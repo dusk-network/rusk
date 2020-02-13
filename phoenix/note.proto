@@ -1,0 +1,45 @@
+syntax = "proto3";
+package phoenix;
+
+import "field.proto";
+
+enum NoteType {
+  TRANSPARENT = 0;
+  OBFUSCATED = 1;
+}
+
+enum InputOutput {
+  INPUT = 0;
+  OUTPUT = 1;
+}
+
+message Idx { uint64 pos = 1; }
+
+message Nullifier { Scalar h = 1; }
+
+message Note {
+  NoteType note_type = 1;
+  Idx pos = 2;
+  InputOutput io = 3;
+  Nonce nonce = 4;
+  CompressedPoint r_g = 5;
+  CompressedPoint pk_r = 6;
+  CompressedPoint commitment = 7;
+  bytes encrypted_blinding_factor = 8;
+  oneof value {
+    uint64 transparent_value = 9;
+    bytes encrypted_value = 10;
+  }
+}
+
+message DecryptedNote {
+  NoteType note_type = 1;
+  Idx pos = 2;
+  uint64 value = 3;
+  InputOutput io = 4;
+  Nonce nonce = 5;
+  CompressedPoint r_g = 6;
+  CompressedPoint pk_r = 7;
+  CompressedPoint commitment = 8;
+  Scalar blinding_factor = 9;
+}
