@@ -1,0 +1,22 @@
+syntax = "proto3";
+package rusk;
+
+import "transaction.proto";
+
+message StateTransitionValidationRequest {
+  repeated Transaction txs = 1;
+}
+
+message StateTransitionValidationResponse {
+  repeated Transaction txs = 1;
+  bool success = 2;
+}
+
+message StateTransitionExecutionRequest {
+  repeated Transaction txs = 1;
+}
+
+message StateTransitionExecutionResponse {
+  repeated Transaction txs = 1;
+  bool success = 2;
+}

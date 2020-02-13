@@ -1,0 +1,13 @@
+syntax = "proto3";
+package rusk;
+
+message TransactionItem {
+  bytes sender = 1;
+  bytes recipient = 2;
+  fixed64 value = 3;
+}
+
+message Transaction {
+  repeated TransactionItem items = 1;
+  fixed64 fee = 2;
+}
