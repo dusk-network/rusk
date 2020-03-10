@@ -1,0 +1,42 @@
+syntax="proto3";
+package node;
+
+enum TxType {
+    // CoinbaseType is the identifier for a block coinbase
+    COINBASE= 0;
+
+    // BidType is the identifier for a blind bid
+    BID= 1;
+
+    // StakeType is the identifier for a stake
+    STAKE= 2;
+
+    // StandardType is the identifier for a standard transaction
+    STANDARD= 3;
+
+    // TimelockType is the identifier for a standard time-locked transaction
+    TIMELOCK= 4;
+
+    // ContractType is the identifier for a smart contract transaction
+    CONTRACT= 5;
+}
+
+message Tx {
+    TxType type = 1;
+    string id = 2;
+    fixed64 lock_time = 3;
+}
+
+// SelectRequest can specify an ID or a transaction type or none
+message SelectRequest {
+    repeated TxType types = 1;
+    string id = 2;
+}
+
+message SelectResponse {
+    //Note: the response was a single string describing the transactions. 
+    //It should actually be responsibility of the caller to format the data or handle it otherwise
+    //string msg = 1;
+    repeated Tx result = 1;
+}
+

@@ -1,0 +1,26 @@
+syntax = "proto3";
+package rusk;
+
+// Phoenix import
+import "transaction.proto";
+
+message EchoRequest {}
+message EchoResponse {}
+
+message ValidateStateTransitionRequest {
+  // List of transactions to be validated
+  repeated phoenix.Transaction txs = 1;
+}
+message ValidateStateTransitionResponse {
+  // Status of the state transition
+  bool success = 1;
+}
+
+service Rusk {
+  // Simple echo request
+  rpc Echo(EchoRequest) returns (EchoResponse) {}
+  // Validate a set of transactions, returning false if at least one of the
+  // listed transactions is inconsistent
+  rpc ValidateStateTransition(ValidateStateTransitionRequest)
+      returns (ValidateStateTransitionResponse) {}
+}
