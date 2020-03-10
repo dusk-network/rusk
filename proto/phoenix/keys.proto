@@ -1,0 +1,19 @@
+syntax = "proto3";
+package phoenix;
+
+import "field.proto";
+
+message SecretKey {
+  Scalar a = 1;
+  Scalar b = 2;
+}
+
+message ViewKey {
+  Scalar a = 1;
+  CompressedPoint b_g = 2;
+}
+
+message PublicKey {
+  CompressedPoint a_g = 1;
+  CompressedPoint b_g = 2;
+}

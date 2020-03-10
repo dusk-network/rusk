@@ -1,0 +1,6 @@
+syntax = "proto3";
+package phoenix;
+
+message Scalar { bytes data = 1; }
+message CompressedPoint { bytes y = 1; }
+message Nonce { bytes bs = 1; }
