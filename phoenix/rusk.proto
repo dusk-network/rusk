@@ -1,7 +1,10 @@
-syntax = "proto3";
-package rusk;
+// Rusk definitions should be done outside of phoenix package, but tonic library
+// is not behaving well for multiple packages (rusk, phoenix, etc). For this
+// reason, Rusk service is declared inside of the phoenix package.
 
-// Phoenix import
+syntax = "proto3";
+package phoenix;
+
 import "transaction.proto";
 
 message EchoRequest {}

@@ -289,6 +289,31 @@
 | VerifyTransaction | [Transaction](#phoenix.Transaction) | [VerifyTransactionResponse](#phoenix.VerifyTransactionResponse) |  |
 | VerifyTransactionRoot | [VerifyTransactionRootRequest](#phoenix.VerifyTransactionRootRequest) | [VerifyTransactionRootResponse](#phoenix.VerifyTransactionRootResponse) |  |
 | StoreTransactions | [StoreTransactionsRequest](#phoenix.StoreTransactionsRequest) | [StoreTransactionsResponse](#phoenix.StoreTransactionsResponse) |  |
+
+## rusk.proto
+
+### EchoRequest
+
+### EchoResponse
+
+### ValidateStateTransitionRequest
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| txs | [Transaction](#phoenix.Transaction) | repeated | List of transactions to be validated |
+### ValidateStateTransitionResponse
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| success | [bool](#bool) |  | Status of the state transition |
+
+### Rusk
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| Echo | [EchoRequest](#phoenix.EchoRequest) | [EchoResponse](#phoenix.EchoResponse) | Simple echo request |
+| ValidateStateTransition | [ValidateStateTransitionRequest](#phoenix.ValidateStateTransitionRequest) | [ValidateStateTransitionResponse](#phoenix.ValidateStateTransitionResponse) | Validate a set of transactions, returning false if at least one of the listed transactions is inconsistent |
+
 ## transaction.proto
 
 ### Transaction
