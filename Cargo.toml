@@ -1,0 +1,16 @@
+[package]
+name = "rusk"
+version = "0.1.0"
+authors = ["Victor Lopez <victor@dusk.network>"]
+edition = "2018"
+
+[dependencies]
+tonic = "^0.1"
+tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
+tracing = "0.1"
+tracing-subscriber = "0.1"
+clap = "2.33"
+
+[dependencies.phoenix]
+git = "https://github.com/dusk-network/phoenix.git"
+branch = "master"

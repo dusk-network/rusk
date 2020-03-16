@@ -1,0 +1,101 @@
+syntax = "proto3";
+package phoenix;
+
+import "field.proto";
+import "keys.proto";
+import "note.proto";
+import "transaction.proto";
+
+message EchoMethod { string m = 1; }
+
+message GenerateSecretKeyRequest { bytes b = 1; }
+
+message NullifierRequest {
+  Note note = 1;
+  SecretKey sk = 2;
+}
+message NullifierResponse { Nullifier nullifier = 1; }
+
+message NullifierStatusRequest { Nullifier nullifier = 1; }
+message NullifierStatusResponse { bool unspent = 1; }
+
+message DecryptNoteRequest {
+  Note note = 1;
+  ViewKey vk = 2;
+}
+
+message OwnedNotesRequest {
+  ViewKey vk = 1;
+  repeated Note notes = 2;
+}
+
+message OwnedNotesResponse { repeated DecryptedNote notes = 1; }
+
+message NewTransactionInputRequest {
+  Idx pos = 1;
+  SecretKey sk = 2;
+}
+
+message NewTransactionOutputRequest {
+  NoteType note_type = 1;
+  PublicKey pk = 2;
+  uint64 value = 3;
+}
+
+message NewTransactionRequest {
+  repeated TransactionInput inputs = 1;
+  repeated TransactionOutput outputs = 2;
+  uint64 fee = 3;
+}
+
+message VerifyTransactionResponse {}
+
+message VerifyTransactionRootRequest {
+  Transaction transaction = 1;
+  Scalar root = 2;
+}
+message VerifyTransactionRootResponse {}
+
+message StoreTransactionsRequest { repeated Transaction transactions = 1; }
+message StoreTransactionsResponse {
+  repeated Note notes = 1;
+  Scalar root = 2;
+}
+
+message SetFeePkRequest {
+  Transaction transaction = 1;
+  PublicKey pk = 2;
+}
+
+message KeysResponse {
+  ViewKey vk = 1;
+  PublicKey pk = 2;
+}
+
+service Phoenix {
+  rpc Echo(EchoMethod) returns (EchoMethod) {}
+
+  rpc GenerateSecretKey(GenerateSecretKeyRequest) returns (SecretKey) {}
+  rpc Keys(SecretKey) returns (KeysResponse) {}
+
+  rpc Nullifier(NullifierRequest) returns (NullifierResponse) {}
+  rpc NullifierStatus(NullifierStatusRequest)
+      returns (NullifierStatusResponse) {}
+  rpc FetchNote(Idx) returns (Note) {}
+  rpc DecryptNote(DecryptNoteRequest) returns (DecryptedNote) {}
+  rpc OwnedNotes(OwnedNotesRequest) returns (OwnedNotesResponse) {}
+  rpc FullScanOwnedNotes(ViewKey) returns (OwnedNotesResponse) {}
+
+  rpc NewTransactionInput(NewTransactionInputRequest)
+      returns (TransactionInput) {}
+  rpc NewTransactionOutput(NewTransactionOutputRequest)
+      returns (TransactionOutput) {}
+  rpc NewTransaction(NewTransactionRequest) returns (Transaction) {}
+  rpc SetFeePk(SetFeePkRequest) returns (Transaction) {}
+
+  rpc VerifyTransaction(Transaction) returns (VerifyTransactionResponse) {}
+  rpc VerifyTransactionRoot(VerifyTransactionRootRequest)
+      returns (VerifyTransactionRootResponse) {}
+  rpc StoreTransactions(StoreTransactionsRequest)
+      returns (StoreTransactionsResponse) {}
+}

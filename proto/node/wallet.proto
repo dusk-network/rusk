@@ -1,0 +1,66 @@
+syntax="proto3";
+package node;
+
+import "mempool.proto";
+
+message PubKey {
+    bytes public_key = 1;
+}
+
+message CreateRequest {
+	string password = 1;
+    bytes seed = 2;
+}
+
+message LoadRequest {
+	string password = 1;
+}
+
+message LoadResponse {
+    PubKey key = 1;
+}
+
+message ConsensusTxRequest {
+	fixed64 amount = 1;
+	fixed64 lock_time = 2;
+}
+
+message TransferRequest {
+	fixed64 amount = 1;
+	bytes address = 2;
+}
+
+message TransferResponse {
+	bytes hash = 1;
+}
+
+message WalletStatusResponse {
+	bool loaded = 1;
+}
+
+message SyncProgressResponse {
+	float progress = 1;
+}
+
+message BalanceResponse {
+	fixed64 unlockedBalance = 1;
+	fixed64 lockedBalance = 2;
+}
+
+enum Direction {
+	OUT = 0;
+	IN = 1;
+}
+
+message TxRecord {
+	Direction direction = 1;
+	int64 timestamp = 2;
+	fixed64 height = 3;
+	TxType type = 4;
+	fixed64 amount = 5;
+	fixed64 unlockHeight = 6;
+}
+
+message TxHistoryResponse {
+	repeated TxRecord records = 1;
+}
