@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use phoenix::{rpc, DbRoot, Transaction};
+use phoenix::{rpc, db, Transaction};
 use tracing::trace;
 
 pub struct RuskServer {
@@ -37,13 +37,8 @@ impl rpc::rusk_server::Rusk for RuskServer {
             );
         }
 
-        let state = DbRoot::new(&self.db_path)
-            .and_then(|root| root.restore())
+        db::store_bulk_transactions(&self.db_path, &txs)
             .map_err(|e| tonic::Status::internal(e.to_string()))?;
-
-        state
-            .validate_bulk_transaction(txs.as_slice())
-            .map_err(|e| tonic::Status::invalid_argument(e.to_string()))?;
 
         Ok(tonic::Response::new(rpc::ValidateStateTransitionResponse {
             success: true,
