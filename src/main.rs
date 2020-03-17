@@ -1,4 +1,4 @@
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{transport::Server};
 
 use rusk::Rusk;
 use phoenix::rpc::rusk_server::RuskServer;
