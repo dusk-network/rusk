@@ -99,8 +99,6 @@ impl rpc::rusk_server::Rusk for Rusk {
                 .unwrap();
         });
 
-        root.set_root(&mut network).unwrap();
-
         Ok(tonic::Response::new(rpc::ValidateStateTransitionResponse {
             success: true,
         }))
