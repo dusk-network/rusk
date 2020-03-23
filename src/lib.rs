@@ -1,14 +1,14 @@
 use bytehash::Blake2b;
-use dusk_abi::H256;
+use dusk_abi::{ContractCall, H256};
 use kelvin::Root;
-use phoenix::{rpc, Scalar, Transaction};
+use phoenix::{rpc, Nullifier, Scalar, Transaction, TransactionItem};
 use phoenix_abi::{
     types::{MAX_NOTES_PER_TRANSACTION, MAX_NULLIFIERS_PER_TRANSACTION},
     Note as ABINote, Nullifier as ABINullifier,
 };
 use rusk_vm::{Contract, GasMeter, NetworkState, Schedule, StandardABI};
+use std::convert::TryFrom;
 use tracing::trace;
-use transfer::transfer;
 
 pub struct Rusk {
     contract_id: H256,
@@ -24,6 +24,8 @@ impl Default for Rusk {
             root.restore().unwrap();
 
         let contract_id = network.deploy(contract).unwrap();
+
+        root.set_root(&mut network).unwrap();
         Self {
             contract_id: contract_id,
         }
@@ -49,11 +51,20 @@ impl rpc::rusk_server::Rusk for Rusk {
     > {
         let mut txs = vec![];
         for t in request.into_inner().txs {
-            txs.push(
-                Transaction::try_from_rpc_transaction("/tmp/rusk-vm-demo", t).map_err(
-                    |e| tonic::Status::invalid_argument(e.to_string()),
-                )?,
-            );
+            let mut tx = Transaction::default();
+
+            for nul in t.clone().nullifiers {
+                let mut item = TransactionItem::default();
+                item.set_nullifier(Nullifier::try_from(nul).unwrap());
+                tx.push(item);
+            }
+
+            for note in t.clone().outputs {
+                let item = TransactionItem::try_from(note).unwrap();
+                tx.push(item);
+            }
+
+            txs.push(tx);
         }
 
         let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
@@ -67,7 +78,7 @@ impl rpc::rusk_server::Rusk for Rusk {
             let mut notes: Vec<ABINote> = vec![];
 
             tx.items().iter().for_each(|item| {
-                if *item.nullifier().point() != Scalar::default() {
+                if *item.nullifier().point() != *Nullifier::default().point() {
                     let nullifier =
                         ABINullifier::from(item.nullifier().clone());
                     nullifiers.push(nullifier);
@@ -77,7 +88,6 @@ impl rpc::rusk_server::Rusk for Rusk {
                 }
             });
 
-            // Swap to arrays
             let mut nul_arr =
                 [ABINullifier::default(); MAX_NULLIFIERS_PER_TRANSACTION];
             let mut note_arr = [ABINote::default(); MAX_NOTES_PER_TRANSACTION];
@@ -90,13 +100,16 @@ impl rpc::rusk_server::Rusk for Rusk {
                 note_arr[i] = note;
             }
 
+            println!("calling contract");
+            let call: ContractCall<(
+                [ABINullifier; MAX_NULLIFIERS_PER_TRANSACTION],
+                [ABINote; MAX_NOTES_PER_TRANSACTION],
+            )> = ContractCall::new((nul_arr, note_arr)).unwrap();
             network
-                .call_contract(
-                    &self.contract_id,
-                    transfer(nul_arr, note_arr),
-                    &mut gas,
-                )
+                .call_contract(&self.contract_id, call, &mut gas)
                 .unwrap();
+
+            println!("done");
         });
 
         Ok(tonic::Response::new(rpc::ValidateStateTransitionResponse {
