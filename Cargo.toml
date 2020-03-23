@@ -13,7 +13,6 @@ clap = "2.33"
 prost = "0.6"
 rusk-vm = { path = "../rusk-vm" }
 dusk-abi = { path = "../rusk-vm/dusk-abi" }
-transfer = { path = "../rusk-vm/tests/contracts/transfer/wasm" }
 phoenix-abi = { path = "../phoenix-abi" }
 kelvin = "0.9"
 bytehash = "0.2"
