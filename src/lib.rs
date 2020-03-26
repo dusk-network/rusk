@@ -17,7 +17,7 @@ pub struct Rusk {
 impl Default for Rusk {
     fn default() -> Self {
         let schedule = Schedule::default();
-        let contract = Contract::new(include_bytes!("../../rusk-vm/tests/contracts/transfer/wasm/target/wasm32-unknown-unknown/release/transfer.wasm"), &schedule).unwrap();
+        let contract = Contract::new(include_bytes!("../../rusk-vm/tests/contracts/fee/wasm/target/wasm32-unknown-unknown/release/transfer.wasm"), &schedule).unwrap();
 
         let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
@@ -40,6 +40,28 @@ impl rpc::rusk_server::Rusk for Rusk {
     ) -> Result<tonic::Response<rpc::EchoResponse>, tonic::Status> {
         trace!("Incoming echo request");
         Ok(tonic::Response::new(rpc::EchoResponse::default()))
+    }
+
+    async fn distribute(
+        &self,
+        request: tonic::Request<rpc::DistributeRequest>,
+    ) -> Result<tonic::Response<rpc::DistributeResponse>, tonic::Status> {
+        let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
+        let mut network: NetworkState<StandardABI<_>, Blake2b> =
+            root.restore().unwrap();
+
+        let mut gas = GasMeter::with_limit(1_000_000_000);
+    }
+
+    async fn withdraw(
+        &self,
+        request: tonic::Request<rpc::WithdrawRequest>,
+    ) -> Result<tonic::Response<rpc::WithdrawResponse>, tonic::Status> {
+        let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
+        let mut network: NetworkState<StandardABI<_>, Blake2b> =
+            root.restore().unwrap();
+
+        let mut gas = GasMeter::with_limit(1_000_000_000);
     }
 
     async fn validate_state_transition(
