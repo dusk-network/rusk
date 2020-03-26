@@ -1,0 +1,59 @@
+// Rusk definitions should be done outside of phoenix package, but tonic library
+// is not behaving well for multiple packages (rusk, phoenix, etc). For this
+// reason, Rusk service is declared inside of the phoenix package.
+
+syntax = "proto3";
+package phoenix;
+
+import "transaction.proto";
+import "keys.proto";
+
+message Provisioner {
+	bytes address = 1;
+}
+
+message EchoRequest {}
+message EchoResponse {}
+
+message ValidateStateTransitionRequest {
+  // List of transactions to be validated
+  repeated phoenix.Transaction txs = 1;
+}
+message ValidateStateTransitionResponse {
+  // Status of the state transition
+  bool success = 1;
+}
+
+message DistributeRequest {
+	fixed64 total_reward = 1;
+	repeated Provisioner addresses = 2;
+	PublicKey pk = 3;
+}
+
+message DistributeResponse {
+	bool success = 1;
+}
+
+message WithdrawRequest {
+	bytes signature = 1;
+	bytes address = 2;
+	fixed64 value = 3;
+	PublicKey pk = 4;
+}
+
+message WithdrawResponse{
+	bool success = 1;
+}
+
+service Rusk {
+  // Simple echo request
+  rpc Echo(EchoRequest) returns (EchoResponse) {}
+  // Validate a set of transactions, returning false if at least one of the
+  // listed transactions is inconsistent
+  rpc ValidateStateTransition(ValidateStateTransitionRequest)
+      returns (ValidateStateTransitionResponse) {}
+	rpc Distribute(DistributeRequest)
+			returns (DistributeResponse) {}
+	rpc Withdraw(WithdrawRequest)
+			returns (WithdrawResponse) {}
+}
