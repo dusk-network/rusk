@@ -1,33 +1,38 @@
 use bytehash::Blake2b;
-use dusk_abi::{ContractCall, H256};
+use dusk_abi::{ContractCall, FeeCall, Provisioners, Signature, H256};
 use kelvin::Root;
-use phoenix::{rpc, Nullifier, Scalar, Transaction, TransactionItem};
-use phoenix_abi::{
-    types::{MAX_NOTES_PER_TRANSACTION, MAX_NULLIFIERS_PER_TRANSACTION},
-    Note as ABINote, Nullifier as ABINullifier,
+use phoenix::{
+    rpc, Nullifier, PublicKey, Scalar, Transaction, TransactionItem,
 };
+use phoenix_abi::{Note as ABINote, Nullifier as ABINullifier};
 use rusk_vm::{Contract, GasMeter, NetworkState, Schedule, StandardABI};
 use std::convert::TryFrom;
 use tracing::trace;
 
 pub struct Rusk {
-    contract_id: H256,
+    transfer_id: H256,
+    fee_id: H256,
 }
 
 impl Default for Rusk {
     fn default() -> Self {
         let schedule = Schedule::default();
-        let contract = Contract::new(include_bytes!("../../rusk-vm/tests/contracts/fee/wasm/target/wasm32-unknown-unknown/release/transfer.wasm"), &schedule).unwrap();
+        let fee_contract= Contract::new(include_bytes!("../../rusk-vm/tests/contracts/fee/wasm/target/wasm32-unknown-unknown/release/fee.wasm"), &schedule).unwrap();
 
         let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
             root.restore().unwrap();
 
-        let contract_id = network.deploy(contract).unwrap();
+        let fee_id = network.deploy(fee_contract).unwrap();
+
+        let transfer_contract= Contract::new(include_bytes!("../../rusk-vm/tests/contracts/transfer/wasm/target/wasm32-unknown-unknown/release/transfer.wasm"), &schedule).unwrap();
+
+        let transfer_id = network.deploy(transfer_contract).unwrap();
 
         root.set_root(&mut network).unwrap();
         Self {
-            contract_id: contract_id,
+            fee_id: fee_id,
+            transfer_id: transfer_id,
         }
     }
 }
@@ -51,6 +56,44 @@ impl rpc::rusk_server::Rusk for Rusk {
             root.restore().unwrap();
 
         let mut gas = GasMeter::with_limit(1_000_000_000);
+        let req = request.into_inner();
+
+        let pk = PublicKey::try_from(req.clone().pk.unwrap()).unwrap();
+        let a_g_bytes = pk.a_g.compress().to_bytes();
+        let b_g_bytes = pk.b_g.compress().to_bytes();
+
+        let mut pk_buf = [0u8; 64];
+        for i in 0..32 {
+            pk_buf[i] = a_g_bytes[i];
+        }
+
+        for i in 0..32 {
+            pk_buf[i + 32] = b_g_bytes[i];
+        }
+
+        let mut provisioners = Provisioners::default();
+
+        for i in 0..32 {
+            provisioners.0[i] = req.clone().addresses[0].address[i];
+        }
+
+        let call: ContractCall<()> = ContractCall::new(FeeCall::Distribute {
+            total_reward: req.clone().total_reward,
+            addresses: provisioners,
+            pk: pk_buf.into(),
+        })
+        .unwrap();
+
+        println!("distributing rewards..");
+
+        network.call_contract(&self.fee_id, call, &mut gas).unwrap();
+
+        root.set_root(&mut network).unwrap();
+
+        println!("done");
+        Ok(tonic::Response::new(rpc::DistributeResponse {
+            success: true,
+        }))
     }
 
     async fn withdraw(
@@ -62,6 +105,41 @@ impl rpc::rusk_server::Rusk for Rusk {
             root.restore().unwrap();
 
         let mut gas = GasMeter::with_limit(1_000_000_000);
+        let mut address = [0u8; 32];
+        let req = request.into_inner();
+        address.copy_from_slice(&req.address);
+
+        let pk = PublicKey::try_from(req.clone().pk.unwrap()).unwrap();
+        let a_g_bytes = pk.a_g.compress().to_bytes();
+        let b_g_bytes = pk.b_g.compress().to_bytes();
+
+        let mut pk_buf = [0u8; 64];
+        for i in 0..32 {
+            pk_buf[i] = a_g_bytes[i];
+        }
+
+        for i in 0..32 {
+            pk_buf[i + 32] = b_g_bytes[i];
+        }
+
+        let call: ContractCall<()> = ContractCall::new(FeeCall::Withdraw {
+            sig: Signature::from_slice(&req.signature),
+            address: address,
+            value: req.clone().value,
+            pk: pk_buf.into(),
+        })
+        .unwrap();
+
+        println!("withdrawing provisioner reward");
+
+        network.call_contract(&self.fee_id, call, &mut gas).unwrap();
+
+        root.set_root(&mut network).unwrap();
+
+        println!("done");
+        Ok(tonic::Response::new(rpc::WithdrawResponse {
+            success: true,
+        }))
     }
 
     async fn validate_state_transition(
@@ -110,9 +188,8 @@ impl rpc::rusk_server::Rusk for Rusk {
                 }
             });
 
-            let mut nul_arr =
-                [ABINullifier::default(); MAX_NULLIFIERS_PER_TRANSACTION];
-            let mut note_arr = [ABINote::default(); MAX_NOTES_PER_TRANSACTION];
+            let mut nul_arr = [ABINullifier::default(); ABINullifier::MAX];
+            let mut note_arr = [ABINote::default(); ABINote::MAX];
 
             for (i, nul) in nullifiers.drain(..).enumerate() {
                 nul_arr[i] = nul;
@@ -124,11 +201,11 @@ impl rpc::rusk_server::Rusk for Rusk {
 
             println!("calling contract");
             let call: ContractCall<(
-                [ABINullifier; MAX_NULLIFIERS_PER_TRANSACTION],
-                [ABINote; MAX_NOTES_PER_TRANSACTION],
+                [ABINullifier; ABINullifier::MAX],
+                [ABINote; ABINote::MAX],
             )> = ContractCall::new((nul_arr, note_arr)).unwrap();
             network
-                .call_contract(&self.contract_id, call, &mut gas)
+                .call_contract(&self.transfer_id, call, &mut gas)
                 .unwrap();
 
             println!("done");
