@@ -1,7 +1,9 @@
+mod server;
+
 use tonic::transport::Server;
 
 use phoenix::rpc::rusk_server::RuskServer;
-use rusk::Rusk;
+use server::Rusk;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
