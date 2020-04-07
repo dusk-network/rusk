@@ -18,4 +18,5 @@ kelvin = "0.9"
 bytehash = "0.2"
 
 [dependencies.phoenix]
-path = { git = "ssh://git@github.com/dusk-network/phoenix.git", branch = "fix-proto" }
+git = "ssh://git@github.com/dusk-network/phoenix.git"
+branch = "cleanup"
