@@ -89,3 +89,53 @@ impl rpc::rusk_server::Rusk for Rusk {
         }))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use phoenix::{
+        rpc::{rusk_client::RuskClient, rusk_server::RuskServer},
+        PublicKey,
+    };
+    use phoenix_wallet::{client, server};
+    use tonic::transport::Server;
+
+    #[tokio::test]
+    async fn test_transfer() {
+        let srv = RuskServer::new(Rusk::default());
+        let addr = "0.0.0.0:8081";
+
+        tokio::spawn(async {
+            Server::builder()
+                .add_service(RuskServer::new(Rusk::default()))
+                .serve(addr.parse().unwrap())
+                .await
+        });
+
+        let wallet_srv = server::PhoenixServer::new();
+        let wallet_addr = "0.0.0.0:8051";
+
+        tokio::spawn(async {
+            Server::builder()
+                .add_service(RuskServer::new(Rusk::default()))
+                .serve(wallet_addr.parse().unwrap())
+                .await
+        });
+
+        let pk = PublicKey::default();
+        let tx = client::create_transaction(100_000 as u64, 100 as u64, pk)
+            .await
+            .unwrap();
+
+        let rusk_client =
+            RuskClient::connect(addr.parse().unwrap()).await.unwrap();
+        let request =
+            tonic::Request::new(rpc::ValidateStateTransitionRequest {
+                txs: vec![tx],
+            });
+        let response = rusk_client
+            .validate_state_transition(request)
+            .await
+            .unwrap();
+    }
+}
