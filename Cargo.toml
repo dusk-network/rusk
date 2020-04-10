@@ -11,12 +11,16 @@ tracing = "0.1"
 tracing-subscriber = "0.1"
 clap = "2.33"
 prost = "0.6"
-rusk-vm = { path = "../rusk-vm" }
-dusk-abi = { path = "../rusk-vm/dusk-abi" }
+rusk-vm = { git = "ssh://git@github.com/dusk-network/rusk-vm.git", branch = "staking" }
 phoenix-abi = { path = "../phoenix-abi" }
 kelvin = "0.9"
 bytehash = "0.2"
 
 [dependencies.phoenix]
-git = "ssh://git@github.com/dusk-network/phoenix.git"
-branch = "cleanup"
+path = "../phoenix"
+
+[dev-dependencies]
+phoenix-wallet = { path = "../phoenix-wallet" }
+
+[build-dependencies]
+tonic-build = { version = "0.1", default-features = false, features = ["transport"] }
