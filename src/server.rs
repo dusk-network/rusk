@@ -7,9 +7,7 @@ use phoenix::{
     SecretKey, Transaction, TransactionInput, TransactionOutput,
     TransparentNote, ViewKey,
 };
-use phoenix_abi::{
-    Note as ABINote, Nullifier as ABINullifier, Proof as ABIProof,
-};
+use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::{ContractCall, TransferCall, H256};
 use rusk_vm::{Contract, GasMeter, NetworkState, Schedule, StandardABI};
 use std::convert::{TryFrom, TryInto};
@@ -71,20 +69,22 @@ impl rpc::rusk_server::Rusk for Rusk {
             .txs
             .iter()
             .filter_map(|t| {
-                let mut nul_arr = [ABINullifier::default(); ABINullifier::MAX];
+                let mut input_arr = [ABIInput::default(); ABIInput::MAX];
                 let mut note_arr = [ABINote::default(); ABINote::MAX];
 
-                for (i, nul) in t.inputs.iter().enumerate() {
-                    let abi_nullifier =
-                        ABINullifier::try_from(nul.nullifier.as_ref().unwrap())
-                            .ok()?;
-                    nul_arr[i] = abi_nullifier;
+                for (i, input) in t.inputs.iter().enumerate() {
+                    let abi_input = ABIInput::try_from(input).ok()?;
+                    input_arr[i] = abi_input;
                 }
 
                 for (i, output) in t.outputs.iter().enumerate() {
                     let abi_note = ABINote::try_from(output).ok()?;
                     note_arr[i] = abi_note;
                 }
+
+                let fee_note =
+                    ABINote::try_from(t.fee.as_ref().unwrap()).ok()?;
+                note_arr[ABINote::MAX - 1] = fee_note;
 
                 let mut gas = GasMeter::with_limit(1_000_000_000);
 
@@ -93,7 +93,7 @@ impl rpc::rusk_server::Rusk for Rusk {
                 let proof = ABIProof(proof_buf);
                 let call: ContractCall<bool> =
                     ContractCall::new(TransferCall::Transfer {
-                        nullifiers: nul_arr,
+                        inputs: input_arr,
                         notes: note_arr,
                         proof,
                     })
