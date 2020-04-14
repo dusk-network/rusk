@@ -11,16 +11,15 @@ tracing = "0.1"
 tracing-subscriber = "0.1"
 clap = "2.33"
 prost = "0.6"
-rusk-vm = { git = "ssh://git@github.com/dusk-network/rusk-vm.git", branch = "staking" }
-phoenix-abi = { git = "ssh://git@github.com/dusk-network/phoenix-abi.git" }
-kelvin = "0.9"
+rusk-vm = { git = "ssh://git@github.com/dusk-network/rusk-vm.git", branch = "transfer" }
+phoenix-abi = { git = "ssh://git@github.com/dusk-network/phoenix-abi.git", branch = "transfer" }
+kelvin = "0.11.2"
 bytehash = "0.2"
+hex = "^0.4"
 
 [dependencies.phoenix]
 git = "ssh://git@github.com/dusk-network/phoenix.git"
-
-[dev-dependencies]
-phoenix-wallet = { git = "ssh://git@github.com/dusk-network/phoenix-wallet.git" }
+branch = "update-protobuf"
 
 [build-dependencies]
 tonic-build = { version = "0.1", default-features = false, features = ["transport"] }
