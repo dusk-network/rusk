@@ -1,3 +1,4 @@
+mod client;
 mod server;
 
 use tonic::transport::Server;
