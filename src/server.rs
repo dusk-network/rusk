@@ -1,11 +1,10 @@
 use bytehash::Blake2b;
-use hex::decode;
 use kelvin::{ByteHash, Root};
 use phoenix::{
     db, db::Db, db::DbNotesIterator, rpc, utils, zk, Error, Note,
     NoteGenerator, NoteVariant, Nullifier, ObfuscatedNote, PublicKey,
-    SecretKey, Transaction, TransactionInput, TransactionOutput,
-    TransparentNote, ViewKey,
+    SecretKey, Transaction, TransactionInput, TransactionItem,
+    TransactionOutput, TransparentNote, ViewKey,
 };
 use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::{ContractCall, TransferCall, H256};
@@ -17,8 +16,6 @@ use tracing::trace;
 fn error_to_tonic(e: Error) -> tonic::Status {
     e.into()
 }
-
-const DB_PATH: &'static str = "/tmp/rusk";
 
 pub struct Rusk {
     transfer_id: H256,
@@ -187,6 +184,8 @@ impl rpc::rusk_server::Rusk for Rusk {
     ) -> Result<tonic::Response<rpc::NullifierStatusResponse>, tonic::Status>
     {
         trace!("Incoming nullifier status request");
+        unimplemented!()
+        /*
         let request = request.into_inner();
 
         let nullifier: Nullifier = request
@@ -200,6 +199,7 @@ impl rpc::rusk_server::Rusk for Rusk {
 
         let response = rpc::NullifierStatusResponse { unspent };
         Ok(tonic::Response::new(response))
+        */
     }
 
     async fn fetch_note(
@@ -207,12 +207,15 @@ impl rpc::rusk_server::Rusk for Rusk {
         request: tonic::Request<rpc::FetchNoteRequest>,
     ) -> Result<tonic::Response<rpc::Note>, tonic::Status> {
         trace!("Incoming fetch note request");
+        unimplemented!()
+        /*
         let idx: u64 = request.into_inner().pos;
         let note = db::fetch_note(&DB_PATH, idx)
             .map(|note| note.into())
             .map_err(error_to_tonic)?;
 
         Ok(tonic::Response::new(note))
+        */
     }
 
     async fn decrypt_note(
@@ -282,12 +285,16 @@ impl rpc::rusk_server::Rusk for Rusk {
         let vk: ViewKey =
             request.into_inner().try_into().map_err(error_to_tonic)?;
 
-        let root = Root::<_, Blake2b>::new(DB_PATH).unwrap();
+        let root = Root::<_, Blake2b>::new(Path::new(
+            &std::env::var("PHOENIX_DB").unwrap(),
+        ))
+        .unwrap();
         let db: Db<_> = root.restore().unwrap();
 
-        let path = Path::new(DB_PATH);
-        let notes_iter: DbNotesIterator<Blake2b> =
-            DbNotesIterator::try_from(path.to_path_buf()).unwrap();
+        let notes_iter: DbNotesIterator<Blake2b> = DbNotesIterator::try_from(
+            Path::new(&std::env::var("PHOENIX_DB").unwrap()).to_path_buf(),
+        )
+        .unwrap();
         let mut notes: Vec<rpc::DecryptedNote> = vec![];
         notes_iter.for_each(|note: NoteVariant| {
             if note.is_owned_by(&vk) {
@@ -406,7 +413,11 @@ impl rpc::rusk_server::Rusk for Rusk {
                     ),
                 };
 
-                let merkle_proof = db::merkle_opening(DB_PATH, &note).unwrap();
+                let merkle_proof = db::merkle_opening(
+                    Path::new(&std::env::var("PHOENIX_DB").unwrap()),
+                    &note,
+                )
+                .unwrap();
                 note.to_transaction_input(
                     merkle_proof,
                     sk.clone().try_into().unwrap(),
@@ -414,9 +425,8 @@ impl rpc::rusk_server::Rusk for Rusk {
             })
             .collect::<Vec<TransactionInput>>();
 
-        inputs.into_iter().for_each(|input| {
-            tx.push_input(input).unwrap();
-        });
+        // TODO: when we can add more than one, turn this into a for loop
+        tx.push_input(inputs[0]).unwrap();
 
         // Make output note
         let pk: PublicKey = pk.try_into().unwrap();
@@ -431,7 +441,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         .unwrap();
 
         // Make change note if needed
-        let change = input_amount - (request.value + request.fee);
+        let change = inputs[0].value() - (request.value + request.fee);
         if change > 0 {
             let (note, blinding_factor) = TransparentNote::output(&pk, change);
 
@@ -562,8 +572,15 @@ mod tests {
 
     #[tokio::test(threaded_scheduler)]
     async fn test_transfer() {
+        // Set DB_PATH
+        let mut db_path = std::env::temp_dir();
+        db_path.push("phoenix-db");
+        std::env::set_var("PHOENIX_DB", db_path.into_os_string());
+
+        // Mandatory Phoenix setup
         utils::init();
         zk::init();
+
         let srv = RuskServer::new(Rusk::default());
         let addr = "0.0.0.0:8080";
 
@@ -574,8 +591,10 @@ mod tests {
                 .await
         });
 
+        // TODO: maybe find a less hacky way to let the server get up and running
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
+        // First, credit the sender with a note, so that he can create a transaction from it
         let sk_str = "b9e2d256378bd34648eb802a497977b2a14d5aae3826866baac570a4a7a1360a4c1722a9d8126e5654c5411bef959b18e58d4b4f88b07b8ab8bd42ec67c90c0b";
         let decoded = hex::decode(sk_str).unwrap();
         let mut a_bytes = [0u8; 32];
@@ -585,19 +604,40 @@ mod tests {
         let a = utils::deserialize_jubjub_scalar(&a_bytes).unwrap();
         let b = utils::deserialize_jubjub_scalar(&b_bytes).unwrap();
         let sk = SecretKey::new(a, b);
-        let pk = PublicKey::default();
+        let pk = sk.public_key();
+
+        let mut tx = Transaction::default();
+        let value = 100_000_000;
+        let (note, blinding_factor) = TransparentNote::output(&pk, value);
+        tx.push_output(note.to_transaction_output(value, blinding_factor, pk))
+            .unwrap();
+        db::store(
+            std::path::Path::new(&std::env::var("PHOENIX_DB").unwrap()),
+            &tx,
+        )
+        .unwrap();
+
+        // Now, let's make a transaction
+        let recipient = PublicKey::default();
         let tx = client::create_transaction(
             sk,
             100_000 as u64,
             100 as u64,
-            pk.into(),
+            recipient.into(),
         )
         .await
         .unwrap();
 
+        // And execute it on the VM
         let response =
             client::validate_state_transition(vec![tx]).await.unwrap();
 
         println!("{:?}", response);
+
+        // Clean up DB
+        std::fs::remove_dir_all(std::path::Path::new(
+            &std::env::var("PHOENIX_DB").unwrap(),
+        ))
+        .unwrap();
     }
 }
