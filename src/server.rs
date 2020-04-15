@@ -595,15 +595,7 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(1000));
 
         // First, credit the sender with a note, so that he can create a transaction from it
-        let sk_str = "b9e2d256378bd34648eb802a497977b2a14d5aae3826866baac570a4a7a1360a4c1722a9d8126e5654c5411bef959b18e58d4b4f88b07b8ab8bd42ec67c90c0b";
-        let decoded = hex::decode(sk_str).unwrap();
-        let mut a_bytes = [0u8; 32];
-        a_bytes.copy_from_slice(&decoded[0..32]);
-        let mut b_bytes = [0u8; 32];
-        b_bytes.copy_from_slice(&decoded[32..64]);
-        let a = utils::deserialize_jubjub_scalar(&a_bytes).unwrap();
-        let b = utils::deserialize_jubjub_scalar(&b_bytes).unwrap();
-        let sk = SecretKey::new(a, b);
+        let sk = SecretKey::default();
         let pk = sk.public_key();
 
         let mut tx = Transaction::default();
