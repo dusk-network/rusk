@@ -87,7 +87,7 @@ impl rpc::rusk_server::Rusk for Rusk {
 
                 let mut proof_buf = [0u8; ABIProof::SIZE];
                 proof_buf.copy_from_slice(&t.proof);
-                let proof = ABIProof(proof_buf);
+                let proof = ABIProof::from_bytes(proof_buf);
                 let call: ContractCall<bool> =
                     ContractCall::new(TransferCall::Transfer {
                         inputs: input_arr,
