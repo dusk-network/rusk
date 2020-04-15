@@ -443,6 +443,8 @@ impl rpc::rusk_server::Rusk for Rusk {
         // Make change note if needed
         let change = inputs[0].value() - (request.value + request.fee);
         if change > 0 {
+            let secret_key: SecretKey = sk.clone().try_into().unwrap();
+            let pk = secret_key.public_key();
             let (note, blinding_factor) = TransparentNote::output(&pk, change);
 
             tx.push_output(note.to_transaction_output(
