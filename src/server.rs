@@ -94,10 +94,9 @@ impl rpc::rusk_server::Rusk for Rusk {
                         proof,
                     })
                     .ok()?;
-                let result =
-                    network.call_contract(&self.transfer_id, call, &mut gas);
-                println!("{:?}", result);
-                result.ok()
+                network
+                    .call_contract(&self.transfer_id, call, &mut gas)
+                    .ok()
             })
             .collect();
         if correct_txs.len() > 0 {
