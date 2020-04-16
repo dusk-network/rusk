@@ -407,7 +407,7 @@ impl rpc::rusk_server::Rusk for Rusk {
             .into_iter()
             .map(|input| {
                 // TODO: handle this error properly
-                let note = match input.note_type.try_into().unwrap() {
+                let note = match input.note_type.try_into()? {
                     rpc::NoteType::Transparent => NoteVariant::Transparent(
                         TransparentNote::try_from(input)?,
                     ),
