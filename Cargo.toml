@@ -19,7 +19,6 @@ hex = "^0.4"
 
 [dependencies.phoenix]
 git = "ssh://git@github.com/dusk-network/phoenix.git"
-branch = "plonk"
 
 [build-dependencies]
 tonic-build = { version = "0.1", default-features = false, features = ["transport"] }
