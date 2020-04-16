@@ -115,12 +115,9 @@ impl rpc::rusk_server::Rusk for Rusk {
         request: tonic::Request<rpc::GenerateSecretKeyRequest>,
     ) -> Result<tonic::Response<rpc::SecretKey>, tonic::Status> {
         trace!("Incoming generate secret key request");
-        unimplemented!()
-        /*
         let sk = SecretKey::from(request.into_inner().b.as_slice());
         let sk = rpc::SecretKey::from(sk);
         Ok(tonic::Response::new(sk))
-        */
     }
 
     async fn keys(
