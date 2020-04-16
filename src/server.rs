@@ -225,7 +225,7 @@ impl rpc::rusk_server::Rusk for Rusk {
                 };
 
                 let merkle_proof =
-                    db::merkle_opening(Path::new(db_path), &note).unwrap();
+                    db::merkle_opening(Path::new(db_path), &note)?;
                 Ok(note
                     .to_transaction_input(merkle_proof, sk.clone().try_into()?))
             })
