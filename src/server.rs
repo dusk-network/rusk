@@ -57,9 +57,9 @@ impl rpc::rusk_server::Rusk for Rusk {
         tonic::Response<rpc::ValidateStateTransitionResponse>,
         tonic::Status,
     > {
-        let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state").unwrap();
+        let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state")?;
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
-            root.restore().unwrap();
+            root.restore()?;
 
         let correct_txs: Vec<bool> = request
             .into_inner()
@@ -79,8 +79,7 @@ impl rpc::rusk_server::Rusk for Rusk {
                     note_arr[i] = abi_note;
                 }
 
-                let fee_note =
-                    ABINote::try_from(t.fee.as_ref().unwrap()).ok()?;
+                let fee_note = ABINote::try_from(t.fee.as_ref()?).ok()?;
                 note_arr[ABINote::MAX - 1] = fee_note;
 
                 let mut gas = GasMeter::with_limit(1_000_000_000);
@@ -94,7 +93,7 @@ impl rpc::rusk_server::Rusk for Rusk {
                         notes: note_arr,
                         proof,
                     })
-                    .unwrap();
+                    .ok()?;
                 let result =
                     network.call_contract(&self.transfer_id, call, &mut gas);
                 println!("{:?}", result);
@@ -285,16 +284,17 @@ impl rpc::rusk_server::Rusk for Rusk {
         let vk: ViewKey =
             request.into_inner().try_into().map_err(error_to_tonic)?;
 
-        let root = Root::<_, Blake2b>::new(Path::new(
-            &std::env::var("PHOENIX_DB").unwrap(),
-        ))
-        .unwrap();
-        let db: Db<_> = root.restore().unwrap();
+        let db_path = &std::env::var("PHOENIX_DB").or(Err(
+            tonic::Status::new(tonic::Code::Internal, "could not get db path"),
+        ))?;
+        let root = Root::<_, Blake2b>::new(Path::new(db_path))?;
+        let db: Db<_> = root.restore().or(Err(tonic::Status::new(
+            tonic::Code::Internal,
+            "could not reconstruct db",
+        )))?;
 
-        let notes_iter: DbNotesIterator<Blake2b> = DbNotesIterator::try_from(
-            Path::new(&std::env::var("PHOENIX_DB").unwrap()).to_path_buf(),
-        )
-        .unwrap();
+        let notes_iter: DbNotesIterator<Blake2b> =
+            DbNotesIterator::try_from(Path::new(db_path).to_path_buf())?;
         let mut notes: Vec<rpc::DecryptedNote> = vec![];
         notes_iter.for_each(|note: NoteVariant| {
             if note.is_owned_by(&vk) {
@@ -399,6 +399,10 @@ impl rpc::rusk_server::Rusk for Rusk {
 
         let mut tx = Transaction::default();
 
+        let db_path = &std::env::var("PHOENIX_DB").or(Err(
+            tonic::Status::new(tonic::Code::Internal, "could not get db path"),
+        ))?;
+
         let inputs: Vec<TransactionInput> = request
             .inputs
             .into_iter()
@@ -406,30 +410,25 @@ impl rpc::rusk_server::Rusk for Rusk {
                 // TODO: handle this error properly
                 let note = match input.note_type.try_into().unwrap() {
                     rpc::NoteType::Transparent => NoteVariant::Transparent(
-                        TransparentNote::try_from(input).unwrap(),
+                        TransparentNote::try_from(input)?,
                     ),
                     rpc::NoteType::Obfuscated => NoteVariant::Obfuscated(
-                        ObfuscatedNote::try_from(input).unwrap(),
+                        ObfuscatedNote::try_from(input)?,
                     ),
                 };
 
-                let merkle_proof = db::merkle_opening(
-                    Path::new(&std::env::var("PHOENIX_DB").unwrap()),
-                    &note,
-                )
-                .unwrap();
-                note.to_transaction_input(
-                    merkle_proof,
-                    sk.clone().try_into().unwrap(),
-                )
+                let merkle_proof =
+                    db::merkle_opening(Path::new(db_path), &note).unwrap();
+                Ok(note
+                    .to_transaction_input(merkle_proof, sk.clone().try_into()?))
             })
-            .collect::<Vec<TransactionInput>>();
+            .collect::<Result<Vec<TransactionInput>, tonic::Status>>()?;
 
         // TODO: when we can add more than one, turn this into a for loop
-        tx.push_input(inputs[0]).unwrap();
+        tx.push_input(inputs[0])?;
 
         // Make output note
-        let pk: PublicKey = pk.try_into().unwrap();
+        let pk: PublicKey = pk.try_into()?;
         let (note, blinding_factor) =
             TransparentNote::output(&pk, request.value);
 
@@ -437,13 +436,12 @@ impl rpc::rusk_server::Rusk for Rusk {
             request.value,
             blinding_factor,
             pk,
-        ))
-        .unwrap();
+        ))?;
 
         // Make change note if needed
         let change = inputs[0].value() - (request.value + request.fee);
         if change > 0 {
-            let secret_key: SecretKey = sk.clone().try_into().unwrap();
+            let secret_key: SecretKey = sk.clone().try_into()?;
             let pk = secret_key.public_key();
             let (note, blinding_factor) = TransparentNote::output(&pk, change);
 
@@ -451,8 +449,7 @@ impl rpc::rusk_server::Rusk for Rusk {
                 change,
                 blinding_factor,
                 pk,
-            ))
-            .unwrap();
+            ))?;
         }
 
         // Make fee note
@@ -464,9 +461,9 @@ impl rpc::rusk_server::Rusk for Rusk {
             pk,
         ));
 
-        tx.prove().unwrap();
+        tx.prove()?;
 
-        Ok(tonic::Response::new(tx.try_into().unwrap()))
+        Ok(tonic::Response::new(tx.try_into()?))
     }
 
     async fn verify_transaction(
