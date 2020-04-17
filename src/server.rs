@@ -1,10 +1,9 @@
 use bytehash::Blake2b;
-use kelvin::{ByteHash, Root};
+use kelvin::Root;
 use phoenix::{
-    db, db::Db, db::DbNotesIterator, rpc, utils, zk, Error, Note,
-    NoteGenerator, NoteVariant, Nullifier, ObfuscatedNote, PublicKey,
-    SecretKey, Transaction, TransactionInput, TransactionItem,
-    TransactionOutput, TransparentNote, ViewKey,
+    db, db::DbNotesIterator, rpc, utils, Error, Note, NoteGenerator,
+    NoteVariant, ObfuscatedNote, PublicKey, SecretKey, Transaction,
+    TransactionInput, TransactionItem, TransparentNote, ViewKey,
 };
 use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::{ContractCall, TransferCall, H256};
@@ -57,7 +56,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         tonic::Response<rpc::ValidateStateTransitionResponse>,
         tonic::Status,
     > {
-        let mut root = Root::<_, Blake2b>::new("/tmp/rusk-state")?;
+        let root = Root::<_, Blake2b>::new("/tmp/rusk-state")?;
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
             root.restore()?;
 
@@ -157,11 +156,6 @@ impl rpc::rusk_server::Rusk for Rusk {
         let db_path = &std::env::var("PHOENIX_DB").or(Err(
             tonic::Status::new(tonic::Code::Internal, "could not get db path"),
         ))?;
-        let root = Root::<_, Blake2b>::new(Path::new(db_path))?;
-        let db: Db<_> = root.restore().or(Err(tonic::Status::new(
-            tonic::Code::Internal,
-            "could not reconstruct db",
-        )))?;
 
         let notes_iter: DbNotesIterator<Blake2b> =
             DbNotesIterator::try_from(Path::new(db_path).to_path_buf())?;
