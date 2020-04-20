@@ -114,6 +114,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         }))
     }
 
+    // TODO: implement
     async fn execute_state_transition(
         &self,
         request: tonic::Request<rpc::ExecuteStateTransitionRequest>,
@@ -124,6 +125,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         unimplemented!()
     }
 
+    // TODO: implement
     async fn generate_score(
         &self,
         request: tonic::Request<rpc::GenerateScoreRequest>,
@@ -290,6 +292,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         Ok(tonic::Response::new(tx.try_into()?))
     }
 
+    // TODO: implement
     async fn verify_transaction(
         &self,
         request: tonic::Request<rpc::Transaction>,
