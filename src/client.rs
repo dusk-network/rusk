@@ -31,10 +31,8 @@ pub async fn validate_state_transition(
 ) -> Result<rpc::ValidateStateTransitionResponse, Box<dyn std::error::Error>> {
     let mut client = client().await?;
     let request = tonic::Request::new(rpc::ValidateStateTransitionRequest {
-        calls: vec![phoenix::rpc::ContractCall {
-            contract_call: Some(phoenix::rpc::contract_call::ContractCall::Tx(
-                tx,
-            )),
+        calls: vec![rpc::ContractCall {
+            contract_call: Some(rpc::contract_call::ContractCall::Tx(tx)),
         }],
     });
     let response = client.validate_state_transition(request).await?;
