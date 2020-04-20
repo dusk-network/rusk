@@ -20,6 +20,7 @@ pub async fn create_transaction(
         recipient: Some(recipient),
         value,
         fee,
+        obfuscated: false,
     });
     let response = client.new_transaction(request).await?;
     Ok(response.into_inner())
