@@ -3,7 +3,8 @@ use kelvin::Root;
 use phoenix::{
     db, db::DbNotesIterator, rpc, utils, Error, Note, NoteGenerator,
     NoteVariant, ObfuscatedNote, PublicKey, SecretKey, Transaction,
-    TransactionInput, TransactionItem, TransparentNote, ViewKey,
+    TransactionInput, TransactionItem, TransactionOutput, TransparentNote,
+    ViewKey,
 };
 use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::{ContractCall, TransferCall, H256};
@@ -255,27 +256,40 @@ impl rpc::rusk_server::Rusk for Rusk {
 
         // Make output note
         let pk: PublicKey = pk.try_into()?;
-        let (note, blinding_factor) =
-            TransparentNote::output(&pk, request.value);
+        let output: TransactionOutput = match request.obfuscated {
+            true => {
+                let (note, blinding_factor) =
+                    ObfuscatedNote::output(&pk, request.value);
+                note.to_transaction_output(request.value, blinding_factor, pk)
+            }
+            false => {
+                let (note, blinding_factor) =
+                    TransparentNote::output(&pk, request.value);
+                note.to_transaction_output(request.value, blinding_factor, pk)
+            }
+        };
 
-        tx.push_output(note.to_transaction_output(
-            request.value,
-            blinding_factor,
-            pk,
-        ))?;
+        tx.push_output(output)?;
 
         // Make change note if needed
         let change = inputs[0].value() - (request.value + request.fee);
         if change > 0 {
             let secret_key: SecretKey = sk.clone().try_into()?;
             let pk = secret_key.public_key();
-            let (note, blinding_factor) = TransparentNote::output(&pk, change);
+            let output: TransactionOutput = match request.obfuscated {
+                true => {
+                    let (note, blinding_factor) =
+                        ObfuscatedNote::output(&pk, change);
+                    note.to_transaction_output(change, blinding_factor, pk)
+                }
+                false => {
+                    let (note, blinding_factor) =
+                        TransparentNote::output(&pk, change);
+                    note.to_transaction_output(change, blinding_factor, pk)
+                }
+            };
 
-            tx.push_output(note.to_transaction_output(
-                change,
-                blinding_factor,
-                pk,
-            ))?;
+            tx.push_output(output)?;
         }
 
         // Make fee note
