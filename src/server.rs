@@ -60,53 +60,78 @@ impl rpc::rusk_server::Rusk for Rusk {
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
             root.restore()?;
 
-        let correct_txs: Vec<bool> = request
+        let correct_txs: Vec<rpc::ContractCall> = request
             .into_inner()
-            .txs
-            .iter()
-            .filter_map(|t| {
-                let mut input_arr = [ABIInput::default(); ABIInput::MAX];
-                let mut note_arr = [ABINote::default(); ABINote::MAX];
+            .calls
+            .into_iter()
+            .filter_map(|t| match t.contract_call? {
+                rpc::contract_call::ContractCall::Tx(t) => {
+                    let mut input_arr = [ABIInput::default(); ABIInput::MAX];
+                    let mut note_arr = [ABINote::default(); ABINote::MAX];
 
-                for (i, input) in t.inputs.iter().enumerate() {
-                    let abi_input = ABIInput::try_from(input).ok()?;
-                    input_arr[i] = abi_input;
-                }
+                    for (i, input) in t.inputs.iter().enumerate() {
+                        let abi_input = ABIInput::try_from(input).ok()?;
+                        input_arr[i] = abi_input;
+                    }
 
-                for (i, output) in t.outputs.iter().enumerate() {
-                    let abi_note = ABINote::try_from(output).ok()?;
-                    note_arr[i] = abi_note;
-                }
+                    for (i, output) in t.outputs.iter().enumerate() {
+                        let abi_note = ABINote::try_from(output).ok()?;
+                        note_arr[i] = abi_note;
+                    }
 
-                let fee_note = ABINote::try_from(t.fee.as_ref()?).ok()?;
-                note_arr[ABINote::MAX - 1] = fee_note;
+                    let fee_note = ABINote::try_from(t.fee.as_ref()?).ok()?;
+                    note_arr[ABINote::MAX - 1] = fee_note;
 
-                let mut gas = GasMeter::with_limit(1_000_000_000);
+                    let mut gas = GasMeter::with_limit(1_000_000_000);
 
-                let mut proof_buf = [0u8; ABIProof::SIZE];
-                proof_buf.copy_from_slice(&t.proof);
-                let proof = ABIProof::from_bytes(proof_buf);
-                let call: ContractCall<bool> =
-                    ContractCall::new(TransferCall::Transfer {
-                        inputs: input_arr,
-                        notes: note_arr,
-                        proof,
+                    let mut proof_buf = [0u8; ABIProof::SIZE];
+                    proof_buf.copy_from_slice(&t.proof);
+                    let proof = ABIProof::from_bytes(proof_buf);
+                    let call: ContractCall<bool> =
+                        ContractCall::new(TransferCall::Transfer {
+                            inputs: input_arr,
+                            notes: note_arr,
+                            proof,
+                        })
+                        .ok()?;
+                    network
+                        .call_contract(&self.transfer_id, call, &mut gas)
+                        .ok()?;
+
+                    Some(rpc::ContractCall {
+                        contract_call: Some(
+                            rpc::contract_call::ContractCall::Tx(t),
+                        ),
                     })
-                    .ok()?;
-                network
-                    .call_contract(&self.transfer_id, call, &mut gas)
-                    .ok()
+                }
+                // TODO: add logic for handling other types of contract calls
+                _ => None,
             })
             .collect();
-        if correct_txs.len() > 0 {
-            return Ok(tonic::Response::new(
-                rpc::ValidateStateTransitionResponse { success: true },
-            ));
-        }
 
         Ok(tonic::Response::new(rpc::ValidateStateTransitionResponse {
-            success: false,
+            successful_calls: correct_txs,
         }))
+    }
+
+    // TODO: implement
+    async fn execute_state_transition(
+        &self,
+        request: tonic::Request<rpc::ExecuteStateTransitionRequest>,
+    ) -> Result<
+        tonic::Response<rpc::ExecuteStateTransitionResponse>,
+        tonic::Status,
+    > {
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn generate_score(
+        &self,
+        request: tonic::Request<rpc::GenerateScoreRequest>,
+    ) -> Result<tonic::Response<rpc::GenerateScoreResponse>, tonic::Status>
+    {
+        unimplemented!()
     }
 
     async fn generate_secret_key(
@@ -267,6 +292,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         Ok(tonic::Response::new(tx.try_into()?))
     }
 
+    // TODO: implement
     async fn verify_transaction(
         &self,
         request: tonic::Request<rpc::Transaction>,
@@ -280,101 +306,6 @@ impl rpc::rusk_server::Rusk for Rusk {
             .map(|_| tonic::Response::new(rpc::VerifyTransactionResponse {}))
             .map_err(error_to_tonic)
         */
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn nullifier(
-        &self,
-        request: tonic::Request<rpc::NullifierRequest>,
-    ) -> Result<tonic::Response<rpc::NullifierResponse>, tonic::Status> {
-        trace!("Incoming nullifier request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn nullifier_status(
-        &self,
-        request: tonic::Request<rpc::NullifierStatusRequest>,
-    ) -> Result<tonic::Response<rpc::NullifierStatusResponse>, tonic::Status>
-    {
-        trace!("Incoming nullifier status request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn fetch_note(
-        &self,
-        request: tonic::Request<rpc::FetchNoteRequest>,
-    ) -> Result<tonic::Response<rpc::Note>, tonic::Status> {
-        trace!("Incoming fetch note request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn decrypt_note(
-        &self,
-        request: tonic::Request<rpc::DecryptNoteRequest>,
-    ) -> Result<tonic::Response<rpc::DecryptedNote>, tonic::Status> {
-        trace!("Incoming decrypt note request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn owned_notes(
-        &self,
-        request: tonic::Request<rpc::OwnedNotesRequest>,
-    ) -> Result<tonic::Response<rpc::OwnedNotesResponse>, tonic::Status> {
-        trace!("Incoming owned notes request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn new_transaction_input(
-        &self,
-        request: tonic::Request<rpc::NewTransactionInputRequest>,
-    ) -> Result<tonic::Response<rpc::TransactionInput>, tonic::Status> {
-        trace!("Incoming new transaction input request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn new_transaction_output(
-        &self,
-        request: tonic::Request<rpc::NewTransactionOutputRequest>,
-    ) -> Result<tonic::Response<rpc::TransactionOutput>, tonic::Status> {
-        trace!("Incoming new transaction output request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn verify_transaction_root(
-        &self,
-        _request: tonic::Request<rpc::VerifyTransactionRootRequest>,
-    ) -> Result<
-        tonic::Response<rpc::VerifyTransactionRootResponse>,
-        tonic::Status,
-    > {
-        trace!("Incoming verify transaction root request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn store_transactions(
-        &self,
-        request: tonic::Request<rpc::StoreTransactionsRequest>,
-    ) -> Result<tonic::Response<rpc::StoreTransactionsResponse>, tonic::Status>
-    {
-        trace!("Incoming store transactions request");
-        unimplemented!()
-    }
-
-    // TODO: remove once protobuf spec is updated
-    async fn set_fee_pk(
-        &self,
-        request: tonic::Request<rpc::SetFeePkRequest>,
-    ) -> Result<tonic::Response<rpc::Transaction>, tonic::Status> {
-        trace!("Incoming set fee pk request");
-        unimplemented!()
     }
 }
 
@@ -438,8 +369,7 @@ mod tests {
         .unwrap();
 
         // And execute it on the VM
-        let response =
-            client::validate_state_transition(vec![tx]).await.unwrap();
+        let response = client::validate_state_transition(tx).await.unwrap();
 
         println!("{:?}", response);
 
