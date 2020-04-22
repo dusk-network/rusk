@@ -11,11 +11,16 @@ tracing = "0.1"
 tracing-subscriber = "0.1"
 clap = "2.33"
 prost = "0.6"
-rusk-vm = { git = "ssh://git@github.com/dusk-network/rusk-vm.git", tag = "v0.1.2" }
-phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi" }
-kelvin = "0.11.2"
-bytehash = "0.2"
+# rusk-vm = { git = "ssh://git@github.com/dusk-network/rusk-vm.git", tag = "v0.1.2" }
+rusk-vm = { path = "../rusk-vm" }
+phoenix-abi = { path = "../phoenix-abi" }
+# phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi" }
+kelvin = "0.12"
+kelvin-radix = "0.8"
+
 hex = "^0.4"
+
+dataview = { git = "https://github.com/dusk-network/dataview.git" }
 
 [dependencies.phoenix]
 git = "https://github.com/dusk-network/phoenix"

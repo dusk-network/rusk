@@ -1,14 +1,15 @@
-use bytehash::Blake2b;
-use kelvin::Root;
+use dataview::Pod;
+use kelvin::{Blake2b, Root};
 use phoenix::{
     db, db::DbNotesIterator, rpc, utils, Error, Note, NoteGenerator,
     NoteVariant, ObfuscatedNote, PublicKey, SecretKey, Transaction,
     TransactionInput, TransactionItem, TransparentNote, ViewKey,
 };
 use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
-use rusk_vm::dusk_abi::{ContractCall, TransferCall, H256};
+use rusk_vm::dusk_abi::H256;
 use rusk_vm::{Contract, GasMeter, NetworkState, Schedule, StandardABI};
 use std::convert::{TryFrom, TryInto};
+use std::fs;
 use std::path::Path;
 use tracing::trace;
 
@@ -20,6 +21,16 @@ pub struct Rusk {
     transfer_id: H256,
 }
 
+// Transfer Contract args
+#[repr(C)]
+struct TransferCall(
+    [ABIInput; ABIInput::MAX],
+    [ABINote; ABINote::MAX],
+    ABIProof,
+);
+
+unsafe impl Pod for TransferCall {}
+
 impl Default for Rusk {
     fn default() -> Self {
         let schedule = Schedule::default();
@@ -28,14 +39,17 @@ impl Default for Rusk {
         let mut network: NetworkState<StandardABI<_>, Blake2b> =
             root.restore().unwrap();
 
-        let transfer_contract= Contract::new(include_bytes!("../../rusk-vm/tests/contracts/transfer/wasm/target/wasm32-unknown-unknown/release/transfer.wasm"), &schedule).unwrap();
+        // TODO: For development only
+        let transfer_contract = Contract::new(
+            fs::read("./contracts/transfer/target/wasm32-unknown-unknown/release/transfer.wasm").unwrap().as_slice(),
+            &schedule,
+        )
+        .unwrap();
 
         let transfer_id = network.deploy(transfer_contract).unwrap();
 
         root.set_root(&mut network).unwrap();
-        Self {
-            transfer_id: transfer_id,
-        }
+        Self { transfer_id }
     }
 }
 
@@ -87,15 +101,14 @@ impl rpc::rusk_server::Rusk for Rusk {
                     let mut proof_buf = [0u8; ABIProof::SIZE];
                     proof_buf.copy_from_slice(&t.proof);
                     let proof = ABIProof::from_bytes(proof_buf);
-                    let call: ContractCall<bool> =
-                        ContractCall::new(TransferCall::Transfer {
-                            inputs: input_arr,
-                            notes: note_arr,
-                            proof,
-                        })
-                        .ok()?;
+
                     network
-                        .call_contract(&self.transfer_id, call, &mut gas)
+                        .call_contract_operation::<TransferCall, i32>(
+                            self.transfer_id,
+                            1, // Transfer opcode
+                            TransferCall(input_arr, note_arr, proof),
+                            &mut gas,
+                        )
                         .ok()?;
 
                     Some(rpc::ContractCall {
@@ -117,7 +130,7 @@ impl rpc::rusk_server::Rusk for Rusk {
     // TODO: implement
     async fn execute_state_transition(
         &self,
-        request: tonic::Request<rpc::ExecuteStateTransitionRequest>,
+        _request: tonic::Request<rpc::ExecuteStateTransitionRequest>,
     ) -> Result<
         tonic::Response<rpc::ExecuteStateTransitionResponse>,
         tonic::Status,
@@ -128,7 +141,7 @@ impl rpc::rusk_server::Rusk for Rusk {
     // TODO: implement
     async fn generate_score(
         &self,
-        request: tonic::Request<rpc::GenerateScoreRequest>,
+        _request: tonic::Request<rpc::GenerateScoreRequest>,
     ) -> Result<tonic::Response<rpc::GenerateScoreResponse>, tonic::Status>
     {
         unimplemented!()
@@ -178,9 +191,12 @@ impl rpc::rusk_server::Rusk for Rusk {
         let vk: ViewKey =
             request.into_inner().try_into().map_err(error_to_tonic)?;
 
-        let db_path = &std::env::var("PHOENIX_DB").or(Err(
-            tonic::Status::new(tonic::Code::Internal, "could not get db path"),
-        ))?;
+        let db_path = &std::env::var("PHOENIX_DB").or_else(|_| {
+            Err(tonic::Status::new(
+                tonic::Code::Internal,
+                "could not get db path",
+            ))
+        })?;
 
         let notes_iter: DbNotesIterator<Blake2b> =
             DbNotesIterator::try_from(Path::new(db_path).to_path_buf())?;
@@ -202,15 +218,19 @@ impl rpc::rusk_server::Rusk for Rusk {
         let request = request.into_inner();
 
         // Ensure the SK exists
-        let sk = request.sk.ok_or(tonic::Status::new(
-            tonic::Code::InvalidArgument,
-            "no secret key provided",
-        ))?;
+        let sk = request.sk.ok_or_else(|| {
+            tonic::Status::new(
+                tonic::Code::InvalidArgument,
+                "no secret key provided",
+            )
+        })?;
         // Ensure PK exists
-        let pk = request.recipient.ok_or(tonic::Status::new(
-            tonic::Code::InvalidArgument,
-            "no secret key provided",
-        ))?;
+        let pk = request.recipient.ok_or_else(|| {
+            tonic::Status::new(
+                tonic::Code::InvalidArgument,
+                "no secret key provided",
+            )
+        })?;
 
         let input_amount = request
             .inputs
@@ -225,9 +245,12 @@ impl rpc::rusk_server::Rusk for Rusk {
 
         let mut tx = Transaction::default();
 
-        let db_path = &std::env::var("PHOENIX_DB").or(Err(
-            tonic::Status::new(tonic::Code::Internal, "could not get db path"),
-        ))?;
+        let db_path = &std::env::var("PHOENIX_DB").or_else(|_| {
+            Err(tonic::Status::new(
+                tonic::Code::Internal,
+                "could not get db path",
+            ))
+        })?;
 
         let inputs: Vec<TransactionInput> = request
             .inputs
@@ -267,7 +290,7 @@ impl rpc::rusk_server::Rusk for Rusk {
         // Make change note if needed
         let change = inputs[0].value() - (request.value + request.fee);
         if change > 0 {
-            let secret_key: SecretKey = sk.clone().try_into()?;
+            let secret_key: SecretKey = sk.try_into()?;
             let pk = secret_key.public_key();
             let (note, blinding_factor) = TransparentNote::output(&pk, change);
 
@@ -295,7 +318,7 @@ impl rpc::rusk_server::Rusk for Rusk {
     // TODO: implement
     async fn verify_transaction(
         &self,
-        request: tonic::Request<rpc::Transaction>,
+        _request: tonic::Request<rpc::Transaction>,
     ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
     {
         trace!("Incoming verify transaction request");
@@ -310,73 +333,5 @@ impl rpc::rusk_server::Rusk for Rusk {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::client;
-    use phoenix::{
-        rpc::rusk_server::RuskServer, utils, zk, PublicKey, SecretKey,
-    };
-    use tonic::transport::Server;
-
-    #[tokio::test(threaded_scheduler)]
-    async fn test_transfer() {
-        // Set DB_PATH
-        let mut db_path = std::env::temp_dir();
-        db_path.push("phoenix-db");
-        std::env::set_var("PHOENIX_DB", db_path.into_os_string());
-
-        // Mandatory Phoenix setup
-        utils::init();
-        zk::init();
-
-        let srv = RuskServer::new(Rusk::default());
-        let addr = "0.0.0.0:8080";
-
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(srv)
-                .serve(addr.parse().unwrap())
-                .await
-        });
-
-        // TODO: maybe find a less hacky way to let the server get up and running
-        std::thread::sleep(std::time::Duration::from_millis(1000));
-
-        // First, credit the sender with a note, so that he can create a transaction from it
-        let sk = SecretKey::default();
-        let pk = sk.public_key();
-
-        let mut tx = Transaction::default();
-        let value = 100_000_000;
-        let (note, blinding_factor) = TransparentNote::output(&pk, value);
-        tx.push_output(note.to_transaction_output(value, blinding_factor, pk))
-            .unwrap();
-        db::store(
-            std::path::Path::new(&std::env::var("PHOENIX_DB").unwrap()),
-            &tx,
-        )
-        .unwrap();
-
-        // Now, let's make a transaction
-        let recipient = PublicKey::default();
-        let tx = client::create_transaction(
-            sk,
-            100_000 as u64,
-            100 as u64,
-            recipient.into(),
-        )
-        .await
-        .unwrap();
-
-        // And execute it on the VM
-        let response = client::validate_state_transition(tx).await.unwrap();
-
-        println!("{:?}", response);
-
-        // Clean up DB
-        std::fs::remove_dir_all(std::path::Path::new(
-            &std::env::var("PHOENIX_DB").unwrap(),
-        ))
-        .unwrap();
-    }
-}
+#[path = "./test_contract_transfer.rs"]
+mod test_contract_transfer;
