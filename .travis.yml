@@ -1,0 +1,20 @@
+language: rust
+
+branches:
+  only:
+    - master
+
+os:
+  - linux
+
+matrix:
+  include:
+    - rust: nightly
+      before_script:
+        - rustup target add wasm32-unknown-unknown
+      after_script:
+        # Send a notification to the Dusk build Status Telegram channel once the CI build completes
+        - bash <(curl -s https://raw.githubusercontent.com/dusk-network/tools/master/bash/telegram_ci_notifications.sh)
+
+script:
+  - make test

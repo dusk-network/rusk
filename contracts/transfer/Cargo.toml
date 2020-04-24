@@ -1,0 +1,19 @@
+[package]
+name = "transfer"
+version = "0.1.0"
+authors = ["zer0 <matteo@dusk.network>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", default-features = false }
+phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi", default-features = false }
+dataview = { git = "https://github.com/dusk-network/dataview" }
+rusk-contract = { git = "https://github.com/dusk-network/rusk-contract" }
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = 'abort'
