@@ -1,6 +1,5 @@
 [![Build Status](https://travis-ci.com/dusk-network/rusk.svg?branch=master)](https://travis-ci.com/dusk-network/rusk)
 [![codecov](https://codecov.io/gh/dusk-network/rusk/branch/master/graph/badge.svg)](https://codecov.io/gh/dusk-network/rusk)
-[![Repository](https://dusk-network.github.io/rusk/repo-badge.svg)](https://github.com/dusk-network/rusk)
 
 # Rusk
 
