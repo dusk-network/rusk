@@ -8,10 +8,10 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-#dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", default-features = false }
-dusk-abi = { path = "../../../dusk-abi", default-features = false }
-phoenix-abi = { path = "../../../phoenix-abi", default-features = false }
+dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", default-features = false }
+phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi", default-features = false }
 dataview = { git = "https://github.com/dusk-network/dataview" }
+rusk-contract = { git = "https://github.com/dusk-network/rusk-contract" }
 
 [profile.release]
 lto = true

@@ -43,7 +43,10 @@ contracts: ## Generate the WASM for all the contracts
 
 test: ## Run the tests
 		@make contracts && \
-			cargo test -- --release --nocapture
+			cargo test --release -- --nocapture
 
+run: ## Run the tests
+		@make contracts && \
+			cargo run --release
 
-.PHONY: help doc doc-internal publish-doc wasm contracts test
+.PHONY: help doc doc-internal publish-doc wasm contracts test run
