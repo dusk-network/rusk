@@ -300,17 +300,14 @@ impl rpc::rusk_server::Rusk for Rusk {
 
         // Make output note
         let pk: PublicKey = pk.try_into()?;
-        let output: TransactionOutput = match request.obfuscated {
-            true => {
-                let (note, blinding_factor) =
-                    ObfuscatedNote::output(&pk, request.value);
-                note.to_transaction_output(request.value, blinding_factor, pk)
-            }
-            false => {
-                let (note, blinding_factor) =
-                    TransparentNote::output(&pk, request.value);
-                note.to_transaction_output(request.value, blinding_factor, pk)
-            }
+        let output = if request.obfuscated {
+            let (note, blinding_factor) =
+                ObfuscatedNote::output(&pk, request.value);
+            note.to_transaction_output(request.value, blinding_factor, pk)
+        } else {
+            let (note, blinding_factor) =
+                TransparentNote::output(&pk, request.value);
+            note.to_transaction_output(request.value, blinding_factor, pk)
         };
 
         tx.push_output(output)?;
@@ -320,17 +317,14 @@ impl rpc::rusk_server::Rusk for Rusk {
         if change > 0 {
             let secret_key: SecretKey = sk.try_into()?;
             let pk = secret_key.public_key();
-            let output: TransactionOutput = match request.obfuscated {
-                true => {
-                    let (note, blinding_factor) =
-                        ObfuscatedNote::output(&pk, change);
-                    note.to_transaction_output(change, blinding_factor, pk)
-                }
-                false => {
-                    let (note, blinding_factor) =
-                        TransparentNote::output(&pk, change);
-                    note.to_transaction_output(change, blinding_factor, pk)
-                }
+            let output = if request.obfuscated {
+                let (note, blinding_factor) =
+                    ObfuscatedNote::output(&pk, request.value);
+                note.to_transaction_output(request.value, blinding_factor, pk)
+            } else {
+                let (note, blinding_factor) =
+                    TransparentNote::output(&pk, request.value);
+                note.to_transaction_output(request.value, blinding_factor, pk)
             };
 
             tx.push_output(output)?;
