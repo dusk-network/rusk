@@ -3,8 +3,7 @@ use kelvin::{Blake2b, Root};
 use phoenix::{
     db, db::DbNotesIterator, rpc, utils, Error, Note, NoteGenerator,
     NoteVariant, ObfuscatedNote, PublicKey, SecretKey, Transaction,
-    TransactionInput, TransactionItem, TransactionOutput, TransparentNote,
-    ViewKey,
+    TransactionInput, TransactionItem, TransparentNote, ViewKey,
 };
 use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::H256;
@@ -319,12 +318,12 @@ impl rpc::rusk_server::Rusk for Rusk {
             let pk = secret_key.public_key();
             let output = if request.obfuscated {
                 let (note, blinding_factor) =
-                    ObfuscatedNote::output(&pk, request.value);
-                note.to_transaction_output(request.value, blinding_factor, pk)
+                    ObfuscatedNote::output(&pk, change);
+                note.to_transaction_output(change, blinding_factor, pk)
             } else {
                 let (note, blinding_factor) =
-                    TransparentNote::output(&pk, request.value);
-                note.to_transaction_output(request.value, blinding_factor, pk)
+                    TransparentNote::output(&pk, change);
+                note.to_transaction_output(change, blinding_factor, pk)
             };
 
             tx.push_output(output)?;
