@@ -500,7 +500,3 @@ impl rpc::rusk_server::Rusk for Rusk {
 #[cfg(test)]
 #[path = "./test_contract_transfer.rs"]
 mod test_contract_transfer;
-
-#[cfg(test)]
-#[path = "./test_contract_bid.rs"]
-mod test_contract_bid;
