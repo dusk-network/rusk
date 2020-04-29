@@ -358,6 +358,143 @@ impl rpc::rusk_server::Rusk for Rusk {
             .map_err(error_to_tonic)
         */
     }
+
+    // TODO: implement
+    async fn new_stake(
+        &self,
+        _request: tonic::Request<rpc::StakeTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::StakeTransaction>, tonic::Status> {
+        trace!("Incoming new stake request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_stake(
+        &self,
+        _request: tonic::Request<rpc::StakeTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify stake request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_withdraw_stake(
+        &self,
+        _request: tonic::Request<rpc::WithdrawStakeTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::WithdrawStakeTransaction>, tonic::Status>
+    {
+        trace!("Incoming new withdraw stake request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_withdraw_stake(
+        &self,
+        _request: tonic::Request<rpc::WithdrawStakeTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify withdraw stake request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_bid(
+        &self,
+        _request: tonic::Request<rpc::BidTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::BidTransaction>, tonic::Status> {
+        trace!("Incoming new bid request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_bid(
+        &self,
+        _request: tonic::Request<rpc::BidTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify bid request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_withdraw_bid(
+        &self,
+        _request: tonic::Request<rpc::WithdrawBidTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::WithdrawBidTransaction>, tonic::Status>
+    {
+        trace!("Incoming new withdraw bid request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_withdraw_bid(
+        &self,
+        _request: tonic::Request<rpc::WithdrawBidTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify withdraw bid request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_distribute(
+        &self,
+        _request: tonic::Request<rpc::DistributeTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::DistributeTransaction>, tonic::Status>
+    {
+        trace!("Incoming new distribute request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_distribute(
+        &self,
+        _request: tonic::Request<rpc::DistributeTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify distribute request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_withdraw_fees(
+        &self,
+        _request: tonic::Request<rpc::WithdrawFeesTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::WithdrawFeesTransaction>, tonic::Status>
+    {
+        trace!("Incoming new withdraw fees request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_withdraw_fees(
+        &self,
+        _request: tonic::Request<rpc::WithdrawFeesTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify withdraw fees request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn new_slash(
+        &self,
+        _request: tonic::Request<rpc::SlashTransactionRequest>,
+    ) -> Result<tonic::Response<rpc::SlashTransaction>, tonic::Status> {
+        trace!("Incoming new slash request");
+        unimplemented!()
+    }
+
+    // TODO: implement
+    async fn verify_slash(
+        &self,
+        _request: tonic::Request<rpc::SlashTransaction>,
+    ) -> Result<tonic::Response<rpc::VerifyTransactionResponse>, tonic::Status>
+    {
+        trace!("Incoming verify slash request");
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
