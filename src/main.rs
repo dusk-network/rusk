@@ -3,7 +3,7 @@ mod server;
 
 use tonic::transport::Server;
 
-use phoenix::{rpc::rusk_server::RuskServer, utils, zk};
+//use phoenix::{rpc::rusk_server::RuskServer, utils, zk};
 use server::Rusk;
 
 #[tokio::main]
@@ -14,16 +14,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db_path.push("phoenix-db");
     std::env::set_var("PHOENIX_DB", db_path.into_os_string());
 
-    // Mandatory Phoenix setup
-    utils::init();
-    zk::init();
-
-    let addr = "127.0.0.1:8080".parse().unwrap();
-    println!("listening on {}...", addr);
-    Server::builder()
-        .add_service(RuskServer::new(Rusk::default()))
-        .serve(addr)
-        .await?;
-
+    //let addr = "127.0.0.1:8080".parse().unwrap();
+    //println!("listening on {}...", addr);
+    /* Server::builder()
+            .add_service(RuskServer::new(Rusk::default()))
+            .serve(addr)
+            .await?;
+    */
     Ok(())
 }

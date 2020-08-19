@@ -1,26 +1,26 @@
-use dataview::Pod;
+//use dataview::Pod;
 use kelvin::{Blake2b, Root};
-use phoenix::{
+/*use phoenix::{
     db, db::DbNotesIterator, rpc, utils, Error, Note, NoteGenerator,
     NoteVariant, ObfuscatedNote, PublicKey, SecretKey, Transaction,
     TransactionInput, TransactionItem, TransparentNote, ViewKey,
-};
-use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
+};*/
+//use phoenix_abi::{Input as ABIInput, Note as ABINote, Proof as ABIProof};
 use rusk_vm::dusk_abi::H256;
 use rusk_vm::{Contract, GasMeter, NetworkState, Schedule, StandardABI};
 use std::convert::{TryFrom, TryInto};
 use std::fs;
 use std::path::Path;
 use tracing::trace;
-
+/*
 fn error_to_tonic(e: Error) -> tonic::Status {
     e.into()
 }
-
+*/
 pub struct Rusk {
     transfer_id: H256,
 }
-
+/*
 // Transfer Contract's `transfer` method
 //
 // For genesis contracts atm we will have this signature
@@ -404,7 +404,6 @@ impl rpc::rusk_server::Rusk for Rusk {
         _request: tonic::Request<rpc::BidTransactionRequest>,
     ) -> Result<tonic::Response<rpc::BidTransaction>, tonic::Status> {
         trace!("Incoming new bid request");
-        unimplemented!()
     }
 
     // TODO: implement
@@ -500,3 +499,4 @@ impl rpc::rusk_server::Rusk for Rusk {
 #[cfg(test)]
 #[path = "./test_contract_transfer.rs"]
 mod test_contract_transfer;
+*/

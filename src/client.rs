@@ -1,4 +1,4 @@
-use phoenix::{
+/*use phoenix::{
     rpc::{self, rusk_client::RuskClient, PublicKey},
     SecretKey,
 };
@@ -42,4 +42,4 @@ pub async fn validate_state_transition(
 
 pub async fn client() -> Result<RuskClient<Channel>, Error> {
     Ok(RuskClient::connect("http://127.0.0.1:8080").await?)
-}
+}*/

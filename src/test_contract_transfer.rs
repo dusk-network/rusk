@@ -1,4 +1,4 @@
-use super::*;
+/*use super::*;
 use crate::client;
 use phoenix::{
   db, rpc::rusk_server::RuskServer, utils, zk, PublicKey, SecretKey,
@@ -67,3 +67,4 @@ async fn test_transfer() {
   ))
   .unwrap();
 }
+*/
