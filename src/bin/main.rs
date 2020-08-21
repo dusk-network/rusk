@@ -1,11 +1,10 @@
-pub mod server;
-pub use server::basic_proto;
-use server::basic_proto::echoer_server::EchoerServer;
-use server::Rusk;
+use rusk::basic_proto::echoer_server::EchoerServer;
+use rusk::Rusk;
 use tonic::transport::Server;
 
-pub async fn startup(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let addr = addr.parse()?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let addr = "[::1]:50051".parse()?;
     let rusk = Rusk::default();
 
     Server::builder()

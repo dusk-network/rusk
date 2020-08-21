@@ -6,11 +6,11 @@ edition = "2018"
 
 [lib]
 name = "rusk"
-path = "src/lib.rs"
+path = "src/rusk/lib.rs"
 
 [[bin]]
-name = "rusk_app"
-path = "src/main.rs"
+name = "rusk"
+path = "src/bin/main.rs"
 
 [dependencies]
 tonic = "0.3"
