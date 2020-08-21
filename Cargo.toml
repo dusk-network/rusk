@@ -4,6 +4,14 @@ version = "0.1.0"
 authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
+[lib]
+name = "rusk_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rusk"
+path = "src/main.rs"
+
 [dependencies]
 tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
