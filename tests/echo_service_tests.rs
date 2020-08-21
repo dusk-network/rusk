@@ -1,6 +1,8 @@
-use basic_proto::echoer_client::EchoerClient;
-use basic_proto::EchoRequest;
-use rusk_lib::startup;
+use rusk::basic_proto::echoer_client::EchoerClient;
+use rusk::basic_proto::echoer_server::EchoerServer;
+use rusk::basic_proto::EchoRequest;
+use rusk::server::Rusk;
+use tonic::transport::Server;
 
 pub mod basic_proto {
     tonic::include_proto!("basic_proto");
@@ -12,7 +14,16 @@ mod tests {
 
     #[tokio::test(threaded_scheduler)]
     async fn echo_works() -> Result<(), Box<dyn std::error::Error>> {
-        tokio::spawn(async move { startup("http://[::1]:50051").await });
+        let addr = "[::1]:50051".parse()?;
+        let rusk = Rusk::default();
+
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(EchoerServer::new(rusk))
+                .serve(addr)
+                .await
+                .unwrap()
+        });
         let mut client = EchoerClient::connect("http://[::1]:50051").await?;
 
         let message = "Test echo is working!";
@@ -22,7 +33,7 @@ mod tests {
 
         let response = client.echo(request).await?;
 
-        assert!(response.into_inner().message == message);
+        assert_eq!(response.into_inner().message, message);
 
         Ok(())
     }

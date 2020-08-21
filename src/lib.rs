@@ -1,5 +1,5 @@
-mod server;
-
+pub mod server;
+pub use server::basic_proto;
 use server::basic_proto::echoer_server::EchoerServer;
 use server::Rusk;
 use tonic::transport::Server;

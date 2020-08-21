@@ -5,11 +5,11 @@ authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
 [lib]
-name = "rusk_lib"
+name = "rusk"
 path = "src/lib.rs"
 
 [[bin]]
-name = "rusk"
+name = "rusk_app"
 path = "src/main.rs"
 
 [dependencies]
