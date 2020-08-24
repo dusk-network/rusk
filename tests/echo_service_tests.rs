@@ -1,7 +1,7 @@
-use rusk::basic_proto::echoer_client::EchoerClient;
-use rusk::basic_proto::echoer_server::EchoerServer;
-use rusk::basic_proto::EchoRequest;
-use rusk::Rusk;
+use rusk::services::echoer::basic_proto::echoer_client::EchoerClient;
+use rusk::services::echoer::basic_proto::echoer_server::EchoerServer;
+use rusk::services::echoer::basic_proto::EchoRequest;
+use rusk::services::echoer::Rusk;
 use tonic::transport::Server;
 
 pub mod basic_proto {
