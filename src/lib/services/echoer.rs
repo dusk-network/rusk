@@ -1,16 +1,17 @@
 //! Temporary server implementation for rusk
 
+use crate::Rusk;
 use tonic::{Request, Response, Status};
+use tracing::info;
 
-use basic_proto::echoer_server::Echoer;
-use basic_proto::{EchoRequest, EchoResponse};
+// Re-export the main types for Echoer Service.
+pub use basic_proto::echoer_client::EchoerClient;
+pub use basic_proto::echoer_server::{Echoer, EchoerServer};
+pub use basic_proto::{EchoRequest, EchoResponse};
 
-pub mod basic_proto {
+pub(self) mod basic_proto {
     tonic::include_proto!("basic_proto");
 }
-
-#[derive(Debug, Default)]
-pub struct Rusk {}
 
 #[tonic::async_trait]
 impl Echoer for Rusk {
@@ -19,7 +20,7 @@ impl Echoer for Rusk {
         request: Request<EchoRequest>, // Accept request of type EchoRequest
     ) -> Result<Response<EchoResponse>, Status> {
         // Return an instance of type EchoReply
-        println!("Got a request: {:?}", request);
+        info!("Got a request: {:?}", request);
 
         let reply = EchoResponse {
             // We must use .into_inner() as the fields of gRPC requests and responses are private
