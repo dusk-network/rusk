@@ -2,12 +2,8 @@ pub(crate) mod commands;
 pub(crate) mod config;
 use clap::{App, Arg};
 
-fn main() {
-    run();
-}
-
 #[tokio::main]
-async fn run() {
+async fn main() {
     let matches = App::new("Rusk")
         .version("v0.1.0")
         .author("Dusk Network B.V. All Rights Reserved.")
@@ -36,10 +32,13 @@ async fn run() {
         .get_matches();
 
     // Startup call sending the possible args passed
-    commands::startup::startup(
+    match commands::startup::startup(
         matches.value_of("host"),
         matches.value_of("port"),
     )
     .await
-    .unwrap();
+    {
+        Ok(_) => (),
+        Err(e) => eprintln!("{}", e),
+    };
 }
