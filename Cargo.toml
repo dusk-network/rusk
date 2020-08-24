@@ -3,6 +3,7 @@ name = "rusk"
 version = "0.1.0"
 authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
+autobins = false
 
 [lib]
 name = "rusk"
