@@ -19,7 +19,7 @@ contracts: ## Generate the WASM for all the contracts
 
 test: ## Run the tests
 		@make contracts && \
-			cargo test --release -- --nocapture --features "tests_travis"
+			cargo test --release --features "tests_travis" -- --nocapture 
 
 run: ## Run the server
 		@make contracts && \
