@@ -3,39 +3,31 @@ name = "rusk"
 version = "0.1.0"
 authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
+autobins = false
+
+[lib]
+name = "rusk"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "rusk"
+path = "src/bin/main.rs"
 
 [dependencies]
-tonic = "^0.1"
+tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
 tracing = "0.1"
-tracing-subscriber = "0.1"
-clap = "2.33"
+tracing-subscriber = "0.2"
+clap = "2.33.3"
 prost = "0.6"
-rusk-vm = { git = "https://github.com/dusk-network/rusk-vm" }
-phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi" }
-kelvin = "0.12"
-kelvin-radix = "0.8"
-
-hex = "^0.4"
-
-dataview = { git = "https://github.com/dusk-network/dataview.git" }
-
-[dependencies.phoenix]
-git = "https://github.com/dusk-network/phoenix"
+kelvin = "0.18"
+kelvin-radix = "0.10"
+thiserror = "1.0"
+anyhow = "1.0"
+rustc_tools_util = "0.2"
 
 [build-dependencies]
-tonic-build = { version = "0.1", default-features = false, features = ["transport"] }
+tonic-build = "0.3"
+rustc_tools_util = "0.2"
 
-# This is a temporary fix until we stop to use zexe; it's needed to replace
-# in the dependency graph the library below with the revision specified.
-# Unfortunately `patch` works matching just the URL - doesn't take in account
-# revision or branches, see:  https://github.com/rust-lang/cargo/issues/5478
-#
-# A quick workaround is changing the URL with double slashes
-[patch.'https://github.com/scipr-lab/zexe/']
-algebra = { git = 'https://github.com/scipr-lab//zexe', rev="2c22b77" }
-ff-fft = { git = "https://github.com/scipr-lab//zexe", rev="2c22b77" }
-bench-utils = { git = "https://github.com/scipr-lab//zexe", rev="2c22b77" }
 
-[patch.'https://github.com/scipr-lab/poly-commit']
-poly-commit = { git = "https://github.com/scipr-lab//poly-commit", rev="77676213"}
