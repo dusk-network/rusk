@@ -7,13 +7,24 @@ pub mod basic_proto {
     tonic::include_proto!("basic_proto");
 }
 
+#[cfg(feature = "tests_travis")]
+const SERVER_ADDRESS: &'static str = "[::1]:50051";
+#[cfg(feature = "tests_travis")]
+const CLIENT_ADDRESS: &'static str = "http://[::1]:50051";
+
+#[cfg(not(feature = "tests_travis"))]
+const SERVER_ADDRESS: &'static str = "[::1]:50051";
+#[cfg(not(feature = "tests_travis"))]
+const CLIENT_ADDRESS: &'static str = "http://[::1]:50051";
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test(threaded_scheduler)]
     async fn echo_works() -> Result<(), Box<dyn std::error::Error>> {
-        let addr = "[::1]:50051".parse()?;
+        let addr = SERVER_ADDRESS.parse()?;
+        println!("{:?}", addr);
         let rusk = Rusk::default();
         // Generate a subscriber with the desired log level.
         let subscriber =
@@ -30,7 +41,7 @@ mod tests {
                 .await
                 .unwrap()
         });
-        let mut client = EchoerClient::connect("http://[::1]:50051").await?;
+        let mut client = EchoerClient::connect(CLIENT_ADDRESS).await?;
 
         let message = "Test echo is working!";
         let request = tonic::Request::new(EchoRequest {
