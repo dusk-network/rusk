@@ -17,7 +17,6 @@ mod tests {
     #[tokio::test(threaded_scheduler)]
     async fn echo_works() -> Result<(), Box<dyn std::error::Error>> {
         let addr = SERVER_ADDRESS.parse()?;
-        println!("{:?}", addr);
         let rusk = Rusk::default();
         // Generate a subscriber with the desired log level.
         let subscriber =
