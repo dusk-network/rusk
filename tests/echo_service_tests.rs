@@ -7,15 +7,8 @@ pub mod basic_proto {
     tonic::include_proto!("basic_proto");
 }
 
-#[cfg(feature = "tests_travis")]
-const SERVER_ADDRESS: &'static str = "[::1]:50051";
-#[cfg(feature = "tests_travis")]
-const CLIENT_ADDRESS: &'static str = "http://[::1]:50051";
-
-#[cfg(not(feature = "tests_travis"))]
-const SERVER_ADDRESS: &'static str = "[::1]:50051";
-#[cfg(not(feature = "tests_travis"))]
-const CLIENT_ADDRESS: &'static str = "http://[::1]:50051";
+const SERVER_ADDRESS: &'static str = "127.0.1.1:50051";
+const CLIENT_ADDRESS: &'static str = "http://127.0.1.1:50051";
 
 #[cfg(test)]
 mod tests {

@@ -30,6 +30,4 @@ rustc_tools_util = "0.2"
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
 
-[features]
-tests_travis = []
 
