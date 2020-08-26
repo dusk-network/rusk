@@ -5,12 +5,12 @@ use tonic::{Request, Response, Status};
 use tracing::info;
 
 // Re-export the main types for Echoer Service.
-pub use basic_proto::echoer_client::EchoerClient;
-pub use basic_proto::echoer_server::{Echoer, EchoerServer};
-pub use basic_proto::{EchoRequest, EchoResponse};
+pub use rusk_proto::echoer_client::EchoerClient;
+pub use rusk_proto::echoer_server::{Echoer, EchoerServer};
+pub use rusk_proto::{EchoRequest, EchoResponse};
 
-pub(self) mod basic_proto {
-    tonic::include_proto!("basic_proto");
+pub(self) mod rusk_proto {
+    tonic::include_proto!("rusk");
 }
 
 #[tonic::async_trait]

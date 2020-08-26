@@ -89,6 +89,7 @@ async fn startup(
     let addr: std::net::SocketAddr = full_address.parse()?;
     let rusk = Rusk::default();
 
+    // Build the Server with the `Echo` service attached to it.
     Ok(Server::builder()
         .add_service(EchoerServer::new(rusk))
         .serve(addr)

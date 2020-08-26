@@ -7,7 +7,7 @@
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic.
-    tonic_build::compile_protos("proto_tmp/rusk.proto")?;
+    tonic_build::compile_protos("schema/rusk.proto")?;
     // Get crate version + commit + toolchain for `-v` arg support.
     println!(
         "cargo:rustc-env=GIT_HASH={}",

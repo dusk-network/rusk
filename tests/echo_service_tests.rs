@@ -3,9 +3,6 @@ use rusk::Rusk;
 use tonic::transport::Server;
 use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
-pub mod basic_proto {
-    tonic::include_proto!("basic_proto");
-}
 
 const SERVER_ADDRESS: &'static str = "127.0.1.1:50051";
 const CLIENT_ADDRESS: &'static str = "http://127.0.1.1:50051";
