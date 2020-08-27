@@ -1,8 +1,5 @@
 language: rust
-
-branches:
-  only:
-    - master
+sudo: true
 
 os:
   - linux

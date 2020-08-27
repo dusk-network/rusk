@@ -15,8 +15,8 @@ use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
 const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
-const SERVER_ADDRESS: &'static str = "127.0.1.1:50051";
-const CLIENT_ADDRESS: &'static str = "http://127.0.1.1:50051";
+const SERVER_ADDRESS: &'static str = "127.0.0.1:50051";
+const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50051";
 
 #[cfg(test)]
 mod tests {
