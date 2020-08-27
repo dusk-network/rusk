@@ -1,3 +1,6 @@
+// Copyright (c) DUSK NETWORK. All rights reserved.
+// Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
+
 //! Helper functions to get the proper version of the crate to be
 //! displayed.
 use rustc_tools_util::VersionInfo;
