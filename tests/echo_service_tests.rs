@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "windows"))]
 mod unix;
 use futures::stream::TryStreamExt;
 use rusk::services::echoer::{EchoRequest, EchoerClient, EchoerServer};
