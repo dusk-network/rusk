@@ -14,14 +14,16 @@ use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-pub const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
+const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
+const SERVER_ADDRESS: &'static str = "127.0.1.1:50051";
+const CLIENT_ADDRESS: &'static str = "http://127.0.1.1:50051";
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test(threaded_scheduler)]
-    async fn echo_works() -> Result<(), Box<dyn std::error::Error>> {
+    async fn echo_works_uds() -> Result<(), Box<dyn std::error::Error>> {
         // Generate a subscriber with the desired log level.
         let subscriber =
             Subscriber::builder().with_max_level(Level::INFO).finish();
@@ -58,6 +60,31 @@ mod tests {
         let mut client = EchoerClient::new(channel);
 
         // Actual test case.
+        let message = "Test echo is working!";
+        let request = tonic::Request::new(EchoRequest {
+            message: message.into(),
+        });
+
+        let response = client.echo(request).await?;
+
+        assert_eq!(response.into_inner().message, message);
+
+        Ok(())
+    }
+
+    #[tokio::test(threaded_scheduler)]
+    async fn echo_works_tcp_ip() -> Result<(), Box<dyn std::error::Error>> {
+        let addr = SERVER_ADDRESS.parse()?;
+        let rusk = Rusk::default();
+        tokio::spawn(async move {
+            Server::builder()
+                .add_service(EchoerServer::new(rusk))
+                .serve(addr)
+                .await
+                .unwrap()
+        });
+        let mut client = EchoerClient::connect(CLIENT_ADDRESS).await?;
+
         let message = "Test echo is working!";
         let request = tonic::Request::new(EchoRequest {
             message: message.into(),
