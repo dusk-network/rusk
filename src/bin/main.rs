@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
 
@@ -14,6 +15,11 @@ use version::show_version;
 /// Default UDS path that Rusk GRPC-server will connect to.
 pub const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
 
+/// Default port that Rusk GRPC-server will listen to.
+pub(crate) const PORT: &'static str = "8585";
+/// Default host_address that Rusk GRPC-server will listen to.
+pub(crate) const HOST_ADDRESS: &'static str = "127.0.0.1";
+
 #[tokio::main]
 async fn main() {
     let crate_info = get_version_info!();
@@ -25,9 +31,32 @@ async fn main() {
             Arg::with_name("socket")
                 .short("s")
                 .long("socket")
-                .value_name(SOCKET_PATH)
-                .help("Path for setting up the UDS")
-                .default_value("./rusk_listener")
+                .value_name("socket")
+                .help("Path for setting up the UDS ")
+                .default_value(SOCKET_PATH)
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("ipc_method")
+                .long("ipc_method")
+                .value_name("ipc_method")
+                .possible_values(&["uds", "tcp_ip"])
+                .help("Inter-Process communication protocol you want to use ")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("port")
+                .short("p")
+                .long("port")
+                .value_name("port")
+                .help("Port you want to use ")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("host")
+                .short("h")
+                .long("host")
+                .value_name("host")
                 .takes_value(true),
         )
         .arg(
@@ -64,16 +93,53 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    // Startup call sending the possible args passed
-    match startup(matches.value_of("socket").unwrap_or_else(|| SOCKET_PATH))
-        .await
-    {
-        Ok(_) => (),
+    // Match the desired IPC method. Or set the default one depending on the OS used.
+    // Then startup rusk with the final values.
+    let res = match matches.value_of("ipc_method") {
+        Some(method) => match (cfg!(windows), method) {
+            (_, "tcp_ip") => {
+                startup_with_tcp_ip(
+                    matches.value_of("host").unwrap_or_else(|| HOST_ADDRESS),
+                    matches.value_of("port").unwrap_or_else(|| PORT),
+                )
+                .await
+            }
+            (true, "uds") => {
+                panic!("Windows does not support Unix Domain Sockets");
+            }
+            (false, "uds") => {
+                startup_with_uds(
+                    matches.value_of("socket").unwrap_or_else(|| SOCKET_PATH),
+                )
+                .await
+            }
+            (_, _) => unreachable!(),
+        },
+        None => {
+            if cfg!(windows) {
+                startup_with_tcp_ip(
+                    matches.value_of("host").unwrap_or_else(|| HOST_ADDRESS),
+                    matches.value_of("port").unwrap_or_else(|| PORT),
+                )
+                .await
+            } else {
+                startup_with_uds(
+                    matches.value_of("socket").unwrap_or_else(|| SOCKET_PATH),
+                )
+                .await
+            }
+        }
+    };
+    match res {
+        Ok(()) => (),
         Err(e) => eprintln!("{}", e),
     };
 }
 
-async fn startup(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+#[cfg(not(target_os = "windows"))]
+async fn startup_with_uds(
+    path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     tokio::fs::create_dir_all(Path::new(path).parent().unwrap()).await?;
 
     let mut uds = UnixListener::bind(path)?;
@@ -86,4 +152,21 @@ async fn startup(path: &str) -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     Ok(())
+}
+
+async fn startup_with_tcp_ip(
+    host: &str,
+    port: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut full_address = host.to_string();
+    full_address.extend(":".chars());
+    full_address.extend(port.to_string().chars());
+    let addr: std::net::SocketAddr = full_address.parse()?;
+    let rusk = Rusk::default();
+
+    // Build the Server with the `Echo` service attached to it.
+    Ok(Server::builder()
+        .add_service(EchoerServer::new(rusk))
+        .serve(addr)
+        .await?)
 }
