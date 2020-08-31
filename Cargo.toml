@@ -22,9 +22,11 @@ clap = "2.33.3"
 prost = "0.6"
 kelvin = "0.18"
 kelvin-radix = "0.10"
+futures = { version = "0.3", default-features = false, features = ["alloc"] }
 thiserror = "1.0"
 anyhow = "1.0"
 rustc_tools_util = "0.2"
+tower = "0.3"
 
 [build-dependencies]
 tonic-build = "0.3"
