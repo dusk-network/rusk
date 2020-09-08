@@ -26,7 +26,7 @@ message TransactionPayload {
     BlsScalar anchor = 1;
     repeated BlsScalar nullifier = 2;
     Crossover crossover = 3;
-    repeated Note = 4;
+    repeated Note notes = 4;
     Fee fee = 5;
     Proof spending_proof = 6;
     bytes call_data = 7;

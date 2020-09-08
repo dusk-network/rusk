@@ -14,22 +14,25 @@ message Bid {
     JubJubCompressed commitment = 5;
     BlsScalar elegibility_ts = 6;
     BlsScalar expiration_ts = 7;
+    uint64 bid_tree_storage_index = 8;
 }
 
 // Used to Request the creation of a Bid
 message BidTransactionRequest {
     BlsScalar k = 1;
-    StealthAddress pk_r = 2;
-    BlsScalar seed = 3;
-    fixed64 latest_consensus_round = 4;
-    fixed64 latest_consensus_step = 5;
-    //rusk.Transaction tx = 5;
+    uint64 value = 2;
+    JubJubCompressed secret = 3;
+    StealthAddress pk_r = 4;
+    BlsScalar seed = 5;
+    fixed64 latest_consensus_round = 6;
+    fixed64 latest_consensus_step = 7;
+    //rusk.Transaction tx = 8;
 }
 
 message BidTransaction {
-    BlsScalar m = 1;
-    JubJubCompressed commitment = 2;
-    fixed64 expiration_height = 3;
+    Bid bid = 1;
+    BlsScalar bid_hash = 2;
+    // rusk.Transaction tx = 3;
 }
 
 message FindBidRequest {
@@ -41,9 +44,7 @@ message BidList {
     repeated BlsScalar bid_hash_list = 2;
 }
 
-
-
-service Bid {
+service BidService {
     // Generate a new Bid and a proof of it's correctness.
     rpc NewBid(BidTransactionRequest) returns (BidTransaction) {}
     // Look for your owned Bids and return a list of them and it's hash repr
