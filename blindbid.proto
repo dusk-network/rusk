@@ -1,0 +1,41 @@
+syntax = "proto3";
+package rusk;
+
+import "basic_fields.proto";
+import "transaction.proto";
+import "keys.proto";
+
+service BlindBid {
+    // Generate a proof of blind bid, and a score.
+    rpc GenerateScore(GenerateScoreRequest) returns (GenerateScoreResponse) {}
+    // Verify a proof of blind bid, and the associated score.
+    rpc VerifyScore(VerifyScoreRequest) returns (VerifyScoreResponse) {}
+}
+
+message GenerateScoreRequest {
+    BlsScalar k = 1;
+    BlsScalar seed = 2;
+    JubJubCompressed secret_key = 3; 
+    uint32 round = 4;
+    uint32 step = 5;
+}
+
+message GenerateScoreResponse {
+    Proof blindbid_proof = 1;
+    BlsScalar score = 2;
+    BlsScalar prover_identity = 4;
+}
+
+message VerifyScoreRequest {
+    Proof proof = 1;
+    BlsScalar score = 2;
+    BlsScalar seed = 3;
+    BlsScalar prover_id = 4;
+    fixed64 round = 5;
+    uint32 step = 6;
+}
+
+message VerifyScoreResponse {
+    bool success = 1;
+}
+
