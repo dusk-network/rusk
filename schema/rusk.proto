@@ -3,3 +3,7 @@ package rusk;
 
 
 import "echo.proto";
+import "bid.proto";
+import "blindbid.proto";
+import "transaction.proto";
+import "keys.proto";

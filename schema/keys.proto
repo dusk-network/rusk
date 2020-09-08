@@ -1,0 +1,24 @@
+syntax = "proto3";
+package rusk;
+
+import "basic_fields.proto";
+
+message SecretKey {
+    JubJubScalar a = 1;
+    JubJubScalar b = 2;
+}
+
+message ViewKey {
+    JubJubScalar a = 1;
+    JubJubCompressed b_g = 2;
+}
+
+message PublicKey {
+    JubJubCompressed a_g = 1;
+    JubJubCompressed b_g = 2;
+}
+
+message StealthAddress {
+    JubJubCompressed r_g = 1;
+    JubJubCompressed pk_r = 2;
+}
