@@ -16,7 +16,8 @@ path = "src/bin/main.rs"
 [dependencies]
 tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
-blind_bid = {git = "https://github.com/dusk-network/dusk-blindbid"}
+blind_bid = {git = "https://github.com/dusk-network/dusk-blindbid", branch = "blindbid_service_edits"}
+poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.6.4"}
 dusk-plonk = "0.2.8"
 tracing = "0.1"
 tracing-subscriber = "0.2"
