@@ -11,3 +11,4 @@ phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" }
 dusk-plonk = "0.2.8"
 dusk-bls12_381 = "0.1.3"
 dusk-jubjub = { git = "https://github.com/dusk-network/jubjub.git" , tag = "v0.3.6"}
+poseidon252 = { git = "https://github.com/dusk-network/Poseidon252" , tag = "v0.6.3"}
