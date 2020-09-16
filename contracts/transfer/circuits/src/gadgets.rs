@@ -3,5 +3,8 @@
 
 pub mod commitment;
 pub mod balance;
-pub mod secret key;
+pub mod secret_key;
 pub mod range;
+pub mod merkle;
+pub mod nullifier;
+pub mod preimage;
