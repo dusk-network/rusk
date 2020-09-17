@@ -1,6 +1,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
-
+/*
 use phoenix_core::note::Note;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -30,11 +30,13 @@ pub fn input_preimage(composer: &mut StandardComposer, note: &Note) {
     );
 
     let note_hash = composer.add_input(note.hash());
+
+    let zero = composer.add_input(Scalar::zero());
     
     composer.add_gate(
         output,
         note_hash,
-        composer.zero_var, 
+        zero, 
         -BlsScalar::one(),
         BlsScalar::one(),
         BlsScalar::one(),
@@ -44,3 +46,4 @@ pub fn input_preimage(composer: &mut StandardComposer, note: &Note) {
     
     );
 }
+*/
