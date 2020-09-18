@@ -2,6 +2,7 @@
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 
 pub mod echoer;
+pub mod pki;
 use tonic::{Request, Response, Status};
 
 pub(crate) mod rusk_proto {
