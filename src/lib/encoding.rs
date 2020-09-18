@@ -3,12 +3,14 @@
 
 use super::services::rusk_proto;
 use core::convert::TryFrom;
+use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::jubjub::{AffinePoint as JubJubAffine, Scalar as JubJubScalar};
 use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a
 /// GRPC request.
+//XXX: Can be done including the TryFrom
 pub(crate) fn decode_request_param<T>(
     possible_param: Option<&T>,
 ) -> Result<&T, Status>
@@ -16,6 +18,15 @@ where
     T: Clone,
 {
     possible_param.ok_or(Status::new(Code::Unknown, "Missing required fields."))
+}
+
+/// Generic function used to encore parameters that are optional in a
+/// GRPC response.
+pub(crate) fn encode_request_param<T, U>(param: T) -> Result<Option<U>, Status>
+where
+    U: From<T>,
+{
+    Ok(Some(U::from(param)))
 }
 
 impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
