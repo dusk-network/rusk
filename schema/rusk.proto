@@ -1,5 +1,6 @@
 syntax = "proto3";
 package rusk;
+option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "echo.proto";
 import "bid.proto";
@@ -7,4 +8,46 @@ import "blindbid.proto";
 import "transaction.proto";
 import "keys.proto";
 
+message VerifyStateTransitionRequest {
+    repeated Transaction txs = 1;
+    fixed64 height = 2;
+    bytes seed = 3;
+}
 
+message VerifyStateTransitionResponse {
+    repeated fixed64 failed_calls = 1;
+}
+
+message ExecuteStateTransitionRequest {
+    repeated Transaction txs = 1;
+    fixed64 height = 2;
+    bytes seed = 3;
+}
+
+message ExecuteStateTransitionResponse {
+    bool success = 1;
+    string error_message = 2;
+}
+
+message Provisioner {
+    bytes public_key_bls = 1;
+    repeated Stake stakes = 2;
+}
+
+message Stake {
+    fixed64 amount = 1;
+    fixed64 start_height = 2;
+    fixed64 end_height = 3;
+}
+
+message GetProvisionersRequest {}
+
+message GetProvisionersResponse {
+    repeated Provisioner provisioners = 1;
+}
+
+service State {
+    rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
+    rpc ExecuteStateTransition(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
+    rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
+}
