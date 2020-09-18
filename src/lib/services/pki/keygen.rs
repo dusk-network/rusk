@@ -5,7 +5,7 @@
 
 use super::rusk_proto;
 use super::ServiceRequestHandler;
-use crate::encoding::decode_request_param;
+use crate::encoding::encode_request_param;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use rand::thread_rng;
 use tonic::{Code, Request, Response, Status};
@@ -19,7 +19,7 @@ pub use rusk_proto::{
 
 /// Implementation of the ScoreGeneration Handler.
 pub struct KeyGenHandler<'a> {
-    request: &'a Request<GenerateKeysRequest>,
+    _request: &'a Request<GenerateKeysRequest>,
 }
 
 impl<'a, 'b>
@@ -29,7 +29,7 @@ where
     'b: 'a,
 {
     fn load_request(request: &'b Request<GenerateKeysRequest>) -> Self {
-        Self { request }
+        Self { _request: request }
     }
 
     fn handle_request(&self) -> Result<Response<GenerateKeysResponse>, Status> {
@@ -40,10 +40,11 @@ where
         // Derive PublicKey and ViewKey from SecretKey
         let pk = PublicSpendKey::from(sk);
         let vk = ViewKey::from(sk);
+        // Encode parameters and send the response.
         Ok(Response::new(GenerateKeysResponse {
-            sk: Some(sk),
-            vk: Some(vk),
-            pk: Some(pk),
+            sk: encode_request_param(sk),
+            vk: encode_request_param(vk),
+            pk: encode_request_param(pk),
         }))
     }
 }
