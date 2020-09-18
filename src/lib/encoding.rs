@@ -22,11 +22,11 @@ where
 
 /// Generic function used to encore parameters that are optional in a
 /// GRPC response.
-pub(crate) fn encode_request_param<T, U>(param: T) -> Result<Option<U>, Status>
+pub(crate) fn encode_request_param<T, U>(param: T) -> Option<U>
 where
     U: From<T>,
 {
-    Ok(Some(U::from(param)))
+    Some(U::from(param))
 }
 
 // ---- Basic Types -> Protobuf types ---- //
