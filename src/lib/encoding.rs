@@ -117,6 +117,31 @@ impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
     }
 }
 
+impl TryFrom<&rusk_proto::JubJubScalar> for JubJubScalar {
+    type Error = Status;
+
+    fn try_from(
+        value: &rusk_proto::JubJubScalar,
+    ) -> Result<JubJubScalar, Status> {
+        let mut bytes = [0u8; 32];
+        // Check if the data is 32 bytes exactly so we can
+        // safely copy from the slice.
+        if value.data.len() != 32 {
+            return Err(Status::failed_precondition(
+                "JubJubScalar recieved is not 32 bytes long",
+            ));
+        };
+        bytes[..].copy_from_slice(&value.data[..]);
+        let possible_scalar = JubJubScalar::from_bytes(&bytes);
+        if possible_scalar.is_none().into() {
+            return Err(Status::failed_precondition(
+                "JubJubScalar was not cannonically encoded",
+            ));
+        };
+        Ok(possible_scalar.unwrap())
+    }
+}
+
 impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
     type Error = Status;
 
