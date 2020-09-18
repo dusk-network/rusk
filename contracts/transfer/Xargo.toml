@@ -1,5 +1,0 @@
-[dependencies]
-core = { default-features = false, features = ["panic_immediate_abort"] }
-
-[dependencies.compiler_builtins]
-stage = 1
