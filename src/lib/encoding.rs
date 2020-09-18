@@ -29,6 +29,71 @@ where
     Ok(Some(U::from(param)))
 }
 
+// ---- Basic Types -> Protobuf types ---- //
+impl From<JubJubAffine> for rusk_proto::JubJubCompressed {
+    fn from(value: JubJubAffine) -> Self {
+        rusk_proto::JubJubCompressed {
+            data: Vec::from(&value.to_bytes()[..]),
+        }
+    }
+}
+
+impl From<&JubJubScalar> for rusk_proto::JubJubScalar {
+    fn from(value: &JubJubScalar) -> Self {
+        rusk_proto::JubJubScalar {
+            data: Vec::from(&value.to_bytes()[..]),
+        }
+    }
+}
+
+impl From<JubJubScalar> for rusk_proto::JubJubScalar {
+    fn from(value: JubJubScalar) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<&BlsScalar> for rusk_proto::BlsScalar {
+    fn from(value: &BlsScalar) -> Self {
+        rusk_proto::BlsScalar {
+            data: Vec::from(&value.to_bytes()[..]),
+        }
+    }
+}
+
+impl From<BlsScalar> for rusk_proto::BlsScalar {
+    fn from(value: BlsScalar) -> Self {
+        (&value).into()
+    }
+}
+
+impl From<PublicSpendKey> for rusk_proto::PublicKey {
+    fn from(value: PublicSpendKey) -> Self {
+        rusk_proto::PublicKey {
+            a_g: Some(JubJubAffine::from(value.A()).into()),
+            b_g: Some(JubJubAffine::from(value.B()).into()),
+        }
+    }
+}
+
+impl From<SecretSpendKey> for rusk_proto::SecretKey {
+    fn from(value: SecretSpendKey) -> Self {
+        rusk_proto::SecretKey {
+            a: Some(value.a().into()),
+            b: Some(value.b().into()),
+        }
+    }
+}
+
+impl From<ViewKey> for rusk_proto::ViewKey {
+    fn from(value: ViewKey) -> Self {
+        rusk_proto::ViewKey {
+            a: Some(value.a().into()),
+            b_g: Some(JubJubAffine::from(value.B()).into()),
+        }
+    }
+}
+
+// ----- Protobuf types -> Basic types ----- //
 impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
     type Error = Status;
 
