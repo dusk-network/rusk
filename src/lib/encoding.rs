@@ -111,13 +111,11 @@ impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
             ));
         };
         bytes[..].copy_from_slice(&value.data[..]);
-        let possible_scalar = BlsScalar::from_bytes(&bytes);
-        if possible_scalar.is_none().into() {
-            return Err(Status::failed_precondition(
+        Option::from(BlsScalar::from_bytes(&bytes)).ok_or(
+            Status::failed_precondition(
                 "BlsScalar was not cannonically encoded",
-            ));
-        };
-        Ok(possible_scalar.unwrap())
+            ),
+        )
     }
 }
 
@@ -136,13 +134,11 @@ impl TryFrom<&rusk_proto::JubJubScalar> for JubJubScalar {
             ));
         };
         bytes[..].copy_from_slice(&value.data[..]);
-        let possible_scalar = JubJubScalar::from_bytes(&bytes);
-        if possible_scalar.is_none().into() {
-            return Err(Status::failed_precondition(
+        Option::from(JubJubScalar::from_bytes(&bytes)).ok_or(
+            Status::failed_precondition(
                 "JubJubScalar was not cannonically encoded",
-            ));
-        };
-        Ok(possible_scalar.unwrap())
+            ),
+        )
     }
 }
 
@@ -161,13 +157,11 @@ impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
             ));
         };
         bytes[..].copy_from_slice(&value.data[..]);
-        let possible_point = JubJubAffine::from_bytes(bytes);
-        if possible_point.is_none().into() {
-            return Err(Status::failed_precondition(
+        Option::from(JubJubAffine::from_bytes(bytes)).ok_or(
+            Status::failed_precondition(
                 "JubJubAffine was not cannonically encoded",
-            ));
-        };
-        Ok(possible_point.unwrap())
+            ),
+        )
     }
 }
 
