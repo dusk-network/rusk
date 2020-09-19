@@ -5,9 +5,9 @@
 
 use super::rusk_proto;
 use super::ServiceRequestHandler;
-use crate::encoding::decode_request_param;
-use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
-use rand::thread_rng;
+use dusk_pki::PublicSpendKey;
+use dusk_plonk::jubjub::Fr as JubJubScalar;
+use std::convert::TryInto;
 use tonic::{Request, Response, Status};
 
 // Re-export the needed types for PKI-GenStealthAddr Service.
@@ -29,7 +29,12 @@ where
 
     fn handle_request(&self) -> Result<Response<StealthAddress>, Status> {
         // Parse the request and try to decode the PublicKey.
-        //let pk: PublicSpendKey = self._request.get_ref().try_into()?;
-        unimplemented!()
+        let pk: PublicSpendKey = self._request.get_ref().try_into()?;
+
+        // Compute a stealth address.
+        // First, we need to generate a random scalar.
+        let r = JubJubScalar::random(&mut rand::thread_rng());
+        let stealth_address = pk.gen_stealth_address(&r);
+        Ok(Response::new(StealthAddress::from(stealth_address)))
     }
 }

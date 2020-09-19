@@ -3,7 +3,7 @@
 
 use super::services::rusk_proto;
 use core::convert::TryFrom;
-use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::jubjub::{AffinePoint as JubJubAffine, Scalar as JubJubScalar};
 use tonic::{Code, Status};
@@ -97,6 +97,15 @@ impl From<ViewKey> for rusk_proto::ViewKey {
     }
 }
 
+impl From<StealthAddress> for rusk_proto::StealthAddress {
+    fn from(value: StealthAddress) -> Self {
+        rusk_proto::StealthAddress {
+            r_g: Some(JubJubAffine::from(value.R()).into()),
+            pk_r: Some(JubJubAffine::from(value.pk_r()).into()),
+        }
+    }
+}
+
 // ----- Protobuf types -> Basic types ----- //
 impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
     type Error = Status;
@@ -185,5 +194,37 @@ impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
                 .into(),
             ),
         )
+    }
+}
+
+impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
+    type Error = Status;
+
+    fn try_from(
+        value: &rusk_proto::StealthAddress,
+    ) -> Result<StealthAddress, Status> {
+        let mut bytes = [0u8; 64];
+        // Ensure that both fields are not empty
+        let r_g = value.r_g.as_ref().ok_or(Status::failed_precondition(
+            "StealthAddress was missing r_g field",
+        ))?;
+        let pk_r = value.pk_r.as_ref().ok_or(Status::failed_precondition(
+            "StealthAddress was missing pk_r field",
+        ))?;
+
+        // Ensure that both fields are 32 bytes long, so we can
+        // safely copy from the slice.
+        if r_g.data.len() != 32 || pk_r.data.len() != 32 {
+            return Err(Status::failed_precondition(
+                "StealthAddress fields are of improper length",
+            ));
+        };
+
+        bytes[..32].copy_from_slice(&r_g.data[..]);
+        bytes[32..].copy_from_slice(&pk_r.data[..]);
+
+        Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
+            Status::failed_precondition("StealthAdress was improperly encoded")
+        })?)
     }
 }
