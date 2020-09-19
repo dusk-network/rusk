@@ -1,13 +1,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
-//! Echo service implementation for the Rusk server.
+//! Public Key infrastructure service implementation for the Rusk server.
 
 mod keygen;
+mod stealth_gen;
 
 use super::rusk_proto;
 use crate::services::ServiceRequestHandler;
 use crate::Rusk;
 use keygen::KeyGenHandler;
+use stealth_gen::StealthAddrGenHandler;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
@@ -40,6 +42,17 @@ impl Keys for Rusk {
         &self,
         request: Request<PublicKey>,
     ) -> Result<Response<StealthAddress>, Status> {
-        unimplemented!()
+        let handler = StealthAddrGenHandler::load_request(&request);
+        info!("Recieved StealthAddrGen request");
+        match handler.handle_request() {
+            Ok(response) => {
+                info!("StealthAddrGen request was successfully processed. Sending response..");
+                Ok(response)
+            }
+            Err(e) => {
+                error!("An error ocurred during the StealthAddrGen request processing: {:?}", e);
+                Err(e)
+            }
+        }
     }
 }
