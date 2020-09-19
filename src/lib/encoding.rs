@@ -170,3 +170,26 @@ impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
         Ok(possible_point.unwrap())
     }
 }
+
+impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
+    type Error = Status;
+
+    fn try_from(
+        value: &rusk_proto::PublicKey,
+    ) -> Result<PublicSpendKey, Status> {
+        Ok(
+            PublicSpendKey::new(
+                decode_request_param::<
+                    &rusk_proto::JubJubCompressed,
+                    JubJubAffine,
+                >(value.a_g.as_ref().as_ref())?
+                .into(),
+                decode_request_param::<
+                    &rusk_proto::JubJubCompressed,
+                    JubJubAffine,
+                >(value.a_g.as_ref().as_ref())?
+                .into(),
+            ),
+        )
+    }
+}

@@ -8,14 +8,10 @@ use super::ServiceRequestHandler;
 use crate::encoding::encode_request_param;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use rand::thread_rng;
-use tonic::{Code, Request, Response, Status};
+use tonic::{Request, Response, Status};
 
-// Re-export the main types for PKI Service.
-pub use rusk_proto::keys_client::KeysClient;
-pub use rusk_proto::keys_server::{Keys, KeysServer};
-pub use rusk_proto::{
-    GenerateKeysRequest, GenerateKeysResponse, PublicKey, StealthAddress,
-};
+// Re-export the main types needed by PKI-GenerateKeys Service.
+pub use rusk_proto::{GenerateKeysRequest, GenerateKeysResponse};
 
 /// Implementation of the ScoreGeneration Handler.
 pub struct KeyGenHandler<'a> {
