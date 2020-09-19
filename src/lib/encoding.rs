@@ -10,14 +10,18 @@ use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a
 /// GRPC request.
-//XXX: Can be done including the TryFrom
-pub(crate) fn decode_request_param<T>(
+pub(crate) fn decode_request_param<T, U>(
     possible_param: Option<&T>,
-) -> Result<&T, Status>
+) -> Result<U, Status>
 where
     T: Clone,
+    U: TryFrom<T, Error = Status>,
 {
-    possible_param.ok_or(Status::new(Code::Unknown, "Missing required fields."))
+    Ok(U::try_from(
+        possible_param
+            .ok_or(Status::new(Code::Unknown, "Missing required fields."))?
+            .clone(),
+    )?)
 }
 
 /// Generic function used to encore parameters that are optional in a
