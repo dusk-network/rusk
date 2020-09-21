@@ -8,7 +8,7 @@ use dusk_plonk::jubjub::{
 use dusk_plonk::prelude::*;
 
 /// This gadget simply wraps around the composer's `range_gate` function,
-/// but takes in any type that implements the [`TransactionItem`] trait,
+/// but takes in any type that implements the traits of the note,
 /// for ease-of-use in circuit construction.
 pub fn range(composer: &mut StandardComposer, value: u64) {
     let value = composer.add_input(BlsScalar::from(value));
