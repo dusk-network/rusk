@@ -7,14 +7,15 @@ use dusk_plonk::jubjub::{
 };
 use dusk_plonk::prelude::*;
 use dusk_bls12_381::Scalar;
+use plonk_gadgets::AllocatedScalar;
 
 // Prove that the amount inputted equals the amount outputted
-pub fn sk_knowledge(composer: &mut StandardComposer, sk: Fr, pk: AffinePoint) {
-    let sk_r = composer.add_input(sk.into());
+pub fn sk_knowledge(composer: &mut StandardComposer, sk: AllocatedScalar, pk: AffinePoint) {
     
-    let p1 = scalar_mul(composer, sk_r, GENERATOR_EXTENDED);
+    let p1 = scalar_mul(composer, sk.var, GENERATOR_EXTENDED);
 
     composer.assert_equal_public_point(*p1.point(), pk);
+    
 }
 
 
@@ -31,21 +32,26 @@ mod commitment_tests {
         let sk = Fr::random(&mut rand::thread_rng());
         let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
         
-
+        
 
         // Generate Composer & Public Parameters
-        let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng()).unwrap();
-        let (ck, vk) = pub_params.trim(1 << 16).unwrap();
+        let pub_params = PublicParameters::setup(1 << 10, &mut rand::thread_rng()).unwrap();
+        let (ck, vk) = pub_params.trim(1 << 9).unwrap();
         let mut prover = Prover::new(b"test");
 
-        sk_knowledge(prover.mut_cs(), sk, pk);
+        let sk_r = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(sk));
+
+        sk_knowledge(prover.mut_cs(), sk_r, pk);
         prover.mut_cs().add_dummy_constraints();
 
         let circuit = prover.preprocess(&ck).unwrap();
         let proof = prover.prove(&ck).unwrap();
 
         let mut verifier = Verifier::new(b"test");
-        sk_knowledge(verifier.mut_cs(), sk, pk);
+
+        let sk_r = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(sk));
+
+        sk_knowledge(verifier.mut_cs(), sk_r, pk);
         verifier.mut_cs().add_dummy_constraints();
         verifier.preprocess(&ck).unwrap();
         

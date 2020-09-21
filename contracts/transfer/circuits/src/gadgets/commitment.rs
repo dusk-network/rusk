@@ -12,19 +12,12 @@ use rand::*;
 use plonk_gadgets::AllocatedScalar;
 use dusk_bls12_381::Scalar;
 
-// pub struct PedersenCommitment {
-//     r: ExtendedPoint
-//     c: ExtendedPoint
-// }
-
 /// Prove knowledge of the value and blinding factor, which make up the value commitment.
 /// This commitment gadget is using the pedersen commitments.
-pub fn commitment(composer: &mut StandardComposer, value: Fr, blinder: Fr, pub_commit: AffinePoint) {
-    let bid_value = AllocatedScalar::allocate(composer, value.into());
-    let blinder = composer.add_input(blinder.into());
-
-    let p1 = scalar_mul(composer, bid_value.var, GENERATOR_EXTENDED);
-    let p2 = scalar_mul(composer, blinder, GENERATOR_NUMS_EXTENDED);
+pub fn commitment(composer: &mut StandardComposer, value: AllocatedScalar, blinder: AllocatedScalar, pub_commit: AffinePoint) {
+    
+    let p1 = scalar_mul(composer, value.var, GENERATOR_EXTENDED);
+    let p2 = scalar_mul(composer, blinder.var, GENERATOR_NUMS_EXTENDED);
 
     let commitment = p1.point().fast_add(composer, *p2.point());
 
@@ -48,9 +41,12 @@ mod commitment_tests {
         );
 
         // Generate Composer & Public Parameters
-        let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng()).unwrap();
-        let (ck, vk) = pub_params.trim(1 << 16).unwrap();
+        let pub_params = PublicParameters::setup(1 << 14, &mut rand::thread_rng()).unwrap();
+        let (ck, vk) = pub_params.trim(1 << 13).unwrap();
         let mut prover = Prover::new(b"test");
+
+        let value = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(100));
+        let blinder = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(20000));
 
         commitment(prover.mut_cs(), value, blinder, pc_commitment);
 
@@ -58,6 +54,10 @@ mod commitment_tests {
         let proof = prover.prove(&ck).unwrap();
 
         let mut verifier = Verifier::new(b"test");
+
+        let value = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(100));
+        let blinder = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(20000));
+
         commitment(verifier.mut_cs(), value, blinder, AffinePoint::from(pc_commitment));
         verifier.preprocess(&ck).unwrap();
         
