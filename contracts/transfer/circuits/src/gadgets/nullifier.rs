@@ -13,7 +13,7 @@ use plonk_gadgets::AllocatedScalar;
 use dusk_pki::Ownable;
 
 pub fn nullifier(composer: &mut StandardComposer, pos: AllocatedScalar, sk: AllocatedScalar, nullifier: AllocatedScalar) {
-    let zero = composer.add_input(Scalar::zero());
+    let zero = composer.add_witness_to_circuit_description(Scalar::zero());
     let output = sponge_hash_gadget(composer, &[sk.var, pos.var]);
 
     composer.add_gate(

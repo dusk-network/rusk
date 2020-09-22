@@ -4,7 +4,7 @@
 use phoenix_core::note::Note;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED, ExtendedPoint
 };
 use dusk_plonk::prelude::*;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
@@ -12,40 +12,26 @@ use dusk_bls12_381::Scalar;
 use dusk_pki::Ownable;
 use plonk_gadgets::AllocatedScalar;
 
-pub fn input_preimage(composer: &mut StandardComposer, note: &Note) {
-    let value_commitment_x = AllocatedScalar::allocate(composer, note.value_commitment().get_x());
-    let value_commitment_y = AllocatedScalar::allocate(composer, note.value_commitment().get_y());
-
-    let pos = AllocatedScalar::allocate(composer, Scalar::from(note.pos()));
-
-    let pk_r_x = AffinePoint::from(note.stealth_address().pk_r()).get_x();
-    let pk_r_y = AffinePoint::from(note.stealth_address().pk_r()).get_y();
-    // XXX: These need to be uncommented once the `hash` method for the 
-    // phoenix_core::Note is fixed.
-    // let R_x = AffinePoint::from(note.stealth_address().R()).get_x();
-    // let R_y = AffinePoint::from(note.stealth_address().R()).get_y();
-
-    let point_x = AllocatedScalar::allocate(composer, pk_r_x);
-    let point_y = AllocatedScalar::allocate(composer, pk_r_y);
-    // let rand_x = AllocatedScalar::allocate(composer, R_x);
-    // let rand_y = AllocatedScalar::allocate(composer, R_x);
-
+#[allow(non_snake_case)]
+pub fn input_preimage(composer: &mut StandardComposer, 
+    value_commitment_x: AllocatedScalar, 
+    value_commitment_y: AllocatedScalar, 
+    pos: AllocatedScalar, 
+    pk_r_x: AllocatedScalar, 
+    pk_r_y: AllocatedScalar,
+    note_hash: AllocatedScalar,
+) {
     let output = sponge_hash_gadget(composer, 
         &[value_commitment_x.var, 
         value_commitment_y.var, 
         pos.var, 
-        point_x.var,
-        point_y.var,
-        // rand_x.var,
-        // rand_y.var,
+        pk_r_x.var,
+        pk_r_y.var,
         ], 
     );
 
-    let note_hash = AllocatedScalar::allocate(composer, note.hash());
-    let zero = composer.add_input(Scalar::zero());
-    println!("{:?}", output);
-    println!("{:?}", note_hash);
-    
+    let zero = composer.add_witness_to_circuit_description(Scalar::zero());
+
     composer.add_gate(
         output,
         note_hash.var,
@@ -65,33 +51,49 @@ mod commitment_tests {
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use rand::Rng;
-    use phoenix_core::note::NoteType;
     use dusk_pki::PublicSpendKey;
+    use phoenix_core::NoteType;
 
     #[test]
     fn preimage_gadget() {
-        let value: u64 = rand::thread_rng().gen();
-        let sk = Fr::random(&mut rand::thread_rng());
-        let sk2 = Fr::random(&mut rand::thread_rng());
-        let pk = GENERATOR_EXTENDED * sk;
-        let pk2 = GENERATOR_EXTENDED * sk2;
-        let note = Note::new(NoteType::Transparent, &PublicSpendKey::new(pk, pk2), value);
-
         // Generate Composer & Public Parameters
         let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng()).unwrap();
         let (ck, vk) = pub_params.trim(1 << 16).unwrap();
         let mut prover = Prover::new(b"test");
 
-        input_preimage(prover.mut_cs(), &note);
+        let value: u64 = rand::thread_rng().gen();
+        let sk = Fr::random(&mut rand::thread_rng());
+        let v_com = GENERATOR_EXTENDED * sk;
+        let v_com_x = AllocatedScalar::allocate(prover.mut_cs(), AffinePoint::from(v_com).get_x());
+        let v_com_y = AllocatedScalar::allocate(prover.mut_cs(), AffinePoint::from(v_com).get_y());
+        let pos = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(1));
+
+        let sk = Fr::random(&mut rand::thread_rng());
+        let sk2 = Fr::random(&mut rand::thread_rng());
+        let pk = GENERATOR_EXTENDED * sk;
+        let pk2 = GENERATOR_EXTENDED * sk2;
+        
+        let note = Note::new(NoteType::Transparent, &PublicSpendKey::new(pk, pk2), value);
+        let note_hash = note.hash();
+        let note_scalar = AllocatedScalar::allocate(prover.mut_cs(), note_hash);
+        let pk_x = AllocatedScalar::allocate(prover.mut_cs(), note.stealth_address().pk_r().get_x());
+        let pk_y = AllocatedScalar::allocate(prover.mut_cs(), note.stealth_address().pk_r().get_y());
+
+        input_preimage(prover.mut_cs(), v_com_x, v_com_y, pos, pk_x, pk_y, note_scalar);
         prover.mut_cs().add_dummy_constraints();
 
         println!("{}", prover.mut_cs().circuit_size());
-        // prover.mut_cs().check_circuit_satisfied();
         let circuit = prover.preprocess(&ck).unwrap();
         let proof = prover.prove(&ck).unwrap();
 
         let mut verifier = Verifier::new(b"test");
-        input_preimage(verifier.mut_cs(), &note);
+        let v_com_x = AllocatedScalar::allocate(verifier.mut_cs(), AffinePoint::from(v_com).get_x());
+        let v_com_y = AllocatedScalar::allocate(verifier.mut_cs(), AffinePoint::from(v_com).get_y());
+        let pos = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(1));
+        let note_scalar = AllocatedScalar::allocate(verifier.mut_cs(), note_hash);
+        let pk_x = AllocatedScalar::allocate(verifier.mut_cs(), note.stealth_address().pk_r().get_x());
+        let pk_y = AllocatedScalar::allocate(verifier.mut_cs(), note.stealth_address().pk_r().get_y());
+        input_preimage(verifier.mut_cs(), v_com_x, v_com_y, pos, pk_x, pk_y, note_scalar);
         verifier.mut_cs().add_dummy_constraints();
         verifier.preprocess(&ck).unwrap();
         
