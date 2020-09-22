@@ -1,7 +1,7 @@
 [package]
 name = "rusk"
 version = "0.1.0"
-authors = ["CPerezz <carlos@dusk.network>", "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>"]
+authors = ["CPerezz <carlos@dusk.network>", "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>", "Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 autobins = false
 
