@@ -3,10 +3,10 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
-use dusk_bls12_381::Scalar;
+
 use plonk_gadgets::AllocatedScalar;
 
 // Prove that the amount inputted equals the amount outputted
@@ -29,7 +29,7 @@ mod commitment_tests {
     #[test]
     fn  sk_gadget() {
         
-        let sk = Fr::random(&mut rand::thread_rng());
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
         
         

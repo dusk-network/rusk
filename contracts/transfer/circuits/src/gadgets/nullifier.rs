@@ -4,16 +4,15 @@
 use phoenix_core::note::Note;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+ AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use poseidon252::sponge::sponge::{sponge_hash_gadget, sponge_hash};
-use dusk_bls12_381::Scalar;
 use plonk_gadgets::AllocatedScalar;
 use dusk_pki::Ownable;
 
 pub fn nullifier(composer: &mut StandardComposer, pos: AllocatedScalar, sk: AllocatedScalar, nullifier: AllocatedScalar) {
-    let zero = composer.add_witness_to_circuit_description(Scalar::zero());
+    let zero = composer.add_witness_to_circuit_description(BlsScalar::zero());
     let output = sponge_hash_gadget(composer, &[sk.var, pos.var]);
 
     composer.add_gate(

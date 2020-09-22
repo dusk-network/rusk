@@ -3,9 +3,8 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_bls12_381::Scalar;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 
@@ -13,6 +12,7 @@ use plonk_gadgets::AllocatedScalar;
 pub fn balance(composer: &mut StandardComposer, v_in: AllocatedScalar, v_out: AllocatedScalar, fee: AllocatedScalar) {
 
     let mut sum = composer.add_input(BlsScalar::zero());
+    let zero = composer.add_witness_to_circuit_description(BlsScalar::zero());
 
     sum = composer.add(
         (BlsScalar::one(), sum),
@@ -28,14 +28,16 @@ pub fn balance(composer: &mut StandardComposer, v_in: AllocatedScalar, v_out: Al
         BlsScalar::zero(),
     );
     
-    sum = composer.add(
-        (BlsScalar::one(), sum),
-        (-BlsScalar::one(), fee.var),
+    composer.add_gate(
+        sum, 
+        fee.var, 
+        zero,
+        BlsScalar::one(),
+        -BlsScalar::one(),
         BlsScalar::zero(),
         BlsScalar::zero(),
+        BlsScalar::zero()
     );
-
-    composer.constrain_to_constant(sum, BlsScalar::zero(), BlsScalar::zero());
 
 }
 

@@ -5,12 +5,12 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    Fr, AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED, ExtendedPoint,
+ AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED, ExtendedPoint,
 };
 use dusk_plonk::prelude::*;
 use rand::*;
 use plonk_gadgets::AllocatedScalar;
-use dusk_bls12_381::Scalar;
+
 
 /// Prove knowledge of the value and blinding factor, which make up the value commitment.
 /// This commitment gadget is using the pedersen commitments.
@@ -32,8 +32,8 @@ mod commitment_tests {
 
     #[test]
     fn commitment_gadget() {
-        let value = Fr::from(100 as u64);
-        let blinder = Fr::from(20000 as u64);
+        let value = JubJubScalar::from(100 as u64);
+        let blinder = JubJubScalar::from(20000 as u64);
 
         let pc_commitment = AffinePoint::from(
             &(GENERATOR_EXTENDED * value) 
