@@ -33,8 +33,9 @@ where
 
         // Compute a stealth address.
         // First, we need to generate a random scalar.
-        let r = JubJubScalar::random(&mut rand::thread_rng());
-        let stealth_address = pk.gen_stealth_address(&r);
+        let stealth_address = pk.gen_stealth_address(&JubJubScalar::random(
+            &mut rand::thread_rng(),
+        ));
         Ok(Response::new(StealthAddress::from(stealth_address)))
     }
 }
