@@ -4,5 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod gadgets;
-pub mod dusk_contract;
+
+pub mod send_to_contract_transparent;
+pub mod send_to_contract_obfuscated;
+pub mod withdraw_from_obfuscated;
+pub mod withdraw_from_obfuscated_to_contract;
+pub mod execute;
