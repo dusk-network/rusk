@@ -9,14 +9,14 @@ use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
+use plonk_gadgets::AllocatedScalar;
 
 /// This gadget simply wraps around the composer's `range_gate` function,
 /// but takes in any type that implements the traits of the note,
 /// for ease-of-use in circuit construction.
-pub fn range(composer: &mut StandardComposer, value: u64) {
-    let value = composer.add_input(BlsScalar::from(value));
+pub fn range(composer: &mut StandardComposer, value: AllocatedScalar) {
 
-    composer.range_gate(value, 64);
+    composer.range_gate(value.var, 64);
 }
 
 #[cfg(test)]
@@ -37,13 +37,18 @@ mod commitment_tests {
         let (ck, vk) = pub_params.trim(1 << 16)?;
         let mut prover = Prover::new(b"test");
 
-        range(prover.mut_cs(), value);
+        let val = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(value));
+
+        range(prover.mut_cs(), val);
 
         let circuit = prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
-        range(verifier.mut_cs(), value);
+
+        let val = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(value));
+
+        range(verifier.mut_cs(), val);
         verifier.preprocess(&ck)?;
 
         let pi = verifier.mut_cs().public_inputs.clone();
