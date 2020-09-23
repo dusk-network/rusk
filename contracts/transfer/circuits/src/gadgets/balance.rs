@@ -12,8 +12,12 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 
 // Prove that the amount inputted equals the amount outputted
-pub fn balance(composer: &mut StandardComposer, v_in: AllocatedScalar, v_out: AllocatedScalar, fee: AllocatedScalar) {
-
+pub fn balance(
+    composer: &mut StandardComposer,
+    v_in: AllocatedScalar,
+    v_out: AllocatedScalar,
+    fee: AllocatedScalar,
+) {
     let mut sum = composer.add_input(BlsScalar::zero());
     let zero = composer.add_witness_to_circuit_description(BlsScalar::zero());
 
@@ -30,59 +34,63 @@ pub fn balance(composer: &mut StandardComposer, v_in: AllocatedScalar, v_out: Al
         BlsScalar::zero(),
         BlsScalar::zero(),
     );
-    
+
     composer.add_gate(
-        sum, 
-        fee.var, 
+        sum,
+        fee.var,
         zero,
         BlsScalar::one(),
         -BlsScalar::one(),
         BlsScalar::zero(),
         BlsScalar::zero(),
-        BlsScalar::zero()
+        BlsScalar::zero(),
     );
-
 }
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
 
     #[test]
-    fn  balance_gadget() {
+    fn balance_gadget() -> Result<(), Error> {
         let v_in = 100 as u64;
         let v_out = 98 as u64;
         let fee = 2 as u64;
 
-
         // Generate Composer & Public Parameters
-        let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng()).unwrap();
-        let (ck, vk) = pub_params.trim(1 << 16).unwrap();
+        let pub_params =
+            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 16)?;
         let mut prover = Prover::new(b"test");
 
-        let v_in = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(100));
-        let v_out = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(98));
-        let fee = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(2));
+        let v_in =
+            AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(100));
+        let v_out =
+            AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(98));
+        let fee =
+            AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(2));
 
         balance(prover.mut_cs(), v_in, v_out, fee);
 
-        let circuit = prover.preprocess(&ck).unwrap();
-        let proof = prover.prove(&ck).unwrap();
+        let circuit = prover.preprocess(&ck)?;
+        let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
 
-        let v_in = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(100));
-        let v_out = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(98));
-        let fee = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(2));
+        let v_in =
+            AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(100));
+        let v_out =
+            AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(98));
+        let fee =
+            AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(2));
 
         balance(verifier.mut_cs(), v_in, v_out, fee);
-        verifier.preprocess(&ck).unwrap();
-        
+        verifier.preprocess(&ck)?;
+
         let pi = verifier.mut_cs().public_inputs.clone();
-        verifier.verify(&proof, &vk, &pi).unwrap();
+        verifier.verify(&proof, &vk, &pi)
     }
 }

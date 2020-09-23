@@ -12,51 +12,53 @@ use dusk_plonk::prelude::*;
 
 use plonk_gadgets::AllocatedScalar;
 
-// Prove that the amount inputted equals the amount outputted
-pub fn sk_knowledge(composer: &mut StandardComposer, sk: AllocatedScalar, pk: AffinePoint) {
-    
+/// Prove that the amount inputted equals the amount outputted
+pub fn sk_knowledge(
+    composer: &mut StandardComposer,
+    sk: AllocatedScalar,
+    pk: AffinePoint,
+) {
     let p1 = scalar_mul(composer, sk.var, GENERATOR_EXTENDED);
 
     composer.assert_equal_public_point(*p1.point(), pk);
-    
 }
-
 
 #[cfg(test)]
 mod commitment_tests {
     use super::*;
+    use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use rand::Rng;
 
     #[test]
-    fn  sk_gadget() {
-        
+    fn sk_gadget() -> Result<(), Error> {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
-        
-        
 
         // Generate Composer & Public Parameters
-        let pub_params = PublicParameters::setup(1 << 10, &mut rand::thread_rng()).unwrap();
-        let (ck, vk) = pub_params.trim(1 << 9).unwrap();
+        let pub_params =
+            PublicParameters::setup(1 << 10, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 9)?;
         let mut prover = Prover::new(b"test");
 
-        let sk_r = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(sk));
+        let sk_r =
+            AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(sk));
 
         sk_knowledge(prover.mut_cs(), sk_r, pk);
 
-        let circuit = prover.preprocess(&ck).unwrap();
-        let proof = prover.prove(&ck).unwrap();
+        let circuit = prover.preprocess(&ck)?;
+        let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
 
-        let sk_r = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(sk));
+        let sk_r =
+            AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(sk));
 
         sk_knowledge(verifier.mut_cs(), sk_r, pk);
-        verifier.preprocess(&ck).unwrap();
-        
+        verifier.preprocess(&ck)?;
+
         let pi = verifier.mut_cs().public_inputs.clone();
-        verifier.verify(&proof, &vk, &pi).unwrap();
+        verifier.verify(&proof, &vk, &pi)
     }
 }

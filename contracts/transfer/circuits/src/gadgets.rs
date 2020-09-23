@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod commitment;
 pub mod balance;
-pub mod secret_key;
-pub mod range;
+pub mod commitment;
 pub mod merkle;
 pub mod nullifier;
 pub mod preimage;
+pub mod range;
+pub mod secret_key;

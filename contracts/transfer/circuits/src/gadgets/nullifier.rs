@@ -4,47 +4,53 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use phoenix_core::note::Note;
+use dusk_pki::Ownable;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
- AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
-use poseidon252::sponge::sponge::{sponge_hash_gadget, sponge_hash};
+use phoenix_core::note::Note;
 use plonk_gadgets::AllocatedScalar;
-use dusk_pki::Ownable;
+use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 
-pub fn nullifier(composer: &mut StandardComposer, pos: AllocatedScalar, sk: AllocatedScalar, nullifier: AllocatedScalar) {
+pub fn nullifier(
+    composer: &mut StandardComposer,
+    pos: AllocatedScalar,
+    sk: AllocatedScalar,
+    nullifier: AllocatedScalar,
+) {
     let zero = composer.add_witness_to_circuit_description(BlsScalar::zero());
     let output = sponge_hash_gadget(composer, &[sk.var, pos.var]);
 
     composer.add_gate(
-        output, 
-        zero, 
+        output,
         zero,
-        -BlsScalar::one(), 
-        BlsScalar::one(), 
+        zero,
+        -BlsScalar::one(),
         BlsScalar::one(),
-        BlsScalar::zero(), 
+        BlsScalar::one(),
+        BlsScalar::zero(),
         nullifier.scalar,
     );
 }
 
-
 #[cfg(test)]
 mod commitment_tests {
     use super::*;
+    use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use rand::Rng;
 
     #[test]
-    fn nullifier_gadget() {
+    fn nullifier_gadget() -> Result<(), Error> {
         let pos_scalar = BlsScalar::from(1);
         let sk_scalar = BlsScalar::from(100);
         // Generate Composer & Public Parameters
-        let pub_params = PublicParameters::setup(1 << 14, &mut rand::thread_rng()).unwrap();
-        let (ck, vk) = pub_params.trim(1 << 13).unwrap();
+        let pub_params =
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 13)?;
         let mut prover = Prover::new(b"test");
 
         let pos = AllocatedScalar::allocate(prover.mut_cs(), pos_scalar);
@@ -54,8 +60,8 @@ mod commitment_tests {
 
         nullifier(prover.mut_cs(), pos, sk, nul);
 
-        let circuit = prover.preprocess(&ck).unwrap();
-        let proof = prover.prove(&ck).unwrap();
+        let circuit = prover.preprocess(&ck)?;
+        let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
 
@@ -64,9 +70,9 @@ mod commitment_tests {
         let nul = AllocatedScalar::allocate(verifier.mut_cs(), nul_scalar);
 
         nullifier(verifier.mut_cs(), pos, sk, nul);
-        verifier.preprocess(&ck).unwrap();
-        
+        verifier.preprocess(&ck)?;
+
         let pi = verifier.mut_cs().public_inputs.clone();
-        verifier.verify(&proof, &vk, &pi).unwrap();
+        verifier.verify(&proof, &vk, &pi)
     }
 }
