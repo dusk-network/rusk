@@ -1,7 +1,7 @@
 [package]
 name = "rusk"
 version = "0.1.0"
-authors = ["Victor Lopez <victor@dusk.network>"]
+authors = ["CPerezz <carlos@dusk.network>", "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>", "Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 autobins = false
 
@@ -16,6 +16,9 @@ path = "src/bin/main.rs"
 [dependencies]
 tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
+poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.6.4"}
+dusk-plonk = "0.2.9"
+dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.1.1"}
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"
@@ -27,6 +30,7 @@ thiserror = "1.0"
 anyhow = "1.0"
 rustc_tools_util = "0.2"
 tower = "0.3"
+rand = "0.7.0"
 
 [build-dependencies]
 tonic-build = "0.3"

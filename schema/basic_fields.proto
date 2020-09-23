@@ -1,0 +1,9 @@
+syntax = "proto3";
+package rusk;
+option go_package = "github.com/dusk-network/rusk-schema;rusk";
+
+message BlsScalar { bytes data = 1; }
+message JubJubScalar { bytes data = 1; }
+message JubJubCompressed { bytes data = 1; }
+message PoseidonCipher { bytes data = 1; }
+message Proof { bytes data = 1; }

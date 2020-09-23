@@ -1,0 +1,38 @@
+syntax = "proto3";
+package rusk;
+option go_package = "github.com/dusk-network/rusk-schema;rusk";
+
+import "basic_fields.proto";
+
+message SecretKey {
+    JubJubScalar a = 1;
+    JubJubScalar b = 2;
+}
+
+message ViewKey {
+    JubJubScalar a = 1;
+    JubJubCompressed b_g = 2;
+}
+
+message PublicKey {
+    JubJubCompressed a_g = 1;
+    JubJubCompressed b_g = 2;
+}
+
+message StealthAddress {
+    JubJubCompressed r_g = 1;
+    JubJubCompressed pk_r = 2;
+}
+
+message GenerateKeysRequest {}
+
+message GenerateKeysResponse {
+    SecretKey sk = 1;
+    ViewKey vk = 2;
+    PublicKey pk = 3;
+}
+
+service Keys {
+    rpc GenerateKeys(GenerateKeysRequest) returns (GenerateKeysResponse) {}
+    rpc GenerateStealthAddress(PublicKey) returns (StealthAddress) {}
+}
