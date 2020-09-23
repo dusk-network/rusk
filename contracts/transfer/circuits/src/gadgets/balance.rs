@@ -1,5 +1,8 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
 // Copyright (c) DUSK NETWORK. All rights reserved.
-// Licensed under the MPL 2.0 license. See LICENSE file in the project root for details. 
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -66,7 +69,6 @@ mod tests {
         let fee = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(2));
 
         balance(prover.mut_cs(), v_in, v_out, fee);
-        prover.mut_cs().add_dummy_constraints();
 
         let circuit = prover.preprocess(&ck).unwrap();
         let proof = prover.prove(&ck).unwrap();
@@ -78,7 +80,6 @@ mod tests {
         let fee = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(2));
 
         balance(verifier.mut_cs(), v_in, v_out, fee);
-        verifier.mut_cs().add_dummy_constraints();
         verifier.preprocess(&ck).unwrap();
         
         let pi = verifier.mut_cs().public_inputs.clone();

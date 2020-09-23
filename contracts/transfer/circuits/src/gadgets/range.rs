@@ -1,5 +1,8 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
 // Copyright (c) DUSK NETWORK. All rights reserved.
-// Licensed under the MPL 2.0 license. See LICENSE file in the project root for details. 
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -33,14 +36,12 @@ mod commitment_tests {
         let mut prover = Prover::new(b"test");
 
         range(prover.mut_cs(), value);
-        prover.mut_cs().add_dummy_constraints();
 
         let circuit = prover.preprocess(&ck).unwrap();
         let proof = prover.prove(&ck).unwrap();
 
         let mut verifier = Verifier::new(b"test");
         range(verifier.mut_cs(), value);
-        verifier.mut_cs().add_dummy_constraints();
         verifier.preprocess(&ck).unwrap();
         
         let pi = verifier.mut_cs().public_inputs.clone();
