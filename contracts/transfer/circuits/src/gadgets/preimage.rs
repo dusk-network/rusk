@@ -4,16 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::Ownable;
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    AffinePoint, ExtendedPoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
-use dusk_plonk::prelude::*;
-use phoenix_core::note::Note;
-use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 
+
+use dusk_plonk::prelude::*;
+use plonk_gadgets::AllocatedScalar;
+use poseidon252::sponge::sponge::sponge_hash_gadget;
+
+/// Prove knowledge of the preimage of a note,
+/// used as input for a transaction.
 #[allow(non_snake_case)]
 pub fn input_preimage(
     composer: &mut StandardComposer,
@@ -42,11 +40,13 @@ pub fn input_preimage(
 mod commitment_tests {
     use super::*;
     use anyhow::{Error, Result};
-    use dusk_pki::PublicSpendKey;
+    use dusk_pki::{Ownable, PublicSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
-    use phoenix_core::NoteType;
+    use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use phoenix_core::{Note, NoteType};
     use rand::Rng;
+
     #[test]
     fn preimage_gadget() -> Result<(), Error> {
         // Generate Composer & Public Parameters
@@ -93,7 +93,6 @@ mod commitment_tests {
         let key = &PublicSpendKey::new(pk, pk2);
 
         let note = Note::new(NoteType::Transparent, key, value);
-        let note_hash = note.hash();
 
         preimage_circuit(prover.mut_cs(), &note);
         prover.preprocess(&ck)?;

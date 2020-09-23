@@ -4,16 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::Ownable;
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
 use dusk_plonk::prelude::*;
-use phoenix_core::note::Note;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
+use poseidon252::sponge::sponge::sponge_hash_gadget;
 
+/// Prove knowledge of the preimage of a given nullifier.
 pub fn nullifier(
     composer: &mut StandardComposer,
     pos: AllocatedScalar,
@@ -41,7 +36,7 @@ mod commitment_tests {
     use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
-    use rand::Rng;
+    use poseidon252::sponge::sponge::sponge_hash;
 
     #[test]
     fn nullifier_gadget() -> Result<(), Error> {
@@ -51,6 +46,8 @@ mod commitment_tests {
         let pub_params =
             PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
         let (ck, vk) = pub_params.trim(1 << 13)?;
+
+
         let mut prover = Prover::new(b"test");
 
         let pos = AllocatedScalar::allocate(prover.mut_cs(), pos_scalar);
@@ -60,7 +57,7 @@ mod commitment_tests {
 
         nullifier(prover.mut_cs(), pos, sk, nul);
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");

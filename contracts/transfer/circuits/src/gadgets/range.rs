@@ -4,10 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 
@@ -15,7 +11,6 @@ use plonk_gadgets::AllocatedScalar;
 /// but takes in any type that implements the traits of the note,
 /// for ease-of-use in circuit construction.
 pub fn range(composer: &mut StandardComposer, value: AllocatedScalar) {
-
     composer.range_gate(value.var, 64);
 }
 
@@ -41,7 +36,7 @@ mod commitment_tests {
 
         range(prover.mut_cs(), val);
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");

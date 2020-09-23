@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_plonk::prelude::*;
-use phoenix_core::note::Note;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::merkle_proof::{merkle_opening_gadget, PoseidonBranch};
 
+/// Prove the knowledge of the position of the note in
+/// the merkle tree.
 pub fn merkle(
     composer: &mut StandardComposer,
     branch: PoseidonBranch,
@@ -29,9 +30,8 @@ mod commitment_tests {
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use kelvin::Blake2b;
-    use phoenix_core::note::NoteType;
+    use phoenix_core::note::{Note, NoteType};
     use poseidon252::{PoseidonTree, StorageScalar};
-    use rand::Rng;
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
@@ -60,7 +60,7 @@ mod commitment_tests {
             note_hash,
         );
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");

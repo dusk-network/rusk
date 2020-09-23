@@ -4,14 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
+
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 
-// Prove that the amount inputted equals the amount outputted
+/// Prove that the amount inputted equals the amount outputted.
+/// This is for a note.
 pub fn balance(
     composer: &mut StandardComposer,
     v_in: AllocatedScalar,
@@ -56,10 +54,6 @@ mod tests {
 
     #[test]
     fn balance_gadget() -> Result<(), Error> {
-        let v_in = 100 as u64;
-        let v_out = 98 as u64;
-        let fee = 2 as u64;
-
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
@@ -75,7 +69,7 @@ mod tests {
 
         balance(prover.mut_cs(), v_in, v_out, fee);
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");

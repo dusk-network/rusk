@@ -6,13 +6,14 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    AffinePoint, GENERATOR_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 
 use plonk_gadgets::AllocatedScalar;
 
-/// Prove that the amount inputted equals the amount outputted
+/// Prove knowledge of a secret key, by performing a scalar
+/// multiplication in-circuit.
 pub fn sk_knowledge(
     composer: &mut StandardComposer,
     sk: AllocatedScalar,
@@ -29,7 +30,6 @@ mod commitment_tests {
     use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::proof_system::{Prover, Verifier};
-    use rand::Rng;
 
     #[test]
     fn sk_gadget() -> Result<(), Error> {
@@ -47,7 +47,7 @@ mod commitment_tests {
 
         sk_knowledge(prover.mut_cs(), sk_r, pk);
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");

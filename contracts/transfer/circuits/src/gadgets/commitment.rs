@@ -6,11 +6,10 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    AffinePoint, ExtendedPoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use rand::*;
 
 /// Prove knowledge of the value and blinding factor, which make up the value commitment.
 /// This commitment gadget is using the pedersen commitments.
@@ -58,7 +57,7 @@ mod commitment_tests {
 
         commitment(prover.mut_cs(), value, blinder, pc_commitment);
 
-        let circuit = prover.preprocess(&ck)?;
+        prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
