@@ -3,6 +3,7 @@
 
 pub mod echoer;
 pub mod pki;
+pub mod staking;
 use tonic::{Request, Response, Status};
 
 pub(crate) mod rusk_proto {
