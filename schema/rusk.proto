@@ -7,6 +7,8 @@ import "bid.proto";
 import "blindbid.proto";
 import "transaction.proto";
 import "keys.proto";
+import "transfer.proto";
+import "stake.proto";
 
 message VerifyStateTransitionRequest {
     repeated Transaction txs = 1;
@@ -32,12 +34,6 @@ message ExecuteStateTransitionResponse {
 message Provisioner {
     bytes public_key_bls = 1;
     repeated Stake stakes = 2;
-}
-
-message Stake {
-    fixed64 amount = 1;
-    fixed64 start_height = 2;
-    fixed64 end_height = 3;
 }
 
 message GetProvisionersRequest {}
