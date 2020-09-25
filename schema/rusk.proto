@@ -7,6 +7,8 @@ import "bid.proto";
 import "blindbid.proto";
 import "transaction.proto";
 import "keys.proto";
+import "transfer.proto";
+import "stake.proto";
 
 message VerifyStateTransitionRequest {
     repeated Transaction txs = 1;
