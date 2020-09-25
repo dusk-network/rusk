@@ -3,8 +3,10 @@
 
 //! Staking infrastructure service implementation for the Rusk server.
 
-use super::rusk_proto::{StakeTransactionRequest, Transaction};
+use super::rusk_proto::{Bn256Point, StakeTransactionRequest, Transaction};
 use super::ServiceRequestHandler;
+use crate::encoding::decode_request_param;
+use crate::types::BN256Point;
 use tonic::{Request, Response, Status};
 
 /// Implementation of the NewStake handler.
@@ -22,6 +24,10 @@ where
     }
 
     fn handle_request(&self) -> Result<Response<Transaction>, Status> {
+        let value: u64 = self._request.get_ref().value;
+        let pk: BN256Point = decode_request_param::<&Bn256Point, BN256Point>(
+            self._request.get_ref().public_key_bls.as_ref().as_ref(),
+        )?;
         unimplemented!()
     }
 }

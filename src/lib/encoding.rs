@@ -2,6 +2,7 @@
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 
 use super::services::rusk_proto;
+use crate::types::BN256Point;
 use core::convert::TryFrom;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
@@ -105,6 +106,44 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
         }
     }
 }
+
+impl From<&BN256Point> for rusk_proto::Bn256Point {
+    fn from(value: &BN256Point) -> Self {
+        rusk_proto::Bn256Point {
+            data: Vec::from(&value.to_bytes()[..]),
+        }
+    }
+}
+
+impl From<BN256Point> for rusk_proto::Bn256Point {
+    fn from(value: BN256Point) -> Self {
+        (&value).into()
+    }
+}
+
+/*
+impl From<&Note> for rusk_proto::Note {
+    fn from(value: Note) -> Self {
+        rusk_proto::Note {
+            // TODO: should we add NoteType to the protobuf definition?
+            randomness: Some(value.randomness.into()),
+            commitment: Some(value.value_commitment.into()),
+            nonce: Some(value.nonce.into()),
+            pk_r: Some(value.stealth_address.into()),
+            // TODO: this typo should be fixed on rusk-schema
+            encypted_data: Some(rusk_proto::PoseidonCipher {
+                data: value.encrypted_data,
+            }),
+        }
+    }
+}
+
+impl From<Note> for rusk_proto::Note {
+    fn from(value: Note) -> Self {
+        (&value).into()
+    }
+}
+*/
 
 // ----- Protobuf types -> Basic types ----- //
 impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
@@ -226,5 +265,24 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
         })?)
+    }
+}
+
+impl TryFrom<&rusk_proto::Bn256Point> for BN256Point {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::Bn256Point) -> Result<BN256Point, Status> {
+        let mut bytes = [0u8; 129];
+
+        // Ensure that the field exists, and is the proper length
+        if value.data.len() != 129 {
+            return Err(Status::failed_precondition(
+                "Bn256Point is of improper length",
+            ));
+        };
+
+        bytes.copy_from_slice(&value.data[..]);
+
+        Ok(BN256Point::from_bytes(bytes))
     }
 }

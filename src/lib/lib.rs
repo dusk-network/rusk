@@ -3,6 +3,7 @@
 
 pub mod encoding;
 pub mod services;
+mod types;
 
 #[derive(Debug, Default)]
 pub struct Rusk {}

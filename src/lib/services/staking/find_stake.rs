@@ -3,8 +3,10 @@
 
 //! Staking infrastructure service implementation for the Rusk server.
 
-use super::rusk_proto::{FindStakeRequest, FindStakeResponse};
+use super::rusk_proto::{Bn256Point, FindStakeRequest, FindStakeResponse};
 use super::ServiceRequestHandler;
+use crate::encoding::decode_request_param;
+use crate::types::BN256Point;
 use tonic::{Request, Response, Status};
 
 /// Implementation of the FindStake handler.
@@ -22,6 +24,9 @@ where
     }
 
     fn handle_request(&self) -> Result<Response<FindStakeResponse>, Status> {
+        let pk: BN256Point = decode_request_param::<&Bn256Point, BN256Point>(
+            self._request.get_ref().pk.as_ref().as_ref(),
+        )?;
         unimplemented!()
     }
 }
