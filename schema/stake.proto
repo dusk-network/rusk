@@ -4,7 +4,12 @@ option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "transaction.proto";
 import "basic_fields.proto";
-import "rusk.proto";
+
+message Stake {
+    fixed64 amount = 1;
+    fixed64 start_height = 2;
+    fixed64 end_height = 3;
+}
 
 message StakeTransactionRequest {
     fixed64 value = 1;
