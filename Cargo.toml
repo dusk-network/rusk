@@ -18,7 +18,11 @@ tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
 poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.6.4"}
 dusk-plonk = "0.2.9"
-dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.1.1"}
+# We're importing 0.1.0 here because phoenix-core also imports 0.1.0.
+# If those imports are not unified, then the compiler will throw errors
+# about the Ownable trait.
+dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.1.0"}
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" }
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"
