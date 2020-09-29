@@ -8,13 +8,14 @@ edition = "2018"
 
 [dependencies]
 phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" }
-poseidon252 = { git = "https://github.com/dusk-network/Poseidon252" , tag = "v0.7.0"}
+poseidon252 = { git = "https://github.com/dusk-network/Poseidon252" , tag = "v0.8.0"}
 rand = "0.7"
 kelvin = "0.19"
-plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.2.0"}
+plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.3.0"}
 dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", tag = "v0.1.0" }
 anyhow = "1.0"
 
+
 [dependencies.dusk-plonk]
-version = "0.2.9"
+version = "0.2.11"
 # features = ["trace-print", "trace"]
