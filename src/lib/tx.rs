@@ -7,4 +7,4 @@ pub mod transaction;
 
 pub use crossover::Crossover;
 pub use fee::Fee;
-pub use transaction::{Transaction, TransactionPayload};
+pub use transaction::{Transaction, TransactionPayload, TxType};
