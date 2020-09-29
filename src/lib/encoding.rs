@@ -156,7 +156,7 @@ impl TryFrom<&mut Note> for rusk_proto::Note {
 
     fn try_from(value: &mut Note) -> Result<Self, Status> {
         let mut bytes = [0u8; 233];
-        value.write(&mut bytes)?;
+        value.read(&mut bytes)?;
         Ok(rusk_proto::Note {
             note_type: value.note() as i32,
             value_commitment: Some(value.value_commitment().into()),
@@ -472,11 +472,11 @@ impl TryFrom<&rusk_proto::Note> for Note {
                 .ok_or(Status::failed_precondition(
                     "No encrypted data present",
                 ))?
-                .data[..],
+                .data,
         );
 
         let mut note = Note::default();
-        note.read(&mut buf)?;
+        note.write(&mut buf)?;
         Ok(note)
     }
 }
@@ -533,6 +533,11 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
     fn try_from(
         value: &rusk_proto::TransactionPayload,
     ) -> Result<TransactionPayload, Status> {
+        let mut proof: Option<Proof> = None;
+        if value.spending_proof.as_ref().is_some() {
+            proof = Some(value.spending_proof.as_ref().unwrap().try_into()?);
+        }
+
         Ok(TransactionPayload::new(
             value
                 .anchor
@@ -565,15 +570,7 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
                     "No fee present in transaction payload",
                 ))?
                 .try_into()?,
-            Some(
-                value
-                    .spending_proof
-                    .as_ref()
-                    .ok_or(Status::failed_precondition(
-                        "No proof present in transaction payload",
-                    ))?
-                    .try_into()?,
-            ),
+            proof,
             value.call_data.clone(),
         ))
     }
