@@ -58,7 +58,7 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         /// Create allocated scalars for private inputs
         let spend_value =
             AllocatedScalar::allocate(composer, spend_commitment_value);
-        let blind_value =
+        let spend_blind =
             AllocatedScalar::allocate(composer, spend_commitment_blinder);
         let message_value =
             AllocatedScalar::allocate(composer, message_commitment_value);
@@ -69,17 +69,20 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         let note_blind =
             AllocatedScalar::allocate(composer, note_commitment_blinder);
         
+        // Prove the knowledge of the commitment opening of the spend commitment of the input
         let p1 = scalar_mul(composer, spend_value.var, GENERATOR_EXTENDED);
-        let p2 = scalar_mul(composer, blind_value.var, GENERATOR_NUMS_EXTENDED);
+        let p2 = scalar_mul(composer, spend_blind.var, GENERATOR_NUMS_EXTENDED);
         
         let commitment = p1.point().fast_add(composer, *p2.point());
     
+        // Add PI constraint for the commitment computation check.
         pi.push(PublicInput::AffinePoint(
             spend_commitment,
             composer.circuit_size(),
             composer.circuit_size() + 1,
         ));
     
+        // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, spend_commitment);
         
         range(composer, spend_value, 64);
@@ -89,14 +92,17 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         
         let commitment2 = p3.point().fast_add(composer, *p4.point());
     
+        // Add PI constraint for the commitment computation check.
         pi.push(PublicInput::AffinePoint(
             message_commitment,
             composer.circuit_size(),
             composer.circuit_size() + 1,
         ));
     
+        // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment2, message_commitment);
-        
+    
+        // Prove that the value of the opening of the message commitment of the input is within range
         range(composer, message_value, 64);
 
         let p5 = scalar_mul(composer, note_value.var, GENERATOR_EXTENDED);
@@ -104,16 +110,20 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         
         let commitment3 = p5.point().fast_add(composer, *p6.point());
     
+        // Add PI constraint for the commitment computation check.
         pi.push(PublicInput::AffinePoint(
             note_commitment,
             composer.circuit_size(),
             composer.circuit_size() + 1,
         ));
     
+        // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment3, note_commitment);
-        
+    
+        // Prove that the value of the opening of the note commitment of the input is within range
         range(composer, note_value, 64);
 
+        // Constrain the value inputs to satisfy: v_spend - v_message - v_note = 0 
         composer.add_gate(
             message_value.var,
             note_value.var,
@@ -235,6 +245,7 @@ mod tests {
     #[test]
     fn test_withdraw_from_obfuscated() -> Result<()> {
         
+        // Define and create spend commitment values
         let spend_value = JubJubScalar::from(300 as u64);
         let spend_blinder = JubJubScalar::from(100 as u64);
         let spend_commitment = AffinePoint::from(
@@ -242,6 +253,7 @@ mod tests {
                 + &(GENERATOR_NUMS_EXTENDED * spend_blinder),
         );
 
+        // Define and create message commitment values
         let message_value = JubJubScalar::from(200 as u64);
         let message_blinder = JubJubScalar::from(200 as u64);
         let message_commitment = AffinePoint::from(
@@ -249,6 +261,7 @@ mod tests {
                 + &(GENERATOR_NUMS_EXTENDED * message_blinder),
         );
 
+        // Define and create note commitment values
         let note_value = JubJubScalar::from(100 as u64);
         let note_blinder = JubJubScalar::from(300 as u64);
         let note_commitment = AffinePoint::from(
@@ -256,6 +269,7 @@ mod tests {
                 + &(GENERATOR_NUMS_EXTENDED * note_blinder),
         );
 
+        // Build circuit structure
         let mut circuit = WithdrawFromContractObfuscatedCircuit {
             spend_commitment_value: Some(spend_value.into()),
             spend_commitment_blinder: Some(spend_blinder.into()),
@@ -284,5 +298,66 @@ mod tests {
 
         circuit.verify_proof(&pub_params, &vk, b"ObfuscatedWithdraw", &proof, &pi)
     }
+
+    #[test]
+    fn test_withdraw_from_obfuscated_wrong_value() -> Result<()> {
+        
+        // Define and create spend commitment values
+        let spend_value = JubJubScalar::from(200 as u64);
+        let spend_blinder = JubJubScalar::from(100 as u64);
+        let spend_commitment = AffinePoint::from(
+            &(GENERATOR_EXTENDED * spend_value)
+                + &(GENERATOR_NUMS_EXTENDED * spend_blinder),
+        );
+
+        // Define and create message commitment values
+        let message_value = JubJubScalar::from(200 as u64);
+        let message_blinder = JubJubScalar::from(200 as u64);
+        let message_commitment = AffinePoint::from(
+            &(GENERATOR_EXTENDED * message_value)
+                + &(GENERATOR_NUMS_EXTENDED * message_blinder),
+        );
+
+        // Define and create note commitment values
+        let note_value = JubJubScalar::from(100 as u64);
+        let note_blinder = JubJubScalar::from(300 as u64);
+        let note_commitment = AffinePoint::from(
+            &(GENERATOR_EXTENDED * note_value)
+                + &(GENERATOR_NUMS_EXTENDED * note_blinder),
+        );
+
+        // Build circuit structure
+        let mut circuit = WithdrawFromContractObfuscatedCircuit {
+            spend_commitment_value: Some(spend_value.into()),
+            spend_commitment_blinder: Some(spend_blinder.into()),
+            spend_commitment: Some(spend_commitment),
+            message_commitment_value: Some(message_value.into()),
+            message_commitment_blinder: Some(message_blinder.into()),
+            message_commitment: Some(message_commitment),
+            note_commitment_value: Some(note_value.into()),
+            note_commitment_blinder: Some(note_blinder.into()),
+            note_commitment: Some(note_commitment),
+            size: 0, 
+            pi_constructor: None,
+        };
+
+        // Generate Composer & Public Parameters
+        let pub_params =
+            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let proof = circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdraw")?;  
+
+        let pi = vec![
+            PublicInput::AffinePoint(spend_commitment, 0, 0),
+            PublicInput::AffinePoint(message_commitment, 0, 0),
+            PublicInput::AffinePoint(note_commitment, 0, 0),
+        ];
+
+        assert!(circuit
+            .verify_proof(&pub_params, &vk, b"ObfuscatedWithdraw", &proof, &pi)
+            .is_err());
+        Ok(())
+    }
+
 }
 

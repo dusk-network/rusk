@@ -81,3 +81,4 @@ mod commitment_tests {
         verifier.verify(&proof, &vk, &pi)
     }
 }
+
