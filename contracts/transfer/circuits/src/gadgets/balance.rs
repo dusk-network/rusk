@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 

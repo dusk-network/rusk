@@ -4,14 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::prelude::*;
-use crate::gadgets::{range::range, commitment::commitment};
-use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED 
-};
-use plonk_gadgets::AllocatedScalar;
+use crate::gadgets::range::range;
 use anyhow::{Error, Result};
+use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
+use dusk_plonk::jubjub::{
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+};
+use dusk_plonk::prelude::*;
+use plonk_gadgets::AllocatedScalar;
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
@@ -21,33 +21,53 @@ pub struct SendToContractTransparentCircuit {
     pub commitment_value: Option<BlsScalar>,
     /// Blinder within Pedersen commitment
     pub blinder: Option<BlsScalar>,
-    /// Pedersen Commitment 
+    /// Pedersen Commitment
     pub commitment: Option<AffinePoint>,
     /// Value to be sent
     pub value: Option<BlsScalar>,
-    // Returns circuit size
+    /// Returns circuit size
     pub size: usize,
-    // Gives Public Inputs
+    /// Gives Public Inputs
     pub pi_constructor: Option<Vec<PublicInput>>,
 }
 
 impl Circuit<'_> for SendToContractTransparentCircuit {
-
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<Vec<PublicInput>, Error> {
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<Vec<PublicInput>, Error> {
         let mut pi: Vec<PublicInput> = vec![];
-        let commitment_crossover = self.commitment.ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let commitment_crossover_value = self.commitment_value.ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let commitment_crossover_blinder = self.blinder.ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let value = self.value.ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let commitment_crossover = self
+            .commitment
+            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let commitment_crossover_value = self
+            .commitment_value
+            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let commitment_crossover_blinder = self
+            .blinder
+            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let value = self
+            .value
+            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
 
         // Create allocated scalars for private inputs
-        let allocated_commitment_crossover_value = AllocatedScalar::allocate(composer, commitment_crossover_value);
-        let allocated_commitment_crossover_blinder = AllocatedScalar::allocate(composer, commitment_crossover_blinder);
+        let allocated_commitment_crossover_value =
+            AllocatedScalar::allocate(composer, commitment_crossover_value);
+        let allocated_commitment_crossover_blinder =
+            AllocatedScalar::allocate(composer, commitment_crossover_blinder);
 
         // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
-        let p1 = scalar_mul(composer, allocated_commitment_crossover_value.var, GENERATOR_EXTENDED);
-        let p2 = scalar_mul(composer, allocated_commitment_crossover_blinder.var, GENERATOR_NUMS_EXTENDED);
-    
+        let p1 = scalar_mul(
+            composer,
+            allocated_commitment_crossover_value.var,
+            GENERATOR_EXTENDED,
+        );
+        let p2 = scalar_mul(
+            composer,
+            allocated_commitment_crossover_blinder.var,
+            GENERATOR_NUMS_EXTENDED,
+        );
+
         let commitment = p1.point().fast_add(composer, *p2.point());
 
         // Add PI constraint for the commitment computation check.
@@ -59,31 +79,30 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
 
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, commitment_crossover);
-    
+
         // Prove that the value of the opening of the commitment of the input is within range
         range(composer, allocated_commitment_crossover_value, 64);
 
         // Add PI constraint for the commitment computation check.
-        pi.push(PublicInput::BlsScalar(
-            -value,
-            composer.circuit_size(),
-        ));
+        pi.push(PublicInput::BlsScalar(-value, composer.circuit_size()));
 
         // Constrains the crossover value to equal the PI value
-        composer.constrain_to_constant(allocated_commitment_crossover_value.var, BlsScalar::zero(), -value);
-        
+        composer.constrain_to_constant(
+            allocated_commitment_crossover_value.var,
+            BlsScalar::zero(),
+            -value,
+        );
 
         self.size = composer.circuit_size();
         Ok(pi)
     }
-
 
     fn compile(
         &mut self,
         pub_params: &PublicParameters,
     ) -> Result<(ProverKey, VerifierKey, usize), Error> {
         // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 16)?;
+        let (ck, _) = pub_params.trim(1 << 10)?;
         // Generate & save `ProverKey` with some random values.
         let mut prover = Prover::new(b"TestCircuit");
         // Set size & Pi builder
@@ -144,7 +163,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         prover_key: &ProverKey,
         transcript_initialisation: &'static [u8],
     ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 16)?;
+        let (ck, _) = pub_params.trim(1 << 10)?;
         // New Prover instance
         let mut prover = Prover::new(transcript_initialisation);
         // Fill witnesses for Prover
@@ -162,7 +181,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         proof: &Proof,
         pub_inputs: &[PublicInput],
     ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 16)?;
+        let (_, vk) = pub_params.trim(1 << 10)?;
         // New Verifier instance
         let mut verifier = Verifier::new(transcript_initialisation);
         // Fill witnesses for Verifier
@@ -172,17 +191,14 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{Error, Result};
+    use anyhow::Result;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-    use dusk_plonk::proof_system::{Prover, Verifier};
 
     #[test]
     fn test_send_to_contract_transparent() -> Result<()> {
-
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(300 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
@@ -198,15 +214,15 @@ mod tests {
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: Some(commitment_crossover_value.into()),
             blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover), 
+            commitment: Some(commitment_crossover),
             value: Some(value),
-            size: 0, 
+            size: 0,
             pi_constructor: None,
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
         let (pk, vk, _) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
@@ -216,12 +232,10 @@ mod tests {
         ];
 
         circuit.verify_proof(&pub_params, &vk, b"TransparentSend", &proof, &pi)
-
     }
 
     #[test]
     fn test_send_to_contract_transparent_wrong_value() -> Result<()> {
-
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(500 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
@@ -237,15 +251,15 @@ mod tests {
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: Some(commitment_crossover_value.into()),
             blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover), 
+            commitment: Some(commitment_crossover),
             value: Some(value),
-            size: 0, 
+            size: 0,
             pi_constructor: None,
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
         let (pk, vk, _) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
@@ -262,7 +276,6 @@ mod tests {
 
     #[test]
     fn test_send_to_contract_transparent_wrong_pi() -> Result<()> {
-
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(300 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
@@ -278,15 +291,15 @@ mod tests {
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: Some(commitment_crossover_value.into()),
             blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover), 
+            commitment: Some(commitment_crossover),
             value: Some(value),
-            size: 0, 
+            size: 0,
             pi_constructor: None,
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
         let (pk, vk, _) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
@@ -301,4 +314,3 @@ mod tests {
         Ok(())
     }
 }
-    

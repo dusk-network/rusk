@@ -4,9 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod execute;
+mod send_to_contract_obfuscated;
+mod send_to_contract_transparent;
+mod withdraw_from_obfuscated;
+mod withdraw_from_obfuscated_to_contract;
 
-pub mod send_to_contract_transparent;
-pub mod send_to_contract_obfuscated;
-pub mod withdraw_from_obfuscated;
-pub mod withdraw_from_obfuscated_to_contract;
-pub mod execute;
+
+pub use send_to_contract_transparent::SendToContractTransparentCircuit;
+pub use withdraw_from_obfuscated::WithdrawFromContractObfuscatedCircuit;
+pub use withdraw_from_obfuscated_to_contract::{WithdrawFromObfuscatedToContractCircuitOne, WithdrawFromObfuscatedToContractCircuitTwo};

@@ -6,7 +6,6 @@
 
 // XXX: THIS GADGET NEEDS REFACTORING WHEN THE GITBOOK SPECS ARE READY
 
-
 // /// This gadget constructs the circuit for an 'Execute' call on the DUSK token contract.
 // pub fn execute_gadget(
 //     composer: &mut StandardComposer) {

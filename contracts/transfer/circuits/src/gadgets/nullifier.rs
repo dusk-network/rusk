@@ -47,7 +47,6 @@ mod commitment_tests {
             PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
         let (ck, vk) = pub_params.trim(1 << 13)?;
 
-
         let mut prover = Prover::new(b"test");
 
         let pos = AllocatedScalar::allocate(prover.mut_cs(), pos_scalar);

@@ -10,7 +10,11 @@ use plonk_gadgets::AllocatedScalar;
 /// This gadget simply wraps around the composer's `range_gate` function,
 /// but takes in any type that implements the traits of the note,
 /// for ease-of-use in circuit construction.
-pub fn range(composer: &mut StandardComposer, value: AllocatedScalar, bit_length: usize) {
+pub fn range(
+    composer: &mut StandardComposer,
+    value: AllocatedScalar,
+    bit_length: usize,
+) {
     composer.range_gate(value.var, bit_length);
 }
 
@@ -23,7 +27,7 @@ mod commitment_tests {
     use rand::Rng;
 
     #[test]
-    fn range_gadget() -> Result<(), Error>  {
+    fn range_gadget() -> Result<(), Error> {
         let value: u64 = rand::thread_rng().gen();
 
         // Generate Composer & Public Parameters
@@ -32,7 +36,8 @@ mod commitment_tests {
         let (ck, vk) = pub_params.trim(1 << 16)?;
         let mut prover = Prover::new(b"test");
 
-        let val = AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(value));
+        let val =
+            AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(value));
 
         range(prover.mut_cs(), val, 64);
 
@@ -41,7 +46,10 @@ mod commitment_tests {
 
         let mut verifier = Verifier::new(b"test");
 
-        let val = AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(value));
+        let val = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            BlsScalar::from(value),
+        );
 
         range(verifier.mut_cs(), val, 64);
         verifier.preprocess(&ck)?;

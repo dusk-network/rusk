@@ -4,5 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod gadgets;
 pub mod dusk_contract;
+pub mod gadgets;
