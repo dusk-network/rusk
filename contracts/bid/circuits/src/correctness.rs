@@ -105,13 +105,13 @@ impl Circuit<'_> for CorrectnessCircuit {
         // Setup PublicParams
         let (ck, _) = pub_params.trim(1 << 10)?;
         // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"TestCircuit");
+        let mut prover = Prover::new(b"BidCorrectness");
         // Set size & PI builder
         self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
         prover.preprocess(&ck)?;
 
         // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"TestCircuit");
+        let mut verifier = Verifier::new(b"BidCorrectness");
         self.gadget(verifier.mut_cs())?;
         verifier.preprocess(&ck)?;
         Ok((
