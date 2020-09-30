@@ -28,7 +28,7 @@ pub struct Transaction {
 pub struct TransactionPayload {
     anchor: BlsScalar,
     nullifiers: Vec<BlsScalar>,
-    crossover: Crossover,
+    crossover: Option<Crossover>,
     notes: Vec<Note>,
     fee: Fee,
     spending_proof: Option<Proof>,
@@ -72,7 +72,7 @@ impl Default for TransactionPayload {
         TransactionPayload {
             anchor: BlsScalar::zero(),
             nullifiers: vec![],
-            crossover: Crossover::default(),
+            crossover: None,
             notes: vec![],
             fee: Fee::default(),
             spending_proof: None,
@@ -158,7 +158,7 @@ impl TransactionPayload {
     pub fn new(
         anchor: BlsScalar,
         nullifiers: Vec<BlsScalar>,
-        crossover: Crossover,
+        crossover: Option<Crossover>,
         notes: Vec<Note>,
         fee: Fee,
         spending_proof: Option<Proof>,
@@ -189,7 +189,7 @@ impl TransactionPayload {
 
     /// Set the crossover note on the transaction.
     pub fn set_crossover(&mut self, crossover: Crossover) {
-        self.crossover = crossover;
+        self.crossover = Some(crossover);
     }
 
     /// Add a nullifier to the transaction.
@@ -200,6 +200,11 @@ impl TransactionPayload {
     /// Add a note to the transaction.
     pub fn add_note(&mut self, note: Note) {
         self.notes.push(note);
+    }
+
+    /// Set the proof on the transaction.
+    pub fn set_proof(&mut self, proof: Proof) {
+        self.spending_proof = Some(proof);
     }
 
     /// Set the call data for the transaction
@@ -218,7 +223,7 @@ impl TransactionPayload {
     }
 
     /// Get the crossover note belonging to the transaction.
-    pub fn crossover(&self) -> Crossover {
+    pub fn crossover(&self) -> Option<Crossover> {
         self.crossover
     }
 
@@ -261,7 +266,11 @@ impl Read for TransactionPayload {
             })
             .collect::<io::Result<Vec<usize>>>()?;
 
-        n += self.crossover.read(&mut buf[n..])?;
+        let crossover_present = self.crossover.is_some() as u8;
+        n += (&mut buf[n..]).write(&crossover_present.to_le_bytes())?;
+        if crossover_present != 0 {
+            n += self.crossover.unwrap().read(&mut buf[n..])?;
+        }
         n += (&mut buf[n..]).write(&(self.notes.len() as u64).to_le_bytes())?;
 
         self.notes
@@ -331,7 +340,12 @@ impl Write for TransactionPayload {
             })
             .collect::<Result<Vec<usize>, io::Error>>()?;
 
-        n += self.crossover.write(&buf[n..])?;
+        n += (&buf[n..]).read(&mut one_byte)?;
+        if u8::from_le_bytes(one_byte) != 0 {
+            let mut crossover = Crossover::default();
+            n += crossover.write(&buf[n..])?;
+            self.crossover = Some(crossover);
+        }
 
         n += (&buf[n..]).read(&mut one_u64)?;
         let notes_size = u64::from_le_bytes(one_u64) as usize;

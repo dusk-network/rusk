@@ -205,7 +205,7 @@ impl TryFrom<&TransactionPayload> for rusk_proto::TransactionPayload {
                 .into_iter()
                 .map(|n| n.into())
                 .collect(),
-            crossover: Some(value.crossover().into()),
+            crossover: value.crossover().map(|c| c.into()),
             notes: value
                 .notes()
                 .to_vec()
@@ -538,6 +538,11 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
             proof = Some(value.spending_proof.as_ref().unwrap().try_into()?);
         }
 
+        let mut crossover: Option<Crossover> = None;
+        if value.crossover.as_ref().is_some() {
+            crossover = Some(value.crossover.as_ref().unwrap().try_into()?);
+        }
+
         Ok(TransactionPayload::new(
             value
                 .anchor
@@ -551,13 +556,7 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
                 .iter()
                 .map(|n| n.try_into())
                 .collect::<Result<Vec<BlsScalar>, _>>()?,
-            value
-                .crossover
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No crossover present in transaction payload",
-                ))?
-                .try_into()?,
+            crossover,
             value
                 .notes
                 .iter()
