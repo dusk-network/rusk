@@ -407,10 +407,6 @@ impl TryFrom<&rusk_proto::Proof> for Proof {
     type Error = Status;
 
     fn try_from(value: &rusk_proto::Proof) -> Result<Proof, Status> {
-        // NOTE: the length of the data field is not checked here
-        // as there is no constant denoting its length anywhere.
-        // This could change if the PLONK library would expose
-        // `Proof::serialised_size()`.
         Ok(Proof::from_bytes(&value.data).map_err(|_| {
             Status::failed_precondition("Could not decode proof")
         })?)
