@@ -2,7 +2,7 @@
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 
 use super::services::rusk_proto;
-use crate::tx::{Crossover, Fee, Transaction, TransactionPayload};
+use crate::transaction::{Crossover, Fee, Transaction, TransactionPayload};
 use core::convert::TryFrom;
 use dusk_pki::{
     Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,

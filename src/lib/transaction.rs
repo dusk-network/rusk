@@ -3,7 +3,12 @@
 
 //! Phoenix transaction structure implementation.
 
-use crate::tx::{Crossover, Fee};
+pub mod crossover;
+pub mod fee;
+
+pub use crossover::Crossover;
+pub use fee::Fee;
+
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::note::Note;
