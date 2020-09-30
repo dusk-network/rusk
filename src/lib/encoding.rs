@@ -213,7 +213,7 @@ impl TryFrom<&TransactionPayload> for rusk_proto::TransactionPayload {
                 .map(|mut n| (&mut n).try_into())
                 .collect::<Result<Vec<rusk_proto::Note>, _>>()?,
             fee: Some(value.fee().into()),
-            spending_proof: value.spending_proof().map(|p| p.into()),
+            spending_proof: Some(value.spending_proof().into()),
             call_data: value.call_data().to_vec(),
         })
     }
@@ -533,11 +533,6 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
     fn try_from(
         value: &rusk_proto::TransactionPayload,
     ) -> Result<TransactionPayload, Status> {
-        let mut proof: Option<Proof> = None;
-        if value.spending_proof.as_ref().is_some() {
-            proof = Some(value.spending_proof.as_ref().unwrap().try_into()?);
-        }
-
         let mut crossover: Option<Crossover> = None;
         if value.crossover.as_ref().is_some() {
             crossover = Some(value.crossover.as_ref().unwrap().try_into()?);
@@ -569,7 +564,13 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
                     "No fee present in transaction payload",
                 ))?
                 .try_into()?,
-            proof,
+            value
+                .spending_proof
+                .as_ref()
+                .ok_or(Status::failed_precondition(
+                    "No proof present in transaction payload",
+                ))?
+                .try_into()?,
             value.call_data.clone(),
         ))
     }
