@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
-// Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
+// Copyright (c) DUSK NETWORK. All rights reserved.
 
 /// Buildfile for the rusk crate.
 ///
