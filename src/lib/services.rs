@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod bid;
 pub mod blindbid;
 pub mod echoer;
 pub mod pki;
