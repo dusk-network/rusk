@@ -21,6 +21,8 @@ test: ## Run the tests
 		@make contracts && \
 			cargo test --release -- --nocapture  && \
 				rm /tmp/rusk_listener
+		cd contracts/bid/circuits && cargo test --release
+		# cd contracts/transfer/circuits && cargo test --release
 
 run: ## Run the server
 		@make contracts && \
