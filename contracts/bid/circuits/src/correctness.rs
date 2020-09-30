@@ -86,8 +86,7 @@ impl Circuit<'_> for CorrectnessCircuit {
             BlsScalar::from(*V_MAX),
             value,
         );
-        // We need cond to be one, so we conditionally select one.
-        let cond = conditionally_select_one(composer, zero, cond);
+
         // Constrain cond to be one - meaning that the range check holds.
         composer.constrain_to_constant(
             cond,
@@ -104,7 +103,7 @@ impl Circuit<'_> for CorrectnessCircuit {
         pub_params: &PublicParameters,
     ) -> Result<(ProverKey, VerifierKey, usize), Error> {
         // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 16)?;
+        let (ck, _) = pub_params.trim(1 << 10)?;
         // Generate & save `ProverKey` with some random values.
         let mut prover = Prover::new(b"TestCircuit");
         // Set size & PI builder
@@ -165,7 +164,7 @@ impl Circuit<'_> for CorrectnessCircuit {
         prover_key: &ProverKey,
         transcript_initialisation: &'static [u8],
     ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 16)?;
+        let (ck, _) = pub_params.trim(1 << 10)?;
         // New Prover instance
         let mut prover = Prover::new(transcript_initialisation);
         // Fill witnesses for Prover
@@ -183,7 +182,7 @@ impl Circuit<'_> for CorrectnessCircuit {
         proof: &Proof,
         pub_inputs: &[PublicInput],
     ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 16)?;
+        let (_, vk) = pub_params.trim(1 << 10)?;
         // New Verifier instance
         let mut verifier = Verifier::new(transcript_initialisation);
         // Fill witnesses for Verifier
@@ -200,6 +199,40 @@ mod tests {
 
     #[test]
     fn test_correctness_circuit() -> Result<()> {
+        let value = JubJubScalar::from(100000 as u64);
+        let blinder = JubJubScalar::from(50000 as u64);
+
+        let c = JubJubAffine::from(
+            (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
+        );
+
+        let mut circuit = CorrectnessCircuit {
+            commitment: Some(c),
+            value: Some(value.into()),
+            blinder: Some(blinder.into()),
+            size: 0,
+            pi_constructor: None,
+        };
+
+        let pub_params =
+            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
+
+        let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
+
+        circuit.verify_proof(
+            &pub_params,
+            &vk,
+            b"BidCorrectness",
+            &proof,
+            &pi,
+        )?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_correctness_circuit_out_of_bounds() -> Result<()> {
         let value = JubJubScalar::from(100 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
 
@@ -216,19 +249,15 @@ mod tests {
         };
 
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
         let (pk, vk, _) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
 
         let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
 
-        circuit.verify_proof(
-            &pub_params,
-            &vk,
-            b"BidCorrectness",
-            &proof,
-            &pi,
-        )?;
+        assert!(circuit
+            .verify_proof(&pub_params, &vk, b"BidCorrectness", &proof, &pi,)
+            .is_err());
         Ok(())
     }
 }
