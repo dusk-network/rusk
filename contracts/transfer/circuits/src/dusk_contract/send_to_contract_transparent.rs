@@ -58,12 +58,13 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
     
         range(composer, allocated_commitment_crossover_value, 64);
 
-        composer.constrain_to_constant(allocated_commitment_crossover_value.var, BlsScalar::zero(), -value);
-        
         pi.push(PublicInput::BlsScalar(
             -value,
             composer.circuit_size(),
         ));
+
+        composer.constrain_to_constant(allocated_commitment_crossover_value.var, BlsScalar::zero(), -value);
+        
 
         self.size = composer.circuit_size();
         Ok(pi)
