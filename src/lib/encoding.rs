@@ -232,7 +232,7 @@ impl TryFrom<Transaction> for rusk_proto::Transaction {
 
     fn try_from(value: Transaction) -> Result<Self, Status> {
         Ok(rusk_proto::Transaction {
-            version: value.version() as u32,
+            version: value.version().into(),
             r#type: value.tx_type().into(),
             tx_payload: Some(value.payload().try_into()?),
         })
@@ -593,7 +593,10 @@ impl TryFrom<&rusk_proto::Transaction> for Transaction {
         value: &rusk_proto::Transaction,
     ) -> Result<Transaction, Status> {
         Ok(Transaction::new(
-            value.version as u8,
+            value
+                .version
+                .try_into()
+                .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
             value
                 .r#type
                 .try_into()

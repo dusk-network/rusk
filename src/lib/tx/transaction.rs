@@ -7,84 +7,14 @@ use crate::tx::{Crossover, Fee};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::note::Note;
-use phoenix_core::Error;
-use std::convert::{TryFrom, TryInto};
 use std::io::{self, Read, Write};
 use std::mem::transmute_copy;
-
-/// Type identifiers for Phoenix transactions.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TxType {
-    Transfer,
-    Distribute,
-    WithdrawFees,
-    Bid,
-    Stake,
-    Slash,
-    WithdrawStake,
-    WithdrawBid,
-}
-
-impl From<TxType> for u32 {
-    fn from(value: TxType) -> u32 {
-        match value {
-            TxType::Transfer => 0,
-            TxType::Distribute => 1,
-            TxType::WithdrawFees => 2,
-            TxType::Bid => 3,
-            TxType::Stake => 4,
-            TxType::Slash => 5,
-            TxType::WithdrawStake => 6,
-            TxType::WithdrawBid => 7,
-        }
-    }
-}
-
-impl TryFrom<u32> for TxType {
-    type Error = Error;
-
-    fn try_from(value: u32) -> Result<TxType, Error> {
-        match value {
-            0 => Ok(TxType::Transfer),
-            1 => Ok(TxType::Distribute),
-            2 => Ok(TxType::WithdrawFees),
-            3 => Ok(TxType::Bid),
-            4 => Ok(TxType::Stake),
-            5 => Ok(TxType::Slash),
-            6 => Ok(TxType::WithdrawStake),
-            7 => Ok(TxType::WithdrawBid),
-            n => Err(Error::InvalidNoteType(n as u8)),
-        }
-    }
-}
-
-impl Read for TxType {
-    fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
-        buf.write(&(u32::from(*self) as u8).to_le_bytes())
-    }
-}
-
-impl Write for TxType {
-    fn write(&mut self, mut buf: &[u8]) -> io::Result<usize> {
-        let mut n = 0;
-        let mut one_byte = [0u8; 1];
-
-        n += buf.read(&mut one_byte)?;
-        *self = (one_byte[0] as u32).try_into()?;
-
-        Ok(n)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
 
 /// All of the fields that make up a Phoenix transaction.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
     version: u8,
-    tx_type: TxType,
+    tx_type: u8,
     payload: TransactionPayload,
 }
 
@@ -126,7 +56,7 @@ impl Default for Transaction {
     fn default() -> Self {
         Transaction {
             version: 0,
-            tx_type: TxType::Transfer,
+            tx_type: 0,
             payload: TransactionPayload::default(),
         }
     }
@@ -149,11 +79,7 @@ impl Default for TransactionPayload {
 impl Transaction {
     /// Create a new transaction, giving all of the parameters up front.
     /// This is mostly used for deserialization from GRPC.
-    pub fn new(
-        version: u8,
-        tx_type: TxType,
-        payload: TransactionPayload,
-    ) -> Self {
+    pub fn new(version: u8, tx_type: u8, payload: TransactionPayload) -> Self {
         Transaction {
             version,
             tx_type,
@@ -162,7 +88,7 @@ impl Transaction {
     }
 
     /// Set the transaction type.
-    pub fn set_type(&mut self, tx_type: TxType) {
+    pub fn set_type(&mut self, tx_type: u8) {
         self.tx_type = tx_type;
     }
 
@@ -172,7 +98,7 @@ impl Transaction {
     }
 
     /// Get the transaction type.
-    pub fn tx_type(&self) -> TxType {
+    pub fn tx_type(&self) -> u8 {
         self.tx_type
     }
 
@@ -192,7 +118,7 @@ impl Read for Transaction {
         let mut n = 0;
 
         n += buf.write(&self.version.to_le_bytes())?;
-        n += self.tx_type.read(&mut buf[n..])?;
+        n += buf.write(&self.tx_type.to_le_bytes())?;
         n += self.payload.read(&mut buf[n..])?;
 
         Ok(n)
@@ -208,7 +134,9 @@ impl Write for Transaction {
         n += buf.read(&mut one_byte)?;
         self.version = u8::from_le_bytes(one_byte);
 
-        n += self.tx_type.write(&buf[n..])?;
+        n += buf.read(&mut one_byte)?;
+        self.tx_type = u8::from_le_bytes(one_byte);
+
         n += self.payload.write(&buf[n..])?;
 
         Ok(n)
