@@ -22,7 +22,7 @@ dusk-plonk = "0.2.9"
 # If those imports are not unified, then the compiler will throw errors
 # about the Ownable trait.
 dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.1.0"}
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" }
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-core", tag = "v0.1.0" }
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"

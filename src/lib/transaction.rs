@@ -146,7 +146,8 @@ impl Default for TransactionPayload {
             fee: Fee::default(),
             // NOTE: we are unwrapping here, but this should never fail,
             // since it is a pre-generated proof which is shown to be correct.
-            spending_proof: Proof::from_bytes(&DEFAULT_PROOF_BYTES).unwrap(),
+            spending_proof: Proof::from_bytes(&DEFAULT_PROOF_BYTES)
+                .expect("Decoding default proof failed"),
             call_data: vec![],
         }
     }
