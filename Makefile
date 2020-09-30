@@ -9,7 +9,7 @@ wasm: ## Generate the WASM for the contract given (e.g. make wasm for=transfer)
 		-- -C link-args=-s
 
 contracts: ## Generate the WASM for all the contracts
-		@for file in `find contracts -name "Cargo.toml"` ; do \
+		@for file in `find contracts -maxdepth 2 -name "Cargo.toml"` ; do \
 			cargo rustc \
 				--manifest-path=$${file} \
 				--release \
@@ -21,6 +21,8 @@ test: ## Run the tests
 		@make contracts && \
 			cargo test --release -- --nocapture  && \
 				rm /tmp/rusk_listener
+		cd contracts/bid/circuits && cargo test --release
+		# cd contracts/transfer/circuits && cargo test --release
 
 run: ## Run the server
 		@make contracts && \
