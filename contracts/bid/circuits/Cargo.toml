@@ -10,5 +10,5 @@ edition = "2018"
 anyhow = "^1.0.0"
 dusk-plonk = {version = "0.2.11"}
 plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.3.0"}
-dusk-blindbid = { git = "https://github.com/dusk-network/dusk-blindbid" }
+dusk-blindbid = { git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.1.0" }
 rand = "0.7"
