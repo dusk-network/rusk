@@ -5,9 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 use anyhow::Result;
+use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::jubjub::{AffinePoint, GENERATOR_EXTENDED};
+use dusk_plonk::jubjub::{
+    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+};
 use dusk_plonk::prelude::*;
 use kelvin::Blake2b;
 use poseidon252::PoseidonTree;
@@ -21,6 +24,10 @@ const PUB_PARAMS_FILE: &'static str = "pub_params_dev.bin";
 const BLINDBID_CIRCUIT_PK_PATH: &'static str = "blindbid_circ.pk";
 /// BlindBid Circuit VerifierKey path.
 const BLINDBID_CIRCUIT_VK_PATH: &'static str = "blindbid_circ.vk";
+/// Bid correctness Circuit ProverKey path.
+const BID_CORRECTNESS_CIRCUIT_PK_PATH: &'static str = "bid_correctness_circ.pk";
+/// Bid correctness Circuit VerifierKey path.
+const BID_CORRECTNESS_CIRCUIT_VK_PATH: &'static str = "bid_correctness_circ.vk";
 
 /// Buildfile for the rusk crate.
 ///
@@ -29,6 +36,7 @@ const BLINDBID_CIRCUIT_VK_PATH: &'static str = "blindbid_circ.vk";
 /// 2. Get the version of the crate and some extra info to
 /// support the `-v` argument properly.
 /// 3. Compile the blindbid circuit.
+/// 4. Compile the Bid correctness circuit.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic.
     tonic_build::compile_protos("schema/rusk.proto")?;
@@ -54,6 +62,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         (true, true) => (),
         (_, _) => blindbid::compile_blindbid_circuit()?,
     };
+
+    // Compile Bid correctness Circuit if it hasn't been already.
+    match (
+        PathBuf::from(BID_CORRECTNESS_CIRCUIT_PK_PATH).exists(),
+        PathBuf::from(BID_CORRECTNESS_CIRCUIT_VK_PATH).exists(),
+    ) {
+        (true, true) => (),
+        (_, _) => bid::compile_bid_correctness_circuit()?,
+    };
     Ok(())
 }
 
@@ -64,6 +81,36 @@ fn read_pub_params() -> Result<PublicParameters> {
     pub_params_file.read_to_end(&mut buff)?;
     let result: PublicParameters = bincode::deserialize(&buff)?;
     Ok(result)
+}
+
+mod bid {
+    use super::*;
+
+    pub fn compile_bid_correctness_circuit() -> Result<()> {
+        let pub_params = read_pub_params()?;
+        let value = JubJubScalar::from(100000 as u64);
+        let blinder = JubJubScalar::from(50000 as u64);
+
+        let c = AffinePoint::from(
+            (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
+        );
+
+        let mut circuit = CorrectnessCircuit {
+            commitment: Some(c),
+            value: Some(value.into()),
+            blinder: Some(blinder.into()),
+            size: 0,
+            pi_constructor: None,
+        };
+
+        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let mut pk_file = File::create(BID_CORRECTNESS_CIRCUIT_PK_PATH)?;
+        pk_file.write(&pk.to_bytes())?;
+
+        let mut vk_file = File::create(BID_CORRECTNESS_CIRCUIT_VK_PATH)?;
+        vk_file.write(&vk.to_bytes())?;
+        Ok(())
+    }
 }
 
 mod blindbid {
