@@ -47,14 +47,14 @@ impl BidService for Rusk {
         request: Request<FindBidRequest>,
     ) -> Result<Response<BidList>, Status> {
         let handler = FindBidHandler::load_request(&request);
-        info!("Received NewBid request");
+        info!("Received FindBid request");
         match handler.handle_request() {
             Ok(response) => {
-                info!("NewBid request was successfully processed. Sending response..");
+                info!("FindBid request was successfully processed. Sending response..");
                 Ok(response)
             }
             Err(e) => {
-                error!("An error ocurred during the NewBid request processing: {:?}", e);
+                error!("An error ocurred during the FindBid request processing: {:?}", e);
                 Err(e)
             }
         }
