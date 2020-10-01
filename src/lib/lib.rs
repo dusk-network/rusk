@@ -10,3 +10,9 @@ pub mod services;
 
 #[derive(Debug, Default)]
 pub struct Rusk {}
+
+pub mod proto_types {
+    pub use super::services::rusk_proto::{
+        BlsScalar, JubJubCompressed, JubJubScalar, Proof,
+    };
+}

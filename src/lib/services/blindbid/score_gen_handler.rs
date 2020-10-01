@@ -5,16 +5,16 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::super::ServiceRequestHandler;
+use super::get_bid_storage_fields;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::circuit_helpers::*;
 use crate::encoding::{decode_request_param, encode_request_param};
 use anyhow::Result;
-use dusk_blindbid::bid::Bid;
 use dusk_blindbid::BlindBidCircuit;
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use dusk_plonk::prelude::*;
-use poseidon252::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
+use tracing::info;
 /// Implementation of the ScoreGeneration Handler.
 pub struct ScoreGenHandler<'a> {
     request: &'a Request<GenerateScoreRequest>,
@@ -37,9 +37,12 @@ where
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
         let (k, seed, secret) = parse_score_gen_params(self.request)?;
-        // Get bid from storage
+        // XXX: We need to mock the storage for now, so we push to a PoseidonTree the Bid that we
+        // should only need to retrieve. To do so, we need all of the parameters, not just the index.
         let (bid, branch) = get_bid_storage_fields(
             self.request.get_ref().index_stored_bid as usize,
+            Some(secret),
+            Some(k),
         )?;
 
         // Generate Score for the Bid
@@ -77,8 +80,10 @@ where
             size: 0,
             pi_constructor: None,
         };
+        info!("Starting to compute a proof");
         let proof = gen_blindbid_proof(&mut circuit)
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
+        info!("Finished with computing the proof");
         Ok(Response::new(GenerateScoreResponse {
             blindbid_proof: encode_request_param(&proof),
             score: encode_request_param(score.score),
@@ -101,16 +106,8 @@ fn parse_score_gen_params(
     Ok((k, seed, secret))
 }
 
-// This function simulates the obtention of a Bid from the
-// Bid contract storage and a PoseidonBranch that references it.
-fn get_bid_storage_fields(
-    idx: usize,
-) -> Result<(Bid, PoseidonBranch), std::io::Error> {
-    unimplemented!()
-}
-
 // Generate a blindbid proof given a circuit instance loaded with the
-// desired inputs.
+// desired inputs.verifier_key
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     // Read PublicParameters
     let pub_params = read_pub_params()?;

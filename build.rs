@@ -6,14 +6,12 @@
 // Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{bid::Bid, BlindBidCircuit};
+use dusk_blindbid::{bid::Bid, tree::BidTree, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
-use kelvin::Blake2b;
-use poseidon252::PoseidonTree;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -119,7 +117,7 @@ mod blindbid {
     pub fn compile_blindbid_circuit() -> Result<()> {
         let pub_params = read_pub_params()?;
         // Generate a PoseidonTree and append the Bid.
-        let mut tree: PoseidonTree<Bid, Blake2b> = PoseidonTree::new(17usize);
+        let mut tree = BidTree::new(17usize);
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());

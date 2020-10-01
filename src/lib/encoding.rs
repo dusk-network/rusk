@@ -240,3 +240,13 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         })?)
     }
 }
+
+impl TryFrom<&rusk_proto::Proof> for Proof {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::Proof) -> Result<Proof, Status> {
+        Ok(Proof::from_bytes(&value.data).map_err(|_| {
+            Status::failed_precondition("Could not decode proof")
+        })?)
+    }
+}
