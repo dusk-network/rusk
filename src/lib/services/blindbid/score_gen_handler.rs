@@ -1,8 +1,7 @@
 use super::super::ServiceRequestHandler;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::encoding::decode_request_param;
-use blind_bid::bid::Bid;
-use core::convert::TryInto;
+use dusk_blindbid::bid::Bid;
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use tonic::{Code, Request, Response, Status};
