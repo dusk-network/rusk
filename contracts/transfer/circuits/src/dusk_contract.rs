@@ -10,7 +10,11 @@ mod send_to_contract_transparent;
 mod withdraw_from_obfuscated;
 mod withdraw_from_obfuscated_to_contract;
 
-
+pub use execute::ExecuteCircuit;
+pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use withdraw_from_obfuscated::WithdrawFromContractObfuscatedCircuit;
-pub use withdraw_from_obfuscated_to_contract::{WithdrawFromObfuscatedToContractCircuitOne, WithdrawFromObfuscatedToContractCircuitTwo};
+pub use withdraw_from_obfuscated_to_contract::{
+    WithdrawFromObfuscatedToContractCircuitOne,
+    WithdrawFromObfuscatedToContractCircuitTwo,
+};
