@@ -6,6 +6,7 @@
 
 pub mod echoer;
 pub mod pki;
+pub mod transaction;
 use tonic::{Request, Response, Status};
 
 pub(crate) mod rusk_proto {
