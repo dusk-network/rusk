@@ -1,0 +1,66 @@
+syntax = "proto3";
+package rusk;
+option go_package = "github.com/dusk-network/rusk-schema;rusk";
+
+import "transaction.proto";
+import "basic_fields.proto";
+
+message Stake {
+    fixed64 amount = 1;
+    fixed64 start_height = 2;
+    fixed64 end_height = 3;
+}
+
+message StakeTransactionRequest {
+    fixed64 value = 1;
+    BN256Point public_key_bls = 2;
+}
+
+message FindStakeRequest {
+    BN256Point pk = 1;
+}
+
+message FindStakeResponse {
+    repeated Stake stakes = 1;
+}
+
+message ExtendStakeRequest {
+    bytes identifier = 1;
+    BN256Point pk = 2;
+    BN256Point sig = 3;
+}
+
+message WithdrawStakeRequest {
+    bytes identifier = 1;
+    BN256Point pk = 2;
+    BN256Point sig = 3;
+    Note note = 4;
+}
+
+message SlashRequest {
+    BN256Point pk = 1;
+    fixed64 round = 2;
+    uint32 step = 3;
+    BlsScalar message1 = 4;
+    BlsScalar message2 = 5;
+    BN256Point sig1 = 6;
+    BN256Point sig2 = 7;
+    Note note = 8;
+}
+
+service StakeService {
+    // Generate a new Stake transaction.
+    rpc NewStake(StakeTransactionRequest) returns (Transaction) {}
+
+    // Find all stakes related to a provisioner public key.
+    rpc FindStake(FindStakeRequest) returns (FindStakeResponse) {}
+
+    // Extend a stake.
+    rpc ExtendStake(ExtendStakeRequest) returns (Transaction) {}
+
+    // Withdraw a stake.
+    rpc WithdrawStake(WithdrawStakeRequest) returns (Transaction) {}
+
+    // Slash a misbehaving provisioner.
+    rpc Slash(SlashRequest) returns (Transaction) {}
+}
