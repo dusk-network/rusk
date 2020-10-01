@@ -9,6 +9,7 @@ import "transaction.proto";
 import "keys.proto";
 import "transfer.proto";
 import "stake.proto";
+import "reward.proto";
 
 message VerifyStateTransitionRequest {
     repeated Transaction txs = 1;

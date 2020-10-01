@@ -45,3 +45,17 @@ message Transaction {
     uint32 type = 2;
     TransactionPayload tx_payload = 3;
 }
+
+message TransactionRequest {
+    bytes contract_address = 1;
+    uint32 op_code = 2;
+    bytes arguments = 3;
+    fixed64 gas_limit = 4;
+    fixed64 gas_price = 5;
+}
+
+service TransactionService {
+    // A generic method to create a transaction which requires
+    // no special fields (no crossover, outputs, or specific proofs).
+    rpc NewTransaction(TransactionRequest) returns (Transaction) {}
+}
