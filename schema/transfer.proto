@@ -8,6 +8,8 @@ import "keys.proto";
 message TransferTransactionRequest {
     fixed64 value = 1;
     StealthAddress recipient = 2;
+    fixed64 gas_limit = 3;
+    fixed64 gas_price = 4;
 }
 
 service Transfer {

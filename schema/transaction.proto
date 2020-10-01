@@ -3,6 +3,7 @@ package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "basic_fields.proto";
+import "keys.proto";
 
 message Crossover {
     JubJubCompressed value_comm = 1;
@@ -12,15 +13,21 @@ message Crossover {
 message Fee {
     uint64 gas_limit = 1;
     uint64 gas_price = 2;
-    JubJubCompressed R = 3;
-    JubJubCompressed pk_r = 4;
+    StealthAddress address = 3;
 }
+
 message Note {
-    JubJubCompressed randomness = 1;
-    JubJubCompressed pk_r = 2;
-    JubJubCompressed commitment = 3;
-    BlsScalar nonce = 4;
-    PoseidonCipher encypted_data = 5;
+    enum NoteType {
+        TRANSPARENT = 0;
+        OBFUSCATED = 1;
+    }
+
+    NoteType note_type = 1;
+    JubJubCompressed value_commitment = 2;
+    JubJubScalar nonce = 3;
+    StealthAddress address = 4;
+    fixed64 pos = 5;
+    PoseidonCipher encrypted_data = 6;
 }
 
 message TransactionPayload {
@@ -37,4 +44,18 @@ message Transaction {
     uint32 version = 1;
     uint32 type = 2;
     TransactionPayload tx_payload = 3;
+}
+
+message TransactionRequest {
+    bytes contract_address = 1;
+    uint32 op_code = 2;
+    bytes arguments = 3;
+    fixed64 gas_limit = 4;
+    fixed64 gas_price = 5;
+}
+
+service TransactionService {
+    // A generic method to create a transaction which requires
+    // no special fields (no crossover, outputs, or specific proofs).
+    rpc NewTransaction(TransactionRequest) returns (Transaction) {}
 }

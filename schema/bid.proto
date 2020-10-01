@@ -26,6 +26,8 @@ message BidTransactionRequest {
     BlsScalar seed = 5;
     fixed64 latest_consensus_round = 6;
     fixed64 latest_consensus_step = 7;
+    fixed64 gas_limit = 8;
+    fixed64 gas_price = 9;
 }
 
 message BidTransaction {
@@ -47,6 +49,4 @@ service BidService {
     rpc NewBid(BidTransactionRequest) returns (BidTransaction) {}
     // Look for your owned Bids and return a list of them and it's hash repr
     rpc FindBid(FindBidRequest) returns (BidList) {}
-    // Request a wirhdraw of a Bid. Not supported yet.
-    //rpc NewWithdrawBid(WithdrawBidTransactionRequest) returns (WithdrawBidTransaction) {}
 }
