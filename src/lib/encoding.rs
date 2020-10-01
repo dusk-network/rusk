@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::services::rusk_proto;
+use crate::types::BN256Point;
 use core::convert::TryFrom;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
@@ -106,6 +107,20 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
             r_g: Some(JubJubAffine::from(value.R()).into()),
             pk_r: Some(JubJubAffine::from(value.pk_r()).into()),
         }
+    }
+}
+
+impl From<&BN256Point> for rusk_proto::Bn256Point {
+    fn from(value: &BN256Point) -> Self {
+        rusk_proto::Bn256Point {
+            data: Vec::from(&value.to_bytes()[..]),
+        }
+    }
+}
+
+impl From<BN256Point> for rusk_proto::Bn256Point {
+    fn from(value: BN256Point) -> Self {
+        (&value).into()
     }
 }
 
@@ -229,5 +244,24 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
         })?)
+    }
+}
+
+impl TryFrom<&rusk_proto::Bn256Point> for BN256Point {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::Bn256Point) -> Result<BN256Point, Status> {
+        let mut bytes = [0u8; 129];
+
+        // Ensure that the field exists, and is the proper length
+        if value.data.len() != 129 {
+            return Err(Status::failed_precondition(
+                "Bn256Point is of improper length",
+            ));
+        };
+
+        bytes.copy_from_slice(&value.data[..]);
+
+        Ok(BN256Point::from_bytes(bytes))
     }
 }
