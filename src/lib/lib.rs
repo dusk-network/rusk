@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
 
