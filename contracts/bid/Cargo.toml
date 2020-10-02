@@ -1,9 +1,17 @@
 [package]
 name = "bid"
 version = "0.1.0"
-authors = ["CPerezz <c.perezbaro@gmail.com>"]
+authors = ["Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+canonical = { path = "../../../canonical/canon" }
+canonical_derive = { path = "../../../canonical/canon_derive" }
+canonical_host = { path = "../../../canonical/canon_host", optional = true }
+
+[features]
+hosted = ["canonical/hosted"]
+host = ["canonical_host"]
