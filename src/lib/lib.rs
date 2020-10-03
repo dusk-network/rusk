@@ -8,7 +8,7 @@ pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Rusk {}
 
 pub mod proto_types {
