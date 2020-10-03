@@ -7,7 +7,7 @@ import "keys.proto";
 
 message Crossover {
     JubJubCompressed value_comm = 1;
-    BlsScalar nonce = 2;
+    JubJubScalar nonce = 2;
     PoseidonCipher encypted_data = 3;
 }
 message Fee {
