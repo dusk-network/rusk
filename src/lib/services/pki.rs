@@ -18,8 +18,9 @@ use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
 pub use super::rusk_proto::{
-    keys_server::Keys, keys_server::KeysServer, GenerateKeysRequest,
-    GenerateKeysResponse, PublicKey, StealthAddress,
+    keys_client::KeysClient,
+    keys_server::{Keys, KeysServer},
+    GenerateKeysRequest, GenerateKeysResponse, PublicKey, StealthAddress,
 };
 
 #[tonic::async_trait]
