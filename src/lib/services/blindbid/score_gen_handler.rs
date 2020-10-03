@@ -14,7 +14,7 @@ use dusk_blindbid::BlindBidCircuit;
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Code, Request, Response, Status};
-use tracing::info;
+
 /// Implementation of the ScoreGeneration Handler.
 pub struct ScoreGenHandler<'a> {
     request: &'a Request<GenerateScoreRequest>,
@@ -80,10 +80,8 @@ where
             size: 0,
             pi_constructor: None,
         };
-        info!("Starting to compute a proof");
         let proof = gen_blindbid_proof(&mut circuit)
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
-        info!("Finished with computing the proof");
         Ok(Response::new(GenerateScoreResponse {
             blindbid_proof: encode_request_param(&proof),
             score: encode_request_param(score.score),
@@ -109,10 +107,8 @@ fn parse_score_gen_params(
 // Generate a blindbid proof given a circuit instance loaded with the
 // desired inputs.verifier_key
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
-    // Read PublicParameters
-    let pub_params = read_pub_params()?;
     // Read ProverKey of the circuit.
     let prover_key = read_blindcid_circuit_pk()?;
     // Generate a proof using the circuit
-    circuit.gen_proof(&pub_params, &prover_key, b"BlindBid")
+    circuit.gen_proof(&crate::PUB_PARAMS, &prover_key, b"BlindBid")
 }
