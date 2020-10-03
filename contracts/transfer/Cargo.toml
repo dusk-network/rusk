@@ -1,19 +1,17 @@
 [package]
 name = "transfer"
 version = "0.2.0"
-authors = ["zer0 <matteo@dusk.network>"]
+authors = ["Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", default-features = false }
-phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi", default-features = false }
-dataview = { git = "https://github.com/dusk-network/dataview" }
-cake-rusk = { git = "https://github.com/dusk-network/cake-rusk" }
+canonical = { path = "../../../canonical/canon" }
+canonical_derive = { path = "../../../canonical/canon_derive" }
+canonical_host = { path = "../../../canonical/canon_host", optional = true }
 
-[profile.release]
-lto = true
-codegen-units = 1
-panic = 'abort'
+[features]
+hosted = ["canonical/hosted"]
+host = ["canonical_host"]
