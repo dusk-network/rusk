@@ -20,12 +20,12 @@ use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
+const SOCKET_PATH: &'static str = "/tmp/rusk_listener_echoer";
 const SERVER_ADDRESS: &'static str = "127.0.0.1:50051";
-const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50051";
+const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50054";
 
 #[cfg(test)]
-mod tests {
+mod echo_service_tests {
     use super::*;
 
     #[tokio::test(threaded_scheduler)]
@@ -57,7 +57,7 @@ mod tests {
         });
 
         // Create the client binded to the default testing UDS path.
-        let channel = Endpoint::try_from("http://[::]:50051")?
+        let channel = Endpoint::try_from("http://[::]:50052")?
             .connect_with_connector(service_fn(|_: Uri| {
                 // Connect to a Uds socket
                 UnixStream::connect(SOCKET_PATH)
@@ -78,7 +78,7 @@ mod tests {
         Ok(())
     }
 
-    /* TEST INGORED Until Travis works well with TCP/IP testing.
+    /*
     #[tokio::test(threaded_scheduler)]
     async fn echo_works_tcp_ip() -> Result<(), Box<dyn std::error::Error>> {
         let addr = SERVER_ADDRESS.parse()?;
@@ -102,5 +102,6 @@ mod tests {
         assert_eq!(response.into_inner().message, message);
 
         Ok(())
-    }*/
+    }
+    */
 }

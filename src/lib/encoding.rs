@@ -9,6 +9,7 @@ use core::convert::TryFrom;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::jubjub::{AffinePoint as JubJubAffine, Scalar as JubJubScalar};
+use dusk_plonk::proof_system::Proof;
 use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a
@@ -105,6 +106,14 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
         rusk_proto::StealthAddress {
             r_g: Some(JubJubAffine::from(value.R()).into()),
             pk_r: Some(JubJubAffine::from(value.pk_r()).into()),
+        }
+    }
+}
+
+impl From<&Proof> for rusk_proto::Proof {
+    fn from(value: &Proof) -> Self {
+        rusk_proto::Proof {
+            data: value.to_bytes().to_vec(),
         }
     }
 }
@@ -228,6 +237,16 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
 
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
+        })?)
+    }
+}
+
+impl TryFrom<&rusk_proto::Proof> for Proof {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::Proof) -> Result<Proof, Status> {
+        Ok(Proof::from_bytes(&value.data).map_err(|_| {
+            Status::failed_precondition("Could not decode proof")
         })?)
     }
 }
