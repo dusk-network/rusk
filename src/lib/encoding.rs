@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::services::rusk_proto;
-use crate::transaction::{Crossover, Fee, Transaction, TransactionPayload};
+use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::TryFrom;
 use dusk_pki::{
     Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
@@ -16,7 +16,7 @@ use dusk_plonk::jubjub::{
     Scalar as JubJubScalar,
 };
 use dusk_plonk::proof_system::Proof;
-use phoenix_core::note::Note;
+use phoenix_core::{Crossover, Fee, Note};
 use poseidon252::cipher::{PoseidonCipher, CIPHER_BYTES_SIZE};
 use std::convert::TryInto;
 use std::io::{Read, Write};
@@ -176,9 +176,9 @@ impl TryFrom<&mut Note> for rusk_proto::Note {
 impl From<Fee> for rusk_proto::Fee {
     fn from(value: Fee) -> Self {
         rusk_proto::Fee {
-            gas_limit: value.gas_limit(),
-            gas_price: value.gas_price(),
-            address: Some(value.address().into()),
+            gas_limit: value.gas_limit,
+            gas_price: value.gas_price,
+            address: Some(value.stealth_address().into()),
         }
     }
 }
@@ -189,9 +189,9 @@ impl From<Crossover> for rusk_proto::Crossover {
             value_comm: Some(
                 JubJubAffine::from(value.value_commitment()).into(),
             ),
-            nonce: Some(value.nonce().into()),
+            nonce: Some((*value.nonce()).into()),
             /// XXX: fix this typo in rusk-schema
-            encypted_data: Some(value.encrypted_data().into()),
+            encypted_data: Some((*value.encrypted_data()).into()),
         }
     }
 }
@@ -484,15 +484,32 @@ impl TryFrom<&rusk_proto::Fee> for Fee {
     type Error = Status;
 
     fn try_from(value: &rusk_proto::Fee) -> Result<Fee, Status> {
-        Ok(Fee::new(
-            value.gas_limit,
-            value.gas_price,
-            value
+        let mut buf = [0u8; 80];
+        buf[0..8].copy_from_slice(&value.gas_limit.to_le_bytes());
+        buf[8..16].copy_from_slice(&value.gas_price.to_le_bytes());
+        buf[16..48].copy_from_slice(
+            &value
                 .address
                 .as_ref()
                 .ok_or(Status::failed_precondition("No address present"))?
-                .try_into()?,
-        ))
+                .r_g
+                .as_ref()
+                .ok_or(Status::failed_precondition("No r_g present"))?
+                .data,
+        );
+        buf[48..].copy_from_slice(
+            &value
+                .address
+                .as_ref()
+                .ok_or(Status::failed_precondition("No address present"))?
+                .pk_r
+                .as_ref()
+                .ok_or(Status::failed_precondition("No pk_r present"))?
+                .data,
+        );
+        let mut fee = Fee::default();
+        fee.write(&mut buf)?;
+        Ok(fee)
     }
 }
 
@@ -500,29 +517,37 @@ impl TryFrom<&rusk_proto::Crossover> for Crossover {
     type Error = Status;
 
     fn try_from(value: &rusk_proto::Crossover) -> Result<Crossover, Status> {
-        Ok(Crossover::new(
-            value
+        let mut buf = [0u8; 160];
+        buf[0..32].copy_from_slice(
+            &value
                 .value_comm
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No nonce present in crossover",
                 ))?
-                .try_into()?,
-            value
+                .data,
+        );
+        buf[32..64].copy_from_slice(
+            &value
                 .nonce
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No nonce present in crossover",
                 ))?
-                .try_into()?,
-            value
+                .data,
+        );
+        buf[64..].copy_from_slice(
+            &value
                 .encypted_data
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No encrypted data present in crossover",
                 ))?
-                .try_into()?,
-        ))
+                .data,
+        );
+        let mut crossover = Crossover::default();
+        crossover.write(&mut buf)?;
+        Ok(crossover)
     }
 }
 

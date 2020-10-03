@@ -1,17 +1,14 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
 // Copyright (c) DUSK NETWORK. All rights reserved.
-// Licensed under the MPL 2.0 license. See LICENSE file in the project root for details.
 
 //! Phoenix transaction structure implementation.
 
-pub mod crossover;
-pub mod fee;
-
-pub use crossover::Crossover;
-pub use fee::Fee;
-
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::proof_system::Proof;
-use phoenix_core::note::Note;
+use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
 use std::mem::transmute_copy;
 
@@ -463,7 +460,6 @@ mod tests {
         Fr as JubJubScalar, GENERATOR_EXTENDED,
     };
     use phoenix_core::Note;
-    use poseidon252::cipher::PoseidonCipher;
     use rand::Rng;
     use std::convert::TryInto;
     use std::io::{Read, Write};
@@ -504,28 +500,29 @@ mod tests {
         let a = JubJubExtended::from(JubJubAffine::from(a));
         let b = JubJubExtended::from(JubJubAffine::from(b));
 
-        let address = PublicSpendKey::new(a, b).gen_stealth_address(
-            &JubJubScalar::random(&mut rand::thread_rng()),
-        );
+        let psk = PublicSpendKey::new(a, b);
 
-        Fee::new(gas_limit, gas_price, address)
+        Fee::new(gas_limit, gas_price, &psk)
     }
 
     fn random_crossover() -> Crossover {
         let s = JubJubScalar::random(&mut rand::thread_rng());
-        let value_commitment = GENERATOR_EXTENDED * s;
+        let a = GENERATOR_EXTENDED * s;
+
+        let s = JubJubScalar::random(&mut rand::thread_rng());
+        let b = GENERATOR_EXTENDED * s;
 
         // We need to cast extended points to affine and back,
         // to ensure integrity of data.
-        let value_commitment =
-            JubJubExtended::from(JubJubAffine::from(value_commitment));
+        let a = JubJubExtended::from(JubJubAffine::from(a));
+        let b = JubJubExtended::from(JubJubAffine::from(b));
 
-        let nonce = BlsScalar::random(&mut rand::thread_rng());
+        let value: u64 = rand::thread_rng().gen();
 
-        let scalars = [BlsScalar::random(&mut rand::thread_rng()); 3];
-        let encrypted_data = PoseidonCipher::new(scalars);
-
-        Crossover::new(value_commitment, nonce, encrypted_data)
+        let psk = PublicSpendKey::new(a, b);
+        let note = Note::obfuscated(&psk, value);
+        let (_, crossover): (Fee, Crossover) = note.try_into().unwrap();
+        crossover
     }
 
     fn random_tx() -> Transaction {

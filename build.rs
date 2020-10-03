@@ -13,7 +13,7 @@ use dusk_plonk::jubjub::{
 };
 use dusk_plonk::prelude::*;
 use kelvin::Blake2b;
-use poseidon252::PoseidonTree;
+use poseidon252::{PoseidonAnnotation, PoseidonTree};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -119,7 +119,8 @@ mod blindbid {
     pub fn compile_blindbid_circuit() -> Result<()> {
         let pub_params = read_pub_params()?;
         // Generate a PoseidonTree and append the Bid.
-        let mut tree: PoseidonTree<Bid, Blake2b> = PoseidonTree::new(17usize);
+        let mut tree: PoseidonTree<Bid, PoseidonAnnotation, Blake2b> =
+            PoseidonTree::new(17usize);
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
