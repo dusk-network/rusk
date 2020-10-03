@@ -4,9 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
 pub mod transaction;
 
 #[derive(Debug, Default)]
 pub struct Rusk {}
+
+pub mod proto_types {
+    pub use super::services::rusk_proto::{
+        BlsScalar, JubJubCompressed, JubJubScalar, Proof,
+    };
+}
