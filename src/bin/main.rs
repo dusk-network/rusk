@@ -10,7 +10,9 @@ mod version;
 
 use clap::{App, Arg};
 use futures::stream::TryStreamExt;
+use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
+use rusk::services::pki::KeysServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
 use std::path::Path;
@@ -152,8 +154,13 @@ async fn startup_with_uds(
 
     let rusk = Rusk::default();
 
+    let echoer = EchoerServer::new(rusk);
+    let blindbid = BlindBidServiceServer::new(rusk);
+    let keys = KeysServer::new(rusk);
     Server::builder()
-        .add_service(EchoerServer::new(rusk))
+        .add_service(echoer)
+        .add_service(blindbid)
+        .add_service(keys)
         .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
         .await?;
 
@@ -170,9 +177,15 @@ async fn startup_with_tcp_ip(
     let addr: std::net::SocketAddr = full_address.parse()?;
     let rusk = Rusk::default();
 
+    let echoer = EchoerServer::new(rusk);
+    let blindbid = BlindBidServiceServer::new(rusk);
+    let keys = KeysServer::new(rusk);
+
     // Build the Server with the `Echo` service attached to it.
     Ok(Server::builder()
-        .add_service(EchoerServer::new(rusk))
+        .add_service(echoer)
+        .add_service(blindbid)
+        .add_service(keys)
         .serve(addr)
         .await?)
 }
