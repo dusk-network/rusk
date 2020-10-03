@@ -23,9 +23,6 @@ mod commitment_tests {
     use anyhow::{Error, Result};
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-    use dusk_plonk::jubjub::{
-        AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-    };
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::{Note, NoteType};
     use poseidon252::sponge::sponge::sponge_hash;

@@ -18,7 +18,6 @@ pub fn sk_knowledge(
     sk: AllocatedScalar,
     pk: PlonkPoint,
 ) {
-    
     let p1 = scalar_mul(composer, sk.var, GENERATOR_EXTENDED);
     composer.assert_equal_point(*p1.point(), pk);
 }

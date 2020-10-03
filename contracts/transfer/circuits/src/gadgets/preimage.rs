@@ -6,7 +6,7 @@
 
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
+use poseidon252::sponge::sponge::sponge_hash_gadget;
 
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
@@ -37,12 +37,11 @@ pub fn input_preimage(
 mod commitment_tests {
     use super::*;
     use anyhow::{Error, Result};
-    use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
+    use dusk_pki::{Ownable, PublicSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::{Note, NoteType};
-    use rand::Rng;
 
     #[test]
     fn preimage_gadget() -> Result<(), Error> {

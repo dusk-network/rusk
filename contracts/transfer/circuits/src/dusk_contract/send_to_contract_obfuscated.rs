@@ -24,9 +24,9 @@ pub struct SendToContractObfuscatedCircuit {
     pub commitment_crossover: Option<AffinePoint>,
     /// Value within commitment message
     pub commitment_message_value: Option<BlsScalar>,
-    /// Blinder within message commitment 
+    /// Blinder within message commitment
     pub commitment_message_blinder: Option<BlsScalar>,
-    /// Message commitment point 
+    /// Message commitment point
     pub commitment_message: Option<AffinePoint>,
     /// Returns circuit size
     pub size: usize,
@@ -69,7 +69,7 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
             AllocatedScalar::allocate(composer, commitment_message_value);
         let allocated_message_blinder =
             AllocatedScalar::allocate(composer, commitment_message_blinder);
-        
+
         // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
         let p1 = scalar_mul(
             composer,
@@ -124,11 +124,13 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         // Prove that the value of the opening of the commitment of the input is within range
         range(composer, allocated_message_value, 64);
 
-        composer.assert_equal(allocated_crossover_value.var, allocated_message_value.var);
+        composer.assert_equal(
+            allocated_crossover_value.var,
+            allocated_message_value.var,
+        );
 
         self.size = composer.circuit_size();
         Ok(pi)
-        
     }
 
     fn compile(
@@ -223,9 +225,7 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         verifier.verifier_key = Some(*verifier_key);
         verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
     }
-    
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -253,7 +253,9 @@ mod tests {
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: Some(commitment_crossover_value.into()),
-            commitment_crossover_blinder: Some(commitment_crossover_blinder.into()),
+            commitment_crossover_blinder: Some(
+                commitment_crossover_blinder.into(),
+            ),
             commitment_crossover: Some(commitment_crossover),
             commitment_message_value: Some(commitment_message_value.into()),
             commitment_message_blinder: Some(commitment_message_blinder.into()),
@@ -270,7 +272,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
-            PublicInput::AffinePoint(commitment_message, 0, 0)
+            PublicInput::AffinePoint(commitment_message, 0, 0),
         ];
 
         circuit.verify_proof(&pub_params, &vk, b"ObfuscatedSend", &proof, &pi)
@@ -296,7 +298,9 @@ mod tests {
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: Some(commitment_crossover_value.into()),
-            commitment_crossover_blinder: Some(commitment_crossover_blinder.into()),
+            commitment_crossover_blinder: Some(
+                commitment_crossover_blinder.into(),
+            ),
             commitment_crossover: Some(commitment_crossover),
             commitment_message_value: Some(commitment_message_value.into()),
             commitment_message_blinder: Some(commitment_message_blinder.into()),
@@ -313,7 +317,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
-            PublicInput::AffinePoint(commitment_message, 0, 0)
+            PublicInput::AffinePoint(commitment_message, 0, 0),
         ];
 
         assert!(circuit

@@ -31,11 +31,12 @@ mod commitment_tests {
     use dusk_plonk::proof_system::{Prover, Verifier};
     use kelvin::Blake2b;
     use phoenix_core::note::{Note, NoteType};
-    use poseidon252::{PoseidonTree, StorageScalar, PoseidonAnnotation};
+    use poseidon252::{PoseidonAnnotation, PoseidonTree, StorageScalar};
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
-        let mut tree = PoseidonTree::<StorageScalar, PoseidonAnnotation, Blake2b>::new(17);
+        let mut tree =
+            PoseidonTree::<StorageScalar, PoseidonAnnotation, Blake2b>::new(17);
 
         let a =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
