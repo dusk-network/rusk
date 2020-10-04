@@ -20,7 +20,8 @@ use tracing::{error, info};
 pub use super::rusk_proto::{
     keys_client::KeysClient,
     keys_server::{Keys, KeysServer},
-    GenerateKeysRequest, GenerateKeysResponse, PublicKey, StealthAddress,
+    GenerateKeysRequest, GenerateKeysResponse, JubJubCompressed, JubJubScalar,
+    PublicKey, SecretKey, StealthAddress,
 };
 
 #[tonic::async_trait]

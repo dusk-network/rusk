@@ -4,10 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
+use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_plonk::jubjub::{ExtendedPoint as JubJubExtended, Fr as JubJubScalar};
+use encoding::decode_request_param;
 use futures::stream::TryStreamExt;
-use rusk::services::pki::{GenerateKeysRequest, KeysClient, KeysServer};
+use rusk::services::pki::{
+    GenerateKeysRequest, JubJubCompressed, JubJubScalar as ProtoJubJubScalar,
+    KeysClient, KeysServer, SecretKey,
+};
 use rusk::Rusk;
 use std::convert::TryFrom;
 use std::path::Path;
@@ -74,8 +81,39 @@ mod pki_service_tests {
         assert!(response.vk.is_some());
         assert!(response.sk.is_some());
 
+        let sk = response.sk.unwrap();
+        // Make sure as well, that the keys are related.
+        let a = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
+            sk.a.as_ref().as_ref(),
+        )?;
+        let b = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
+            sk.b.as_ref().as_ref(),
+        )?;
+        let sk = SecretSpendKey::new(a, b);
+
+        let vk = response.vk.unwrap();
+        let a = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
+            vk.a.as_ref().as_ref(),
+        )?;
+        let b = decode_request_param::<&JubJubCompressed, JubJubExtended>(
+            vk.b_g.as_ref().as_ref(),
+        )?;
+        let vk = ViewKey::new(a, b);
+
+        let pk = response.pk.unwrap();
+        let a = decode_request_param::<&JubJubCompressed, JubJubExtended>(
+            pk.a_g.as_ref().as_ref(),
+        )?;
+        let b = decode_request_param::<&JubJubCompressed, JubJubExtended>(
+            pk.b_g.as_ref().as_ref(),
+        )?;
+        let psk = PublicSpendKey::new(a, b);
+
+        assert_eq!(sk.view_key(), vk);
+        assert_eq!(sk.public_key(), psk);
+
         // Stealth address generation
-        let request = tonic::Request::new(response.pk.unwrap());
+        let request = tonic::Request::new(pk);
 
         let response = client.generate_stealth_address(request).await?;
 
