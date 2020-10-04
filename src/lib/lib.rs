@@ -10,7 +10,7 @@ pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
 
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone)]
 pub struct Rusk {}
 
 impl Default for Rusk {

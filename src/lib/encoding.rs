@@ -5,10 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::services::rusk_proto;
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto};
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
-use dusk_plonk::jubjub::{AffinePoint as JubJubAffine, Scalar as JubJubScalar};
+use dusk_plonk::jubjub::{
+    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
+    Scalar as JubJubScalar,
+};
 use dusk_plonk::proof_system::Proof;
 use tonic::{Code, Status};
 
@@ -43,6 +46,18 @@ impl From<JubJubAffine> for rusk_proto::JubJubCompressed {
         rusk_proto::JubJubCompressed {
             data: Vec::from(&value.to_bytes()[..]),
         }
+    }
+}
+
+impl From<JubJubExtended> for rusk_proto::JubJubCompressed {
+    fn from(value: JubJubExtended) -> Self {
+        JubJubAffine::from(value).into()
+    }
+}
+
+impl From<&JubJubExtended> for rusk_proto::JubJubCompressed {
+    fn from(value: &JubJubExtended) -> Self {
+        (*value).into()
     }
 }
 
@@ -183,6 +198,17 @@ impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
                 "JubJubAffine was not cannonically encoded",
             ),
         )
+    }
+}
+
+impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubExtended {
+    type Error = Status;
+
+    fn try_from(
+        value: &rusk_proto::JubJubCompressed,
+    ) -> Result<JubJubExtended, Status> {
+        let a: JubJubAffine = value.try_into()?;
+        Ok(a.into())
     }
 }
 
