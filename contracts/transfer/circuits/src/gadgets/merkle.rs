@@ -16,9 +16,8 @@ pub fn merkle(
     note_hash: AllocatedScalar,
 ) -> Variable {
     let leaf = note_hash.var;
-    let root = branch.root;
 
-    merkle_opening_gadget(composer, branch, leaf, root)
+    merkle_opening_gadget(composer, branch, leaf)
 }
 
 #[cfg(test)]

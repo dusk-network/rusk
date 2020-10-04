@@ -18,37 +18,26 @@ use plonk_gadgets::AllocatedScalar;
 #[derive(Debug, Default, Clone)]
 pub struct SendToContractTransparentCircuit {
     /// Value within Pedersen commitment
-    pub commitment_value: Option<BlsScalar>,
+    pub commitment_value: BlsScalar,
     /// Blinder within Pedersen commitment
-    pub blinder: Option<BlsScalar>,
+    pub blinder: BlsScalar,
     /// Pedersen Commitment
-    pub commitment: Option<AffinePoint>,
+    pub commitment: AffinePoint,
     /// Value to be sent
-    pub value: Option<BlsScalar>,
+    pub value: BlsScalar,
     /// Returns circuit size
-    pub size: usize,
+    pub trim_size: usize,
     /// Gives Public Inputs
-    pub pi_constructor: Option<Vec<PublicInput>>,
+    pub pi_positions: Vec<PublicInput>,
 }
 
 impl Circuit<'_> for SendToContractTransparentCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<Vec<PublicInput>, Error> {
-        let mut pi: Vec<PublicInput> = vec![];
-        let commitment_crossover = self
-            .commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let commitment_crossover_value = self
-            .commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let commitment_crossover_blinder = self
-            .blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let value = self
-            .value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
+        let commitment_crossover = self.commitment;
+        let commitment_crossover_value = self.commitment_value;
+        let commitment_crossover_blinder = self.blinder;
+        let value = self.value;
+        let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
         let allocated_commitment_crossover_value =
@@ -84,7 +73,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         range(composer, allocated_commitment_crossover_value, 64);
 
         // Add PI constraint for the commitment computation check.
-        pi.push(PublicInput::BlsScalar(-value, composer.circuit_size()));
+        pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));
 
         // Constrains the crossover value to equal the PI value
         composer.constrain_to_constant(
@@ -93,101 +82,28 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
             -value,
         );
 
-        self.size = composer.circuit_size();
-        Ok(pi)
+        Ok(())
     }
 
-    fn compile(
-        &mut self,
-        pub_params: &PublicParameters,
-    ) -> Result<(ProverKey, VerifierKey, usize), Error> {
-        // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 10)?;
-        // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"TestCircuit");
-        // Set size & Pi builder
-        self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
-        prover.preprocess(&ck)?;
-
-        // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"TestCircuit");
-        self.gadget(verifier.mut_cs())?;
-        verifier.preprocess(&ck)?;
-        Ok((
-            prover
-                .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
-            verifier
-                .verifier_key
-                .expect("Unexpected error. Missing VerifierKey in compilation"),
-            self.circuit_size(),
-        ))
+    /// Returns the size at which we trim the `PublicParameters`
+    /// to compile the circuit or perform proving/verification
+    /// actions.
+    fn get_trim_size(&self) -> usize {
+        self.trim_size
     }
 
-    fn build_pi(&self, pub_inputs: &[PublicInput]) -> Result<Vec<BlsScalar>> {
-        let mut pi = vec![BlsScalar::zero(); self.size];
-        self.pi_constructor
-            .as_ref()
-            .ok_or(CircuitErrors::CircuitInputsNotFound)?
-            .iter()
-            .enumerate()
-            .for_each(|(idx, pi_constr)| {
-                match pi_constr {
-                    PublicInput::BlsScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::JubJubScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::AffinePoint(_, pos_x, pos_y) => {
-                        let (coord_x, coord_y) = (
-                            pub_inputs[idx].value()[0],
-                            pub_inputs[idx].value()[1],
-                        );
-                        pi[*pos_x] = -coord_x;
-                        pi[*pos_y] = -coord_y;
-                    }
-                };
-            });
-        Ok(pi)
+    fn set_trim_size(&mut self, size: usize) {
+        self.trim_size = size;
     }
 
-    fn circuit_size(&self) -> usize {
-        self.size
+    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
     }
 
-    fn gen_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        prover_key: &ProverKey,
-        transcript_initialisation: &'static [u8],
-    ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 10)?;
-        // New Prover instance
-        let mut prover = Prover::new(transcript_initialisation);
-        // Fill witnesses for Prover
-        self.gadget(prover.mut_cs())?;
-        // Add ProverKey to Prover
-        prover.prover_key = Some(prover_key.clone());
-        prover.prove(&ck)
-    }
-
-    fn verify_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        verifier_key: &VerifierKey,
-        transcript_initialisation: &'static [u8],
-        proof: &Proof,
-        pub_inputs: &[PublicInput],
-    ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 10)?;
-        // New Verifier instance
-        let mut verifier = Verifier::new(transcript_initialisation);
-        // Fill witnesses for Verifier
-        self.gadget(verifier.mut_cs())?;
-        verifier.verifier_key = Some(*verifier_key);
-        verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 }
 
@@ -212,23 +128,23 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
-            commitment_value: Some(commitment_crossover_value.into()),
-            blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_crossover_value.into(),
+            blinder: commitment_crossover_blinder.into(),
+            commitment: commitment_crossover,
+            value: value,
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         circuit.verify_proof(&pub_params, &vk, b"TransparentSend", &proof, &pi)
@@ -249,23 +165,23 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
-            commitment_value: Some(commitment_crossover_value.into()),
-            blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_crossover_value.into(),
+            blinder: commitment_crossover_blinder.into(),
+            commitment: commitment_crossover,
+            value: value,
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         assert!(circuit
@@ -289,23 +205,23 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
-            commitment_value: Some(commitment_crossover_value.into()),
-            blinder: Some(commitment_crossover_blinder.into()),
-            commitment: Some(commitment_crossover),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_crossover_value.into(),
+            blinder: commitment_crossover_blinder.into(),
+            commitment: commitment_crossover,
+            value: value,
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         assert!(circuit

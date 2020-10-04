@@ -8,15 +8,12 @@ use crate::gadgets::secret_key::sk_knowledge;
 use crate::gadgets::{
     merkle::merkle, nullifier::nullifier_gadget, range::range,
 };
-use anyhow::{Error, Result};
+use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_plonk::prelude::BlsScalar;
-use dusk_plonk::prelude::JubJubScalar;
-
 use dusk_plonk::prelude::*;
 use kelvin::Blake2b;
 use plonk_gadgets::AllocatedScalar;
@@ -30,83 +27,67 @@ pub struct ExecuteCircuit {
     /// Storage height of the tree
     // pub anchor: Option<BlsScalar>,
     /// Nullifier for note
-    pub nullifiers: Option<Vec<BlsScalar>>,
+    pub nullifiers: Vec<BlsScalar>,
     /// Note hashes
-    pub note_hashes: Option<Vec<BlsScalar>>,
+    pub note_hashes: Vec<BlsScalar>,
     /// Positions of notes
-    pub position_of_notes: Option<Vec<BlsScalar>>,
+    pub position_of_notes: Vec<BlsScalar>,
     /// Poseidon branches of the input notes
-    pub input_poseidon_branches: Option<Vec<PoseidonBranch>>,
+    pub input_poseidon_branches: Vec<PoseidonBranch>,
     /// Input notes secret keys
-    pub input_notes_sk: Option<Vec<JubJubScalar>>,
+    pub input_notes_sk: Vec<JubJubScalar>,
     /// Input notes public keys
-    pub input_notes_pk: Option<Vec<AffinePoint>>,
+    pub input_notes_pk: Vec<AffinePoint>,
     /// Input commitment points
-    pub input_commitments: Option<Vec<AffinePoint>>,
+    pub input_commitments: Vec<AffinePoint>,
     /// Input note values
-    pub input_values: Option<Vec<BlsScalar>>,
+    pub input_values: Vec<BlsScalar>,
     /// Input notes blinders
-    pub input_blinders: Option<Vec<BlsScalar>>,
+    pub input_blinders: Vec<BlsScalar>,
     /// Commitment point to crossover
-    pub crossover_commitment: Option<AffinePoint>,
+    pub crossover_commitment: AffinePoint,
     /// Crossover commitment value
-    pub crossover_commitment_value: Option<BlsScalar>,
+    pub crossover_commitment_value: BlsScalar,
     /// Crossover commitment blinder
-    pub crossover_commitment_blinder: Option<BlsScalar>,
+    pub crossover_commitment_blinder: BlsScalar,
     /// Obfuscated note commitments
-    pub obfuscated_commitment_points: Option<Vec<AffinePoint>>,
+    pub obfuscated_commitment_points: Vec<AffinePoint>,
     /// Obfuscated note values
-    pub obfuscated_note_values: Option<Vec<BlsScalar>>,
+    pub obfuscated_note_values: Vec<BlsScalar>,
     /// Obfuscated note blinder
-    pub obfuscated_note_blinders: Option<Vec<BlsScalar>>,
+    pub obfuscated_note_blinders: Vec<BlsScalar>,
     /// Fee
-    pub fee: Option<BlsScalar>,
+    pub fee: BlsScalar,
     /// Returns circuit size
-    pub size: usize,
+    pub trim_size: usize,
     /// Gives Public Inputs
-    pub pi_constructor: Option<Vec<PublicInput>>,
+    pub pi_positions: Vec<PublicInput>,
 }
 
 impl Circuit<'_> for ExecuteCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<Vec<PublicInput>, Error> {
-        let mut pi: Vec<PublicInput> = vec![];
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         // XXX: The anchors do not seem necessary, as they are contained within the poseidon branch
         // XXX: but until they are removed from the specs, they will remain commented here.
         // let anchor = self
         //     .anchor
         //     .as_ref()
-        //     .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let nullifiers = self
-            .nullifiers
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        //
+        let nullifiers = self.nullifiers.clone();
         let note_hashes: Vec<AllocatedScalar> = self
             .note_hashes
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|note_hash| AllocatedScalar::allocate(composer, *note_hash))
             .collect();
         let position_of_notes: Vec<AllocatedScalar> = self
             .position_of_notes
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|position_of_notes| {
                 AllocatedScalar::allocate(composer, *position_of_notes)
             })
             .collect();
-        let input_poseidon_branches = self
-            .input_poseidon_branches
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let input_poseidon_branches = self.input_poseidon_branches.clone();
         let input_notes_sk: Vec<AllocatedScalar> = self
             .input_notes_sk
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|input_notes_sk| {
                 AllocatedScalar::allocate(
@@ -117,8 +98,6 @@ impl Circuit<'_> for ExecuteCircuit {
             .collect();
         let input_notes_pk: Vec<PlonkPoint> = self
             .input_notes_pk
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|input_notes_pk| {
                 PlonkPoint::from_private_affine(composer, *input_notes_pk)
@@ -126,17 +105,13 @@ impl Circuit<'_> for ExecuteCircuit {
             .collect();
         let input_commitments: Vec<PlonkPoint> = self
             .input_commitments
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|input_commitments| {
                 PlonkPoint::from_private_affine(composer, *input_commitments)
             })
             .collect();
-        let input_note_values: Vec<AllocatedScalar> = self
+        let mut input_note_values: Vec<AllocatedScalar> = self
             .input_values
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|input_values| {
                 AllocatedScalar::allocate(composer, *input_values)
@@ -144,33 +119,18 @@ impl Circuit<'_> for ExecuteCircuit {
             .collect();
         let input_notes_blinders: Vec<AllocatedScalar> = self
             .input_blinders
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|input_blinders| {
                 AllocatedScalar::allocate(composer, *input_blinders)
             })
             .collect();
-        let crossover_commitment = self
-            .crossover_commitment
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let crossover_commitment_value = self
-            .crossover_commitment_value
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let crossover_commitment_blinder = self
-            .crossover_commitment_blinder
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let obfuscated_commitment_points = self
-            .obfuscated_commitment_points
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let obfuscated_note_values: Vec<AllocatedScalar> = self
+        let crossover_commitment = self.crossover_commitment;
+        let crossover_commitment_value = self.crossover_commitment_value;
+        let crossover_commitment_blinder = self.crossover_commitment_blinder;
+        let obfuscated_commitment_points =
+            self.obfuscated_commitment_points.clone();
+        let mut obfuscated_note_values: Vec<AllocatedScalar> = self
             .obfuscated_note_values
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|obfuscated_note_values| {
                 AllocatedScalar::allocate(composer, *obfuscated_note_values)
@@ -178,24 +138,23 @@ impl Circuit<'_> for ExecuteCircuit {
             .collect();
         let obfuscated_note_blinders: Vec<AllocatedScalar> = self
             .obfuscated_note_blinders
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?
             .iter()
             .map(|obfuscated_note_blinders| {
                 AllocatedScalar::allocate(composer, *obfuscated_note_blinders)
             })
             .collect();
-        let fee = self
-            .fee
-            .as_ref()
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+        let fee = self.fee;
+        let pi = self.get_mut_pi_positions();
 
         let crossover_value =
-            AllocatedScalar::allocate(composer, *crossover_commitment_value);
+            AllocatedScalar::allocate(composer, crossover_commitment_value);
         let crossover_blinder =
-            AllocatedScalar::allocate(composer, *crossover_commitment_blinder);
+            AllocatedScalar::allocate(composer, crossover_commitment_blinder);
 
         // 1. Prove the knowledge of the input Note paths to Note Tree, via root anchor
+
+        // Iterate over the branch of each note and push the roots into the
+        // vector of public inputs
         input_poseidon_branches
             .iter()
             .zip(note_hashes.iter())
@@ -203,20 +162,21 @@ impl Circuit<'_> for ExecuteCircuit {
                 let root = merkle(composer, branch.clone(), *note_hash);
 
                 pi.push(PublicInput::BlsScalar(
-                    -branch.root,
+                    branch.root(),
                     composer.circuit_size(),
                 ));
 
                 composer.constrain_to_constant(
                     root,
                     BlsScalar::zero(),
-                    -branch.root,
+                    -branch.root(),
                 );
             });
 
         // 2. Prove the knowledge of the pre-images of the input Notes
 
-        let mut i = 0;
+        // Iterate over the note elements and hash them together
+        // and constrain against the hash of the note.
         input_commitments
             .iter()
             .zip(position_of_notes.iter())
@@ -229,12 +189,14 @@ impl Circuit<'_> for ExecuteCircuit {
                 );
 
                 composer.assert_equal(computed_hash, note_hash.var);
-                println!("commitments - {} - {}", i, composer.circuit_size());
-                i += 1;
             });
 
         // 3. Prove the knowledge of the secret keys corresponding to the public keys in input Notes
+        // This is the notes sk_r and pk_r.
 
+        // Iterate over each element of the vector of secret keys
+        // and prove that they are relates to the the elements of
+        // a vector pf public keys.
         input_notes_sk.iter().zip(input_notes_pk.iter()).for_each(
             |(secret_key, public_key)| {
                 sk_knowledge(composer, *secret_key, *public_key);
@@ -253,7 +215,7 @@ impl Circuit<'_> for ExecuteCircuit {
 
                 // Push Public nullifiers
                 pi.push(PublicInput::BlsScalar(
-                    -nullifier,
+                    *nullifier,
                     composer.circuit_size(),
                 ));
 
@@ -298,13 +260,13 @@ impl Circuit<'_> for ExecuteCircuit {
 
         // Add PI constraint for the commitment computation check.
         pi.push(PublicInput::AffinePoint(
-            *crossover_commitment,
+            crossover_commitment,
             composer.circuit_size(),
             composer.circuit_size() + 1,
         ));
 
         // Assert computed commitment is equal to publicly inputted affine point
-        composer.assert_equal_public_point(commitment, *crossover_commitment);
+        composer.assert_equal_public_point(commitment, crossover_commitment);
 
         // 8. Prove that the value of the opening of the commitment of the Crossover is within range
         range(composer, crossover_value, 64);
@@ -340,128 +302,69 @@ impl Circuit<'_> for ExecuteCircuit {
         });
 
         // 11. Prove that input_note_value - output_note_value - crossover_value - fee = 0
-        let all_input_values: BlsScalar = input_note_values
-            .iter()
-            .fold(BlsScalar::zero(), |acc, value| acc + value.scalar);
-        let all_output_values: BlsScalar = obfuscated_note_values
-            .iter()
-            .fold(BlsScalar::zero(), |acc, value| acc + value.scalar)
-            + crossover_commitment_value;
-        let zero =
-            composer.add_witness_to_circuit_description(BlsScalar::zero());
-        pi.push(PublicInput::BlsScalar(*fee, composer.circuit_size()));
+        let initial = input_note_values[0].var;
+        let all_input_values = input_note_values.iter_mut().skip(1).fold(
+            initial,
+            |acc, variable| {
+                composer.add(
+                    (BlsScalar::one(), acc),
+                    (BlsScalar::one(), variable.var),
+                    BlsScalar::zero(),
+                    BlsScalar::zero(),
+                )
+            },
+        );
 
-        let all_output_values =
-            AllocatedScalar::allocate(composer, all_output_values);
-        let all_input_values =
-            AllocatedScalar::allocate(composer, all_input_values);
+        let initial = obfuscated_note_values[0].var;
+        let all_obfuscated_values = obfuscated_note_values
+            .iter_mut()
+            .skip(1)
+            .fold(initial, |acc, variable| {
+                composer.add(
+                    (BlsScalar::one(), acc),
+                    (BlsScalar::one(), variable.var),
+                    BlsScalar::zero(),
+                    BlsScalar::zero(),
+                )
+            });
 
+        pi.push(PublicInput::BlsScalar(fee, composer.circuit_size()));
+
+        let crossover_commitment_value =
+            AllocatedScalar::allocate(composer, crossover_commitment_value);
         composer.add_gate(
-            zero,
-            all_output_values.var,
-            all_input_values.var,
-            BlsScalar::zero(),
+            crossover_commitment_value.var,
+            all_obfuscated_values,
+            all_input_values,
+            BlsScalar::one(),
             BlsScalar::one(),
             -BlsScalar::one(),
             BlsScalar::zero(),
-            *fee,
+            fee,
         );
 
-        self.size = composer.circuit_size();
-        Ok(pi)
+        Ok(())
     }
 
-    fn compile(
-        &mut self,
-        pub_params: &PublicParameters,
-    ) -> Result<(ProverKey, VerifierKey, usize), Error> {
-        // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 17)?;
-        // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"TestCircuit");
-        // Set size & Pi builder
-        self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
-        prover.preprocess(&ck)?;
-
-        // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"TestCircuit");
-        self.gadget(verifier.mut_cs())?;
-        verifier.preprocess(&ck)?;
-        Ok((
-            prover
-                .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
-            verifier
-                .verifier_key
-                .expect("Unexpected error. Missing VerifierKey in compilation"),
-            self.circuit_size(),
-        ))
+    /// Returns the size at which we trim the `PublicParameters`
+    /// to compile the circuit or perform proving/verification
+    /// actions.
+    fn get_trim_size(&self) -> usize {
+        self.trim_size
     }
 
-    fn build_pi(&self, pub_inputs: &[PublicInput]) -> Result<Vec<BlsScalar>> {
-        let mut pi = vec![BlsScalar::zero(); self.size];
-        self.pi_constructor
-            .as_ref()
-            .ok_or(CircuitErrors::CircuitInputsNotFound)?
-            .iter()
-            .enumerate()
-            .for_each(|(idx, pi_constr)| {
-                match pi_constr {
-                    PublicInput::BlsScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::JubJubScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::AffinePoint(_, pos_x, pos_y) => {
-                        let (coord_x, coord_y) = (
-                            pub_inputs[idx].value()[0],
-                            pub_inputs[idx].value()[1],
-                        );
-                        pi[*pos_x] = -coord_x;
-                        pi[*pos_y] = -coord_y;
-                    }
-                };
-            });
-        Ok(pi)
+    fn set_trim_size(&mut self, size: usize) {
+        self.trim_size = size;
     }
 
-    fn circuit_size(&self) -> usize {
-        self.size
+    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
     }
 
-    fn gen_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        prover_key: &ProverKey,
-        transcript_initialisation: &'static [u8],
-    ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 17)?;
-        // New Prover instance
-        let mut prover = Prover::new(transcript_initialisation);
-        // Fill witnesses for Prover
-        self.gadget(prover.mut_cs())?;
-        // Add ProverKey to Prover
-        prover.prover_key = Some(prover_key.clone());
-        prover.prove(&ck)
-    }
-
-    fn verify_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        verifier_key: &VerifierKey,
-        transcript_initialisation: &'static [u8],
-        proof: &Proof,
-        pub_inputs: &[PublicInput],
-    ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 17)?;
-        // New Verifier instance
-        let mut verifier = Verifier::new(transcript_initialisation);
-        // Fill witnesses for Verifier
-        self.gadget(verifier.mut_cs())?;
-        verifier.verifier_key = Some(*verifier_key);
-        verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 }
 
@@ -488,7 +391,6 @@ mod tests {
     }
 
     // Function to build execute circuit from given circuit inputs
-
     fn build_execute_circuit(
         nullifiers: Vec<BlsScalar>,
         note_hashes: Vec<BlsScalar>,
@@ -509,63 +411,91 @@ mod tests {
     ) -> ExecuteCircuit {
         ExecuteCircuit {
             // anchor: None,
-            nullifiers: Some(nullifiers),
-            note_hashes: Some(note_hashes),
-            position_of_notes: Some(position_of_notes),
-            input_poseidon_branches: Some(input_poseidon_branches),
-            input_notes_sk: Some(input_notes_sk),
-            input_notes_pk: Some(input_notes_pk),
-            input_commitments: Some(input_commitments),
-            input_values: Some(input_values),
-            input_blinders: Some(input_blinders),
-            crossover_commitment: Some(crossover_commitment),
-            crossover_commitment_value: Some(crossover_commitment_value.into()),
-            crossover_commitment_blinder: Some(
-                crossover_commitment_blinder.into(),
-            ),
-            obfuscated_commitment_points: Some(obfuscated_commitment_points),
-            obfuscated_note_values: Some(obfuscated_note_values),
-            obfuscated_note_blinders: Some(obfuscated_note_blinders),
-            fee: Some(fee),
-            size: 0,
-            pi_constructor: None,
+            nullifiers: nullifiers,
+            note_hashes: note_hashes,
+            position_of_notes: position_of_notes,
+            input_poseidon_branches: input_poseidon_branches,
+            input_notes_sk: input_notes_sk,
+            input_notes_pk: input_notes_pk,
+            input_commitments: input_commitments,
+            input_values: input_values,
+            input_blinders: input_blinders,
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: obfuscated_commitment_points,
+            obfuscated_note_values: obfuscated_note_values,
+            obfuscated_note_blinders: obfuscated_note_blinders,
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
         }
     }
 
+    fn add_circuit_public_inputs(
+        circuit: &ExecuteCircuit,
+        crossover_commitment: AffinePoint,
+        fee: BlsScalar,
+        pi: &mut Vec<PublicInput>,
+    ) {
+        circuit.input_poseidon_branches.iter().for_each(|branch| {
+            pi.push(PublicInput::BlsScalar(branch.root(), 0));
+        });
+        circuit.nullifiers.iter().for_each(|nullifier| {
+            pi.push(PublicInput::BlsScalar(*nullifier, 0));
+        });
+
+        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
+
+        circuit.obfuscated_commitment_points.iter().for_each(
+            |commitment_point| {
+                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
+            },
+        );
+
+        pi.push(PublicInput::BlsScalar(-fee, 0));
+    }
+
+    fn circuit_note(
+        ssk: SecretSpendKey,
+        value: u64,
+        pos: u64,
+        input_note_blinder: JubJubScalar,
+    ) -> Note {
+        let r = JubJubScalar::from(150 as u64);
+        let nonce = JubJubScalar::from(350 as u64);
+        let psk = PublicSpendKey::from(&ssk);
+        let mut note = Note::deterministic(
+            NoteType::Transparent,
+            &r,
+            nonce,
+            &psk,
+            value,
+            input_note_blinder,
+        );
+        note.set_pos(pos);
+        note
+    }
+
     #[test]
+    // This test ensures the execute gadget is done correctly
+    // by creating two notes and setting their field values
+    // in the execute circuit
     fn test_execute() -> Result<()> {
         // Generate the (a,b) for the note
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         // Declare the secret spend key for the note
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        // Derive the public spend key from the note from the above secret spend key
-        let psk1 = PublicSpendKey::from(ssk1);
         // Assign the value of the note
         let value1 = 600u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
         // Create a deterministic note so that we can assign the blinder and not have inner randomness
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
         // Set the position of the note
-        let pos1 = note1.set_pos(0);
-        // Define the hash of the note, which is required for the preimage check
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        // Derive the one time secret key, sk_r, for the note
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
+        note1.set_pos(0);
         // Derive the one time public key, pk_r, for the note
-        let pk_r1 = note1.stealth_address().pk_r();
-        let nullifier1 = note1.gen_nullifier(&ssk1);
-        let input_note_value_one = JubJubScalar::from(600 as u64);
+        let input_note_value_one = JubJubScalar::from(value1);
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
             input_note_blinder_one,
@@ -576,34 +506,15 @@ mod tests {
         let secret4 = JubJubScalar::from(400 as u64);
         // Declare the secret spend key for the note
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        // Derive the public spend key from the note from the above secret spend key
-        let psk2 = PublicSpendKey::from(ssk2);
         // Assign the value of the first note as 400, which is incorrect
         let value2 = 200u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
         // Create a deterministic note so that we can assign the blinder and not have inner randomness
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
         // Set the position of the note
-        let pos2 = note2.set_pos(1);
-        // Define the hash of the note, which is required for the preimage check
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        // Derive the one time secret key, sk_r, for the note
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        // Derive the one time public key, pk_r, for the note
-        let pk_r2 = note2.stealth_address().pk_r();
-        // Assign the nullifier of the note
-        let nullifier2 = note2.gen_nullifier(&ssk2);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         // Generate the value commitment of the note from the value and blinder
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
@@ -644,15 +555,21 @@ mod tests {
         let fee = BlsScalar::from(200);
 
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
@@ -673,76 +590,36 @@ mod tests {
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         circuit.verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
     }
 
     #[test]
+    // This circuit sets the wrong value for the first note,
+    // which will fail the commitment check and create
+    // an incorrect note. This is preventing the user from
+    // falsifying their note value.
     fn test_wrong_note_value_one() -> Result<()> {
         // Generate the (a,b) for the note
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         // Declare the secret spend key for the note
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        // Derive the public spend key from the note from the above secret spend key
-        let psk1 = PublicSpendKey::from(ssk1);
         // Assign the value of the first note as 400, which is incorrect
-        let value1 = 400u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
+        let value1 = 500u64;
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
         // Create a deterministic note so that we can assign the blinder and not have inner randomness
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
         // Set the position of the note
-        let pos1 = note1.set_pos(0);
-        // Define the hash of the note, which is required for the preimage check
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        // Derive the one time secret key, sk_r, for the note
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
-        // Derive the one time public key, pk_r, for the note
-        let pk_r1 = note1.stealth_address().pk_r();
-        // Assign the nullifier of the note
-        let nullifier1 = note1.gen_nullifier(&ssk1);
-        let input_note_value_one = JubJubScalar::from(600 as u64);
+        note1.set_pos(0);
+
+        let input_note_value_one = JubJubScalar::from(value1);
         // Generate the value commitment of the note from the value and blinder
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
@@ -752,26 +629,12 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        let psk2 = PublicSpendKey::from(ssk2);
         let value2 = 200u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
-        let pos2 = note2.set_pos(1);
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        let pk_r2 = note2.stealth_address().pk_r();
-        let nullifier2 = note2.gen_nullifier(&ssk2);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
             input_note_blinder_two,
@@ -811,16 +674,23 @@ mod tests {
         let fee = BlsScalar::from(200);
 
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
+            // This is where the wrong values are inputted
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
             crossover_commitment,
@@ -841,36 +711,11 @@ mod tests {
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         assert!(circuit
             .verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
@@ -879,30 +724,20 @@ mod tests {
     }
 
     #[test]
+    // This circuit sets the wrong value for the second note,
+    // which will fail the commitment check and create
+    // an incorrect note. This is preventing the user from
+    // falsifying their note value.
     fn test_wrong_note_value_two() -> Result<()> {
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        let psk1 = PublicSpendKey::from(ssk1);
         let value1 = 600u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
-        let pos1 = note1.set_pos(0);
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
-        let pk_r1 = note1.stealth_address().pk_r();
-        let nullifier1 = note1.gen_nullifier(&ssk1);
-        let input_note_value_one = JubJubScalar::from(600 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+
+        let input_note_value_one = JubJubScalar::from(value1);
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
             input_note_blinder_one,
@@ -911,27 +746,13 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        let psk2 = PublicSpendKey::from(ssk2);
         // Assign an incorrect value to the note. This will fail in the commitment check and the balance check
         let value2 = 800u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
-        let pos2 = note2.set_pos(1);
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        let pk_r2 = note2.stealth_address().pk_r();
-        let nullifier2 = note2.gen_nullifier(&ssk2);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
             input_note_blinder_two,
@@ -966,16 +787,23 @@ mod tests {
         let fee = BlsScalar::from(200);
 
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
+            // This is where the incorrect values is assigned to the circuit
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
             crossover_commitment,
@@ -996,36 +824,11 @@ mod tests {
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         assert!(circuit
             .verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
@@ -1034,30 +837,18 @@ mod tests {
     }
 
     #[test]
+    // This circuit tests to see if a wrong nullifier
+    // leads to a failed circuit
     fn test_wrong_nullifier() -> Result<()> {
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        let psk1 = PublicSpendKey::from(ssk1);
         let value1 = 600u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
-        let pos1 = note1.set_pos(0);
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
-        let pk_r1 = note1.stealth_address().pk_r();
-        let nullifier1 = note1.gen_nullifier(&ssk1);
-        let input_note_value_one = JubJubScalar::from(600 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+
+        let input_note_value_one = JubJubScalar::from(value1);
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
             input_note_blinder_one,
@@ -1066,27 +857,12 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        let psk2 = PublicSpendKey::from(ssk2);
         let value2 = 200u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
-        let pos2 = note2.set_pos(1);
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        let pk_r2 = note2.stealth_address().pk_r();
-        // Derive the second nullifier incorrectly
-        let nullifier2 = note2.gen_nullifier(&ssk1);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
             input_note_blinder_two,
@@ -1122,15 +898,22 @@ mod tests {
 
         // The vector entries for the nulllifier are incorrect
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            // Here the second nullifier is declared incorrectly
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk1)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
@@ -1152,36 +935,11 @@ mod tests {
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         // Assert the test fails
         assert!(circuit
@@ -1191,30 +949,19 @@ mod tests {
     }
 
     #[test]
+    // The fee is a public input and is the value
+    // paid for processing a transaction. With an
+    // incorrect value for PI, the test should fail.
     fn test_wrong_fee() -> Result<()> {
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        let psk1 = PublicSpendKey::from(ssk1);
         let value1 = 600u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
-        let pos1 = note1.set_pos(0);
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
-        let pk_r1 = note1.stealth_address().pk_r();
-        let nullifier1 = note1.gen_nullifier(&ssk1);
-        let input_note_value_one = JubJubScalar::from(600 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+
+        let input_note_value_one = JubJubScalar::from(value1);
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
             input_note_blinder_one,
@@ -1223,26 +970,12 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        let psk2 = PublicSpendKey::from(ssk2);
         let value2 = 200u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
-        let pos2 = note2.set_pos(1);
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        let pk_r2 = note2.stealth_address().pk_r();
-        let nullifier2 = note2.gen_nullifier(&ssk2);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
             input_note_blinder_two,
@@ -1278,15 +1011,21 @@ mod tests {
         let fee = BlsScalar::from(20);
 
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
@@ -1302,42 +1041,18 @@ mod tests {
                 obfuscated_note_blinder_one.into(),
                 obfuscated_note_blinder_two.into(),
             ],
+            // Here the incorrect fee is added
             fee,
         );
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         // Assert that the proof will fail
         assert!(circuit
@@ -1347,29 +1062,20 @@ mod tests {
     }
 
     #[test]
+    // This test pushes the position of the note,
+    // after the note position is pushed to the tree.
+    // This should fail meaning the user cannot amend
+    // the position of the note in the tree after its
+    // set.
     fn test_pushing_note_to_wrong_position() -> Result<()> {
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
         let ssk1 = SecretSpendKey::new(secret1, secret2);
-        let psk1 = PublicSpendKey::from(ssk1);
         let value1 = 600u64;
-        let r1 = JubJubScalar::from(150 as u64);
-        let nonce1 = JubJubScalar::from(350 as u64);
-        let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        let mut note1 = Note::deterministic(
-            NoteType::Transparent,
-            &r1,
-            nonce1,
-            &psk1,
-            value1,
-            input_note_blinder_one,
-        );
-        let pos1 = note1.set_pos(0);
-        let note_hash1 = note1.hash();
-        let pos_a = note1.pos();
-        let sk_r1 = ssk1.sk_r(note1.stealth_address());
-        let pk_r1 = note1.stealth_address().pk_r();
-        let nullifier1 = note1.gen_nullifier(&ssk1);
+        let input_note_blinder_one = JubJubScalar::from(value1);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+
         let input_note_value_one = JubJubScalar::from(600 as u64);
         let input_commitment_one = compute_value_commitment(
             input_note_value_one,
@@ -1379,26 +1085,12 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        let psk2 = PublicSpendKey::from(ssk2);
         let value2 = 200u64;
-        let r2 = JubJubScalar::from(450 as u64);
-        let nonce2 = JubJubScalar::from(6750 as u64);
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        let mut note2 = Note::deterministic(
-            NoteType::Transparent,
-            &r2,
-            nonce2,
-            &psk2,
-            value2,
-            input_note_blinder_two,
-        );
-        let pos2 = note2.set_pos(1);
-        let note_hash2 = note2.hash();
-        let pos_b = note2.pos();
-        let sk_r2 = ssk2.sk_r(note2.stealth_address());
-        let pk_r2 = note2.stealth_address().pk_r().clone();
-        let nullifier2 = note2.gen_nullifier(&ssk2);
-        let input_note_value_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
         let input_commitment_two = compute_value_commitment(
             input_note_value_two,
             input_note_blinder_two,
@@ -1412,7 +1104,6 @@ mod tests {
         // After the note has been pushed to the tree, set the position elsewhere,
         // this will cause the the preimage and nullifier to fail
         note2.set_pos(5);
-        let pos_b = note2.pos();
 
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
@@ -1438,15 +1129,21 @@ mod tests {
         let fee = BlsScalar::from(200);
 
         let mut circuit = build_execute_circuit(
-            vec![nullifier1, nullifier2],
-            vec![note_hash1, note_hash2],
-            vec![BlsScalar::from(pos_a), BlsScalar::from(pos_b)],
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
             ],
-            vec![sk_r1, sk_r2],
-            vec![AffinePoint::from(pk_r1), AffinePoint::from(pk_r2)],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
             vec![input_commitment_one, input_commitment_two],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
@@ -1468,36 +1165,11 @@ mod tests {
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 18, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"Execute")?;
 
         let mut pi = vec![];
-        circuit
-            .input_poseidon_branches
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|branch| {
-                pi.push(PublicInput::BlsScalar(-branch.root, 0));
-            });
-        circuit
-            .nullifiers
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|nullifier| {
-                pi.push(PublicInput::BlsScalar(-nullifier, 0));
-            });
-        pi.push(PublicInput::AffinePoint(crossover_commitment, 0, 0));
-        circuit
-            .obfuscated_commitment_points
-            .as_ref()
-            .unwrap()
-            .iter()
-            .for_each(|commitment_point| {
-                pi.push(PublicInput::AffinePoint(*commitment_point, 0, 0));
-            });
-        pi.push(PublicInput::BlsScalar(fee, 0));
+        add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
         // Assert the proof will fail
         assert!(circuit

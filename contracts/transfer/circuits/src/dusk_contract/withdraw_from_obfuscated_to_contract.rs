@@ -18,62 +18,53 @@ use plonk_gadgets::AllocatedScalar;
 #[derive(Debug, Default, Clone)]
 pub struct WithdrawFromObfuscatedToContractCircuitOne {
     /// Spend Value within commitment
-    pub commitment_value: Option<BlsScalar>,
+    pub commitment_value: BlsScalar,
     /// Spend Blinder within commitment
-    pub commitment_blinder: Option<BlsScalar>,
+    pub commitment_blinder: BlsScalar,
     /// Spend Commitment
-    pub commitment_point: Option<AffinePoint>,
+    pub commitment_point: AffinePoint,
     /// Message Value within spend commitment
-    pub spend_commitment_value: Option<BlsScalar>,
+    pub spend_commitment_value: BlsScalar,
     /// Message Blinder within spend commitment
-    pub spend_commitment_blinder: Option<BlsScalar>,
+    pub spend_commitment_blinder: BlsScalar,
     /// Message spend Commitment
-    pub spend_commitment: Option<AffinePoint>,
+    pub spend_commitment: AffinePoint,
     /// Note Value within change commitment
-    pub change_commitment_value: Option<BlsScalar>,
+    pub change_commitment_value: BlsScalar,
     /// Note Blinder within change commitment
-    pub change_commitment_blinder: Option<BlsScalar>,
+    pub change_commitment_blinder: BlsScalar,
     /// Note change Commitment
-    pub change_commitment: Option<AffinePoint>,
+    pub change_commitment: AffinePoint,
     /// Returns circuit size
-    pub size: usize,
+    pub trim_size: usize,
     /// Gives Public Inputs
-    pub pi_constructor: Option<Vec<PublicInput>>,
+    pub pi_positions: Vec<PublicInput>,
 }
 
 impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
     fn gadget(
         &mut self,
         composer: &mut StandardComposer,
-    ) -> Result<Vec<PublicInput>, Error> {
-        let mut pi: Vec<PublicInput> = vec![];
+    ) -> Result<()> {
         let commitment_value = self
-            .commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_value;
         let commitment_blinder = self
-            .commitment_blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_blinder;
         let commitment_point = self
-            .commitment_point
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_point;
         let spend_commitment_value = self
-            .spend_commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .spend_commitment_value;
         let spend_commitment_blinder = self
-            .spend_commitment_blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .spend_commitment_blinder;
         let spend_commitment = self
-            .spend_commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .spend_commitment;
         let change_commitment_value = self
-            .change_commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment_value;
         let change_commitment_blinder = self
-            .change_commitment_blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment_blinder;
         let change_commitment = self
-            .change_commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment;
+        let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
         let commitment_value =
@@ -159,101 +150,29 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
             BlsScalar::zero(),
         );
 
-        self.size = composer.circuit_size();
-        Ok(pi)
+        
+        Ok(())
     }
 
-    fn compile(
-        &mut self,
-        pub_params: &PublicParameters,
-    ) -> Result<(ProverKey, VerifierKey, usize), Error> {
-        // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 12)?;
-        // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"TestCircuit");
-        // Set size & Pi builder
-        self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
-        prover.preprocess(&ck)?;
-
-        // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"TestCircuit");
-        self.gadget(verifier.mut_cs())?;
-        verifier.preprocess(&ck)?;
-        Ok((
-            prover
-                .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
-            verifier
-                .verifier_key
-                .expect("Unexpected error. Missing VerifierKey in compilation"),
-            self.circuit_size(),
-        ))
+    /// Returns the size at which we trim the `PublicParameters`
+    /// to compile the circuit or perform proving/verification
+    /// actions.
+    fn get_trim_size(&self) -> usize {
+        self.trim_size
     }
 
-    fn build_pi(&self, pub_inputs: &[PublicInput]) -> Result<Vec<BlsScalar>> {
-        let mut pi = vec![BlsScalar::zero(); self.size];
-        self.pi_constructor
-            .as_ref()
-            .ok_or(CircuitErrors::CircuitInputsNotFound)?
-            .iter()
-            .enumerate()
-            .for_each(|(idx, pi_constr)| {
-                match pi_constr {
-                    PublicInput::BlsScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::JubJubScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::AffinePoint(_, pos_x, pos_y) => {
-                        let (coord_x, coord_y) = (
-                            pub_inputs[idx].value()[0],
-                            pub_inputs[idx].value()[1],
-                        );
-                        pi[*pos_x] = -coord_x;
-                        pi[*pos_y] = -coord_y;
-                    }
-                };
-            });
-        Ok(pi)
+    fn set_trim_size(&mut self, size: usize) {
+        self.trim_size = size;
     }
 
-    fn circuit_size(&self) -> usize {
-        self.size
+    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
     }
 
-    fn gen_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        prover_key: &ProverKey,
-        transcript_initialisation: &'static [u8],
-    ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 12)?;
-        // New Prover instance
-        let mut prover = Prover::new(transcript_initialisation);
-        // Fill witnesses for Prover
-        self.gadget(prover.mut_cs())?;
-        // Add ProverKey to Prover
-        prover.prover_key = Some(prover_key.clone());
-        prover.prove(&ck)
-    }
-
-    fn verify_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        verifier_key: &VerifierKey,
-        transcript_initialisation: &'static [u8],
-        proof: &Proof,
-        pub_inputs: &[PublicInput],
-    ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 10)?;
-        // New Verifier instance
-        let mut verifier = Verifier::new(transcript_initialisation);
-        // Fill witnesses for Verifier
-        self.gadget(verifier.mut_cs())?;
-        verifier.verifier_key = Some(*verifier_key);
-        verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 }
 
@@ -263,52 +182,45 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
 #[derive(Debug, Default, Clone)]
 pub struct WithdrawFromObfuscatedToContractCircuitTwo {
     /// Spend Value within Pedersen commitment
-    pub commitment_value: Option<BlsScalar>,
+    pub commitment_value: BlsScalar,
     /// Spend Blinder within Pedersen commitment
-    pub commitment_blinder: Option<BlsScalar>,
+    pub commitment_blinder: BlsScalar,
     /// Spend Pedersen Commitment
-    pub commitment_point: Option<AffinePoint>,
+    pub commitment_point: AffinePoint,
     /// Note Value within Pedersen commitment
-    pub change_commitment_value: Option<BlsScalar>,
+    pub change_commitment_value: BlsScalar,
     /// Note Blinder within Pedersen commitment
-    pub change_commitment_blinder: Option<BlsScalar>,
+    pub change_commitment_blinder: BlsScalar,
     /// Note Pedersen Commitment
-    pub change_commitment: Option<AffinePoint>,
+    pub change_commitment: AffinePoint,
     /// Value to be sent
-    pub value: Option<BlsScalar>,
+    pub value: BlsScalar,
     // Returns circuit size
-    pub size: usize,
+    pub trim_size: usize,
     // Gives Public Inputs
-    pub pi_constructor: Option<Vec<PublicInput>>,
+    pub pi_positions: Vec<PublicInput>,
 }
 
 impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
     fn gadget(
         &mut self,
         composer: &mut StandardComposer,
-    ) -> Result<Vec<PublicInput>, Error> {
-        let mut pi: Vec<PublicInput> = vec![];
+    ) -> Result<()> {
         let commitment_value = self
-            .commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_value;
         let commitment_blinder = self
-            .commitment_blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_blinder;
         let commitment_point = self
-            .commitment_point
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .commitment_point;
         let change_commitment_value = self
-            .change_commitment_value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment_value;
         let change_commitment_blinder = self
-            .change_commitment_blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment_blinder;
         let change_commitment = self
-            .change_commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .change_commitment;
         let value = self
-            .value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .value;
+        let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
         let allocated_commitment_value =
@@ -379,7 +291,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
         range(composer, allocated_change_value, 64);
 
         // Add PI constraint for the sum check
-        pi.push(PublicInput::BlsScalar(-value, composer.circuit_size()));
+        pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));
 
         // Constrain: value - change value - commitment value = 0
         composer.poly_gate(
@@ -394,102 +306,29 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
             -value,
         );
 
-        // Set the final circuit size as a Circuit struct attribute.
-        self.size = composer.circuit_size();
-        Ok(pi)
+  
+        Ok(())
     }
 
-    fn compile(
-        &mut self,
-        pub_params: &PublicParameters,
-    ) -> Result<(ProverKey, VerifierKey, usize), Error> {
-        // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 12)?;
-        // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"TestCircuit");
-        // Set size & Pi builder
-        self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
-        prover.preprocess(&ck)?;
-
-        // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"TestCircuit");
-        self.gadget(verifier.mut_cs())?;
-        verifier.preprocess(&ck)?;
-        Ok((
-            prover
-                .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
-            verifier
-                .verifier_key
-                .expect("Unexpected error. Missing VerifierKey in compilation"),
-            self.circuit_size(),
-        ))
+        /// Returns the size at which we trim the `PublicParameters`
+    /// to compile the circuit or perform proving/verification
+    /// actions.
+    fn get_trim_size(&self) -> usize {
+        self.trim_size
     }
 
-    fn build_pi(&self, pub_inputs: &[PublicInput]) -> Result<Vec<BlsScalar>> {
-        let mut pi = vec![BlsScalar::zero(); self.size];
-        self.pi_constructor
-            .as_ref()
-            .ok_or(CircuitErrors::CircuitInputsNotFound)?
-            .iter()
-            .enumerate()
-            .for_each(|(idx, pi_constr)| {
-                match pi_constr {
-                    PublicInput::BlsScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::JubJubScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::AffinePoint(_, pos_x, pos_y) => {
-                        let (coord_x, coord_y) = (
-                            pub_inputs[idx].value()[0],
-                            pub_inputs[idx].value()[1],
-                        );
-                        pi[*pos_x] = -coord_x;
-                        pi[*pos_y] = -coord_y;
-                    }
-                };
-            });
-        Ok(pi)
+    fn set_trim_size(&mut self, size: usize) {
+        self.trim_size = size;
     }
 
-    fn circuit_size(&self) -> usize {
-        self.size
+    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
     }
 
-    fn gen_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        prover_key: &ProverKey,
-        transcript_initialisation: &'static [u8],
-    ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 12)?;
-        // New Prover instance
-        let mut prover = Prover::new(transcript_initialisation);
-        // Fill witnesses for Prover
-        self.gadget(prover.mut_cs())?;
-        // Add ProverKey to Prover
-        prover.prover_key = Some(prover_key.clone());
-        prover.prove(&ck)
-    }
-
-    fn verify_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        verifier_key: &VerifierKey,
-        transcript_initialisation: &'static [u8],
-        proof: &Proof,
-        pub_inputs: &[PublicInput],
-    ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 12)?;
-        // New Verifier instance
-        let mut verifier = Verifier::new(transcript_initialisation);
-        // Fill witnesses for Verifier
-        self.gadget(verifier.mut_cs())?;
-        verifier.verifier_key = Some(*verifier_key);
-        verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 }
 
@@ -527,23 +366,23 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = WithdrawFromObfuscatedToContractCircuitOne {
-            commitment_value: Some(commitment_value.into()),
-            commitment_blinder: Some(commitment_blinder.into()),
-            commitment_point: Some(commitment_point),
-            spend_commitment_value: Some(spend_value.into()),
-            spend_commitment_blinder: Some(spend_blinder.into()),
-            spend_commitment: Some(spend_commitment),
-            change_commitment_value: Some(change_value.into()),
-            change_commitment_blinder: Some(change_blinder.into()),
-            change_commitment: Some(change_commitment),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: commitment_point,
+            spend_commitment_value: spend_value.into(),
+            spend_commitment_blinder: spend_blinder.into(),
+            spend_commitment: spend_commitment,
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
+            change_commitment: change_commitment,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 13, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof =
             circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdrawOne")?;
 
@@ -591,23 +430,23 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = WithdrawFromObfuscatedToContractCircuitOne {
-            commitment_value: Some(commitment_value.into()),
-            commitment_blinder: Some(commitment_blinder.into()),
-            commitment_point: Some(commitment_point),
-            spend_commitment_value: Some(spend_value.into()),
-            spend_commitment_blinder: Some(spend_blinder.into()),
-            spend_commitment: Some(spend_commitment),
-            change_commitment_value: Some(change_value.into()),
-            change_commitment_blinder: Some(change_blinder.into()),
-            change_commitment: Some(change_commitment),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: commitment_point,
+            spend_commitment_value: spend_value.into(),
+            spend_commitment_blinder: spend_blinder.into(),
+            spend_commitment: spend_commitment,
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
+            change_commitment: change_commitment,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 13, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof =
             circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdrawOne")?;
 
@@ -652,28 +491,28 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = WithdrawFromObfuscatedToContractCircuitTwo {
-            commitment_value: Some(commitment_value.into()),
-            commitment_blinder: Some(commitment_blinder.into()),
-            commitment_point: Some(commitment_point),
-            change_commitment_value: Some(change_value.into()),
-            change_commitment_blinder: Some(change_blinder.into()),
-            change_commitment: Some(change_commitment),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: commitment_point,
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
+            change_commitment: change_commitment,
+            value: value,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 13, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof =
             circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdrawTwo")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_point, 0, 0),
             PublicInput::AffinePoint(change_commitment, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         circuit.verify_proof(
@@ -709,28 +548,28 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = WithdrawFromObfuscatedToContractCircuitTwo {
-            commitment_value: Some(commitment_value.into()),
-            commitment_blinder: Some(commitment_blinder.into()),
-            commitment_point: Some(commitment_point),
-            change_commitment_value: Some(change_value.into()),
-            change_commitment_blinder: Some(change_blinder.into()),
-            change_commitment: Some(change_commitment),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: commitment_point,
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
+            change_commitment: change_commitment,
+            value: value,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 13, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof =
             circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdrawTwo")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_point, 0, 0),
             PublicInput::AffinePoint(change_commitment, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         assert!(circuit
@@ -768,28 +607,28 @@ mod tests {
 
         // Build circuit structure
         let mut circuit = WithdrawFromObfuscatedToContractCircuitTwo {
-            commitment_value: Some(commitment_value.into()),
-            commitment_blinder: Some(commitment_blinder.into()),
-            commitment_point: Some(commitment_point),
-            change_commitment_value: Some(change_value.into()),
-            change_commitment_blinder: Some(change_blinder.into()),
-            change_commitment: Some(change_commitment),
-            value: Some(value),
-            size: 0,
-            pi_constructor: None,
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: commitment_point,
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
+            change_commitment: change_commitment,
+            value: value,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 13, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof =
             circuit.gen_proof(&pub_params, &pk, b"ObfuscatedWithdrawTwo")?;
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_point, 0, 0),
             PublicInput::AffinePoint(change_commitment, 0, 0),
-            PublicInput::BlsScalar(-value, 0),
+            PublicInput::BlsScalar(value, 0),
         ];
 
         assert!(circuit

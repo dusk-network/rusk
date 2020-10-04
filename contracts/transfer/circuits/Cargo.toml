@@ -7,11 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" , tag = "v0.2.1-alpha"}
-poseidon252 = { git = "https://github.com/dusk-network/Poseidon252" , tag = "v0.8.1"}
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-core" , branch = "luke_test" }
+poseidon252 = { git = "https://github.com/dusk-network/Poseidon252" , tag = "v0.10.0"}
 rand = "0.7"
 kelvin = "0.19"
-plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.3.0"}
-dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", tag = "v0.2.0" }
+plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.4.0"}
+dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", branch = "luke_tests" }
 anyhow = "1.0"
-dusk-plonk = {version = "0.2.11", features = ["trace-print"]}
+dusk-plonk = {version = "0.3.1", features = ["trace-print"]}
