@@ -9,7 +9,7 @@ pub mod echoer;
 pub mod pki;
 use tonic::{Request, Response, Status};
 
-pub(crate) mod rusk_proto {
+pub mod rusk_proto {
     tonic::include_proto!("rusk");
 }
 

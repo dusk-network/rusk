@@ -2,7 +2,9 @@ syntax = "proto3";
 package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
-import "basic_fields.proto";
+message BN256Point {
+    bytes data = 1;
+}
 
 message GetBalanceResponse {
     fixed64 balance = 1;
@@ -14,7 +16,7 @@ message GetWithdrawalTimeResponse {
 
 service Reward {
     // Get reward balance of the given provisioner.
-    rpc GetBalance(BN256Point) returns (GetBalanceResponse) {}
+    rpc GetBalance(BN256Point) returns (GetBalanceResponse) {} 
     // Get height of the last reward withdrawal of a given provisioner.
     rpc GetWithdrawalTime(BN256Point) returns (GetWithdrawalTimeResponse) {}
 }

@@ -2,28 +2,27 @@ syntax = "proto3";
 package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
-import "basic_fields.proto";
-import "keys.proto";
 import "transaction.proto";
+import "keys.proto";
 
 // Bid representation
 message Bid {
-    PoseidonCipher encrypted_data = 1;
-    BlsScalar hashed_secret = 2;
-    BlsScalar nonce = 3;
-    StealthAddress pk_r = 4;
-    JubJubCompressed commitment = 5;
-    BlsScalar elegibility_ts = 6;
-    BlsScalar expiration_ts = 7;
+    bytes encrypted_data = 1;
+    bytes hashed_secret = 2; // BlsScalar
+    bytes nonce = 3; // BlsScalar
+    StealthAddress stealth_address = 4;
+    bytes commitment = 5; // JubJubCompressed
+    bytes elegibility = 6; // BlsScalar
+    bytes expiration = 7; // BlsScalar
 }
 
 // Used to Request the creation of a Bid
 message BidTransactionRequest {
-    BlsScalar k = 1;
+    bytes k = 1; // BlsScalar
     uint64 value = 2;
-    JubJubCompressed secret = 3;
-    StealthAddress pk_r = 4;
-    BlsScalar seed = 5;
+    bytes secret = 3; // JubJubCompressed
+    StealthAddress stealth_address = 4;
+    bytes seed = 5; // BlsScalar
     fixed64 latest_consensus_round = 6;
     fixed64 latest_consensus_step = 7;
     fixed64 gas_limit = 8;
@@ -36,12 +35,12 @@ message BidTransaction {
 }
 
 message FindBidRequest {
-    StealthAddress addr = 1;
+    StealthAddress stealth_address = 1;
 }
 
 message BidList {
     repeated Bid bid_list = 1;
-    repeated BlsScalar bid_hash_list = 2;
+    repeated bytes bid_hash_list = 2; // BlsScalar
 }
 
 service BidService {

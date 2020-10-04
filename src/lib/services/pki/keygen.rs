@@ -8,7 +8,7 @@
 
 use super::rusk_proto;
 use super::ServiceRequestHandler;
-use crate::encoding::encode_request_param;
+use crate::encoding::encode_optional_request_param;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use rand::thread_rng;
 use tonic::{Request, Response, Status};
@@ -41,9 +41,9 @@ where
         let vk = ViewKey::from(sk);
         // Encode parameters and send the response.
         Ok(Response::new(GenerateKeysResponse {
-            sk: encode_request_param(sk),
-            vk: encode_request_param(vk),
-            pk: encode_request_param(pk),
+            sk: encode_optional_request_param(sk),
+            vk: encode_optional_request_param(vk),
+            pk: encode_optional_request_param(pk),
         }))
     }
 }
