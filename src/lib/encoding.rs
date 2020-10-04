@@ -200,23 +200,23 @@ impl TryFrom<&TransactionPayload> for rusk_proto::TransactionPayload {
 
     fn try_from(value: &TransactionPayload) -> Result<Self, Status> {
         Ok(rusk_proto::TransactionPayload {
-            anchor: Some(value.anchor().into()),
+            anchor: Some(value.anchor.into()),
             nullifier: value
-                .nullifiers()
+                .nullifiers
                 .to_vec()
                 .into_iter()
                 .map(|n| n.into())
                 .collect(),
-            crossover: value.crossover().map(|c| c.into()),
+            crossover: value.crossover.map(|c| c.into()),
             notes: value
-                .notes()
+                .notes
                 .to_vec()
                 .into_iter()
                 .map(|mut n| (&mut n).try_into())
                 .collect::<Result<Vec<rusk_proto::Note>, _>>()?,
-            fee: Some(value.fee().into()),
-            spending_proof: Some(value.spending_proof().into()),
-            call_data: value.call_data().to_vec(),
+            fee: Some(value.fee.into()),
+            spending_proof: Some((&value.spending_proof).into()),
+            call_data: value.call_data.to_vec(),
         })
     }
 }
@@ -234,9 +234,9 @@ impl TryFrom<Transaction> for rusk_proto::Transaction {
 
     fn try_from(value: Transaction) -> Result<Self, Status> {
         Ok(rusk_proto::Transaction {
-            version: value.version().into(),
-            r#type: value.tx_type().into(),
-            tx_payload: Some(value.payload().try_into()?),
+            version: value.version.into(),
+            r#type: value.tx_type.into(),
+            tx_payload: Some(value.payload.try_into()?),
         })
     }
 }
@@ -561,41 +561,41 @@ impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
             crossover = Some(value.crossover.as_ref().unwrap().try_into()?);
         }
 
-        Ok(TransactionPayload::new(
-            value
+        Ok(TransactionPayload {
+            anchor: value
                 .anchor
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No anchor present in transaction payload",
                 ))?
                 .try_into()?,
-            value
+            nullifiers: value
                 .nullifier
                 .iter()
                 .map(|n| n.try_into())
                 .collect::<Result<Vec<BlsScalar>, _>>()?,
             crossover,
-            value
+            notes: value
                 .notes
                 .iter()
                 .map(|n| n.try_into())
                 .collect::<Result<Vec<Note>, _>>()?,
-            value
+            fee: value
                 .fee
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No fee present in transaction payload",
                 ))?
                 .try_into()?,
-            value
+            spending_proof: value
                 .spending_proof
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No proof present in transaction payload",
                 ))?
                 .try_into()?,
-            value.call_data.clone(),
-        ))
+            call_data: value.call_data.clone(),
+        })
     }
 }
 
@@ -615,22 +615,22 @@ impl TryFrom<&rusk_proto::Transaction> for Transaction {
     fn try_from(
         value: &rusk_proto::Transaction,
     ) -> Result<Transaction, Status> {
-        Ok(Transaction::new(
-            value
+        Ok(Transaction {
+            version: value
                 .version
                 .try_into()
                 .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
-            value
+            tx_type: value
                 .r#type
                 .try_into()
                 .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
-            value
+            payload: value
                 .tx_payload
                 .as_ref()
                 .ok_or(Status::failed_precondition(
                     "No transaction payload present",
                 ))?
                 .try_into()?,
-        ))
+        })
     }
 }
