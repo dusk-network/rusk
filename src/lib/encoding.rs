@@ -6,7 +6,7 @@
 
 use super::services::rusk_proto;
 use crate::transaction::{Transaction, TransactionPayload};
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto};
 use dusk_pki::{
     Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
@@ -18,7 +18,6 @@ use dusk_plonk::jubjub::{
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use poseidon252::cipher::{PoseidonCipher, CIPHER_BYTES_SIZE};
-use std::convert::TryInto;
 use std::io::{Read, Write};
 use tonic::{Code, Status};
 

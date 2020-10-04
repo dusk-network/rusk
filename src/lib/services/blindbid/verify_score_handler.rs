@@ -15,7 +15,7 @@ use dusk_blindbid::BlindBidCircuit;
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
-use tracing::warn;
+
 /// Implementation of the VerifyScore Handler.
 pub struct VerifyScoreHandler<'a> {
     request: &'a Request<VerifyScoreRequest>,
@@ -72,10 +72,7 @@ where
                 score,
             ) {
                 Ok(_) => true,
-                Err(e) => {
-                    warn!("{:?}", e);
-                    false
-                }
+                Err(_) => false,
             },
         }))
     }
@@ -105,8 +102,6 @@ fn verify_blindbid_proof(
     prover_id: BlsScalar,
     score: BlsScalar,
 ) -> Result<()> {
-    // Read PublicParameters
-    let pub_params = read_pub_params()?;
     // Read VerifierKey of the circuit.
     let verifier_key = read_blindcid_circuit_vk()?;
     // Build PI array (safe to unwrap since we just created the circuit
@@ -133,5 +128,11 @@ fn verify_blindbid_proof(
         PublicInput::BlsScalar(-score, 0),
     ];
     // Verify the proof.
-    circuit.verify_proof(&pub_params, &verifier_key, b"BlindBid", proof, &pi)
+    circuit.verify_proof(
+        &crate::PUB_PARAMS,
+        &verifier_key,
+        b"BlindBid",
+        proof,
+        &pi,
+    )
 }
