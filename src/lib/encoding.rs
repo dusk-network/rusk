@@ -4,96 +4,56 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![allow(non_snake_case)]
 use super::services::rusk_proto;
-use core::convert::{TryFrom, TryInto};
-use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
-use dusk_plonk::jubjub::{
-    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
-    Scalar as JubJubScalar,
+use core::convert::TryFrom;
+use dusk_pki::{
+    jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
-use dusk_plonk::proof_system::Proof;
-use tonic::{Code, Status};
+use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::prelude::*;
+use tonic::Status;
 
-/// Generic function used to retrieve parameters that are optional from a
-/// GRPC request.
-pub(crate) fn decode_request_param<T, U>(
-    possible_param: Option<&T>,
-) -> Result<U, Status>
-where
-    T: Clone,
-    U: TryFrom<T, Error = Status>,
-{
-    Ok(U::try_from(
-        possible_param
-            .ok_or(Status::new(Code::Unknown, "Missing required fields."))?
-            .clone(),
-    )?)
+/// Wrapper over `jubjub_decode` fn
+pub(crate) fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
+    jubjub_decode::<JubJubAffine>(bytes).map_err(|_| {
+        Status::failed_precondition("Point was improperly encoded")
+    })
 }
 
-/// Generic function used to encore parameters that are optional in a
-/// GRPC response.
-pub(crate) fn encode_request_param<T, U>(param: T) -> Option<U>
-where
-    U: From<T>,
-{
-    Some(U::from(param))
+/// Wrapper over `jubjub_decode` fn
+pub(crate) fn decode_jubjub_scalar(
+    bytes: &[u8],
+) -> Result<JubJubScalar, Status> {
+    jubjub_decode::<JubJubScalar>(bytes).map_err(|_| {
+        Status::failed_precondition("JubjubScalar was improperly encoded")
+    })
 }
 
-// ---- Basic Types -> Protobuf types ---- //
-impl From<JubJubAffine> for rusk_proto::JubJubCompressed {
-    fn from(value: JubJubAffine) -> Self {
-        rusk_proto::JubJubCompressed {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
+/// Decoder fn used for `BlsScalar`
+pub(crate) fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
+    if bytes.len() < 32 {
+        Err(Status::failed_precondition(
+            "Not enough bytes to decode a BlsScalar",
+        ))
+    } else {
+        let bytes = <&[u8; 32]>::try_from(bytes).map_err(|_| {
+            Status::failed_precondition(
+                "Expecting 32 bytes to decode a BlsScalar",
+            )
+        })?;
 
-impl From<JubJubExtended> for rusk_proto::JubJubCompressed {
-    fn from(value: JubJubExtended) -> Self {
-        JubJubAffine::from(value).into()
-    }
-}
-
-impl From<&JubJubExtended> for rusk_proto::JubJubCompressed {
-    fn from(value: &JubJubExtended) -> Self {
-        (*value).into()
-    }
-}
-
-impl From<&JubJubScalar> for rusk_proto::JubJubScalar {
-    fn from(value: &JubJubScalar) -> Self {
-        rusk_proto::JubJubScalar {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
-
-impl From<JubJubScalar> for rusk_proto::JubJubScalar {
-    fn from(value: JubJubScalar) -> Self {
-        (&value).into()
-    }
-}
-
-impl From<&BlsScalar> for rusk_proto::BlsScalar {
-    fn from(value: &BlsScalar) -> Self {
-        rusk_proto::BlsScalar {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
-
-impl From<BlsScalar> for rusk_proto::BlsScalar {
-    fn from(value: BlsScalar) -> Self {
-        (&value).into()
+        Option::from(BlsScalar::from_bytes(&bytes)).ok_or_else(|| {
+            Status::failed_precondition("Point was improperly encoded")
+        })
     }
 }
 
 impl From<PublicSpendKey> for rusk_proto::PublicKey {
     fn from(value: PublicSpendKey) -> Self {
         rusk_proto::PublicKey {
-            a_g: Some(JubJubAffine::from(value.A()).into()),
-            b_g: Some(JubJubAffine::from(value.B()).into()),
+            a_g: JubJubAffine::from(value.A()).to_bytes().to_vec(),
+            b_g: JubJubAffine::from(value.B()).to_bytes().to_vec(),
         }
     }
 }
@@ -101,8 +61,8 @@ impl From<PublicSpendKey> for rusk_proto::PublicKey {
 impl From<SecretSpendKey> for rusk_proto::SecretKey {
     fn from(value: SecretSpendKey) -> Self {
         rusk_proto::SecretKey {
-            a: Some(value.a().into()),
-            b: Some(value.b().into()),
+            a: value.a().to_bytes().to_vec(),
+            b: value.b().to_bytes().to_vec(),
         }
     }
 }
@@ -110,8 +70,8 @@ impl From<SecretSpendKey> for rusk_proto::SecretKey {
 impl From<ViewKey> for rusk_proto::ViewKey {
     fn from(value: ViewKey) -> Self {
         rusk_proto::ViewKey {
-            a: Some(value.a().into()),
-            b_g: Some(JubJubAffine::from(value.B()).into()),
+            a: value.a().to_bytes().to_vec(),
+            b_g: JubJubAffine::from(value.B()).to_bytes().to_vec(),
         }
     }
 }
@@ -119,119 +79,40 @@ impl From<ViewKey> for rusk_proto::ViewKey {
 impl From<StealthAddress> for rusk_proto::StealthAddress {
     fn from(value: StealthAddress) -> Self {
         rusk_proto::StealthAddress {
-            r_g: Some(JubJubAffine::from(value.R()).into()),
-            pk_r: Some(JubJubAffine::from(value.pk_r()).into()),
+            r_g: JubJubAffine::from(value.R()).to_bytes().to_vec(),
+            pk_r: JubJubAffine::from(value.pk_r()).to_bytes().to_vec(),
         }
     }
 }
 
-impl From<&Proof> for rusk_proto::Proof {
-    fn from(value: &Proof) -> Self {
-        rusk_proto::Proof {
-            data: value.to_bytes().to_vec(),
-        }
+impl From<&StealthAddress> for rusk_proto::StealthAddress {
+    fn from(value: &StealthAddress) -> Self {
+        (*value).into()
     }
 }
 
 // ----- Protobuf types -> Basic types ----- //
-impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::BlsScalar) -> Result<BlsScalar, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "BlsScalar recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(BlsScalar::from_bytes(&bytes)).ok_or(
-            Status::failed_precondition(
-                "BlsScalar was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubScalar> for JubJubScalar {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubScalar,
-    ) -> Result<JubJubScalar, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "JubJubScalar recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(JubJubScalar::from_bytes(&bytes)).ok_or(
-            Status::failed_precondition(
-                "JubJubScalar was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubCompressed,
-    ) -> Result<JubJubAffine, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "JubJubAffine recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(JubJubAffine::from_bytes(bytes)).ok_or(
-            Status::failed_precondition(
-                "JubJubAffine was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubExtended {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubCompressed,
-    ) -> Result<JubJubExtended, Status> {
-        let a: JubJubAffine = value.try_into()?;
-        Ok(a.into())
-    }
-}
-
 impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
     type Error = Status;
 
     fn try_from(
         value: &rusk_proto::PublicKey,
     ) -> Result<PublicSpendKey, Status> {
-        Ok(
-            PublicSpendKey::new(
-                decode_request_param::<
-                    &rusk_proto::JubJubCompressed,
-                    JubJubAffine,
-                >(value.a_g.as_ref().as_ref())?
-                .into(),
-                decode_request_param::<
-                    &rusk_proto::JubJubCompressed,
-                    JubJubAffine,
-                >(value.a_g.as_ref().as_ref())?
-                .into(),
-            ),
-        )
+        Ok(PublicSpendKey::new(
+            decode_affine(&value.a_g)?.into(),
+            decode_affine(&value.b_g)?.into(),
+        ))
+    }
+}
+
+impl TryFrom<&rusk_proto::ViewKey> for ViewKey {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::ViewKey) -> Result<ViewKey, Status> {
+        Ok(ViewKey::new(
+            decode_jubjub_scalar(&value.a)?,
+            decode_affine(&value.b_g)?.into(),
+        ))
     }
 }
 
@@ -241,38 +122,24 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
     fn try_from(
         value: &rusk_proto::StealthAddress,
     ) -> Result<StealthAddress, Status> {
-        let mut bytes = [0u8; 64];
         // Ensure that both fields are not empty
-        let r_g = value.r_g.as_ref().ok_or(Status::failed_precondition(
-            "StealthAddress was missing r_g field",
-        ))?;
-        let pk_r = value.pk_r.as_ref().ok_or(Status::failed_precondition(
-            "StealthAddress was missing pk_r field",
-        ))?;
+        let r_g = &value.r_g;
+        let pk_r = &value.pk_r;
 
         // Ensure that both fields are 32 bytes long, so we can
         // safely copy from the slice.
-        if r_g.data.len() != 32 || pk_r.data.len() != 32 {
+        if r_g.len() != 32 || pk_r.len() != 32 {
             return Err(Status::failed_precondition(
                 "StealthAddress fields are of improper length",
             ));
         };
 
-        bytes[..32].copy_from_slice(&r_g.data[..]);
-        bytes[32..].copy_from_slice(&pk_r.data[..]);
+        let mut bytes = [0u8; 64];
+        bytes[..32].copy_from_slice(&r_g[..]);
+        bytes[32..].copy_from_slice(&pk_r[..]);
 
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
-        })?)
-    }
-}
-
-impl TryFrom<&rusk_proto::Proof> for Proof {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::Proof) -> Result<Proof, Status> {
-        Ok(Proof::from_bytes(&value.data).map_err(|_| {
-            Status::failed_precondition("Could not decode proof")
         })?)
     }
 }

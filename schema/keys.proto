@@ -2,26 +2,24 @@ syntax = "proto3";
 package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
-import "basic_fields.proto";
-
 message SecretKey {
-    JubJubScalar a = 1;
-    JubJubScalar b = 2;
+    bytes a = 1; // JubJubScalar
+    bytes b = 2; // JubJubScalar
 }
 
 message ViewKey {
-    JubJubScalar a = 1;
-    JubJubCompressed b_g = 2;
+    bytes a = 1; // JubJubScalar
+    bytes b_g = 2; // JubJubCompressed, B = b * G
 }
 
 message PublicKey {
-    JubJubCompressed a_g = 1;
-    JubJubCompressed b_g = 2;
+    bytes a_g = 1; // JubJubCompressed, A = a * G
+    bytes b_g = 2; // JubJubCompressed, B = b * G
 }
 
 message StealthAddress {
-    JubJubCompressed r_g = 1;
-    JubJubCompressed pk_r = 2;
+    bytes r_g = 1; // JubJubCompressed, R = r * G
+    bytes pk_r = 2; // JubJubCompressed
 }
 
 message GenerateKeysRequest {}

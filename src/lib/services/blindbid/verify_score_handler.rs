@@ -8,7 +8,7 @@ use super::super::ServiceRequestHandler;
 use super::get_bid_storage_fields;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
 use crate::circuit_helpers::*;
-use crate::encoding::decode_request_param;
+use crate::encoding::decode_bls_scalar;
 use anyhow::Result;
 use dusk_blindbid::score_gen::Score;
 use dusk_blindbid::BlindBidCircuit;
@@ -83,14 +83,11 @@ where
 fn parse_score_verify_params(
     request: &Request<VerifyScoreRequest>,
 ) -> Result<(Proof, BlsScalar, BlsScalar, BlsScalar), Status> {
-    let proof: Proof =
-        decode_request_param(request.get_ref().proof.as_ref().as_ref())?;
-    let score: BlsScalar =
-        decode_request_param(request.get_ref().score.as_ref().as_ref())?;
-    let seed: BlsScalar =
-        decode_request_param(request.get_ref().seed.as_ref().as_ref())?;
-    let prover_id: BlsScalar =
-        decode_request_param(request.get_ref().prover_id.as_ref().as_ref())?;
+    let proof = Proof::from_bytes(&request.get_ref().proof[..])
+        .map_err(|e| Status::failed_precondition(format!("{:?}", e)))?;
+    let score = decode_bls_scalar(&request.get_ref().score[..])?;
+    let seed = decode_bls_scalar(&request.get_ref().seed[..])?;
+    let prover_id = decode_bls_scalar(&request.get_ref().prover_id[..])?;
     Ok((proof, score, seed, prover_id))
 }
 
