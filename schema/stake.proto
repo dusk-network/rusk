@@ -3,7 +3,6 @@ package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "transaction.proto";
-import "basic_fields.proto";
 
 message Stake {
     fixed64 amount = 1;
@@ -13,13 +12,13 @@ message Stake {
 
 message StakeTransactionRequest {
     fixed64 value = 1;
-    BN256Point public_key_bls = 2;
+    bytes public_key_bls = 2; // BN256Point
     fixed64 gas_limit = 3;
     fixed64 gas_price = 4;
 }
 
 message FindStakeRequest {
-    BN256Point pk = 1;
+    bytes pk = 1; // BN256Point
 }
 
 message FindStakeResponse {

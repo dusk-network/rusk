@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![allow(non_snake_case)]
 use super::services::rusk_proto;
+<<<<<<< HEAD
 use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::{TryFrom, TryInto};
 use dusk_pki::{
@@ -88,18 +90,56 @@ impl From<&BlsScalar> for rusk_proto::BlsScalar {
         }
     }
 }
+=======
+use core::convert::TryFrom;
+use dusk_pki::{
+    jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
+};
+use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::prelude::*;
+use tonic::Status;
 
-impl From<BlsScalar> for rusk_proto::BlsScalar {
-    fn from(value: BlsScalar) -> Self {
-        (&value).into()
+/// Wrapper over `jubjub_decode` fn
+pub(crate) fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
+    jubjub_decode::<JubJubAffine>(bytes).map_err(|_| {
+        Status::failed_precondition("Point was improperly encoded")
+    })
+}
+
+/// Wrapper over `jubjub_decode` fn
+pub(crate) fn decode_jubjub_scalar(
+    bytes: &[u8],
+) -> Result<JubJubScalar, Status> {
+    jubjub_decode::<JubJubScalar>(bytes).map_err(|_| {
+        Status::failed_precondition("JubjubScalar was improperly encoded")
+    })
+}
+
+/// Decoder fn used for `BlsScalar`
+pub(crate) fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
+    if bytes.len() < 32 {
+        Err(Status::failed_precondition(
+            "Not enough bytes to decode a BlsScalar",
+        ))
+    } else {
+        let bytes = <&[u8; 32]>::try_from(bytes).map_err(|_| {
+            Status::failed_precondition(
+                "Expecting 32 bytes to decode a BlsScalar",
+            )
+        })?;
+>>>>>>> master
+
+        Option::from(BlsScalar::from_bytes(&bytes)).ok_or_else(|| {
+            Status::failed_precondition("Point was improperly encoded")
+        })
     }
 }
 
 impl From<PublicSpendKey> for rusk_proto::PublicKey {
     fn from(value: PublicSpendKey) -> Self {
         rusk_proto::PublicKey {
-            a_g: Some(JubJubAffine::from(value.A()).into()),
-            b_g: Some(JubJubAffine::from(value.B()).into()),
+            a_g: JubJubAffine::from(value.A()).to_bytes().to_vec(),
+            b_g: JubJubAffine::from(value.B()).to_bytes().to_vec(),
         }
     }
 }
@@ -107,8 +147,8 @@ impl From<PublicSpendKey> for rusk_proto::PublicKey {
 impl From<SecretSpendKey> for rusk_proto::SecretKey {
     fn from(value: SecretSpendKey) -> Self {
         rusk_proto::SecretKey {
-            a: Some(value.a().into()),
-            b: Some(value.b().into()),
+            a: value.a().to_bytes().to_vec(),
+            b: value.b().to_bytes().to_vec(),
         }
     }
 }
@@ -116,8 +156,8 @@ impl From<SecretSpendKey> for rusk_proto::SecretKey {
 impl From<ViewKey> for rusk_proto::ViewKey {
     fn from(value: ViewKey) -> Self {
         rusk_proto::ViewKey {
-            a: Some(value.a().into()),
-            b_g: Some(JubJubAffine::from(value.B()).into()),
+            a: value.a().to_bytes().to_vec(),
+            b_g: JubJubAffine::from(value.B()).to_bytes().to_vec(),
         }
     }
 }
@@ -125,8 +165,8 @@ impl From<ViewKey> for rusk_proto::ViewKey {
 impl From<StealthAddress> for rusk_proto::StealthAddress {
     fn from(value: StealthAddress) -> Self {
         rusk_proto::StealthAddress {
-            r_g: Some(JubJubAffine::from(value.R()).into()),
-            pk_r: Some(JubJubAffine::from(value.pk_r()).into()),
+            r_g: JubJubAffine::from(value.R()).to_bytes().to_vec(),
+            pk_r: JubJubAffine::from(value.pk_r()).to_bytes().to_vec(),
         }
     }
 }
@@ -134,22 +174,6 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
 impl From<&StealthAddress> for rusk_proto::StealthAddress {
     fn from(value: &StealthAddress) -> Self {
         (*value).into()
-    }
-}
-
-impl From<PoseidonCipher> for rusk_proto::PoseidonCipher {
-    fn from(value: PoseidonCipher) -> Self {
-        rusk_proto::PoseidonCipher {
-            data: value.to_bytes().to_vec(),
-        }
-    }
-}
-
-impl From<&Proof> for rusk_proto::Proof {
-    fn from(value: &Proof) -> Self {
-        rusk_proto::Proof {
-            data: value.to_bytes().to_vec(),
-        }
     }
 }
 
@@ -242,112 +266,27 @@ impl TryFrom<Transaction> for rusk_proto::Transaction {
 }
 
 // ----- Protobuf types -> Basic types ----- //
-impl TryFrom<&rusk_proto::BlsScalar> for BlsScalar {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::BlsScalar) -> Result<BlsScalar, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "BlsScalar recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(BlsScalar::from_bytes(&bytes)).ok_or(
-            Status::failed_precondition(
-                "BlsScalar was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<rusk_proto::BlsScalar> for BlsScalar {
-    type Error = Status;
-
-    fn try_from(value: rusk_proto::BlsScalar) -> Result<BlsScalar, Status> {
-        (&value).try_into()
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubScalar> for JubJubScalar {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubScalar,
-    ) -> Result<JubJubScalar, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "JubJubScalar recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(JubJubScalar::from_bytes(&bytes)).ok_or(
-            Status::failed_precondition(
-                "JubJubScalar was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubAffine {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubCompressed,
-    ) -> Result<JubJubAffine, Status> {
-        let mut bytes = [0u8; 32];
-        // Check if the data is 32 bytes exactly so we can
-        // safely copy from the slice.
-        if value.data.len() != 32 {
-            return Err(Status::failed_precondition(
-                "JubJubAffine recieved is not 32 bytes long",
-            ));
-        };
-        bytes[..].copy_from_slice(&value.data[..]);
-        Option::from(JubJubAffine::from_bytes(bytes)).ok_or(
-            Status::failed_precondition(
-                "JubJubAffine was not cannonically encoded",
-            ),
-        )
-    }
-}
-
-impl TryFrom<&rusk_proto::JubJubCompressed> for JubJubExtended {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::JubJubCompressed,
-    ) -> Result<JubJubExtended, Status> {
-        let a: JubJubAffine = value.try_into()?;
-        Ok(a.into())
-    }
-}
-
 impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
     type Error = Status;
 
     fn try_from(
         value: &rusk_proto::PublicKey,
     ) -> Result<PublicSpendKey, Status> {
-        Ok(
-            PublicSpendKey::new(
-                decode_request_param::<
-                    &rusk_proto::JubJubCompressed,
-                    JubJubAffine,
-                >(value.a_g.as_ref().as_ref())?
-                .into(),
-                decode_request_param::<
-                    &rusk_proto::JubJubCompressed,
-                    JubJubAffine,
-                >(value.a_g.as_ref().as_ref())?
-                .into(),
-            ),
-        )
+        Ok(PublicSpendKey::new(
+            decode_affine(&value.a_g)?.into(),
+            decode_affine(&value.b_g)?.into(),
+        ))
+    }
+}
+
+impl TryFrom<&rusk_proto::ViewKey> for ViewKey {
+    type Error = Status;
+
+    fn try_from(value: &rusk_proto::ViewKey) -> Result<ViewKey, Status> {
+        Ok(ViewKey::new(
+            decode_jubjub_scalar(&value.a)?,
+            decode_affine(&value.b_g)?.into(),
+        ))
     }
 }
 
@@ -358,254 +297,24 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         value: &rusk_proto::StealthAddress,
     ) -> Result<StealthAddress, Status> {
         // Ensure that both fields are not empty
-        let r_g = value.r_g.as_ref().ok_or(Status::failed_precondition(
-            "StealthAddress was missing r_g field",
-        ))?;
-        let pk_r = value.pk_r.as_ref().ok_or(Status::failed_precondition(
-            "StealthAddress was missing pk_r field",
-        ))?;
+        let r_g = &value.r_g;
+        let pk_r = &value.pk_r;
 
         // Ensure that both fields are 32 bytes long, so we can
         // safely copy from the slice.
-        if r_g.data.len() != 32 || pk_r.data.len() != 32 {
+        if r_g.len() != 32 || pk_r.len() != 32 {
             return Err(Status::failed_precondition(
                 "StealthAddress fields are of improper length",
             ));
         };
 
         let mut bytes = [0u8; 64];
-        bytes[..32].copy_from_slice(&r_g.data[..]);
-        bytes[32..].copy_from_slice(&pk_r.data[..]);
+        bytes[..32].copy_from_slice(&r_g[..]);
+        bytes[32..].copy_from_slice(&pk_r[..]);
 
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
         })?)
-    }
-}
-
-impl TryFrom<&rusk_proto::PoseidonCipher> for PoseidonCipher {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::PoseidonCipher,
-    ) -> Result<PoseidonCipher, Status> {
-        // Ensure that data field is proper length
-        if value.data.len() != CIPHER_BYTES_SIZE {
-            return Err(Status::failed_precondition(
-                "PoseidonCipher data field is of improper length",
-            ));
-        }
-
-        let mut bytes = [0u8; CIPHER_BYTES_SIZE];
-        bytes.copy_from_slice(&value.data);
-
-        Ok(PoseidonCipher::from_bytes(&bytes).ok_or(
-            Status::failed_precondition("Could not decode PoseidonCipher"),
-        )?)
-    }
-}
-
-impl TryFrom<&rusk_proto::Proof> for Proof {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::Proof) -> Result<Proof, Status> {
-        Ok(Proof::from_bytes(&value.data).map_err(|_| {
-            Status::failed_precondition("Could not decode proof")
-        })?)
-    }
-}
-
-impl TryFrom<&rusk_proto::Note> for Note {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::Note) -> Result<Note, Status> {
-        let mut buf = [0u8; 233];
-        let t = value.note_type as u8;
-        buf[0] = t;
-        buf[1..33].copy_from_slice(
-            &value
-                .value_commitment
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No value commitment present",
-                ))?
-                .data,
-        );
-        buf[33..65].copy_from_slice(
-            &value
-                .nonce
-                .as_ref()
-                .ok_or(Status::failed_precondition("No nonce present"))?
-                .data,
-        );
-        buf[65..97].copy_from_slice(
-            &value
-                .address
-                .as_ref()
-                .ok_or(Status::failed_precondition("No nonce present"))?
-                .r_g
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No pk_r present in stealth address",
-                ))?
-                .data,
-        );
-        buf[97..129].copy_from_slice(
-            &value
-                .address
-                .as_ref()
-                .ok_or(Status::failed_precondition("No nonce present"))?
-                .pk_r
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No pk_r present in stealth address",
-                ))?
-                .data,
-        );
-        buf[129..137].copy_from_slice(&value.pos.to_le_bytes());
-        buf[137..233].copy_from_slice(
-            &value
-                .encrypted_data
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No encrypted data present",
-                ))?
-                .data,
-        );
-
-        let mut note = Note::default();
-        note.write(&mut buf)?;
-        Ok(note)
-    }
-}
-
-impl TryFrom<&rusk_proto::Fee> for Fee {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::Fee) -> Result<Fee, Status> {
-        let mut buf = [0u8; 80];
-        buf[0..8].copy_from_slice(&value.gas_limit.to_le_bytes());
-        buf[8..16].copy_from_slice(&value.gas_price.to_le_bytes());
-        buf[16..48].copy_from_slice(
-            &value
-                .address
-                .as_ref()
-                .ok_or(Status::failed_precondition("No address present"))?
-                .r_g
-                .as_ref()
-                .ok_or(Status::failed_precondition("No r_g present"))?
-                .data,
-        );
-        buf[48..].copy_from_slice(
-            &value
-                .address
-                .as_ref()
-                .ok_or(Status::failed_precondition("No address present"))?
-                .pk_r
-                .as_ref()
-                .ok_or(Status::failed_precondition("No pk_r present"))?
-                .data,
-        );
-        let mut fee = Fee::default();
-        fee.write(&mut buf)?;
-        Ok(fee)
-    }
-}
-
-impl TryFrom<&rusk_proto::Crossover> for Crossover {
-    type Error = Status;
-
-    fn try_from(value: &rusk_proto::Crossover) -> Result<Crossover, Status> {
-        let mut buf = [0u8; 160];
-        buf[0..32].copy_from_slice(
-            &value
-                .value_comm
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No nonce present in crossover",
-                ))?
-                .data,
-        );
-        buf[32..64].copy_from_slice(
-            &value
-                .nonce
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No nonce present in crossover",
-                ))?
-                .data,
-        );
-        buf[64..].copy_from_slice(
-            &value
-                .encypted_data
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No encrypted data present in crossover",
-                ))?
-                .data,
-        );
-        let mut crossover = Crossover::default();
-        crossover.write(&mut buf)?;
-        Ok(crossover)
-    }
-}
-
-impl TryFrom<&rusk_proto::TransactionPayload> for TransactionPayload {
-    type Error = Status;
-
-    fn try_from(
-        value: &rusk_proto::TransactionPayload,
-    ) -> Result<TransactionPayload, Status> {
-        let mut crossover: Option<Crossover> = None;
-        if value.crossover.as_ref().is_some() {
-            crossover = Some(value.crossover.as_ref().unwrap().try_into()?);
-        }
-
-        Ok(TransactionPayload {
-            anchor: value
-                .anchor
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No anchor present in transaction payload",
-                ))?
-                .try_into()?,
-            nullifiers: value
-                .nullifier
-                .iter()
-                .map(|n| n.try_into())
-                .collect::<Result<Vec<BlsScalar>, _>>()?,
-            crossover,
-            notes: value
-                .notes
-                .iter()
-                .map(|n| n.try_into())
-                .collect::<Result<Vec<Note>, _>>()?,
-            fee: value
-                .fee
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No fee present in transaction payload",
-                ))?
-                .try_into()?,
-            spending_proof: value
-                .spending_proof
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No proof present in transaction payload",
-                ))?
-                .try_into()?,
-            call_data: value.call_data.clone(),
-        })
-    }
-}
-
-impl TryFrom<rusk_proto::TransactionPayload> for TransactionPayload {
-    type Error = Status;
-
-    fn try_from(
-        value: rusk_proto::TransactionPayload,
-    ) -> Result<TransactionPayload, Status> {
-        (&value).try_into()
     }
 }
 

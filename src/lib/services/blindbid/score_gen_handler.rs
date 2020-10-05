@@ -8,7 +8,7 @@ use super::super::ServiceRequestHandler;
 use super::get_bid_storage_fields;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::circuit_helpers::*;
-use crate::encoding::{decode_request_param, encode_request_param};
+use crate::encoding::{decode_affine, decode_bls_scalar};
 use anyhow::Result;
 use dusk_blindbid::BlindBidCircuit;
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
@@ -83,9 +83,9 @@ where
         let proof = gen_blindbid_proof(&mut circuit)
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
         Ok(Response::new(GenerateScoreResponse {
-            blindbid_proof: encode_request_param(&proof),
-            score: encode_request_param(score.score),
-            prover_identity: encode_request_param(prover_id),
+            blindbid_proof: proof.to_bytes().to_vec(),
+            score: score.score.to_bytes().to_vec(),
+            prover_identity: prover_id.to_bytes().to_vec(),
         }))
     }
 }
@@ -95,12 +95,9 @@ where
 fn parse_score_gen_params(
     request: &Request<GenerateScoreRequest>,
 ) -> Result<(BlsScalar, BlsScalar, JubJubAffine), Status> {
-    let k: BlsScalar =
-        decode_request_param(request.get_ref().k.as_ref().as_ref())?;
-    let seed: BlsScalar =
-        decode_request_param(request.get_ref().seed.as_ref().as_ref())?;
-    let secret: JubJubAffine =
-        decode_request_param(request.get_ref().secret.as_ref().as_ref())?;
+    let k = decode_bls_scalar(&request.get_ref().k[..])?;
+    let seed = decode_bls_scalar(&request.get_ref().seed[..])?;
+    let secret = decode_affine(&request.get_ref().secret[..])?;
     Ok((k, seed, secret))
 }
 

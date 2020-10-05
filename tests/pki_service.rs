@@ -7,13 +7,15 @@
 mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
-use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::jubjub::{ExtendedPoint as JubJubExtended, Fr as JubJubScalar};
+use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_plonk::jubjub::{
+    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
+    Fr as JubJubScalar,
+};
 use encoding::decode_request_param;
 use futures::stream::TryStreamExt;
 use rusk::services::pki::{
-    GenerateKeysRequest, JubJubCompressed, JubJubScalar as ProtoJubJubScalar,
-    KeysClient, KeysServer, SecretKey,
+    GenerateKeysRequest, KeysClient, KeysServer, SecretKey,
 };
 use rusk::Rusk;
 use std::convert::TryFrom;
@@ -76,37 +78,20 @@ mod pki_service_tests {
 
         let response = client.generate_keys(request).await?.into_inner();
 
-        // Let's see if we got some random keys from the server.
-        assert!(response.pk.is_some());
-        assert!(response.vk.is_some());
-        assert!(response.sk.is_some());
-
         let sk = response.sk.unwrap();
         // Make sure as well, that the keys are related.
-        let a = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
-            sk.a.as_ref().as_ref(),
-        )?;
-        let b = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
-            sk.b.as_ref().as_ref(),
-        )?;
+        let a = jubjub_decode::<JubJubScalar>(&sk.a)?;
+        let b = jubjub_decode::<JubJubScalar>(&sk.b)?;
         let sk = SecretSpendKey::new(a, b);
 
         let vk = response.vk.unwrap();
-        let a = decode_request_param::<&ProtoJubJubScalar, JubJubScalar>(
-            vk.a.as_ref().as_ref(),
-        )?;
-        let b = decode_request_param::<&JubJubCompressed, JubJubExtended>(
-            vk.b_g.as_ref().as_ref(),
-        )?;
+        let a = jubjub_decode::<JubJubScalar>(&vk.a)?;
+        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&vk.b_g)?);
         let vk = ViewKey::new(a, b);
 
         let pk = response.pk.unwrap();
-        let a = decode_request_param::<&JubJubCompressed, JubJubExtended>(
-            pk.a_g.as_ref().as_ref(),
-        )?;
-        let b = decode_request_param::<&JubJubCompressed, JubJubExtended>(
-            pk.b_g.as_ref().as_ref(),
-        )?;
+        let a = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.a_g)?);
+        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.b_g)?);
         let psk = PublicSpendKey::new(a, b);
 
         assert_eq!(sk.view_key(), vk);
@@ -117,9 +102,6 @@ mod pki_service_tests {
 
         let response = client.generate_stealth_address(request).await?;
 
-        // Let's see if we got a stealth address from the server.
-        let s_a = response.into_inner();
-        assert!(s_a.r_g.is_some() && s_a.pk_r.is_some());
         Ok(())
     }
 }

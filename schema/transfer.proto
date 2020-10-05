@@ -3,11 +3,10 @@ package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "transaction.proto";
-import "keys.proto";
 
 message TransferTransactionRequest {
     fixed64 value = 1;
-    StealthAddress recipient = 2;
+    bytes recipient = 2; // Stealth Address
     fixed64 gas_limit = 3;
     fixed64 gas_price = 4;
 }

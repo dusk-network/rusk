@@ -26,12 +26,6 @@ impl Default for Rusk {
     }
 }
 
-pub mod proto_types {
-    pub use super::services::rusk_proto::{
-        BlsScalar, JubJubCompressed, JubJubScalar, Proof,
-    };
-}
-
 use dusk_plonk::prelude::PublicParameters;
 use lazy_static::lazy_static;
 lazy_static! {
