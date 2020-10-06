@@ -5,8 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use tracing::info;
-
-pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
 pub mod transaction;
@@ -30,7 +28,10 @@ use dusk_plonk::prelude::PublicParameters;
 use lazy_static::lazy_static;
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
-        circuit_helpers::read_pub_params()
-            .expect("Error reading Public Params.")
+        let buff =
+            rusk_profile::get_common_reference_string().expect("CRS not found");
+        let result: PublicParameters =
+            bincode::deserialize(&buff).expect("CRS not decoded");
+        result
     };
 }

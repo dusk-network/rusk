@@ -7,7 +7,6 @@
 use super::super::ServiceRequestHandler;
 use super::get_bid_storage_fields;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
-use crate::circuit_helpers::*;
 use crate::encoding::decode_bls_scalar;
 use anyhow::Result;
 use dusk_blindbid::score_gen::Score;
@@ -65,15 +64,13 @@ where
         };
 
         Ok(Response::new(VerifyScoreResponse {
-            success: match verify_blindbid_proof(
+            success: verify_blindbid_proof(
                 &mut circuit,
                 &proof,
                 prover_id,
                 score,
-            ) {
-                Ok(_) => true,
-                Err(_) => false,
-            },
+            )
+            .is_ok(),
         }))
     }
 }
@@ -99,8 +96,14 @@ fn verify_blindbid_proof(
     prover_id: BlsScalar,
     score: BlsScalar,
 ) -> Result<()> {
-    // Read VerifierKey of the circuit.
-    let verifier_key = read_blindcid_circuit_vk()?;
+    // Read ProverKey of the circuit.
+    // TODO: remove unwrap
+    let verifier_key = rusk_profile::keys_for("dusk-blindbid")
+        .get_verifier("blindbid")
+        .unwrap();
+
+    let verifier_key = VerifierKey::from_bytes(&verifier_key[..])?;
+
     // Build PI array (safe to unwrap since we just created the circuit
     // with everything initialized).
     let pi = vec![

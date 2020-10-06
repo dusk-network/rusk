@@ -39,8 +39,9 @@ mod blindbid_service_tests {
         let subscriber =
             Subscriber::builder().with_max_level(Level::INFO).finish();
         // Set the subscriber as global.
-        // so this subscriber will be used as the default in all threads for the remainder
-        // of the duration of the program, similar to how `loggers` work in the `log` crate.
+        // so this subscriber will be used as the default in all threads for the
+        // remainder of the duration of the program, similar to how
+        // `loggers` work in the `log` crate.
         subscriber::set_global_default(subscriber)
             .expect("Failed on subscribe tracing");
 
@@ -50,9 +51,9 @@ mod blindbid_service_tests {
 
         let mut uds = UnixListener::bind(SOCKET_PATH)?;
         let rusk = Rusk::default();
-        // We can't avoid the unwrap here until the async closure (#62290) lands.
-        // And therefore we can force the closure to return a Result.
-        // See: https://github.com/rust-lang/rust/issues/62290
+        // We can't avoid the unwrap here until the async closure (#62290)
+        // lands. And therefore we can force the closure to return a
+        // Result. See: https://github.com/rust-lang/rust/issues/62290
         tokio::spawn(async move {
             Server::builder()
                 .add_service(BlindBidServiceServer::new(rusk))
