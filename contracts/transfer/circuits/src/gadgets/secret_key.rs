@@ -5,9 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED,
-};
+use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
+use dusk_plonk::jubjub::{AffinePoint, GENERATOR_EXTENDED};
 use dusk_plonk::prelude::*;
 
 use plonk_gadgets::AllocatedScalar;
@@ -17,11 +16,10 @@ use plonk_gadgets::AllocatedScalar;
 pub fn sk_knowledge(
     composer: &mut StandardComposer,
     sk: AllocatedScalar,
-    pk: AffinePoint,
+    pk: PlonkPoint,
 ) {
     let p1 = scalar_mul(composer, sk.var, GENERATOR_EXTENDED);
-
-    composer.assert_equal_public_point(*p1.point(), pk);
+    composer.assert_equal_point(*p1.point(), pk);
 }
 
 #[cfg(test)]
@@ -35,7 +33,6 @@ mod commitment_tests {
     fn sk_gadget() -> Result<(), Error> {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
-
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 10, &mut rand::thread_rng())?;
@@ -45,7 +42,9 @@ mod commitment_tests {
         let sk_r =
             AllocatedScalar::allocate(prover.mut_cs(), BlsScalar::from(sk));
 
-        sk_knowledge(prover.mut_cs(), sk_r, pk);
+        let ppk = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
+
+        sk_knowledge(prover.mut_cs(), sk_r, ppk);
 
         prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
@@ -55,7 +54,9 @@ mod commitment_tests {
         let sk_r =
             AllocatedScalar::allocate(verifier.mut_cs(), BlsScalar::from(sk));
 
-        sk_knowledge(verifier.mut_cs(), sk_r, pk);
+        let ppk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
+
+        sk_knowledge(verifier.mut_cs(), sk_r, ppk);
         verifier.preprocess(&ck)?;
 
         let pi = verifier.mut_cs().public_inputs.clone();

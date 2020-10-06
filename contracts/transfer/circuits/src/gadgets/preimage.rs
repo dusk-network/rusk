@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
-
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
@@ -20,8 +18,7 @@ pub fn input_preimage(
     pos: AllocatedScalar,
     pk_r_x: AllocatedScalar,
     pk_r_y: AllocatedScalar,
-    note_hash: BlsScalar,
-) {
+) -> Variable {
     let output = sponge_hash_gadget(
         composer,
         &[
@@ -33,7 +30,7 @@ pub fn input_preimage(
         ],
     );
 
-    composer.constrain_to_constant(output, BlsScalar::zero(), -note_hash);
+    output
 }
 
 #[cfg(test)]
@@ -42,67 +39,93 @@ mod commitment_tests {
     use anyhow::{Error, Result};
     use dusk_pki::{Ownable, PublicSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-    use dusk_plonk::proof_system::{Prover, Verifier};
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::{Note, NoteType};
-    use rand::Rng;
 
     #[test]
     fn preimage_gadget() -> Result<(), Error> {
+        let secret1 = JubJubScalar::from(100u64);
+        let secret2 = JubJubScalar::from(200u64);
+        let pk1 = GENERATOR_EXTENDED * secret1;
+        let pk2 = GENERATOR_EXTENDED * secret2;
+        let psk = PublicSpendKey::new(pk1, pk2);
+        let value = 25u64;
+        let note = Note::new(NoteType::Transparent, &psk, value);
+        let note_hash = note.hash();
+
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
-        let (ck, vk) = pub_params.trim(1 << 13)?;
-        let preimage_circuit = |composer: &mut StandardComposer,
-                                note: &Note| {
-            let commitment: Vec<AllocatedScalar> = note
-                .value_commitment()
-                .to_hash_inputs()
-                .iter()
-                .map(|coord| AllocatedScalar::allocate(composer, *coord))
-                .collect();
-            let pk: Vec<AllocatedScalar> = note
-                .stealth_address()
-                .pk_r()
-                .to_hash_inputs()
-                .iter()
-                .map(|coord| AllocatedScalar::allocate(composer, *coord))
-                .collect();
-            let pos = AllocatedScalar::allocate(
-                composer,
-                BlsScalar::from(note.pos()),
-            );
-            let note_hash = note.hash();
-            input_preimage(
-                composer,
-                commitment[0],
-                commitment[1],
-                pos,
-                pk[0],
-                pk[1],
-                note_hash,
-            );
-        };
+            PublicParameters::setup(1 << 15, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 14)?;
         let mut prover = Prover::new(b"test");
 
-        let value: u64 = rand::thread_rng().gen();
-        let sk = JubJubScalar::random(&mut rand::thread_rng());
-        let sk2 = JubJubScalar::random(&mut rand::thread_rng());
-        let pk = GENERATOR_EXTENDED * sk;
-        let pk2 = GENERATOR_EXTENDED * sk2;
-        let key = &PublicSpendKey::new(pk, pk2);
+        let comm_x = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            note.value_commitment().to_hash_inputs()[0],
+        );
+        let comm_y = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            note.value_commitment().to_hash_inputs()[1],
+        );
+        let pos = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            BlsScalar::from(note.pos()),
+        );
+        let pkr_x = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            note.stealth_address().pk_r().to_hash_inputs()[0],
+        );
+        let pkr_y = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            note.stealth_address().pk_r().to_hash_inputs()[1],
+        );
 
-        let note = Note::new(NoteType::Transparent, key, value);
-
-        preimage_circuit(prover.mut_cs(), &note);
+        let a =
+            input_preimage(prover.mut_cs(), comm_x, comm_y, pos, pkr_x, pkr_y);
+        prover
+            .mut_cs()
+            .constrain_to_constant(a, BlsScalar::zero(), -note_hash);
+        let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
-        preimage_circuit(verifier.mut_cs(), &note);
-        verifier.preprocess(&ck)?;
+        let comm_x = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            note.value_commitment().to_hash_inputs()[0],
+        );
+        let comm_y = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            note.value_commitment().to_hash_inputs()[1],
+        );
+        let pos = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            BlsScalar::from(note.pos()),
+        );
+        let pkr_x = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            note.stealth_address().pk_r().to_hash_inputs()[0],
+        );
+        let pkr_y = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            note.stealth_address().pk_r().to_hash_inputs()[1],
+        );
 
-        let pi = verifier.mut_cs().public_inputs.clone();
-        verifier.verify(&proof, &vk, &pi)
+        let a = input_preimage(
+            verifier.mut_cs(),
+            comm_x,
+            comm_y,
+            pos,
+            pkr_x,
+            pkr_y,
+        );
+        verifier.mut_cs().constrain_to_constant(
+            a,
+            BlsScalar::zero(),
+            -note_hash,
+        );
+        verifier.preprocess(&ck)?;
+        verifier.verify(&proof, &vk, &prover_pi)
     }
 }
