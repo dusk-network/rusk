@@ -26,8 +26,9 @@ impl Echoer for Rusk {
         info!("Got an ECHO request: {:?}", request);
 
         let reply = EchoResponse {
-            // We must use .into_inner() as the fields of gRPC requests and responses are private
-            message: format!("{}", request.into_inner().message).into(),
+            // We must use .into_inner() as the fields of gRPC requests and
+            // responses are private
+            message: request.into_inner().message,
         };
 
         Ok(Response::new(reply))

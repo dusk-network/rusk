@@ -17,11 +17,9 @@ pub(crate) fn show_version(info: VersionInfo) -> String {
         info.commit_date.unwrap_or_default()
     );
 
-    let version_build = if build.len() > 1 {
+    if build.len() > 1 {
         format!("{} ({})", version, build)
     } else {
         version
-    };
-
-    version_build
+    }
 }

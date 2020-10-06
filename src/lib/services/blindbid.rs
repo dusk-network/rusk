@@ -13,8 +13,7 @@ use crate::services::ServiceRequestHandler;
 use crate::Rusk;
 use dusk_blindbid::tree::BidTree;
 use score_gen_handler::ScoreGenHandler;
-use std::fs::File;
-use std::io::prelude::*;
+use std::fs::{read, write};
 use tonic::{Request, Response, Status};
 use tracing::{info, warn};
 use verify_score_handler::VerifyScoreHandler;
@@ -106,16 +105,15 @@ pub(crate) fn get_bid_storage_fields(
             )
             .expect("This should not fail");
             // Write bid to disk to "mock it" since storage is not persistent.
-            let mut bid_file = File::create(BID_FILE_PATH)?;
-            bid_file.write(&bid.to_bytes()[..])?;
+            write(BID_FILE_PATH, &bid.to_bytes()[..])?;
             bid
         }
         (_, _) => {
             // Read the bid from disk to have the same as the original one
             // since storage is not persistent atm.
-            let mut bid_file = File::open(BID_FILE_PATH)?;
+            let bytes = read(BID_FILE_PATH)?;
             let mut buff: [u8; 320] = [0u8; 320];
-            bid_file.read(&mut buff)?;
+            buff.copy_from_slice(&bytes[..]);
             Bid::from_bytes(buff)?
         }
     };
@@ -123,15 +121,17 @@ pub(crate) fn get_bid_storage_fields(
     let mut tree = BidTree::new(17);
     let obtained_idx = tree.push(bid)?;
     assert_eq!(idx, obtained_idx as usize);
-    let branch =
-        tree.poseidon_branch(idx as u64)?
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                format!("missing branch in the extraction process."),
-            ))?;
-    let extracted_bid = tree.get(idx as u64)?.ok_or(std::io::Error::new(
-        std::io::ErrorKind::NotFound,
-        "Bid not found in the tree",
-    ))?;
+    let branch = tree.poseidon_branch(idx as u64)?.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "missing branch in the extraction process.",
+        )
+    })?;
+    let extracted_bid = tree.get(idx as u64)?.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "Bid not found in the tree",
+        )
+    })?;
     Ok((extracted_bid, branch))
 }
