@@ -22,7 +22,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 /// Default proof path.
-const DEFAULT_PROOF_FILE: &'static str = "proof.bin";
+const DEFAULT_PROOF_FILE: &str = "src/lib/proof.bin";
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -153,13 +153,13 @@ mod blindbid {
         )?;
 
         let mut circuit = BlindBidCircuit {
-            bid: bid,
-            score: score,
-            secret_k: secret_k,
-            secret: secret,
+            bid,
+            score,
+            secret_k,
+            secret,
             seed: consensus_round_seed,
-            latest_consensus_round: latest_consensus_round,
-            latest_consensus_step: latest_consensus_step,
+            latest_consensus_round,
+            latest_consensus_step,
             branch: &branch,
             trim_size: 1 << 15,
             pi_positions: vec![],
@@ -270,7 +270,7 @@ mod default_proof {
         let proof = Proof::from_bytes(&DEFAULT_PROOF_BYTES)?;
 
         let mut proof_file = File::create(DEFAULT_PROOF_FILE)?;
-        proof_file.write(&proof.to_bytes())?;
+        let _ = proof_file.write(&proof.to_bytes())?;
         Ok(())
     }
 }

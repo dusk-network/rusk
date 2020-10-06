@@ -10,7 +10,6 @@ use anyhow::Result;
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
-use std::fs::File;
 use std::io::{self, Read, Write};
 
 /// PLONK proofs are constant size. However, since we can not get this
@@ -18,14 +17,9 @@ use std::io::{self, Read, Write};
 /// for convenience.
 pub(crate) const PROOF_SIZE: usize = 1040;
 
-const DEFAULT_PROOF_FILE: &'static str = "proof.bin";
-
 fn read_default_proof() -> Result<Proof> {
-    let mut proof_file = File::open(DEFAULT_PROOF_FILE)?;
-    let mut buff = vec![];
-    proof_file.read_to_end(&mut buff)?;
-    let proof = Proof::from_bytes(&buff)?;
-    Ok(proof)
+    let bytes = include_bytes!("proof.bin");
+    Proof::from_bytes(&bytes[..])
 }
 
 /// All of the fields that make up a Phoenix transaction.
@@ -54,11 +48,11 @@ impl Clone for TransactionPayload {
             .expect("directly converting a valid proof should never fail");
 
         TransactionPayload {
-            anchor: self.anchor.clone(),
+            anchor: self.anchor,
             nullifiers: self.nullifiers.clone(),
-            crossover: self.crossover.clone(),
+            crossover: self.crossover,
             notes: self.notes.clone(),
-            fee: self.fee.clone(),
+            fee: self.fee,
             spending_proof: new_proof,
             call_data: self.call_data.clone(),
         }
@@ -145,9 +139,9 @@ impl Read for TransactionPayload {
         self.nullifiers
             .iter()
             .map(|nul| {
-                (&mut buf[n..]).write(&nul.to_bytes()).and_then(|num| {
+                (&mut buf[n..]).write(&nul.to_bytes()).map(|num| {
                     n += num;
-                    Ok(num)
+                    num
                 })
             })
             .collect::<io::Result<Vec<usize>>>()?;
@@ -164,9 +158,9 @@ impl Read for TransactionPayload {
         self.notes
             .iter_mut()
             .map(|note| {
-                note.read(&mut buf[n..]).and_then(|num| {
+                note.read(&mut buf[n..]).map(|num| {
                     n += num;
-                    Ok(num)
+                    num
                 })
             })
             .collect::<io::Result<Vec<usize>>>()?;
@@ -198,12 +192,13 @@ impl Write for TransactionPayload {
 
         // Anchor
         n += (&buf[n..]).read(&mut one_scalar)?;
-        self.anchor = Option::from(BlsScalar::from_bytes(&one_scalar)).ok_or(
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Could not deserialize anchor",
-            ),
-        )?;
+        self.anchor = Option::from(BlsScalar::from_bytes(&one_scalar))
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Could not deserialize anchor",
+                )
+            })?;
 
         // Nullifiers
         n += (&buf[n..]).read(&mut one_u64)?;
@@ -216,10 +211,12 @@ impl Write for TransactionPayload {
                     n += num;
                     self.nullifiers.push(
                         Option::from(BlsScalar::from_bytes(&one_scalar))
-                            .ok_or(io::Error::new(
-                                io::ErrorKind::InvalidData,
-                                "Could not deserialize nullifier",
-                            ))?,
+                            .ok_or_else(|| {
+                                io::Error::new(
+                                    io::ErrorKind::InvalidData,
+                                    "Could not deserialize nullifier",
+                                )
+                            })?,
                     );
 
                     Ok(n)

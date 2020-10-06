@@ -170,7 +170,7 @@ impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
         value: &mut rusk_proto::Transaction,
     ) -> Result<Transaction, Status> {
         let mut payload = TransactionPayload::default();
-        payload.write(&mut value.payload)?;
+        let _ = payload.write(&value.payload)?;
 
         Ok(Transaction {
             version: value

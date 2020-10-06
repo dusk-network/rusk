@@ -51,13 +51,13 @@ where
 
         // Create a BlindBidCircuit instance
         let mut circuit = BlindBidCircuit {
-            bid: bid,
+            bid,
             score: Score::default(),
             secret_k: BlsScalar::default(),
             secret: JubJubAffine::default(),
-            seed: seed,
-            latest_consensus_round: latest_consensus_round,
-            latest_consensus_step: latest_consensus_step,
+            seed,
+            latest_consensus_round,
+            latest_consensus_step,
             branch: &branch,
             trim_size: 1 << 15,
             pi_positions: vec![],

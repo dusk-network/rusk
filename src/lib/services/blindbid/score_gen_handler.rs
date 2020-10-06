@@ -70,13 +70,13 @@ where
         // Generate Blindbid proof proving that the generated `Score` is
         // correct.
         let mut circuit = BlindBidCircuit {
-            bid: bid,
-            score: score,
+            bid,
+            score,
             secret_k: k,
-            secret: secret,
-            seed: seed,
-            latest_consensus_round: latest_consensus_round,
-            latest_consensus_step: latest_consensus_step,
+            secret,
+            seed,
+            latest_consensus_round,
+            latest_consensus_step,
             branch: &branch,
             trim_size: 1 << 15,
             pi_positions: vec![],
