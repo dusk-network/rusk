@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use dusk_blindbid::{V_MAX, V_MIN};
 use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
@@ -18,35 +18,24 @@ use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 #[derive(Debug, Clone, Default)]
 pub struct CorrectnessCircuit {
     /// The value commitment of the bid.
-    pub commitment: Option<AffinePoint>,
+    pub commitment: AffinePoint,
     /// The value of the bid, in clear.
-    pub value: Option<BlsScalar>,
+    pub value: BlsScalar,
     /// The blinder, used to construct the value commitment.
-    pub blinder: Option<BlsScalar>,
+    pub blinder: BlsScalar,
     /// The size of the circuit
-    pub size: usize,
+    pub trim_size: usize,
     /// Public input constructor, used when generating a proof.
-    pub pi_constructor: Option<Vec<PublicInput>>,
+    pub pi_positions: Vec<PublicInput>,
 }
 
 impl Circuit<'_> for CorrectnessCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<Vec<PublicInput>, Error> {
-        let mut pi = vec![];
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
+        let commitment = self.commitment;
+        let value = self.value;
+        let blinder = self.blinder;
 
-        // Make sure we have all of the circuit inputs before proceeding.
-        let commitment = self
-            .commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let value = self
-            .value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let blinder = self
-            .blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-
+        let pi = self.get_mut_pi_positions();
         // Allocate all private inputs to the circuit.
         let value = AllocatedScalar::allocate(composer, value);
         let blinder = AllocatedScalar::allocate(composer, blinder);
@@ -87,101 +76,23 @@ impl Circuit<'_> for CorrectnessCircuit {
             BlsScalar::zero(),
         );
 
-        self.size = composer.circuit_size();
-        Ok(pi)
+        Ok(())
     }
 
-    fn compile(
-        &mut self,
-        pub_params: &PublicParameters,
-    ) -> Result<(ProverKey, VerifierKey, usize), Error> {
-        // Setup PublicParams
-        let (ck, _) = pub_params.trim(1 << 10)?;
-        // Generate & save `ProverKey` with some random values.
-        let mut prover = Prover::new(b"BidCorrectness");
-        // Set size & PI builder
-        self.pi_constructor = Some(self.gadget(prover.mut_cs())?);
-        prover.preprocess(&ck)?;
-
-        // Generate & save `VerifierKey` with some random values.
-        let mut verifier = Verifier::new(b"BidCorrectness");
-        self.gadget(verifier.mut_cs())?;
-        verifier.preprocess(&ck)?;
-        Ok((
-            prover
-                .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
-            verifier
-                .verifier_key
-                .expect("Unexpected error. Missing VerifierKey in compilation"),
-            self.circuit_size(),
-        ))
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
     }
 
-    fn build_pi(&self, pub_inputs: &[PublicInput]) -> Result<Vec<BlsScalar>> {
-        let mut pi = vec![BlsScalar::zero(); self.size];
-        self.pi_constructor
-            .as_ref()
-            .ok_or(CircuitErrors::CircuitInputsNotFound)?
-            .iter()
-            .enumerate()
-            .for_each(|(idx, pi_constr)| {
-                match pi_constr {
-                    PublicInput::BlsScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::JubJubScalar(_, pos) => {
-                        pi[*pos] = pub_inputs[idx].value()[0]
-                    }
-                    PublicInput::AffinePoint(_, pos_x, pos_y) => {
-                        let (coord_x, coord_y) = (
-                            pub_inputs[idx].value()[0],
-                            pub_inputs[idx].value()[1],
-                        );
-                        pi[*pos_x] = -coord_x;
-                        pi[*pos_y] = -coord_y;
-                    }
-                };
-            });
-        Ok(pi)
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 
-    fn circuit_size(&self) -> usize {
-        self.size
+    fn get_trim_size(&self) -> usize {
+        self.trim_size
     }
 
-    fn gen_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        prover_key: &ProverKey,
-        transcript_initialisation: &'static [u8],
-    ) -> Result<Proof> {
-        let (ck, _) = pub_params.trim(1 << 10)?;
-        // New Prover instance
-        let mut prover = Prover::new(transcript_initialisation);
-        // Fill witnesses for Prover
-        self.gadget(prover.mut_cs())?;
-        // Add ProverKey to Prover
-        prover.prover_key = Some(prover_key.clone());
-        prover.prove(&ck)
-    }
-
-    fn verify_proof(
-        &mut self,
-        pub_params: &PublicParameters,
-        verifier_key: &VerifierKey,
-        transcript_initialisation: &'static [u8],
-        proof: &Proof,
-        pub_inputs: &[PublicInput],
-    ) -> Result<(), Error> {
-        let (_, vk) = pub_params.trim(1 << 10)?;
-        // New Verifier instance
-        let mut verifier = Verifier::new(transcript_initialisation);
-        // Fill witnesses for Verifier
-        self.gadget(verifier.mut_cs())?;
-        verifier.verifier_key = Some(*verifier_key);
-        verifier.verify(proof, &vk, &self.build_pi(pub_inputs)?)
+    fn set_trim_size(&mut self, size: usize) {
+        self.trim_size = size;
     }
 }
 
@@ -200,21 +111,29 @@ mod tests {
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: Some(c),
-            value: Some(value.into()),
-            blinder: Some(blinder.into()),
-            size: 0,
-            pi_constructor: None,
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
+
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
 
+        let mut verifier_circuit = CorrectnessCircuit {
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
+        };
         let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
 
-        circuit.verify_proof(
+        verifier_circuit.verify_proof(
             &pub_params,
             &vk,
             b"BidCorrectness",
@@ -234,21 +153,28 @@ mod tests {
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: Some(c),
-            value: Some(value.into()),
-            blinder: Some(blinder.into()),
-            size: 0,
-            pi_constructor: None,
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
 
+        let mut verifier_circuit = CorrectnessCircuit {
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
+        };
         let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
 
-        assert!(circuit
+        assert!(verifier_circuit
             .verify_proof(&pub_params, &vk, b"BidCorrectness", &proof, &pi,)
             .is_err());
         Ok(())

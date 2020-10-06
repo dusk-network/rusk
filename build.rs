@@ -80,6 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         true => (),
         _ => default_proof::write_default_proof()?,
     };
+
     Ok(())
 }
 
@@ -105,14 +106,14 @@ mod bid {
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: Some(c),
-            value: Some(value.into()),
-            blinder: Some(blinder.into()),
-            size: 0,
-            pi_constructor: None,
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let mut pk_file = File::create(BID_CORRECTNESS_CIRCUIT_PK_PATH)?;
         pk_file.write(&pk.to_bytes())?;
 
@@ -152,25 +153,25 @@ mod blindbid {
         let score = bid.compute_score(
             &secret,
             secret_k,
-            branch.root,
+            branch.root(),
             consensus_round_seed,
             latest_consensus_round,
             latest_consensus_step,
         )?;
 
         let mut circuit = BlindBidCircuit {
-            bid: Some(bid),
-            score: Some(score),
-            secret_k: Some(secret_k),
-            secret: Some(secret),
-            seed: Some(consensus_round_seed),
-            latest_consensus_round: Some(latest_consensus_round),
-            latest_consensus_step: Some(latest_consensus_step),
-            branch: Some(&branch),
-            size: 0,
-            pi_constructor: None,
+            bid: bid,
+            score: score,
+            secret_k: secret_k,
+            secret: secret,
+            seed: consensus_round_seed,
+            latest_consensus_round: latest_consensus_round,
+            latest_consensus_step: latest_consensus_step,
+            branch: &branch,
+            trim_size: 1 << 15,
+            pi_positions: vec![],
         };
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         let mut pk_file = File::create(BLINDBID_CIRCUIT_PK_PATH)?;
         pk_file.write(&pk.to_bytes())?;
 
