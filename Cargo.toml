@@ -20,6 +20,7 @@ poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.8.
 dusk-plonk = "0.2.11"
 dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.2.4"}
 dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.2.0"}
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-core", tag = "v0.2.1-alpha" }
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"
@@ -43,6 +44,7 @@ dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v
 anyhow = "1.0"
 poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.8.1"}
 dusk-pki = {git = "https://github.com/dusk-network/dusk-pki/", tag = "v0.2.0"}
+phoenix-core = { git = "https://github.com/dusk-network/phoenix-core", tag = "v0.2.1-alpha" }
 kelvin = "0.19.0"
 nstack = "0.5.0"
 rand = "0.7"

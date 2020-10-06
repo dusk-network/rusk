@@ -91,6 +91,94 @@ impl From<&StealthAddress> for rusk_proto::StealthAddress {
     }
 }
 
+impl TryFrom<&mut Note> for rusk_proto::Note {
+    type Error = Status;
+
+    fn try_from(value: &mut Note) -> Result<Self, Status> {
+        let mut bytes = [0u8; 233];
+        value.read(&mut bytes)?;
+        Ok(rusk_proto::Note {
+            note_type: value.note() as i32,
+            value_commitment: Some(value.value_commitment().into()),
+            nonce: Some(value.nonce().into()),
+            address: Some(value.stealth_address().into()),
+            pos: value.pos(),
+            encrypted_data: Some(rusk_proto::PoseidonCipher {
+                data: bytes[137..233].to_vec(),
+            }),
+        })
+    }
+}
+
+impl From<Fee> for rusk_proto::Fee {
+    fn from(value: Fee) -> Self {
+        rusk_proto::Fee {
+            gas_limit: value.gas_limit,
+            gas_price: value.gas_price,
+            address: Some(value.stealth_address().into()),
+        }
+    }
+}
+
+impl From<Crossover> for rusk_proto::Crossover {
+    fn from(value: Crossover) -> Self {
+        rusk_proto::Crossover {
+            value_comm: Some(
+                JubJubAffine::from(value.value_commitment()).into(),
+            ),
+            nonce: Some((*value.nonce()).into()),
+            /// XXX: fix this typo in rusk-schema
+            encypted_data: Some((*value.encrypted_data()).into()),
+        }
+    }
+}
+
+impl TryFrom<&TransactionPayload> for rusk_proto::TransactionPayload {
+    type Error = Status;
+
+    fn try_from(value: &TransactionPayload) -> Result<Self, Status> {
+        Ok(rusk_proto::TransactionPayload {
+            anchor: Some(value.anchor.into()),
+            nullifier: value
+                .nullifiers
+                .to_vec()
+                .into_iter()
+                .map(|n| n.into())
+                .collect(),
+            crossover: value.crossover.map(|c| c.into()),
+            notes: value
+                .notes
+                .to_vec()
+                .into_iter()
+                .map(|mut n| (&mut n).try_into())
+                .collect::<Result<Vec<rusk_proto::Note>, _>>()?,
+            fee: Some(value.fee.into()),
+            spending_proof: Some((&value.spending_proof).into()),
+            call_data: value.call_data.to_vec(),
+        })
+    }
+}
+
+impl TryFrom<TransactionPayload> for rusk_proto::TransactionPayload {
+    type Error = Status;
+
+    fn try_from(value: TransactionPayload) -> Result<Self, Status> {
+        (&value).try_into()
+    }
+}
+
+impl TryFrom<Transaction> for rusk_proto::Transaction {
+    type Error = Status;
+
+    fn try_from(value: Transaction) -> Result<Self, Status> {
+        Ok(rusk_proto::Transaction {
+            version: value.version.into(),
+            r#type: value.tx_type.into(),
+            tx_payload: Some(value.payload.try_into()?),
+        })
+    }
+}
+
 // ----- Protobuf types -> Basic types ----- //
 impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
     type Error = Status;

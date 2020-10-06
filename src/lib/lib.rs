@@ -9,6 +9,7 @@ use tracing::info;
 pub(crate) mod circuit_helpers;
 pub mod encoding;
 pub mod services;
+pub mod transaction;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rusk {}
