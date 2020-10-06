@@ -96,8 +96,11 @@ impl Read for Transaction {
     fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
         let mut n = 0;
 
+        // Version
         n += buf.write(&[self.version])?;
+        // Type
         n += buf.write(&[self.tx_type])?;
+        // Payload
         n += self.payload.read(&mut buf[n..])?;
 
         Ok(n)
@@ -110,12 +113,15 @@ impl Write for Transaction {
 
         let mut one_byte = [0u8; 1];
 
+        // Version
         n += buf.read(&mut one_byte)?;
         self.version = one_byte[0];
 
+        // Type
         n += buf.read(&mut one_byte)?;
         self.tx_type = one_byte[0];
 
+        // Payload
         n += self.payload.write(&buf[n..])?;
 
         Ok(n)
@@ -130,10 +136,12 @@ impl Read for TransactionPayload {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let mut n = 0;
 
+        // Anchor
         n += (&mut buf[n..]).write(&self.anchor.to_bytes())?;
         n += (&mut buf[n..])
             .write(&(self.nullifiers.len() as u64).to_le_bytes())?;
 
+        // Nullifiers
         self.nullifiers
             .iter()
             .map(|nul| {
@@ -144,6 +152,7 @@ impl Read for TransactionPayload {
             })
             .collect::<io::Result<Vec<usize>>>()?;
 
+        // Crossover
         let crossover_present = self.crossover.is_some() as u8;
         n += (&mut buf[n..]).write(&[crossover_present])?;
         if crossover_present != 0 {
@@ -151,6 +160,7 @@ impl Read for TransactionPayload {
         }
         n += (&mut buf[n..]).write(&(self.notes.len() as u64).to_le_bytes())?;
 
+        // Notes
         self.notes
             .iter_mut()
             .map(|note| {
@@ -161,11 +171,14 @@ impl Read for TransactionPayload {
             })
             .collect::<io::Result<Vec<usize>>>()?;
 
+        // Fee
         n += self.fee.read(&mut buf[n..])?;
 
+        // Proof
         let proof_bytes = self.spending_proof.to_bytes();
         n += (&mut buf[n..]).write(&proof_bytes)?;
 
+        // Call data
         n += (&mut buf[n..])
             .write(&(self.call_data.len() as u64).to_le_bytes())?;
         n += (&mut buf[n..]).write(&self.call_data)?;
@@ -183,6 +196,7 @@ impl Write for TransactionPayload {
         let mut one_note = [0u8; 233];
         let mut one_byte = [0u8; 1];
 
+        // Anchor
         n += (&buf[n..]).read(&mut one_scalar)?;
         self.anchor = Option::from(BlsScalar::from_bytes(&one_scalar)).ok_or(
             io::Error::new(
@@ -191,6 +205,7 @@ impl Write for TransactionPayload {
             ),
         )?;
 
+        // Nullifiers
         n += (&buf[n..]).read(&mut one_u64)?;
         let nul_size = u64::from_le_bytes(one_u64) as usize;
         self.nullifiers = Vec::<BlsScalar>::with_capacity(nul_size);
@@ -212,6 +227,7 @@ impl Write for TransactionPayload {
             })
             .collect::<Result<Vec<usize>, io::Error>>()?;
 
+        // Crossover
         n += (&buf[n..]).read(&mut one_byte)?;
         if one_byte[0] != 0 {
             let mut crossover = Crossover::default();
@@ -219,21 +235,25 @@ impl Write for TransactionPayload {
             self.crossover = Some(crossover);
         }
 
+        // Notes
         n += (&buf[n..]).read(&mut one_u64)?;
         let notes_size = u64::from_le_bytes(one_u64) as usize;
-        self.notes = vec![Note::default(); notes_size];
-        self.notes
-            .iter_mut()
-            .map(|note| {
+        self.notes = Vec::<Note>::with_capacity(notes_size);
+        (0..notes_size)
+            .into_iter()
+            .map(|_| {
                 (&buf[n..]).read(&mut one_note).and_then(|num| {
                     n += num;
-                    note.write(&one_note).and_then(|_| Ok(num))
+                    self.notes.push(Note::from_bytes(&one_note)?);
+                    Ok(num)
                 })
             })
             .collect::<Result<Vec<usize>, io::Error>>()?;
 
+        // Fee
         n += self.fee.write(&buf[n..])?;
 
+        // Proof
         let mut proof_data = vec![0u8; PROOF_SIZE];
         n += (&buf[n..]).read(&mut proof_data)?;
         let proof = Proof::from_bytes(&proof_data).map_err(|_| {
@@ -244,6 +264,7 @@ impl Write for TransactionPayload {
         })?;
         self.spending_proof = proof;
 
+        // Call data
         n += (&buf[n..]).read(&mut one_u64)?;
         let call_data_size = u64::from_le_bytes(one_u64) as usize;
         let mut call_data = vec![0u8; call_data_size];
@@ -264,12 +285,9 @@ mod tests {
     use crate::services::rusk_proto;
     use dusk_pki::PublicSpendKey;
     use dusk_plonk::bls12_381::Scalar as BlsScalar;
-    use dusk_plonk::jubjub::{
-        AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
-        Fr as JubJubScalar, GENERATOR_EXTENDED,
-    };
+    use dusk_plonk::jubjub::{Fr as JubJubScalar, GENERATOR_EXTENDED};
     use phoenix_core::{Note, NoteType};
-    use std::convert::TryInto;
+    use std::convert::{TryFrom, TryInto};
     use std::io::{Read, Write};
 
     fn deterministic_note() -> Note {
@@ -330,24 +348,26 @@ mod tests {
     }
 
     #[test]
-    fn transaction_encode_decode() {
-        let tx = deterministic_tx();
-        let pbuf_tx: rusk_proto::Transaction = tx.clone().try_into().unwrap();
-        let decoded_tx: Transaction = (&pbuf_tx).try_into().unwrap();
+    fn transaction_encode_decode() -> Result<()> {
+        let mut tx = deterministic_tx();
+        let mut pbuf_tx = rusk_proto::Transaction::try_from(&mut tx.clone())?;
+        let decoded_tx = Transaction::try_from(&mut pbuf_tx)?;
 
         assert_eq!(tx, decoded_tx);
+        Ok(())
     }
 
     #[test]
-    fn transaction_read_write() {
+    fn transaction_read_write() -> Result<()> {
         let mut tx = deterministic_tx();
 
         let mut buf = [0u8; 4096];
-        tx.read(&mut buf).unwrap();
+        tx.read(&mut buf)?;
 
         let mut decoded_tx = Transaction::default();
-        decoded_tx.write(&mut buf).unwrap();
+        decoded_tx.write(&mut buf)?;
 
         assert_eq!(tx, decoded_tx);
+        Ok(())
     }
 }

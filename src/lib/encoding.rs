@@ -6,97 +6,15 @@
 
 #![allow(non_snake_case)]
 use super::services::rusk_proto;
-<<<<<<< HEAD
 use crate::transaction::{Transaction, TransactionPayload};
-use core::convert::{TryFrom, TryInto};
-use dusk_pki::{
-    Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
-};
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
-use dusk_plonk::jubjub::{
-    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
-    Scalar as JubJubScalar,
-};
-use dusk_plonk::proof_system::Proof;
-use phoenix_core::{Crossover, Fee, Note};
-use poseidon252::cipher::{PoseidonCipher, CIPHER_BYTES_SIZE};
-use std::io::{Read, Write};
-use tonic::{Code, Status};
-
-/// Generic function used to retrieve parameters that are optional from a
-/// GRPC request.
-pub(crate) fn decode_request_param<T, U>(
-    possible_param: Option<&T>,
-) -> Result<U, Status>
-where
-    T: Clone,
-    U: TryFrom<T, Error = Status>,
-{
-    Ok(U::try_from(
-        possible_param
-            .ok_or(Status::new(Code::Unknown, "Missing required fields."))?
-            .clone(),
-    )?)
-}
-
-/// Generic function used to encore parameters that are optional in a
-/// GRPC response.
-pub(crate) fn encode_request_param<T, U>(param: T) -> Option<U>
-where
-    U: From<T>,
-{
-    Some(U::from(param))
-}
-
-// ---- Basic Types -> Protobuf types ---- //
-impl From<JubJubAffine> for rusk_proto::JubJubCompressed {
-    fn from(value: JubJubAffine) -> Self {
-        rusk_proto::JubJubCompressed {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
-
-impl From<JubJubExtended> for rusk_proto::JubJubCompressed {
-    fn from(value: JubJubExtended) -> Self {
-        JubJubAffine::from(value).into()
-    }
-}
-
-impl From<&JubJubExtended> for rusk_proto::JubJubCompressed {
-    fn from(value: &JubJubExtended) -> Self {
-        (*value).into()
-    }
-}
-
-impl From<&JubJubScalar> for rusk_proto::JubJubScalar {
-    fn from(value: &JubJubScalar) -> Self {
-        rusk_proto::JubJubScalar {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
-
-impl From<JubJubScalar> for rusk_proto::JubJubScalar {
-    fn from(value: JubJubScalar) -> Self {
-        (&value).into()
-    }
-}
-
-impl From<&BlsScalar> for rusk_proto::BlsScalar {
-    fn from(value: &BlsScalar) -> Self {
-        rusk_proto::BlsScalar {
-            data: Vec::from(&value.to_bytes()[..]),
-        }
-    }
-}
-=======
 use core::convert::TryFrom;
 use dusk_pki::{
     jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use dusk_plonk::prelude::*;
+use std::convert::TryInto;
+use std::io::{Read, Write};
 use tonic::Status;
 
 /// Wrapper over `jubjub_decode` fn
@@ -127,7 +45,6 @@ pub(crate) fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
                 "Expecting 32 bytes to decode a BlsScalar",
             )
         })?;
->>>>>>> master
 
         Option::from(BlsScalar::from_bytes(&bytes)).ok_or_else(|| {
             Status::failed_precondition("Point was improperly encoded")
@@ -177,90 +94,18 @@ impl From<&StealthAddress> for rusk_proto::StealthAddress {
     }
 }
 
-impl TryFrom<&mut Note> for rusk_proto::Note {
+impl TryFrom<&mut Transaction> for rusk_proto::Transaction {
     type Error = Status;
 
-    fn try_from(value: &mut Note) -> Result<Self, Status> {
-        let mut bytes = [0u8; 233];
-        value.read(&mut bytes)?;
-        Ok(rusk_proto::Note {
-            note_type: value.note() as i32,
-            value_commitment: Some(value.value_commitment().into()),
-            nonce: Some(value.nonce().into()),
-            address: Some(value.stealth_address().into()),
-            pos: value.pos(),
-            encrypted_data: Some(rusk_proto::PoseidonCipher {
-                data: bytes[137..233].to_vec(),
-            }),
-        })
-    }
-}
+    fn try_from(value: &mut Transaction) -> Result<Self, Status> {
+        let mut buf = vec![0u8; 4096];
+        let n = value.payload.read(&mut buf)?;
+        buf.truncate(n);
 
-impl From<Fee> for rusk_proto::Fee {
-    fn from(value: Fee) -> Self {
-        rusk_proto::Fee {
-            gas_limit: value.gas_limit,
-            gas_price: value.gas_price,
-            address: Some(value.stealth_address().into()),
-        }
-    }
-}
-
-impl From<Crossover> for rusk_proto::Crossover {
-    fn from(value: Crossover) -> Self {
-        rusk_proto::Crossover {
-            value_comm: Some(
-                JubJubAffine::from(value.value_commitment()).into(),
-            ),
-            nonce: Some((*value.nonce()).into()),
-            /// XXX: fix this typo in rusk-schema
-            encypted_data: Some((*value.encrypted_data()).into()),
-        }
-    }
-}
-
-impl TryFrom<&TransactionPayload> for rusk_proto::TransactionPayload {
-    type Error = Status;
-
-    fn try_from(value: &TransactionPayload) -> Result<Self, Status> {
-        Ok(rusk_proto::TransactionPayload {
-            anchor: Some(value.anchor.into()),
-            nullifier: value
-                .nullifiers
-                .to_vec()
-                .into_iter()
-                .map(|n| n.into())
-                .collect(),
-            crossover: value.crossover.map(|c| c.into()),
-            notes: value
-                .notes
-                .to_vec()
-                .into_iter()
-                .map(|mut n| (&mut n).try_into())
-                .collect::<Result<Vec<rusk_proto::Note>, _>>()?,
-            fee: Some(value.fee.into()),
-            spending_proof: Some((&value.spending_proof).into()),
-            call_data: value.call_data.to_vec(),
-        })
-    }
-}
-
-impl TryFrom<TransactionPayload> for rusk_proto::TransactionPayload {
-    type Error = Status;
-
-    fn try_from(value: TransactionPayload) -> Result<Self, Status> {
-        (&value).try_into()
-    }
-}
-
-impl TryFrom<Transaction> for rusk_proto::Transaction {
-    type Error = Status;
-
-    fn try_from(value: Transaction) -> Result<Self, Status> {
         Ok(rusk_proto::Transaction {
             version: value.version.into(),
             r#type: value.tx_type.into(),
-            tx_payload: Some(value.payload.try_into()?),
+            payload: buf,
         })
     }
 }
@@ -318,12 +163,15 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
     }
 }
 
-impl TryFrom<&rusk_proto::Transaction> for Transaction {
+impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
     type Error = Status;
 
     fn try_from(
-        value: &rusk_proto::Transaction,
+        value: &mut rusk_proto::Transaction,
     ) -> Result<Transaction, Status> {
+        let mut payload = TransactionPayload::default();
+        payload.write(&mut value.payload)?;
+
         Ok(Transaction {
             version: value
                 .version
@@ -333,13 +181,7 @@ impl TryFrom<&rusk_proto::Transaction> for Transaction {
                 .r#type
                 .try_into()
                 .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
-            payload: value
-                .tx_payload
-                .as_ref()
-                .ok_or(Status::failed_precondition(
-                    "No transaction payload present",
-                ))?
-                .try_into()?,
+            payload,
         })
     }
 }

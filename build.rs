@@ -8,6 +8,7 @@ use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
