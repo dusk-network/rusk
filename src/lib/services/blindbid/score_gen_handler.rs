@@ -7,7 +7,6 @@
 use super::super::ServiceRequestHandler;
 use super::get_bid_storage_fields;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
-use crate::circuit_helpers::*;
 use crate::encoding::{decode_affine, decode_bls_scalar};
 use anyhow::Result;
 use dusk_blindbid::BlindBidCircuit;
@@ -37,8 +36,9 @@ where
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
         let (k, seed, secret) = parse_score_gen_params(self.request)?;
-        // XXX: We need to mock the storage for now, so we push to a PoseidonTree the Bid that we
-        // should only need to retrieve. To do so, we need all of the parameters, not just the index.
+        // XXX: We need to mock the storage for now, so we push to a
+        // PoseidonTree the Bid that we should only need to retrieve. To
+        // do so, we need all of the parameters, not just the index.
         let (bid, branch) = get_bid_storage_fields(
             self.request.get_ref().index_stored_bid as usize,
             Some(secret),
@@ -67,7 +67,8 @@ where
             latest_consensus_round,
             latest_consensus_step,
         );
-        // Generate Blindbid proof proving that the generated `Score` is correct.
+        // Generate Blindbid proof proving that the generated `Score` is
+        // correct.
         let mut circuit = BlindBidCircuit {
             bid: Some(bid),
             score: Some(score),
@@ -105,7 +106,12 @@ fn parse_score_gen_params(
 // desired inputs.verifier_key
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     // Read ProverKey of the circuit.
-    let prover_key = read_blindcid_circuit_pk()?;
+    // TODO: remove unwrap
+    let prover_key = rusk_profile::keys_for("dusk-blindbid")
+        .get_prover("blindbid")
+        .unwrap();
+
+    let prover_key = ProverKey::from_bytes(&prover_key[..])?;
     // Generate a proof using the circuit
     circuit.gen_proof(&crate::PUB_PARAMS, &prover_key, b"BlindBid")
 }

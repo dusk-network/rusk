@@ -12,10 +12,7 @@ use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
-use plonk_gadgets::{
-    AllocatedScalar, RangeGadgets::range_check,
-    ScalarGadgets::conditionally_select_one,
-};
+use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 
 /// Circuit which proves the correctness of a blind bid.
 #[derive(Debug, Clone, Default)]
@@ -39,20 +36,13 @@ impl Circuit<'_> for CorrectnessCircuit {
     ) -> Result<Vec<PublicInput>, Error> {
         let mut pi = vec![];
 
-        // Generate constant witness values for 0.
-        let zero =
-            composer.add_witness_to_circuit_description(BlsScalar::zero());
-
         // Make sure we have all of the circuit inputs before proceeding.
         let commitment = self
             .commitment
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let value = self
-            .value
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
-        let blinder = self
-            .blinder
-            .ok_or_else(|| CircuitErrors::CircuitInputsNotFound)?;
+            .ok_or(CircuitErrors::CircuitInputsNotFound)?;
+        let value = self.value.ok_or(CircuitErrors::CircuitInputsNotFound)?;
+        let blinder =
+            self.blinder.ok_or(CircuitErrors::CircuitInputsNotFound)?;
 
         // Allocate all private inputs to the circuit.
         let value = AllocatedScalar::allocate(composer, value);
@@ -117,8 +107,7 @@ impl Circuit<'_> for CorrectnessCircuit {
         Ok((
             prover
                 .prover_key
-                .expect("Unexpected error. Missing VerifierKey in compilation")
-                .clone(),
+                .expect("Unexpected error. Missing VerifierKey in compilation"),
             verifier
                 .verifier_key
                 .expect("Unexpected error. Missing VerifierKey in compilation"),
