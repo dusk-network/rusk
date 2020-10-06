@@ -7,6 +7,7 @@
 use tracing::info;
 pub mod encoding;
 pub mod services;
+pub mod transaction;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rusk {}

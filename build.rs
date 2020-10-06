@@ -6,15 +6,17 @@
 
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{bid::Bid, tree::BidTree, BlindBidCircuit};
+use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_plonk::prelude::*;
-
 use dusk_plonk::prelude::PublicParameters;
+use dusk_plonk::prelude::*;
+use kelvin::Blake2b;
 use lazy_static::lazy_static;
+use poseidon252::{PoseidonAnnotation, PoseidonTree};
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -89,14 +91,14 @@ mod bid {
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: Some(c),
-            value: Some(value.into()),
-            blinder: Some(blinder.into()),
-            size: 0,
-            pi_constructor: None,
+            commitment: c,
+            value: value.into(),
+            blinder: blinder.into(),
+            trim_size: 1 << 10,
+            pi_positions: vec![],
         };
 
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         Ok((pk.to_bytes(), vk.to_bytes()))
     }
 }
@@ -107,7 +109,8 @@ mod blindbid {
     pub fn compile_circuit() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
         // Generate a PoseidonTree and append the Bid.
-        let mut tree = BidTree::new(17usize);
+        let mut tree: PoseidonTree<Bid, PoseidonAnnotation, Blake2b> =
+            PoseidonTree::new(17usize);
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -131,26 +134,25 @@ mod blindbid {
         let score = bid.compute_score(
             &secret,
             secret_k,
-            branch.root,
+            branch.root(),
             consensus_round_seed,
             latest_consensus_round,
             latest_consensus_step,
         )?;
 
         let mut circuit = BlindBidCircuit {
-            bid: Some(bid),
-            score: Some(score),
-            secret_k: Some(secret_k),
-            secret: Some(secret),
-            seed: Some(consensus_round_seed),
-            latest_consensus_round: Some(latest_consensus_round),
-            latest_consensus_step: Some(latest_consensus_step),
-            branch: Some(&branch),
-            size: 0,
-            pi_constructor: None,
+            bid,
+            score,
+            secret_k,
+            secret,
+            seed: consensus_round_seed,
+            latest_consensus_round,
+            latest_consensus_step,
+            branch: &branch,
+            trim_size: 1 << 15,
+            pi_positions: vec![],
         };
-
-        let (pk, vk, _) = circuit.compile(&pub_params)?;
+        let (pk, vk) = circuit.compile(&pub_params)?;
         Ok((pk.to_bytes(), vk.to_bytes()))
     }
 

@@ -54,7 +54,7 @@ where
             .compute_score(
                 &secret,
                 k,
-                branch.root,
+                branch.root(),
                 seed,
                 latest_consensus_round,
                 latest_consensus_step,
@@ -70,16 +70,16 @@ where
         // Generate Blindbid proof proving that the generated `Score` is
         // correct.
         let mut circuit = BlindBidCircuit {
-            bid: Some(bid),
-            score: Some(score),
-            secret_k: Some(k),
-            secret: Some(secret),
-            seed: Some(seed),
-            latest_consensus_round: Some(latest_consensus_round),
-            latest_consensus_step: Some(latest_consensus_step),
-            branch: Some(&branch),
-            size: 0,
-            pi_constructor: None,
+            bid,
+            score,
+            secret_k: k,
+            secret,
+            seed,
+            latest_consensus_round,
+            latest_consensus_step,
+            branch: &branch,
+            trim_size: 1 << 15,
+            pi_positions: vec![],
         };
         let proof = gen_blindbid_proof(&mut circuit)
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;

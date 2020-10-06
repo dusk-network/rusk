@@ -6,12 +6,15 @@
 
 #![allow(non_snake_case)]
 use super::services::rusk_proto;
+use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::TryFrom;
 use dusk_pki::{
     jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
 use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
 use dusk_plonk::prelude::*;
+use std::convert::TryInto;
+use std::io::{Read, Write};
 use tonic::Status;
 
 /// Wrapper over `jubjub_decode` fn
@@ -91,6 +94,22 @@ impl From<&StealthAddress> for rusk_proto::StealthAddress {
     }
 }
 
+impl TryFrom<&mut Transaction> for rusk_proto::Transaction {
+    type Error = Status;
+
+    fn try_from(value: &mut Transaction) -> Result<Self, Status> {
+        let mut buf = vec![0u8; 4096];
+        let n = value.payload.read(&mut buf)?;
+        buf.truncate(n);
+
+        Ok(rusk_proto::Transaction {
+            version: value.version.into(),
+            r#type: value.tx_type.into(),
+            payload: buf,
+        })
+    }
+}
+
 // ----- Protobuf types -> Basic types ----- //
 impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
     type Error = Status;
@@ -141,5 +160,28 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
         })?)
+    }
+}
+
+impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
+    type Error = Status;
+
+    fn try_from(
+        value: &mut rusk_proto::Transaction,
+    ) -> Result<Transaction, Status> {
+        let mut payload = TransactionPayload::default();
+        let _ = payload.write(&value.payload)?;
+
+        Ok(Transaction {
+            version: value
+                .version
+                .try_into()
+                .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
+            tx_type: value
+                .r#type
+                .try_into()
+                .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
+            payload,
+        })
     }
 }

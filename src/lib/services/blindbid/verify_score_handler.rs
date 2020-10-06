@@ -51,16 +51,16 @@ where
 
         // Create a BlindBidCircuit instance
         let mut circuit = BlindBidCircuit {
-            bid: Some(bid),
-            score: Some(Score::default()),
-            secret_k: Some(BlsScalar::default()),
-            secret: Some(JubJubAffine::default()),
-            seed: Some(seed),
-            latest_consensus_round: Some(latest_consensus_round),
-            latest_consensus_step: Some(latest_consensus_step),
-            branch: Some(&branch),
-            size: 0,
-            pi_constructor: None,
+            bid,
+            score: Score::default(),
+            secret_k: BlsScalar::default(),
+            secret: JubJubAffine::default(),
+            seed,
+            latest_consensus_round,
+            latest_consensus_step,
+            branch: &branch,
+            trim_size: 1 << 15,
+            pi_positions: vec![],
         };
 
         Ok(Response::new(VerifyScoreResponse {
@@ -107,25 +107,12 @@ fn verify_blindbid_proof(
     // Build PI array (safe to unwrap since we just created the circuit
     // with everything initialized).
     let pi = vec![
-        PublicInput::BlsScalar(
-            -circuit.branch.expect("Unexpected Error").root,
-            0,
-        ),
-        PublicInput::BlsScalar(
-            -circuit.bid.expect("Unexpected Error").hash(),
-            0,
-        ),
-        PublicInput::AffinePoint(
-            circuit.bid.expect("Unexpected Error").c,
-            0,
-            0,
-        ),
-        PublicInput::BlsScalar(
-            -circuit.bid.expect("Unexpected Error").hashed_secret,
-            0,
-        ),
-        PublicInput::BlsScalar(-prover_id, 0),
-        PublicInput::BlsScalar(-score, 0),
+        PublicInput::BlsScalar(circuit.branch.root(), 0),
+        PublicInput::BlsScalar(circuit.bid.hash(), 0),
+        PublicInput::AffinePoint(circuit.bid.c, 0, 0),
+        PublicInput::BlsScalar(circuit.bid.hashed_secret, 0),
+        PublicInput::BlsScalar(prover_id, 0),
+        PublicInput::BlsScalar(score, 0),
     ];
     // Verify the proof.
     circuit.verify_proof(
