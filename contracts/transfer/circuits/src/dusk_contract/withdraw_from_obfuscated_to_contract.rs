@@ -42,28 +42,16 @@ pub struct WithdrawFromObfuscatedToContractCircuitOne {
 }
 
 impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<()> {
-        let commitment_value = self
-            .commitment_value;
-        let commitment_blinder = self
-            .commitment_blinder;
-        let commitment_point = self
-            .commitment_point;
-        let spend_commitment_value = self
-            .spend_commitment_value;
-        let spend_commitment_blinder = self
-            .spend_commitment_blinder;
-        let spend_commitment = self
-            .spend_commitment;
-        let change_commitment_value = self
-            .change_commitment_value;
-        let change_commitment_blinder = self
-            .change_commitment_blinder;
-        let change_commitment = self
-            .change_commitment;
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
+        let commitment_value = self.commitment_value;
+        let commitment_blinder = self.commitment_blinder;
+        let commitment_point = self.commitment_point;
+        let spend_commitment_value = self.spend_commitment_value;
+        let spend_commitment_blinder = self.spend_commitment_blinder;
+        let spend_commitment = self.spend_commitment;
+        let change_commitment_value = self.change_commitment_value;
+        let change_commitment_blinder = self.change_commitment_blinder;
+        let change_commitment = self.change_commitment;
         let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
@@ -150,7 +138,6 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
             BlsScalar::zero(),
         );
 
-        
         Ok(())
     }
 
@@ -202,24 +189,14 @@ pub struct WithdrawFromObfuscatedToContractCircuitTwo {
 }
 
 impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<()> {
-        let commitment_value = self
-            .commitment_value;
-        let commitment_blinder = self
-            .commitment_blinder;
-        let commitment_point = self
-            .commitment_point;
-        let change_commitment_value = self
-            .change_commitment_value;
-        let change_commitment_blinder = self
-            .change_commitment_blinder;
-        let change_commitment = self
-            .change_commitment;
-        let value = self
-            .value;
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
+        let commitment_value = self.commitment_value;
+        let commitment_blinder = self.commitment_blinder;
+        let commitment_point = self.commitment_point;
+        let change_commitment_value = self.change_commitment_value;
+        let change_commitment_blinder = self.change_commitment_blinder;
+        let change_commitment = self.change_commitment;
+        let value = self.value;
         let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
@@ -306,11 +283,10 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
             -value,
         );
 
-  
         Ok(())
     }
 
-        /// Returns the size at which we trim the `PublicParameters`
+    /// Returns the size at which we trim the `PublicParameters`
     /// to compile the circuit or perform proving/verification
     /// actions.
     fn get_trim_size(&self) -> usize {

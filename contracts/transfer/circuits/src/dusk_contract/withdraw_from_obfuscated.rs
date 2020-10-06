@@ -42,28 +42,16 @@ pub struct WithdrawFromContractObfuscatedCircuit {
 }
 
 impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut StandardComposer,
-    ) -> Result<()> {
-        let spend_commitment_value = self
-            .spend_commitment_value;
-        let spend_commitment_blinder = self
-            .spend_commitment_blinder;
-        let spend_commitment = self
-            .spend_commitment;
-        let message_commitment_value = self
-            .message_commitment_value;
-        let message_commitment_blinder = self
-            .message_commitment_blinder;
-        let message_commitment: AffinePoint = self
-            .message_commitment;
-        let note_commitment_value = self
-            .note_commitment_value;
-        let note_commitment_blinder = self
-            .note_commitment_blinder;
-        let note_commitment = self
-            .note_commitment;
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
+        let spend_commitment_value = self.spend_commitment_value;
+        let spend_commitment_blinder = self.spend_commitment_blinder;
+        let spend_commitment = self.spend_commitment;
+        let message_commitment_value = self.message_commitment_value;
+        let message_commitment_blinder = self.message_commitment_blinder;
+        let message_commitment: AffinePoint = self.message_commitment;
+        let note_commitment_value = self.note_commitment_value;
+        let note_commitment_blinder = self.note_commitment_blinder;
+        let note_commitment = self.note_commitment;
         let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs

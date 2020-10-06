@@ -302,6 +302,8 @@ impl Circuit<'_> for ExecuteCircuit {
         });
 
         // 11. Prove that input_note_value - output_note_value - crossover_value - fee = 0
+        let zero =
+            composer.add_witness_to_circuit_description(BlsScalar::zero());
         let initial = input_note_values[0].var;
         let all_input_values = input_note_values.iter_mut().skip(1).fold(
             initial,
@@ -315,7 +317,12 @@ impl Circuit<'_> for ExecuteCircuit {
             },
         );
 
-        let initial = obfuscated_note_values[0].var;
+        let initial = if obfuscated_note_values.is_empty() {
+            zero
+        } else {
+            obfuscated_note_values[0].var
+        };
+
         let all_obfuscated_values = obfuscated_note_values
             .iter_mut()
             .skip(1)
@@ -481,7 +488,7 @@ mod tests {
     // This test ensures the execute gadget is done correctly
     // by creating two notes and setting their field values
     // in the execute circuit
-    fn test_execute() -> Result<()> {
+    fn test_execute_yes() -> Result<()> {
         // Generate the (a,b) for the note
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
@@ -577,14 +584,10 @@ mod tests {
             crossover_commitment_value.into(),
             crossover_commitment_blinder.into(),
             vec![obfuscated_commitment_one, obfuscated_commitment_two],
-            vec![
-                obfuscated_note_value_one.into(),
-                obfuscated_note_value_two.into(),
-            ],
-            vec![
-                obfuscated_note_blinder_one.into(),
-                obfuscated_note_blinder_two.into(),
-            ],
+            vec![ obfuscated_note_value_one.into(), obfuscated_note_value_two.into()],
+
+            vec![obfuscated_note_blinder_one.into(), obfuscated_note_blinder_two.into()],
+
             fee,
         );
 
