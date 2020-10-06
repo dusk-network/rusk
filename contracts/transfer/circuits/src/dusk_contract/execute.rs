@@ -110,6 +110,9 @@ impl Circuit<'_> for ExecuteCircuit {
                 PlonkPoint::from_private_affine(composer, *input_commitments)
             })
             .collect();
+        if self.input_values.is_empty() {
+            return Err(CircuitErrors::CircuitInputsNotFound.into());
+        };
         let mut input_note_values: Vec<AllocatedScalar> = self
             .input_values
             .iter()
@@ -304,6 +307,7 @@ impl Circuit<'_> for ExecuteCircuit {
         // 11. Prove that input_note_value - output_note_value - crossover_value - fee = 0
         let zero =
             composer.add_witness_to_circuit_description(BlsScalar::zero());
+
         let initial = input_note_values[0].var;
         let all_input_values = input_note_values.iter_mut().skip(1).fold(
             initial,
@@ -488,7 +492,7 @@ mod tests {
     // This test ensures the execute gadget is done correctly
     // by creating two notes and setting their field values
     // in the execute circuit
-    fn test_execute_yes() -> Result<()> {
+    fn test_execute() -> Result<()> {
         // Generate the (a,b) for the note
         let secret1 = JubJubScalar::from(100 as u64);
         let secret2 = JubJubScalar::from(200 as u64);
@@ -520,6 +524,13 @@ mod tests {
         let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
         // Set the position of the note
         note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
+        // Generate the value commitment of the note from the value and blinder
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
 
         let input_note_value_two = JubJubScalar::from(value2);
         // Generate the value commitment of the note from the value and blinder
@@ -584,10 +595,14 @@ mod tests {
             crossover_commitment_value.into(),
             crossover_commitment_blinder.into(),
             vec![obfuscated_commitment_one, obfuscated_commitment_two],
-            vec![ obfuscated_note_value_one.into(), obfuscated_note_value_two.into()],
-
-            vec![obfuscated_note_blinder_one.into(), obfuscated_note_blinder_two.into()],
-
+            vec![
+                obfuscated_note_value_one.into(),
+                obfuscated_note_value_two.into(),
+            ],
+            vec![
+                obfuscated_note_blinder_one.into(),
+                obfuscated_note_blinder_two.into(),
+            ],
             fee,
         );
 
@@ -1176,6 +1191,175 @@ mod tests {
 
         // Assert the proof will fail
         assert!(circuit
+            .verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
+            .is_err());
+        Ok(())
+    }
+
+    #[test]
+    // This test ensures the execute gadget is done correctly
+    // by creating two notes and setting their field values
+    // in the execute circuit
+    fn test_execute_prover_cannot_cheat() -> Result<()> {
+        // Generate the (a,b) for the note
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        // Declare the secret spend key for the note
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        // Assign the value of the note
+        let value1 = 600u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        // Set the position of the note
+        note1.set_pos(0);
+        // Derive the one time public key, pk_r, for the note
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+
+        // Generate the (a,b) for the note
+        let secret3 = JubJubScalar::from(300 as u64);
+        let secret4 = JubJubScalar::from(400 as u64);
+        // Declare the secret spend key for the note
+        let ssk2 = SecretSpendKey::new(secret3, secret4);
+        // Assign the value of the first note as 400, which is incorrect
+        let value2 = 200u64;
+        let input_note_blinder_two = JubJubScalar::from(200 as u64);
+        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        // Set the position of the note
+        note2.set_pos(1);
+
+        let input_note_value_two = JubJubScalar::from(value2);
+        // Generate the value commitment of the note from the value and blinder
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+
+        let input_note_value_two = JubJubScalar::from(value2);
+        // Generate the value commitment of the note from the value and blinder
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+        // Assign the postitions of the notes to a position in the tree
+        let tree_pos_1 = tree.push(note1)?;
+        let tree_pos_2 = tree.push(note2)?;
+
+        // Generate the crossover commitment, C.c(v,b)
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+
+        // Generate the commitment to the first output note, C.c(v,b)
+        let obfuscated_note_value_one = JubJubScalar::from(200 as u64);
+        let obfuscated_note_blinder_one = JubJubScalar::from(100 as u64);
+        let obfuscated_commitment_one = compute_value_commitment(
+            obfuscated_note_value_one,
+            obfuscated_note_blinder_one,
+        );
+
+        // Generate the commitment to the second output note, C.c(v,b)
+        let obfuscated_note_value_two = JubJubScalar::from(200 as u64);
+        let obfuscated_note_blinder_two = JubJubScalar::from(200 as u64);
+        let obfuscated_commitment_two = compute_value_commitment(
+            obfuscated_note_value_two,
+            obfuscated_note_blinder_two,
+        );
+
+        // Assign the fee
+        let fee = BlsScalar::from(200);
+
+        let mut prover_circuit = build_execute_circuit(
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
+            vec![
+                tree.poseidon_branch(tree_pos_1)?.unwrap(),
+                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+            ],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
+            vec![], //input_commitment_one, input_commitment_two],
+            vec![input_note_value_one.into(), input_note_value_two.into()],
+            vec![], ///input_note_blinder_one.into(), input_note_blinder_two.into()],
+            crossover_commitment,
+            crossover_commitment_value.into(),
+            crossover_commitment_blinder.into(),
+            vec![obfuscated_commitment_one, obfuscated_commitment_two],
+            vec![
+                obfuscated_note_value_one.into(),
+                obfuscated_note_value_two.into(),
+            ],
+            vec![
+                obfuscated_note_blinder_one.into(),
+                obfuscated_note_blinder_two.into(),
+            ],
+            fee,
+        );
+
+
+        // Generate Composer & Public Parameters
+        let pub_params =
+            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let (pk, vk) = prover_circuit.compile(&pub_params)?;
+        let proof = prover_circuit.gen_proof(&pub_params, &pk, b"Execute")?;
+
+        let mut verifier_circuit = build_execute_circuit(
+            vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
+            vec![note1.hash(), note2.hash()],
+            vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
+            vec![
+                tree.poseidon_branch(tree_pos_1)?.unwrap(),
+                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+            ],
+            vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
+            vec![input_commitment_one, input_commitment_two],
+            vec![input_note_value_one.into(), input_note_value_two.into()],
+            vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
+            crossover_commitment,
+            crossover_commitment_value.into(),
+            crossover_commitment_blinder.into(),
+            vec![obfuscated_commitment_one, obfuscated_commitment_two],
+            vec![
+                obfuscated_note_value_one.into(),
+                obfuscated_note_value_two.into(),
+            ],
+            vec![
+                obfuscated_note_blinder_one.into(),
+                obfuscated_note_blinder_two.into(),
+            ],
+            fee,
+        );
+        verifier_circuit.compile(&pub_params);
+        let mut pi = vec![];
+        add_circuit_public_inputs(&verifier_circuit, crossover_commitment, fee, &mut pi);
+
+        // Assert the proof will fail
+        assert!(verifier_circuit
             .verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
             .is_err());
         Ok(())
