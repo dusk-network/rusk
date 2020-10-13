@@ -13,11 +13,13 @@ use poseidon252::sponge::sponge::sponge_hash_gadget;
 #[allow(non_snake_case)]
 pub fn input_preimage(
     composer: &mut StandardComposer,
+    type: AllocatedScalar,
     value_commitment_x: AllocatedScalar,
     value_commitment_y: AllocatedScalar,
     pos: AllocatedScalar,
     pk_r_x: AllocatedScalar,
     pk_r_y: AllocatedScalar,
+    encrypted_data: AllocatedScalar,
 ) -> Variable {
     let output = sponge_hash_gadget(
         composer,
