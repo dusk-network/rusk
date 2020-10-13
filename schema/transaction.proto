@@ -2,18 +2,17 @@ syntax = "proto3";
 package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
-import "basic_fields.proto";
 import "keys.proto";
 
 message Crossover {
-    JubJubCompressed value_comm = 1;
-    BlsScalar nonce = 2;
-    PoseidonCipher encypted_data = 3;
+    bytes value_commitment = 1; // JubJubCompressed
+    bytes nonce = 2; // JubJubScalar
+    bytes encrypted_data = 3;
 }
 message Fee {
     uint64 gas_limit = 1;
     uint64 gas_price = 2;
-    StealthAddress address = 3;
+    StealthAddress stealth_address = 3;
 }
 
 message Note {
@@ -23,35 +22,24 @@ message Note {
     }
 
     NoteType note_type = 1;
-    JubJubCompressed value_commitment = 2;
-    JubJubScalar nonce = 3;
-    StealthAddress address = 4;
+    bytes value_commitment = 2; // JubJubCompressed
+    bytes nonce = 3; // JubJubScalar
+    StealthAddress stealth_address = 4;
     fixed64 pos = 5;
-    PoseidonCipher encrypted_data = 6;
-}
-
-message TransactionPayload {
-    BlsScalar anchor = 1;
-    repeated BlsScalar nullifier = 2;
-    Crossover crossover = 3;
-    repeated Note notes = 4;
-    Fee fee = 5;
-    Proof spending_proof = 6;
-    bytes call_data = 7;
+    bytes encrypted_data = 6;
 }
 
 message Transaction {
     uint32 version = 1;
     uint32 type = 2;
-    TransactionPayload tx_payload = 3;
+    bytes payload = 3;
 }
 
 message TransactionRequest {
     bytes contract_address = 1;
     uint32 op_code = 2;
     bytes arguments = 3;
-    fixed64 gas_limit = 4;
-    fixed64 gas_price = 5;
+    Fee fee = 4;
 }
 
 service TransactionService {

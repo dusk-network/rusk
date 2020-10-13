@@ -10,7 +10,9 @@ mod version;
 
 use clap::{App, Arg};
 use futures::stream::TryStreamExt;
+use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
+use rusk::services::pki::KeysServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
 use std::path::Path;
@@ -19,12 +21,12 @@ use tonic::transport::Server;
 use version::show_version;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-pub const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
+pub const SOCKET_PATH: &str = "/tmp/rusk_listener";
 
 /// Default port that Rusk GRPC-server will listen to.
-pub(crate) const PORT: &'static str = "8585";
+pub(crate) const PORT: &str = "8585";
 /// Default host_address that Rusk GRPC-server will listen to.
-pub(crate) const HOST_ADDRESS: &'static str = "127.0.0.1";
+pub(crate) const HOST_ADDRESS: &str = "127.0.0.1";
 
 #[tokio::main]
 async fn main() {
@@ -94,19 +96,20 @@ async fn main() {
         .with_max_level(log)
         .finish();
     // Set the subscriber as global.
-    // so this subscriber will be used as the default in all threads for the remainder
-    // of the duration of the program, similar to how `loggers` work in the `log` crate.
+    // so this subscriber will be used as the default in all threads for the
+    // remainder of the duration of the program, similar to how `loggers`
+    // work in the `log` crate.
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    // Match the desired IPC method. Or set the default one depending on the OS used.
-    // Then startup rusk with the final values.
+    // Match the desired IPC method. Or set the default one depending on the OS
+    // used. Then startup rusk with the final values.
     let res = match matches.value_of("ipc_method") {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
                 startup_with_tcp_ip(
-                    matches.value_of("host").unwrap_or_else(|| HOST_ADDRESS),
-                    matches.value_of("port").unwrap_or_else(|| PORT),
+                    matches.value_of("host").unwrap_or(HOST_ADDRESS),
+                    matches.value_of("port").unwrap_or(PORT),
                 )
                 .await
             }
@@ -115,7 +118,7 @@ async fn main() {
             }
             (false, "uds") => {
                 startup_with_uds(
-                    matches.value_of("socket").unwrap_or_else(|| SOCKET_PATH),
+                    matches.value_of("socket").unwrap_or(SOCKET_PATH),
                 )
                 .await
             }
@@ -124,13 +127,13 @@ async fn main() {
         None => {
             if cfg!(windows) {
                 startup_with_tcp_ip(
-                    matches.value_of("host").unwrap_or_else(|| HOST_ADDRESS),
-                    matches.value_of("port").unwrap_or_else(|| PORT),
+                    matches.value_of("host").unwrap_or(HOST_ADDRESS),
+                    matches.value_of("port").unwrap_or(PORT),
                 )
                 .await
             } else {
                 startup_with_uds(
-                    matches.value_of("socket").unwrap_or_else(|| SOCKET_PATH),
+                    matches.value_of("socket").unwrap_or(SOCKET_PATH),
                 )
                 .await
             }
@@ -152,8 +155,13 @@ async fn startup_with_uds(
 
     let rusk = Rusk::default();
 
+    let echoer = EchoerServer::new(rusk);
+    let blindbid = BlindBidServiceServer::new(rusk);
+    let keys = KeysServer::new(rusk);
     Server::builder()
-        .add_service(EchoerServer::new(rusk))
+        .add_service(echoer)
+        .add_service(blindbid)
+        .add_service(keys)
         .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
         .await?;
 
@@ -165,14 +173,20 @@ async fn startup_with_tcp_ip(
     port: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut full_address = host.to_string();
-    full_address.extend(":".chars());
-    full_address.extend(port.to_string().chars());
+    full_address.push(':');
+    full_address.push_str(&port.to_string());
     let addr: std::net::SocketAddr = full_address.parse()?;
     let rusk = Rusk::default();
 
+    let echoer = EchoerServer::new(rusk);
+    let blindbid = BlindBidServiceServer::new(rusk);
+    let keys = KeysServer::new(rusk);
+
     // Build the Server with the `Echo` service attached to it.
     Ok(Server::builder()
-        .add_service(EchoerServer::new(rusk))
+        .add_service(echoer)
+        .add_service(blindbid)
+        .add_service(keys)
         .serve(addr)
         .await?)
 }

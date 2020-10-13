@@ -4,10 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
+use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_plonk::jubjub::{
+    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
+    Fr as JubJubScalar,
+};
+use encoding::decode_request_param;
 use futures::stream::TryStreamExt;
-use rusk::services::echoer::{EchoRequest, EchoerClient, EchoerServer};
+use rusk::services::pki::{
+    GenerateKeysRequest, KeysClient, KeysServer, SecretKey,
+};
 use rusk::Rusk;
 use std::convert::TryFrom;
 use std::path::Path;
@@ -20,16 +29,14 @@ use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-const SOCKET_PATH: &'static str = "/tmp/rusk_listener_echoer";
-const SERVER_ADDRESS: &'static str = "127.0.0.1:50051";
-const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50054";
+const SOCKET_PATH: &'static str = "/tmp/rusk_listener_pki";
 
 #[cfg(test)]
-mod echo_service_tests {
+mod pki_service_tests {
     use super::*;
 
     #[tokio::test(threaded_scheduler)]
-    async fn echo_works_uds() -> Result<(), Box<dyn std::error::Error>> {
+    async fn pki_works_uds() -> Result<(), Box<dyn std::error::Error>> {
         // Generate a subscriber with the desired log level.
         let subscriber =
             Subscriber::builder().with_max_level(Level::INFO).finish();
@@ -51,58 +58,51 @@ mod echo_service_tests {
         // Result. See: https://github.com/rust-lang/rust/issues/62290
         tokio::spawn(async move {
             Server::builder()
-                .add_service(EchoerServer::new(rusk))
+                .add_service(KeysServer::new(rusk))
                 .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
                 .await
                 .unwrap();
         });
 
         // Create the client binded to the default testing UDS path.
-        let channel = Endpoint::try_from("http://[::]:50052")?
+        let channel = Endpoint::try_from("http://[::]:50051")?
             .connect_with_connector(service_fn(|_: Uri| {
                 // Connect to a Uds socket
                 UnixStream::connect(SOCKET_PATH)
             }))
             .await?;
-        let mut client = EchoerClient::new(channel);
+        let mut client = KeysClient::new(channel);
 
-        // Actual test case.
-        let message = "Test echo is working!";
-        let request = tonic::Request::new(EchoRequest {
-            message: message.into(),
-        });
+        // Actual test case
+        // Key generation
+        let request = tonic::Request::new(GenerateKeysRequest {});
 
-        let response = client.echo(request).await?;
+        let response = client.generate_keys(request).await?.into_inner();
 
-        assert_eq!(response.into_inner().message, message);
+        let sk = response.sk.unwrap();
+        // Make sure as well, that the keys are related.
+        let a = jubjub_decode::<JubJubScalar>(&sk.a)?;
+        let b = jubjub_decode::<JubJubScalar>(&sk.b)?;
+        let sk = SecretSpendKey::new(a, b);
 
-        Ok(())
-    }
+        let vk = response.vk.unwrap();
+        let a = jubjub_decode::<JubJubScalar>(&vk.a)?;
+        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&vk.b_g)?);
+        let vk = ViewKey::new(a, b);
 
-    /*
-    #[tokio::test(threaded_scheduler)]
-    async fn echo_works_tcp_ip() -> Result<(), Box<dyn std::error::Error>> {
-        let addr = SERVER_ADDRESS.parse()?;
-        let rusk = Rusk::default();
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(EchoerServer::new(rusk))
-                .serve(addr)
-                .await
-                .unwrap()
-        });
-        let mut client = EchoerClient::connect(CLIENT_ADDRESS).await?;
+        let pk = response.pk.unwrap();
+        let a = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.a_g)?);
+        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.b_g)?);
+        let psk = PublicSpendKey::new(a, b);
 
-        let message = "Test echo is working!";
-        let request = tonic::Request::new(EchoRequest {
-            message: message.into(),
-        });
+        assert_eq!(sk.view_key(), vk);
+        assert_eq!(sk.public_key(), psk);
 
-        let response = client.echo(request).await?;
+        // Stealth address generation
+        let request = tonic::Request::new(pk);
 
-        assert_eq!(response.into_inner().message, message);
+        let response = client.generate_stealth_address(request).await?;
 
         Ok(())
     }
-    */
 }

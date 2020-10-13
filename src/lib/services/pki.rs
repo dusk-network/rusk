@@ -18,7 +18,9 @@ use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
 pub use super::rusk_proto::{
-    keys_server::Keys, GenerateKeysRequest, GenerateKeysResponse, PublicKey,
+    keys_client::KeysClient,
+    keys_server::{Keys, KeysServer},
+    GenerateKeysRequest, GenerateKeysResponse, PublicKey, SecretKey,
     StealthAddress,
 };
 

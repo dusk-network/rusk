@@ -4,10 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
+use dusk_plonk::prelude::*;
 use futures::stream::TryStreamExt;
-use rusk::services::echoer::{EchoRequest, EchoerClient, EchoerServer};
+use rusk::services::blindbid::{
+    BlindBidServiceClient, BlindBidServiceServer, GenerateScoreRequest,
+    GenerateScoreResponse, VerifyScoreRequest, VerifyScoreResponse,
+};
 use rusk::Rusk;
 use std::convert::TryFrom;
 use std::path::Path;
@@ -20,16 +25,16 @@ use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-const SOCKET_PATH: &'static str = "/tmp/rusk_listener_echoer";
+const SOCKET_PATH: &'static str = "/tmp/rusk_listener_blindbid";
 const SERVER_ADDRESS: &'static str = "127.0.0.1:50051";
-const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50054";
+const CLIENT_ADDRESS: &'static str = "http://127.0.0.1:50051";
 
 #[cfg(test)]
-mod echo_service_tests {
+mod blindbid_service_tests {
     use super::*;
 
     #[tokio::test(threaded_scheduler)]
-    async fn echo_works_uds() -> Result<(), Box<dyn std::error::Error>> {
+    async fn walkthrough_works() -> Result<(), Box<dyn std::error::Error>> {
         // Generate a subscriber with the desired log level.
         let subscriber =
             Subscriber::builder().with_max_level(Level::INFO).finish();
@@ -51,58 +56,54 @@ mod echo_service_tests {
         // Result. See: https://github.com/rust-lang/rust/issues/62290
         tokio::spawn(async move {
             Server::builder()
-                .add_service(EchoerServer::new(rusk))
+                .add_service(BlindBidServiceServer::new(rusk))
                 .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
                 .await
                 .unwrap();
         });
 
         // Create the client binded to the default testing UDS path.
-        let channel = Endpoint::try_from("http://[::]:50052")?
+        let channel = Endpoint::try_from("http://[::]:50051")?
             .connect_with_connector(service_fn(|_: Uri| {
                 // Connect to a Uds socket
                 UnixStream::connect(SOCKET_PATH)
             }))
             .await?;
-        let mut client = EchoerClient::new(channel);
 
-        // Actual test case.
-        let message = "Test echo is working!";
-        let request = tonic::Request::new(EchoRequest {
-            message: message.into(),
+        // ------------------------------------------------------------ //
+        //                                                              //
+        //                                                              //
+        //                      Actual Testcase                         //
+        //                                                              //
+        // ------------------------------------------------------------ //
+        let mut client = BlindBidServiceClient::new(channel);
+        // Declare the parameters needed to generate a blindbid proof which
+        // were the ones used to generate the Bid that is now stored in the
+        // Bid Tree.
+        let request = tonic::Request::new(GenerateScoreRequest {
+            k: BlsScalar::one().to_bytes().to_vec(),
+            seed: BlsScalar::one().to_bytes().to_vec(),
+            secret: dusk_plonk::jubjub::GENERATOR.to_bytes().to_vec(),
+            round: 1000u32,
+            step: 1000u32,
+            index_stored_bid: 0u64,
         });
+        let response = client.generate_score(request).await?;
+        let proof = &response.get_ref().blindbid_proof;
+        let score = &response.get_ref().score;
+        let prover_id = &response.get_ref().prover_identity;
 
-        let response = client.echo(request).await?;
-
-        assert_eq!(response.into_inner().message, message);
-
+        let verify_request = tonic::Request::new(VerifyScoreRequest {
+            proof: proof.clone(),
+            score: score.clone(),
+            seed: BlsScalar::one().to_bytes().to_vec(),
+            prover_id: prover_id.clone(),
+            round: 1000u64,
+            step: 1000u32,
+            index_stored_bid: 0u64,
+        });
+        let verify_response = client.verify_score(verify_request).await?;
+        assert_eq!(verify_response.get_ref().success, true);
         Ok(())
     }
-
-    /*
-    #[tokio::test(threaded_scheduler)]
-    async fn echo_works_tcp_ip() -> Result<(), Box<dyn std::error::Error>> {
-        let addr = SERVER_ADDRESS.parse()?;
-        let rusk = Rusk::default();
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(EchoerServer::new(rusk))
-                .serve(addr)
-                .await
-                .unwrap()
-        });
-        let mut client = EchoerClient::connect(CLIENT_ADDRESS).await?;
-
-        let message = "Test echo is working!";
-        let request = tonic::Request::new(EchoRequest {
-            message: message.into(),
-        });
-
-        let response = client.echo(request).await?;
-
-        assert_eq!(response.into_inner().message, message);
-
-        Ok(())
-    }
-    */
 }

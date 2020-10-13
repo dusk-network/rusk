@@ -1,3 +1,6 @@
 Cargo.lock
 **/target
 **/*.rs.bk
+*.bin
+*.pk
+*.vk
