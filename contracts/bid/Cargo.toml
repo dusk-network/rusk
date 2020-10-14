@@ -12,6 +12,6 @@ canonical = "0.1.0"
 canonical_derive = "0.1.0"
 canonical_host = { version = "0.1.0", optional = true }
 dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.3.0"}
-
+dusk-plonk = {git = "https://github.com/dusk-network/plonk", tag = "v0.3.1" }
 [features]
 host = ["canonical_host"]

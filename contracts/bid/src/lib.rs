@@ -9,6 +9,8 @@
 
 use canonical_derive::Canon;
 use dusk_blindbid::{bid::Bid, tree::BidTree};
+use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::prelude::*;
 
 const PAGE_SIZE: usize = 1024 * 4;
 
@@ -46,16 +48,27 @@ mod host {
     type QueryIndex = u8;
 
     impl BidContract {
-        pub fn find_bid(pk: PublicKey) -> Query<(QueryIndex, PublicKey), Bid> {
-            Query::new((0, pk))
-        }
-
         pub fn bid(
-            bid: Bid,
+            commitment: JubJubAffine,
+            hashed_secret: BlsScalar,
+            nonce: BlsScalar,
+            encrypted_data: PoseidonCipher,
+            stealth_address: StealthAddress,
+            block_height: u64,
             correctness_proof: Proof,
             spending_proof: Proof,
         ) -> Query<(QueryIndex, Bid, Proof, Proof), ()> {
-            Query::new((1, bid, correctness_proof, spending_proof))
+            Query::new((
+                1,
+                commitment,
+                hashed_secret,
+                nonce,
+                encrypted_data,
+                stealth_address,
+                block_height,
+                correctness_proof,
+                spending_proof,
+            ))
         }
     }
 }

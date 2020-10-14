@@ -88,7 +88,7 @@ fn transaction(
     // read self.
     let mut slf: BidContract = Canon::<BS>::read(&mut source)?;
     // read transaction id
-    let qid: u16 = Canon::<BS>::read(&mut source)?;
+    let qid: u8 = Canon::<BS>::read(&mut source)?;
     match qid {
         // Bid fn call
         0 => {
@@ -138,10 +138,10 @@ fn transaction(
         }
         // Extend Bid call
         1 => unimplemented!(), //Pending to clarify specs and signature
-                                // scheme.
+        // scheme.
         // Withdraw Bid
         2 => unimplemented!(), //Pending to clarify specs and signature
-                                // scheme.
+        // scheme.
         _ => unreachable!(),
     }
 }
