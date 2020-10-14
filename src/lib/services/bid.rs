@@ -6,6 +6,7 @@
 
 //! Bid service implementation for the Rusk server.
 
+mod contract_host_fns;
 mod find_bid;
 mod new_bid;
 

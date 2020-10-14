@@ -1,5 +1,5 @@
 [package]
-name = "bid"
+name = "bid-contract"
 version = "0.1.0"
 authors = ["Jules de Smit <jules@dusk.network>"]
 edition = "2018"
@@ -8,10 +8,10 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-canonical = { path = "../../../canonical/canon" }
-canonical_derive = { path = "../../../canonical/canon_derive" }
-canonical_host = { path = "../../../canonical/canon_host", optional = true }
+canonical = "0.1.0"
+canonical_derive = "0.1.0"
+canonical_host = { version = "0.1.0", optional = true }
+dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.3.0"}
 
 [features]
-hosted = ["canonical/hosted"]
 host = ["canonical_host"]
