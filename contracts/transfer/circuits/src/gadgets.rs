@@ -10,4 +10,5 @@ pub mod merkle;
 pub mod nullifier;
 pub mod preimage;
 pub mod range;
+pub mod schnorr;
 pub mod secret_key;
