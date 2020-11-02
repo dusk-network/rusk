@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::AffinePoint;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 use std::convert::TryInto;
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
 
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
@@ -49,7 +49,7 @@ pub fn input_preimage(
 }
 
 #[cfg(test)]
-mod commitment_tests {
+mod preimage_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_pki::{Ownable, PublicSpendKey};
@@ -87,18 +87,6 @@ mod commitment_tests {
         let cipher3 = BlsScalar::from_bytes(&arr3).unwrap();
 
         let note_hash = note.hash();
-            //sponge_hash(&[
-
-        //     BlsScalar::from(note.note() as u64)]);
-        //     note.value_commitment().to_hash_inputs()[0],
-        //     note.value_commitment().to_hash_inputs()[1],
-        //     BlsScalar::from(*note.nonce()),
-        //     note.stealth_address().pk_r().to_hash_inputs()[0],
-        //     note.stealth_address().pk_r().to_hash_inputs()[1],
-        //     note.stealth_address().R().to_hash_inputs()[0],
-        //     note.stealth_address().R().to_hash_inputs()[1],
-        //     BlsScalar::from(note.pos()),]
-        // );
 
         // Generate Composer & Public Parameters
         let pub_params =
@@ -130,9 +118,12 @@ mod commitment_tests {
             prover.mut_cs(),
             BlsScalar::from(note.pos()),
         );
-        let cipher_1 = AllocatedScalar::allocate(prover.mut_cs(), cipher1);
-        let cipher_2 = AllocatedScalar::allocate(prover.mut_cs(), cipher2);
-        let cipher_3 = AllocatedScalar::allocate(prover.mut_cs(), cipher3);
+        let cipher_1 =
+            AllocatedScalar::allocate(prover.mut_cs(), note.cipher()[0]);
+        let cipher_2 =
+            AllocatedScalar::allocate(prover.mut_cs(), note.cipher()[1]);
+        let cipher_3 =
+            AllocatedScalar::allocate(prover.mut_cs(), note.cipher()[2]);
 
         let a = input_preimage(
             prover.mut_cs(),
@@ -178,9 +169,12 @@ mod commitment_tests {
             verifier.mut_cs(),
             BlsScalar::from(note.pos()),
         );
-        let cipher_1 = AllocatedScalar::allocate(verifier.mut_cs(), cipher1);
-        let cipher_2 = AllocatedScalar::allocate(verifier.mut_cs(), cipher2);
-        let cipher_3 = AllocatedScalar::allocate(verifier.mut_cs(), cipher3);
+        let cipher_1 =
+            AllocatedScalar::allocate(verifier.mut_cs(), note.cipher()[0]);
+        let cipher_2 =
+            AllocatedScalar::allocate(verifier.mut_cs(), note.cipher()[1]);
+        let cipher_3 =
+            AllocatedScalar::allocate(verifier.mut_cs(), note.cipher()[2]);
 
         let a = input_preimage(
             verifier.mut_cs(),
