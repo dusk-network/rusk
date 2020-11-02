@@ -45,7 +45,7 @@ pub fn balance(
 }
 
 #[cfg(test)]
-mod tests {
+mod balance_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;

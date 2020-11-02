@@ -23,7 +23,7 @@ pub fn sk_knowledge(
 }
 
 #[cfg(test)]
-mod commitment_tests {
+mod secret_key_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
