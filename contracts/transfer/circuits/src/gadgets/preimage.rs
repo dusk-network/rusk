@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
@@ -15,12 +16,9 @@ use std::convert::TryInto;
 pub fn input_preimage(
     composer: &mut StandardComposer,
     note_type: AllocatedScalar,
-    value_commitment_x: AllocatedScalar,
-    value_commitment_y: AllocatedScalar,
-    pk_r_x: AllocatedScalar,
-    pk_r_y: AllocatedScalar,
-    randomness_x: AllocatedScalar,
-    randomness_y: AllocatedScalar,
+    value_commitment: PlonkPoint,
+    pk_r: PlonkPoint,
+    randomness: PlonkPoint,
     position: AllocatedScalar,
     cipher_one: AllocatedScalar,
     cipher_two: AllocatedScalar,
@@ -30,12 +28,12 @@ pub fn input_preimage(
         composer,
         &[
             note_type.var,
-            value_commitment_x.var,
-            value_commitment_y.var,
-            pk_r_x.var,
-            pk_r_y.var,
-            randomness_x.var,
-            randomness_y.var,
+            *value_commitment.x(),
+            *value_commitment.y(),
+            *pk_r.x(),
+            *pk_r.y(),
+            *randomness.x(),
+            *randomness.y(),
             position.var,
             cipher_one.var,
             cipher_two.var,
@@ -96,29 +94,17 @@ mod commitment_tests {
             prover.mut_cs(),
             BlsScalar::from(note.note() as u64),
         );
-        let comm_x = AllocatedScalar::allocate(
+        let commitment = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            note.value_commitment().to_hash_inputs()[0],
+            AffinePoint::from(note.value_commitment()),
         );
-        let comm_y = AllocatedScalar::allocate(
+        let pkr = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            note.value_commitment().to_hash_inputs()[1],
+            AffinePoint::from(note.stealth_address().pk_r()),
         );
-        let pkr_x = AllocatedScalar::allocate(
+        let r = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            note.stealth_address().pk_r().to_hash_inputs()[0],
-        );
-        let pkr_y = AllocatedScalar::allocate(
-            prover.mut_cs(),
-            note.stealth_address().pk_r().to_hash_inputs()[1],
-        );
-        let r_x = AllocatedScalar::allocate(
-            prover.mut_cs(),
-            note.stealth_address().R().to_hash_inputs()[0],
-        );
-        let r_y = AllocatedScalar::allocate(
-            prover.mut_cs(),
-            note.stealth_address().R().to_hash_inputs()[1],
+            AffinePoint::from(note.stealth_address().R()),
         );
         let pos = AllocatedScalar::allocate(
             prover.mut_cs(),
@@ -131,12 +117,9 @@ mod commitment_tests {
         let a = input_preimage(
             prover.mut_cs(),
             note_type,
-            comm_x,
-            comm_y,
-            pkr_x,
-            pkr_y,
-            r_x,
-            r_y,
+            commitment,
+            pkr,
+            r,
             pos,
             cipher_1,
             cipher_2,
@@ -155,29 +138,17 @@ mod commitment_tests {
             verifier.mut_cs(),
             BlsScalar::from(note.note() as u64),
         );
-        let comm_x = AllocatedScalar::allocate(
+        let commitment = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            note.value_commitment().to_hash_inputs()[0],
+            AffinePoint::from(note.value_commitment()),
         );
-        let comm_y = AllocatedScalar::allocate(
+        let pkr = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            note.value_commitment().to_hash_inputs()[1],
+            AffinePoint::from(note.stealth_address().pk_r()),
         );
-        let pkr_x = AllocatedScalar::allocate(
+        let r = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            note.stealth_address().pk_r().to_hash_inputs()[0],
-        );
-        let pkr_y = AllocatedScalar::allocate(
-            verifier.mut_cs(),
-            note.stealth_address().pk_r().to_hash_inputs()[1],
-        );
-        let r_x = AllocatedScalar::allocate(
-            verifier.mut_cs(),
-            note.stealth_address().R().to_hash_inputs()[0],
-        );
-        let r_y = AllocatedScalar::allocate(
-            verifier.mut_cs(),
-            note.stealth_address().R().to_hash_inputs()[1],
+            AffinePoint::from(note.stealth_address().R()),
         );
         let pos = AllocatedScalar::allocate(
             verifier.mut_cs(),
@@ -190,12 +161,9 @@ mod commitment_tests {
         let a = input_preimage(
             verifier.mut_cs(),
             note_type,
-            comm_x,
-            comm_y,
-            pkr_x,
-            pkr_y,
-            r_x,
-            r_y,
+            commitment,
+            pkr,
+            r,
             pos,
             cipher_1,
             cipher_2,
