@@ -5,10 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
+use dusk_plonk::jubjub::AffinePoint;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::sponge_hash_gadget;
+use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 use std::convert::TryInto;
+use dusk_plonk::bls12_381::Scalar as BlsScalar;
 
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
@@ -17,6 +19,7 @@ pub fn input_preimage(
     composer: &mut StandardComposer,
     note_type: AllocatedScalar,
     value_commitment: PlonkPoint,
+    nonce: AllocatedScalar,
     pk_r: PlonkPoint,
     randomness: PlonkPoint,
     position: AllocatedScalar,
@@ -30,6 +33,7 @@ pub fn input_preimage(
             note_type.var,
             *value_commitment.x(),
             *value_commitment.y(),
+            nonce.var,
             *pk_r.x(),
             *pk_r.y(),
             *randomness.x(),
@@ -83,6 +87,18 @@ mod commitment_tests {
         let cipher3 = BlsScalar::from_bytes(&arr3).unwrap();
 
         let note_hash = note.hash();
+            //sponge_hash(&[
+
+        //     BlsScalar::from(note.note() as u64)]);
+        //     note.value_commitment().to_hash_inputs()[0],
+        //     note.value_commitment().to_hash_inputs()[1],
+        //     BlsScalar::from(*note.nonce()),
+        //     note.stealth_address().pk_r().to_hash_inputs()[0],
+        //     note.stealth_address().pk_r().to_hash_inputs()[1],
+        //     note.stealth_address().R().to_hash_inputs()[0],
+        //     note.stealth_address().R().to_hash_inputs()[1],
+        //     BlsScalar::from(note.pos()),]
+        // );
 
         // Generate Composer & Public Parameters
         let pub_params =
@@ -97,6 +113,10 @@ mod commitment_tests {
         let commitment = PlonkPoint::from_private_affine(
             prover.mut_cs(),
             AffinePoint::from(note.value_commitment()),
+        );
+        let nonce = AllocatedScalar::allocate(
+            prover.mut_cs(),
+            BlsScalar::from(*note.nonce()),
         );
         let pkr = PlonkPoint::from_private_affine(
             prover.mut_cs(),
@@ -118,6 +138,7 @@ mod commitment_tests {
             prover.mut_cs(),
             note_type,
             commitment,
+            nonce,
             pkr,
             r,
             pos,
@@ -131,7 +152,6 @@ mod commitment_tests {
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
-        prover.mut_cs().check_circuit_satisfied();
 
         let mut verifier = Verifier::new(b"test");
         let note_type = AllocatedScalar::allocate(
@@ -141,6 +161,10 @@ mod commitment_tests {
         let commitment = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
             AffinePoint::from(note.value_commitment()),
+        );
+        let nonce = AllocatedScalar::allocate(
+            verifier.mut_cs(),
+            BlsScalar::from(*note.nonce()),
         );
         let pkr = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
@@ -162,6 +186,7 @@ mod commitment_tests {
             verifier.mut_cs(),
             note_type,
             commitment,
+            nonce,
             pkr,
             r,
             pos,
