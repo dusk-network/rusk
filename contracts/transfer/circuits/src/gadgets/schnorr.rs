@@ -31,9 +31,10 @@ pub fn schnorr_one_key(
     let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.xor_gate(c,b,252);
+    let challenge = composer.xor_gate(c, b, 252);
 
-    let sig = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
+    let sig =
+        fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let p = variable_base_scalar_mul(composer, challenge, pk);
 
     let add = sig.point().add(composer, *p.point());
@@ -63,9 +64,11 @@ pub fn schnorr_two_keys(
     let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.xor_gate(c,b,252);
-    let sig_1 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
-    let sig_2 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_NUMS_EXTENDED);
+    let challenge = composer.xor_gate(c, b, 252);
+    let sig_1 =
+        fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
+    let sig_2 =
+        fixed_base_scalar_mul(composer, signature.var, GENERATOR_NUMS_EXTENDED);
     let pub_1 = variable_base_scalar_mul(composer, challenge, pk);
     let pub_2 = variable_base_scalar_mul(composer, challenge, pk_prime);
 
@@ -114,9 +117,11 @@ mod schnorr_tests {
 
         let sig_a = AllocatedScalar::allocate(prover.mut_cs(), U.into());
         let R_p = PlonkPoint::from_private_affine(prover.mut_cs(), R);
-        let R_prime_p = PlonkPoint::from_private_affine(prover.mut_cs(), R_prime);
+        let R_prime_p =
+            PlonkPoint::from_private_affine(prover.mut_cs(), R_prime);
         let pk_p = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
-        let pk_prime_p = PlonkPoint::from_private_affine(prover.mut_cs(), pk_prime);
+        let pk_prime_p =
+            PlonkPoint::from_private_affine(prover.mut_cs(), pk_prime);
         let message_a = AllocatedScalar::allocate(prover.mut_cs(), message);
 
         schnorr_two_keys(
@@ -135,9 +140,11 @@ mod schnorr_tests {
         let mut verifier = Verifier::new(b"test");
         let sig = AllocatedScalar::allocate(verifier.mut_cs(), U.into());
         let R = PlonkPoint::from_private_affine(verifier.mut_cs(), R);
-        let R_prime = PlonkPoint::from_private_affine(verifier.mut_cs(), R_prime);
+        let R_prime =
+            PlonkPoint::from_private_affine(verifier.mut_cs(), R_prime);
         let pk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
-        let pk_prime = PlonkPoint::from_private_affine(verifier.mut_cs(), pk_prime);
+        let pk_prime =
+            PlonkPoint::from_private_affine(verifier.mut_cs(), pk_prime);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
         schnorr_two_keys(
@@ -164,11 +171,7 @@ mod schnorr_tests {
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
         let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[
-            R.get_x(),
-            R.get_y(),
-            h,
-        ]);
+        let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
         let c = c_hash & BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c.to_bytes()).unwrap();
         let U = r - (c * sk);
@@ -184,13 +187,7 @@ mod schnorr_tests {
         let pk_p = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
         let message_a = AllocatedScalar::allocate(prover.mut_cs(), message);
 
-        schnorr_one_key(
-            prover.mut_cs(),
-            sig_a,
-            R_p,
-            pk_p,
-            message_a,
-        );
+        schnorr_one_key(prover.mut_cs(), sig_a, R_p, pk_p, message_a);
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
@@ -201,13 +198,7 @@ mod schnorr_tests {
         let pk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
-        schnorr_one_key(
-            verifier.mut_cs(),
-            sig,
-            R,
-            pk,
-            message,
-        );
+        schnorr_one_key(verifier.mut_cs(), sig, R, pk, message);
         verifier.preprocess(&ck)?;
         verifier.verify(&proof, &vk, &prover_pi)
     }
