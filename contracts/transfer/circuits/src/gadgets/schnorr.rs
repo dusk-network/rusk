@@ -15,7 +15,10 @@ use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
 use std::convert::TryInto;
 
-/// verifies stuff
+/// Utilises a Schnorr signature scheme,
+/// to prove the knowledge of a discrete
+/// log for a given public key.
+#[allow(non_snake_case)]
 pub fn schnorr_one_key(
     composer: &mut StandardComposer,
     signature: AllocatedScalar,
@@ -24,7 +27,11 @@ pub fn schnorr_one_key(
     message: AllocatedScalar,
 ) {
     let h = sponge_hash_gadget(composer, &[message.var]);
-    let challenge = sponge_hash_gadget(composer, &[*R.x(), *R.y(), h]);
+    let c = sponge_hash_gadget(composer, &[*R.x(), *R.y(), h]);
+    let b = BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+    let b = composer.add_witness_to_circuit_description(b);
+
+    let challenge = composer.and_gate(c,b,252);
 
     let sig = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let p = variable_base_scalar_mul(composer, challenge, pk);
@@ -33,8 +40,12 @@ pub fn schnorr_one_key(
     composer.assert_equal_point(add, R);
 }
 
-/// Verifies that schnorr signature outputs
-/// share the same Discrete log
+/// Utilises a Schnorr signature scheme,
+/// to prove the knowledge of the discrete
+/// log for given keys in a public key pair.
+/// ALso verifying that both keys share the
+/// same discrete log.
+#[allow(non_snake_case)]
 pub fn schnorr_two_keys(
     composer: &mut StandardComposer,
     signature: AllocatedScalar,
@@ -45,11 +56,14 @@ pub fn schnorr_two_keys(
     message: AllocatedScalar,
 ) {
     let h = sponge_hash_gadget(composer, &[message.var]);
-    let challenge = sponge_hash_gadget(
+    let c = sponge_hash_gadget(
         composer,
         &[*R.x(), *R.y(), *R_prime.x(), *R_prime.y(), h],
     );
+    let b = BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+    let b = composer.add_witness_to_circuit_description(b);
 
+    let challenge = composer.and_gate(c,b,252);
     let sig_1 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let sig_2 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_NUMS_EXTENDED);
     let pub_1 = variable_base_scalar_mul(composer, challenge, pk);
@@ -69,7 +83,7 @@ mod schnorr_tests {
 
     #[test]
     #[allow(non_snake_case)]
-    fn schnorr_gadget() -> Result<(), Error> {
+    fn schnorr_gadget_two_keys() -> Result<(), Error> {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
@@ -178,7 +192,7 @@ mod schnorr_tests {
         );
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
-        // prover.mut_cs().check_circuit_satisfied();
+        prover.mut_cs().check_circuit_satisfied();
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
