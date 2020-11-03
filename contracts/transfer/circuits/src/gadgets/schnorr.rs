@@ -31,7 +31,7 @@ pub fn schnorr_one_key(
     let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.xor_gate(c, b, 252);
+    let challenge = composer.xor_gate(c, b, 250);
 
     let sig =
         fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
@@ -44,7 +44,7 @@ pub fn schnorr_one_key(
 /// Utilises a Schnorr signature scheme,
 /// to prove the knowledge of the discrete
 /// log for given keys in a public key pair.
-/// ALso verifying that both keys share the
+/// Also verifying that both keys share the
 /// same discrete log.
 #[allow(non_snake_case)]
 pub fn schnorr_two_keys(
@@ -64,7 +64,7 @@ pub fn schnorr_two_keys(
     let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.xor_gate(c, b, 252);
+    let challenge = composer.xor_gate(c, b, 250);
     let sig_1 =
         fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let sig_2 =
@@ -105,8 +105,8 @@ mod schnorr_tests {
             R_prime.get_y(),
             h,
         ]);
-        let c = c_hash & BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
-        let c = JubJubScalar::from_bytes(&c.to_bytes()).unwrap();
+        let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
 
         // Generate Composer & Public Parameters
@@ -161,6 +161,7 @@ mod schnorr_tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn schnorr_gadget_one_key() -> Result<(), Error> {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
@@ -172,8 +173,8 @@ mod schnorr_tests {
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
         let h = sponge_hash(&[message]);
         let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
-        let c = c_hash & BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
-        let c = JubJubScalar::from_bytes(&c.to_bytes()).unwrap();
+        let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
 
         // Generate Composer & Public Parameters
