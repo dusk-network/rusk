@@ -28,10 +28,10 @@ pub fn schnorr_one_key(
 ) {
     let h = sponge_hash_gadget(composer, &[message.var]);
     let c = sponge_hash_gadget(composer, &[*R.x(), *R.y(), h]);
-    let b = BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+    let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.and_gate(c,b,252);
+    let challenge = composer.xor_gate(c,b,252);
 
     let sig = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let p = variable_base_scalar_mul(composer, challenge, pk);
@@ -60,10 +60,10 @@ pub fn schnorr_two_keys(
         composer,
         &[*R.x(), *R.y(), *R_prime.x(), *R_prime.y(), h],
     );
-    let b = BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+    let b = BlsScalar::zero();
     let b = composer.add_witness_to_circuit_description(b);
 
-    let challenge = composer.and_gate(c,b,252);
+    let challenge = composer.xor_gate(c,b,252);
     let sig_1 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_EXTENDED);
     let sig_2 = fixed_base_scalar_mul(composer, signature.var, GENERATOR_NUMS_EXTENDED);
     let pub_1 = variable_base_scalar_mul(composer, challenge, pk);
@@ -102,7 +102,8 @@ mod schnorr_tests {
             R_prime.get_y(),
             h,
         ]);
-        let c = JubJubScalar::from_raw(*c_hash.reduce().internal_repr());
+        let c = c_hash & BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c.to_bytes()).unwrap();
         let U = r - (c * sk);
 
         // Generate Composer & Public Parameters
@@ -129,15 +130,14 @@ mod schnorr_tests {
         );
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
-        // prover.mut_cs().check_circuit_satisfied();
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
         let sig = AllocatedScalar::allocate(verifier.mut_cs(), U.into());
         let R = PlonkPoint::from_private_affine(verifier.mut_cs(), R);
         let R_prime = PlonkPoint::from_private_affine(verifier.mut_cs(), R_prime);
-        let pk = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
-        let pk_prime = PlonkPoint::from_private_affine(prover.mut_cs(), pk_prime);
+        let pk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
+        let pk_prime = PlonkPoint::from_private_affine(verifier.mut_cs(), pk_prime);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
         schnorr_two_keys(
@@ -169,7 +169,8 @@ mod schnorr_tests {
             R.get_y(),
             h,
         ]);
-        let c = JubJubScalar::from_raw(*c_hash.reduce().internal_repr());
+        let c = c_hash & BlsScalar::pow_of_2(252).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c.to_bytes()).unwrap();
         let U = r - (c * sk);
 
         // Generate Composer & Public Parameters
@@ -192,13 +193,12 @@ mod schnorr_tests {
         );
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
-        prover.mut_cs().check_circuit_satisfied();
         let proof = prover.prove(&ck)?;
 
         let mut verifier = Verifier::new(b"test");
         let sig = AllocatedScalar::allocate(verifier.mut_cs(), U.into());
         let R = PlonkPoint::from_private_affine(verifier.mut_cs(), R);
-        let pk = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
+        let pk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
         schnorr_one_key(
