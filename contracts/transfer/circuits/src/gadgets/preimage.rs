@@ -10,7 +10,7 @@ use dusk_plonk::jubjub::AffinePoint;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
-use std::convert::TryInto;
+
 
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
@@ -27,7 +27,7 @@ pub fn input_preimage(
     cipher_two: AllocatedScalar,
     cipher_three: AllocatedScalar,
 ) -> Variable {
-    let output = sponge_hash_gadget(
+    sponge_hash_gadget(
         composer,
         &[
             note_type.var,
@@ -43,9 +43,8 @@ pub fn input_preimage(
             cipher_two.var,
             cipher_three.var,
         ],
-    );
+    )
 
-    output
 }
 
 #[cfg(test)]
@@ -77,21 +76,13 @@ mod preimage_tests {
             value,
             blinder,
         );
-        let note_bytes = note.to_bytes();
-        let cipher = &note_bytes[note_bytes.len() - 96..];
-        let arr1: [u8; 32] = cipher[..32].try_into().expect("Invalid length");
-        let cipher1 = BlsScalar::from_bytes(&arr1).unwrap();
-        let arr2: [u8; 32] = cipher[32..64].try_into().expect("Invalid length");
-        let cipher2 = BlsScalar::from_bytes(&arr2).unwrap();
-        let arr3: [u8; 32] = cipher[64..].try_into().expect("Invalid length");
-        let cipher3 = BlsScalar::from_bytes(&arr3).unwrap();
 
         let note_hash = note.hash();
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
-        let (ck, vk) = pub_params.trim(1 << 16)?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 13)?;
         let mut prover = Prover::new(b"test");
 
         let note_type = AllocatedScalar::allocate(

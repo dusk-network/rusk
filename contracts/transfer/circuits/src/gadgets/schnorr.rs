@@ -19,7 +19,7 @@ use std::convert::TryInto;
 /// to prove the knowledge of a discrete
 /// log for a given public key.
 #[allow(non_snake_case)]
-pub fn schnorr_one_key(
+pub fn schnorr_gadget_one_key(
     composer: &mut StandardComposer,
     signature: AllocatedScalar,
     R: PlonkPoint,
@@ -28,8 +28,7 @@ pub fn schnorr_one_key(
 ) {
     let h = sponge_hash_gadget(composer, &[message.var]);
     let c = sponge_hash_gadget(composer, &[*R.x(), *R.y(), h]);
-    let b = BlsScalar::zero();
-    let b = composer.add_witness_to_circuit_description(b);
+    let b = composer.add_witness_to_circuit_description(BlsScalar::zero());
 
     let challenge = composer.xor_gate(c, b, 250);
 
@@ -47,7 +46,7 @@ pub fn schnorr_one_key(
 /// Also verifying that both keys share the
 /// same discrete log.
 #[allow(non_snake_case)]
-pub fn schnorr_two_keys(
+pub fn schnorr_gadget_two_keys(
     composer: &mut StandardComposer,
     signature: AllocatedScalar,
     R: PlonkPoint,
@@ -61,8 +60,8 @@ pub fn schnorr_two_keys(
         composer,
         &[*R.x(), *R.y(), *R_prime.x(), *R_prime.y(), h],
     );
-    let b = BlsScalar::zero();
-    let b = composer.add_witness_to_circuit_description(b);
+
+    let b = composer.add_witness_to_circuit_description(BlsScalar::zero());
 
     let challenge = composer.xor_gate(c, b, 250);
     let sig_1 =
@@ -86,7 +85,7 @@ mod schnorr_tests {
 
     #[test]
     #[allow(non_snake_case)]
-    fn schnorr_gadget_two_keys() -> Result<(), Error> {
+    fn schnorr_two_keys() -> Result<(), Error> {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
@@ -111,8 +110,8 @@ mod schnorr_tests {
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
-        let (ck, vk) = pub_params.trim(1 << 16)?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 13)?;
         let mut prover = Prover::new(b"test");
 
         let sig_a = AllocatedScalar::allocate(prover.mut_cs(), U.into());
@@ -124,7 +123,7 @@ mod schnorr_tests {
             PlonkPoint::from_private_affine(prover.mut_cs(), pk_prime);
         let message_a = AllocatedScalar::allocate(prover.mut_cs(), message);
 
-        schnorr_two_keys(
+        schnorr_gadget_two_keys(
             prover.mut_cs(),
             sig_a,
             R_p,
@@ -147,7 +146,7 @@ mod schnorr_tests {
             PlonkPoint::from_private_affine(verifier.mut_cs(), pk_prime);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
-        schnorr_two_keys(
+        schnorr_gadget_two_keys(
             verifier.mut_cs(),
             sig,
             R,
@@ -162,7 +161,7 @@ mod schnorr_tests {
 
     #[test]
     #[allow(non_snake_case)]
-    fn schnorr_gadget_one_key() -> Result<(), Error> {
+    fn schnorr_one_key() -> Result<(), Error> {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
@@ -179,8 +178,8 @@ mod schnorr_tests {
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
-        let (ck, vk) = pub_params.trim(1 << 16)?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
+        let (ck, vk) = pub_params.trim(1 << 13)?;
         let mut prover = Prover::new(b"test");
 
         let sig_a = AllocatedScalar::allocate(prover.mut_cs(), U.into());
@@ -188,7 +187,7 @@ mod schnorr_tests {
         let pk_p = PlonkPoint::from_private_affine(prover.mut_cs(), pk);
         let message_a = AllocatedScalar::allocate(prover.mut_cs(), message);
 
-        schnorr_one_key(prover.mut_cs(), sig_a, R_p, pk_p, message_a);
+        schnorr_gadget_one_key(prover.mut_cs(), sig_a, R_p, pk_p, message_a);
         let prover_pi = prover.mut_cs().public_inputs.clone();
         prover.preprocess(&ck)?;
         let proof = prover.prove(&ck)?;
@@ -199,7 +198,7 @@ mod schnorr_tests {
         let pk = PlonkPoint::from_private_affine(verifier.mut_cs(), pk);
         let message = AllocatedScalar::allocate(verifier.mut_cs(), message);
 
-        schnorr_one_key(verifier.mut_cs(), sig, R, pk, message);
+        schnorr_gadget_one_key(verifier.mut_cs(), sig, R, pk, message);
         verifier.preprocess(&ck)?;
         verifier.verify(&proof, &vk, &prover_pi)
     }
