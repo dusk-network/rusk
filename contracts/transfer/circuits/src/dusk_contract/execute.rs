@@ -24,8 +24,6 @@ use poseidon252::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 /// for a 'send to contract transparent' transaction.
 #[derive(Debug, Default, Clone)]
 pub struct ExecuteCircuit {
-    /// Storage height of the tree
-    // pub anchor: Option<BlsScalar>,
     /// Nullifier for note
     pub nullifiers: Vec<BlsScalar>,
     /// Note hashes
