@@ -11,7 +11,6 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 
-
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
 #[allow(non_snake_case)]
@@ -44,7 +43,6 @@ pub fn input_preimage(
             cipher_three.var,
         ],
     )
-
 }
 
 #[cfg(test)]

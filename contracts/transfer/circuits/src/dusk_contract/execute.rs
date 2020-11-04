@@ -1298,7 +1298,8 @@ mod tests {
             ],
             vec![], //input_commitment_one, input_commitment_two],
             vec![input_note_value_one.into(), input_note_value_two.into()],
-            vec![], ///input_note_blinder_one.into(), input_note_blinder_two.into()],
+            vec![],
+            ///input_note_blinder_one.into(), input_note_blinder_two.into()],
             crossover_commitment,
             crossover_commitment_value.into(),
             crossover_commitment_blinder.into(),
@@ -1313,7 +1314,6 @@ mod tests {
             ],
             fee,
         );
-
 
         // Generate Composer & Public Parameters
         let pub_params =
@@ -1356,7 +1356,12 @@ mod tests {
         );
         verifier_circuit.compile(&pub_params);
         let mut pi = vec![];
-        add_circuit_public_inputs(&verifier_circuit, crossover_commitment, fee, &mut pi);
+        add_circuit_public_inputs(
+            &verifier_circuit,
+            crossover_commitment,
+            fee,
+            &mut pi,
+        );
 
         // Assert the proof will fail
         assert!(verifier_circuit
