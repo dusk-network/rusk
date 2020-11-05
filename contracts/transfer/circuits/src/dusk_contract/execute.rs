@@ -66,12 +66,6 @@ pub struct ExecuteCircuit {
 
 impl Circuit<'_> for ExecuteCircuit {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        // XXX: The anchors do not seem necessary, as they are contained within the poseidon branch
-        // XXX: but until they are removed from the specs, they will remain commented here.
-        // let anchor = self
-        //     .anchor
-        //     .as_ref()
-        //
         let nullifiers = self.nullifiers.clone();
         let note_hashes: Vec<AllocatedScalar> = self
             .note_hashes
