@@ -18,7 +18,7 @@ pub fn nullifier_gadget(
 }
 
 #[cfg(test)]
-mod commitment_tests {
+mod nullifier_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};

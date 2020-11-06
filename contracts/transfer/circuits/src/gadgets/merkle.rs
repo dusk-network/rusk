@@ -21,7 +21,7 @@ pub fn merkle(
 }
 
 #[cfg(test)]
-mod commitment_tests {
+mod merkle_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_pki::PublicSpendKey;
