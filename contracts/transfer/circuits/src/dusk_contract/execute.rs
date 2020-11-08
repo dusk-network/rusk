@@ -142,7 +142,10 @@ impl Circuit<'_> for ExecuteCircuit {
             .input_nonces
             .iter()
             .map(|input_nonces| {
-                AllocatedScalar::allocate(composer, BlsScalar::from(*input_nonces))
+                AllocatedScalar::allocate(
+                    composer,
+                    BlsScalar::from(*input_nonces),
+                )
             })
             .collect();
         if self.input_values.is_empty() {
@@ -310,17 +313,15 @@ impl Circuit<'_> for ExecuteCircuit {
                 )| {
                     let computed_hash = input_preimage(
                         composer,
-
-                            *note_type,
-                            *commitment,
-                            *nonce,
-                            *pk_r,
-                            *randomness,
-                            *position,
-                            *cipher_one,
-                            *cipher_two,
-                            *cipher_three,
-
+                        *note_type,
+                        *commitment,
+                        *nonce,
+                        *pk_r,
+                        *randomness,
+                        *position,
+                        *cipher_one,
+                        *cipher_two,
+                        *cipher_three,
                     );
 
                     composer.assert_equal(computed_hash, note_hash.var);
@@ -763,7 +764,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -781,7 +785,10 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -899,7 +906,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -918,7 +928,10 @@ mod tests {
             // This is where the wrong values are inputted
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1029,7 +1042,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1048,7 +1064,10 @@ mod tests {
             // This is where the incorrect values is assigned to the circuit
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1158,7 +1177,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk1)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1176,7 +1198,10 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1287,7 +1312,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1305,7 +1333,10 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1422,7 +1453,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1440,7 +1474,10 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1573,7 +1610,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1592,7 +1632,10 @@ mod tests {
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![],
             ///input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
@@ -1625,7 +1668,10 @@ mod tests {
             vec![note1.gen_nullifier(&ssk1), note2.gen_nullifier(&ssk2)],
             vec![note1.hash(), note2.hash()],
             vec![BlsScalar::from(note1.pos()), BlsScalar::from(note2.pos())],
-            vec![BlsScalar::from(note1.note() as u64), BlsScalar::from(note2.note() as u64)],
+            vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
             vec![
                 tree.poseidon_branch(tree_pos_1)?.unwrap(),
                 tree.poseidon_branch(tree_pos_2)?.unwrap(),
@@ -1643,7 +1689,10 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![input_note_blinder_one.into(), input_note_blinder_two.into()],
-            vec![note1.stealth_address().R().into(), note2.stealth_address().R().into()],
+            vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
             vec![note1.cipher()[0], note2.cipher()[0]],
             vec![note1.cipher()[1], note2.cipher()[1]],
             vec![note1.cipher()[2], note2.cipher()[2]],
