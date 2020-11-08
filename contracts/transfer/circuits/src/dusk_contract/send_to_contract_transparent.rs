@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets::range::range;
+use crate::gadgets::{range::range, schnorr::schnorr_gadget_one_key};
 use anyhow::{Error, Result};
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
+use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
@@ -25,6 +26,14 @@ pub struct SendToContractTransparentCircuit {
     pub commitment: AffinePoint,
     /// Value to be sent
     pub value: BlsScalar,
+    /// Schnorr signature
+    pub schnorr_sig: JubJubScalar,
+    /// Schnorr R
+    pub schnorr_r: AffinePoint,
+    /// Schnorr PK
+    pub schnorr_pk: AffinePoint,
+    /// Schnorr message
+    pub schnorr_message: BlsScalar,
     /// Returns circuit size
     pub trim_size: usize,
     /// Gives Public Inputs
@@ -36,6 +45,11 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         let commitment_crossover = self.commitment;
         let commitment_crossover_value = self.commitment_value;
         let commitment_crossover_blinder = self.blinder;
+        let schnorr_sig = self.schnorr_sig;
+        let schnorr_r = self.schnorr_r;
+        let schnorr_pk = self.schnorr_pk;
+        let schnorr_message = self.schnorr_message;
+
         let value = self.value;
         let pi = self.get_mut_pi_positions();
 
@@ -44,6 +58,12 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
             AllocatedScalar::allocate(composer, commitment_crossover_value);
         let allocated_commitment_crossover_blinder =
             AllocatedScalar::allocate(composer, commitment_crossover_blinder);
+        let schnorr_sig =
+            AllocatedScalar::allocate(composer, schnorr_sig.into());
+        let schnorr_r = PlonkPoint::from_private_affine(composer, schnorr_r);
+        let schnorr_pk = PlonkPoint::from_public_affine(composer, schnorr_pk);
+        let schnorr_message =
+            AllocatedScalar::allocate(composer, schnorr_message);
 
         // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
         let p1 = scalar_mul(
@@ -74,6 +94,15 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
 
         // Add PI constraint for the commitment computation check.
         pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));
+
+        // Verify the Schnorr signature
+        schnorr_gadget_one_key(
+            composer,
+            schnorr_sig,
+            schnorr_r,
+            schnorr_pk,
+            schnorr_message,
+        );
 
         // Constrains the crossover value to equal the PI value
         composer.constrain_to_constant(
@@ -112,6 +141,22 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
+    use poseidon252::sponge::sponge::sponge_hash;
+
+    fn schnorr_sign(
+        sk: JubJubScalar,
+        message: BlsScalar,
+    ) -> (JubJubScalar, AffinePoint, AffinePoint) {
+        let pk = AffinePoint::from(GENERATOR_NUMS_EXTENDED * sk);
+        let r = JubJubScalar::random(&mut rand::thread_rng());
+        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
+        let h = sponge_hash(&[message]);
+        let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
+        let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
+        let U = r - (c * sk);
+        (U, R, pk)
+    }
 
     #[test]
     fn test_send_to_contract_transparent() -> Result<()> {
@@ -126,19 +171,27 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(300);
 
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
+        let message = BlsScalar::random(&mut rand::thread_rng());
+        let sig = schnorr_sign(sk, message);
+
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: commitment_crossover_value.into(),
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
-            trim_size: 1 << 10,
+            schnorr_sig: sig.0,
+            schnorr_r: sig.1,
+            schnorr_pk: sig.2,
+            schnorr_message: message,
+            trim_size: 1 << 13,
             pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
         let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
@@ -163,19 +216,27 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(300);
 
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
+        let message = BlsScalar::random(&mut rand::thread_rng());
+        let sig = schnorr_sign(sk, message);
+
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: commitment_crossover_value.into(),
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
-            trim_size: 1 << 10,
+            schnorr_sig: sig.0,
+            schnorr_r: sig.1,
+            schnorr_pk: sig.2,
+            schnorr_message: message,
+            trim_size: 1 << 13,
             pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
         let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 
@@ -203,19 +264,27 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(100);
 
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
+        let message = BlsScalar::random(&mut rand::thread_rng());
+        let sig = schnorr_sign(sk, message);
+
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: commitment_crossover_value.into(),
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
-            trim_size: 1 << 10,
+            schnorr_sig: sig.0,
+            schnorr_r: sig.1,
+            schnorr_pk: sig.2,
+            schnorr_message: message,
+            trim_size: 1 << 13,
             pi_positions: vec![],
         };
 
         // Generate Composer & Public Parameters
         let pub_params =
-            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
         let (pk, vk) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"TransparentSend")?;
 

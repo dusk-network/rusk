@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets::range::range;
+use crate::gadgets::{range::range, schnorr::schnorr_gadget_one_key};
 use anyhow::{Error, Result};
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
+use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
     AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
@@ -28,6 +29,14 @@ pub struct SendToContractObfuscatedCircuit {
     pub commitment_message_blinder: BlsScalar,
     /// Message commitment point
     pub commitment_message: AffinePoint,
+    /// Schnorr signature
+    pub schnorr_sig: JubJubScalar,
+    /// Schnorr R
+    pub schnorr_r: AffinePoint,
+    /// Schnorr PK
+    pub schnorr_pk: AffinePoint,
+    /// Schnorr message
+    pub schnorr_message: BlsScalar,
     /// Returns circuit size
     pub trim_size: usize,
     /// Gives Public Inputs
@@ -42,6 +51,10 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         let commitment_message_value = self.commitment_message_value;
         let commitment_message_blinder = self.commitment_message_blinder;
         let commitment_message = self.commitment_message;
+        let schnorr_sig = self.schnorr_sig;
+        let schnorr_r = self.schnorr_r;
+        let schnorr_pk = self.schnorr_pk;
+        let schnorr_message = self.schnorr_message;
         let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
@@ -53,6 +66,12 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
             AllocatedScalar::allocate(composer, commitment_message_value);
         let allocated_message_blinder =
             AllocatedScalar::allocate(composer, commitment_message_blinder);
+        let schnorr_sig =
+            AllocatedScalar::allocate(composer, schnorr_sig.into());
+        let schnorr_r = PlonkPoint::from_private_affine(composer, schnorr_r);
+        let schnorr_pk = PlonkPoint::from_public_affine(composer, schnorr_pk);
+        let schnorr_message =
+            AllocatedScalar::allocate(composer, schnorr_message);
 
         // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
         let p1 = scalar_mul(
@@ -80,6 +99,15 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
 
         // Prove that the value of the opening of the commitment of the input is within range
         range(composer, allocated_crossover_value, 64);
+
+        // Verify the Schnorr signature
+        schnorr_gadget_one_key(
+            composer,
+            schnorr_sig,
+            schnorr_r,
+            schnorr_pk,
+            schnorr_message,
+        );
 
         // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
         let p3 = scalar_mul(
@@ -143,6 +171,22 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
+    use poseidon252::sponge::sponge::sponge_hash;
+
+    fn schnorr_sign(
+        sk: JubJubScalar,
+        message: BlsScalar,
+    ) -> (JubJubScalar, AffinePoint, AffinePoint) {
+        let pk = AffinePoint::from(GENERATOR_NUMS_EXTENDED * sk);
+        let r = JubJubScalar::random(&mut rand::thread_rng());
+        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
+        let h = sponge_hash(&[message]);
+        let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
+        let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
+        let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
+        let U = r - (c * sk);
+        (U, R, pk)
+    }
 
     #[test]
     fn test_send_to_contract_obfuscated() -> Result<()> {
@@ -161,6 +205,10 @@ mod tests {
                 + &(GENERATOR_NUMS_EXTENDED * commitment_message_blinder),
         );
 
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
+        let message = BlsScalar::random(&mut rand::thread_rng());
+        let sig = schnorr_sign(sk, message);
+
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: commitment_crossover_value.into(),
@@ -169,6 +217,10 @@ mod tests {
             commitment_message_value: commitment_message_value.into(),
             commitment_message_blinder: commitment_message_blinder.into(),
             commitment_message: commitment_message,
+            schnorr_sig: sig.0,
+            schnorr_r: sig.1,
+            schnorr_pk: sig.2,
+            schnorr_message: message,
             trim_size: 1 << 13,
             pi_positions: vec![],
         };
@@ -204,6 +256,10 @@ mod tests {
                 + &(GENERATOR_NUMS_EXTENDED * commitment_message_blinder),
         );
 
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
+        let message = BlsScalar::random(&mut rand::thread_rng());
+        let sig = schnorr_sign(sk, message);
+
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: commitment_crossover_value.into(),
@@ -212,6 +268,10 @@ mod tests {
             commitment_message_value: commitment_message_value.into(),
             commitment_message_blinder: commitment_message_blinder.into(),
             commitment_message: commitment_message,
+            schnorr_sig: sig.0,
+            schnorr_r: sig.1,
+            schnorr_pk: sig.2,
+            schnorr_message: message,
             trim_size: 1 << 13,
             pi_positions: vec![],
         };
