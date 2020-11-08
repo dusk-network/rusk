@@ -45,7 +45,7 @@ rusk-profile = { path = "./profile" }
 [build-dependencies]
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
-dusk-plonk = "0.3.1"
+dusk-plonk = "0.3.3"
 dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.4.0-alpha"}
 anyhow = "1.0"
 poseidon252 = {git = "https://github.com/dusk-network/Poseidon252", tag = "v0.10.0"}
