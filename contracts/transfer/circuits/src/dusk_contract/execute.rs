@@ -627,6 +627,7 @@ mod tests {
         pi.push(PublicInput::BlsScalar(-fee, 0));
     }
 
+    // Function to create deterministic note from chosen instantiated parameters
     fn circuit_note(
         ssk: SecretSpendKey,
         value: u64,
@@ -648,6 +649,9 @@ mod tests {
         note
     }
 
+    // This function is used to create a Schnorr signature
+    // which are then verified in the circuit. Standardly, the user
+    // will provide the signatures directly into the circuit.
     fn schnorr_sign(
         sk: JubJubScalar,
         message: BlsScalar,
@@ -1631,7 +1635,6 @@ mod tests {
             vec![*note1.nonce(), *note2.nonce()],
             vec![input_note_value_one.into(), input_note_value_two.into()],
             vec![],
-            ///input_note_blinder_one.into(), input_note_blinder_two.into()],
             vec![
                 note1.stealth_address().R().into(),
                 note2.stealth_address().R().into(),
