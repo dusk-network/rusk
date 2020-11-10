@@ -824,6 +824,7 @@ mod tests {
         let mut pi = vec![];
         add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
 
+
         circuit.verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
     }
 
