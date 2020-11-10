@@ -26,6 +26,8 @@ pub struct SendToContractTransparentCircuit {
     pub commitment: AffinePoint,
     /// Value to be sent
     pub value: BlsScalar,
+    /// Public key
+    pub pk: AffinePoint,
     /// Schnorr signature
     pub schnorr_sig: JubJubScalar,
     /// Schnorr R
@@ -51,6 +53,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         let schnorr_message = self.schnorr_message;
 
         let value = self.value;
+        let pk = self.pk;
         let pi = self.get_mut_pi_positions();
 
         // Create allocated scalars for private inputs
@@ -61,7 +64,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         let schnorr_sig =
             AllocatedScalar::allocate(composer, schnorr_sig.into());
         let schnorr_r = PlonkPoint::from_private_affine(composer, schnorr_r);
-        let schnorr_pk = PlonkPoint::from_public_affine(composer, schnorr_pk);
+        let schnorr_pk = PlonkPoint::from_private_affine(composer, schnorr_pk);
         let schnorr_message =
             AllocatedScalar::allocate(composer, schnorr_message);
 
@@ -92,8 +95,14 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         // Prove that the value of the opening of the commitment of the input is within range
         range(composer, allocated_commitment_crossover_value, 64);
 
-        // Add PI constraint for the commitment computation check.
-        pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));
+        //Assert the given private and public pk inputs are equal
+        pi.push(PublicInput::AffinePoint(
+            pk,
+            composer.circuit_size(),
+            composer.circuit_size() + 1,
+        ));
+
+        composer.assert_equal_public_point(schnorr_pk, pk);
 
         // Verify the Schnorr signature
         schnorr_gadget_one_key(
@@ -103,6 +112,9 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
             schnorr_pk,
             schnorr_message,
         );
+
+        // Add PI constraint for the commitment computation check.
+        pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));
 
         // Constrains the crossover value to equal the PI value
         composer.constrain_to_constant(
@@ -147,7 +159,7 @@ mod tests {
         sk: JubJubScalar,
         message: BlsScalar,
     ) -> (JubJubScalar, AffinePoint, AffinePoint) {
-        let pk = AffinePoint::from(GENERATOR_NUMS_EXTENDED * sk);
+        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
         let h = sponge_hash(&[message]);
@@ -171,9 +183,10 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(300);
 
-        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
+        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
@@ -181,6 +194,7 @@ mod tests {
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
+            pk: public_key,
             schnorr_sig: sig.0,
             schnorr_r: sig.1,
             schnorr_pk: sig.2,
@@ -197,6 +211,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
+            PublicInput::AffinePoint(public_key, 0, 0),
             PublicInput::BlsScalar(value, 0),
         ];
 
@@ -216,9 +231,10 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(300);
 
-        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
+        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
@@ -226,6 +242,7 @@ mod tests {
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
+            pk: public_key,
             schnorr_sig: sig.0,
             schnorr_r: sig.1,
             schnorr_pk: sig.2,
@@ -242,6 +259,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
+            PublicInput::AffinePoint(public_key, 0, 0),
             PublicInput::BlsScalar(value, 0),
         ];
 
@@ -264,9 +282,10 @@ mod tests {
         // Declare value for PI input
         let value = BlsScalar::from(100);
 
-        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
+        let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
+        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
@@ -274,6 +293,7 @@ mod tests {
             blinder: commitment_crossover_blinder.into(),
             commitment: commitment_crossover,
             value: value,
+            pk: public_key,
             schnorr_sig: sig.0,
             schnorr_r: sig.1,
             schnorr_pk: sig.2,
@@ -290,6 +310,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
+            PublicInput::AffinePoint(public_key, 0, 0),
             PublicInput::BlsScalar(value, 0),
         ];
 
