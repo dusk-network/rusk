@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::bls12_318::BlsScalar as Scalar;
+use dusk_plonk::bls12_381::BlsScalar as Scalar;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::tree::zk::merkle_opening;

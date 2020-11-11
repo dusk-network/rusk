@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{Ownable, StealthAddress};
+use dusk_pki::Ownable;
+use dusk_pki::StealthAddress;
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::JubJubAffine as AffinePoint;

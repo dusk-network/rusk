@@ -18,6 +18,9 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
 use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
+use dusk_plonk::bls12_381::BlsScalar as Scalar;
+use canonical_host::MemStore;
+
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
@@ -725,7 +728,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         // Assign the postitions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
@@ -867,7 +870,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         // Assign the postitions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
@@ -1008,7 +1011,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1141,7 +1144,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1277,7 +1280,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1415,7 +1418,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1571,7 +1574,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
         // Assign the postitions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
