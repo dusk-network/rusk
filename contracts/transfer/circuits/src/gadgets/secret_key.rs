@@ -6,7 +6,7 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
-use dusk_plonk::jubjub::{AffinePoint, GENERATOR_EXTENDED};
+use dusk_plonk::jubjub::{JubJubAffine as AffinePoint, GENERATOR_EXTENDED};
 use dusk_plonk::prelude::*;
 
 use plonk_gadgets::AllocatedScalar;

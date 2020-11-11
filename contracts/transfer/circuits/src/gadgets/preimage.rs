@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
+use dusk_pki::{Ownable, StealthAddress};
+use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
-use dusk_plonk::jubjub::AffinePoint;
+use dusk_plonk::jubjub::JubJubAffine as AffinePoint;
 use dusk_plonk::prelude::*;
+use phoenix_core::note::{Note, NoteType};
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 

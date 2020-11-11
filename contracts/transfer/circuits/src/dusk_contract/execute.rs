@@ -12,13 +12,12 @@ use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
-use kelvin::Blake2b;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
-use poseidon252::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
+use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
@@ -35,7 +34,7 @@ pub struct ExecuteCircuit {
     /// Input note types
     pub input_note_types: Vec<BlsScalar>,
     /// Poseidon branches of the input notes
-    pub input_poseidon_branches: Vec<PoseidonBranch>,
+    pub input_poseidon_branches: Vec<PoseidonBranch<17>>,
     /// Input notes secret keys
     pub input_notes_sk: Vec<JubJubScalar>,
     /// Input notes public keys
@@ -545,7 +544,7 @@ mod tests {
         note_hashes: Vec<BlsScalar>,
         position_of_notes: Vec<BlsScalar>,
         input_note_types: Vec<BlsScalar>,
-        input_poseidon_branches: Vec<PoseidonBranch>,
+        input_poseidon_branches: Vec<PoseidonBranch<17>>,
         input_notes_sk: Vec<JubJubScalar>,
         input_notes_pk: Vec<AffinePoint>,
         input_notes_pk_prime: Vec<AffinePoint>,
@@ -823,7 +822,6 @@ mod tests {
 
         let mut pi = vec![];
         add_circuit_public_inputs(&circuit, crossover_commitment, fee, &mut pi);
-
 
         circuit.verify_proof(&pub_params, &vk, b"Execute", &proof, &pi)
     }

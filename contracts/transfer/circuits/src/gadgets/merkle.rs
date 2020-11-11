@@ -4,38 +4,41 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_plonk::bls12_318::BlsScalar as Scalar;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::merkle_proof::{merkle_opening_gadget, PoseidonBranch};
+use poseidon252::tree::zk::merkle_opening;
+use poseidon252::tree::PoseidonBranch;
 
 /// Prove the knowledge of the position of the note in
 /// the merkle tree.
 pub fn merkle(
     composer: &mut StandardComposer,
-    branch: PoseidonBranch,
+    branch: PoseidonBranch<17>,
     note_hash: AllocatedScalar,
 ) -> Variable {
     let leaf = note_hash.var;
 
-    merkle_opening_gadget(composer, branch, leaf)
+    merkle_opening(composer, &branch, leaf)
 }
 
 #[cfg(test)]
 mod merkle_tests {
     use super::*;
     use anyhow::{Error, Result};
+    use canonical_host::MemStore;
     use dusk_pki::PublicSpendKey;
+    use dusk_plonk::bls12_318::BlsScalar as Scalar;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
-    use kelvin::Blake2b;
     use phoenix_core::note::{Note, NoteType};
     use poseidon252::{PoseidonAnnotation, PoseidonTree, StorageScalar};
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
         let mut tree =
-            PoseidonTree::<StorageScalar, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<Scalar, PoseidonAnnotation, MemStore, 17>::new(17);
 
         let a =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
