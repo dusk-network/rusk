@@ -211,6 +211,7 @@ mod tests {
 
         let pi = vec![
             PublicInput::AffinePoint(commitment_crossover, 0, 0),
+            PublicInput::AffinePoint(public_key, 0, 0),
             PublicInput::BlsScalar(value, 0),
         ];
 
