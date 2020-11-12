@@ -6,10 +6,10 @@
 
 use anyhow::Result;
 use dusk_blindbid::{V_MAX, V_MIN};
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
+use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};

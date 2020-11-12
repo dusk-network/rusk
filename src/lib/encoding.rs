@@ -11,7 +11,7 @@ use core::convert::TryFrom;
 use dusk_pki::{
     jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
-use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use std::convert::TryInto;
 use std::io::{Read, Write};

@@ -7,7 +7,7 @@
 //! Phoenix transaction structure implementation.
 
 use anyhow::Result;
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
+use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
@@ -281,8 +281,8 @@ mod tests {
     use super::*;
     use crate::services::rusk_proto;
     use dusk_pki::PublicSpendKey;
-    use dusk_plonk::bls12_381::Scalar as BlsScalar;
-    use dusk_plonk::jubjub::{Fr as JubJubScalar, GENERATOR_EXTENDED};
+    use dusk_plonk::bls12_381::BlsScalar;
+    use dusk_plonk::jubjub::{JubJubScalar, GENERATOR_EXTENDED};
     use phoenix_core::{Note, NoteType};
     use std::convert::{TryFrom, TryInto};
     use std::io::{Read, Write};
