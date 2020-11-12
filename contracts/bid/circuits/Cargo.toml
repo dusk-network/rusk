@@ -9,6 +9,6 @@ edition = "2018"
 [dependencies]
 anyhow = "^1.0.0"
 dusk-plonk = "0.3.3"
-plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.4.0"}
-dusk-blindbid = { git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.4.0-alpha" }
+plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.4.3"}
+dusk-blindbid = { git = "https://github.com/dusk-network/dusk-blindbid", branch = "update_version"}
 rand = "0.7"
