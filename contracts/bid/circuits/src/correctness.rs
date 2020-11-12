@@ -99,7 +99,7 @@ impl Circuit<'_> for CorrectnessCircuit {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+    use dusk_plonk::jubjub::JubJubAffine;
 
     #[test]
     fn test_correctness_circuit() -> Result<()> {
