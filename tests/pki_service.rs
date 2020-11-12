@@ -8,10 +8,7 @@ mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
 use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::jubjub::{
-    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
-    Fr as JubJubScalar,
-};
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
 use encoding::decode_request_param;
 use futures::stream::TryStreamExt;
 use rusk::services::pki::{

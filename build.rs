@@ -6,17 +6,18 @@
 
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{bid::Bid, BlindBidCircuit};
+use dusk_blindbid::bid::Bid;
+use dusk_blindbid::proof::BlindBidCircuit;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::PublicParameters;
 use dusk_plonk::prelude::*;
 use kelvin::Blake2b;
 use lazy_static::lazy_static;
-use poseidon252::{PoseidonAnnotation, PoseidonTree};
+use poseidon252::tree::{PoseidonAnnotation, PoseidonTree};
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -105,12 +106,13 @@ mod bid {
 
 mod blindbid {
     use super::*;
+    use canonical_host::MemStore;
 
     pub fn compile_circuit() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
         // Generate a PoseidonTree and append the Bid.
-        let mut tree: PoseidonTree<Bid, PoseidonAnnotation, Blake2b> =
-            PoseidonTree::new(17usize);
+        let mut tree =
+            PoseidonTree::<Bid, PoseidonAnnotation, MemStore, 17>::new();
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -126,9 +128,7 @@ mod blindbid {
         tree.push(bid)?;
 
         // Extract the branch
-        let branch = tree
-            .poseidon_branch(0u64)?
-            .expect("Poseidon Branch Extraction");
+        let branch = tree.branch(0)?.expect("Poseidon Branch Extraction");
 
         // Generate a `Score` for our Bid with the consensus parameters
         let score = bid.compute_score(
