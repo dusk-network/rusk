@@ -18,8 +18,8 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
 use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
-use dusk_plonk::bls12_381::BlsScalar as Scalar;
-use canonical_host::MemStore;
+use dusk_plonk::bls12_381::BlsScalar;
+
 
 
 /// The circuit responsible for creating a zero-knowledge proof
@@ -526,7 +526,8 @@ mod tests {
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use phoenix_core::{Note, NoteType};
     use poseidon252::sponge::sponge::sponge_hash;
-    use poseidon252::PoseidonBranch;
+    use poseidon252::tree::PoseidonBranch;
+    use canonical_host::MemStore;
 
     // Function to generate value commitment from value and blinder. This is a pedersen commitment.
     fn compute_value_commitment(
@@ -728,7 +729,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         // Assign the postitions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
@@ -775,8 +776,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -870,8 +871,8 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
-        // Assign the postitions of the notes to a position in the tree
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        // Assign the positions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -917,8 +918,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1011,7 +1012,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1053,8 +1054,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1144,7 +1145,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1188,8 +1189,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1280,7 +1281,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1323,8 +1324,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1418,7 +1419,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
 
@@ -1464,8 +1465,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1574,7 +1575,7 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
         // Assign the postitions of the notes to a position in the tree
         let tree_pos_1 = tree.push(note1)?;
         let tree_pos_2 = tree.push(note2)?;
@@ -1621,8 +1622,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1678,8 +1679,8 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.poseidon_branch(tree_pos_1)?.unwrap(),
-                tree.poseidon_branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),

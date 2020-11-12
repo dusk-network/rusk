@@ -28,17 +28,17 @@ mod merkle_tests {
     use anyhow::{Error, Result};
     use canonical_host::MemStore;
     use dusk_pki::PublicSpendKey;
-    use dusk_plonk::bls12_318::BlsScalar as Scalar;
+    use dusk_plonk::bls12_381::BlsScalar as Scalar;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::note::{Note, NoteType};
-    use poseidon252::{PoseidonAnnotation, PoseidonTree, StorageScalar};
+    use poseidon252::tree::{PoseidonAnnotation, PoseidonTree};
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
         let mut tree =
-            PoseidonTree::<Scalar, PoseidonAnnotation, MemStore, 17>::new(17);
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
 
         let a =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
@@ -46,7 +46,7 @@ mod merkle_tests {
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
         let psk = PublicSpendKey::new(a, b);
         let note = Note::new(NoteType::Transparent, &psk, 100);
-        tree.push(StorageScalar { 0: note.hash() })?;
+        tree.push(note)?;
 
         // Generate Composer & Public Parameters
         let pub_params =
@@ -59,7 +59,7 @@ mod merkle_tests {
         merkle(
             prover.mut_cs(),
             //not convertible by anyhow, hence I am unwrapping
-            tree.poseidon_branch(0u64).unwrap().unwrap(),
+            tree.branch(0).unwrap().unwrap(),
             note_hash,
         );
 
@@ -74,7 +74,7 @@ mod merkle_tests {
         merkle(
             verifier.mut_cs(),
             //not convertible by anyhow, hence I am unwrapping
-            tree.poseidon_branch(0u64).unwrap().unwrap(),
+            tree.branch(0).unwrap().unwrap(),
             note_hash,
         );
         verifier.preprocess(&ck)?;
