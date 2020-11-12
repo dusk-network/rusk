@@ -9,6 +9,7 @@ use crate::gadgets::{
     range::range, schnorr::schnorr_gadget_two_keys, secret_key::sk_knowledge,
 };
 use anyhow::Result;
+use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
@@ -18,9 +19,6 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
 use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
-use dusk_plonk::bls12_381::BlsScalar;
-
-
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
@@ -522,12 +520,12 @@ impl Circuit<'_> for ExecuteCircuit {
 mod tests {
     use super::*;
     use anyhow::Result;
+    use canonical_host::MemStore;
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use phoenix_core::{Note, NoteType};
     use poseidon252::sponge::sponge::sponge_hash;
     use poseidon252::tree::PoseidonBranch;
-    use canonical_host::MemStore;
 
     // Function to generate value commitment from value and blinder. This is a pedersen commitment.
     fn compute_value_commitment(
