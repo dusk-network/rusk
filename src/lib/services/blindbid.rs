@@ -68,13 +68,14 @@ impl BlindBidService for Rusk {
     }
 }
 
+use canonical_host::MemStore;
 use dusk_blindbid::bid::Bid;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::{
-    bls12_381::Scalar as BlsScalar,
-    jubjub::{AffinePoint as JubJubAffine, Scalar as JubJubScalar},
+    bls12_381::BlsScalar,
+    jubjub::{JubJubAffine, JubJubScalar},
 };
-use poseidon252::PoseidonBranch;
+use poseidon252::tree::PoseidonBranch;
 // This function simulates the obtention of a Bid from the
 // Bid contract storage and a PoseidonBranch that references it.
 // For this function to work as a correct mocker, it always needs
@@ -86,7 +87,7 @@ pub(crate) fn get_bid_storage_fields(
     idx: usize,
     secret: Option<JubJubAffine>,
     k: Option<BlsScalar>,
-) -> Result<(Bid, PoseidonBranch), std::io::Error> {
+) -> Result<(Bid, PoseidonBranch<17>), std::io::Error> {
     const BID_FILE_PATH: &str = "bid.bin";
     let bid = match (secret.as_ref(), k) {
         (Some(secret), Some(k)) => {
@@ -112,25 +113,42 @@ pub(crate) fn get_bid_storage_fields(
             // Read the bid from disk to have the same as the original one
             // since storage is not persistent atm.
             let bytes = read(BID_FILE_PATH)?;
-            let mut buff: [u8; 320] = [0u8; 320];
+            let mut buff: [u8; 328] = [0u8; 328];
             buff.copy_from_slice(&bytes[..]);
             Bid::from_bytes(buff)?
         }
     };
 
-    let mut tree = BidTree::new(17);
-    let obtained_idx = tree.push(bid)?;
+    let mut tree = BidTree::<MemStore>::new();
+    let obtained_idx = tree.push(bid).ok().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "tree index obtention failed",
+        )
+    })?;
     assert_eq!(idx, obtained_idx as usize);
-    let branch = tree.poseidon_branch(idx as u64)?.ok_or_else(|| {
+    let branch = tree.poseidon_branch(idx as usize).ok().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "missing branch in the extraction process.",
         )
     })?;
-    let extracted_bid = tree.get(idx as u64)?.ok_or_else(|| {
+    let branch = branch.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "missing branch in the extraction process.",
+        )
+    })?;
+    let extracted_bid = tree.get(idx as u64).ok().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "Bid not found in the tree",
+        )
+    })?;
+    let extracted_bid = extracted_bid.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "missing branch in the extraction process.",
         )
     })?;
     Ok((extracted_bid, branch))

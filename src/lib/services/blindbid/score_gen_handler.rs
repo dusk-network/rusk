@@ -10,7 +10,7 @@ use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::encoding::{decode_affine, decode_bls_scalar};
 use anyhow::Result;
 use dusk_blindbid::BlindBidCircuit;
-use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Code, Request, Response, Status};
 

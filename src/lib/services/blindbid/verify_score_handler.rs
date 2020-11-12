@@ -11,7 +11,7 @@ use crate::encoding::decode_bls_scalar;
 use anyhow::Result;
 use dusk_blindbid::score_gen::Score;
 use dusk_blindbid::BlindBidCircuit;
-use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
 
