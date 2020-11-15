@@ -456,7 +456,7 @@ mod transfer {
             change_commitment_value: change_value.into(),
             change_commitment_blinder: change_blinder.into(),
             change_commitment: m_c,
-            trim_size: 1 << 10,
+            trim_size: 1 << 12,
             pi_positions: vec![],
         };
 
@@ -647,7 +647,7 @@ mod transfer {
                 obfuscated_note_blinder_two.into(),
             ],
             fee: fee,
-            trim_size: 1 << 17,
+            trim_size: 1 << 16,
             pi_positions: vec![],
         };
 
