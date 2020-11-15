@@ -6,16 +6,17 @@
 
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
+use canonical_host::MemStore;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_pki::{PublicSpendKey, SecretSpendKey, Ownable};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
     JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::PublicParameters;
 use dusk_plonk::prelude::*;
-use kelvin::Blake2b;
 use lazy_static::lazy_static;
+use phoenix_core::{Note, NoteType};
 use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
 use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 use transfer_circuits::dusk_contract::{
@@ -24,6 +25,7 @@ use transfer_circuits::dusk_contract::{
     WithdrawFromObfuscatedToContractCircuitOne,
     WithdrawFromObfuscatedToContractCircuitTwo,
 };
+
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
         let buff = match rusk_profile::get_common_reference_string() {
@@ -106,10 +108,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             transfer::compile_wfotct_circuit()?,
         )?;
         for i in 1..13 {
-            transfer_keys.update(
-                &format!("Execute{}", i),
-                transfer::compile_execute_circuit(i)?,
-            )?;
+            let fnctn = match i {
+                // 1 => transfer::compile_execute_circuit_1,
+                // 2 => transfer::compile_execute_circuit_2,
+                // 3 => transfer::compile_execute_circuit_3,
+                // 4 => transfer::compile_execute_circuit_4,
+                // 5 => transfer::compile_execute_circuit_5,
+                6 => transfer::compile_execute_circuit_6,
+                // 7 => transfer::compile_execute_circuit_7,
+                // 8 => transfer::compile_execute_circuit_8,
+                // 9 => transfer::compile_execute_circuit_9,
+                // 10 => transfer::compile_execute_circuit_10,
+                // 11 => transfer::compile_execute_circuit_11,
+                // 12 => transfer::compile_execute_circuit_12,
+                _ => transfer::compile_execute_circuit_6,
+            };
+            transfer_keys.update(&format!("Execute{}", i), fnctn()?)?;
         }
     }
 
@@ -147,8 +161,8 @@ mod blindbid {
     pub fn compile_circuit() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
         // Generate a PoseidonTree and append the Bid.
-        let mut tree: PoseidonTree<Bid, PoseidonAnnotation, Blake2b> =
-            PoseidonTree::new(17usize);
+        let mut tree =
+            PoseidonTree::<Bid, PoseidonAnnotation, MemStore, 17>::new();
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -160,12 +174,12 @@ mod blindbid {
         let latest_consensus_round = BlsScalar::from(50u64);
         let latest_consensus_step = BlsScalar::from(50u64);
 
-        // Append the StorageBid as an StorageScalar to the tree.
+        // Append the StorageBid as a StorageScalar to the tree.
         tree.push(bid)?;
 
         // Extract the branch
         let branch = tree
-            .poseidon_branch(0u64)?
+            .branch(64 as usize)?
             .expect("Poseidon Branch Extraction");
 
         // Generate a `Score` for our Bid with the consensus parameters
@@ -261,6 +275,40 @@ mod transfer {
         let U = r - (c * sk);
         (U, R, R_prime, pk_prime)
     }
+    // Function to create deterministic note from chosen instantiated parameters
+    fn circuit_note(
+        ssk: SecretSpendKey,
+        value: u64,
+        pos: u64,
+        input_note_blinder: JubJubScalar,
+    ) -> Note {
+        let r = JubJubScalar::from(150 as u64);
+        let nonce = JubJubScalar::from(350 as u64);
+        let psk = PublicSpendKey::from(&ssk);
+        let mut note = Note::deterministic(
+            NoteType::Transparent,
+            &r,
+            nonce,
+            &psk,
+            value,
+            input_note_blinder,
+        );
+        note.set_pos(pos);
+        note
+    }
+    // Function to generate value commitment from value and blinder. This is a
+    // pedersen commitment.
+    fn compute_value_commitment(
+        value: JubJubScalar,
+        blinder: JubJubScalar,
+    ) -> AffinePoint {
+        let commitment = AffinePoint::from(
+            &(GENERATOR_EXTENDED * value)
+                + &(GENERATOR_NUMS_EXTENDED * blinder),
+        );
+
+        commitment
+    }
 
     pub fn compile_stct_circuit() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
@@ -279,7 +327,7 @@ mod transfer {
 
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: commitment_value.into(),
-            commitment_blinder: commitment_blinder.into(),
+            blinder: commitment_blinder.into(),
             commitment: c_p,
             value: note_value,
             pk: public_key,
@@ -303,8 +351,8 @@ mod transfer {
             (GENERATOR_EXTENDED * crossover_value)
                 + (GENERATOR_NUMS_EXTENDED * crossover_blinder),
         );
-        let message_value = JubJubScalar::from(300);
-        let message_blinder = JubJubScalar::from(199);
+        let message_value = JubJubScalar::from(300 as u64);
+        let message_blinder = JubJubScalar::from(199 as u64);
         let m = AffinePoint::from(
             (GENERATOR_EXTENDED * message_value)
                 + (GENERATOR_NUMS_EXTENDED * message_blinder),
@@ -344,7 +392,7 @@ mod transfer {
                 + (GENERATOR_NUMS_EXTENDED * spend_blinder),
         );
         let message_value = JubJubScalar::from(200 as u64);
-        let message_blinder = JubJubScalar::from(199);
+        let message_blinder = JubJubScalar::from(199u64);
         let m_c = AffinePoint::from(
             (GENERATOR_EXTENDED * message_value)
                 + (GENERATOR_NUMS_EXTENDED * message_blinder),
@@ -391,22 +439,22 @@ mod transfer {
                 + (GENERATOR_NUMS_EXTENDED * spend_blinder),
         );
 
-        let message_value = JubJubScalar::from(200 as u64);
-        let message_blinder = JubJubScalar::from(199);
+        let change_value = JubJubScalar::from(200 as u64);
+        let change_blinder = JubJubScalar::from(199 as u64);
         let m_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * message_value)
-                + (GENERATOR_NUMS_EXTENDED * message_blinder),
+            (GENERATOR_EXTENDED * change_value)
+                + (GENERATOR_NUMS_EXTENDED * change_blinder),
         );
 
-        let mut circuit = WithdrawFromObfuscatedCircuitToContractOne {
+        let mut circuit = WithdrawFromObfuscatedToContractCircuitOne {
             commitment_value: commitment_value.into(),
             commitment_blinder: commitment_blinder.into(),
             commitment_point: s_c,
             spend_commitment_value: spend_value.into(),
             spend_commitment_blinder: spend_blinder.into(),
             spend_commitment: s_c,
-            change_commitment_value: message_value,
-            change_commitment_blinder: message_blinder.into(),
+            change_commitment_value: change_value.into(),
+            change_commitment_blinder: change_blinder.into(),
             change_commitment: m_c,
             trim_size: 1 << 10,
             pi_positions: vec![],
@@ -426,57 +474,184 @@ mod transfer {
                 + (GENERATOR_NUMS_EXTENDED * commitment_blinder),
         );
 
-        let spend_value = JubJubScalar::from(300 as u64);
-        let spend_blinder = JubJubScalar::from(150 as u64);
-        let s_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * spend_value)
-                + (GENERATOR_NUMS_EXTENDED * spend_blinder),
-        );
+        let value = BlsScalar::from(300 as u64);
 
-        let message_value = JubJubScalar::from(200 as u64);
-        let message_blinder = JubJubScalar::from(199);
+        let change_message_value = JubJubScalar::from(200 as u64);
+        let change_message_blinder = JubJubScalar::from(199 as u64);
         let m_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * message_value)
-                + (GENERATOR_NUMS_EXTENDED * message_blinder),
+            (GENERATOR_EXTENDED * change_message_value)
+                + (GENERATOR_NUMS_EXTENDED * change_message_blinder),
         );
 
-        let mut circuit = WithdrawFromObfuscatedCircuitToContractTwo {
-            // commitment_value: commitment_value.into(),
-            // commitment_blinder: commitment_blinder.into(),
-            // commitment_point: s_c,
-            // spend_commitment_value: spend_value.into(),
-            // spend_commitment_blinder: spend_blinder.into(),
-            // spend_commitment: s_c,
-            // change_commitment_value: message_value,
-            // change_commitment_blinder: message_blinder.into(),
-            // change_commitment: m_c,
-            // trim_size: 1 << 10,
-            // pi_positions: vec![],
+        let mut circuit = WithdrawFromObfuscatedToContractCircuitTwo {
+            commitment_value: commitment_value.into(),
+            commitment_blinder: commitment_blinder.into(),
+            commitment_point: n_c,
+            change_commitment_value: change_message_value.into(),
+            change_commitment_blinder: change_message_blinder.into(),
+            change_commitment: m_c,
+            value: value,
+            trim_size: 1 << 12,
+            pi_positions: vec![],
         };
 
         let (pk, vk) = circuit.compile(&pub_params)?;
         Ok((pk.to_bytes(), vk.to_bytes()))
     }
 
-    // pub fn compile_execute_circuit(1) -> Result<(Vec<u8>, Vec<u8>)> {
-    //     let pub_params = &PUB_PARAMS;
-    //     let commitment_value = JubJubScalar::from(319 as u64);
-    //     let commitment_blinder = JubJubScalar::from(157 as u64);
-    //     let c = AffinePoint::from(
-    //         (GENERATOR_EXTENDED * commitment_value) +
-    // (GENERATOR_NUMS_EXTENDED * commitment_blinder),     );
-    //     let note_value = BlsScalar::from(319);
-    //
-    //     let mut circuit = ExecuteCircuit {
-    //         commitment_value: commitment_value.into(),
-    //         commitment_blinder: commitment_blinder.into(),
-    //         commitment: c,
-    //         value: note_value,
-    //         trim_size: 1 << 10,
-    //         pi_positions: vec![],
-    //     };
-    //
-    //     let (pk, vk) = circuit.compile(&pub_params)?;
-    //     Ok((pk.to_bytes(), vk.to_bytes()))
-    // }
+    // The execute circuit has multiple variations,
+    // which is dependant upon the number of input
+    // and output notes and is denoted in the table below:
+    // __________________________________________
+    // |Variation_|_Inputs_notes_|_Output_Notes_|
+    // |1         |______1_______|______0_______|
+    // |2         |______1_______|______1_______|
+    // |3         |______1_______|______2_______|
+    // |4         |______2_______|______0_______|
+    // |5         |______2_______|______1_______|
+    // |6         |______2_______|______2_______|
+    // |7         |______3_______|______0_______|
+    // |8         |______3_______|______1_______|
+    // |9         |______3_______|______2_______|
+    // |10        |______4_______|______0_______|
+    // |12        |______4_______|______1_______|
+    // |13________|______4_______|______2_______|
+
+    pub fn compile_execute_circuit_6() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 600u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+        let secret3 = JubJubScalar::from(300 as u64);
+        let secret4 = JubJubScalar::from(400 as u64);
+        let ssk2 = SecretSpendKey::new(secret3, secret4);
+        let value2 = 200u64;
+        let input_note_blinder_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let tree_pos_2 = tree.push(note2)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+        let obfuscated_note_value_one = JubJubScalar::from(200 as u64);
+        let obfuscated_note_blinder_one = JubJubScalar::from(100 as u64);
+        let obfuscated_commitment_one = compute_value_commitment(
+            obfuscated_note_value_one,
+            obfuscated_note_blinder_one,
+        );
+        let obfuscated_note_value_two = JubJubScalar::from(200 as u64);
+        let obfuscated_note_blinder_two = JubJubScalar::from(200 as u64);
+        let obfuscated_commitment_two = compute_value_commitment(
+            obfuscated_note_value_two,
+            obfuscated_note_blinder_two,
+        );
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+        let sig2 = double_schnorr_sign(
+            ssk2.sk_r(note2.stealth_address()),
+            BlsScalar::one(),
+        );
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![
+                note1.gen_nullifier(&ssk1),
+                note2.gen_nullifier(&ssk2),
+            ],
+            note_hashes: vec![note1.hash(), note2.hash()],
+            position_of_notes: vec![
+                BlsScalar::from(note1.pos()),
+                BlsScalar::from(note2.pos()),
+            ],
+            input_note_types: vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
+            input_poseidon_branches: vec![
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
+            ],
+            input_notes_sk: vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            input_notes_pk: vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
+            input_notes_pk_prime: vec![sig1.3, sig2.3],
+            input_commitments: vec![
+                input_commitment_one,
+                input_commitment_two
+            ],
+            input_nonces: vec![*note1.nonce(), *note2.nonce()],
+            input_values: vec![
+                input_note_value_one.into(),
+                input_note_value_two.into(),
+            ],
+            input_blinders: vec![
+                input_note_blinder_one.into(),
+                input_note_blinder_two.into(),
+            ],
+            input_randomness: vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
+            input_ciphers_one: vec![note1.cipher()[0], note2.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1], note2.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2], note2.cipher()[2]],
+            schnorr_sigs: vec![sig1.0, sig2.0],
+            schnorr_r: vec![sig1.1, sig2.1],
+            schnorr_r_prime: vec![sig1.2, sig2.2],
+            schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![
+                obfuscated_commitment_one,
+                obfuscated_commitment_two,
+            ],
+            obfuscated_note_values: vec![
+                obfuscated_note_value_one.into(),
+                obfuscated_note_value_two.into(),
+            ],
+            obfuscated_note_blinders: vec![
+                obfuscated_note_blinder_one.into(),
+                obfuscated_note_blinder_two.into(),
+            ],
+            fee: fee,
+            trim_size: 1 << 17,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
 }
