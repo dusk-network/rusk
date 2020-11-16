@@ -234,6 +234,7 @@ mod blindbid {
 
 mod transfer {
     use super::*;
+
     // This function signs a message with a secret key
     // and produces a public key to allow for the proof
     // of knowledge of a DLP.
@@ -314,10 +315,9 @@ mod transfer {
         let pub_params = &PUB_PARAMS;
         let commitment_value = JubJubScalar::from(319 as u64);
         let commitment_blinder = JubJubScalar::from(157 as u64);
-        let c_p = AffinePoint::from(
-            (GENERATOR_EXTENDED * commitment_value)
-                + (GENERATOR_NUMS_EXTENDED * commitment_blinder),
-        );
+        let c_p =
+            compute_value_commitment(commitment_value, commitment_blinder);
+
         let note_value = BlsScalar::from(319);
 
         let message = BlsScalar::random(&mut rand::thread_rng());
@@ -347,16 +347,11 @@ mod transfer {
         let pub_params = &PUB_PARAMS;
         let crossover_value = JubJubScalar::from(300 as u64);
         let crossover_blinder = JubJubScalar::from(150 as u64);
-        let c_p = AffinePoint::from(
-            (GENERATOR_EXTENDED * crossover_value)
-                + (GENERATOR_NUMS_EXTENDED * crossover_blinder),
-        );
+        let c_p = compute_value_commitment(crossover_value, crossover_blinder);
+
         let message_value = JubJubScalar::from(300 as u64);
         let message_blinder = JubJubScalar::from(199 as u64);
-        let m = AffinePoint::from(
-            (GENERATOR_EXTENDED * message_value)
-                + (GENERATOR_NUMS_EXTENDED * message_blinder),
-        );
+        let m = compute_value_commitment(message_value, message_blinder);
 
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let schnorr_m = BlsScalar::random(&mut rand::thread_rng());
@@ -387,22 +382,13 @@ mod transfer {
         let pub_params = &PUB_PARAMS;
         let spend_value = JubJubScalar::from(300 as u64);
         let spend_blinder = JubJubScalar::from(150 as u64);
-        let s_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * spend_value)
-                + (GENERATOR_NUMS_EXTENDED * spend_blinder),
-        );
+        let s_c = compute_value_commitment(spend_value, spend_blinder);
         let message_value = JubJubScalar::from(200 as u64);
         let message_blinder = JubJubScalar::from(199u64);
-        let m_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * message_value)
-                + (GENERATOR_NUMS_EXTENDED * message_blinder),
-        );
+        let m_c = compute_value_commitment(message_value, message_blinder);
         let note_value = JubJubScalar::from(100 as u64);
         let note_blinder = JubJubScalar::from(318 as u64);
-        let n_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * note_value)
-                + (GENERATOR_NUMS_EXTENDED * note_blinder),
-        );
+        let n_c = compute_value_commitment(note_value, note_blinder);
 
         let mut circuit = WithdrawFromContractObfuscatedCircuit {
             spend_commitment_value: spend_value.into(),
@@ -427,29 +413,21 @@ mod transfer {
 
         let commitment_value = JubJubScalar::from(100 as u64);
         let commitment_blinder = JubJubScalar::from(318 as u64);
-        let n_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * commitment_value)
-                + (GENERATOR_NUMS_EXTENDED * commitment_blinder),
-        );
+        let n_c =
+            compute_value_commitment(commitment_value, commitment_blinder);
 
         let spend_value = JubJubScalar::from(300 as u64);
         let spend_blinder = JubJubScalar::from(150 as u64);
-        let s_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * spend_value)
-                + (GENERATOR_NUMS_EXTENDED * spend_blinder),
-        );
+        let s_c = compute_value_commitment(spend_value, spend_blinder);
 
         let change_value = JubJubScalar::from(200 as u64);
         let change_blinder = JubJubScalar::from(199 as u64);
-        let m_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * change_value)
-                + (GENERATOR_NUMS_EXTENDED * change_blinder),
-        );
+        let m_c = compute_value_commitment(change_value, change_blinder);
 
         let mut circuit = WithdrawFromObfuscatedToContractCircuitOne {
             commitment_value: commitment_value.into(),
             commitment_blinder: commitment_blinder.into(),
-            commitment_point: s_c,
+            commitment_point: n_c,
             spend_commitment_value: spend_value.into(),
             spend_commitment_blinder: spend_blinder.into(),
             spend_commitment: s_c,
@@ -469,18 +447,16 @@ mod transfer {
 
         let commitment_value = JubJubScalar::from(100 as u64);
         let commitment_blinder = JubJubScalar::from(318 as u64);
-        let n_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * commitment_value)
-                + (GENERATOR_NUMS_EXTENDED * commitment_blinder),
-        );
+        let n_c =
+            compute_value_commitment(commitment_value, commitment_blinder);
 
         let value = BlsScalar::from(300 as u64);
 
         let change_message_value = JubJubScalar::from(200 as u64);
         let change_message_blinder = JubJubScalar::from(199 as u64);
-        let m_c = AffinePoint::from(
-            (GENERATOR_EXTENDED * change_message_value)
-                + (GENERATOR_NUMS_EXTENDED * change_message_blinder),
+        let m_c = compute_value_commitment(
+            change_message_value,
+            change_message_blinder,
         );
 
         let mut circuit = WithdrawFromObfuscatedToContractCircuitTwo {
@@ -1141,7 +1117,7 @@ mod transfer {
         let value3 = 100u64;
         let input_note_blinder_three = JubJubScalar::from(165 as u64);
         let mut note3 = circuit_note(ssk3, value3, 0, input_note_blinder_three);
-        note1.set_pos(0);
+        note1.set_pos(2);
         let input_note_value_three = JubJubScalar::from(value3);
         let input_commitment_three = compute_value_commitment(
             input_note_value_three,
@@ -1296,7 +1272,7 @@ mod transfer {
         let value3 = 100u64;
         let input_note_blinder_three = JubJubScalar::from(165 as u64);
         let mut note3 = circuit_note(ssk3, value3, 0, input_note_blinder_three);
-        note3.set_pos(0);
+        note3.set_pos(2);
         let input_note_value_three = JubJubScalar::from(value3);
         let input_commitment_three = compute_value_commitment(
             input_note_value_three,
