@@ -179,7 +179,7 @@ mod blindbid {
 
         // Extract the branch
         let branch = tree
-            .branch(64 as usize)?
+            .branch(0usize)?
             .expect("Poseidon Branch Extraction");
 
         // Generate a `Score` for our Bid with the consensus parameters
