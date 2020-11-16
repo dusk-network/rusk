@@ -8,7 +8,7 @@ use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
 use canonical_host::MemStore;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
-use dusk_pki::{PublicSpendKey, SecretSpendKey, Ownable};
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
     JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
@@ -517,6 +517,476 @@ mod transfer {
     // |12        |______4_______|______1_______|
     // |13________|______4_______|______2_______|
 
+    pub fn compile_execute_circuit_1() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 400u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![note1.gen_nullifier(&ssk1)],
+            note_hashes: vec![note1.hash()],
+            position_of_notes: vec![BlsScalar::from(note1.pos())],
+            input_note_types: vec![BlsScalar::from(note1.note() as u64)],
+            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
+            input_notes_pk: vec![AffinePoint::from(
+                note1.stealth_address().pk_r(),
+            )],
+            input_notes_pk_prime: vec![sig1.3],
+            input_commitments: vec![input_commitment_one],
+            input_nonces: vec![*note1.nonce()],
+            input_values: vec![input_note_value_one.into()],
+            input_blinders: vec![input_note_blinder_one.into()],
+            input_randomness: vec![note1.stealth_address().R().into()],
+            input_ciphers_one: vec![note1.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2]],
+            schnorr_sigs: vec![sig1.0],
+            schnorr_r: vec![sig1.1],
+            schnorr_r_prime: vec![sig1.2],
+            schnorr_messages: vec![BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![],
+            obfuscated_note_values: vec![],
+            obfuscated_note_blinders: vec![],
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
+
+    pub fn compile_execute_circuit_2() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 500u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+        let obfuscated_note_value_one = JubJubScalar::from(100 as u64);
+        let obfuscated_note_blinder_one = JubJubScalar::from(100 as u64);
+        let obfuscated_commitment_one = compute_value_commitment(
+            obfuscated_note_value_one,
+            obfuscated_note_blinder_one,
+        );
+
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![note1.gen_nullifier(&ssk1)],
+            note_hashes: vec![note1.hash()],
+            position_of_notes: vec![BlsScalar::from(note1.pos())],
+            input_note_types: vec![BlsScalar::from(note1.note() as u64)],
+            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
+            input_notes_pk: vec![AffinePoint::from(
+                note1.stealth_address().pk_r(),
+            )],
+            input_notes_pk_prime: vec![sig1.3],
+            input_commitments: vec![input_commitment_one],
+            input_nonces: vec![*note1.nonce()],
+            input_values: vec![input_note_value_one.into()],
+            input_blinders: vec![input_note_blinder_one.into()],
+            input_randomness: vec![note1.stealth_address().R().into()],
+            input_ciphers_one: vec![note1.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2]],
+            schnorr_sigs: vec![sig1.0],
+            schnorr_r: vec![sig1.1],
+            schnorr_r_prime: vec![sig1.2],
+            schnorr_messages: vec![BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![obfuscated_commitment_one],
+            obfuscated_note_values: vec![obfuscated_note_value_one.into()],
+            obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
+
+    pub fn compile_execute_circuit_3() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 600u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+        let obfuscated_note_value_one = JubJubScalar::from(100 as u64);
+        let obfuscated_note_blinder_one = JubJubScalar::from(100 as u64);
+        let obfuscated_commitment_one = compute_value_commitment(
+            obfuscated_note_value_one,
+            obfuscated_note_blinder_one,
+        );
+        let obfuscated_note_value_two = JubJubScalar::from(100 as u64);
+        let obfuscated_note_blinder_two = JubJubScalar::from(200 as u64);
+        let obfuscated_commitment_two = compute_value_commitment(
+            obfuscated_note_value_two,
+            obfuscated_note_blinder_two,
+        );
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![note1.gen_nullifier(&ssk1)],
+            note_hashes: vec![note1.hash()],
+            position_of_notes: vec![BlsScalar::from(note1.pos())],
+            input_note_types: vec![BlsScalar::from(note1.note() as u64)],
+            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
+            input_notes_pk: vec![AffinePoint::from(
+                note1.stealth_address().pk_r(),
+            )],
+            input_notes_pk_prime: vec![sig1.3],
+            input_commitments: vec![input_commitment_one],
+            input_nonces: vec![*note1.nonce()],
+            input_values: vec![input_note_value_one.into()],
+            input_blinders: vec![input_note_blinder_one.into()],
+            input_randomness: vec![note1.stealth_address().R().into()],
+            input_ciphers_one: vec![note1.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2]],
+            schnorr_sigs: vec![sig1.0],
+            schnorr_r: vec![sig1.1],
+            schnorr_r_prime: vec![sig1.2],
+            schnorr_messages: vec![BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![
+                obfuscated_commitment_one,
+                obfuscated_commitment_two,
+            ],
+            obfuscated_note_values: vec![
+                obfuscated_note_value_one.into(),
+                obfuscated_note_value_two.into(),
+            ],
+            obfuscated_note_blinders: vec![
+                obfuscated_note_blinder_one.into(),
+                obfuscated_note_blinder_two.into(),
+            ],
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
+
+    pub fn compile_execute_circuit_4() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 200u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+        let secret3 = JubJubScalar::from(300 as u64);
+        let secret4 = JubJubScalar::from(400 as u64);
+        let ssk2 = SecretSpendKey::new(secret3, secret4);
+        let value2 = 200u64;
+        let input_note_blinder_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let tree_pos_2 = tree.push(note2)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+        let sig2 = double_schnorr_sign(
+            ssk2.sk_r(note2.stealth_address()),
+            BlsScalar::one(),
+        );
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![
+                note1.gen_nullifier(&ssk1),
+                note2.gen_nullifier(&ssk2),
+            ],
+            note_hashes: vec![note1.hash(), note2.hash()],
+            position_of_notes: vec![
+                BlsScalar::from(note1.pos()),
+                BlsScalar::from(note2.pos()),
+            ],
+            input_note_types: vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
+            input_poseidon_branches: vec![
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
+            ],
+            input_notes_sk: vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            input_notes_pk: vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
+            input_notes_pk_prime: vec![sig1.3, sig2.3],
+            input_commitments: vec![input_commitment_one, input_commitment_two],
+            input_nonces: vec![*note1.nonce(), *note2.nonce()],
+            input_values: vec![
+                input_note_value_one.into(),
+                input_note_value_two.into(),
+            ],
+            input_blinders: vec![
+                input_note_blinder_one.into(),
+                input_note_blinder_two.into(),
+            ],
+            input_randomness: vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
+            input_ciphers_one: vec![note1.cipher()[0], note2.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1], note2.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2], note2.cipher()[2]],
+            schnorr_sigs: vec![sig1.0, sig2.0],
+            schnorr_r: vec![sig1.1, sig2.1],
+            schnorr_r_prime: vec![sig1.2, sig2.2],
+            schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![],
+            obfuscated_note_values: vec![],
+            obfuscated_note_blinders: vec![],
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
+    pub fn compile_execute_circuit_5() -> Result<(Vec<u8>, Vec<u8>)> {
+        let pub_params = &PUB_PARAMS;
+        let secret1 = JubJubScalar::from(100 as u64);
+        let secret2 = JubJubScalar::from(200 as u64);
+        let ssk1 = SecretSpendKey::new(secret1, secret2);
+        let value1 = 400u64;
+        let input_note_blinder_one = JubJubScalar::from(100 as u64);
+        let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
+        note1.set_pos(0);
+        let input_note_value_one = JubJubScalar::from(value1);
+        let input_commitment_one = compute_value_commitment(
+            input_note_value_one,
+            input_note_blinder_one,
+        );
+        let secret3 = JubJubScalar::from(300 as u64);
+        let secret4 = JubJubScalar::from(400 as u64);
+        let ssk2 = SecretSpendKey::new(secret3, secret4);
+        let value2 = 200u64;
+        let input_note_blinder_two = JubJubScalar::from(200 as u64);
+        let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
+        note2.set_pos(1);
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let input_note_value_two = JubJubScalar::from(value2);
+        let input_commitment_two = compute_value_commitment(
+            input_note_value_two,
+            input_note_blinder_two,
+        );
+        let mut tree =
+            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1)?;
+        let tree_pos_2 = tree.push(note2)?;
+        let crossover_commitment_value = JubJubScalar::from(200 as u64);
+        let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
+        let crossover_commitment = compute_value_commitment(
+            crossover_commitment_value,
+            crossover_commitment_blinder,
+        );
+        let obfuscated_note_value_one = JubJubScalar::from(200 as u64);
+        let obfuscated_note_blinder_one = JubJubScalar::from(100 as u64);
+        let obfuscated_commitment_one = compute_value_commitment(
+            obfuscated_note_value_one,
+            obfuscated_note_blinder_one,
+        );
+
+        let sig1 = double_schnorr_sign(
+            ssk1.sk_r(note1.stealth_address()),
+            BlsScalar::one(),
+        );
+        let sig2 = double_schnorr_sign(
+            ssk2.sk_r(note2.stealth_address()),
+            BlsScalar::one(),
+        );
+        let fee = BlsScalar::from(200);
+
+        let mut circuit = ExecuteCircuit {
+            nullifiers: vec![
+                note1.gen_nullifier(&ssk1),
+                note2.gen_nullifier(&ssk2),
+            ],
+            note_hashes: vec![note1.hash(), note2.hash()],
+            position_of_notes: vec![
+                BlsScalar::from(note1.pos()),
+                BlsScalar::from(note2.pos()),
+            ],
+            input_note_types: vec![
+                BlsScalar::from(note1.note() as u64),
+                BlsScalar::from(note2.note() as u64),
+            ],
+            input_poseidon_branches: vec![
+                tree.branch(tree_pos_1)?.unwrap(),
+                tree.branch(tree_pos_2)?.unwrap(),
+            ],
+            input_notes_sk: vec![
+                ssk1.sk_r(note1.stealth_address()),
+                ssk2.sk_r(note2.stealth_address()),
+            ],
+            input_notes_pk: vec![
+                AffinePoint::from(note1.stealth_address().pk_r()),
+                AffinePoint::from(note2.stealth_address().pk_r()),
+            ],
+            input_notes_pk_prime: vec![sig1.3, sig2.3],
+            input_commitments: vec![input_commitment_one, input_commitment_two],
+            input_nonces: vec![*note1.nonce(), *note2.nonce()],
+            input_values: vec![
+                input_note_value_one.into(),
+                input_note_value_two.into(),
+            ],
+            input_blinders: vec![
+                input_note_blinder_one.into(),
+                input_note_blinder_two.into(),
+            ],
+            input_randomness: vec![
+                note1.stealth_address().R().into(),
+                note2.stealth_address().R().into(),
+            ],
+            input_ciphers_one: vec![note1.cipher()[0], note2.cipher()[0]],
+            input_ciphers_two: vec![note1.cipher()[1], note2.cipher()[1]],
+            input_ciphers_three: vec![note1.cipher()[2], note2.cipher()[2]],
+            schnorr_sigs: vec![sig1.0, sig2.0],
+            schnorr_r: vec![sig1.1, sig2.1],
+            schnorr_r_prime: vec![sig1.2, sig2.2],
+            schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
+            crossover_commitment: crossover_commitment,
+            crossover_commitment_value: crossover_commitment_value.into(),
+            crossover_commitment_blinder: crossover_commitment_blinder.into(),
+            obfuscated_commitment_points: vec![obfuscated_commitment_one],
+            obfuscated_note_values: vec![obfuscated_note_value_one.into()],
+            obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
+            fee: fee,
+            trim_size: 1 << 16,
+            pi_positions: vec![],
+        };
+
+        let (pk, vk) = circuit.compile(&pub_params)?;
+        Ok((pk.to_bytes(), vk.to_bytes()))
+    }
     pub fn compile_execute_circuit_6() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
         let secret1 = JubJubScalar::from(100 as u64);
@@ -607,10 +1077,7 @@ mod transfer {
                 AffinePoint::from(note2.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3],
-            input_commitments: vec![
-                input_commitment_one,
-                input_commitment_two
-            ],
+            input_commitments: vec![input_commitment_one, input_commitment_two],
             input_nonces: vec![*note1.nonce(), *note2.nonce()],
             input_values: vec![
                 input_note_value_one.into(),
