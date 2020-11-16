@@ -178,9 +178,7 @@ mod blindbid {
         tree.push(bid)?;
 
         // Extract the branch
-        let branch = tree
-            .branch(0usize)?
-            .expect("Poseidon Branch Extraction");
+        let branch = tree.branch(0usize)?.expect("Poseidon Branch Extraction");
 
         // Generate a `Score` for our Bid with the consensus parameters
         let score = bid.compute_score(
@@ -1233,7 +1231,7 @@ mod transfer {
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
@@ -1394,7 +1392,7 @@ mod transfer {
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
@@ -1569,7 +1567,7 @@ mod transfer {
                 obfuscated_note_blinder_two.into(),
             ],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
@@ -1765,7 +1763,7 @@ mod transfer {
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
@@ -1967,7 +1965,7 @@ mod transfer {
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
@@ -2183,7 +2181,7 @@ mod transfer {
                 obfuscated_note_blinder_two.into(),
             ],
             fee: fee,
-            trim_size: 1 << 16,
+            trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
