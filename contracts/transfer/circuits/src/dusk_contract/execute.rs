@@ -6,7 +6,7 @@
 
 use crate::gadgets::{
     merkle::merkle, nullifier::nullifier_gadget, preimage::input_preimage,
-    range::range, schnorr::schnorr_gadget_two_keys, secret_key::sk_knowledge,
+    range::range, schnorr::schnorr_gadget_two_keys,
 };
 use anyhow::Result;
 use dusk_plonk::bls12_381::BlsScalar;
@@ -17,8 +17,7 @@ use dusk_plonk::jubjub::{
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::sponge_hash_gadget;
-use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
+use poseidon252::tree::PoseidonBranch;
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
@@ -519,13 +518,14 @@ impl Circuit<'_> for ExecuteCircuit {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::leaf::NoteLeaf;
     use anyhow::Result;
     use canonical_host::MemStore;
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use phoenix_core::{Note, NoteType};
-    use poseidon252::sponge::sponge::sponge_hash;
-    use poseidon252::tree::PoseidonBranch;
+    use poseidon252::sponge::hash;
+    use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 
     // Function to generate value commitment from value and blinder. This is a pedersen commitment.
     fn compute_value_commitment(
@@ -571,34 +571,33 @@ mod tests {
         fee: BlsScalar,
     ) -> ExecuteCircuit {
         ExecuteCircuit {
-            // anchor: None,
-            nullifiers: nullifiers,
-            note_hashes: note_hashes,
-            position_of_notes: position_of_notes,
-            input_note_types: input_note_types,
-            input_poseidon_branches: input_poseidon_branches,
-            input_notes_sk: input_notes_sk,
-            input_notes_pk: input_notes_pk,
-            input_notes_pk_prime: input_notes_pk_prime,
-            input_commitments: input_commitments,
+            nullifiers,
+            note_hashes,
+            position_of_notes,
+            input_note_types,
+            input_poseidon_branches,
+            input_notes_sk,
+            input_notes_pk,
+            input_notes_pk_prime,
+            input_commitments,
             input_nonces,
-            input_values: input_values,
-            input_blinders: input_blinders,
+            input_values,
+            input_blinders,
             input_randomness,
             input_ciphers_one,
             input_ciphers_two,
             input_ciphers_three,
-            schnorr_sigs: schnorr_sigs,
-            schnorr_r: schnorr_r,
-            schnorr_r_prime: schnorr_r_prime,
-            schnorr_messages: schnorr_messages,
-            crossover_commitment: crossover_commitment,
+            schnorr_sigs,
+            schnorr_r,
+            schnorr_r_prime,
+            schnorr_messages,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
-            obfuscated_commitment_points: obfuscated_commitment_points,
-            obfuscated_note_values: obfuscated_note_values,
-            obfuscated_note_blinders: obfuscated_note_blinders,
-            fee: fee,
+            obfuscated_commitment_points,
+            obfuscated_note_values,
+            obfuscated_note_blinders,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         }
@@ -661,14 +660,9 @@ mod tests {
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
         let R_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * r);
-        let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[
-            R.get_x(),
-            R.get_y(),
-            R_prime.get_x(),
-            R_prime.get_y(),
-            h,
-        ]);
+        let h = hash(&[message]);
+        let c_hash =
+            hash(&[R.get_x(), R.get_y(), R_prime.get_x(), R_prime.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
@@ -719,18 +713,11 @@ mod tests {
             input_note_blinder_two,
         );
 
-        let input_note_value_two = JubJubScalar::from(value2);
-        // Generate the value commitment of the note from the value and blinder
-        let input_commitment_two = compute_value_commitment(
-            input_note_value_two,
-            input_note_blinder_two,
-        );
-
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
         // Assign the postitions of the notes to a position in the tree
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+        let tree_pos_1 = tree.push(note1.into()).expect("Tree appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Tree appending error");
 
         // Generate the crossover commitment, C.c(v,b)
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
@@ -774,8 +761,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction err")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction err")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -869,10 +860,10 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
         // Assign the positions of the notes to a position in the tree
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         // Generate the crossover commitment, C.c(v,b)
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
@@ -916,8 +907,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1010,9 +1005,9 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
@@ -1052,8 +1047,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1143,9 +1142,9 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
@@ -1187,8 +1186,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1279,9 +1282,9 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
@@ -1322,8 +1325,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1417,9 +1424,9 @@ mod tests {
         );
 
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         // After the note has been pushed to the tree, set the position elsewhere,
         // this will cause the the preimage and nullifier to fail
@@ -1463,8 +1470,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1565,18 +1576,11 @@ mod tests {
             input_note_blinder_two,
         );
 
-        let input_note_value_two = JubJubScalar::from(value2);
-        // Generate the value commitment of the note from the value and blinder
-        let input_commitment_two = compute_value_commitment(
-            input_note_value_two,
-            input_note_blinder_two,
-        );
-
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
         // Assign the postitions of the notes to a position in the tree
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
+        let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
+        let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
         // Generate the crossover commitment, C.c(v,b)
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
@@ -1620,8 +1624,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1677,8 +1685,12 @@ mod tests {
                 BlsScalar::from(note2.note() as u64),
             ],
             vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                tree.branch(tree_pos_1)
+                    .expect("Branch extraction error")
+                    .unwrap(),
+                tree.branch(tree_pos_2)
+                    .expect("Branch extraction error")
+                    .unwrap(),
             ],
             vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1718,7 +1730,7 @@ mod tests {
             ],
             fee,
         );
-        verifier_circuit.compile(&pub_params);
+        verifier_circuit.compile(&pub_params)?;
         let mut pi = vec![];
         add_circuit_public_inputs(
             &verifier_circuit,

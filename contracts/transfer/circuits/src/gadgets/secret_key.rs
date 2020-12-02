@@ -6,7 +6,7 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
-use dusk_plonk::jubjub::{JubJubAffine as AffinePoint, GENERATOR_EXTENDED};
+use dusk_plonk::jubjub::GENERATOR_EXTENDED;
 use dusk_plonk::prelude::*;
 
 use plonk_gadgets::AllocatedScalar;
@@ -27,12 +27,13 @@ mod secret_key_tests {
     use super::*;
     use anyhow::{Error, Result};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
+    use dusk_plonk::jubjub::JubJubAffine;
     use dusk_plonk::proof_system::{Prover, Verifier};
 
     #[test]
     fn sk_gadget() -> Result<(), Error> {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
         // Generate Composer & Public Parameters
         let pub_params =
             PublicParameters::setup(1 << 10, &mut rand::thread_rng())?;

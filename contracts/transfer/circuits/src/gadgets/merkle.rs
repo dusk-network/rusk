@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::bls12_381::BlsScalar as Scalar;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::tree::zk::merkle_opening;
+use poseidon252::tree::merkle_opening;
 use poseidon252::tree::PoseidonBranch;
 
 /// Prove the knowledge of the position of the note in
@@ -25,28 +24,30 @@ pub fn merkle(
 #[cfg(test)]
 mod merkle_tests {
     use super::*;
+    use crate::leaf::NoteLeaf;
     use anyhow::{Error, Result};
     use canonical_host::MemStore;
     use dusk_pki::PublicSpendKey;
-    use dusk_plonk::bls12_381::BlsScalar as Scalar;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::note::{Note, NoteType};
     use poseidon252::tree::{PoseidonAnnotation, PoseidonTree};
+    use rand::thread_rng;
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
         let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
         let a =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
         let b =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
         let psk = PublicSpendKey::new(a, b);
-        let note = Note::new(NoteType::Transparent, &psk, 100);
-        tree.push(note)?;
+        let note =
+            Note::new(&mut thread_rng(), NoteType::Transparent, &psk, 100);
+        tree.push(note.into()).expect("Tree append error");
 
         // Generate Composer & Public Parameters
         let pub_params =
