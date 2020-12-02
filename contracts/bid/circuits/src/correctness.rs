@@ -9,7 +9,7 @@ use dusk_blindbid::{V_MAX, V_MIN};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
@@ -18,7 +18,7 @@ use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 #[derive(Debug, Clone, Default)]
 pub struct CorrectnessCircuit {
     /// The value commitment of the bid.
-    pub commitment: AffinePoint,
+    pub commitment: JubJubAffine,
     /// The value of the bid, in clear.
     pub value: BlsScalar,
     /// The blinder, used to construct the value commitment.
@@ -64,8 +64,8 @@ impl Circuit<'_> for CorrectnessCircuit {
         // 2. Range check - v_min <= value <= v_max
         let cond = range_check(
             composer,
-            BlsScalar::from(*V_MIN),
-            BlsScalar::from(*V_MAX),
+            BlsScalar::from(V_MIN),
+            BlsScalar::from(V_MAX),
             value,
         );
 
