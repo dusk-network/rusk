@@ -34,7 +34,7 @@ pub struct ExecuteCircuit {
     /// Input note types
     pub input_note_types: Vec<BlsScalar>,
     /// Poseidon branches of the input notes
-    pub input_poseidon_branches: Vec<PoseidonBranch<31>>,
+    pub input_poseidon_branches: Vec<PoseidonBranch<17>>,
     /// Input notes secret keys
     pub input_notes_sk: Vec<JubJubScalar>,
     /// Input notes public keys

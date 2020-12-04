@@ -19,7 +19,7 @@ use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
 use phoenix_core::{Note, NoteType};
 use poseidon252::sponge::hash;
-use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
+use poseidon252::tree::PoseidonBranch;
 use transfer_circuits::dusk_contract::{
     ExecuteCircuit, SendToContractObfuscatedCircuit,
     SendToContractTransparentCircuit, WithdrawFromContractObfuscatedCircuit,
@@ -127,7 +127,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             transfer_keys.update(&format!("Execute{}", i), fnctn()?)?;
         }
     }
-
     Ok(())
 }
 
@@ -518,7 +517,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
+            input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -591,7 +590,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
+            input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -669,7 +668,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
+            input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -770,8 +769,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -882,8 +881,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -999,8 +998,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1132,9 +1131,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1288,9 +1287,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1449,9 +1448,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1632,10 +1631,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1828,10 +1827,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -2029,10 +2028,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
-                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
+                PoseidonBranch::<17>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),

@@ -13,7 +13,7 @@ use poseidon252::tree::PoseidonBranch;
 /// the merkle tree.
 pub fn merkle(
     composer: &mut StandardComposer,
-    branch: PoseidonBranch<31>,
+    branch: PoseidonBranch<17>,
     note_hash: AllocatedScalar,
 ) -> Variable {
     let leaf = note_hash.var;
