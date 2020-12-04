@@ -7,9 +7,9 @@
 //! Phoenix transaction structure implementation.
 
 use anyhow::Result;
-use dusk_pki::StealthAddress;
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::jubjub::JubJubScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
@@ -73,14 +73,16 @@ impl Default for TransactionPayload {
             nullifiers: vec![],
             crossover: None,
             notes: vec![],
-            fee: Fee {
-                gas_limit: 0u64,
-                gas_price: 0u64,
-                stealth_address: StealthAddress {
-                    R: JubJubExtended::default(),
-                    pk_r: JubJubExtended::default(),
-                },
-            },
+            fee: Fee::deterministic(
+                0u64,
+                0u64,
+                &JubJubScalar::default(),
+                &PublicSpendKey::from(SecretSpendKey::new(
+                    JubJubScalar::default(),
+                    JubJubScalar::default(),
+                )),
+            ),
+
             // NOTE: we are unwrapping here, but this should never fail,
             // since it is a pre-generated proof which is shown to be correct.
             spending_proof: read_default_proof()
@@ -161,14 +163,11 @@ impl Read for TransactionPayload {
         n += (&mut buf[n..]).write(&(self.notes.len() as u64).to_le_bytes())?;
 
         // Notes
-        self.notes
-            .iter_mut()
-            .map(|note| {
-                buf[n..n + Note::serialized_size()]
-                    .copy_from_slice(&note.to_bytes());
-                n += Note::serialized_size();
-            })
-            .collect::<()>();
+        self.notes.iter().for_each(|note| {
+            buf[n..n + Note::serialized_size()]
+                .copy_from_slice(&note.to_bytes());
+            n += Note::serialized_size();
+        });
 
         // Fee
         buf[n..n + Fee::serialized_size()]
