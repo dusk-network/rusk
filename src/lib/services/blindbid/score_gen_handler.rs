@@ -104,10 +104,9 @@ fn parse_score_gen_params(
 // desired inputs.verifier_key
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     // Read ProverKey of the circuit.
-    // TODO: remove unwrap
     let prover_key = rusk_profile::keys_for("dusk-blindbid")
         .get_prover("blindbid")
-        .unwrap();
+        .expect("Failed to get blindbid circuit keys from rusk_profile.");
 
     let prover_key = ProverKey::from_bytes(&prover_key[..])?;
     // Generate a proof using the circuit

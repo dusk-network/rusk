@@ -9,7 +9,7 @@ use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
-    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
@@ -23,17 +23,17 @@ pub struct SendToContractTransparentCircuit {
     /// Blinder within Pedersen commitment
     pub blinder: BlsScalar,
     /// Pedersen Commitment
-    pub commitment: AffinePoint,
+    pub commitment: JubJubAffine,
     /// Value to be sent
     pub value: BlsScalar,
     /// Public key
-    pub pk: AffinePoint,
+    pub pk: JubJubAffine,
     /// Schnorr signature
     pub schnorr_sig: JubJubScalar,
     /// Schnorr R
-    pub schnorr_r: AffinePoint,
+    pub schnorr_r: JubJubAffine,
     /// Schnorr PK
-    pub schnorr_pk: AffinePoint,
+    pub schnorr_pk: JubJubAffine,
     /// Schnorr message
     pub schnorr_message: BlsScalar,
     /// Returns circuit size
@@ -68,7 +68,8 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         let schnorr_message =
             AllocatedScalar::allocate(composer, schnorr_message);
 
-        // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
+        // Prove the knowledge of the commitment opening of the commitment of
+        // the crossover in the input
         let p1 = scalar_mul(
             composer,
             allocated_commitment_crossover_value.var,
@@ -92,7 +93,8 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, commitment_crossover);
 
-        // Prove that the value of the opening of the commitment of the input is within range
+        // Prove that the value of the opening of the commitment of the input is
+        // within range
         range(composer, allocated_commitment_crossover_value, 64);
 
         //Assert the given private and public pk inputs are equal
@@ -137,7 +139,8 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         self.trim_size = size;
     }
 
-    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    /// /// Return a mutable reference to the Public Inputs storage of the
+    /// circuit.
     fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
         &mut self.pi_positions
     }
@@ -158,10 +161,10 @@ mod tests {
     fn schnorr_sign(
         sk: JubJubScalar,
         message: BlsScalar,
-    ) -> (JubJubScalar, AffinePoint, AffinePoint) {
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
+    ) -> (JubJubScalar, JubJubAffine, JubJubAffine) {
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
         let h = sponge_hash(&[message]);
         let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
@@ -175,7 +178,7 @@ mod tests {
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(300 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
-        let commitment_crossover = AffinePoint::from(
+        let commitment_crossover = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_crossover_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_crossover_blinder),
         );
@@ -186,7 +189,7 @@ mod tests {
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
@@ -223,7 +226,7 @@ mod tests {
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(500 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
-        let commitment_crossover = AffinePoint::from(
+        let commitment_crossover = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_crossover_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_crossover_blinder),
         );
@@ -234,7 +237,7 @@ mod tests {
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {
@@ -274,7 +277,7 @@ mod tests {
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(300 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
-        let commitment_crossover = AffinePoint::from(
+        let commitment_crossover = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_crossover_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_crossover_blinder),
         );
@@ -285,7 +288,7 @@ mod tests {
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractTransparentCircuit {

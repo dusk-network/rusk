@@ -12,7 +12,7 @@ use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
-    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::PublicParameters;
 use dusk_plonk::prelude::*;
@@ -127,6 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             transfer_keys.update(&format!("Execute{}", i), fnctn()?)?;
         }
     }
+
     Ok(())
 }
 
@@ -138,7 +139,7 @@ mod bid {
         let value = JubJubScalar::from(100000 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
 
-        let c = AffinePoint::from(
+        let c = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
@@ -164,7 +165,7 @@ mod blindbid {
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
         let bid = random_bid(&secret, secret_k)?;
-        let secret: AffinePoint = (GENERATOR_EXTENDED * secret).into();
+        let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
 
         // Generate fields for the Bid & required by the compute_score
         let consensus_round_seed = 50u64;
@@ -236,10 +237,10 @@ mod transfer {
     fn single_schnorr_sign(
         sk: JubJubScalar,
         message: BlsScalar,
-    ) -> (JubJubScalar, AffinePoint, AffinePoint) {
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
+    ) -> (JubJubScalar, JubJubAffine, JubJubAffine) {
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
         let h = hash(&[message]);
         let c_hash = hash(&[R.get_x(), R.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
@@ -253,11 +254,11 @@ mod transfer {
     fn double_schnorr_sign(
         sk: JubJubScalar,
         message: BlsScalar,
-    ) -> (JubJubScalar, AffinePoint, AffinePoint, AffinePoint) {
-        let pk_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * sk);
+    ) -> (JubJubScalar, JubJubAffine, JubJubAffine, JubJubAffine) {
+        let pk_prime = JubJubAffine::from(GENERATOR_NUMS_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
-        let R_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * r);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
+        let R_prime = JubJubAffine::from(GENERATOR_NUMS_EXTENDED * r);
         let h = hash(&[message]);
         let c_hash =
             hash(&[R.get_x(), R.get_y(), R_prime.get_x(), R_prime.get_y(), h]);
@@ -292,8 +293,8 @@ mod transfer {
     fn compute_value_commitment(
         value: JubJubScalar,
         blinder: JubJubScalar,
-    ) -> AffinePoint {
-        let commitment = AffinePoint::from(
+    ) -> JubJubAffine {
+        let commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * value)
                 + &(GENERATOR_NUMS_EXTENDED * blinder),
         );
@@ -313,7 +314,7 @@ mod transfer {
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let sig = single_schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         let mut circuit = SendToContractTransparentCircuit {
             commitment_value: commitment_value.into(),
@@ -346,7 +347,7 @@ mod transfer {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let schnorr_m = BlsScalar::random(&mut rand::thread_rng());
         let sig = single_schnorr_sign(sk, schnorr_m);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: crossover_value.into(),
@@ -519,7 +520,7 @@ mod transfer {
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
             input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
-            input_notes_pk: vec![AffinePoint::from(
+            input_notes_pk: vec![JubJubAffine::from(
                 note1.stealth_address().pk_r(),
             )],
             input_notes_pk_prime: vec![sig1.3],
@@ -592,7 +593,7 @@ mod transfer {
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
             input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
-            input_notes_pk: vec![AffinePoint::from(
+            input_notes_pk: vec![JubJubAffine::from(
                 note1.stealth_address().pk_r(),
             )],
             input_notes_pk_prime: vec![sig1.3],
@@ -670,7 +671,7 @@ mod transfer {
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
             input_poseidon_branches: vec![PoseidonBranch::<17>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
-            input_notes_pk: vec![AffinePoint::from(
+            input_notes_pk: vec![JubJubAffine::from(
                 note1.stealth_address().pk_r(),
             )],
             input_notes_pk_prime: vec![sig1.3],
@@ -777,8 +778,8 @@ mod transfer {
                 ssk2.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3],
             input_commitments: vec![input_commitment_one, input_commitment_two],
@@ -889,8 +890,8 @@ mod transfer {
                 ssk2.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3],
             input_commitments: vec![input_commitment_one, input_commitment_two],
@@ -1006,8 +1007,8 @@ mod transfer {
                 ssk2.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3],
             input_commitments: vec![input_commitment_one, input_commitment_two],
@@ -1141,9 +1142,9 @@ mod transfer {
                 ssk3.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3],
             input_commitments: vec![
@@ -1297,9 +1298,9 @@ mod transfer {
                 ssk3.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3],
             input_commitments: vec![
@@ -1458,9 +1459,9 @@ mod transfer {
                 ssk3.sk_r(note2.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3],
             input_commitments: vec![
@@ -1643,10 +1644,10 @@ mod transfer {
                 ssk4.sk_r(note4.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
-                AffinePoint::from(note4.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note4.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3, sig4.3],
             input_commitments: vec![
@@ -1839,10 +1840,10 @@ mod transfer {
                 ssk4.sk_r(note4.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
-                AffinePoint::from(note4.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note4.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3, sig4.3],
             input_commitments: vec![
@@ -2040,10 +2041,10 @@ mod transfer {
                 ssk4.sk_r(note4.stealth_address()),
             ],
             input_notes_pk: vec![
-                AffinePoint::from(note1.stealth_address().pk_r()),
-                AffinePoint::from(note2.stealth_address().pk_r()),
-                AffinePoint::from(note3.stealth_address().pk_r()),
-                AffinePoint::from(note4.stealth_address().pk_r()),
+                JubJubAffine::from(note1.stealth_address().pk_r()),
+                JubJubAffine::from(note2.stealth_address().pk_r()),
+                JubJubAffine::from(note3.stealth_address().pk_r()),
+                JubJubAffine::from(note4.stealth_address().pk_r()),
             ],
             input_notes_pk_prime: vec![sig1.3, sig2.3, sig3.3, sig4.3],
             input_commitments: vec![

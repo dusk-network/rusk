@@ -352,7 +352,7 @@ mod tests {
 
         let psk = PublicSpendKey::new(a, b);
 
-        Fee::new(gas_limit, gas_price, &psk)
+        Fee::new(&mut rand::thread_rng(), gas_limit, gas_price, &psk)
     }
 
     fn deterministic_crossover() -> Crossover {
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn transaction_encode_decode() -> Result<()> {
-        let mut tx = deterministic_tx();
+        let tx = deterministic_tx();
         let mut pbuf_tx = rusk_proto::Transaction::try_from(&mut tx.clone())?;
         let decoded_tx = Transaction::try_from(&mut pbuf_tx)?;
 

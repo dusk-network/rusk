@@ -9,12 +9,13 @@ use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
 use dusk_plonk::jubjub::{
-    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 
-/// XXX: missing fields from stuct as per gitbook. This is for one time encryption pk.
+/// XXX: missing fields from stuct as per gitbook. This is for one time
+/// encryption pk.
 #[derive(Debug, Default, Clone)]
 pub struct SendToContractObfuscatedCircuit {
     /// Value within commitment crossover
@@ -22,21 +23,21 @@ pub struct SendToContractObfuscatedCircuit {
     /// Blinder within commitment crossover
     pub commitment_crossover_blinder: BlsScalar,
     /// Commitment crossover point
-    pub commitment_crossover: AffinePoint,
+    pub commitment_crossover: JubJubAffine,
     /// Value within commitment message
     pub commitment_message_value: BlsScalar,
     /// Blinder within message commitment
     pub commitment_message_blinder: BlsScalar,
     /// Message commitment point
-    pub commitment_message: AffinePoint,
+    pub commitment_message: JubJubAffine,
     /// Public key
-    pub pk: AffinePoint,
+    pub pk: JubJubAffine,
     /// Schnorr signature
     pub schnorr_sig: JubJubScalar,
     /// Schnorr R
-    pub schnorr_r: AffinePoint,
+    pub schnorr_r: JubJubAffine,
     /// Schnorr PK
-    pub schnorr_pk: AffinePoint,
+    pub schnorr_pk: JubJubAffine,
     /// Schnorr message
     pub schnorr_message: BlsScalar,
     /// Returns circuit size
@@ -76,7 +77,8 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         let schnorr_message =
             AllocatedScalar::allocate(composer, schnorr_message);
 
-        // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
+        // Prove the knowledge of the commitment opening of the commitment of
+        // the crossover in the input
         let p1 = scalar_mul(
             composer,
             allocated_crossover_value.var,
@@ -100,7 +102,8 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, commitment_crossover);
 
-        // Prove that the value of the opening of the commitment of the input is within range
+        // Prove that the value of the opening of the commitment of the input is
+        // within range
         range(composer, allocated_crossover_value, 64);
 
         //Assert the given private and public pk inputs are equal
@@ -121,7 +124,8 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
             schnorr_message,
         );
 
-        // Prove the knowledge of the commitment opening of the commitment of the crossover in the input
+        // Prove the knowledge of the commitment opening of the commitment of
+        // the crossover in the input
         let p3 = scalar_mul(
             composer,
             allocated_message_value.var,
@@ -145,7 +149,8 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment2, commitment_message);
 
-        // Prove that the value of the opening of the commitment of the input is within range
+        // Prove that the value of the opening of the commitment of the input is
+        // within range
         range(composer, allocated_message_value, 64);
 
         composer.assert_equal(
@@ -167,7 +172,8 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         self.trim_size = size;
     }
 
-    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    /// /// Return a mutable reference to the Public Inputs storage of the
+    /// circuit.
     fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
         &mut self.pi_positions
     }
