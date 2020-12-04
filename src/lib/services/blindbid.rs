@@ -11,7 +11,14 @@ mod verify_score_handler;
 use super::rusk_proto;
 use crate::services::ServiceRequestHandler;
 use crate::Rusk;
-use dusk_blindbid::tree::BidTree;
+use canonical_host::MemStore;
+use dusk_blindbid::bid::Bid;
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_plonk::{
+    bls12_381::BlsScalar,
+    jubjub::{JubJubAffine, JubJubScalar},
+};
+use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 use score_gen_handler::ScoreGenHandler;
 use std::fs::{read, write};
 use tonic::{Request, Response, Status};
@@ -68,14 +75,6 @@ impl BlindBidService for Rusk {
     }
 }
 
-use canonical_host::MemStore;
-use dusk_blindbid::bid::Bid;
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::{
-    bls12_381::BlsScalar,
-    jubjub::{JubJubAffine, JubJubScalar},
-};
-use poseidon252::tree::PoseidonBranch;
 // This function simulates the obtention of a Bid from the
 // Bid contract storage and a PoseidonBranch that references it.
 // For this function to work as a correct mocker, it always needs
@@ -101,8 +100,8 @@ pub(crate) fn get_bid_storage_fields(
                 &JubJubScalar::from(60_000u64),
                 secret,
                 k,
-                -BlsScalar::from(99),
-                -BlsScalar::from(99),
+                u64::MAX,
+                u64::MAX,
             )
             .expect("This should not fail");
             // Write bid to disk to "mock it" since storage is not persistent.
@@ -113,13 +112,14 @@ pub(crate) fn get_bid_storage_fields(
             // Read the bid from disk to have the same as the original one
             // since storage is not persistent atm.
             let bytes = read(BID_FILE_PATH)?;
-            let mut buff: [u8; 328] = [0u8; 328];
+            let mut buff: [u8; Bid::serialized_size()] =
+                [0u8; Bid::serialized_size()];
             buff.copy_from_slice(&bytes[..]);
             Bid::from_bytes(buff)?
         }
     };
 
-    let mut tree = BidTree::<MemStore>::new();
+    let mut tree = PoseidonTree::<Bid, PoseidonAnnotation, MemStore, 17>::new();
     let obtained_idx = tree.push(bid).ok().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
@@ -127,7 +127,7 @@ pub(crate) fn get_bid_storage_fields(
         )
     })?;
     assert_eq!(idx, obtained_idx as usize);
-    let branch = tree.poseidon_branch(idx as usize).ok().ok_or_else(|| {
+    let branch = tree.branch(idx as usize).ok().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "missing branch in the extraction process.",
@@ -139,7 +139,7 @@ pub(crate) fn get_bid_storage_fields(
             "missing branch in the extraction process.",
         )
     })?;
-    let extracted_bid = tree.get(idx as u64).ok().ok_or_else(|| {
+    let extracted_bid = tree.get(idx).ok().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "Bid not found in the tree",

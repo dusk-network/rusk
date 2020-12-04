@@ -46,16 +46,14 @@ where
         )?;
 
         // Generate Score for the Bid
-        let latest_consensus_round =
-            BlsScalar::from(self.request.get_ref().round as u64);
-        let latest_consensus_step =
-            BlsScalar::from(self.request.get_ref().step as u64);
+        let latest_consensus_round = self.request.get_ref().round as u64;
+        let latest_consensus_step = self.request.get_ref().step as u64;
         let score = bid
             .compute_score(
                 &secret,
                 k,
                 branch.root(),
-                seed,
+                seed.reduce().0[0],
                 latest_consensus_round,
                 latest_consensus_step,
             )
@@ -64,8 +62,8 @@ where
         let prover_id = bid.generate_prover_id(
             k,
             seed,
-            latest_consensus_round,
-            latest_consensus_step,
+            BlsScalar::from(latest_consensus_round),
+            BlsScalar::from(latest_consensus_step),
         );
         // Generate Blindbid proof proving that the generated `Score` is
         // correct.
@@ -75,8 +73,8 @@ where
             secret_k: k,
             secret,
             seed,
-            latest_consensus_round,
-            latest_consensus_step,
+            latest_consensus_round: BlsScalar::from(latest_consensus_round),
+            latest_consensus_step: BlsScalar::from(latest_consensus_step),
             branch: &branch,
             trim_size: 1 << 15,
             pi_positions: vec![],

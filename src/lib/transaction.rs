@@ -7,15 +7,12 @@
 //! Phoenix transaction structure implementation.
 
 use anyhow::Result;
+use dusk_pki::StealthAddress;
 use dusk_plonk::bls12_381::BlsScalar;
+use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
-
-/// PLONK proofs are constant size. However, since we can not get this
-/// attribute from the `dusk_plonk` library, we declare it ourselves here
-/// for convenience.
-pub(crate) const PROOF_SIZE: usize = 1040;
 
 fn read_default_proof() -> Result<Proof> {
     let bytes = include_bytes!("proof.bin");
@@ -76,7 +73,14 @@ impl Default for TransactionPayload {
             nullifiers: vec![],
             crossover: None,
             notes: vec![],
-            fee: Fee::default(),
+            fee: Fee {
+                gas_limit: 0u64,
+                gas_price: 0u64,
+                stealth_address: StealthAddress {
+                    R: JubJubExtended::default(),
+                    pk_r: JubJubExtended::default(),
+                },
+            },
             // NOTE: we are unwrapping here, but this should never fail,
             // since it is a pre-generated proof which is shown to be correct.
             spending_proof: read_default_proof()
@@ -150,7 +154,9 @@ impl Read for TransactionPayload {
         let crossover_present = self.crossover.is_some() as u8;
         n += (&mut buf[n..]).write(&[crossover_present])?;
         if crossover_present != 0 {
-            n += self.crossover.unwrap().read(&mut buf[n..])?;
+            buf[n..n + Crossover::serialized_size()]
+                .copy_from_slice(&self.crossover.unwrap().to_bytes());
+            n += Crossover::serialized_size();
         }
         n += (&mut buf[n..]).write(&(self.notes.len() as u64).to_le_bytes())?;
 
@@ -158,15 +164,16 @@ impl Read for TransactionPayload {
         self.notes
             .iter_mut()
             .map(|note| {
-                note.read(&mut buf[n..]).map(|num| {
-                    n += num;
-                    num
-                })
+                buf[n..n + Note::serialized_size()]
+                    .copy_from_slice(&note.to_bytes());
+                n += Note::serialized_size();
             })
-            .collect::<io::Result<Vec<usize>>>()?;
+            .collect::<()>();
 
         // Fee
-        n += self.fee.read(&mut buf[n..])?;
+        buf[n..n + Fee::serialized_size()]
+            .copy_from_slice(&self.fee.to_bytes());
+        n += Fee::serialized_size();
 
         // Proof
         let proof_bytes = self.spending_proof.to_bytes();
@@ -227,9 +234,17 @@ impl Write for TransactionPayload {
         // Crossover
         n += (&buf[n..]).read(&mut one_byte)?;
         if one_byte[0] != 0 {
-            let mut crossover = Crossover::default();
-            n += crossover.write(&buf[n..])?;
-            self.crossover = Some(crossover);
+            let mut one_crossover = [0u8; Crossover::serialized_size()];
+            one_crossover[..]
+                .copy_from_slice(&buf[n..n + Crossover::serialized_size()]);
+            self.crossover =
+                Some(Crossover::from_bytes(&one_crossover).map_err(|e| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        format!("{:?}", e),
+                    )
+                })?);
+            n += Crossover::serialized_size();
         }
 
         // Notes
@@ -241,17 +256,32 @@ impl Write for TransactionPayload {
             .map(|_| {
                 (&buf[n..]).read(&mut one_note).and_then(|num| {
                     n += num;
-                    self.notes.push(Note::from_bytes(&one_note)?);
+                    self.notes.push(Note::from_bytes(&one_note).map_err(
+                        |e| {
+                            std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput,
+                                format!("{:?}", e),
+                            )
+                        },
+                    )?);
                     Ok(num)
                 })
             })
             .collect::<Result<Vec<usize>, io::Error>>()?;
 
         // Fee
-        n += self.fee.write(&buf[n..])?;
+        let mut one_fee = [0u8; Fee::serialized_size()];
+        one_fee[..].copy_from_slice(&buf[n..n + Fee::serialized_size()]);
+        self.fee = Fee::from_bytes(&one_fee).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("{:?}", e),
+            )
+        })?;
+        n += Fee::serialized_size();
 
         // Proof
-        let mut proof_data = vec![0u8; PROOF_SIZE];
+        let mut proof_data = vec![0u8; Proof::serialised_size()];
         n += (&buf[n..]).read(&mut proof_data)?;
         let proof = Proof::from_bytes(&proof_data).map_err(|_| {
             io::Error::new(

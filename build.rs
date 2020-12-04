@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![allow(non_snake_case)]
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
 use canonical_host::MemStore;
@@ -17,7 +18,7 @@ use dusk_plonk::prelude::PublicParameters;
 use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
 use phoenix_core::{Note, NoteType};
-use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
+use poseidon252::sponge::hash;
 use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 use transfer_circuits::dusk_contract::{
     ExecuteCircuit, SendToContractObfuscatedCircuit,
@@ -160,9 +161,6 @@ mod blindbid {
 
     pub fn compile_circuit() -> Result<(Vec<u8>, Vec<u8>)> {
         let pub_params = &PUB_PARAMS;
-        // Generate a PoseidonTree and append the Bid.
-        let mut tree =
-            PoseidonTree::<Bid, PoseidonAnnotation, MemStore, 17>::new();
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -170,34 +168,33 @@ mod blindbid {
         let secret: AffinePoint = (GENERATOR_EXTENDED * secret).into();
 
         // Generate fields for the Bid & required by the compute_score
-        let consensus_round_seed = BlsScalar::from(50u64);
-        let latest_consensus_round = BlsScalar::from(50u64);
-        let latest_consensus_step = BlsScalar::from(50u64);
-
-        // Append the StorageBid as a StorageScalar to the tree.
-        tree.push(bid)?;
+        let consensus_round_seed = 50u64;
+        let latest_consensus_round = 50u64;
+        let latest_consensus_step = 50u64;
 
         // Extract the branch
-        let branch = tree.branch(0usize)?.expect("Poseidon Branch Extraction");
+        let branch = PoseidonBranch::<17>::default();
 
         // Generate a `Score` for our Bid with the consensus parameters
-        let score = bid.compute_score(
-            &secret,
-            secret_k,
-            branch.root(),
-            consensus_round_seed,
-            latest_consensus_round,
-            latest_consensus_step,
-        )?;
+        let score = bid
+            .compute_score(
+                &secret,
+                secret_k,
+                branch.root(),
+                consensus_round_seed,
+                latest_consensus_round,
+                latest_consensus_step,
+            )
+            .expect("Score gen error");
 
         let mut circuit = BlindBidCircuit {
             bid,
             score,
             secret_k,
             secret,
-            seed: consensus_round_seed,
-            latest_consensus_round,
-            latest_consensus_step,
+            seed: BlsScalar::from(consensus_round_seed),
+            latest_consensus_round: BlsScalar::from(latest_consensus_round),
+            latest_consensus_step: BlsScalar::from(latest_consensus_step),
             branch: &branch,
             trim_size: 1 << 15,
             pi_positions: vec![],
@@ -215,8 +212,8 @@ mod blindbid {
         let value = JubJubScalar::from(value);
         // Set the timestamps as the max values so the proofs do not fail for
         // them (never expired or non-elegible).
-        let elegibility_ts = -BlsScalar::from(90u64);
-        let expiration_ts = -BlsScalar::from(90u64);
+        let elegibility_ts = u64::MAX;
+        let expiration_ts = u64::MAX;
 
         Bid::new(
             &mut rng,
@@ -227,6 +224,7 @@ mod blindbid {
             elegibility_ts,
             expiration_ts,
         )
+        .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
     }
 }
 
@@ -243,8 +241,8 @@ mod transfer {
         let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
-        let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
+        let h = hash(&[message]);
+        let c_hash = hash(&[R.get_x(), R.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
@@ -261,14 +259,9 @@ mod transfer {
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let R = AffinePoint::from(GENERATOR_EXTENDED * r);
         let R_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * r);
-        let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[
-            R.get_x(),
-            R.get_y(),
-            R_prime.get_x(),
-            R_prime.get_y(),
-            h,
-        ]);
+        let h = hash(&[message]);
+        let c_hash =
+            hash(&[R.get_x(), R.get_y(), R_prime.get_x(), R_prime.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
@@ -464,7 +457,7 @@ mod transfer {
             change_commitment_value: change_message_value.into(),
             change_commitment_blinder: change_message_blinder.into(),
             change_commitment: m_c,
-            value: value,
+            value,
             trim_size: 1 << 12,
             pi_positions: vec![],
         };
@@ -506,9 +499,6 @@ mod transfer {
             input_note_blinder_one,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -528,7 +518,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -546,13 +536,13 @@ mod transfer {
             schnorr_r: vec![sig1.1],
             schnorr_r_prime: vec![sig1.2],
             schnorr_messages: vec![BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![],
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -576,9 +566,6 @@ mod transfer {
             input_note_blinder_one,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -604,7 +591,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -622,13 +609,13 @@ mod transfer {
             schnorr_r: vec![sig1.1],
             schnorr_r_prime: vec![sig1.2],
             schnorr_messages: vec![BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![obfuscated_commitment_one],
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -652,9 +639,6 @@ mod transfer {
             input_note_blinder_one,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -685,7 +669,7 @@ mod transfer {
             note_hashes: vec![note1.hash()],
             position_of_notes: vec![BlsScalar::from(note1.pos())],
             input_note_types: vec![BlsScalar::from(note1.note() as u64)],
-            input_poseidon_branches: vec![tree.branch(tree_pos_1)?.unwrap()],
+            input_poseidon_branches: vec![PoseidonBranch::<31>::default()],
             input_notes_sk: vec![ssk1.sk_r(note1.stealth_address())],
             input_notes_pk: vec![AffinePoint::from(
                 note1.stealth_address().pk_r(),
@@ -703,7 +687,7 @@ mod transfer {
             schnorr_r: vec![sig1.1],
             schnorr_r_prime: vec![sig1.2],
             schnorr_messages: vec![BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![
@@ -718,7 +702,7 @@ mod transfer {
                 obfuscated_note_blinder_one.into(),
                 obfuscated_note_blinder_two.into(),
             ],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -754,10 +738,6 @@ mod transfer {
             input_note_blinder_two,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -790,8 +770,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -823,13 +803,13 @@ mod transfer {
             schnorr_r: vec![sig1.1, sig2.1],
             schnorr_r_prime: vec![sig1.2, sig2.2],
             schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![],
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -864,10 +844,6 @@ mod transfer {
             input_note_blinder_two,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -906,8 +882,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -939,13 +915,13 @@ mod transfer {
             schnorr_r: vec![sig1.1, sig2.1],
             schnorr_r_prime: vec![sig1.2, sig2.2],
             schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![obfuscated_commitment_one],
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -980,10 +956,6 @@ mod transfer {
             input_note_blinder_two,
         );
 
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1027,8 +999,8 @@ mod transfer {
                 BlsScalar::from(note2.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1060,7 +1032,7 @@ mod transfer {
             schnorr_r: vec![sig1.1, sig2.1],
             schnorr_r_prime: vec![sig1.2, sig2.2],
             schnorr_messages: vec![BlsScalar::one(), BlsScalar::one()],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![
@@ -1075,7 +1047,7 @@ mod transfer {
                 obfuscated_note_blinder_one.into(),
                 obfuscated_note_blinder_two.into(),
             ],
-            fee: fee,
+            fee,
             trim_size: 1 << 16,
             pi_positions: vec![],
         };
@@ -1114,18 +1086,13 @@ mod transfer {
         let ssk3 = SecretSpendKey::new(secret5, secret6);
         let value3 = 100u64;
         let input_note_blinder_three = JubJubScalar::from(165 as u64);
-        let mut note3 = circuit_note(ssk3, value3, 0, input_note_blinder_three);
+        let note3 = circuit_note(ssk3, value3, 0, input_note_blinder_three);
         note1.set_pos(2);
         let input_note_value_three = JubJubScalar::from(value3);
         let input_commitment_three = compute_value_commitment(
             input_note_value_three,
             input_note_blinder_three,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1165,9 +1132,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1224,13 +1191,13 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![],
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
@@ -1276,11 +1243,6 @@ mod transfer {
             input_note_value_three,
             input_note_blinder_three,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1326,9 +1288,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1385,13 +1347,13 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![obfuscated_commitment_one],
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
@@ -1437,11 +1399,6 @@ mod transfer {
             input_note_value_three,
             input_note_blinder_three,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1492,9 +1449,9 @@ mod transfer {
                 BlsScalar::from(note3.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1551,7 +1508,7 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![
@@ -1566,7 +1523,7 @@ mod transfer {
                 obfuscated_note_blinder_one.into(),
                 obfuscated_note_blinder_two.into(),
             ],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
@@ -1624,12 +1581,6 @@ mod transfer {
             input_note_value_four,
             input_note_blinder_four,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
-        let tree_pos_4 = tree.push(note4)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1681,10 +1632,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
-                tree.branch(tree_pos_4)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1756,13 +1707,13 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![],
             obfuscated_note_values: vec![],
             obfuscated_note_blinders: vec![],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
@@ -1820,12 +1771,6 @@ mod transfer {
             input_note_value_four,
             input_note_blinder_four,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
-        let tree_pos_4 = tree.push(note4)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -1883,10 +1828,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
-                tree.branch(tree_pos_4)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -1958,13 +1903,13 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![obfuscated_commitment_one],
             obfuscated_note_values: vec![obfuscated_note_value_one.into()],
             obfuscated_note_blinders: vec![obfuscated_note_blinder_one.into()],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
@@ -2022,12 +1967,6 @@ mod transfer {
             input_note_value_four,
             input_note_blinder_four,
         );
-        let mut tree =
-            PoseidonTree::<Note, PoseidonAnnotation, MemStore, 17>::new();
-        let tree_pos_1 = tree.push(note1)?;
-        let tree_pos_2 = tree.push(note2)?;
-        let tree_pos_3 = tree.push(note3)?;
-        let tree_pos_4 = tree.push(note4)?;
         let crossover_commitment_value = JubJubScalar::from(300 as u64);
         let crossover_commitment_blinder = JubJubScalar::from(100 as u64);
         let crossover_commitment = compute_value_commitment(
@@ -2090,10 +2029,10 @@ mod transfer {
                 BlsScalar::from(note4.note() as u64),
             ],
             input_poseidon_branches: vec![
-                tree.branch(tree_pos_1)?.unwrap(),
-                tree.branch(tree_pos_2)?.unwrap(),
-                tree.branch(tree_pos_3)?.unwrap(),
-                tree.branch(tree_pos_4)?.unwrap(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
+                PoseidonBranch::<31>::default(),
             ],
             input_notes_sk: vec![
                 ssk1.sk_r(note1.stealth_address()),
@@ -2165,7 +2104,7 @@ mod transfer {
                 BlsScalar::one(),
                 BlsScalar::one(),
             ],
-            crossover_commitment: crossover_commitment,
+            crossover_commitment,
             crossover_commitment_value: crossover_commitment_value.into(),
             crossover_commitment_blinder: crossover_commitment_blinder.into(),
             obfuscated_commitment_points: vec![
@@ -2180,12 +2119,52 @@ mod transfer {
                 obfuscated_note_blinder_one.into(),
                 obfuscated_note_blinder_two.into(),
             ],
-            fee: fee,
+            fee,
             trim_size: 1 << 17,
             pi_positions: vec![],
         };
 
         let (pk, vk) = circuit.compile(&pub_params)?;
         Ok((pk.to_bytes(), vk.to_bytes()))
+    }
+}
+
+mod leaf {
+    use canonical::{Canon, Store};
+    use canonical_derive::Canon;
+    use dusk_plonk::bls12_381::BlsScalar;
+    use phoenix_core::Note;
+    use poseidon252::tree::PoseidonLeaf;
+
+    #[derive(Debug, Clone, Canon)]
+    pub(crate) struct NoteLeaf(Note);
+
+    impl From<Note> for NoteLeaf {
+        fn from(note: Note) -> NoteLeaf {
+            NoteLeaf(note)
+        }
+    }
+
+    impl From<NoteLeaf> for Note {
+        fn from(leaf: NoteLeaf) -> Note {
+            leaf.0
+        }
+    }
+
+    impl<S> PoseidonLeaf<S> for NoteLeaf
+    where
+        S: Store,
+    {
+        fn poseidon_hash(&self) -> BlsScalar {
+            self.0.hash()
+        }
+
+        fn pos(&self) -> u64 {
+            self.0.pos()
+        }
+
+        fn set_pos(&mut self, pos: u64) {
+            self.0.set_pos(pos)
+        }
     }
 }
