@@ -34,7 +34,7 @@ pub struct ExecuteCircuit {
     /// Input note types
     pub input_note_types: Vec<BlsScalar>,
     /// Poseidon branches of the input notes
-    pub input_poseidon_branches: Vec<PoseidonBranch<17>>,
+    pub input_poseidon_branches: Vec<PoseidonBranch<31>>,
     /// Input notes secret keys
     pub input_notes_sk: Vec<JubJubScalar>,
     /// Input notes public keys
@@ -250,7 +250,8 @@ impl Circuit<'_> for ExecuteCircuit {
         let crossover_blinder =
             AllocatedScalar::allocate(composer, crossover_commitment_blinder);
 
-        // 1. Prove the knowledge of the input Note paths to Note Tree, via root anchor
+        // 1. Prove the knowledge of the input Note paths to Note Tree, via root
+        // anchor
 
         // Iterate over the branch of each note and push the roots into the
         // vector of public inputs
@@ -358,7 +359,8 @@ impl Circuit<'_> for ExecuteCircuit {
                     composer.circuit_size(),
                 ));
 
-                // Assert generated nullifiers are equal to publicly inputted nullifiers
+                // Assert generated nullifiers are equal to publicly inputted
+                // nullifiers
                 composer.constrain_to_constant(
                     computed_nullifier,
                     BlsScalar::zero(),
@@ -366,7 +368,8 @@ impl Circuit<'_> for ExecuteCircuit {
                 );
             });
 
-        // 5. Prove the knowledge of the commitment openings of the commitments of the input Notes
+        // 5. Prove the knowledge of the commitment openings of the commitments
+        // of the input Notes
         input_note_values
             .iter()
             .zip(input_notes_blinders.iter())
@@ -378,16 +381,19 @@ impl Circuit<'_> for ExecuteCircuit {
 
                 let commitment = p1.point().fast_add(composer, *p2.point());
 
-                // Assert computed commitment is equal to publicly inputted affine point
+                // Assert computed commitment is equal to publicly inputted
+                // affine point
                 composer.assert_equal_point(commitment, *input_commitment);
             });
 
-        // 6. Prove that the value of the openings of the commitments of the input Notes is in range
+        // 6. Prove that the value of the openings of the commitments of the
+        // input Notes is in range
         input_note_values.iter().for_each(|value| {
             range(composer, *value, 64);
         });
 
-        // 7. Prove the knowledge of the commitment opening of the commitment of the Crossover
+        // 7. Prove the knowledge of the commitment opening of the commitment of
+        // the Crossover
         let p3 = scalar_mul(composer, crossover_value.var, GENERATOR_EXTENDED);
         let p4 = scalar_mul(
             composer,
@@ -407,10 +413,12 @@ impl Circuit<'_> for ExecuteCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, crossover_commitment);
 
-        // 8. Prove that the value of the opening of the commitment of the Crossover is within range
+        // 8. Prove that the value of the opening of the commitment of the
+        // Crossover is within range
         range(composer, crossover_value, 64);
 
-        // 9. Prove the knowledge of the commitment openings of the commitments of the output Obfuscated Notes
+        // 9. Prove the knowledge of the commitment openings of the commitments
+        // of the output Obfuscated Notes
         obfuscated_note_values
             .iter()
             .zip(obfuscated_note_blinders.iter())
@@ -428,19 +436,22 @@ impl Circuit<'_> for ExecuteCircuit {
                     composer.circuit_size(),
                     composer.circuit_size() + 1,
                 ));
-                // Assert computed commitment is equal to publicly inputted affine point
+                // Assert computed commitment is equal to publicly inputted
+                // affine point
                 composer.assert_equal_public_point(
                     commitment,
                     *obfuscated_commitment_points,
                 );
             });
 
-        // 10. Prove that the value of the openings of the commitments of the output Obfuscated Notes is in range
+        // 10. Prove that the value of the openings of the commitments of the
+        // output Obfuscated Notes is in range
         obfuscated_note_values.iter().for_each(|value| {
             range(composer, *value, 64);
         });
 
-        // 11. Prove that input_note_value - output_note_value - crossover_value - fee = 0
+        // 11. Prove that input_note_value - output_note_value - crossover_value
+        // - fee = 0
         let zero =
             composer.add_witness_to_circuit_description(BlsScalar::zero());
 
@@ -504,7 +515,8 @@ impl Circuit<'_> for ExecuteCircuit {
         self.trim_size = size;
     }
 
-    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    /// /// Return a mutable reference to the Public Inputs storage of the
+    /// circuit.
     fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
         &mut self.pi_positions
     }
@@ -527,7 +539,8 @@ mod tests {
     use poseidon252::sponge::hash;
     use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 
-    // Function to generate value commitment from value and blinder. This is a pedersen commitment.
+    // Function to generate value commitment from value and blinder. This is a
+    // pedersen commitment.
     fn compute_value_commitment(
         value: JubJubScalar,
         blinder: JubJubScalar,
@@ -682,7 +695,8 @@ mod tests {
         // Assign the value of the note
         let value1 = 600u64;
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        // Create a deterministic note so that we can assign the blinder and not
+        // have inner randomness
         let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
         // Set the position of the note
         note1.set_pos(0);
@@ -701,7 +715,8 @@ mod tests {
         // Assign the value of the first note as 400, which is incorrect
         let value2 = 200u64;
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        // Create a deterministic note so that we can assign the blinder and not
+        // have inner randomness
         let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
         // Set the position of the note
         note2.set_pos(1);
@@ -833,7 +848,8 @@ mod tests {
         // Assign the value of the first note as 400, which is incorrect
         let value1 = 500u64;
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        // Create a deterministic note so that we can assign the blinder and not
+        // have inner randomness
         let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
         // Set the position of the note
         note1.set_pos(0);
@@ -992,7 +1008,8 @@ mod tests {
         let secret3 = JubJubScalar::from(300 as u64);
         let secret4 = JubJubScalar::from(400 as u64);
         let ssk2 = SecretSpendKey::new(secret3, secret4);
-        // Assign an incorrect value to the note. This will fail in the commitment check and the balance check
+        // Assign an incorrect value to the note. This will fail in the
+        // commitment check and the balance check
         let value2 = 800u64;
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
         let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
@@ -1313,7 +1330,8 @@ mod tests {
         let sig2 =
             schnorr_sign(ssk2.sk_r(note2.stealth_address()), BlsScalar::one());
 
-        // Assign a wrong fee so the amount paid and balance gadget check is incorrect
+        // Assign a wrong fee so the amount paid and balance gadget check is
+        // incorrect
         let fee = BlsScalar::from(20);
 
         let mut circuit = build_execute_circuit(
@@ -1428,8 +1446,9 @@ mod tests {
         let tree_pos_1 = tree.push(note1.into()).expect("Leaf appending error");
         let tree_pos_2 = tree.push(note2.into()).expect("Leaf appending error");
 
-        // After the note has been pushed to the tree, set the position elsewhere,
-        // this will cause the the preimage and nullifier to fail
+        // After the note has been pushed to the tree, set the position
+        // elsewhere, this will cause the the preimage and nullifier to
+        // fail
         note2.set_pos(5);
 
         let crossover_commitment_value = JubJubScalar::from(200 as u64);
@@ -1545,7 +1564,8 @@ mod tests {
         // Assign the value of the note
         let value1 = 600u64;
         let input_note_blinder_one = JubJubScalar::from(100 as u64);
-        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        // Create a deterministic note so that we can assign the blinder and not
+        // have inner randomness
         let mut note1 = circuit_note(ssk1, value1, 0, input_note_blinder_one);
         // Set the position of the note
         note1.set_pos(0);
@@ -1564,7 +1584,8 @@ mod tests {
         // Assign the value of the first note as 400, which is incorrect
         let value2 = 200u64;
         let input_note_blinder_two = JubJubScalar::from(200 as u64);
-        // Create a deterministic note so that we can assign the blinder and not have inner randomness
+        // Create a deterministic note so that we can assign the blinder and not
+        // have inner randomness
         let mut note2 = circuit_note(ssk2, value2, 0, input_note_blinder_two);
         // Set the position of the note
         note2.set_pos(1);
