@@ -7,13 +7,10 @@
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul as fixed_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
-use dusk_plonk::jubjub::{
-    AffinePoint, ExtendedPoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
+use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
-use std::convert::TryInto;
 
 /// Utilises a Schnorr signature scheme,
 /// to prove the knowledge of a discrete
@@ -81,7 +78,8 @@ pub fn schnorr_gadget_two_keys(
 mod schnorr_tests {
     use super::*;
     use anyhow::{Error, Result};
-    use poseidon252::sponge::sponge::sponge_hash;
+    use dusk_plonk::jubjub::JubJubAffine;
+    use poseidon252::sponge::hash;
 
     #[test]
     #[allow(non_snake_case)]
@@ -89,21 +87,16 @@ mod schnorr_tests {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
-        let pk_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * sk);
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
+        let pk_prime = JubJubAffine::from(GENERATOR_NUMS_EXTENDED * sk);
 
         // Signing
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
-        let R_prime = AffinePoint::from(GENERATOR_NUMS_EXTENDED * r);
-        let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[
-            R.get_x(),
-            R.get_y(),
-            R_prime.get_x(),
-            R_prime.get_y(),
-            h,
-        ]);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
+        let R_prime = JubJubAffine::from(GENERATOR_NUMS_EXTENDED * r);
+        let h = hash(&[message]);
+        let c_hash =
+            hash(&[R.get_x(), R.get_y(), R_prime.get_x(), R_prime.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);
@@ -165,13 +158,13 @@ mod schnorr_tests {
         // Setup
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Signing
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
-        let h = sponge_hash(&[message]);
-        let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
+        let h = hash(&[message]);
+        let c_hash = hash(&[R.get_x(), R.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
         let c = JubJubScalar::from_bytes(&c_hash.to_bytes()).unwrap();
         let U = r - (c * sk);

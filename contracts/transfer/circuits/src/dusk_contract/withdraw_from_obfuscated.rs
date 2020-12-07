@@ -5,10 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::gadgets::range::range;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
@@ -22,19 +22,19 @@ pub struct WithdrawFromContractObfuscatedCircuit {
     /// Spend Blinder within Pedersen commitment
     pub spend_commitment_blinder: BlsScalar,
     /// Spend Pedersen Commitment
-    pub spend_commitment: AffinePoint,
+    pub spend_commitment: JubJubAffine,
     /// Message Value within Pedersen commitment
     pub message_commitment_value: BlsScalar,
     /// Message Blinder within Pedersen commitment
     pub message_commitment_blinder: BlsScalar,
     /// Message Pedersen Commitment
-    pub message_commitment: AffinePoint,
+    pub message_commitment: JubJubAffine,
     /// Note Value within Pedersen commitment
     pub note_commitment_value: BlsScalar,
     /// Note Blinder within Pedersen commitment
     pub note_commitment_blinder: BlsScalar,
     /// Note Pedersen Commitment
-    pub note_commitment: AffinePoint,
+    pub note_commitment: JubJubAffine,
     /// Returns circuit size
     pub trim_size: usize,
     /// Gives Public Inputs
@@ -48,7 +48,7 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         let spend_commitment = self.spend_commitment;
         let message_commitment_value = self.message_commitment_value;
         let message_commitment_blinder = self.message_commitment_blinder;
-        let message_commitment: AffinePoint = self.message_commitment;
+        let message_commitment = self.message_commitment;
         let note_commitment_value = self.note_commitment_value;
         let note_commitment_blinder = self.note_commitment_blinder;
         let note_commitment = self.note_commitment;
@@ -68,7 +68,8 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         let note_blind =
             AllocatedScalar::allocate(composer, note_commitment_blinder);
 
-        // Prove the knowledge of the commitment opening of the spend commitment of the input
+        // Prove the knowledge of the commitment opening of the spend commitment
+        // of the input
         let p1 = scalar_mul(composer, spend_value.var, GENERATOR_EXTENDED);
         let p2 = scalar_mul(composer, spend_blind.var, GENERATOR_NUMS_EXTENDED);
 
@@ -102,7 +103,8 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment2, message_commitment);
 
-        // Prove that the value of the opening of the message commitment of the input is within range
+        // Prove that the value of the opening of the message commitment of the
+        // input is within range
         range(composer, message_value, 64);
 
         let p5 = scalar_mul(composer, note_value.var, GENERATOR_EXTENDED);
@@ -120,10 +122,12 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment3, note_commitment);
 
-        // Prove that the value of the opening of the note commitment of the input is within range
+        // Prove that the value of the opening of the note commitment of the
+        // input is within range
         range(composer, note_value, 64);
 
-        // Constrain the value inputs to satisfy: v_spend - v_message - v_note = 0
+        // Constrain the value inputs to satisfy: v_spend - v_message - v_note =
+        // 0
         composer.add_gate(
             message_value.var,
             note_value.var,
@@ -149,7 +153,8 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         self.trim_size = size;
     }
 
-    /// /// Return a mutable reference to the Public Inputs storage of the circuit.
+    /// /// Return a mutable reference to the Public Inputs storage of the
+    /// circuit.
     fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
         &mut self.pi_positions
     }
@@ -171,7 +176,7 @@ mod tests {
         // Define and create spend commitment values
         let spend_value = JubJubScalar::from(300 as u64);
         let spend_blinder = JubJubScalar::from(100 as u64);
-        let spend_commitment = AffinePoint::from(
+        let spend_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * spend_value)
                 + &(GENERATOR_NUMS_EXTENDED * spend_blinder),
         );
@@ -179,7 +184,7 @@ mod tests {
         // Define and create message commitment values
         let message_value = JubJubScalar::from(200 as u64);
         let message_blinder = JubJubScalar::from(200 as u64);
-        let message_commitment = AffinePoint::from(
+        let message_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * message_value)
                 + &(GENERATOR_NUMS_EXTENDED * message_blinder),
         );
@@ -187,7 +192,7 @@ mod tests {
         // Define and create note commitment values
         let note_value = JubJubScalar::from(100 as u64);
         let note_blinder = JubJubScalar::from(300 as u64);
-        let note_commitment = AffinePoint::from(
+        let note_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * note_value)
                 + &(GENERATOR_NUMS_EXTENDED * note_blinder),
         );
@@ -234,7 +239,7 @@ mod tests {
         // Define and create spend commitment values
         let spend_value = JubJubScalar::from(200 as u64);
         let spend_blinder = JubJubScalar::from(100 as u64);
-        let spend_commitment = AffinePoint::from(
+        let spend_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * spend_value)
                 + &(GENERATOR_NUMS_EXTENDED * spend_blinder),
         );
@@ -242,7 +247,7 @@ mod tests {
         // Define and create message commitment values
         let message_value = JubJubScalar::from(200 as u64);
         let message_blinder = JubJubScalar::from(200 as u64);
-        let message_commitment = AffinePoint::from(
+        let message_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * message_value)
                 + &(GENERATOR_NUMS_EXTENDED * message_blinder),
         );
@@ -250,7 +255,7 @@ mod tests {
         // Define and create note commitment values
         let note_value = JubJubScalar::from(100 as u64);
         let note_blinder = JubJubScalar::from(300 as u64);
-        let note_commitment = AffinePoint::from(
+        let note_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * note_value)
                 + &(GENERATOR_NUMS_EXTENDED * note_blinder),
         );

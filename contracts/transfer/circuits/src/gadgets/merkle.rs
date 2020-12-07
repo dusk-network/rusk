@@ -6,44 +6,48 @@
 
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::merkle_proof::{merkle_opening_gadget, PoseidonBranch};
+use poseidon252::tree::merkle_opening;
+use poseidon252::tree::PoseidonBranch;
 
 /// Prove the knowledge of the position of the note in
 /// the merkle tree.
 pub fn merkle(
     composer: &mut StandardComposer,
-    branch: PoseidonBranch,
+    branch: PoseidonBranch<17>,
     note_hash: AllocatedScalar,
 ) -> Variable {
     let leaf = note_hash.var;
 
-    merkle_opening_gadget(composer, branch, leaf)
+    merkle_opening(composer, &branch, leaf)
 }
 
 #[cfg(test)]
 mod merkle_tests {
     use super::*;
+    use crate::leaf::NoteLeaf;
     use anyhow::{Error, Result};
+    use canonical_host::MemStore;
     use dusk_pki::PublicSpendKey;
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::proof_system::{Prover, Verifier};
-    use kelvin::Blake2b;
     use phoenix_core::note::{Note, NoteType};
-    use poseidon252::{PoseidonAnnotation, PoseidonTree, StorageScalar};
+    use poseidon252::tree::{PoseidonAnnotation, PoseidonTree};
+    use rand::thread_rng;
 
     #[test]
     fn merkle_gadget() -> Result<(), Error> {
         let mut tree =
-            PoseidonTree::<StorageScalar, PoseidonAnnotation, Blake2b>::new(17);
+            PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
         let a =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
         let b =
             GENERATOR_EXTENDED * JubJubScalar::random(&mut rand::thread_rng());
         let psk = PublicSpendKey::new(a, b);
-        let note = Note::new(NoteType::Transparent, &psk, 100);
-        tree.push(StorageScalar { 0: note.hash() })?;
+        let note =
+            Note::new(&mut thread_rng(), NoteType::Transparent, &psk, 100);
+        tree.push(note.into()).expect("Tree append error");
 
         // Generate Composer & Public Parameters
         let pub_params =
@@ -56,7 +60,7 @@ mod merkle_tests {
         merkle(
             prover.mut_cs(),
             //not convertible by anyhow, hence I am unwrapping
-            tree.poseidon_branch(0u64).unwrap().unwrap(),
+            tree.branch(0).unwrap().unwrap(),
             note_hash,
         );
 
@@ -71,7 +75,7 @@ mod merkle_tests {
         merkle(
             verifier.mut_cs(),
             //not convertible by anyhow, hence I am unwrapping
-            tree.poseidon_branch(0u64).unwrap().unwrap(),
+            tree.branch(0).unwrap().unwrap(),
             note_hash,
         );
         verifier.preprocess(&ck)?;

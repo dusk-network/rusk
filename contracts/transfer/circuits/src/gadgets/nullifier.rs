@@ -26,6 +26,8 @@ mod nullifier_tests {
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::{Note, NoteType};
     use poseidon252::sponge::sponge::sponge_hash;
+    use rand::thread_rng;
+
     #[test]
     fn test_nullifier() -> Result<(), Error> {
         let secret1 = JubJubScalar::from(100 as u64);
@@ -33,7 +35,8 @@ mod nullifier_tests {
         let ssk = SecretSpendKey::new(secret1, secret2);
         let psk = PublicSpendKey::from(ssk);
         let value = 25u64;
-        let note = Note::new(NoteType::Transparent, &psk, value);
+        let note =
+            Note::new(&mut thread_rng(), NoteType::Transparent, &psk, value);
         let sk_r = BlsScalar::from(ssk.sk_r(note.stealth_address()));
         let pos = note.pos();
         let nullifier_hash = note.gen_nullifier(&ssk);

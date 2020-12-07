@@ -8,15 +8,9 @@ mod encoding;
 #[cfg(not(target_os = "windows"))]
 mod unix;
 use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::jubjub::{
-    AffinePoint as JubJubAffine, ExtendedPoint as JubJubExtended,
-    Fr as JubJubScalar,
-};
-use encoding::decode_request_param;
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
 use futures::stream::TryStreamExt;
-use rusk::services::pki::{
-    GenerateKeysRequest, KeysClient, KeysServer, SecretKey,
-};
+use rusk::services::pki::{GenerateKeysRequest, KeysClient, KeysServer};
 use rusk::Rusk;
 use std::convert::TryFrom;
 use std::path::Path;
@@ -81,18 +75,24 @@ mod pki_service_tests {
 
         let sk = response.sk.unwrap();
         // Make sure as well, that the keys are related.
-        let a = jubjub_decode::<JubJubScalar>(&sk.a)?;
-        let b = jubjub_decode::<JubJubScalar>(&sk.b)?;
+        let a = jubjub_decode::<JubJubScalar>(&sk.a).expect("Decoding error");
+        let b = jubjub_decode::<JubJubScalar>(&sk.b).expect("Decoding error");
         let sk = SecretSpendKey::new(a, b);
 
         let vk = response.vk.unwrap();
-        let a = jubjub_decode::<JubJubScalar>(&vk.a)?;
-        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&vk.b_g)?);
+        let a = jubjub_decode::<JubJubScalar>(&vk.a).expect("Decoding error");
+        let b = JubJubExtended::from(
+            jubjub_decode::<JubJubAffine>(&vk.b_g).expect("Decoding error"),
+        );
         let vk = ViewKey::new(a, b);
 
         let pk = response.pk.unwrap();
-        let a = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.a_g)?);
-        let b = JubJubExtended::from(jubjub_decode::<JubJubAffine>(&pk.b_g)?);
+        let a = JubJubExtended::from(
+            jubjub_decode::<JubJubAffine>(&pk.a_g).expect("Decoding error"),
+        );
+        let b = JubJubExtended::from(
+            jubjub_decode::<JubJubAffine>(&pk.b_g).expect("Decoding error"),
+        );
         let psk = PublicSpendKey::new(a, b);
 
         assert_eq!(sk.view_key(), vk);
@@ -101,7 +101,7 @@ mod pki_service_tests {
         // Stealth address generation
         let request = tonic::Request::new(pk);
 
-        let response = client.generate_stealth_address(request).await?;
+        let _ = client.generate_stealth_address(request).await?;
 
         Ok(())
     }

@@ -4,13 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![allow(dead_code)]
 use core::convert::TryFrom;
-use dusk_pki::{
-    jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
-};
-use dusk_plonk::jubjub::AffinePoint as JubJubAffine;
+use dusk_pki::jubjub_decode;
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
-use rusk::services::rusk_proto;
 use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a

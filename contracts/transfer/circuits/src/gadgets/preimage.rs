@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::bls12_381::Scalar as BlsScalar;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
-use dusk_plonk::jubjub::AffinePoint;
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
-use poseidon252::sponge::sponge::{sponge_hash, sponge_hash_gadget};
+use poseidon252::sponge::sponge::sponge_hash_gadget;
 
 /// Prove knowledge of the preimage of a note,
 /// used as input for a transaction.
@@ -50,7 +48,7 @@ mod preimage_tests {
     use anyhow::{Error, Result};
     use dusk_pki::{Ownable, PublicSpendKey};
     use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-    use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use dusk_plonk::jubjub::{JubJubAffine, GENERATOR_EXTENDED};
     use dusk_plonk::proof_system::{Prover, Verifier};
     use phoenix_core::{Note, NoteType};
 
@@ -88,7 +86,7 @@ mod preimage_tests {
         );
         let commitment = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            AffinePoint::from(note.value_commitment()),
+            JubJubAffine::from(note.value_commitment()),
         );
         let nonce = AllocatedScalar::allocate(
             prover.mut_cs(),
@@ -96,11 +94,11 @@ mod preimage_tests {
         );
         let pkr = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            AffinePoint::from(note.stealth_address().pk_r()),
+            JubJubAffine::from(note.stealth_address().pk_r()),
         );
         let r = PlonkPoint::from_private_affine(
             prover.mut_cs(),
-            AffinePoint::from(note.stealth_address().R()),
+            JubJubAffine::from(note.stealth_address().R()),
         );
         let pos = AllocatedScalar::allocate(
             prover.mut_cs(),
@@ -139,7 +137,7 @@ mod preimage_tests {
         );
         let commitment = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            AffinePoint::from(note.value_commitment()),
+            JubJubAffine::from(note.value_commitment()),
         );
         let nonce = AllocatedScalar::allocate(
             verifier.mut_cs(),
@@ -147,11 +145,11 @@ mod preimage_tests {
         );
         let pkr = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            AffinePoint::from(note.stealth_address().pk_r()),
+            JubJubAffine::from(note.stealth_address().pk_r()),
         );
         let r = PlonkPoint::from_private_affine(
             verifier.mut_cs(),
-            AffinePoint::from(note.stealth_address().R()),
+            JubJubAffine::from(note.stealth_address().R()),
         );
         let pos = AllocatedScalar::allocate(
             verifier.mut_cs(),
