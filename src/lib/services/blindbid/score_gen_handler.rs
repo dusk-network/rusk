@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::super::ServiceRequestHandler;
-use super::get_bid_storage_fields;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::encoding::{decode_affine, decode_bls_scalar};
 use anyhow::Result;
-use dusk_blindbid::BlindBidCircuit;
+use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
+use poseidon252::tree::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
 
 /// Implementation of the ScoreGeneration Handler.
@@ -36,14 +36,8 @@ where
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
         let (k, seed, secret) = parse_score_gen_params(self.request)?;
-        // XXX: We need to mock the storage for now, so we push to a
-        // PoseidonTree the Bid that we should only need to retrieve. To
-        // do so, we need all of the parameters, not just the index.
-        let (bid, branch) = get_bid_storage_fields(
-            self.request.get_ref().index_stored_bid as usize,
-            Some(secret),
-            Some(k),
-        )?;
+        // FIXME: Once Bid contract is ready this will be implementable.
+        let (bid, branch): (Bid, PoseidonBranch<17>) = unimplemented!();
 
         // Generate Score for the Bid
         let latest_consensus_round = self.request.get_ref().round as u64;
@@ -101,7 +95,7 @@ fn parse_score_gen_params(
 }
 
 // Generate a blindbid proof given a circuit instance loaded with the
-// desired inputs.verifier_key
+// desired inputs.
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     // Read ProverKey of the circuit.
     let prover_key = rusk_profile::keys_for("dusk-blindbid")

@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::super::ServiceRequestHandler;
-use super::get_bid_storage_fields;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
 use crate::encoding::decode_bls_scalar;
 use anyhow::Result;
@@ -39,15 +38,8 @@ where
             BlsScalar::from(self.request.get_ref().round as u64);
         let latest_consensus_step =
             BlsScalar::from(self.request.get_ref().step as u64);
-        // Get bid from storage
-        let (bid, branch) = get_bid_storage_fields(
-            self.request.get_ref().index_stored_bid as usize,
-            // XXX: These values are hardcoded so that we can mock the
-            // representation inside of the tree of the same Bid that should
-            // be previously allocated.
-            None,
-            None,
-        )?;
+        // Get bid from storage (FIXME: Once Bid contract is done and working.)
+        let (bid, branch) = unimplemented!();
 
         // Create a BlindBidCircuit instance
         let mut circuit = BlindBidCircuit {
@@ -97,10 +89,9 @@ fn verify_blindbid_proof(
     score: BlsScalar,
 ) -> Result<()> {
     // Read ProverKey of the circuit.
-    // TODO: remove unwrap
     let verifier_key = rusk_profile::keys_for("dusk-blindbid")
         .get_verifier("blindbid")
-        .unwrap();
+        .expect("Rusk_profile failed to get verifier for \"dusk-blindbid\"");
 
     let verifier_key = VerifierKey::from_bytes(&verifier_key[..])?;
 

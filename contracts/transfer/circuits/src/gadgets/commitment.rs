@@ -6,7 +6,7 @@
 
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
-    JubJubAffine as AffinePoint, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::*;
 use plonk_gadgets::AllocatedScalar;
@@ -18,7 +18,7 @@ pub fn commitment(
     composer: &mut StandardComposer,
     value: AllocatedScalar,
     blinder: AllocatedScalar,
-    pub_commit: AffinePoint,
+    pub_commit: JubJubAffine,
 ) {
     let p1 = scalar_mul(composer, value.var, GENERATOR_EXTENDED);
     let p2 = scalar_mul(composer, blinder.var, GENERATOR_NUMS_EXTENDED);
@@ -40,7 +40,7 @@ mod commitment_tests {
         let value = JubJubScalar::from(100 as u64);
         let blinder = JubJubScalar::from(20000 as u64);
 
-        let pc_commitment = AffinePoint::from(
+        let pc_commitment = JubJubAffine::from(
             &(GENERATOR_EXTENDED * value)
                 + &(GENERATOR_NUMS_EXTENDED * blinder),
         );
@@ -74,7 +74,7 @@ mod commitment_tests {
             verifier.mut_cs(),
             value,
             blinder,
-            AffinePoint::from(pc_commitment),
+            JubJubAffine::from(pc_commitment),
         );
         verifier.preprocess(&ck)?;
 
