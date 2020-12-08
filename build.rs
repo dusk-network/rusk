@@ -7,7 +7,6 @@
 #![allow(non_snake_case)]
 use anyhow::Result;
 use bid_circuits::CorrectnessCircuit;
-use canonical_host::MemStore;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;

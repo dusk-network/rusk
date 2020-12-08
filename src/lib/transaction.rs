@@ -6,13 +6,12 @@
 
 //! Phoenix transaction structure implementation.
 
-use anyhow::Result;
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use anyhow::{anyhow, Result};
 use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::JubJubScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
+use std::mem;
 
 fn read_default_proof() -> Result<Proof> {
     let bytes = include_bytes!("proof.bin");
@@ -27,6 +26,36 @@ pub struct Transaction {
     pub(crate) payload: TransactionPayload,
 }
 
+impl Transaction {
+    pub fn new(version: u8, tx_type: u8, payload: TransactionPayload) -> Self {
+        Self {
+            version,
+            tx_type,
+            payload,
+        }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![self.version, self.tx_type];
+
+        bytes.extend_from_slice(&self.payload.to_bytes());
+
+        bytes
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        if bytes.len() < 2 {
+            return Err(anyhow!("The bytes are not sufficient to deserialize the version and type of the transaction!"));
+        }
+
+        let version = bytes[0];
+        let tx_type = bytes[1];
+        let payload = TransactionPayload::from_bytes(&bytes[2..])?;
+
+        Ok(Self::new(version, tx_type, payload))
+    }
+}
+
 /// The payload of a Phoenix transaction.
 #[derive(Debug, PartialEq)]
 pub struct TransactionPayload {
@@ -37,6 +66,180 @@ pub struct TransactionPayload {
     pub(crate) fee: Fee,
     pub(crate) spending_proof: Proof,
     pub(crate) call_data: Vec<u8>,
+}
+
+impl TransactionPayload {
+    //#[cfg(test)]
+    pub fn mock(
+        nullifiers: Vec<BlsScalar>,
+        crossover: Crossover,
+        notes: Vec<Note>,
+        fee: Fee,
+        call_data: Vec<u8>,
+    ) -> Result<Self> {
+        let anchor = BlsScalar::default();
+        let spending_proof = read_default_proof()?;
+        let crossover = Some(crossover);
+
+        Ok(Self {
+            anchor,
+            nullifiers,
+            crossover,
+            notes,
+            fee,
+            spending_proof,
+            call_data,
+        })
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+
+        bytes.extend_from_slice(&self.anchor.to_bytes());
+
+        bytes.extend_from_slice(&self.nullifiers.len().to_le_bytes());
+        self.nullifiers
+            .iter()
+            .for_each(|n| bytes.extend_from_slice(&n.to_bytes()));
+
+        bytes.push(self.crossover.is_some() as u8);
+        if let Some(c) = self.crossover {
+            bytes.extend_from_slice(&c.to_bytes());
+        }
+
+        bytes.extend_from_slice(&self.notes.len().to_le_bytes());
+        self.notes
+            .iter()
+            .for_each(|n| bytes.extend_from_slice(&n.to_bytes()));
+
+        bytes.extend_from_slice(&self.fee.to_bytes());
+
+        bytes.extend_from_slice(&self.spending_proof.to_bytes());
+
+        bytes.extend_from_slice(&self.call_data.len().to_le_bytes());
+        bytes.extend_from_slice(self.call_data.as_slice());
+
+        bytes
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        fn deser_scalar(bytes: &[u8]) -> Result<(&[u8], BlsScalar)> {
+            if bytes.len() < 32 {
+                return Err(anyhow!(
+                    "Not enough bytes to deserialize a scalar!"
+                ));
+            }
+
+            let mut s = [0u8; 32];
+            s.copy_from_slice(&bytes[..32]);
+            let s: Option<BlsScalar> = BlsScalar::from_bytes(&s).into();
+            let s = s.ok_or(anyhow!("Failed to deserialize a scalar!"))?;
+
+            if bytes.len() > 32 {
+                Ok((&bytes[32..], s))
+            } else {
+                Ok((&[], s))
+            }
+        }
+
+        fn deser_usize(bytes: &[u8]) -> Result<(&[u8], usize)> {
+            let mut u = usize::min_value().to_le_bytes();
+            let l = u.len();
+
+            if bytes.len() < l {
+                return Err(anyhow!(
+                    "Not enough bytes to deserialize an usize!"
+                ));
+            }
+
+            u.copy_from_slice(&bytes[..l]);
+            let u = usize::from_le_bytes(u);
+
+            if bytes.len() > l {
+                Ok((&bytes[l..], u))
+            } else {
+                Ok((&[], u))
+            }
+        }
+
+        fn deser_bool(bytes: &[u8]) -> Result<(&[u8], bool)> {
+            if bytes.len() < 1 {
+                return Err(anyhow!("Not enough bytes to deserialize an u8!"));
+            }
+
+            let b = bytes[0] != 0;
+
+            if bytes.len() > 1 {
+                Ok((&bytes[1..], b))
+            } else {
+                Ok((&[], b))
+            }
+        }
+
+        let (bytes, anchor) = deser_scalar(bytes)?;
+
+        let (bytes, items) = deser_usize(bytes)?;
+        let mut nullifiers = Vec::with_capacity(items);
+        let bytes =
+            (0..items).try_fold::<_, _, Result<&[u8]>>(bytes, |bytes, _| {
+                let (bytes, n) = deser_scalar(bytes)?;
+                nullifiers.push(n);
+                Ok(bytes)
+            })?;
+
+        let (bytes, crossover_present) = deser_bool(bytes)?;
+        let (bytes, crossover) = if crossover_present {
+            (
+                &bytes[Crossover::serialized_size()..],
+                Some(Crossover::from_bytes(bytes).map_err(|e| {
+                    anyhow!("Error deserializing crossover: {:?}", e)
+                })?),
+            )
+        } else {
+            (bytes, None)
+        };
+
+        let (bytes, items) = deser_usize(bytes)?;
+        let mut notes = Vec::with_capacity(items);
+        let bytes =
+            (0..items).try_fold::<_, _, Result<&[u8]>>(bytes, |bytes, _| {
+                let note = Note::from_bytes(bytes).map_err(|e| {
+                    anyhow!("Error deserializing note: {:?}", e)
+                })?;
+
+                notes.push(note);
+
+                if bytes.len() > Note::serialized_size() {
+                    Ok(&bytes[Note::serialized_size()..])
+                } else {
+                    Ok(&[])
+                }
+            })?;
+
+        let fee = Fee::from_bytes(bytes)
+            .map_err(|e| anyhow!("Error deserializing fee: {:?}", e))?;
+        let bytes = &bytes[Fee::serialized_size()..];
+
+        let spending_proof =
+            Proof::from_bytes(&bytes[..Proof::serialised_size()])?;
+        let bytes = &bytes[Proof::serialised_size()..];
+
+        let (bytes, items) = deser_usize(bytes)?;
+        if bytes.len() < items {
+            return Err(anyhow!("Not enough bytes to deserialize call data!"));
+        }
+        let call_data = Vec::from(&bytes[..items]);
+
+        Ok(Self {
+            anchor,
+            nullifiers,
+            crossover,
+            notes,
+            fee,
+            spending_proof,
+            call_data,
+        })
+    }
 }
 
 impl Clone for TransactionPayload {
@@ -52,42 +255,6 @@ impl Clone for TransactionPayload {
             fee: self.fee,
             spending_proof: new_proof,
             call_data: self.call_data.clone(),
-        }
-    }
-}
-
-impl Default for Transaction {
-    fn default() -> Self {
-        Transaction {
-            version: 0,
-            tx_type: 0,
-            payload: TransactionPayload::default(),
-        }
-    }
-}
-
-impl Default for TransactionPayload {
-    fn default() -> Self {
-        TransactionPayload {
-            anchor: BlsScalar::zero(),
-            nullifiers: vec![],
-            crossover: None,
-            notes: vec![],
-            fee: Fee::deterministic(
-                0u64,
-                0u64,
-                &JubJubScalar::default(),
-                &PublicSpendKey::from(SecretSpendKey::new(
-                    JubJubScalar::default(),
-                    JubJubScalar::default(),
-                )),
-            ),
-
-            // NOTE: we are unwrapping here, but this should never fail,
-            // since it is a pre-generated proof which is shown to be correct.
-            spending_proof: read_default_proof()
-                .expect("Decoding default proof failed"),
-            call_data: vec![],
         }
     }
 }
@@ -134,170 +301,33 @@ impl Write for Transaction {
 
 impl Read for TransactionPayload {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let mut n = 0;
+        let bytes = self.to_bytes();
+        let l = bytes.len();
 
-        // Anchor
-        n += (&mut buf[n..]).write(&self.anchor.to_bytes())?;
-        n += (&mut buf[n..])
-            .write(&(self.nullifiers.len() as u64).to_le_bytes())?;
-
-        // Nullifiers
-        self.nullifiers
-            .iter()
-            .map(|nul| {
-                (&mut buf[n..]).write(&nul.to_bytes()).map(|num| {
-                    n += num;
-                    num
-                })
-            })
-            .collect::<io::Result<Vec<usize>>>()?;
-
-        // Crossover
-        let crossover_present = self.crossover.is_some() as u8;
-        n += (&mut buf[n..]).write(&[crossover_present])?;
-        if crossover_present != 0 {
-            buf[n..n + Crossover::serialized_size()]
-                .copy_from_slice(&self.crossover.unwrap().to_bytes());
-            n += Crossover::serialized_size();
+        if buf.len() < l {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "The provided buffer is not big enough to serialize a tx payload!"));
         }
-        n += (&mut buf[n..]).write(&(self.notes.len() as u64).to_le_bytes())?;
 
-        // Notes
-        self.notes.iter().for_each(|note| {
-            buf[n..n + Note::serialized_size()]
-                .copy_from_slice(&note.to_bytes());
-            n += Note::serialized_size();
-        });
+        buf[0..l].copy_from_slice(bytes.as_slice());
 
-        // Fee
-        buf[n..n + Fee::serialized_size()]
-            .copy_from_slice(&self.fee.to_bytes());
-        n += Fee::serialized_size();
-
-        // Proof
-        let proof_bytes = self.spending_proof.to_bytes();
-        n += (&mut buf[n..]).write(&proof_bytes)?;
-
-        // Call data
-        n += (&mut buf[n..])
-            .write(&(self.call_data.len() as u64).to_le_bytes())?;
-        n += (&mut buf[n..]).write(&self.call_data)?;
-
-        Ok(n)
+        Ok(l)
     }
 }
 
 impl Write for TransactionPayload {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let mut n = 0;
-
-        let mut one_scalar = [0u8; 32];
-        let mut one_u64 = [0u8; 8];
-        let mut one_note = [0u8; 233];
-        let mut one_byte = [0u8; 1];
-
-        // Anchor
-        n += (&buf[n..]).read(&mut one_scalar)?;
-        self.anchor = Option::from(BlsScalar::from_bytes(&one_scalar))
-            .ok_or_else(|| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Could not deserialize anchor",
-                )
-            })?;
-
-        // Nullifiers
-        n += (&buf[n..]).read(&mut one_u64)?;
-        let nul_size = u64::from_le_bytes(one_u64) as usize;
-        self.nullifiers = Vec::<BlsScalar>::with_capacity(nul_size);
-        (0..nul_size)
-            .into_iter()
-            .map(|_| {
-                (&buf[n..]).read(&mut one_scalar).and_then(|num| {
-                    n += num;
-                    self.nullifiers.push(
-                        Option::from(BlsScalar::from_bytes(&one_scalar))
-                            .ok_or_else(|| {
-                                io::Error::new(
-                                    io::ErrorKind::InvalidData,
-                                    "Could not deserialize nullifier",
-                                )
-                            })?,
-                    );
-
-                    Ok(n)
-                })
-            })
-            .collect::<Result<Vec<usize>, io::Error>>()?;
-
-        // Crossover
-        n += (&buf[n..]).read(&mut one_byte)?;
-        if one_byte[0] != 0 {
-            let mut one_crossover = [0u8; Crossover::serialized_size()];
-            one_crossover[..]
-                .copy_from_slice(&buf[n..n + Crossover::serialized_size()]);
-            self.crossover =
-                Some(Crossover::from_bytes(&one_crossover).map_err(|e| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::InvalidInput,
-                        format!("{:?}", e),
-                    )
-                })?);
-            n += Crossover::serialized_size();
-        }
-
-        // Notes
-        n += (&buf[n..]).read(&mut one_u64)?;
-        let notes_size = u64::from_le_bytes(one_u64) as usize;
-        self.notes = Vec::<Note>::with_capacity(notes_size);
-        (0..notes_size)
-            .into_iter()
-            .map(|_| {
-                (&buf[n..]).read(&mut one_note).and_then(|num| {
-                    n += num;
-                    self.notes.push(Note::from_bytes(&one_note).map_err(
-                        |e| {
-                            std::io::Error::new(
-                                std::io::ErrorKind::InvalidInput,
-                                format!("{:?}", e),
-                            )
-                        },
-                    )?);
-                    Ok(num)
-                })
-            })
-            .collect::<Result<Vec<usize>, io::Error>>()?;
-
-        // Fee
-        let mut one_fee = [0u8; Fee::serialized_size()];
-        one_fee[..].copy_from_slice(&buf[n..n + Fee::serialized_size()]);
-        self.fee = Fee::from_bytes(&one_fee).map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!("{:?}", e),
-            )
-        })?;
-        n += Fee::serialized_size();
-
-        // Proof
-        let mut proof_data = vec![0u8; Proof::serialised_size()];
-        n += (&buf[n..]).read(&mut proof_data)?;
-        let proof = Proof::from_bytes(&proof_data).map_err(|_| {
+        let mut tx = Self::from_bytes(buf).map_err(|_| {
             io::Error::new(
                 io::ErrorKind::InvalidData,
-                "Could not deserialize proof",
+                "Could not deserialize tx payload!",
             )
         })?;
-        self.spending_proof = proof;
 
-        // Call data
-        n += (&buf[n..]).read(&mut one_u64)?;
-        let call_data_size = u64::from_le_bytes(one_u64) as usize;
-        let mut call_data = vec![0u8; call_data_size];
-        n += (&buf[n..]).read(&mut call_data)?;
-        self.call_data = call_data;
+        mem::swap(&mut tx, self);
 
-        Ok(n)
+        let l = self.to_bytes().len();
+
+        Ok(l)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -362,15 +392,16 @@ mod tests {
     }
 
     fn deterministic_tx() -> Transaction {
-        // Create a transaction with deterministic fields
-        let mut tx = Transaction::default();
+        let payload = TransactionPayload::mock(
+            vec![BlsScalar::one()],
+            deterministic_crossover(),
+            vec![deterministic_note()],
+            deterministic_fee(),
+            vec![10u8; 250],
+        )
+        .unwrap();
 
-        tx.payload.nullifiers.push(BlsScalar::one());
-        tx.payload.notes.push(deterministic_note());
-        tx.payload.fee = deterministic_fee();
-        tx.payload.crossover = Some(deterministic_crossover());
-        tx.payload.call_data = vec![10u8; 250];
-        tx
+        Transaction::new(0, 0, payload)
     }
 
     #[test]
@@ -387,11 +418,8 @@ mod tests {
     fn transaction_read_write() -> Result<()> {
         let mut tx = deterministic_tx();
 
-        let mut buf = [0u8; 4096];
-        tx.read(&mut buf)?;
-
-        let mut decoded_tx = Transaction::default();
-        decoded_tx.write(&mut buf)?;
+        let buf = tx.to_bytes();
+        let decoded_tx = Transaction::from_bytes(&buf)?;
 
         assert_eq!(tx, decoded_tx);
         Ok(())
