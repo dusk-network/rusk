@@ -13,11 +13,6 @@ use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
 use std::mem;
 
-fn read_default_proof() -> Result<Proof> {
-    let bytes = include_bytes!("proof.bin");
-    Proof::from_bytes(&bytes[..])
-}
-
 /// All of the fields that make up a Phoenix transaction.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Transaction {
@@ -35,10 +30,10 @@ impl Transaction {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn into_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![self.version, self.tx_type];
 
-        bytes.extend_from_slice(&self.payload.to_bytes());
+        bytes.extend_from_slice(&self.payload.into_bytes());
 
         bytes
     }
@@ -69,19 +64,16 @@ pub struct TransactionPayload {
 }
 
 impl TransactionPayload {
-    //#[cfg(test)]
-    pub fn mock(
+    pub fn new(
+        anchor: BlsScalar,
         nullifiers: Vec<BlsScalar>,
-        crossover: Crossover,
+        crossover: Option<Crossover>,
         notes: Vec<Note>,
         fee: Fee,
+        spending_proof: Proof,
         call_data: Vec<u8>,
-    ) -> Result<Self> {
-        let anchor = BlsScalar::default();
-        let spending_proof = read_default_proof()?;
-        let crossover = Some(crossover);
-
-        Ok(Self {
+    ) -> Self {
+        Self {
             anchor,
             nullifiers,
             crossover,
@@ -89,10 +81,10 @@ impl TransactionPayload {
             fee,
             spending_proof,
             call_data,
-        })
+        }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn into_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
 
         bytes.extend_from_slice(&self.anchor.to_bytes());
@@ -301,7 +293,7 @@ impl Write for Transaction {
 
 impl Read for TransactionPayload {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes = self.to_bytes();
+        let bytes = self.into_bytes();
         let l = bytes.len();
 
         if buf.len() < l {
@@ -325,7 +317,7 @@ impl Write for TransactionPayload {
 
         mem::swap(&mut tx, self);
 
-        let l = self.to_bytes().len();
+        let l = self.into_bytes().len();
 
         Ok(l)
     }
@@ -391,15 +383,34 @@ mod tests {
         crossover
     }
 
-    fn deterministic_tx() -> Transaction {
-        let payload = TransactionPayload::mock(
-            vec![BlsScalar::one()],
-            deterministic_crossover(),
-            vec![deterministic_note()],
-            deterministic_fee(),
-            vec![10u8; 250],
+    fn read_default_proof() -> Result<Proof> {
+        let bytes = include_bytes!("proof.bin");
+        Proof::from_bytes(&bytes[..])
+    }
+
+    fn deterministic_tx_payload() -> TransactionPayload {
+        let anchor = BlsScalar::default();
+        let nullifiers = vec![BlsScalar::one()];
+        let crossover = Some(deterministic_crossover());
+        let notes = vec![deterministic_note()];
+        let fee = deterministic_fee();
+        let spending_proof =
+            read_default_proof().expect("Failed to read proof");
+        let call_data = vec![10u8; 250];
+
+        TransactionPayload::new(
+            anchor,
+            nullifiers,
+            crossover,
+            notes,
+            fee,
+            spending_proof,
+            call_data,
         )
-        .unwrap();
+    }
+
+    fn deterministic_tx() -> Transaction {
+        let payload = deterministic_tx_payload();
 
         Transaction::new(0, 0, payload)
     }
@@ -418,7 +429,7 @@ mod tests {
     fn transaction_read_write() -> Result<()> {
         let mut tx = deterministic_tx();
 
-        let buf = tx.to_bytes();
+        let buf = tx.into_bytes();
         let decoded_tx = Transaction::from_bytes(&buf)?;
 
         assert_eq!(tx, decoded_tx);
