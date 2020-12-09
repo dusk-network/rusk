@@ -17,7 +17,18 @@ const VERIFY_SIG: usize = 2;
 
 #[derive(Copy, Clone)]
 pub struct RuskExternals<'a> {
+    pub_params: &'static PublicParameters,
     memory: &'a MemoryRef,
+}
+
+impl<'a> RuskExternals<'a> {
+    /// Generate a new RuskExternals instance.
+    pub fn new(memory: &'a wasmi::MemoryRef) -> Self {
+        RuskExternals {
+            memory,
+            pub_params: &crate::PUB_PARAMS,
+        }
+    }
 }
 
 impl<'a> Externals for RuskExternals<'a> {
