@@ -6,6 +6,7 @@
 
 use tracing::info;
 pub mod encoding;
+mod host_functions;
 pub mod services;
 pub mod transaction;
 
