@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use super::super::common::encoding::*;
 use super::super::common::unix::*;
 use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
