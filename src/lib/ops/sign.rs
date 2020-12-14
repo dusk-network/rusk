@@ -11,6 +11,9 @@ use dusk_plonk::bls12_381::BlsScalar;
 use schnorr::single_key::{PublicKey, Signature as SchnorrSignature};
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
+pub(crate) const INDEX: usize = 102;
+pub(crate) const NAME: &'static str = "verify_schnorr_sig";
+
 /// Host call definition for the `VERIFY_SIG` opcode.
 pub(crate) fn external(
     external: &mut RuskExternals,
@@ -50,7 +53,7 @@ pub(crate) fn external(
 }
 
 #[inline]
-pub(crate) fn resolver() -> FuncRef {
+pub(crate) fn wasmi_signature() -> FuncRef {
     wasmi::FuncInstance::alloc_host(
         wasmi::Signature::new(
             &[
@@ -61,6 +64,6 @@ pub(crate) fn resolver() -> FuncRef {
             ][..],
             None,
         ),
-        super::VERIFY_SIG,
+        INDEX,
     )
 }

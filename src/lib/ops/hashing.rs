@@ -11,6 +11,9 @@ use dusk_plonk::bls12_381::BlsScalar;
 use poseidon252::sponge::hash;
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
+pub(crate) const INDEX: usize = 101;
+pub(crate) const NAME: &'static str = "p_hash";
+
 /// Host call definition for the `P_HASH` opcode.
 pub(crate) fn external(
     external: &mut RuskExternals,
@@ -47,7 +50,7 @@ pub(crate) fn external(
 }
 
 #[inline]
-pub(crate) fn resolver() -> FuncRef {
+pub(crate) fn wasmi_signature() -> FuncRef {
     wasmi::FuncInstance::alloc_host(
         wasmi::Signature::new(
             &[
@@ -57,6 +60,6 @@ pub(crate) fn resolver() -> FuncRef {
             ][..],
             None,
         ),
-        super::P_HASH,
+        INDEX,
     )
 }

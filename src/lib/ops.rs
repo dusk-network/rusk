@@ -6,7 +6,7 @@
 
 mod errors;
 mod hashing;
-mod signatures;
+mod sign;
 
 use canonical_host::MemoryHolder;
 use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
@@ -16,21 +16,17 @@ use wasmi::{
     RuntimeValue, Signature, Trap, TrapKind,
 };
 
-pub(crate) const P_HASH: usize = 1;
-pub(crate) const VERIFY_SIG: usize = 2;
-
 #[derive(Clone)]
 pub struct RuskExternals {
     pub_params: &'static PublicParameters,
     memory: Option<MemoryRef>,
 }
 
-impl RuskExternals {
-    /// Generate a new RuskExternals instance.
-    pub fn new() -> Self {
-        RuskExternals {
-            memory: None,
+impl Default for RuskExternals {
+    fn default() -> Self {
+        Self {
             pub_params: &crate::PUB_PARAMS,
+            memory: None,
         }
     }
 }
@@ -53,8 +49,8 @@ impl Externals for RuskExternals {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            P_HASH => hashing::external(self, args),
-            VERIFY_SIG => signatures::external(self, args),
+            hashing::INDEX => hashing::external(self, args),
+            sign::INDEX => sign::external(self, args),
             _ => Err(Trap::new(TrapKind::Host(Box::new(
                 RuskExtenalError::InvokeIdxNotFound(index),
             )))),
@@ -69,8 +65,8 @@ impl ModuleImportResolver for RuskExternals {
         _signature: &Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            "p_hash" => Ok(hashing::resolver()),
-            "verify_sig" => Ok(signatures::resolver()),
+            hashing::NAME => Ok(hashing::wasmi_signature()),
+            sign::NAME => Ok(sign::wasmi_signature()),
             _ => Err(Error::Host(Box::new(
                 RuskExtenalError::ResolverNameNotFound(field_name.to_string()),
             ))),
