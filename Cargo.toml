@@ -40,7 +40,11 @@ rand = "0.7.0"
 bincode = "1.3.1"
 lazy_static = "1.4"
 rusk-profile = { path = "./profile" }
+canonical = "0.4"
+canonical_derive = "0.4"
 canonical_host = "0.4"
+wasmi = "0.6"
+schnorr = {git = "https://github.com/dusk-network/schnorr", tag = "v0.1.1-alpha"}
 
 
 [build-dependencies]
@@ -61,3 +65,8 @@ lazy_static = "1.4"
 canonical = "0.4"
 canonical_derive = "0.4"
 canonical_host = "0.4"
+
+[patch.crates-io]
+canonical = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
+canonical_derive = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
+canonical_host = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}

@@ -6,6 +6,7 @@
 
 use tracing::info;
 pub mod encoding;
+mod ops;
 pub mod services;
 pub mod transaction;
 
@@ -27,7 +28,7 @@ impl Default for Rusk {
 use dusk_plonk::prelude::PublicParameters;
 use lazy_static::lazy_static;
 lazy_static! {
-    static ref PUB_PARAMS: PublicParameters = {
+    pub(crate) static ref PUB_PARAMS: PublicParameters = {
         let buff =
             rusk_profile::get_common_reference_string().expect("CRS not found");
         let result: PublicParameters =
