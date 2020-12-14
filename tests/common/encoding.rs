@@ -37,23 +37,21 @@ where
 }
 
 /// Wrapper over `jubjub_decode` fn
-pub(crate) fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
+pub fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
     jubjub_decode::<JubJubAffine>(bytes).map_err(|_| {
         Status::failed_precondition("Point was improperly encoded")
     })
 }
 
 /// Wrapper over `jubjub_decode` fn
-pub(crate) fn decode_jubjub_scalar(
-    bytes: &[u8],
-) -> Result<JubJubScalar, Status> {
+pub fn decode_jubjub_scalar(bytes: &[u8]) -> Result<JubJubScalar, Status> {
     jubjub_decode::<JubJubScalar>(bytes).map_err(|_| {
         Status::failed_precondition("JubjubScalar was improperly encoded")
     })
 }
 
 /// Decoder fn used for `BlsScalar`
-pub(crate) fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
+pub fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
     if bytes.len() < 32 {
         Err(Status::failed_precondition(
             "Not enough bytes to decode a BlsScalar",
