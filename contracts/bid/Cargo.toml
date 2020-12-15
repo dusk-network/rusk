@@ -1,9 +1,52 @@
 [package]
-name = "bid"
+name = "bid_contract"
 version = "0.1.0"
 authors = ["CPerezz <c.perezbaro@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+canonical = {version = "0.4", default-features = false }
+canonical_derive = "0.4"
+canonical_host = { version = "0.4", optional = true }
+dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.4.1", default-features = false}
+dusk-bls12_381 = { version = "0.3", default-features = false, features = ["canon"] }
+dusk-jubjub = {version = "0.5", default-features = false, features = ["canon"]}
+dusk-plonk = "0.3"
+poseidon252 = { git = "https://github.com/dusk-network/poseidon252", tag = "v0.15.0", default-features = false, features = ["canon"]}
+dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", tag = "v0.4.1", default-features = false, features = ["canon"]}
+cfg-if = "1"
+schnorr = {git = "https://github.com/dusk-network/schnorr", default-features = false, branch = "main"}
+dusk-kelvin-map = "0.1"
+
+[dev-dependencies]
+rand = "0.7"
+bid-circuits = {path = "./circuits"}
+rusk = {path = "../../"}
+
+[patch.crates-io]
+canonical = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd", default-features = false}
+canonical_derive = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
+canonical_host = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
+
+[features]
+default = ["dusk-blindbid/canon","poseidon252/canon", "schnorr/canon"]
+hosted = ["poseidon252/canon", "dusk-blindbid/canon", "dusk-plonk/canon", "schnorr/canon"]
+host = [
+        "canonical/host", 
+        "canonical_host", 
+        "poseidon252/canon_host", 
+        "poseidon252/default", 
+        "dusk-blindbid/default", 
+        "dusk-pki/default", 
+        "dusk-plonk/canon",
+        "schnorr/canon"
+        ]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
