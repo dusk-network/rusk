@@ -9,8 +9,7 @@ mod hashing;
 mod sign;
 
 use canonical_host::MemoryHolder;
-use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-pub(crate) use errors::RuskExtenalError;
+pub use errors::RuskExtenalError;
 use wasmi::{
     Error, Externals, FuncRef, MemoryRef, ModuleImportResolver, RuntimeArgs,
     RuntimeValue, Signature, Trap, TrapKind,
@@ -18,16 +17,12 @@ use wasmi::{
 
 #[derive(Clone)]
 pub struct RuskExternals {
-    pub_params: &'static PublicParameters,
     memory: Option<MemoryRef>,
 }
 
 impl Default for RuskExternals {
     fn default() -> Self {
-        Self {
-            pub_params: &crate::PUB_PARAMS,
-            memory: None,
-        }
+        Self { memory: None }
     }
 }
 
