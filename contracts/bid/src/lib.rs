@@ -17,6 +17,10 @@ use canonical::{Canon, Sink, Source, Store};
 use map::KeyToIdxMap;
 use tree::BidTree;
 
+pub const BID_CORRECTNESS_VK: &'static [u8] = core::include_bytes!(
+    "../c0e0efc4fc56af4904d52e381eaf5c7090e91e217bc390997a119140dc672ff2.vk"
+);
+
 pub mod ops {
     // QUERIES
     pub const FIND_BID: u16 = 0x00;

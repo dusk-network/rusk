@@ -43,7 +43,9 @@ fn q(bytes: &mut [u8; PAGE_SIZE]) {
     let _ = query(bytes);
 }
 
-fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), <BS as Store>::Error> {
+fn transaction(
+    bytes: &mut [u8; PAGE_SIZE],
+) -> Result<(), <BS as Store>::Error> {
     let store = BS::default();
     let mut source = ByteSource::new(bytes, store.clone());
 
@@ -56,8 +58,10 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), <BS as Store>::Error> 
             // Read host-sent args
             let commitment: JubJubAffine = Canon::<BS>::read(&mut source)?;
             let nonce: BlsScalar = Canon::<BS>::read(&mut source)?;
-            let stealth_address: StealthAddress = Canon::<BS>::read(&mut source)?;
-            let encrypted_data: PoseidonCipher = Canon::<BS>::read(&mut source)?;
+            let stealth_address: StealthAddress =
+                Canon::<BS>::read(&mut source)?;
+            let encrypted_data: PoseidonCipher =
+                Canon::<BS>::read(&mut source)?;
             let hashed_secret: BlsScalar = Canon::<BS>::read(&mut source)?;
             let block_height: u64 = Canon::<BS>::read(&mut source)?;
             // Fat pointer to the Proof objects.

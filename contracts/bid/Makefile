@@ -15,7 +15,7 @@ check: hosted ## Run the Rust check on the project features
 	
 hosted: ## Build the WASM files
 	@cargo rustc \
-		--manifest-path=./Cargo.toml \
+		--no-default-features \
 		--features hosted \
 		--release \
 		--target wasm32-unknown-unknown \
@@ -28,7 +28,8 @@ host: ## Perform the build for the unconstrained host environment
 
 
 test: ## Perform the contract tests defined in the host module
-	$(MAKE) hosted
+	@make hosted
+	@make host
 	@cargo test \
 		--release \
 		--features host
