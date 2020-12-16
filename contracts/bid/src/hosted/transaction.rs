@@ -18,7 +18,12 @@ const COOLDOWN_PERIOD: u64 = 0;
 
 extern "C" {
     fn verify_sig(pk: &u8, sig: &u8, msg: &u8, ret_addr: &mut [u8; 32]);
-    fn verify(ofs: &u8, ret_addr: &mut [u8; 32]);
+    fn verify_proof(
+        pub_inputs_len: usize,
+        pub_inputs: &u8,
+        proof: &u8,
+        verif_key: &u8,
+    ) -> usize;
 }
 
 impl<S: Store> Contract<S> {
@@ -36,11 +41,16 @@ impl<S: Store> Contract<S> {
         // Verify proof of Correctness of the Bid.
         unsafe {
             let proof_bytes = correctness_proof.to_bytes();
-            let mut ret_addr = [0u8; 32];
-            // First position of the Proof byte blob pointer.
-            verify(&proof_bytes[0], &mut ret_addr);
-            match ret_addr[0] {
-                1u8 => (),
+            match verify_proof(
+                0usize,
+                // We need to send a valid pointer even if we don't have any
+                // public inputs. Therefore we send a pointer to `proof_bytes`
+                // that is not going to be used by the host since the len is 0.
+                &proof_bytes[0],
+                &proof_bytes[0],
+                &crate::BID_CORRECTNESS_VK[0],
+            ) {
+                1usize => (),
                 _ => panic!(),
             };
         };

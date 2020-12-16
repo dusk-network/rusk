@@ -1,6 +1,8 @@
 #![cfg(test)]
 #![cfg(feature = "host")]
 
+mod external;
+
 use bid_circuits::CorrectnessCircuit;
 use bid_contract::BidLeaf;
 use bid_contract::Contract;
@@ -14,8 +16,8 @@ use dusk_jubjub::{
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
+use external::RuskExternals;
 use poseidon252::{cipher::PoseidonCipher, sponge::sponge::*};
-use rusk::ops::RuskExternals;
 
 const BYTECODE: &'static [u8] = include_bytes!(
     "../target/wasm32-unknown-unknown/release/bid_contract.wasm"
@@ -84,7 +86,7 @@ fn bid_correctness() {
                 proof,
             ),
             store.clone(),
-            RuskExternals::default(),
+            RuskExternals { mem: None },
         )
         .unwrap();
     // If call succeeds, this should not fail.

@@ -8,7 +8,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-canonical = {version = "0.4", default-features = false }
+canonical = {version = "0.4"}
 canonical_derive = "0.4"
 canonical_host = { version = "0.4", optional = true }
 dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.4.1", default-features = false}
@@ -24,7 +24,8 @@ dusk-kelvin-map = "0.1"
 [dev-dependencies]
 rand = "0.7"
 bid-circuits = {path = "./circuits"}
-rusk = {path = "../../"}
+wasmi = "0.6"
+canonical_host = { version = "0.4" }
 
 [patch.crates-io]
 canonical = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd", default-features = false}
