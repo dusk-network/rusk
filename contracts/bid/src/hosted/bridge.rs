@@ -1,5 +1,5 @@
 use crate::{ops, Contract};
-use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
+use canonical::{ByteSink, BridgeStore, ByteSource, Canon, Id32, Store};
 use dusk_blindbid::bid::Bid;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::StealthAddress;

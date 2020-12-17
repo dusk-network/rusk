@@ -10,24 +10,26 @@ use poseidon252::sponge::hash;
 use schnorr::single_key::{PublicKey, Signature as SchnorrSignature};
 use wasmi::{
     Error, Externals, FuncRef, MemoryRef, ModuleImportResolver, RuntimeArgs,
-    RuntimeValue, Signature, Trap,
+    RuntimeValue, Signature, Trap, TrapKind,
 };
 
 const P_HASH: usize = 101;
 const VERIFY_SIG: usize = 102;
 const VERIFY_PROOF: usize = 103;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct RuskExternals {
-    mem: Option<MemoryRef>,
+    pub mem: Option<MemoryRef>,
 }
 
 impl MemoryHolder for RuskExternals {
     fn set_memory(&mut self, memory: MemoryRef) {
         self.mem = Some(memory)
     }
-    fn memory(&self) -> Result<MemoryRef, wasmi::Trap> {
-        Ok(self.mem.unwrap())
+    fn memory(&self) -> Result<wasmi::MemoryRef, wasmi::Trap> {
+        self.mem
+            .to_owned()
+            .ok_or_else(|| Trap::new(TrapKind::ElemUninitialized))
     }
 }
 
@@ -42,12 +44,14 @@ impl Externals for RuskExternals {
                 if let [wasmi::RuntimeValue::I32(ofs), wasmi::RuntimeValue::I32(len), wasmi::RuntimeValue::I32(ret_addr)] =
                     args.as_ref()[..]
                 {
-                    let ofs = ofs as usize;
-                    let len = len as usize;
-                    let ret_addr = ret_addr as usize;
-                    mem[ret_addr..ret_addr + 32]
-                        .copy_from_slice(&BlsScalar::one());
-                    Ok(None)
+                    self.memory()?.with_direct_access_mut(|mem| {
+                        let ofs = ofs as usize;
+                        let len = len as usize;
+                        let ret_addr = ret_addr as usize;
+                        mem[ret_addr..ret_addr + 32]
+                            .copy_from_slice(&BlsScalar::one().to_bytes()[..]);
+                        Ok(None)
+                    })
                 } else {
                     todo!("error out for wrong argument types")
                 }
@@ -56,12 +60,14 @@ impl Externals for RuskExternals {
                 if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg), wasmi::RuntimeValue::I32(ret_addr)] =
                     args.as_ref()[..]
                 {
-                    let pk = pk as usize;
-                    let sig = sig as usize;
-                    let msg = msg as usize;
-                    let ret_addr = ret_addr as usize;
-                    mem[ret_addr] = 1u8;
-                    Ok(None)
+                    self.memory()?.with_direct_access_mut(|mem| {
+                        let pk = pk as usize;
+                        let sig = sig as usize;
+                        let msg = msg as usize;
+                        let ret_addr = ret_addr as usize;
+                        mem[ret_addr] = 1u8;
+                        Ok(None)
+                    })
                 } else {
                     todo!("error out for wrong argument types")
                 }
@@ -70,11 +76,15 @@ impl Externals for RuskExternals {
                 if let [wasmi::RuntimeValue::I32(pub_inp_len), wasmi::RuntimeValue::I32(pub_inp), wasmi::RuntimeValue::I32(proof), wasmi::RuntimeValue::I32(verif_key)] =
                     args.as_ref()[..]
                 {
-                    let pub_inp = pub_inp as usize;
-                    let pub_inp_len = pub_inp_len as usize;
-                    let proof = proof as usize;
-                    let verifier_key = verif_key as usize;
-                    Ok(Some(1usize))
+                    self.memory()?.with_direct_access_mut(|mem| {
+                        let pub_inp = pub_inp as usize;
+                        let pub_inp_len = pub_inp_len as usize;
+                        let proof = proof as usize;
+                        let verifier_key = verif_key as usize;
+                        Ok(Some(RuntimeValue::I32(1i32)))
+                    })
+                } else {
+                    todo!("error out for wrong argument types")
                 }
             }
             _ => panic!("Unknown Rusk host fn {}", index),
@@ -122,7 +132,7 @@ impl ModuleImportResolver for RuskExternals {
                     ][..],
                     Some(wasmi::ValueType::I32),
                 ),
-                VERIFY_BID_PROOF,
+                VERIFY_PROOF,
             )),
             _ => panic!("Unknown Rusk host fn {}", field_name),
         }
