@@ -30,10 +30,10 @@ impl Transaction {
         }
     }
 
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![self.version, self.tx_type];
 
-        bytes.extend_from_slice(&self.payload.into_bytes());
+        bytes.extend_from_slice(&self.payload.to_bytes());
 
         bytes
     }
@@ -84,7 +84,7 @@ impl TransactionPayload {
         }
     }
 
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
 
         bytes.extend_from_slice(&self.anchor.to_bytes());
@@ -293,7 +293,7 @@ impl Write for Transaction {
 
 impl Read for TransactionPayload {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes = self.into_bytes();
+        let bytes = self.to_bytes();
         let l = bytes.len();
 
         if buf.len() < l {
@@ -317,7 +317,7 @@ impl Write for TransactionPayload {
 
         mem::swap(&mut tx, self);
 
-        let l = self.into_bytes().len();
+        let l = self.to_bytes().len();
 
         Ok(l)
     }
@@ -429,7 +429,7 @@ mod tests {
     fn transaction_read_write() -> Result<()> {
         let mut tx = deterministic_tx();
 
-        let buf = tx.into_bytes();
+        let buf = tx.to_bytes();
         let decoded_tx = Transaction::from_bytes(&buf)?;
 
         assert_eq!(tx, decoded_tx);
