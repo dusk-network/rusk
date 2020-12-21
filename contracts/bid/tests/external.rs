@@ -130,6 +130,7 @@ impl ModuleImportResolver for RuskExternals {
                 ),
                 VERIFY_PROOF,
             )),
+
             _ => panic!("Unknown Rusk host fn {}", field_name),
         }
     }

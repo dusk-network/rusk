@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::info;
 use crate::leaf::BidLeaf;
 use crate::Contract;
 use canonical::Store;
@@ -51,7 +52,9 @@ impl<S: Store> Contract<S> {
         pub_inputs_len: u8,
         pub_inputs: [[u8; 33]; 1],
     ) -> (bool, usize) {
-        canonical::debug!("Hello\n\n\n\n\n\n\n\n");
+        info!("Block Height: {}", block_height);
+        info!("Hashed Secret: {:?}", hashed_secret);
+
         // Setup error flag to false
         let mut err_flag = false;
         // Verify proof of Correctness of the Bid.
@@ -101,7 +104,8 @@ impl<S: Store> Contract<S> {
             // tree
             Ok(None) => {
                 // Append Bid to the tree and obtain the position of it.
-                // TODO: Add an issue in Poseidon for the size obtention in the internal push impl.
+                // TODO: Add an issue in Poseidon for the size obtention in the
+                // internal push impl.
                 let idx = self.tree_mut().push(BidLeaf { bid });
                 // Link the One-time PK to the idx in the Map
                 // Since we checked on the `get` call that the value was not
@@ -223,10 +227,12 @@ impl<S: Store> Contract<S> {
             {
                 // Inter contract call
 
-                // If the inter-contract call succeeds, we need to clean the tree & map.
-                // Note that if we clean the entry corresponding to this `PublicKey` from the
-                // map there will be no need to do so from the tree. Since the rest of the functions
-                // rely on the map to gain access to the bid that is inside of the tree.
+                // If the inter-contract call succeeds, we need to clean the
+                // tree & map. Note that if we clean the entry
+                // corresponding to this `PublicKey` from the
+                // map there will be no need to do so from the tree. Since the
+                // rest of the functions rely on the map to gain
+                // access to the bid that is inside of the tree.
                 self.map_mut()
                     .remove(pk)
                     .expect("Canon Store error happened.");

@@ -5,5 +5,4 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod bridge;
-mod query;
 mod transaction;

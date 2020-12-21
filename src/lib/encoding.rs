@@ -95,7 +95,7 @@ impl From<&StealthAddress> for rusk_proto::StealthAddress {
 
 impl From<&Transaction> for rusk_proto::Transaction {
     fn from(value: &Transaction) -> Self {
-        let buf = value.payload.into_bytes();
+        let buf = value.payload.to_bytes();
 
         rusk_proto::Transaction {
             version: value.version.into(),
