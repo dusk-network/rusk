@@ -71,10 +71,5 @@ canonical_host = "0.4"
 bid_contract = {path = "contracts/bid"}
 bid-circuits = {path = "./contracts/bid/circuits"}
 
-[patch.crates-io]
-canonical = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
-canonical_derive = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
-canonical_host = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
-
 [features]
 default = ["bid_contract/host"]
