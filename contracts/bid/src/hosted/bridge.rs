@@ -1,5 +1,5 @@
 use crate::{ops, Contract};
-use canonical::{ByteSink, BridgeStore, ByteSource, Canon, Id32, Store};
+use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
 use dusk_blindbid::bid::Bid;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::StealthAddress;
@@ -67,8 +67,11 @@ fn transaction(
             // Fat pointer to the Proof objects.
             let correctness_proof: Proof = Canon::<BS>::read(&mut source)?;
             let spending_proof: Proof = Canon::<BS>::read(&mut source)?;
+            let public_inp_len: u8 = Canon::<BS>::read(&mut source)?;
+            let public_inp_bytes: [[u8; 33]; 1] =
+                Canon::<BS>::read(&mut source)?;
             // Call bid contract fn
-            let idx = slf.bid(
+            let (err_flag, idx) = slf.bid(
                 commitment,
                 hashed_secret,
                 nonce,
@@ -77,12 +80,14 @@ fn transaction(
                 block_height,
                 correctness_proof,
                 spending_proof,
+                public_inp_len,
+                public_inp_bytes,
             );
             let mut sink = ByteSink::new(&mut bytes[..], store.clone());
             // return new state
             Canon::<BS>::write(&slf, &mut sink)?;
             // return result
-            Canon::<BS>::write(&(idx as u64), &mut sink)
+            Canon::<BS>::write(&(err_flag, (idx as u64)), &mut sink)
         }
         ops::WITHDRAW => {
             // Read host-sent args

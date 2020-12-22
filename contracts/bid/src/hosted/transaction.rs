@@ -23,7 +23,7 @@ extern "C" {
         pub_inputs: &u8,
         proof: &u8,
         verif_key: &u8,
-    ) -> usize;
+    ) -> i32;
 }
 
 impl<S: Store> Contract<S> {
@@ -37,21 +37,24 @@ impl<S: Store> Contract<S> {
         block_height: u64,
         correctness_proof: Proof,
         spending_proof: Proof,
-    ) -> usize {
+        pub_inputs_len: u8,
+        pub_inputs: [[u8; 33]; 1],
+    ) -> (bool, usize) {
+        // Setup error flag to false
+        let mut err_flag = false;
         // Verify proof of Correctness of the Bid.
         unsafe {
             let proof_bytes = correctness_proof.to_bytes();
             match verify_proof(
-                0usize,
-                // We need to send a valid pointer even if we don't have any
-                // public inputs. Therefore we send a pointer to `proof_bytes`
-                // that is not going to be used by the host since the len is 0.
-                &proof_bytes[0],
+                pub_inputs_len as usize,
+                &pub_inputs[0][0],
                 &proof_bytes[0],
                 &crate::BID_CORRECTNESS_VK[0],
             ) {
-                1usize => (),
-                _ => panic!(),
+                1i32 => (),
+                0i32 => err_flag = true,
+                // TODO: CHECK the panic! impl since it panics.
+                _ => panic!("Parameter got malformed"),
             };
         };
         // Compute maturity & expiration periods
@@ -75,7 +78,8 @@ impl<S: Store> Contract<S> {
             .map()
             .get(PublicKey::from(bid.stealth_address.pk_r()))
         {
-            // If no entries are found for this PK, add it to the map and the tree
+            // If no entries are found for this PK, add it to the map and the
+            // tree
             Ok(None) => {
                 // Append Bid to the tree and obtain the position of it.
                 let idx = self.tree_mut().push(BidLeaf { bid });
@@ -83,16 +87,21 @@ impl<S: Store> Contract<S> {
                 self.map_mut()
                     .insert(PublicKey::from(bid.stealth_address.pk_r()), idx)
                     .unwrap();
-                // Since we checked on the `get` call that the value was not inside,
-                // there's no need to check that this returns `Ok(None)`. So we just unwap
+                // Since we checked on the `get` call that the value was not
+                // inside, there's no need to check that this
+                // returns `Ok(None)`. So we just unwap
                 // the `Result` and keep the `Option` untouched.
                 idx
             }
-            _ => panic!("Bid already present in the Tree!"),
+            _ => {
+                err_flag = false;
+                // Return whatever
+                usize::MAX
+            }
         };
 
         // TODO: Inter-contract call
-        idx
+        (err_flag, idx)
     }
 
     pub fn extend_bid(&mut self, sig: Signature, pk: PublicKey) -> bool {
@@ -104,7 +113,7 @@ impl<S: Store> Contract<S> {
         &mut self,
         sig: Signature,
         pk: PublicKey,
-        spend_proof: Proof, /*Missing Note*/
+        spend_proof: Proof, /* Missing Note */
     ) -> bool {
         unimplemented!()
     }

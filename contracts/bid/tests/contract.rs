@@ -47,7 +47,7 @@ fn create_proof(
 }
 
 #[test]
-fn bid_correctness() {
+fn bid_contract_workflow_works() {
     // Init Env & Contract
     let store = MemStore::new();
     let wasm_contract = Wasm::new(Contract::new(), BYTECODE);
@@ -69,11 +69,15 @@ fn bid_correctness() {
     let pk_r = PublicSpendKey::from(SecretSpendKey::new(value, blinder));
     let stealth_addr = pk_r.gen_stealth_address(&value);
     let proof = create_proof(commitment, value, blinder);
+    let mut pub_inp_bytes = [0u8; 33];
+    pub_inp_bytes[..].copy_from_slice(
+        &PublicInput::AffinePoint(commitment, 0, 0).to_bytes(),
+    );
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
         .unwrap();
-    let idx = cast
+    let (err, idx) = cast
         .transact(
             &Contract::bid(
                 commitment,
@@ -84,6 +88,8 @@ fn bid_correctness() {
                 15u64,
                 proof.clone(),
                 proof,
+                1,
+                [PublicInput::AffinePoint(commitment, 0, 0).to_bytes()],
             ),
             store.clone(),
             RuskExternals { mem: None },
@@ -91,5 +97,6 @@ fn bid_correctness() {
         .unwrap();
     // If call succeeds, this should not fail.
     cast.commit().unwrap();
+    assert!(err == false);
     assert!(idx == 0u64);
 }

@@ -20,6 +20,8 @@ impl Contract<MemStore> {
         block_height: u64,
         correctness_proof: Proof,
         spending_proof: Proof,
+        pub_inputs_len: u8,
+        pub_inputs: [[u8; PublicInput::serialized_size()]; 1],
     ) -> Transaction<
         (
             TransactionIndex,
@@ -31,8 +33,10 @@ impl Contract<MemStore> {
             u64,
             Proof,
             Proof,
+            u8,
+            [[u8; 33]; 1],
         ),
-        u64,
+        (bool, u64),
     > {
         Transaction::new((
             ops::BID,
@@ -44,6 +48,8 @@ impl Contract<MemStore> {
             block_height,
             correctness_proof,
             spending_proof,
+            pub_inputs_len,
+            pub_inputs,
         ))
     }
 
@@ -59,7 +65,8 @@ impl Contract<MemStore> {
         pub_key: PublicKey,
         spending_proof: Proof,
         //Missing Note
-    ) -> Transaction<(TransactionIndex, Signature, PublicKey, Proof), bool> {
+    ) -> Transaction<(TransactionIndex, Signature, PublicKey, Proof), bool>
+    {
         Transaction::new((ops::EXTEND_BID, signature, pub_key, spending_proof))
     }
 }
