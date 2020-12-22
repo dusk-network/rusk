@@ -13,7 +13,7 @@ help: ## Display this help screen
 
 contracts: ## Compile to WASM and test the contracts
 	$(MAKE) -C $(BID_CONTRACT_DIR) test 
-	$(MAKE) -C $(TRANSFER_CONTRACT_DIR) test
+	##$(MAKE) -C $(TRANSFER_CONTRACT_DIR) test
 
 circuits: ## Compile and run circuits tests
 	$(MAKE) -C $(BID_CIRCUITS_DIR) test 
@@ -21,9 +21,12 @@ circuits: ## Compile and run circuits tests
 
 test: ## Run the tests for the entire rusk repo
 	@make contracts
-	@make circuits 
-	cargo test --release -- --nocapture  && \
-		rm $((LISTENER))
+	@make circuits
+	@cp ~/.rusk/keys/bid-circuits/0.1.0/*.pk tests/contracts/
+	@cargo test 
+		--release \
+		-- --nocapture 
+	rm $((LISTENER))
 
 run: ## Run the server
 		@make contracts && \

@@ -14,6 +14,7 @@ check: hosted ## Run the Rust check on the project features
 	@cargo check --features hosted
 	
 hosted: ## Build the WASM files
+	@cp ~/.rusk/keys/bid-circuits/0.1.0/*.vk .
 	@cargo rustc \
 		--no-default-features \
 		--features hosted \
@@ -24,8 +25,7 @@ hosted: ## Build the WASM files
 host: ## Perform the build for the unconstrained host environment
 	@cargo build \
 		--release \
-		--features hosted
-
+		--features host
 
 test: ## Perform the contract tests defined in the host module
 	@make hosted
