@@ -35,7 +35,9 @@ where
     ///
     /// We don't have a mutable reference available because all its mutation
     /// should be protected by encapsulation
-    pub fn inner(&self) -> &PoseidonTree<BidLeaf, PoseidonMaxAnnotation, S, BID_TREE_DEPTH> {
+    pub fn inner(
+        &self,
+    ) -> &PoseidonTree<BidLeaf, PoseidonMaxAnnotation, S, BID_TREE_DEPTH> {
         &self.tree
     }
 
@@ -52,14 +54,23 @@ where
     }
 
     /// Returns a poseidon branch pointing at the specific index
-    pub fn poseidon_branch(&self, idx: usize) -> Option<PoseidonBranch<BID_TREE_DEPTH>> {
+    pub fn poseidon_branch(
+        &self,
+        idx: usize,
+    ) -> Option<PoseidonBranch<BID_TREE_DEPTH>> {
         self.tree.branch(idx).unwrap()
     }
 
     pub fn iter_block_height(
         &self,
         block_height: u64,
-    ) -> PoseidonTreeIterator<BidLeaf, PoseidonMaxAnnotation, S, u64, BID_TREE_DEPTH> {
+    ) -> PoseidonTreeIterator<
+        BidLeaf,
+        PoseidonMaxAnnotation,
+        S,
+        u64,
+        BID_TREE_DEPTH,
+    > {
         self.tree.iter_walk(block_height).unwrap()
     }
 }

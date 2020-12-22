@@ -194,10 +194,10 @@ mod tests {
     fn schnorr_sign(
         sk: JubJubScalar,
         message: BlsScalar,
-    ) -> (JubJubScalar, AffinePoint, AffinePoint) {
-        let pk = AffinePoint::from(GENERATOR_EXTENDED * sk);
+    ) -> (JubJubScalar, JubJubAffine, JubJubAffine) {
+        let pk = JubJubAffine::from(GENERATOR_EXTENDED * sk);
         let r = JubJubScalar::random(&mut rand::thread_rng());
-        let R = AffinePoint::from(GENERATOR_EXTENDED * r);
+        let R = JubJubAffine::from(GENERATOR_EXTENDED * r);
         let h = sponge_hash(&[message]);
         let c_hash = sponge_hash(&[R.get_x(), R.get_y(), h]);
         let c_hash = c_hash & BlsScalar::pow_of_2(250).sub(&BlsScalar::one());
@@ -211,14 +211,14 @@ mod tests {
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(300 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
-        let commitment_crossover = AffinePoint::from(
+        let commitment_crossover = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_crossover_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_crossover_blinder),
         );
 
         let commitment_message_value = JubJubScalar::from(300 as u64);
         let commitment_message_blinder = JubJubScalar::from(200 as u64);
-        let commitment_message = AffinePoint::from(
+        let commitment_message = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_message_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_message_blinder),
         );
@@ -226,16 +226,16 @@ mod tests {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: commitment_crossover_value.into(),
             commitment_crossover_blinder: commitment_crossover_blinder.into(),
-            commitment_crossover: commitment_crossover,
+            commitment_crossover,
             commitment_message_value: commitment_message_value.into(),
             commitment_message_blinder: commitment_message_blinder.into(),
-            commitment_message: commitment_message,
+            commitment_message,
             pk: public_key,
             schnorr_sig: sig.0,
             schnorr_r: sig.1,
@@ -265,14 +265,14 @@ mod tests {
         // Define and create commitment crossover values
         let commitment_crossover_value = JubJubScalar::from(200 as u64);
         let commitment_crossover_blinder = JubJubScalar::from(100 as u64);
-        let commitment_crossover = AffinePoint::from(
+        let commitment_crossover = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_crossover_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_crossover_blinder),
         );
 
         let commitment_message_value = JubJubScalar::from(300 as u64);
         let commitment_message_blinder = JubJubScalar::from(200 as u64);
-        let commitment_message = AffinePoint::from(
+        let commitment_message = JubJubAffine::from(
             &(GENERATOR_EXTENDED * commitment_message_value)
                 + &(GENERATOR_NUMS_EXTENDED * commitment_message_blinder),
         );
@@ -280,16 +280,16 @@ mod tests {
         let sk = JubJubScalar::random(&mut rand::thread_rng());
         let message = BlsScalar::random(&mut rand::thread_rng());
         let sig = schnorr_sign(sk, message);
-        let public_key = AffinePoint::from(GENERATOR_EXTENDED * sk);
+        let public_key = JubJubAffine::from(GENERATOR_EXTENDED * sk);
 
         // Build circuit structure
         let mut circuit = SendToContractObfuscatedCircuit {
             commitment_crossover_value: commitment_crossover_value.into(),
             commitment_crossover_blinder: commitment_crossover_blinder.into(),
-            commitment_crossover: commitment_crossover,
+            commitment_crossover,
             commitment_message_value: commitment_message_value.into(),
             commitment_message_blinder: commitment_message_blinder.into(),
-            commitment_message: commitment_message,
+            commitment_message,
             pk: public_key,
             schnorr_sig: sig.0,
             schnorr_r: sig.1,

@@ -12,6 +12,7 @@ pub enum RuskExtenalError {
     WrongArgsNumber,
     InvokeIdxNotFound(usize),
     ResolverNameNotFound(String),
+    InvalidFFIEncoding,
 }
 
 impl fmt::Display for RuskExtenalError {

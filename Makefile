@@ -20,6 +20,7 @@ circuits: ## Compile and run circuits tests
 	$(MAKE) -C $(TRANSFER_CIRCUITS_DIR) test
 
 test: ## Run the tests for the entire rusk repo
+	@cargo build --release
 	@make contracts
 	@make circuits
 	@cp ~/.rusk/keys/bid-circuits/0.1.0/*.pk tests/contracts/
