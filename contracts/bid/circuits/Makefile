@@ -2,9 +2,9 @@ PROJECT := "bid_circuits"
 
 .PHONY: all help 
 
-all: host
+all: test
 
-test: hosted ## Run the tests for the circuits
+test: ## Run the tests for the circuits
 	@cargo test \
 		--release \
 		

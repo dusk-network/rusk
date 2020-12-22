@@ -28,9 +28,9 @@ wasmi = "0.6"
 canonical_host = { version = "0.4" }
 
 [patch.crates-io]
-canonical = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd", default-features = false}
-canonical_derive = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
-canonical_host = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
+canonical = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
+canonical_derive = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
+canonical_host = {git = "https://github.com/dusk-network/canonical", branch = "bridge_feat_removal"}
 
 [features]
 default = ["dusk-blindbid/canon","poseidon252/canon", "schnorr/canon"]
