@@ -5,10 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use tracing::info;
-pub mod encoding;
+mod encoding;
 mod ops;
 pub mod services;
-pub mod transaction;
+mod transaction;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rusk {}
@@ -28,7 +28,7 @@ impl Default for Rusk {
 use dusk_plonk::prelude::PublicParameters;
 use lazy_static::lazy_static;
 lazy_static! {
-    pub(crate) static ref PUB_PARAMS: PublicParameters = {
+    pub static ref PUB_PARAMS: PublicParameters = {
         let buff =
             rusk_profile::get_common_reference_string().expect("CRS not found");
         let result: PublicParameters =
@@ -36,3 +36,5 @@ lazy_static! {
         result
     };
 }
+
+pub use ops::{RuskExtenalError, RuskExternals};
