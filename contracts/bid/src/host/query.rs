@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, Contract};
+use crate::Contract;
 use canonical_host::{MemStore, Query};
 use dusk_blindbid::bid::Bid;
-use dusk_bls12_381::BlsScalar;
 
 type QueryIndex = u16;
 

@@ -10,6 +10,7 @@ use dusk_blindbid::bid::Bid;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::StealthAddress;
 use dusk_plonk::prelude::*;
+use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use schnorr::single_key::{PublicKey, Signature};
 
@@ -29,18 +30,18 @@ fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), <BS as Store>::Error> {
     // read query id
     let qid: QueryIndex = Canon::<BS>::read(&mut source)?;
     match qid {
-        ops::FIND_BID => {
-            /*
+        /*ops::FIND_BID => {
+
             // Read idx
             let idx: u64 = Canon::<BS>::read(&mut source)?;
             // Get the leaf
             let ret = slf.get_leaf(idx);
             let mut sink = ByteSink::new(&mut bytes[..], store.clone());
             Canon::<BS>::write(&ret, &mut sink)?;
-            */
+
             unimplemented!()
-        }
-        _ => panic!(""),
+        }*/
+        _ => panic!("No Queries exist for Bid Contract"),
     }
 }
 
@@ -52,6 +53,7 @@ fn q(bytes: &mut [u8; PAGE_SIZE]) {
 fn transaction(
     bytes: &mut [u8; PAGE_SIZE],
 ) -> Result<(), <BS as Store>::Error> {
+    canonical::debug!("Hello\n\n\n\n\n\n\n\n");
     let store = BS::default();
     let mut source = ByteSource::new(bytes, store.clone());
 
@@ -99,8 +101,11 @@ fn transaction(
             // Read host-sent args
             let sig: Signature = Canon::<BS>::read(&mut source)?;
             let pk: PublicKey = Canon::<BS>::read(&mut source)?;
+            let note: Note = Canon::<BS>::read(&mut source)?;
             let spending_proof: Proof = Canon::<BS>::read(&mut source)?;
-            let exec_res = slf.withdraw(sig, pk, spending_proof);
+            let block_height: u64 = Canon::<BS>::read(&mut source)?;
+            let exec_res =
+                slf.withdraw(sig, pk, note, spending_proof, block_height);
             let mut sink = ByteSink::new(&mut bytes[..], store.clone());
             // Return new state
             Canon::<BS>::write(&slf, &mut sink)?;

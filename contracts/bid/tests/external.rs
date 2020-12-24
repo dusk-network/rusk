@@ -6,15 +6,13 @@
 
 use canonical_host::MemoryHolder;
 use dusk_plonk::prelude::*;
-use poseidon252::sponge::hash;
-use schnorr::single_key::{PublicKey, Signature as SchnorrSignature};
 use wasmi::{
     Error, Externals, FuncRef, MemoryRef, ModuleImportResolver, RuntimeArgs,
     RuntimeValue, Signature, Trap, TrapKind,
 };
 
 const P_HASH: usize = 101;
-const VERIFY_SIG: usize = 102;
+const VERIFY_SCHNORR_SIG: usize = 102;
 const VERIFY_PROOF: usize = 103;
 
 #[derive(Debug, Clone)]
@@ -45,8 +43,8 @@ impl Externals for RuskExternals {
                     args.as_ref()[..]
                 {
                     self.memory()?.with_direct_access_mut(|mem| {
-                        let ofs = ofs as usize;
-                        let len = len as usize;
+                        let _ = ofs as usize;
+                        let _ = len as usize;
                         let ret_addr = ret_addr as usize;
                         mem[ret_addr..ret_addr + 32]
                             .copy_from_slice(&BlsScalar::one().to_bytes()[..]);
@@ -56,17 +54,16 @@ impl Externals for RuskExternals {
                     todo!("error out for wrong argument types")
                 }
             }
-            VERIFY_SIG => {
-                if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg), wasmi::RuntimeValue::I32(ret_addr)] =
+            VERIFY_SCHNORR_SIG => {
+                if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg)] =
                     args.as_ref()[..]
                 {
-                    self.memory()?.with_direct_access_mut(|mem| {
-                        let pk = pk as usize;
-                        let sig = sig as usize;
-                        let msg = msg as usize;
-                        let ret_addr = ret_addr as usize;
-                        mem[ret_addr] = 1u8;
-                        Ok(None)
+                    self.memory()?.with_direct_access_mut(|_| {
+                        let _ = pk as usize;
+                        let _ = sig as usize;
+                        let _ = msg as usize;
+
+                        Ok(Some(RuntimeValue::I32(1)))
                     })
                 } else {
                     todo!("error out for wrong argument types")
@@ -76,11 +73,11 @@ impl Externals for RuskExternals {
                 if let [wasmi::RuntimeValue::I32(pub_inp_len), wasmi::RuntimeValue::I32(pub_inp), wasmi::RuntimeValue::I32(proof), wasmi::RuntimeValue::I32(verif_key)] =
                     args.as_ref()[..]
                 {
-                    self.memory()?.with_direct_access_mut(|mem| {
-                        let pub_inp = pub_inp as usize;
-                        let pub_inp_len = pub_inp_len as usize;
-                        let proof = proof as usize;
-                        let verifier_key = verif_key as usize;
+                    self.memory()?.with_direct_access_mut(|_| {
+                        let _ = pub_inp as usize;
+                        let _ = pub_inp_len as usize;
+                        let _ = proof as usize;
+                        let _ = verif_key as usize;
                         Ok(Some(RuntimeValue::I32(1i32)))
                     })
                 } else {
@@ -110,17 +107,16 @@ impl ModuleImportResolver for RuskExternals {
                 ),
                 P_HASH,
             )),
-            "verify_sig" => Ok(wasmi::FuncInstance::alloc_host(
+            "verify_schnorr_sig" => Ok(wasmi::FuncInstance::alloc_host(
                 wasmi::Signature::new(
                     &[
                         wasmi::ValueType::I32,
                         wasmi::ValueType::I32,
                         wasmi::ValueType::I32,
-                        wasmi::ValueType::I32,
                     ][..],
-                    None,
+                    Some(wasmi::ValueType::I32),
                 ),
-                VERIFY_SIG,
+                VERIFY_SCHNORR_SIG,
             )),
             "verify_proof" => Ok(wasmi::FuncInstance::alloc_host(
                 wasmi::Signature::new(

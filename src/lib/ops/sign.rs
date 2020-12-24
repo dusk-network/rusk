@@ -19,13 +19,12 @@ pub(crate) fn external(
     external: &mut RuskExternals,
     args: RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg), wasmi::RuntimeValue::I32(ret_addr)] =
+    if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg)] =
         args.as_ref()[..]
     {
         let pk = pk as usize;
         let sig = sig as usize;
         let msg = msg as usize;
-        let ret_addr = ret_addr as usize;
         external.memory()?.with_direct_access_mut(|mem| {
             // Build Pk
             let mut bytes32 = [0u8; 32];
@@ -40,10 +39,9 @@ pub(crate) fn external(
             let msg = BlsScalar::from_bytes(&bytes32).unwrap();
             // Perform the signature verification
             match sig.verify(&pk, msg) {
-                Ok(()) => mem[ret_addr] = 1u8,
-                _ => mem[ret_addr] = 0u8,
-            };
-            Ok(None)
+                Ok(()) => Ok(Some(RuntimeValue::I32(1))),
+                _ => Ok(Some(RuntimeValue::I32(0))),
+            }
         })
     } else {
         Err(Trap::new(TrapKind::Host(Box::new(
@@ -60,9 +58,8 @@ pub(crate) fn wasmi_signature() -> FuncRef {
                 wasmi::ValueType::I32,
                 wasmi::ValueType::I32,
                 wasmi::ValueType::I32,
-                wasmi::ValueType::I32,
             ][..],
-            None,
+            Some(wasmi::ValueType::I32),
         ),
         INDEX,
     )

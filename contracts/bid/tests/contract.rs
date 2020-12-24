@@ -23,7 +23,9 @@ use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
 use external::RuskExternals;
+use phoenix_core::Note;
 use poseidon252::{cipher::PoseidonCipher, sponge::sponge::*};
+use schnorr::single_key::*;
 
 const BYTECODE: &'static [u8] = include_bytes!(
     "../target/wasm32-unknown-unknown/release/bid_contract.wasm"
@@ -72,8 +74,10 @@ fn bid_contract_workflow_works() {
         &(GENERATOR_EXTENDED * value) + &(GENERATOR_NUMS_EXTENDED * blinder),
     );
     let hashed_secret = sponge_hash(&[value.into()]);
-    let pk_r = PublicSpendKey::from(SecretSpendKey::new(value, blinder));
-    let stealth_addr = pk_r.gen_stealth_address(&value);
+    let secret_spend_key = SecretSpendKey::new(value, blinder);
+    let psk = PublicSpendKey::from(&secret_spend_key);
+    let stealth_addr = psk.gen_stealth_address(&value);
+    let sk_r = secret_spend_key.sk_r(&stealth_addr);
     let proof = create_proof(commitment, value, blinder);
     let mut pub_inp_bytes = [0u8; 33];
     pub_inp_bytes[..].copy_from_slice(
@@ -91,9 +95,9 @@ fn bid_contract_workflow_works() {
                 nonce,
                 encrypted_data,
                 stealth_addr,
-                15u64,
+                0u64,
                 proof.clone(),
-                proof,
+                proof.clone(),
                 1,
                 [PublicInput::AffinePoint(commitment, 0, 0).to_bytes()],
             ),
@@ -105,4 +109,54 @@ fn bid_contract_workflow_works() {
     cast.commit().unwrap();
     assert!(err == false);
     assert!(idx == 0u64);
+
+    // Sign the t_e (expiration) and call extend bid.
+    let secret = SecretKey::from(sk_r);
+    let signature =
+        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
+    // Now that a Bid is inside the tree we should be able to extend it if the
+    // correct signature is provided.
+    let call_error = cast
+        .transact(
+            &Contract::<MemStore>::extend_bid(
+                signature,
+                PublicKey::from(stealth_addr.pk_r()),
+            ),
+            store.clone(),
+            RuskExternals { mem: None },
+        )
+        .expect("Failed to call extend_bid method");
+
+    // If call succeeds, this should not fail.
+    cast.commit().expect("Commit couldn't be done");
+    assert!(call_error == false);
+
+    // Sign the t_e (expiration) and call withdraw bid.
+    // Note that the block_height has to be set so that it
+    // surpasses t_e after the extension + COOLDOWN_PERIOD.
+    let signature =
+        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
+    let block_height = 30u64;
+    // Create a Note
+    // TODO: Create a correct note once the inter-contract call is implemented.
+    let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
+    // Now that a Bid is inside the tree we should be able to extend it if the
+    // correct signature is provided.
+    let call_error = cast
+        .transact(
+            &Contract::<MemStore>::withdraw(
+                signature,
+                PublicKey::from(stealth_addr.pk_r()),
+                note,
+                proof.clone(),
+                block_height,
+            ),
+            store.clone(),
+            RuskExternals { mem: None },
+        )
+        .expect("Failed to call extend_bid method");
+
+    // If call succeeds, this should not fail.
+    cast.commit().expect("Commit couldn't be done");
+    assert!(call_error == false);
 }

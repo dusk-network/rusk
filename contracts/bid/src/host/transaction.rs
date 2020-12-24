@@ -6,11 +6,11 @@
 
 use crate::{ops, Contract};
 use canonical_host::{MemStore, Transaction};
-use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::StealthAddress;
 use dusk_plonk::prelude::*;
+use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use schnorr::single_key::{PublicKey, Signature};
 
@@ -62,17 +62,27 @@ impl Contract<MemStore> {
     pub fn withdraw(
         signature: Signature,
         pub_key: PublicKey,
-    ) -> Transaction<(TransactionIndex, Signature, PublicKey), bool> {
-        Transaction::new((ops::WITHDRAW, signature, pub_key))
+        note: Note,
+        spending_proof: Proof,
+        block_height: u64,
+    ) -> Transaction<
+        (TransactionIndex, Signature, PublicKey, Note, Proof, u64),
+        bool,
+    > {
+        Transaction::new((
+            ops::WITHDRAW,
+            signature,
+            pub_key,
+            note,
+            spending_proof,
+            block_height,
+        ))
     }
 
     pub fn extend_bid(
         signature: Signature,
         pub_key: PublicKey,
-        spending_proof: Proof,
-        //Missing Note
-    ) -> Transaction<(TransactionIndex, Signature, PublicKey, Proof), bool>
-    {
-        Transaction::new((ops::EXTEND_BID, signature, pub_key, spending_proof))
+    ) -> Transaction<(TransactionIndex, Signature, PublicKey), bool> {
+        Transaction::new((ops::EXTEND_BID, signature, pub_key))
     }
 }

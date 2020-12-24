@@ -14,8 +14,7 @@ use dusk_pki::{
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use std::convert::TryInto;
-use std::io::{Read, Write};
-use tonic::Status;
+use tonic::{Code, Status};
 
 /// Wrapper over `jubjub_decode` fn
 pub(crate) fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
@@ -94,19 +93,23 @@ impl From<&StealthAddress> for rusk_proto::StealthAddress {
     }
 }
 
+impl From<&Transaction> for rusk_proto::Transaction {
+    fn from(value: &Transaction) -> Self {
+        let buf = value.payload.into_bytes();
+
+        rusk_proto::Transaction {
+            version: value.version.into(),
+            r#type: value.tx_type.into(),
+            payload: buf,
+        }
+    }
+}
+
 impl TryFrom<&mut Transaction> for rusk_proto::Transaction {
     type Error = Status;
 
     fn try_from(value: &mut Transaction) -> Result<Self, Status> {
-        let mut buf = vec![0u8; 4096];
-        let n = value.payload.read(&mut buf)?;
-        buf.truncate(n);
-
-        Ok(rusk_proto::Transaction {
-            version: value.version.into(),
-            r#type: value.tx_type.into(),
-            payload: buf,
-        })
+        Ok(rusk_proto::Transaction::from(&*value))
     }
 }
 
@@ -169,8 +172,10 @@ impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
     fn try_from(
         value: &mut rusk_proto::Transaction,
     ) -> Result<Transaction, Status> {
-        let mut payload = TransactionPayload::default();
-        let _ = payload.write(&value.payload)?;
+        let payload = TransactionPayload::from_bytes(value.payload.as_slice())
+            .map_err(|e| {
+                Status::new(Code::InvalidArgument, format!("{}", e))
+            })?;
 
         Ok(Transaction {
             version: value

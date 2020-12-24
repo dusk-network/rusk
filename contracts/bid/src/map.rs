@@ -40,4 +40,10 @@ where
     pub fn get(&self, pk: PublicKey) -> Result<Option<u64>, S::Error> {
         self.0.get(&pk.to_bytes())
     }
+
+    /// Remove an entry from the tree. It will return `Ok(Some(u64))` in case the key
+    /// exists and `Ok(None)` otherways.
+    pub fn remove(&mut self, pk: PublicKey) -> Result<Option<u64>, S::Error> {
+        self.0.remove(&pk.to_bytes())
+    }
 }

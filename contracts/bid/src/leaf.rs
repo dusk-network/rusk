@@ -35,11 +35,9 @@ impl From<BidLeaf> for Bid {
 }
 
 extern "C" {
+    #[cfg(feature = "hosted")]
     fn p_hash(ofs: &u8, len: u32, ret_addr: &mut [u8; 32]);
 }
-
-#[cfg(feature = "host")]
-use poseidon252::sponge::sponge::sponge_hash;
 
 use poseidon252::tree::PoseidonLeaf;
 impl<S> PoseidonLeaf<S> for BidLeaf
@@ -47,6 +45,9 @@ where
     S: Store,
 {
     fn poseidon_hash(&self) -> BlsScalar {
+        // Since we use `cfg_if` the compiler can't see that the mut is necessary due to the
+        // branching.
+        #[allow(unused_mut)]
         let mut result = BlsScalar::zero();
         cfg_if! {
             if #[cfg(feature = "host")] {
