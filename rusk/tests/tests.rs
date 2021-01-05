@@ -6,6 +6,7 @@
 
 /*
 pub mod common;
+pub mod contracts;
 pub mod services;
 
 use futures::executor::block_on;
