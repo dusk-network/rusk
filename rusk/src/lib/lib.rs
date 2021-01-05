@@ -37,3 +37,5 @@ lazy_static! {
         result
     };
 }
+
+pub use ops::{RuskExternalError, RuskExternals};

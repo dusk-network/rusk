@@ -1,3 +1,5 @@
+STAKE_CONTRACT_DIR := "./contracts/stake"
+
 help: ## Display this help screen
 	@grep -h \
 		-E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
