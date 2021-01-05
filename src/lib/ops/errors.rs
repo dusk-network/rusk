@@ -8,16 +8,16 @@ use std::fmt;
 use wasmi::HostError;
 
 #[derive(Debug)]
-pub enum RuskExtenalError {
+pub enum RuskExternalError {
     WrongArgsNumber,
     InvokeIdxNotFound(usize),
     ResolverNameNotFound(String),
 }
 
-impl fmt::Display for RuskExtenalError {
+impl fmt::Display for RuskExternalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for RuskExtenalError {}
+impl HostError for RuskExternalError {}

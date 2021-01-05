@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::RuskExtenalError;
+use super::RuskExternalError;
 use super::RuskExternals;
 use canonical_host::MemoryHolder;
 use dusk_plonk::bls12_381::BlsScalar;
@@ -44,7 +44,7 @@ pub(crate) fn external(
         })
     } else {
         Err(Trap::new(TrapKind::Host(Box::new(
-            RuskExtenalError::WrongArgsNumber,
+            RuskExternalError::WrongArgsNumber,
         ))))
     }
 }

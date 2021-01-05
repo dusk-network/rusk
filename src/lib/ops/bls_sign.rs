@@ -7,43 +7,42 @@
 use super::RuskExternalError;
 use super::RuskExternals;
 use canonical_host::MemoryHolder;
+use dusk_bls12_381_sign::{Signature, APK};
 use dusk_plonk::bls12_381::BlsScalar;
-use schnorr::single_key::{PublicKey, Signature as SchnorrSignature};
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
-pub(crate) const INDEX: usize = 102;
-pub(crate) const NAME: &'static str = "verify_schnorr_sig";
+pub(crate) const INDEX: usize = 104;
+pub(crate) const NAME: &'static str = "verify_bls_sig";
 
 /// Host call definition for the `VERIFY_SIG` opcode.
 pub(crate) fn external(
     external: &mut RuskExternals,
     args: RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg), wasmi::RuntimeValue::I32(ret_addr)] =
+    if let [wasmi::RuntimeValue::I32(pk), wasmi::RuntimeValue::I32(sig), wasmi::RuntimeValue::I32(msg)] =
         args.as_ref()[..]
     {
         let pk = pk as usize;
         let sig = sig as usize;
         let msg = msg as usize;
-        let ret_addr = ret_addr as usize;
         external.memory()?.with_direct_access_mut(|mem| {
             // Build Pk
+            let mut bytes96 = [0u8; 96];
+            let mut bytes48 = [0u8; 48];
             let mut bytes32 = [0u8; 32];
-            let mut bytes64 = [0u8; 64];
-            bytes32[0..32].copy_from_slice(&mem[pk..pk + 32]);
-            let pk = PublicKey::from_bytes(&bytes32).unwrap();
+            bytes96[0..96].copy_from_slice(&mem[pk..pk + 96]);
+            let pk = APK::from_bytes(&bytes96).unwrap();
             // Build Sig
-            bytes64[0..64].copy_from_slice(&mem[sig..sig + 64]);
-            let sig = SchnorrSignature::from_bytes(&bytes64).unwrap();
+            bytes48[0..48].copy_from_slice(&mem[sig..sig + 48]);
+            let sig = Signature::from_bytes(&bytes48).unwrap();
             // Build Msg
             bytes32[0..32].copy_from_slice(&mem[msg..msg + 32]);
             let msg = BlsScalar::from_bytes(&bytes32).unwrap();
             // Perform the signature verification
-            match sig.verify(&pk, msg) {
-                Ok(()) => mem[ret_addr] = 1u8,
-                _ => mem[ret_addr] = 0u8,
-            };
-            Ok(None)
+            match pk.verify(&sig, &msg.to_bytes()) {
+                Ok(()) => Ok(Some(RuntimeValue::I32(1))),
+                _ => Ok(Some(RuntimeValue::I32(0))),
+            }
         })
     } else {
         Err(Trap::new(TrapKind::Host(Box::new(
@@ -60,9 +59,8 @@ pub(crate) fn wasmi_signature() -> FuncRef {
                 wasmi::ValueType::I32,
                 wasmi::ValueType::I32,
                 wasmi::ValueType::I32,
-                wasmi::ValueType::I32,
             ][..],
-            None,
+            Some(wasmi::ValueType::I32),
         ),
         INDEX,
     )

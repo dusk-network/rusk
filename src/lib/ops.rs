@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod bls_sign;
 mod errors;
 mod hashing;
 mod sign;
 
 use canonical_host::MemoryHolder;
 use dusk_plonk::commitment_scheme::kzg10::PublicParameters;
-pub(crate) use errors::RuskExtenalError;
+pub use errors::RuskExternalError;
 use wasmi::{
     Error, Externals, FuncRef, MemoryRef, ModuleImportResolver, RuntimeArgs,
     RuntimeValue, Signature, Trap, TrapKind,
@@ -51,8 +52,9 @@ impl Externals for RuskExternals {
         match index {
             hashing::INDEX => hashing::external(self, args),
             sign::INDEX => sign::external(self, args),
+            bls_sign::INDEX => bls_sign::external(self, args),
             _ => Err(Trap::new(TrapKind::Host(Box::new(
-                RuskExtenalError::InvokeIdxNotFound(index),
+                RuskExternalError::InvokeIdxNotFound(index),
             )))),
         }
     }
@@ -67,8 +69,9 @@ impl ModuleImportResolver for RuskExternals {
         match field_name {
             hashing::NAME => Ok(hashing::wasmi_signature()),
             sign::NAME => Ok(sign::wasmi_signature()),
+            bls_sign::NAME => Ok(bls_sign::wasmi_signature()),
             _ => Err(Error::Host(Box::new(
-                RuskExtenalError::ResolverNameNotFound(field_name.to_string()),
+                RuskExternalError::ResolverNameNotFound(field_name.to_string()),
             ))),
         }
     }

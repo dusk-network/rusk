@@ -45,6 +45,7 @@ canonical_derive = "0.4"
 canonical_host = "0.4"
 wasmi = "0.6"
 schnorr = {git = "https://github.com/dusk-network/schnorr", tag = "v0.1.1-alpha"}
+dusk-bls12_381-sign = { git = "https://github.com/dusk-network/bls12_381-sign", branch = "canon" }
 
 
 [build-dependencies]
@@ -65,8 +66,3 @@ lazy_static = "1.4"
 canonical = "0.4"
 canonical_derive = "0.4"
 canonical_host = "0.4"
-
-[patch.crates-io]
-canonical = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
-canonical_derive = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
-canonical_host = {git = "https://github.com/dusk-network/canonical", rev = "edf9efd"}
