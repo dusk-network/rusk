@@ -1,0 +1,31 @@
+[package]
+name = "reward_contract"
+version = "0.1.0"
+authors = ["Jules de Smit <julesdesmit@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+canonical = {version = "0.4"}
+canonical_derive = "0.4"
+canonical_host = { version = "0.4", optional = true }
+dusk-bls12_381 = { version = "0.3", default-features = false, features = ["canon"] }
+dusk-bls12_381-sign = { git = "https://github.com/dusk-network/bls12_381-sign", branch = "canon", default-features = false }
+dusk-kelvin-map = "0.1"
+
+[features]
+default = ["dusk-bls12_381-sign/canon"]
+hosted = ["dusk-bls12_381-sign/std"]
+host = [
+        "canonical/host", 
+        "canonical_host", 
+        "dusk-bls12_381-sign/canon",
+        ]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
