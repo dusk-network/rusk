@@ -640,8 +640,8 @@ mod tests {
         let a_ssk = SecretSpendKey::random(&mut rng);
         let a_psk = a_ssk.public_key();
         let a_value = 600;
-        let (a_note, a_blinding_factor) =
-            Note::transparent(&mut rng, &a_psk, a_value);
+        let a_blinding_factor = Note::transparent_blinding_factor();
+        let a_note = Note::transparent(&mut rng, &a_psk, a_value);
 
         let p = tree.push(a_note.into()).expect("Tree append error");
         let a_note = tree
@@ -665,15 +665,17 @@ mod tests {
         let b_ssk = SecretSpendKey::random(&mut rng);
         let b_psk = b_ssk.public_key();
         let b_value = 450;
-        let (b_note, b_blinding_factor) =
-            Note::obfuscated(&mut rng, &b_psk, b_value);
+        let b_blinding_factor = JubJubScalar::random(&mut rng);
+        let b_note =
+            Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
         circuit.add_output(b_note, b_value, b_blinding_factor);
 
         let c_ssk = SecretSpendKey::random(&mut rng);
         let c_psk = c_ssk.public_key();
         let c_value = 100;
-        let (c_note, c_blinding_factor) =
-            Note::obfuscated(&mut rng, &c_psk, c_value);
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        let c_note =
+            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let (_, crossover) = c_note
             .try_into()
             .expect("Failed to generate fee and crossover!");
@@ -683,15 +685,16 @@ mod tests {
         let d_ssk = SecretSpendKey::random(&mut rng);
         let d_psk = d_ssk.public_key();
         let d_value = 750;
-        let (d_note, d_blinding_factor) =
-            Note::transparent(&mut rng, &d_psk, d_value);
+        let d_blinding_factor = Note::transparent_blinding_factor();
+        let d_note = Note::transparent(&mut rng, &d_psk, d_value);
         circuit.add_output(d_note, d_value, d_blinding_factor);
 
         let e_ssk = SecretSpendKey::random(&mut rng);
         let e_psk = e_ssk.public_key();
         let e_value = 700;
-        let (e_note, e_blinding_factor) =
-            Note::obfuscated(&mut rng, &e_psk, e_value);
+        let e_blinding_factor = JubJubScalar::random(&mut rng);
+        let e_note =
+            Note::obfuscated(&mut rng, &e_psk, e_value, e_blinding_factor);
 
         let p = tree.push(e_note.into()).expect("Tree append error");
         let e_note = tree
@@ -740,8 +743,8 @@ mod tests {
         let a_ssk = SecretSpendKey::random(&mut rng);
         let a_psk = a_ssk.public_key();
         let a_value = 600;
-        let (a_note, a_blinding_factor) =
-            Note::transparent(&mut rng, &a_psk, a_value);
+        let a_blinding_factor = Note::transparent_blinding_factor();
+        let a_note = Note::transparent(&mut rng, &a_psk, a_value);
 
         let p = tree.push(a_note.into()).expect("Tree append error");
         let a_note = tree
@@ -765,15 +768,17 @@ mod tests {
         let b_ssk = SecretSpendKey::random(&mut rng);
         let b_psk = b_ssk.public_key();
         let b_value = 150;
-        let (b_note, b_blinding_factor) =
-            Note::obfuscated(&mut rng, &b_psk, b_value);
+        let b_blinding_factor = JubJubScalar::random(&mut rng);
+        let b_note =
+            Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
         circuit.add_output(b_note, b_value, b_blinding_factor);
 
         let c_ssk = SecretSpendKey::random(&mut rng);
         let c_psk = c_ssk.public_key();
         let c_value = 100;
-        let (c_note, c_blinding_factor) =
-            Note::obfuscated(&mut rng, &c_psk, c_value);
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        let c_note =
+            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let (_, crossover) = c_note
             .try_into()
             .expect("Failed to generate fee and crossover!");
@@ -784,8 +789,8 @@ mod tests {
         let d_psk = d_ssk.public_key();
         let d_value_note = 351;
         let d_value_circuit = 350;
-        let (d_note, d_blinding_factor) =
-            Note::transparent(&mut rng, &d_psk, d_value_note);
+        let d_blinding_factor = Note::transparent_blinding_factor();
+        let d_note = Note::transparent(&mut rng, &d_psk, d_value_note);
         circuit.add_output(d_note, d_value_circuit, d_blinding_factor);
 
         // Generate Composer & Public Parameters
@@ -820,8 +825,8 @@ mod tests {
         let a_ssk = SecretSpendKey::random(&mut rng);
         let a_psk = a_ssk.public_key();
         let a_value = 600;
-        let (a_note, a_blinding_factor) =
-            Note::transparent(&mut rng, &a_psk, a_value);
+        let a_blinding_factor = Note::transparent_blinding_factor();
+        let a_note = Note::transparent(&mut rng, &a_psk, a_value);
 
         let p = tree.push(a_note.into()).expect("Tree append error");
         let a_note = tree
@@ -846,15 +851,17 @@ mod tests {
         let b_ssk = SecretSpendKey::random(&mut rng);
         let b_psk = b_ssk.public_key();
         let b_value = 150;
-        let (b_note, b_blinding_factor) =
-            Note::obfuscated(&mut rng, &b_psk, b_value);
+        let b_blinding_factor = JubJubScalar::random(&mut rng);
+        let b_note =
+            Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
         circuit.add_output(b_note, b_value, b_blinding_factor);
 
         let c_ssk = SecretSpendKey::random(&mut rng);
         let c_psk = c_ssk.public_key();
         let c_value = 100;
-        let (c_note, c_blinding_factor) =
-            Note::obfuscated(&mut rng, &c_psk, c_value);
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        let c_note =
+            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let (_, crossover) = c_note
             .try_into()
             .expect("Failed to generate fee and crossover!");
@@ -864,8 +871,8 @@ mod tests {
         let d_ssk = SecretSpendKey::random(&mut rng);
         let d_psk = d_ssk.public_key();
         let d_value = 350;
-        let (d_note, d_blinding_factor) =
-            Note::transparent(&mut rng, &d_psk, d_value);
+        let d_blinding_factor = Note::transparent_blinding_factor();
+        let d_note = Note::transparent(&mut rng, &d_psk, d_value);
         circuit.add_output(d_note, d_value, d_blinding_factor);
 
         // Generate Composer & Public Parameters
@@ -901,8 +908,8 @@ mod tests {
         let a_ssk = SecretSpendKey::random(&mut rng);
         let a_psk = a_ssk.public_key();
         let a_value = 600;
-        let (a_note, a_blinding_factor) =
-            Note::transparent(&mut rng, &a_psk, a_value);
+        let a_blinding_factor = Note::transparent_blinding_factor();
+        let a_note = Note::transparent(&mut rng, &a_psk, a_value);
 
         let p = tree.push(a_note.into()).expect("Tree append error");
         let a_note = tree
@@ -926,15 +933,17 @@ mod tests {
         let b_ssk = SecretSpendKey::random(&mut rng);
         let b_psk = b_ssk.public_key();
         let b_value = 150;
-        let (b_note, b_blinding_factor) =
-            Note::obfuscated(&mut rng, &b_psk, b_value);
+        let b_blinding_factor = JubJubScalar::random(&mut rng);
+        let b_note =
+            Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
         circuit.add_output(b_note, b_value, b_blinding_factor);
 
         let c_ssk = SecretSpendKey::random(&mut rng);
         let c_psk = c_ssk.public_key();
         let c_value = 100;
-        let (c_note, c_blinding_factor) =
-            Note::obfuscated(&mut rng, &c_psk, c_value);
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        let c_note =
+            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let (_, crossover) = c_note
             .try_into()
             .expect("Failed to generate fee and crossover!");
@@ -944,8 +953,8 @@ mod tests {
         let d_ssk = SecretSpendKey::random(&mut rng);
         let d_psk = d_ssk.public_key();
         let d_value = 350;
-        let (d_note, d_blinding_factor) =
-            Note::transparent(&mut rng, &d_psk, d_value);
+        let d_blinding_factor = Note::transparent_blinding_factor();
+        let d_note = Note::transparent(&mut rng, &d_psk, d_value);
         circuit.add_output(d_note, d_value, d_blinding_factor);
 
         // Generate Composer & Public Parameters
@@ -991,8 +1000,8 @@ mod tests {
         let a_ssk = SecretSpendKey::random(&mut rng);
         let a_psk = a_ssk.public_key();
         let a_value = 600;
-        let (a_note, a_blinding_factor) =
-            Note::transparent(&mut rng, &a_psk, a_value);
+        let a_blinding_factor = Note::transparent_blinding_factor();
+        let a_note = Note::transparent(&mut rng, &a_psk, a_value);
 
         let p = tree.push(a_note.into()).expect("Tree append error");
         let mut a_note = tree
@@ -1020,15 +1029,17 @@ mod tests {
         let b_ssk = SecretSpendKey::random(&mut rng);
         let b_psk = b_ssk.public_key();
         let b_value = 150;
-        let (b_note, b_blinding_factor) =
-            Note::obfuscated(&mut rng, &b_psk, b_value);
+        let b_blinding_factor = JubJubScalar::random(&mut rng);
+        let b_note =
+            Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
         circuit.add_output(b_note, b_value, b_blinding_factor);
 
         let c_ssk = SecretSpendKey::random(&mut rng);
         let c_psk = c_ssk.public_key();
         let c_value = 100;
-        let (c_note, c_blinding_factor) =
-            Note::obfuscated(&mut rng, &c_psk, c_value);
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        let c_note =
+            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let (_, crossover) = c_note
             .try_into()
             .expect("Failed to generate fee and crossover!");
@@ -1038,8 +1049,8 @@ mod tests {
         let d_ssk = SecretSpendKey::random(&mut rng);
         let d_psk = d_ssk.public_key();
         let d_value = 350;
-        let (d_note, d_blinding_factor) =
-            Note::transparent(&mut rng, &d_psk, d_value);
+        let d_blinding_factor = Note::transparent_blinding_factor();
+        let d_note = Note::transparent(&mut rng, &d_psk, d_value);
         circuit.add_output(d_note, d_value, d_blinding_factor);
 
         // Generate Composer & Public Parameters
