@@ -3,11 +3,3 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
-mod commitment;
-mod point_signature;
-mod range;
-
-pub use commitment::commitment;
-pub use point_signature::point_signature;
-pub use range::range;

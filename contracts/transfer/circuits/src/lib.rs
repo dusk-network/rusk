@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//#![allow(non_snake_case)]
-//pub mod dusk_contract;
+mod execute;
+mod send_to_contract_obfuscated;
+mod send_to_contract_transparent;
+
 pub mod gadgets;
 
-#[cfg(test)]
-pub(crate) mod leaf;
-
-mod execute;
-
 pub use execute::ExecuteCircuit;
+pub use send_to_contract_transparent::SendToContractTransparentCircuit;
+
+#[cfg(test)]
+pub mod tests;
