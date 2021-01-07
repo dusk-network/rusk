@@ -1,21 +1,21 @@
 [package]
 name = "transfer-circuits"
-version = "0.1.0"
-authors = ["Bounce23 <luke@dusk.network>"]
+version = "0.2.0"
+authors = ["Bounce23 <luke@dusk.network>", "Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-phoenix-core = { git = "https://github.com/dusk-network/phoenix-core", tag = "v0.5.0", features = ["canon"]}
-poseidon252 = { git = "https://github.com/dusk-network/Poseidon252", tag = "v0.15.0", features = ["canon"]}
 rand = "0.7"
-plonk_gadgets = {git = "https://github.com/dusk-network/plonk_gadgets", tag = "v0.4.3"}
-dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", tag = "v0.4.1"}
+rand_core = "0.5"
 anyhow = "1.0"
-dusk-plonk = {version = "0.3.5", features = ["trace-print", "trace"]}
-
-[dev-dependencies]
+dusk-plonk = "0.3.6"
 canonical = "0.4"
 canonical_derive = "0.4"
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", branch="vlopes11/crossover-decrypt", features = ["canon"]}
+poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag="v0.15.0", features=["canon"]}
+plonk_gadgets = {git="https://github.com/dusk-network/plonk_gadgets", tag="v0.4.3"}
+dusk-pki = {git="https://github.com/dusk-network/dusk-pki", tag="v0.4.1"}
+schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.2.0"}
+
+[dev-dependencies]
 canonical_host = "0.4"

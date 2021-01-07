@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets::range::range;
+use crate::gadgets;
 use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -88,7 +88,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
 
         // Prove that the value of the opening of the commitment of the input is
         // within range
-        range(composer, commitment_value, 64);
+        gadgets::range(composer, commitment_value.var);
 
         // Prove the knowledge of the spend commitment opening of the commitment
         // of the input
@@ -109,7 +109,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
 
         // Prove that the value of the opening of the spend commitment of the
         // input is within range
-        range(composer, spend_value, 64);
+        gadgets::range(composer, spend_value.var);
 
         // Prove the knowledge of the change commitment opening of the
         // commitment of the input
@@ -131,7 +131,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitOne {
 
         // Prove that the value of the opening of the change commitment of the
         // input is within range
-        range(composer, change_value, 64);
+        gadgets::range(composer, change_value.var);
 
         composer.add_gate(
             spend_value.var,
@@ -247,7 +247,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
 
         // Prove that the value of the opening of the commitment of the input is
         // within range
-        range(composer, allocated_commitment_value, 64);
+        gadgets::range(composer, allocated_commitment_value.var);
 
         // Prove the knowledge of the change commitment opening of the
         // commitment of the input
@@ -276,7 +276,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedToContractCircuitTwo {
 
         // Prove that the value of the opening of the change commitment of the
         // input is within range
-        range(composer, allocated_change_value, 64);
+        gadgets::range(composer, allocated_change_value.var);
 
         // Add PI constraint for the sum check
         pi.push(PublicInput::BlsScalar(value, composer.circuit_size()));

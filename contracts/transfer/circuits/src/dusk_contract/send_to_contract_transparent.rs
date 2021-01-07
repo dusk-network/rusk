@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets::{range::range, schnorr::schnorr_gadget_one_key};
+use crate::gadgets::{self, schnorr::schnorr_gadget_one_key};
 use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point as PlonkPoint;
@@ -95,7 +95,7 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
 
         // Prove that the value of the opening of the commitment of the input is
         // within range
-        range(composer, allocated_commitment_crossover_value, 64);
+        gadgets::range(composer, allocated_commitment_crossover_value.var);
 
         //Assert the given private and public pk inputs are equal
         pi.push(PublicInput::AffinePoint(

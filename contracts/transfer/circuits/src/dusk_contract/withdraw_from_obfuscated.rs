@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets::range::range;
+use crate::gadgets;
 use anyhow::Result;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -85,7 +85,7 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
         // Assert computed commitment is equal to publicly inputted affine point
         composer.assert_equal_public_point(commitment, spend_commitment);
 
-        range(composer, spend_value, 64);
+        gadgets::range(composer, spend_value.var);
 
         let p3 = scalar_mul(composer, message_value.var, GENERATOR_EXTENDED);
         let p4 =
@@ -105,7 +105,7 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
 
         // Prove that the value of the opening of the message commitment of the
         // input is within range
-        range(composer, message_value, 64);
+        gadgets::range(composer, message_value.var);
 
         let p5 = scalar_mul(composer, note_value.var, GENERATOR_EXTENDED);
         let p6 = scalar_mul(composer, note_blind.var, GENERATOR_NUMS_EXTENDED);
@@ -124,7 +124,7 @@ impl Circuit<'_> for WithdrawFromContractObfuscatedCircuit {
 
         // Prove that the value of the opening of the note commitment of the
         // input is within range
-        range(composer, note_value, 64);
+        gadgets::range(composer, note_value.var);
 
         // Constrain the value inputs to satisfy: v_spend - v_message - v_note =
         // 0

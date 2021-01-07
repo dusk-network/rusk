@@ -4,9 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(non_snake_case)]
-pub mod dusk_contract;
+//#![allow(non_snake_case)]
+//pub mod dusk_contract;
 pub mod gadgets;
 
 #[cfg(test)]
 pub(crate) mod leaf;
+
+mod execute;
+
+pub use execute::ExecuteCircuit;
