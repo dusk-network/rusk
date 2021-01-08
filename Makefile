@@ -17,15 +17,19 @@ contracts: ## Generate the WASM for all the contracts
 				-- -C link-args=-s; \
 		done
 
-test: ## Run the tests
-		@make contracts && \
-			cargo test --release -- --nocapture  && \
-				rm /tmp/rusk_listener_*
-		cd contracts/bid/circuits && cargo test --release
-		# cd contracts/transfer/circuits && cargo test --release
+test: contracts test_bid test_transfer ## Run the tests
+	@cargo test --release -- --nocapture && \
+		rm /tmp/rusk_listener_*
 
-run: ## Run the server
-		@make contracts && \
-			cargo run --release
+test_bid: contracts ## Run the bid contract tests
+	@cd contracts/bid/circuits && \
+		cargo test --release
 
-.PHONY: help wasm contracts test run
+test_transfer: contracts ## Run the transfer contract tests
+	@cd contracts/transfer/circuits && \
+		cargo test --release
+
+run: contracts ## Run the server
+	@cargo run --release
+
+.PHONY: help wasm contracts test test_bid test_transfer run
