@@ -7,6 +7,7 @@
 mod execute;
 mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
+mod withdraw_from_obfuscated;
 
 pub mod gadgets;
 
