@@ -33,9 +33,8 @@ mod tests;
 
 /// The circuit responsible for creating a zero-knowledge proof
 /// for a 'send to contract transparent' transaction.
-#[derive(Debug, Clone)]
-pub struct ExecuteCircuit<const DEPTH: usize> {
-    trim_size: usize,
+#[derive(Debug, Default, Clone)]
+pub struct ExecuteCircuit<const DEPTH: usize, const CAPACITY: usize> {
     pi_positions: Vec<PublicInput>,
     pub inputs: Vec<CircuitInput<DEPTH>>,
     pub crossover: CircuitCrossover,
@@ -43,18 +42,9 @@ pub struct ExecuteCircuit<const DEPTH: usize> {
     pub tx_hash: BlsScalar,
 }
 
-impl<const DEPTH: usize> ExecuteCircuit<DEPTH> {
-    pub fn with_size(trim_size: usize) -> Self {
-        Self {
-            trim_size,
-            pi_positions: vec![],
-            inputs: vec![],
-            crossover: Default::default(),
-            outputs: vec![],
-            tx_hash: Default::default(),
-        }
-    }
-
+impl<const DEPTH: usize, const CAPACITY: usize>
+    ExecuteCircuit<DEPTH, CAPACITY>
+{
     pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         self.tx_hash = tx_hash;
     }
@@ -113,12 +103,17 @@ impl<const DEPTH: usize> ExecuteCircuit<DEPTH> {
     /// Constant message for the schnorr signature generation
     ///
     /// The signature is provided outside the circuit; so that's why it is constant
+    ///
+    /// The contents of the message are yet to be defined in the documentation. For now, it is
+    /// treated as a constant.
     pub const fn sign_message() -> BlsScalar {
         BlsScalar::one()
     }
 }
 
-impl<const DEPTH: usize> Circuit<'_> for ExecuteCircuit<DEPTH> {
+impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
+    for ExecuteCircuit<DEPTH, CAPACITY>
+{
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
 
@@ -339,11 +334,11 @@ impl<const DEPTH: usize> Circuit<'_> for ExecuteCircuit<DEPTH> {
     /// to compile the circuit or perform proving/verification
     /// actions.
     fn get_trim_size(&self) -> usize {
-        self.trim_size
+        1 << CAPACITY
     }
 
-    fn set_trim_size(&mut self, size: usize) {
-        self.trim_size = size;
+    fn set_trim_size(&mut self, _size: usize) {
+        // N/A
     }
 
     /// Return a mutable reference to the Public Inputs storage of the

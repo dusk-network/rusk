@@ -116,7 +116,7 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
                 ))
             })?;
 
-        let message = ExecuteCircuit::<DEPTH>::sign_message();
+        let message = ExecuteCircuit::<DEPTH, 0>::sign_message();
         let signature = SchnorrSecret::from(&sk_r).sign(rng, message);
 
         Ok(Self {
@@ -190,7 +190,7 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         let pk_r_prime =
             fixed_base::scalar_mul(composer, sk_r, GENERATOR_NUMS_EXTENDED);
         let pk_r_prime = *pk_r_prime.point();
-        let schnorr_message = ExecuteCircuit::<DEPTH>::sign_message();
+        let schnorr_message = ExecuteCircuit::<DEPTH, 0>::sign_message();
         let schnorr_message =
             composer.add_witness_to_circuit_description(schnorr_message);
         let schnorr_u = *self.signature.u();

@@ -30,7 +30,7 @@ fn execute() -> Result<()> {
     let mut tree =
         PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
-    let mut circuit = ExecuteCircuit::with_size(1 << 16);
+    let mut circuit = ExecuteCircuit::<17, 16>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
     let a_psk = a_ssk.public_key();
@@ -136,7 +136,7 @@ fn wrong_note_value_one() -> Result<()> {
     let mut tree =
         PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
-    let mut circuit = ExecuteCircuit::with_size(1 << 15);
+    let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
     let a_psk = a_ssk.public_key();
@@ -222,7 +222,7 @@ fn wrong_nullifier() -> Result<()> {
     let mut tree =
         PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
-    let mut circuit = ExecuteCircuit::with_size(1 << 15);
+    let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
     let a_psk = a_ssk.public_key();
@@ -309,7 +309,7 @@ fn wrong_fee() -> Result<()> {
     let mut tree =
         PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
-    let mut circuit = ExecuteCircuit::with_size(1 << 15);
+    let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
     let a_psk = a_ssk.public_key();
@@ -403,7 +403,7 @@ fn pushing_note_to_wrong_position() -> Result<()> {
     let mut tree =
         PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
 
-    let mut circuit = ExecuteCircuit::with_size(1 << 15);
+    let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
     let a_psk = a_ssk.public_key();
