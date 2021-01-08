@@ -19,12 +19,14 @@ use lazy_static::lazy_static;
 use phoenix_core::{Note, NoteType};
 use poseidon252::sponge::hash;
 use poseidon252::tree::PoseidonBranch;
+/*
 use transfer_circuits::dusk_contract::{
     ExecuteCircuit, SendToContractObfuscatedCircuit,
     SendToContractTransparentCircuit, WithdrawFromContractObfuscatedCircuit,
     WithdrawFromObfuscatedToContractCircuitOne,
     WithdrawFromObfuscatedToContractCircuitTwo,
 };
+*/
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -83,6 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
 
+    /*
     // Get the cached keys for transfer contract crate from rusk profile, or
     // recompile and update them if they're outdated
     let transfer_keys = rusk_profile::keys_for("transfer-circuits");
@@ -126,6 +129,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             transfer_keys.update(&format!("Execute{}", i), fnctn()?)?;
         }
     }
+    */
 
     Ok(())
 }
@@ -228,6 +232,7 @@ mod blindbid {
 }
 
 mod transfer {
+    /*
     use super::*;
 
     // This function signs a message with a secret key
@@ -2126,6 +2131,7 @@ mod transfer {
         let (pk, vk) = circuit.compile(&pub_params)?;
         Ok((pk.to_bytes(), vk.to_bytes()))
     }
+    */
 }
 
 mod leaf {
