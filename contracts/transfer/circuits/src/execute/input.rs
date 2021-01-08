@@ -130,14 +130,6 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         })
     }
 
-    pub fn note(&self) -> &Note {
-        &self.note
-    }
-
-    pub fn sk_r(&self) -> &JubJubScalar {
-        &self.sk_r
-    }
-
     pub const fn branch(&self) -> &PoseidonBranch<DEPTH> {
         &self.branch
     }
@@ -145,10 +137,9 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
     pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessInput {
         let nullifier = self.nullifier;
 
-        let note = self.note();
+        let note = self.note;
 
-        // TODO victor - review this conversion, doesn't seem safe
-        let sk_r = *self.sk_r();
+        let sk_r = self.sk_r;
         let sk_r = composer.add_input(sk_r.into());
 
         let pk_r = fixed_base::scalar_mul(composer, sk_r, GENERATOR_EXTENDED);
