@@ -5,3 +5,4 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 // TODO The message structure is not yet specified
+// Check issue https://github.com/dusk-network/rusk/issues/155
