@@ -6,8 +6,6 @@
 
 use crate::ExecuteCircuit;
 
-use anyhow::{anyhow, Result};
-use canonical::Store;
 use dusk_pki::Ownable;
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base;
@@ -15,9 +13,7 @@ use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
-use poseidon252::tree::{
-    PoseidonBranch, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
-};
+use poseidon252::tree::PoseidonBranch;
 use rand_core::{CryptoRng, RngCore};
 use schnorr::double_key::{SecretKey as SchnorrSecret, Signature};
 
@@ -92,34 +88,19 @@ pub struct CircuitInput<const DEPTH: usize> {
 }
 
 impl<const DEPTH: usize> CircuitInput<DEPTH> {
-    pub fn new<R, L, A, S>(
+    pub fn new<R: RngCore + CryptoRng>(
         rng: &mut R,
-        tree: &PoseidonTree<L, A, S, DEPTH>,
+        branch: PoseidonBranch<DEPTH>,
         sk_r: JubJubScalar,
         note: Note,
         value: u64,
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
-    ) -> Result<Self>
-    where
-        R: RngCore + CryptoRng,
-        L: PoseidonLeaf<S>,
-        A: PoseidonTreeAnnotation<L, S>,
-        S: Store,
-    {
-        let branch = tree
-            .branch(note.pos() as usize)
-            .map_err(|e| anyhow!("Poseidon tree error: {}", e))
-            .and_then(|branch| {
-                branch.ok_or(anyhow!(
-                    "The provided input note doesn't belong to the tree!"
-                ))
-            })?;
-
+    ) -> Self {
         let message = ExecuteCircuit::<DEPTH, 0>::sign_message();
         let signature = SchnorrSecret::from(&sk_r).sign(rng, message);
 
-        Ok(Self {
+        Self {
             sk_r,
             branch,
             note,
@@ -127,7 +108,7 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
             blinding_factor,
             signature,
             nullifier,
-        })
+        }
     }
 
     pub const fn branch(&self) -> &PoseidonBranch<DEPTH> {

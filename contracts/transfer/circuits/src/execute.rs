@@ -10,15 +10,12 @@ use crossover::CircuitCrossover;
 use input::{CircuitInput, WitnessInput};
 use output::{CircuitOutput, WitnessOutput};
 
-use anyhow::Result;
-use canonical::Store;
+use anyhow::{anyhow, Result};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::JubJubExtended;
 use phoenix_core::Note;
 use poseidon252::sponge::sponge::sponge_hash_gadget;
-use poseidon252::tree::{
-    self, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
-};
+use poseidon252::tree::{self, PoseidonBranch};
 use rand_core::{CryptoRng, RngCore};
 use schnorr::gadgets as schnorr_gadgets;
 
@@ -45,35 +42,63 @@ pub struct ExecuteCircuit<const DEPTH: usize, const CAPACITY: usize> {
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
 {
+    pub const fn transcript_label(&self) -> &'static [u8] {
+        b"execute-circuit"
+    }
+
+    pub fn rusk_label(&self) -> String {
+        format!(
+            "transfer-execute-{}-{}",
+            self.inputs.len(),
+            self.outputs.len()
+        )
+    }
+
+    pub fn rusk_circuit_args(
+        &self,
+    ) -> Result<(PublicParameters, ProverKey, VerifierKey)> {
+        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
+        let (pk, vk) = keys
+            .get(self.rusk_label().as_str())
+            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+
+        let pk = ProverKey::from_bytes(pk.as_slice())?;
+        let vk = VerifierKey::from_bytes(vk.as_slice())?;
+
+        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
+            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
+        })?;
+
+        let pp = bincode::deserialize(pp.as_slice()).map_err(|e| {
+            anyhow!("Failed to deserialize public parameters: {}", e)
+        })?;
+
+        Ok((pp, pk, vk))
+    }
+
     pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         self.tx_hash = tx_hash;
     }
 
-    pub fn add_input<R, L, A, S>(
+    pub fn add_input<R: RngCore + CryptoRng>(
         &mut self,
         rng: &mut R,
-        tree: &PoseidonTree<L, A, S, DEPTH>,
+        branch: PoseidonBranch<DEPTH>,
         sk_r: JubJubScalar,
         note: Note,
         value: u64,
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
-    ) -> Result<()>
-    where
-        R: RngCore + CryptoRng,
-        L: PoseidonLeaf<S>,
-        A: PoseidonTreeAnnotation<L, S>,
-        S: Store,
-    {
+    ) -> Result<()> {
         let input = CircuitInput::new(
             rng,
-            tree,
+            branch,
             sk_r,
             note,
             value,
             blinding_factor,
             nullifier,
-        )?;
+        );
 
         self.inputs.push(input);
 

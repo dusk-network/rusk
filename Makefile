@@ -8,6 +8,12 @@ wasm: ## Generate the WASM for the contract given (e.g. make wasm for=transfer)
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
 
+clear: ## Clear Rusk circuit keys
+	@rm -fr ~/.rusk/keys
+
+keys: ## Create Rusk keys
+	@cargo check --release
+
 contracts: ## Generate the WASM for all the contracts
 		@for file in `find contracts -maxdepth 2 -name "Cargo.toml"` ; do \
 			cargo rustc \
@@ -21,15 +27,15 @@ test: contracts test_bid test_transfer ## Run the tests
 	@cargo test --release -- --nocapture && \
 		rm /tmp/rusk_listener_*
 
-test_bid: contracts ## Run the bid contract tests
+test_bid: contracts keys ## Run the bid contract tests
 	@cd contracts/bid/circuits && \
 		cargo test --release
 
-test_transfer: contracts ## Run the transfer contract tests
+test_transfer: contracts keys ## Run the transfer contract tests
 	@cd contracts/transfer/circuits && \
 		cargo test --release
 
 run: contracts ## Run the server
 	@cargo run --release
 
-.PHONY: help wasm contracts test test_bid test_transfer run
+.PHONY: help wasm clear keys contracts test test_bid test_transfer run

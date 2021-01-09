@@ -14,5 +14,5 @@ pub mod gadgets;
 pub use execute::ExecuteCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 
-#[cfg(test)]
-pub mod tests;
+#[cfg(any(test, feature = "helpers"))]
+pub mod helpers;

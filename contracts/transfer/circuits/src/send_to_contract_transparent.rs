@@ -6,7 +6,7 @@
 
 use crate::gadgets;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
@@ -29,6 +29,32 @@ pub struct SendToContractTransparentCircuit {
 }
 
 impl SendToContractTransparentCircuit {
+    pub fn rusk_label(&self) -> String {
+        "transfer-send-to-contract-transparent".into()
+    }
+
+    pub fn rusk_circuit_args(
+        &self,
+    ) -> Result<(PublicParameters, ProverKey, VerifierKey)> {
+        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
+        let (pk, vk) = keys
+            .get(self.rusk_label().as_str())
+            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+
+        let pk = ProverKey::from_bytes(pk.as_slice())?;
+        let vk = VerifierKey::from_bytes(vk.as_slice())?;
+
+        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
+            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
+        })?;
+
+        let pp = bincode::deserialize(pp.as_slice()).map_err(|e| {
+            anyhow!("Failed to deserialize public parameters: {}", e)
+        })?;
+
+        Ok((pp, pk, vk))
+    }
+
     pub fn new(
         value_commitment: JubJubExtended,
         pk: JubJubExtended,

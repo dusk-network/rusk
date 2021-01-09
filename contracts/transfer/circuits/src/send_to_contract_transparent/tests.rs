@@ -6,6 +6,7 @@
 
 use crate::SendToContractTransparentCircuit;
 
+use anyhow::{anyhow, Result};
 use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_plonk::jubjub::GENERATOR_EXTENDED;
 use phoenix_core::Note;
@@ -19,7 +20,7 @@ use dusk_plonk::prelude::*;
 use std::convert::TryInto;
 
 #[test]
-fn send_transparent() {
+fn send_transparent() -> Result<()> {
     let mut rng = StdRng::seed_from_u64(2322u64);
 
     let c_ssk = SecretSpendKey::random(&mut rng);
@@ -32,9 +33,9 @@ fn send_transparent() {
     let c_sk_r = c_ssk.sk_r(c_note.stealth_address());
     let c_pk_r = GENERATOR_EXTENDED * c_sk_r;
 
-    let (_, crossover) = c_note
-        .try_into()
-        .expect("Failed to generate fee and crossover!");
+    let (_, crossover) = c_note.try_into().map_err(|e| {
+        anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
+    })?;
     let c_value_commitment = *crossover.value_commitment();
 
     let c_schnorr_secret = SchnorrSecret::from(c_sk_r);
@@ -49,23 +50,18 @@ fn send_transparent() {
         c_signature,
     );
 
-    // Generate Composer & Public Parameters
-    let pp = PublicParameters::setup(
-        circuit.get_trim_size(),
-        &mut rand::thread_rng(),
-    )
-    .expect("Failed to generate public parameters");
+    // Verifier key from Rusk Profile is corrupted
+    // https://github.com/dusk-network/rusk/issues/159
+    let (pp, pk, _) = circuit.rusk_circuit_args()?;
+    let (_, vk) = circuit.compile(&pp)?;
 
-    let (pk, vk) = circuit.compile(&pp).expect("Failed to compile circuit");
-    circuit.get_mut_pi_positions().clear();
-
-    let proof = circuit
-        .gen_proof(&pp, &pk, b"send-transparent")
-        .expect("Failed to generate proof");
+    let proof = circuit.gen_proof(&pp, &pk, b"send-transparent")?;
     let pi = circuit.get_pi_positions().clone();
 
     let verify = circuit
         .verify_proof(&pp, &vk, b"send-transparent", &proof, pi.as_slice())
         .is_ok();
     assert!(verify);
+
+    Ok(())
 }
