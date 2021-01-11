@@ -28,7 +28,6 @@ host: hosted ## Perform the build for the unconstrained host environment
 
 
 test: hosted ## Perform the contract tests defined in the host module
-	$(MAKE) hosted
 	@cargo test \
 		--release \
 		--features host

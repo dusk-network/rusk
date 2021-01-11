@@ -1,19 +1,39 @@
 [package]
-name = "transfer"
-version = "0.2.0"
-authors = ["zer0 <matteo@dusk.network>"]
+name = "transfer-contract"
+version = "0.3.0"
+authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", default-features = false }
-phoenix-abi = { git = "https://github.com/dusk-network/phoenix-abi", default-features = false }
-dataview = { git = "https://github.com/dusk-network/dataview" }
-cake-rusk = { git = "https://github.com/dusk-network/cake-rusk" }
+canonical = "0.4"
+canonical_derive = "0.4"
+canonical_host = {version="0.4", optional=true}
+wasmi = {version="0.6", optional=true}
+dusk-bls12_381 = {version="0.3", default-features=false, features=["canon"]}
+dusk-jubjub = {version="0.5", default-features=false, features=["canon"]}
+poseidon252 = {git="https://github.com/dusk-network/poseidon252", tag="v0.15.0", default-features=false, features=["canon"]}
+dusk-pki = {git="https://github.com/dusk-network/dusk-pki", tag="v0.4.1", default-features=false, features=["canon"]}
+dusk-kelvin-map = "0.1"
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.5.0", features=["canon"]}
+dusk-plonk = {version="0.3", features=["canon"]}
+
+[features]
+default = []
+hosted = []
+host = [
+    "canonical/host",
+    "canonical_host",
+    "poseidon252/canon_host",
+    "poseidon252/default",
+    "dusk-pki/default",
+    "wasmi"
+]
+
+[profile.dev]
+panic = "abort"
 
 [profile.release]
-lto = true
-codegen-units = 1
-panic = 'abort'
+panic = "abort"
