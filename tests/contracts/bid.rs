@@ -25,11 +25,7 @@ const BID_PROVER_KEY_BYTES: &'static [u8] = include_bytes!(
     "c0e0efc4fc56af4904d52e381eaf5c7090e91e217bc390997a119140dc672ff2.pk"
 );
 
-fn create_proof(
-    commitment: JubJubAffine,
-    value: JubJubScalar,
-    blinder: JubJubScalar,
-) -> Proof {
+fn create_proof(value: JubJubScalar, blinder: JubJubScalar) -> Proof {
     let c = JubJubAffine::from(
         (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
     );
@@ -101,15 +97,15 @@ fn bid_call_correct_proof_works() {
         hashed_secret,
         nonce,
         encrypted_data,
-        psk,
-        ssk,
+        _,
+        _,
         stealth_addr,
         block_height,
     ) = setup_test_params();
 
     // Create CorrectnessCircuit Proof and send it.
     // The proof in this case is correct but the public inputs aren't.
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
 
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
@@ -151,14 +147,14 @@ fn bid_call_wrong_proof_works() {
         hashed_secret,
         nonce,
         encrypted_data,
-        psk,
-        ssk,
+        _,
+        _,
         stealth_addr,
         block_height,
     ) = setup_test_params();
 
     // Create CorrectnessCircuit invalid Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
@@ -200,7 +196,7 @@ fn extend_bid_with_correct_params() {
         hashed_secret,
         nonce,
         encrypted_data,
-        psk,
+        _,
         ssk,
         stealth_addr,
         block_height,
@@ -208,7 +204,7 @@ fn extend_bid_with_correct_params() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit invalid Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
 
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
@@ -234,6 +230,7 @@ fn extend_bid_with_correct_params() {
     // If call succeeds, this should not fail.
     cast.commit().expect("Commit couldn't be done");
     assert!(err == false);
+    assert!(idx == 0u64);
 
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
@@ -271,7 +268,7 @@ fn extend_bid_wrong_sig() {
         hashed_secret,
         nonce,
         encrypted_data,
-        psk,
+        _,
         ssk,
         stealth_addr,
         block_height,
@@ -279,7 +276,7 @@ fn extend_bid_wrong_sig() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit invalid Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
 
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
@@ -305,6 +302,7 @@ fn extend_bid_wrong_sig() {
     // If call succeeds, this should not fail.
     cast.commit().expect("Commit couldn't be done");
     assert!(err == false);
+    assert!(idx == 0u64);
 
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
@@ -346,7 +344,7 @@ fn extend_bid_with_unrecorded_pub_key() {
         hashed_secret,
         nonce,
         encrypted_data,
-        psk,
+        _,
         ssk,
         stealth_addr,
         block_height,
@@ -354,7 +352,7 @@ fn extend_bid_with_unrecorded_pub_key() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit invalid Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
 
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
@@ -380,6 +378,7 @@ fn extend_bid_with_unrecorded_pub_key() {
     // If call succeeds, this should not fail.
     cast.commit().expect("Commit couldn't be done");
     assert!(err == false);
+    assert!(idx == 0u64);
 
     // Sign the t_e (expiration) and call extend bid.
     // Note that this does not really matter since the Public
@@ -436,7 +435,7 @@ fn bid_correct_withdraw() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
@@ -516,7 +515,7 @@ fn bid_withdraw_with_low_block_height() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
@@ -600,7 +599,7 @@ fn bid_withdraw_with_wrong_sig() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
@@ -683,7 +682,7 @@ fn bid_withdraw_with_unrecorded_pub_key() {
     let sk_r = ssk.sk_r(&stealth_addr);
 
     // Create CorrectnessCircuit Proof and send it
-    let proof = create_proof(commitment, value, blinder);
+    let proof = create_proof(value, blinder);
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()

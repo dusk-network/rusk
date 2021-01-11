@@ -9,7 +9,6 @@ pub mod contracts;
 pub mod services;
 
 use futures::executor::block_on;
-use tonic::transport::Channel;
 #[tokio::test(threaded_scheduler)]
 async fn rusk_integration_tests() {
     let channel = block_on(common::setup()).expect("Error on the test setup");

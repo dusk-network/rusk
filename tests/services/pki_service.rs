@@ -4,23 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::super::common::encoding::*;
-use super::super::common::unix::*;
 use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
-use futures::stream::TryStreamExt;
 use rusk::services::rusk_proto::keys_client::KeysClient;
 use rusk::services::rusk_proto::GenerateKeysRequest;
-use rusk::Rusk;
-use std::convert::TryFrom;
-use std::path::Path;
-use tokio::net::UnixListener;
-use tokio::net::UnixStream;
-use tonic::transport::{Channel, Server};
-use tonic::transport::{Endpoint, Uri};
-use tower::service_fn;
-use tracing::{subscriber, Level};
-use tracing_subscriber::fmt::Subscriber;
+use tonic::transport::Channel;
 
 pub async fn pki_walkthrough_uds(
     channel: Channel,

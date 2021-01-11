@@ -4,18 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use futures::stream::TryStreamExt;
 use rusk::services::echoer::{EchoRequest, EchoerClient};
-use rusk::Rusk;
-use std::convert::TryFrom;
-use std::path::Path;
-use tokio::net::UnixListener;
-use tokio::net::UnixStream;
-use tonic::transport::{Channel, Server};
-use tonic::transport::{Endpoint, Uri};
-use tower::service_fn;
-use tracing::{subscriber, Level};
-use tracing_subscriber::fmt::Subscriber;
+
+use tonic::transport::Channel;
 
 pub async fn echo_works_uds(
     channel: Channel,

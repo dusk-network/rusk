@@ -45,10 +45,10 @@ where
     S: Store,
 {
     fn poseidon_hash(&self) -> BlsScalar {
-        // Since we use `cfg_if` the compiler can't see that the mut is necessary due to the
-        // branching.
+        // Since we use `cfg_if` the compiler can't see that the mut is
+        // necessary due to the branching.
         #[allow(unused_mut)]
-        let mut result = BlsScalar::zero();
+        let mut result;
         cfg_if! {
             if #[cfg(feature = "host")] {
                 result = self.bid.hash();
