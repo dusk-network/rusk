@@ -22,8 +22,6 @@ pub const BID_CORRECTNESS_VK: &'static [u8] = core::include_bytes!(
 );
 
 pub(crate) mod ops {
-    // QUERIES
-
     // Transactions
     pub(crate) const BID: u16 = 0x01;
     pub(crate) const WITHDRAW: u16 = 0x02;

@@ -4,5 +4,4 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod query;
 mod transaction;
