@@ -4,14 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::info;
 use crate::leaf::BidLeaf;
 use crate::Contract;
 use canonical::Store;
-use core::ops::DerefMut;
 use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::StealthAddress;
 use dusk_plonk::prelude::*;
 use phoenix_core::Note;
@@ -47,14 +45,9 @@ impl<S: Store> Contract<S> {
         // This will be avaliable inside of the contract scope.
         block_height: u64,
         correctness_proof: Proof,
-        spending_proof: Proof,
-        // TODO: Remove.
-        pub_inputs_len: u8,
+        _spending_proof: Proof,
         pub_inputs: [[u8; 33]; 1],
     ) -> (bool, usize) {
-        info!("Block Height: {}", block_height);
-        info!("Hashed Secret: {:?}", hashed_secret);
-
         // Setup error flag to false
         let mut err_flag = false;
         // Verify proof of Correctness of the Bid.
@@ -63,7 +56,7 @@ impl<S: Store> Contract<S> {
             // TODO: We should avoid that.
             let proof_bytes = correctness_proof.to_bytes();
             match verify_proof(
-                pub_inputs_len as usize,
+                1usize,
                 &pub_inputs[0][0],
                 &proof_bytes[0],
                 &crate::BID_CORRECTNESS_VK[0],
@@ -115,7 +108,6 @@ impl<S: Store> Contract<S> {
                 self.map_mut()
                     .insert(PublicKey::from(bid.stealth_address.pk_r()), idx)
                     .unwrap();
-
                 idx
             }
             _ => {
@@ -155,7 +147,7 @@ impl<S: Store> Contract<S> {
         // Verify the signature by getting `t_e` from the Bid and calling the
         // VERIFY_SIG host fn.
         // Fetch the bid object from the tree getting a &mut to it.
-        let mut tree = self.tree_mut();
+        let tree = self.tree_mut();
         let mut bid = *tree.get_mut(idx as u64).expect("TODO");
         let msg_bytes = BlsScalar::from(bid.bid.expiration.clone()).to_bytes();
         let pk_bytes = pk.to_bytes();
@@ -181,8 +173,8 @@ impl<S: Store> Contract<S> {
         &mut self,
         sig: Signature,
         pk: PublicKey,
-        note: Note,
-        spend_proof: Proof,
+        _note: Note,
+        _spend_proof: Proof,
         block_height: u64,
     ) -> bool {
         // Setup error flag to false
@@ -236,6 +228,7 @@ impl<S: Store> Contract<S> {
                 self.map_mut()
                     .remove(pk)
                     .expect("Canon Store error happened.");
+                // TODO: Zeroize in the tree
                 return err_flag;
             } else {
                 err_flag = true;

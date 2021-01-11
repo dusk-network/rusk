@@ -26,7 +26,6 @@ impl Contract<MemStore> {
         block_height: u64,
         correctness_proof: Proof,
         spending_proof: Proof,
-        pub_inputs_len: u8,
         pub_inputs: [[u8; PublicInput::serialized_size()]; 1],
     ) -> Transaction<
         (
@@ -39,7 +38,6 @@ impl Contract<MemStore> {
             u64,
             Proof,
             Proof,
-            u8,
             [[u8; 33]; 1],
         ),
         (bool, u64),
@@ -54,7 +52,6 @@ impl Contract<MemStore> {
             block_height,
             correctness_proof,
             spending_proof,
-            pub_inputs_len,
             pub_inputs,
         ))
     }

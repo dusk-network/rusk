@@ -10,16 +10,13 @@
 mod external;
 
 use bid_circuits::CorrectnessCircuit;
-use bid_contract::BidLeaf;
 use bid_contract::Contract;
 use canonical_host::{MemStore, Remote, Wasm};
-use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{
-    JubJubAffine, JubJubScalar, GENERATOR, GENERATOR_EXTENDED, GENERATOR_NUMS,
-    GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
 use external::RuskExternals;
@@ -31,11 +28,7 @@ const BYTECODE: &'static [u8] = include_bytes!(
     "../target/wasm32-unknown-unknown/release/bid_contract.wasm"
 );
 
-fn create_proof(
-    commitment: JubJubAffine,
-    value: JubJubScalar,
-    blinder: JubJubScalar,
-) -> Proof {
+fn create_proof(value: JubJubScalar, blinder: JubJubScalar) -> Proof {
     let c = JubJubAffine::from(
         (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
     );
@@ -50,7 +43,7 @@ fn create_proof(
 
     let pub_params =
         PublicParameters::setup(1 << 11, &mut rand::thread_rng()).unwrap();
-    let (pk, vk) = circuit.compile(&pub_params).unwrap();
+    let (pk, _) = circuit.compile(&pub_params).unwrap();
     circuit.gen_proof(&pub_params, &pk, b"Test").unwrap()
 }
 
@@ -77,12 +70,10 @@ fn bid_contract_workflow_works() {
     let secret_spend_key = SecretSpendKey::new(value, blinder);
     let psk = PublicSpendKey::from(&secret_spend_key);
     let stealth_addr = psk.gen_stealth_address(&value);
+    let pk = PublicKey::from(stealth_addr.pk_r());
     let sk_r = secret_spend_key.sk_r(&stealth_addr);
-    let proof = create_proof(commitment, value, blinder);
-    let mut pub_inp_bytes = [0u8; 33];
-    pub_inp_bytes[..].copy_from_slice(
-        &PublicInput::AffinePoint(commitment, 0, 0).to_bytes(),
-    );
+    let proof = create_proof(value, blinder);
+
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
@@ -98,7 +89,6 @@ fn bid_contract_workflow_works() {
                 0u64,
                 proof.clone(),
                 proof.clone(),
-                1,
                 [PublicInput::AffinePoint(commitment, 0, 0).to_bytes()],
             ),
             store.clone(),
@@ -118,10 +108,7 @@ fn bid_contract_workflow_works() {
     // correct signature is provided.
     let call_error = cast
         .transact(
-            &Contract::<MemStore>::extend_bid(
-                signature,
-                PublicKey::from(stealth_addr.pk_r()),
-            ),
+            &Contract::<MemStore>::extend_bid(signature, pk),
             store.clone(),
             RuskExternals { mem: None },
         )
