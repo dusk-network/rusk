@@ -4,10 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod commitment;
-mod point_signature;
-mod range;
-
-pub use commitment::commitment;
-pub use point_signature::point_signature;
-pub use range::range;
+// TODO The message structure is not yet specified
+// Check issue https://github.com/dusk-network/rusk/issues/155
