@@ -141,6 +141,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
+        let mut base_root = None;
 
         // 1. Prove the knowledge of the input Note paths to Note Tree, via root
         // anchor
@@ -154,13 +155,31 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 let note_hash = note.note_hash;
                 let root_p = tree::merkle_opening(composer, branch, note_hash);
 
-                let root = branch.root();
-                pi.push(PublicInput::BlsScalar(root, composer.circuit_size()));
-                composer.constrain_to_constant(
-                    root_p,
-                    BlsScalar::zero(),
-                    -root,
-                );
+                // Test the public input only for the first root
+                //
+                // The remainder roots must be equal to the first (root is unique per proof)
+                match base_root {
+                    None => {
+                        let root = branch.root();
+
+                        pi.push(PublicInput::BlsScalar(
+                            root,
+                            composer.circuit_size(),
+                        ));
+
+                        composer.constrain_to_constant(
+                            root_p,
+                            BlsScalar::zero(),
+                            -root,
+                        );
+
+                        base_root.replace(root_p);
+                    }
+
+                    Some(base) => {
+                        composer.assert_equal(base, root_p);
+                    }
+                }
 
                 note
             })
@@ -186,7 +205,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 input.pk_r,
                 input.pk_r_prime,
                 input.schnorr_message,
-            )
+            );
         });
 
         // 4. Prove the correctness of the nullifiers
@@ -238,6 +257,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 crossover.fee_value,
                 composer.circuit_size(),
             ));
+
             composer.constrain_to_constant(
                 crossover.value,
                 BlsScalar::zero(),
@@ -251,6 +271,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 composer.circuit_size(),
                 composer.circuit_size() + 1,
             ));
+
             composer.assert_equal_public_point(
                 value_commitment_p,
                 value_commitment,
@@ -282,6 +303,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                     composer.circuit_size(),
                     composer.circuit_size() + 1,
                 ));
+
                 composer.assert_equal_public_point(
                     value_commitment_p,
                     value_commitment,
@@ -344,6 +366,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             self.tx_hash,
             composer.circuit_size(),
         ));
+
         composer.constrain_to_constant(
             tx_hash,
             BlsScalar::zero(),

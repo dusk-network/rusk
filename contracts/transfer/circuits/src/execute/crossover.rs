@@ -27,6 +27,14 @@ impl CircuitCrossover {
         }
     }
 
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    pub fn value_commitment(&self) -> &JubJubExtended {
+        &self.value_commitment
+    }
+
     pub fn to_witness(
         &self,
         composer: &mut StandardComposer,

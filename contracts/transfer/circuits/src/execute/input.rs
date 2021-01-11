@@ -115,6 +115,10 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         &self.branch
     }
 
+    pub const fn nullifier(&self) -> &BlsScalar {
+        &self.nullifier
+    }
+
     pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessInput {
         let nullifier = self.nullifier;
 
