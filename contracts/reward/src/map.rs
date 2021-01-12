@@ -7,13 +7,14 @@
 use crate::Key;
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
+use core::ops::Deref;
 use dusk_bls12_381_sign::APK;
 use dusk_kelvin_map::Map;
 
 /// A mapping, where the provisioner BLS public key maps to an amount of DUSK,
 /// and the last withdrawal time.
 #[derive(Debug, Clone, Canon)]
-pub struct BalanceMapping<S: Store>(Map<Key, (u64, u64), S>);
+pub struct BalanceMapping<S: Store>(Map<Key, (u64, u64), S, 32>);
 
 impl<S> BalanceMapping<S>
 where
@@ -21,7 +22,7 @@ where
 {
     /// Create a new instance of a [`BalanceMapping`].
     pub fn new() -> BalanceMapping<S> {
-        Self(Map::<Key, (u64, u64), S>::default())
+        Self(Map::<Key, (u64, u64), S, 32>::default())
     }
 
     /// Include a key -> value mapping to the set.
@@ -42,7 +43,10 @@ where
     /// Fetch a previously inserted key -> value mapping, provided the key.
     ///
     /// Will return `Ok(None)` if no correspondent key was found.
-    pub fn get(&self, key: APK) -> Result<Option<(u64, u64)>, S::Error> {
+    pub fn get<'a>(
+        &'a self,
+        key: APK,
+    ) -> Result<Option<impl Deref<Target = (u64, u64)> + 'a>, S::Error> {
         self.0.get(&Key::new(key))
     }
 

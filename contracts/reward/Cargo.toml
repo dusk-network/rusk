@@ -13,7 +13,7 @@ canonical_derive = "0.4"
 canonical_host = { version = "0.4", optional = true }
 dusk-bls12_381 = { version = "0.3", default-features = false, features = ["canon"] }
 dusk-bls12_381-sign = { git = "https://github.com/dusk-network/bls12_381-sign", branch = "canon", default-features = false }
-dusk-kelvin-map = "0.1"
+dusk-kelvin-map = { path = "../../../dusk-kelvin-map/" }
 
 [features]
 default = ["dusk-bls12_381-sign/canon"]

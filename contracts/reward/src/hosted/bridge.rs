@@ -61,10 +61,12 @@ fn transaction(
     let qid: TransactionIndex = Canon::<BS>::read(&mut source)?;
     match qid {
         ops::DISTRIBUTE => {
+            canonical::debug!("reading");
             // Read host-sent args
             let value: u64 = Canon::<BS>::read(&mut source)?;
             let public_keys: PublicKeys<BS> = Canon::<BS>::read(&mut source)?;
             // Call stake contract fn
+            canonical::debug!("distributing");
             let res = slf.distribute(value, public_keys);
             let mut sink = ByteSink::new(&mut bytes[..], store.clone());
             // return new state

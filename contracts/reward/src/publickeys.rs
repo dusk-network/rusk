@@ -8,7 +8,7 @@ use canonical::{Canon, Sink, Source, Store};
 use core::marker::PhantomData;
 use dusk_bls12_381_sign::APK;
 
-const SIZE: usize = 128;
+const SIZE: usize = 10;
 
 // TODO: determine size
 #[derive(Debug, Clone)]

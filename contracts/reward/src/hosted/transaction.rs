@@ -27,9 +27,10 @@ impl<S: Store> Contract<S> {
             .pks
             .iter()
             .map(|pk| {
+                canonical::debug!("new iteration");
                 let mut values: (u64, u64);
                 match self.balance_mapping.get(pk.clone()) {
-                    Ok(Some(v)) => values = v,
+                    Ok(Some(v)) => values = *v,
                     _ => values = (0, 0),
                 }
 
@@ -52,7 +53,7 @@ impl<S: Store> Contract<S> {
     ) -> bool {
         let mut values: (u64, u64);
         match self.balance_mapping.get(pk) {
-            Ok(Some(v)) => values = v,
+            Ok(Some(v)) => values = *v,
             _ => return false,
         }
 

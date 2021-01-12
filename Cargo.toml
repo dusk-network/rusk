@@ -46,6 +46,8 @@ canonical_host = "0.4"
 wasmi = "0.6"
 schnorr = {git = "https://github.com/dusk-network/schnorr", tag = "v0.1.1-alpha"}
 dusk-bls12_381-sign = { git = "https://github.com/dusk-network/bls12_381-sign", branch = "canon" }
+reward_contract = { path = "contracts/reward" }
+rand_core = "0.6"
 
 
 [build-dependencies]
@@ -73,3 +75,6 @@ rand_core = "0.6"
 
 [features]
 default = ["reward_contract/host"]
+
+[profile.release]
+debug = true

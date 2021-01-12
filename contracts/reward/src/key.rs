@@ -9,7 +9,7 @@ use canonical_derive::Canon;
 use core::cmp::Ordering;
 use dusk_bls12_381_sign::APK;
 
-#[derive(Debug, Clone, Default, Eq, PartialEq, Canon)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Canon)]
 pub struct Key(APK);
 
 impl Key {

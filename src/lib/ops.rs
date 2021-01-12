@@ -19,14 +19,14 @@ use wasmi::{
 
 #[derive(Clone)]
 pub struct RuskExternals {
-    pub_params: &'static PublicParameters,
+    // pub_params: &'static PublicParameters,
     memory: Option<MemoryRef>,
 }
 
 impl Default for RuskExternals {
     fn default() -> Self {
         Self {
-            pub_params: &crate::PUB_PARAMS,
+            // pub_params: &crate::PUB_PARAMS,
             memory: None,
         }
     }

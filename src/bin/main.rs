@@ -8,12 +8,16 @@
 mod unix;
 mod version;
 
+use canonical_host::{MemStore, Remote, Wasm};
 use clap::{App, Arg};
+use dusk_bls12_381_sign::{PublicKey, SecretKey, APK};
 use futures::stream::TryStreamExt;
+use reward_contract::{Contract, PublicKeys};
 use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
+use rusk::{RuskExternalError, RuskExternals};
 use rustc_tools_util::{get_version_info, VersionInfo};
 use std::path::Path;
 use tokio::net::UnixListener;
@@ -28,6 +32,43 @@ pub(crate) const PORT: &str = "8585";
 /// Default host_address that Rusk GRPC-server will listen to.
 pub(crate) const HOST_ADDRESS: &str = "127.0.0.1";
 
+const BYTECODE: &'static [u8] = include_bytes!(
+    "../../contracts/reward/target/wasm32-unknown-unknown/release/reward_contract.wasm"
+);
+
+fn main() {
+    // Init Env & Contract
+    let store = MemStore::new();
+    let wasm_contract = Wasm::new(Contract::new(), BYTECODE);
+    let mut remote = Remote::new(wasm_contract, &store).unwrap();
+
+    let value = 100u64;
+    // Create 128 public keys
+    let mut keys = [APK::default(); 10];
+    for i in 0..keys.len() {
+        let sk = SecretKey::new(&mut rand_core::OsRng);
+        let pk = PublicKey::from(&sk);
+        let apk = APK::from(&pk);
+        keys[i] = apk;
+    }
+
+    let pks = PublicKeys::from(keys.clone());
+
+    // Call distribute
+    let mut cast = remote
+        .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
+        .unwrap();
+    let res = cast
+        .transact(
+            &Contract::<MemStore>::distribute(value, pks),
+            store.clone(),
+            RuskExternals::default(),
+        )
+        .expect("Failed to call the distribute fn");
+    // If call succeeds, this should not fail.
+    cast.commit().expect("Commit couldn't be done");
+}
+/*
 #[tokio::main]
 async fn main() {
     let crate_info = get_version_info!();
@@ -190,3 +231,4 @@ async fn startup_with_tcp_ip(
         .serve(addr)
         .await?)
 }
+*/

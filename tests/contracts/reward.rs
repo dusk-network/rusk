@@ -38,6 +38,7 @@ fn distribute_call_works() {
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
         .unwrap();
+    println!("starting transact");
     let res = cast
         .transact(
             &Contract::<MemStore>::distribute(value, pks),
