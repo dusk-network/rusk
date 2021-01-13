@@ -206,7 +206,7 @@ impl<S: Store> Contract<S> {
             .expect("Unexpected error. Map & Tree are out of sync.");
 
         if bid.0.expiration < (block_height + COOLDOWN_PERIOD) {
-            // If we arrived here, the bid is elegible of withdraw
+            // If we arrived here, the bid is elegible for withdrawal.
             // Now we need to check wether the signature is correct.
             // Verify schnorr sig.
             if !host_functions::verify_schnorr_sig(

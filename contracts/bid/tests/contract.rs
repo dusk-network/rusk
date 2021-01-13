@@ -10,7 +10,7 @@
 mod external;
 
 use bid_circuits::CorrectnessCircuit;
-use bid_contract::Contract;
+use bid_contract::{contract_constants::*, Contract as BidContract};
 use canonical_host::{MemStore, Remote, Wasm};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{
@@ -51,7 +51,7 @@ fn create_proof(value: JubJubScalar, blinder: JubJubScalar) -> Proof {
 fn bid_contract_workflow_works() {
     // Init Env & Contract
     let store = MemStore::new();
-    let wasm_contract = Wasm::new(Contract::new(), BYTECODE);
+    let wasm_contract = Wasm::new(BidContract::new(), BYTECODE);
     let mut remote = Remote::new(wasm_contract, &store).unwrap();
     // Create CorrectnessCircuit Proof and send it
     let value = JubJubScalar::from(100000 as u64);
@@ -73,20 +73,20 @@ fn bid_contract_workflow_works() {
     let pk = PublicKey::from(stealth_addr.pk_r());
     let sk_r = secret_spend_key.sk_r(&stealth_addr);
     let proof = create_proof(value, blinder);
-
+    let mut block_height = 0u64;
     // Add leaf to the Contract's tree and get it's pos index back
     let mut cast = remote
-        .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
+        .cast_mut::<Wasm<BidContract<MemStore>, MemStore>>()
         .unwrap();
     let (err, idx) = cast
         .transact(
-            &Contract::bid(
+            &BidContract::bid(
                 commitment,
                 hashed_secret,
                 nonce,
                 encrypted_data,
                 stealth_addr,
-                0u64,
+                block_height,
                 proof.clone(),
                 proof.clone(),
                 [PublicInput::AffinePoint(commitment, 0, 0).to_bytes()],
@@ -102,13 +102,13 @@ fn bid_contract_workflow_works() {
 
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
+    let signature = secret
+        .sign(&mut rand::thread_rng(), BlsScalar::from(EXPIRATION_PERIOD));
     // Now that a Bid is inside the tree we should be able to extend it if the
     // correct signature is provided.
     let call_error = cast
         .transact(
-            &Contract::<MemStore>::extend_bid(signature, pk),
+            &BidContract::<MemStore>::extend_bid(signature, pk),
             store.clone(),
             RuskExternals { mem: None },
         )
@@ -121,9 +121,19 @@ fn bid_contract_workflow_works() {
     // Sign the t_e (expiration) and call withdraw bid.
     // Note that the block_height has to be set so that it
     // surpasses t_e after the extension + COOLDOWN_PERIOD.
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
-    let block_height = 30u64;
+    // Note also that we extended the bid. Therefore we need to
+    // sign the new expiration which equals: `original_block_height + 2*
+    // EXPIRATION_PERIOD + MATURITY_PERIOD`.
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + 2 * EXPIRATION_PERIOD + MATURITY_PERIOD),
+    );
+    // Set a valid block height so that the Bid is withdrawable.
+    block_height = block_height
+        + 2 * EXPIRATION_PERIOD
+        + MATURITY_PERIOD
+        + COOLDOWN_PERIOD
+        + 1;
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
@@ -131,7 +141,7 @@ fn bid_contract_workflow_works() {
     // correct signature is provided.
     let call_error = cast
         .transact(
-            &Contract::<MemStore>::withdraw(
+            &BidContract::<MemStore>::withdraw(
                 signature,
                 PublicKey::from(stealth_addr.pk_r()),
                 note,

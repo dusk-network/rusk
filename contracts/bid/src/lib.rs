@@ -127,7 +127,7 @@ impl<S: Store> Contract<S> {
 }
 
 #[cfg(feature = "host")]
-pub mod host;
+pub(crate) mod host;
 
 #[cfg(feature = "hosted")]
 pub(crate) mod hosted;

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bid_circuits::CorrectnessCircuit;
-use bid_contract::Contract;
+use bid_contract::{contract_constants::*, Contract};
 use canonical_host::{MemStore, Remote, Wasm};
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::bls12_381::BlsScalar;
@@ -199,7 +199,7 @@ fn extend_bid_updates_expiration() {
         _,
         ssk,
         stealth_addr,
-        block_height,
+        mut block_height,
     ) = setup_test_params();
     let sk_r = ssk.sk_r(&stealth_addr);
 
@@ -237,8 +237,10 @@ fn extend_bid_updates_expiration() {
     //
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + EXPIRATION_PERIOD + MATURITY_PERIOD),
+    );
     let call_error = cast
         .transact(
             &Contract::<MemStore>::extend_bid(
@@ -258,8 +260,10 @@ fn extend_bid_updates_expiration() {
     // our Bid. If we want to extend it again, we should sign now the
     // new expiration time. Which is equivalent to expiration +
     // EXPIRATION_PERIOD.
-    let signature2 =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(20u64));
+    let signature2 = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + 2 * EXPIRATION_PERIOD + MATURITY_PERIOD),
+    );
     let call_error = cast
         .transact(
             &Contract::<MemStore>::extend_bid(
@@ -328,7 +332,7 @@ fn extend_bid_wrong_sig() {
 
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
-    // Use as a message a wrong EXPIRATION_TS.
+    // Use as a message a wrong bid expiration.
     let message = BlsScalar::from(50u64);
     let signature = secret.sign(&mut rand::thread_rng(), message);
     assert!(signature
@@ -369,7 +373,7 @@ fn extend_bid_with_unrecorded_pub_key() {
         _,
         ssk,
         stealth_addr,
-        block_height,
+        mut block_height,
     ) = setup_test_params();
     let sk_r = ssk.sk_r(&stealth_addr);
 
@@ -407,7 +411,8 @@ fn extend_bid_with_unrecorded_pub_key() {
     // key that we will send through the call is not valid.
     // So the signature will never be checked.
     let secret = SecretKey::from(sk_r);
-    let message = BlsScalar::from(10u64);
+    let message =
+        BlsScalar::from(block_height + EXPIRATION_PERIOD + MATURITY_PERIOD);
     let signature = secret.sign(&mut rand::thread_rng(), message);
 
     // Call the signature method with a `PublicKey` that is not found
@@ -488,9 +493,15 @@ fn bid_correct_withdraw() {
     let secret = SecretKey::from(sk_r);
     // Note that the block_height has to be set so that it
     // surpasses t_e after the extension + COOLDOWN_PERIOD.
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
-    block_height = 200u64;
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + EXPIRATION_PERIOD + MATURITY_PERIOD),
+    );
+    block_height = block_height
+        + EXPIRATION_PERIOD
+        + MATURITY_PERIOD
+        + COOLDOWN_PERIOD
+        + 1;
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
@@ -569,9 +580,13 @@ fn bid_withdraw_with_low_block_height() {
     // Note that the block_height has to be set so that it
     // surpasses t_e after the extension + COOLDOWN_PERIOD.
     // Since this is not done, the call should fail.
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
-    block_height = 9u64;
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + MATURITY_PERIOD + EXPIRATION_PERIOD),
+    );
+    block_height =
+        block_height + EXPIRATION_PERIOD + MATURITY_PERIOD + COOLDOWN_PERIOD
+            - 1;
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
@@ -650,12 +665,20 @@ fn bid_withdraw_with_wrong_sig() {
 
     // Sign the t_e (expiration) and call withdraw bid.
     let secret = SecretKey::from(sk_r);
+
+    // Here we are signing a wrong message so that the call fails.
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + EXPIRATION_PERIOD + MATURITY_PERIOD + 1),
+    );
+
     // Note that the block_height has to be set so that it
     // surpasses t_e after the extension + COOLDOWN_PERIOD.
-    // Here we are signing a wrong message so that the call fails.
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(11u64));
-    block_height = 200u64;
+    block_height = block_height
+        + EXPIRATION_PERIOD
+        + MATURITY_PERIOD
+        + COOLDOWN_PERIOD
+        + 1;
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
@@ -733,11 +756,18 @@ fn bid_withdraw_with_unrecorded_pub_key() {
 
     // Sign the t_e (expiration) and call withdraw bid.
     let secret = SecretKey::from(sk_r);
+    let signature = secret.sign(
+        &mut rand::thread_rng(),
+        BlsScalar::from(block_height + EXPIRATION_PERIOD + MATURITY_PERIOD),
+    );
+
     // Note that the block_height has to be set so that it
     // surpasses t_e after the extension + COOLDOWN_PERIOD.
-    let signature =
-        secret.sign(&mut rand::thread_rng(), BlsScalar::from(11u64));
-    block_height = 200u64;
+    block_height = block_height
+        + MATURITY_PERIOD
+        + EXPIRATION_PERIOD
+        + COOLDOWN_PERIOD
+        + 1;
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55);
