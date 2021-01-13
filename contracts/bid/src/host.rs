@@ -4,4 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Host interface for the Bid Contract.
+//!
+//! Here the interface of the contract that will be used to execute
+//! functions of it from the host envoirnoment (Rust) is defined here.
+//!
+//! It mostly contains the function signatures that need to be exported
+//! to the outside world (AKA outside WASM).
+
 mod transaction;

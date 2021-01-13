@@ -4,6 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Hosted interface for the Bid Contract.
+//!
+//! Here the interface of the contract that will run inside the hosted
+//! envoirnoment (WASM instance) is defined and implemented.
+
 mod bridge;
 mod transaction;
 
