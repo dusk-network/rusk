@@ -27,7 +27,7 @@ use tree::BidTree;
 
 /// `VerifierKey` used by the `BidCorrectnessCircuit` to verify a
 /// Bid correctness `Proof` using the PLONK proving systyem.
-pub const BID_CORRECTNESS_VK: &'static [u8] = core::include_bytes!(
+pub const BID_CORRECTNESS_VK: &[u8] = core::include_bytes!(
     "../c0e0efc4fc56af4904d52e381eaf5c7090e91e217bc390997a119140dc672ff2.vk"
 );
 
@@ -68,7 +68,7 @@ pub mod contract_constants {
 /// This Smart Contract that acts as a decentralized interface to manage blind
 /// bids. It is complementary to the Proof Of Blind Bid algorithm used within
 /// the Dusk Network consensus.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Contract<S: Store> {
     tree: BidTree<S>,
     key_idx_map: KeyToIdxMap<S>,

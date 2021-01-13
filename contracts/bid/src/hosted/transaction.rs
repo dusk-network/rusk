@@ -231,10 +231,10 @@ impl<S: Store> Contract<S> {
             // TODO: Zeroize in the tree the leaf that corresponds to the idx
             // linked to `pk` in the map.
             // See: https://github.com/dusk-network/rusk/issues/164
-            return err_flag;
+            err_flag
         } else {
             err_flag = true;
-            return err_flag;
+            err_flag
         }
     }
 }

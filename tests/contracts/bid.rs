@@ -159,7 +159,7 @@ fn bid_call_wrong_proof_works() {
     let mut cast = remote
         .cast_mut::<Wasm<Contract<MemStore>, MemStore>>()
         .unwrap();
-    let (err, idx) = cast
+    let (err, _) = cast
         .transact(
             &Contract::<MemStore>::bid(
                 commitment,
@@ -199,7 +199,7 @@ fn extend_bid_updates_expiration() {
         _,
         ssk,
         stealth_addr,
-        mut block_height,
+        block_height,
     ) = setup_test_params();
     let sk_r = ssk.sk_r(&stealth_addr);
 
@@ -373,7 +373,7 @@ fn extend_bid_with_unrecorded_pub_key() {
         _,
         ssk,
         stealth_addr,
-        mut block_height,
+        block_height,
     ) = setup_test_params();
     let sk_r = ssk.sk_r(&stealth_addr);
 

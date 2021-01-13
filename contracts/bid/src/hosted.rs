@@ -42,16 +42,15 @@ pub(crate) mod host_functions {
         // TODO: We should avoid that.
         let proof_bytes = proof.to_bytes();
         unsafe {
-            match _verify_proof(
-                1usize,
-                &pub_inputs[0],
-                &proof_bytes[0],
-                &verifier_key[0],
-            ) {
-                1i32 => true,
-                0i32 => false,
-                _ => panic!("Malformed result from Proof verification"),
-            }
+            matches!(
+                _verify_proof(
+                    1usize,
+                    &pub_inputs[0],
+                    &proof_bytes[0],
+                    &verifier_key[0],
+                ),
+                1i32
+            )
         }
     }
 
@@ -66,14 +65,14 @@ pub(crate) mod host_functions {
         let sig_bytes = sig.to_bytes();
         let message_bytes = msg.to_bytes();
         unsafe {
-            match _verify_schnorr_sig(
-                &pk_bytes[0],
-                &sig_bytes[0],
-                &message_bytes[0],
-            ) {
-                1i32 => true,
-                _ => false,
-            }
+            matches!(
+                _verify_schnorr_sig(
+                    &pk_bytes[0],
+                    &sig_bytes[0],
+                    &message_bytes[0],
+                ),
+                1i32
+            )
         }
     }
 

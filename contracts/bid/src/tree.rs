@@ -17,7 +17,7 @@ use poseidon252::tree::{
 /// Append-only tree structure which wraps over `PoseidonTree<BidLeaf>`
 /// responsible of the storage and the branch generation capabilities
 /// of the Bid contract.
-#[derive(Debug, Clone, Canon)]
+#[derive(Default, Debug, Clone, Canon)]
 pub struct BidTree<S>
 where
     S: Store,
@@ -63,12 +63,12 @@ where
 
     /// Returns a mutable refecence to the internal `Bid` that corresponds
     /// to the given `idx`.
-    pub fn get_mut<'a>(
-        &'a mut self,
+    pub fn get_mut(
+        &mut self,
         idx: u64,
     ) -> Option<
         BranchMut<
-            'a,
+            '_,
             NStack<BidLeaf, PoseidonMaxAnnotation, S>,
             S,
             BID_TREE_DEPTH,

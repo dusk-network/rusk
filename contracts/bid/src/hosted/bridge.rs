@@ -56,7 +56,7 @@ fn transaction(
                 spending_proof,
                 public_inp_bytes,
             );
-            let mut sink = ByteSink::new(&mut bytes[..], store.clone());
+            let mut sink = ByteSink::new(&mut bytes[..], store);
             // return new state
             Canon::<BS>::write(&slf, &mut sink)?;
             // return result
@@ -71,7 +71,7 @@ fn transaction(
             let block_height: u64 = Canon::<BS>::read(&mut source)?;
             let exec_res =
                 slf.withdraw(sig, pk, note, spending_proof, block_height);
-            let mut sink = ByteSink::new(&mut bytes[..], store.clone());
+            let mut sink = ByteSink::new(&mut bytes[..], store);
             // Return new state
             Canon::<BS>::write(&slf, &mut sink)?;
             // Return result
@@ -82,7 +82,7 @@ fn transaction(
             let sig: Signature = Canon::<BS>::read(&mut source)?;
             let pk: PublicKey = Canon::<BS>::read(&mut source)?;
             let exec_res = slf.extend_bid(sig, pk);
-            let mut sink = ByteSink::new(&mut bytes[..], store.clone());
+            let mut sink = ByteSink::new(&mut bytes[..], store);
             // return new state
             Canon::<BS>::write(&slf, &mut sink)?;
             // return result
