@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::host_functions;
 use crate::leaf::BidLeaf;
 use crate::Contract;
 use canonical::Store;
@@ -16,23 +17,14 @@ use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use schnorr::single_key::{PublicKey, Signature};
 
-/// TODO: Still waiting for values from the research side.
+// TODO: Still waiting for values from the research side.
+// See: https://github.com/dusk-network/rusk/issues/160
 /// t_m in the specs
 const MATURITY_PERIOD: u64 = 0;
 /// t_b in the specs
 const EXPIRATION_PERIOD: u64 = 10;
 /// t_c in the specs
 const COOLDOWN_PERIOD: u64 = 0;
-
-extern "C" {
-    fn verify_schnorr_sig(pk: &u8, sig: &u8, msg: &u8) -> i32;
-    fn verify_proof(
-        pub_inputs_len: usize,
-        pub_inputs: &u8,
-        proof: &u8,
-        verif_key: &u8,
-    ) -> i32;
-}
 
 impl<S: Store> Contract<S> {
     pub fn bid(
@@ -50,25 +42,14 @@ impl<S: Store> Contract<S> {
     ) -> (bool, usize) {
         // Setup error flag to false
         let mut err_flag = false;
-        // Verify proof of Correctness of the Bid.
-        // TODO: Mask this unsafe somewhere else.
-        unsafe {
-            // TODO: We should avoid that.
-            let proof_bytes = correctness_proof.to_bytes();
-            match verify_proof(
-                1usize,
-                &pub_inputs[0][0],
-                &proof_bytes[0],
-                &crate::BID_CORRECTNESS_VK[0],
-            ) {
-                1i32 => (),
-                0i32 => err_flag = true,
-                // TODO: CHECK the panic! impl since it panics.
-                _ => panic!("Parameter got malformed"),
-            };
-        };
 
-        if err_flag {
+        // Verify proof of Correctness of the Bid.
+        if !host_functions::verify_proof(
+            pub_inputs[0],
+            correctness_proof,
+            &crate::BID_CORRECTNESS_VK,
+        ) {
+            err_flag = true;
             return (err_flag, usize::MAX);
         }
 
@@ -149,16 +130,13 @@ impl<S: Store> Contract<S> {
         // Fetch the bid object from the tree getting a &mut to it.
         let tree = self.tree_mut();
         let mut bid = *tree.get_mut(idx as u64).expect("TODO");
-        let msg_bytes = BlsScalar::from(bid.bid.expiration.clone()).to_bytes();
-        let pk_bytes = pk.to_bytes();
-        let sig_bytes = sig.to_bytes();
 
         // Verify schnorr sig.
-        let res = unsafe {
-            verify_schnorr_sig(&pk_bytes[0], &sig_bytes[0], &msg_bytes[0])
-        };
-
-        if res == 0i32 {
+        if !host_functions::verify_schnorr_sig(
+            pk,
+            sig,
+            BlsScalar::from(bid.bid.expiration),
+        ) {
             err_flag = true;
             return err_flag;
         }
@@ -209,14 +187,12 @@ impl<S: Store> Contract<S> {
         if bid.bid.expiration < (block_height + COOLDOWN_PERIOD) {
             // If we arrived here, the bid is elegible of withdraw
             // Now we need to check wether the signature is correct.
-            let msg_bytes = BlsScalar::from(bid.bid.expiration).to_bytes();
-            let pk_bytes = pk.to_bytes();
-            let sig_bytes = sig.to_bytes();
             // Verify schnorr sig.
-            if unsafe {
-                verify_schnorr_sig(&pk_bytes[0], &sig_bytes[0], &msg_bytes[0])
-            } == 1i32
-            {
+            if host_functions::verify_schnorr_sig(
+                pk,
+                sig,
+                BlsScalar::from(bid.bid.expiration),
+            ) {
                 // Inter contract call
 
                 // If the inter-contract call succeeds, we need to clean the

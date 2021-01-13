@@ -12,7 +12,7 @@ use poseidon252::sponge::hash;
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
 pub(crate) const INDEX: usize = 101;
-pub(crate) const NAME: &'static str = "p_hash";
+pub(crate) const NAME: &'static str = "_p_hash";
 
 /// Host call definition for the `P_HASH` opcode.
 pub(crate) fn external(

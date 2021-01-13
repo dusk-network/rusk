@@ -12,7 +12,7 @@ use dusk_plonk::prelude::*;
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
 pub(crate) const INDEX: usize = 103;
-pub(crate) const NAME: &'static str = "verify_proof";
+pub(crate) const NAME: &'static str = "_verify_proof";
 
 /// Host call definition for the `VERIFY_SIG` opcode.
 pub(crate) fn external(

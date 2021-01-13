@@ -12,7 +12,7 @@ use schnorr::single_key::{PublicKey, Signature as SchnorrSignature};
 use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
 
 pub(crate) const INDEX: usize = 102;
-pub(crate) const NAME: &'static str = "verify_schnorr_sig";
+pub(crate) const NAME: &'static str = "_verify_schnorr_sig";
 
 /// Host call definition for the `VERIFY_SIG` opcode.
 pub(crate) fn external(

@@ -96,7 +96,7 @@ impl ModuleImportResolver for RuskExternals {
         _signature: &Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            "p_hash" => Ok(wasmi::FuncInstance::alloc_host(
+            "_p_hash" => Ok(wasmi::FuncInstance::alloc_host(
                 wasmi::Signature::new(
                     &[
                         wasmi::ValueType::I32,
@@ -107,7 +107,7 @@ impl ModuleImportResolver for RuskExternals {
                 ),
                 P_HASH,
             )),
-            "verify_schnorr_sig" => Ok(wasmi::FuncInstance::alloc_host(
+            "_verify_schnorr_sig" => Ok(wasmi::FuncInstance::alloc_host(
                 wasmi::Signature::new(
                     &[
                         wasmi::ValueType::I32,
@@ -118,7 +118,7 @@ impl ModuleImportResolver for RuskExternals {
                 ),
                 VERIFY_SCHNORR_SIG,
             )),
-            "verify_proof" => Ok(wasmi::FuncInstance::alloc_host(
+            "_verify_proof" => Ok(wasmi::FuncInstance::alloc_host(
                 wasmi::Signature::new(
                     &[
                         wasmi::ValueType::I32,

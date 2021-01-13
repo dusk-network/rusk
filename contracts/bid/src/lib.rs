@@ -84,4 +84,4 @@ impl<S: Store> Contract<S> {
 pub mod host;
 
 #[cfg(feature = "hosted")]
-pub mod hosted;
+pub(crate) mod hosted;

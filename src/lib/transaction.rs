@@ -261,6 +261,7 @@ impl Default for Transaction {
     }
 }
 
+//TODO: Determine wether this is necessary.
 impl Default for TransactionPayload {
     fn default() -> Self {
         unimplemented!()
