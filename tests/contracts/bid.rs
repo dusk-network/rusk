@@ -183,7 +183,7 @@ fn bid_call_wrong_proof_works() {
 }
 
 #[test]
-fn extend_bid_with_correct_params() {
+fn extend_bid_updates_expiration() {
     // Init Env & Contract
     let store = MemStore::new();
     let wasm_contract = Wasm::new(Contract::new(), BYTECODE);
@@ -232,16 +232,38 @@ fn extend_bid_with_correct_params() {
     assert!(err == false);
     assert!(idx == 0u64);
 
+    // Now that a Bid is inside the tree we should be able to extend it if the
+    // correct signature is provided.
+    //
     // Sign the t_e (expiration) and call extend bid.
     let secret = SecretKey::from(sk_r);
     let signature =
         secret.sign(&mut rand::thread_rng(), BlsScalar::from(10u64));
-    // Now that a Bid is inside the tree we should be able to extend it if the
-    // correct signature is provided.
     let call_error = cast
         .transact(
             &Contract::<MemStore>::extend_bid(
                 signature,
+                PublicKey::from(stealth_addr.pk_r()),
+            ),
+            store.clone(),
+            RuskExternals::default(),
+        )
+        .expect("Failed to call extend_bid method");
+
+    // If call succeeds, this should not fail.
+    cast.commit().expect("Commit couldn't be done");
+    assert!(call_error == false);
+
+    // If the latest call updated correctly the expiration time of
+    // our Bid. If we want to extend it again, we should sign now the
+    // new expiration time. Which is equivalent to expiration +
+    // EXPIRATION_PERIOD.
+    let signature2 =
+        secret.sign(&mut rand::thread_rng(), BlsScalar::from(20u64));
+    let call_error = cast
+        .transact(
+            &Contract::<MemStore>::extend_bid(
+                signature2,
                 PublicKey::from(stealth_addr.pk_r()),
             ),
             store.clone(),

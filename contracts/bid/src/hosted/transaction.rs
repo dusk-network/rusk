@@ -7,6 +7,7 @@
 use super::host_functions;
 use crate::{contract_constants::*, leaf::BidLeaf, Contract};
 use canonical::Store;
+use core::ops::DerefMut;
 use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubAffine;
@@ -136,7 +137,10 @@ impl<S: Store> Contract<S> {
         // VERIFY_SIG host fn.
         // Fetch the bid object from the tree getting a &mut to it.
         let tree = self.tree_mut();
-        let mut bid = *tree.get_mut(idx as u64).expect("TODO");
+        let mut branch_mut = tree
+            .get_mut(idx as u64)
+            .expect("No leaf was attached to the provided idx");
+        let bid: &mut BidLeaf = branch_mut.deref_mut();
 
         // Verify schnorr sig.
         if !host_functions::verify_schnorr_sig(
@@ -224,7 +228,9 @@ impl<S: Store> Contract<S> {
             self.key_idx_map_mut()
                 .remove(pk)
                 .expect("Canon Store error happened.");
-            // TODO: Zeroize in the tree
+            // TODO: Zeroize in the tree the leaf that corresponds to the idx
+            // linked to `pk` in the map.
+            // See: https://github.com/dusk-network/rusk/issues/164
             return err_flag;
         } else {
             err_flag = true;

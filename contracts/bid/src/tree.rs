@@ -54,6 +54,13 @@ where
             .expect("Couldn't traverse the tree.")
     }
 
+    /// Append a bid to the tree and return its index
+    ///
+    /// The index will be the last available position
+    pub fn push(&mut self, bid: BidLeaf) -> usize {
+        self.tree.push(bid).unwrap()
+    }
+
     /// Returns a mutable refecence to the internal `Bid` that corresponds
     /// to the given `idx`.
     pub fn get_mut<'a>(
@@ -71,13 +78,6 @@ where
             .as_mut()
             .nth_mut::<BID_TREE_DEPTH>(idx)
             .expect("Couldn't traverse the tree")
-    }
-
-    /// Append a bid to the tree and return its index
-    ///
-    /// The index will be the last available position
-    pub fn push(&mut self, bid: BidLeaf) -> usize {
-        self.tree.push(bid).unwrap()
     }
 
     /// Returns a poseidon branch pointing at the specific index
