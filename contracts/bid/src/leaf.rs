@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "hosted")]
+use crate::hosted::host_functions;
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use cfg_if::cfg_if;
@@ -34,12 +36,11 @@ impl From<BidLeaf> for Bid {
     }
 }
 
-extern "C" {
-    #[cfg(feature = "hosted")]
-    fn p_hash(ofs: &u8, len: u32, ret_addr: &mut [u8; 32]);
-}
-
 use poseidon252::tree::PoseidonLeaf;
+
+// Since the `sponge_hash` fn of `Poseidon252` is quite expensive, the variant
+// when executed in the `hosted` envoiroment would indeed call a host_function
+// to do the computations in Rust instead of WASM.
 impl<S> PoseidonLeaf<S> for BidLeaf
 where
     S: Store,
@@ -54,20 +55,7 @@ where
                 result = self.bid.hash();
             }
             else if #[cfg(feature = "hosted")] {
-                unsafe {
-                    let mut bid_attrs = [0u8;416];
-                    // Add Type fields
-                    bid_attrs[0..32].copy_from_slice(&b"53313116000000000000000000000000"[..]);
-                    // Add cipher as scalars
-                    bid_attrs[32..64].copy_from_slice(&self.bid.encrypted_data.cipher()[0].to_bytes()[..]);
-                    bid_attrs[64..96].copy_from_slice(&self.bid.encrypted_data.cipher()[1].to_bytes()[..]);
-                    // Add pk_r
-                    bid_attrs[128..192].copy_from_slice(&self.bid.encrypted_data.cipher()[0].to_bytes()[..]);
-                    //todo!("Finish fields")   ;
-                    let mut result_ffi = [0u8; 32];
-                    p_hash(&bid_attrs[0], 416, &mut result_ffi);
-                    result = BlsScalar::from_bytes(&result_ffi).unwrap()
-                }
+                result = host_functions::p_hash(&self.bid.as_hash_inputs());
             }
         }
         result
