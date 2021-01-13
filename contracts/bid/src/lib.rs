@@ -71,7 +71,7 @@ pub mod contract_constants {
 #[derive(Debug, Clone)]
 pub struct Contract<S: Store> {
     tree: BidTree<S>,
-    map: KeyToIdxMap<S>,
+    key_idx_map: KeyToIdxMap<S>,
 }
 
 impl<S> Canon<S> for Contract<S>
@@ -81,17 +81,18 @@ where
     fn read(source: &mut impl Source<S>) -> Result<Self, S::Error> {
         Ok(Contract {
             tree: Canon::<S>::read(source)?,
-            map: Canon::<S>::read(source)?,
+            key_idx_map: Canon::<S>::read(source)?,
         })
     }
 
     fn write(&self, sink: &mut impl Sink<S>) -> Result<(), S::Error> {
         self.tree.write(sink)?;
-        self.map.write(sink)
+        self.key_idx_map.write(sink)
     }
 
     fn encoded_len(&self) -> usize {
-        Canon::<S>::encoded_len(&self.tree) + Canon::<S>::encoded_len(&self.map)
+        Canon::<S>::encoded_len(&self.tree)
+            + Canon::<S>::encoded_len(&self.key_idx_map)
     }
 }
 
@@ -100,7 +101,7 @@ impl<S: Store> Contract<S> {
     pub fn new() -> Self {
         Self {
             tree: BidTree::new(),
-            map: KeyToIdxMap::new(),
+            key_idx_map: KeyToIdxMap::new(),
         }
     }
 
@@ -115,13 +116,13 @@ impl<S: Store> Contract<S> {
     }
 
     /// Returns a reference to the internal map of the contract.
-    pub fn map(&self) -> &KeyToIdxMap<S> {
-        &self.map
+    pub fn key_idx_map(&self) -> &KeyToIdxMap<S> {
+        &self.key_idx_map
     }
 
     /// Returns a mutable reference to the internal map of the contract.
-    pub fn map_mut(&mut self) -> &mut KeyToIdxMap<S> {
-        &mut self.map
+    pub fn key_idx_map_mut(&mut self) -> &mut KeyToIdxMap<S> {
+        &mut self.key_idx_map
     }
 }
 

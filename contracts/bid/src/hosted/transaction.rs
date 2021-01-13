@@ -73,7 +73,7 @@ impl<S: Store> Contract<S> {
         // bid more than one time.
         let idx = match self
             // TODO: Rename since it's confusing.
-            .map()
+            .key_idx_map()
             .get(PublicKey::from(bid.stealth_address.pk_r()))
         {
             // If no entries are found for this PK, add it to the map and the
@@ -86,7 +86,7 @@ impl<S: Store> Contract<S> {
                 // inside, there's no need to check that this
                 // returns `Ok(None)`. So we just unwrap
                 // the `Result` and keep the `Option` untouched.
-                self.map_mut()
+                self.key_idx_map_mut()
                     .insert(PublicKey::from(bid.stealth_address.pk_r()), idx)
                     .unwrap();
                 idx
@@ -113,7 +113,7 @@ impl<S: Store> Contract<S> {
         // Setup error flag to false
         let mut err_flag = false;
         // Check wether there's an entry on the map for the pk.
-        let idx = match self.map().get(pk) {
+        let idx = match self.key_idx_map().get(pk) {
             // If no entries are found for this PK it's just an err since there
             // are no bids related to this PK to be extended.
             Ok(None) => {
@@ -175,7 +175,7 @@ impl<S: Store> Contract<S> {
         // Setup error flag to false
         let mut err_flag = false;
         // Check wether there's an entry on the map for the pk.
-        let idx = match self.map().get(pk) {
+        let idx = match self.key_idx_map().get(pk) {
             // If no entries are found for this PK it's just an err since there
             // are no bids related to this PK to be extended.
             Ok(None) => {
@@ -221,7 +221,7 @@ impl<S: Store> Contract<S> {
             // map there will be no need to do so from the tree. Since the
             // rest of the functions rely on the map to gain
             // access to the bid that is inside of the tree.
-            self.map_mut()
+            self.key_idx_map_mut()
                 .remove(pk)
                 .expect("Canon Store error happened.");
             // TODO: Zeroize in the tree
