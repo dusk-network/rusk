@@ -17,6 +17,18 @@ use schnorr::single_key::{PublicKey, Signature};
 type TransactionIndex = u16;
 
 impl Contract<MemStore> {
+    /// This function allows to the contract caller to setup a Bid related to a
+    /// one-time identity of his/her property that will allow the user to
+    /// participate in the bidding process of the consensus as well as to
+    /// prove that is part of the bidders set.
+    ///
+    /// This function will first of all, verify that the Bid is correct by
+    /// verifying the BidCorrectness Proof.
+    /// Then it will include the Bid into the PoseidonTree of the contract and
+    /// link the One-Time identity of the user to the index that the bid
+    /// occupies in the tree. Finally it will execute an inter-contract call
+    /// sending the `spending_proof` and a `note` to the transfer contract.
+    /// Which will execute the transaction of Dusk to the contract account.
     pub fn bid(
         commitment: JubJubAffine,
         hashed_secret: BlsScalar,
@@ -56,6 +68,16 @@ impl Contract<MemStore> {
         ))
     }
 
+    /// This function allows to the contract caller to withdraw it's `Bid` and
+    /// therefore the funds placed to place it in the contract.
+    ///
+    /// Note that to be able to withdraw a `Bid`, it needs to reach a certain
+    /// time which corresponds to the `expiration` time of the bid plus the
+    /// `COOLDOWN_PERIOD`.
+    ///
+    /// Once this execution suceeds, any links between the bidder, as well as
+    /// it's one-time identity and the Bid itself will be erased from the
+    /// contract storage which will return some gas to the caller.
     pub fn withdraw(
         signature: Signature,
         pub_key: PublicKey,
@@ -76,6 +98,10 @@ impl Contract<MemStore> {
         ))
     }
 
+    /// This function allows to the contract caller to extend the expiration
+    /// time for his/her `Bid`. That means, remain longer in the Bidding
+    /// consensus process with the same `Bid` and therefore the same
+    /// One-time identity.
     pub fn extend_bid(
         signature: Signature,
         pub_key: PublicKey,

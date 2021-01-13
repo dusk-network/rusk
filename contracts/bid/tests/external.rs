@@ -51,7 +51,7 @@ impl Externals for RuskExternals {
                         Ok(None)
                     })
                 } else {
-                    todo!("error out for wrong argument types")
+                    panic!("No error handling is impl for a Dummy Resolver")
                 }
             }
             VERIFY_SCHNORR_SIG => {
@@ -66,7 +66,7 @@ impl Externals for RuskExternals {
                         Ok(Some(RuntimeValue::I32(1)))
                     })
                 } else {
-                    todo!("error out for wrong argument types")
+                    panic!("No error handling is impl for a Dummy Resolver")
                 }
             }
             VERIFY_PROOF => {
@@ -81,7 +81,7 @@ impl Externals for RuskExternals {
                         Ok(Some(RuntimeValue::I32(1i32)))
                     })
                 } else {
-                    todo!("error out for wrong argument types")
+                    panic!("No error handling is impl for a Dummy Resolver")
                 }
             }
             _ => panic!("Unknown Rusk host fn {}", index),

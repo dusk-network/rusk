@@ -5,8 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::host_functions;
-use crate::leaf::BidLeaf;
-use crate::Contract;
+use crate::{contract_constants::*, leaf::BidLeaf, Contract};
 use canonical::Store;
 use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
@@ -17,16 +16,19 @@ use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use schnorr::single_key::{PublicKey, Signature};
 
-// TODO: Still waiting for values from the research side.
-// See: https://github.com/dusk-network/rusk/issues/160
-/// t_m in the specs
-const MATURITY_PERIOD: u64 = 0;
-/// t_b in the specs
-const EXPIRATION_PERIOD: u64 = 10;
-/// t_c in the specs
-const COOLDOWN_PERIOD: u64 = 0;
-
 impl<S: Store> Contract<S> {
+    /// This function allows to the contract caller to setup a Bid related to a
+    /// one-time identity of his/her property that will allow the user to
+    /// participate in the bidding process of the consensus as well as to
+    /// prove that is part of the bidders set.
+    ///
+    /// This function will first of all, verify that the Bid is correct by
+    /// verifying the BidCorrectness Proof.
+    /// Then it will include the Bid into the PoseidonTree of the contract and
+    /// link the One-Time identity of the user to the index that the bid
+    /// occupies in the tree. Finally it will execute an inter-contract call
+    /// sending the `spending_proof` and a `note` to the transfer contract.
+    /// Which will execute the transaction of Dusk to the contract account.
     pub fn bid(
         &mut self,
         commitment: JubJubAffine,
@@ -78,9 +80,7 @@ impl<S: Store> Contract<S> {
             // tree
             Ok(None) => {
                 // Append Bid to the tree and obtain the position of it.
-                // TODO: Add an issue in Poseidon for the size obtention in the
-                // internal push impl.
-                let idx = self.tree_mut().push(BidLeaf { bid });
+                let idx = self.tree_mut().push(BidLeaf(bid));
                 // Link the One-time PK to the idx in the Map
                 // Since we checked on the `get` call that the value was not
                 // inside, there's no need to check that this
@@ -102,6 +102,13 @@ impl<S: Store> Contract<S> {
         (err_flag, idx)
     }
 
+    // TODO: Check wether we allow to extend long-time expired Bids.
+    // see: https://github.com/dusk-network/rusk/issues/163
+
+    /// This function allows to the contract caller to extend the expiration
+    /// time for his/her `Bid`. That means, remain longer in the Bidding
+    /// consensus process with the same `Bid` and therefore the same
+    /// One-time identity.
     pub fn extend_bid(&mut self, sig: Signature, pk: PublicKey) -> bool {
         // Setup error flag to false
         let mut err_flag = false;
@@ -135,7 +142,7 @@ impl<S: Store> Contract<S> {
         if !host_functions::verify_schnorr_sig(
             pk,
             sig,
-            BlsScalar::from(bid.bid.expiration),
+            BlsScalar::from(bid.0.expiration),
         ) {
             err_flag = true;
             return err_flag;
@@ -143,10 +150,20 @@ impl<S: Store> Contract<S> {
 
         // Assuming now that the result of the verification is true, we now
         // should update the expiration of the Bid by `EXPIRATION_PERIOD`.
-        bid.bid.expiration += EXPIRATION_PERIOD;
+        bid.0.expiration += EXPIRATION_PERIOD;
         err_flag
     }
 
+    /// This function allows to the contract caller to withdraw it's `Bid` and
+    /// therefore the funds placed to place it in the contract.
+    ///
+    /// Note that to be able to withdraw a `Bid`, it needs to reach a certain
+    /// time which corresponds to the `expiration` time of the bid plus the
+    /// `COOLDOWN_PERIOD`.
+    ///
+    /// Once this execution suceeds, any links between the bidder, as well as
+    /// it's one-time identity and the Bid itself will be erased from the
+    /// contract storage which will return some gas to the caller.
     pub fn withdraw(
         &mut self,
         sig: Signature,
@@ -184,32 +201,31 @@ impl<S: Store> Contract<S> {
             .get(idx as u64)
             .expect("Unexpected error. Map & Tree are out of sync.");
 
-        if bid.bid.expiration < (block_height + COOLDOWN_PERIOD) {
+        if bid.0.expiration < (block_height + COOLDOWN_PERIOD) {
             // If we arrived here, the bid is elegible of withdraw
             // Now we need to check wether the signature is correct.
             // Verify schnorr sig.
-            if host_functions::verify_schnorr_sig(
+            if !host_functions::verify_schnorr_sig(
                 pk,
                 sig,
-                BlsScalar::from(bid.bid.expiration),
+                BlsScalar::from(bid.0.expiration),
             ) {
-                // Inter contract call
-
-                // If the inter-contract call succeeds, we need to clean the
-                // tree & map. Note that if we clean the entry
-                // corresponding to this `PublicKey` from the
-                // map there will be no need to do so from the tree. Since the
-                // rest of the functions rely on the map to gain
-                // access to the bid that is inside of the tree.
-                self.map_mut()
-                    .remove(pk)
-                    .expect("Canon Store error happened.");
-                // TODO: Zeroize in the tree
-                return err_flag;
-            } else {
                 err_flag = true;
                 return err_flag;
-            }
+            };
+            // Inter contract call
+
+            // If the inter-contract call succeeds, we need to clean the
+            // tree & map. Note that if we clean the entry
+            // corresponding to this `PublicKey` from the
+            // map there will be no need to do so from the tree. Since the
+            // rest of the functions rely on the map to gain
+            // access to the bid that is inside of the tree.
+            self.map_mut()
+                .remove(pk)
+                .expect("Canon Store error happened.");
+            // TODO: Zeroize in the tree
+            return err_flag;
         } else {
             err_flag = true;
             return err_flag;

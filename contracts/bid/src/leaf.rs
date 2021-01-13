@@ -13,26 +13,50 @@ use core::borrow::Borrow;
 use dusk_blindbid::bid::Bid;
 use dusk_bls12_381::BlsScalar;
 
+/// Wrapper struct over `dusk-blindbid::Bid` which is needed
+/// to be able to implement `PoseidonLeaf` trait logic so that the
+/// hashing of the Bids is done in the host envoirnoment instead
+/// of WASM.
+///
+/// Aside from this difference, BidLeaf does not vary on anything
+/// from the original `Bid` struct at all.
 #[derive(Debug, Clone, Copy, Canon)]
-pub struct BidLeaf {
-    pub bid: Bid,
+pub struct BidLeaf(pub(crate) Bid);
+
+impl BidLeaf {
+    /// Generates a new BidLeaf instance from a `Bid`.
+    pub fn new(bid: Bid) -> Self {
+        BidLeaf(bid)
+    }
+
+    /// Returns the internal bid representation of the `BidLeaf` as with
+    /// the `Bid` type.
+    pub fn bid(&self) -> Bid {
+        self.0
+    }
+
+    /// Returns a &mut to the internal bid representation of the `BidLeaf`
+    /// as with the `Bid` type.
+    pub fn bid_mut(&mut self) -> &mut Bid {
+        &mut self.0
+    }
 }
 
 impl Borrow<u64> for BidLeaf {
     fn borrow(&self) -> &u64 {
-        &self.bid.pos
+        &self.0.pos
     }
 }
 
 impl From<Bid> for BidLeaf {
     fn from(bid: Bid) -> BidLeaf {
-        BidLeaf { bid }
+        BidLeaf(bid)
     }
 }
 
 impl From<BidLeaf> for Bid {
     fn from(leaf: BidLeaf) -> Bid {
-        leaf.bid
+        leaf.0
     }
 }
 
@@ -52,20 +76,20 @@ where
         let mut result;
         cfg_if! {
             if #[cfg(feature = "host")] {
-                result = self.bid.hash();
+                result = self.0.hash();
             }
             else if #[cfg(feature = "hosted")] {
-                result = host_functions::p_hash(&self.bid.as_hash_inputs());
+                result = host_functions::p_hash(&self.0.as_hash_inputs());
             }
         }
         result
     }
 
     fn pos(&self) -> u64 {
-        self.bid.pos
+        self.0.pos
     }
 
     fn set_pos(&mut self, pos: u64) {
-        self.bid.pos = pos;
+        self.0.pos = pos;
     }
 }

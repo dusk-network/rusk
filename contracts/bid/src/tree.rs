@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::leaf::BidLeaf;
+use crate::contract_constants::BID_TREE_DEPTH;
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use microkelvin::{BranchMut, Nth};
@@ -13,7 +14,9 @@ use poseidon252::tree::{
     PoseidonBranch, PoseidonMaxAnnotation, PoseidonTree, PoseidonTreeIterator,
 };
 
-pub const BID_TREE_DEPTH: usize = 17;
+/// Append-only tree structure which wraps over `PoseidonTree<BidLeaf>`
+/// responsible of the storage and the branch generation capabilities
+/// of the Bid contract.
 #[derive(Debug, Clone, Canon)]
 pub struct BidTree<S>
 where
@@ -85,6 +88,8 @@ where
         self.tree.branch(idx).unwrap()
     }
 
+    /// Returns an iterator over the leaves of the Tree starting from a certain
+    /// block-height.
     pub fn iter_block_height(
         &self,
         block_height: u64,
@@ -99,6 +104,7 @@ where
     }
 }
 
+// TODO: Fix block-height annotated search on the tree.
 /*
 #[cfg(test)]
 mod tests {
