@@ -27,7 +27,7 @@ test: ## Run the tests for the entire rusk repo
 	@cargo test 
 		--release \
 		-- --nocapture 
-	rm $((LISTENER))
+	rm $(LISTENER)
 
 run: ## Run the server
 		@make contracts && \
