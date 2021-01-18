@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! This module contains all the logic for the staking contract to function in a
+//! hosted environment, such as a WASM VM.
+
 mod bridge;
 mod query;
 mod transaction;

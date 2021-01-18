@@ -9,6 +9,10 @@ use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_kelvin_map::Map;
 
+/// This set contains all of the provisioners in the contract, ordered by time
+/// of addition. It is used to retrieve a key associated to a provisioner, which
+/// can then be used to access the staking contract map, and allows a user to
+/// retrieve information, or update the expiration period.
 #[derive(Debug, Clone, Canon)]
 pub struct IdentifierSet<S: Store>(Map<Counter, Key, S>);
 

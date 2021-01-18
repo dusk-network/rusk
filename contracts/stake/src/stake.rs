@@ -12,8 +12,13 @@ use dusk_bls12_381_sign::APK;
 /// contains info on it's size, sender, eligibility time, and expiration time.
 #[derive(Debug, Default, Clone, Canon)]
 pub struct Stake {
+    /// The amount of DUSK staked by the provisioner.
     pub value: u64,
+    /// The provisioner's public key.
     pub pk: APK,
+    /// The block height at which this stake becomes active, allowing the
+    /// provisioner to participate in SBA.
     pub eligibility: u64,
+    /// The block height at which this stake becomes inactive.
     pub expiration: u64,
 }

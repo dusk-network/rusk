@@ -10,9 +10,12 @@ use canonical_derive::Canon;
 use core::cmp::Ordering;
 use dusk_bls12_381_sign::APK;
 
+/// The key used in the staking contract's key-value store.
 #[derive(Debug, Default, Clone, Eq, PartialEq, Canon)]
 pub struct Key {
+    /// The provisioner's public key.
     pub pk: APK,
+    /// The provisioner's index in the identifier set.
     pub w_i: Counter,
 }
 

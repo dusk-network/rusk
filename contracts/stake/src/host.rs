@@ -4,5 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! This module contains all the logic for the host environment to provide a
+//! user with the ability to interact with the staking contract.
+
 mod query;
 mod transaction;
