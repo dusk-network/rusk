@@ -12,6 +12,15 @@ use dusk_kelvin_map::Map;
 #[derive(Debug, Clone, Canon)]
 pub struct IdentifierSet<S: Store>(Map<Counter, Key, S>);
 
+impl<S> Default for IdentifierSet<S>
+where
+    S: Store,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S> IdentifierSet<S>
 where
     S: Store,

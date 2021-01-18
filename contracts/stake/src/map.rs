@@ -15,6 +15,15 @@ use dusk_kelvin_map::Map;
 #[derive(Debug, Clone, Canon)]
 pub struct StakeMapping<S: Store>(Map<Key, Stake, S>);
 
+impl<S> Default for StakeMapping<S>
+where
+    S: Store,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S> StakeMapping<S>
 where
     S: Store,

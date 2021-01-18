@@ -20,7 +20,7 @@ pub use map::StakeMapping;
 pub use set::IdentifierSet;
 pub use stake::Stake;
 
-mod ops {
+pub mod ops {
     // Queries
     pub const FIND_STAKE: u16 = 0x00;
 
@@ -36,6 +36,15 @@ pub struct Contract<S: Store> {
     stake_mapping: StakeMapping<S>,
     stake_identifier_set: IdentifierSet<S>,
     counter: Counter,
+}
+
+impl<S> Default for Contract<S>
+where
+    S: Store,
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<S> Canon<S> for Contract<S>
