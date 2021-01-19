@@ -82,6 +82,17 @@ impl Keys {
         })
     }
 
+    pub fn clear_all(&self) -> Result<(), io::Error> {
+        let mut dir = get_rusk_keys_dir()?;
+
+        dir.push(&self.crate_name);
+        if dir.exists() {
+            fs::remove_dir_all(dir.clone())?;
+        }
+
+        Ok(())
+    }
+
     pub fn update(
         &self,
         handle: &str,
@@ -90,9 +101,6 @@ impl Keys {
         let mut dir = get_rusk_keys_dir()?;
 
         dir.push(&self.crate_name);
-        if dir.exists() {
-            fs::remove_dir_all(dir.clone())?;
-        }
         dir.push(&self.version);
         fs::create_dir_all(dir.clone())?;
 
