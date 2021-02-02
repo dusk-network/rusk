@@ -7,6 +7,7 @@
 use crate::{ops, Contract, Leaf};
 
 use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
+use dusk_bls12_381::BlsScalar;
 use dusk_plonk::proof_system::proof::Proof;
 use phoenix_core::Note;
 
@@ -32,8 +33,18 @@ fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), <BS as Store>::Error> {
     let qid: u8 = Canon::<BS>::read(&mut source)?;
 
     match qid {
-        _ => Ok(()),
+        ops::QR_GET_BALANCE => {
+            let address: BlsScalar = Canon::<BS>::read(&mut source)?;
+            let ret = contract.get_balance(address);
+
+            let mut sink = ByteSink::new(&mut bytes[..], store.clone());
+            Canon::<BS>::write(&ret, &mut sink)?;
+        }
+
+        _ => (),
     }
+
+    Ok(())
 }
 
 fn transaction(
@@ -47,18 +58,14 @@ fn transaction(
 
     match qid {
         ops::TX_SEND_TO_CONTRACT_TRANSPARENT => {
-            let note: Note = Canon::<BS>::read(&mut source)?;
-            let spending_proof: Proof = Canon::<BS>::read(&mut source)?;
-            /*
-            let pub_inputs: [[u8; 33]; 1] = Canon::<BS>::read(&mut source)?;
-            */
+            let address: BlsScalar = Canon::<BS>::read(&mut source)?;
+            let value: u64 = Canon::<BS>::read(&mut source)?;
+            let spend_proof: Proof = Canon::<BS>::read(&mut source)?;
 
             let ret = contract.send_to_contract_transparent(
-                note,
-                spending_proof,
-                /*
-                pub_inputs,
-                */
+                address,
+                value,
+                spend_proof,
             );
 
             let mut sink = ByteSink::new(&mut bytes[..], store);

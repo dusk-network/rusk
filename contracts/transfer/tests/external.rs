@@ -4,10 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+const VERIFY_PROOF: usize = 103;
+
 use canonical_host::MemoryHolder;
 use wasmi::{
-    Error as WasmiError, Externals, FuncRef, MemoryRef, ModuleImportResolver,
-    RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    Error as WasmiError, Externals, FuncInstance, FuncRef, MemoryRef,
+    ModuleImportResolver, RuntimeArgs, RuntimeValue, Signature, Trap, TrapKind,
+    ValueType,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -33,7 +36,24 @@ impl Externals for RuskExternals {
         index: usize,
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
-        unimplemented!()
+        match (index, args.as_ref()) {
+            (
+                VERIFY_PROOF,
+                [RuntimeValue::I32(pub_inputs_len), RuntimeValue::I32(pub_inputs), RuntimeValue::I32(circuit_crate_len), RuntimeValue::I32(circuit_crate), RuntimeValue::I32(circuit_label_len), RuntimeValue::I32(circuit_label), RuntimeValue::I32(proof)],
+            ) => self.memory()?.with_direct_access_mut(|mem| {
+                let pub_inputs_len = *pub_inputs_len as usize;
+                let pub_inputs = *pub_inputs as usize;
+                let circuit_crate_len = *circuit_label_len as usize;
+                let circuit_crate = *circuit_label as usize;
+                let circuit_label_len = *circuit_label_len as usize;
+                let circuit_label = *circuit_label as usize;
+                let proof = *proof as usize;
+
+                Ok(Some(RuntimeValue::I32(1)))
+            }),
+
+            _ => Err(Trap::new(TrapKind::UnexpectedSignature)),
+        }
     }
 }
 
@@ -43,6 +63,24 @@ impl ModuleImportResolver for RuskExternals {
         field_name: &str,
         _signature: &Signature,
     ) -> Result<FuncRef, WasmiError> {
-        unimplemented!()
+        match field_name {
+            "verify_proof" => Ok(FuncInstance::alloc_host(
+                Signature::new(
+                    &[
+                        ValueType::I32,
+                        ValueType::I32,
+                        ValueType::I32,
+                        ValueType::I32,
+                        ValueType::I32,
+                        ValueType::I32,
+                        ValueType::I32,
+                    ][..],
+                    Some(ValueType::I32),
+                ),
+                VERIFY_PROOF,
+            )),
+
+            _ => Err(WasmiError::Trap(TrapKind::UnexpectedSignature.into())),
+        }
     }
 }

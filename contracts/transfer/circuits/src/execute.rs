@@ -14,7 +14,7 @@ use anyhow::{anyhow, Result};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::JubJubExtended;
 use phoenix_core::Note;
-use poseidon252::sponge::sponge::sponge_hash_gadget;
+use poseidon252::sponge;
 use poseidon252::tree::{self, PoseidonBranch};
 use rand_core::{CryptoRng, RngCore};
 use schnorr::gadgets as schnorr_gadgets;
@@ -57,6 +57,13 @@ impl<const DEPTH: usize, const CAPACITY: usize>
     pub fn rusk_circuit_args(
         &self,
     ) -> Result<(PublicParameters, ProverKey, VerifierKey)> {
+        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
+            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
+        })?;
+
+        let pp =
+            unsafe { PublicParameters::from_slice_unchecked(pp.as_slice())? };
+
         let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
         let (pk, vk) = keys
             .get(self.rusk_label().as_str())
@@ -64,14 +71,6 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
         let pk = ProverKey::from_bytes(pk.as_slice())?;
         let vk = VerifierKey::from_bytes(vk.as_slice())?;
-
-        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
-            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
-        })?;
-
-        let pp = bincode::deserialize(pp.as_slice()).map_err(|e| {
-            anyhow!("Failed to deserialize public parameters: {}", e)
-        })?;
 
         Ok((pp, pk, vk))
     }
@@ -160,7 +159,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 // The remainder roots must be equal to the first (root is unique per proof)
                 match base_root {
                     None => {
-                        let root = branch.root();
+                        let root = *branch.root();
 
                         pi.push(PublicInput::BlsScalar(
                             root,
@@ -190,7 +189,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             let note_hash = input.note_hash;
             let hash_inputs = input.to_hash_inputs();
 
-            let note_hash_p = sponge_hash_gadget(composer, &hash_inputs);
+            let note_hash_p = sponge::gadget(composer, &hash_inputs);
 
             composer.assert_equal(note_hash, note_hash_p);
         });
@@ -214,7 +213,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             let sk_r = input.sk_r;
             let pos = input.pos;
 
-            let nullifier_p = sponge_hash_gadget(composer, &[sk_r, pos]);
+            let nullifier_p = sponge::gadget(composer, &[sk_r, pos]);
 
             pi.push(PublicInput::BlsScalar(nullifier, composer.circuit_size()));
             composer.constrain_to_constant(

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use tracing::info;
 mod encoding;
 mod ops;
@@ -38,3 +39,4 @@ lazy_static! {
 }
 
 pub use ops::{RuskExtenalError, RuskExternals};
+*/

@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![allow(non_snake_case)]
-use anyhow::Result;
+
+/*
 use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -13,10 +14,11 @@ use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::jubjub::{
     JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_plonk::prelude::PublicParameters;
+use poseidon252::tree::PoseidonBranch;
+*/
+
 use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
-use poseidon252::tree::PoseidonBranch;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -28,10 +30,10 @@ lazy_static! {
             }
         };
 
-        let result: PublicParameters =
-            bincode::deserialize(&buff).expect("CRS not decoded");
-
-        result
+        unsafe {
+            PublicParameters::from_slice_unchecked(&buff)
+                .expect("CRS not decoded")
+        }
     };
 }
 
@@ -61,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("schema/rusk.proto")?;
 
+    /*
     // Get the cached keys for bid-circuits crate from rusk profile, or
     // recompile and update them if they're outdated
     let bid_keys = rusk_profile::keys_for("bid-circuits");
@@ -74,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if blindbid_keys.are_outdated() {
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
+    */
 
     // Get the cached keys for transfer contract crate from rusk profile, or
     // recompile and update them if they're outdated
@@ -85,10 +89,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The execute circuit has multiple variations,
         // which is dependant upon the number of input
         // and output notes and is denoted in the table below:
-        for inputs in 1..5 {
-            for outputs in 0..3 {
+        for inputs in [/*1,  */ 2 , /* 3, 4 */].iter() {
+            for outputs in [/*0, 1, */ 2].iter() {
                 let (id, pk, vk) =
-                    transfer::compile_execute_circuit(inputs, outputs)?;
+                    transfer::compile_execute_circuit(*inputs, *outputs)?;
 
                 transfer_keys.update(id.as_str(), (pk, vk))?;
             }
@@ -98,6 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/*
 mod bid {
     use super::*;
 
@@ -195,28 +200,27 @@ mod blindbid {
         .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
     }
 }
+*/
 
 mod transfer {
     use super::PUB_PARAMS;
-    use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
+    use std::convert::TryInto;
 
     use anyhow::{anyhow, Result};
     use canonical_host::MemStore;
-    use dusk_pki::{Ownable, SecretSpendKey};
+    use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use dusk_plonk::prelude::*;
     use phoenix_core::Note;
     use poseidon252::sponge;
-    use schnorr::single_key::SecretKey as SchnorrSecret;
-
-    use dusk_plonk::prelude::*;
-
-    use std::convert::TryInto;
+    use schnorr::Signature;
+    use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
 
     pub fn compile_stct_circuit() -> Result<(String, Vec<u8>, Vec<u8>)> {
         let mut rng = rand::thread_rng();
 
         let c_ssk = SecretSpendKey::random(&mut rng);
-        let c_psk = c_ssk.public_key();
+        let c_psk = c_ssk.public_spend_key();
 
         let c_value = 100;
         let c_blinding_factor = JubJubScalar::random(&mut rng);
@@ -224,17 +228,18 @@ mod transfer {
         let c_note =
             Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
         let c_sk_r = c_ssk.sk_r(c_note.stealth_address());
-        let c_pk_r = GENERATOR_EXTENDED * c_sk_r;
+        let c_pk_r = GENERATOR_EXTENDED * c_sk_r.as_ref();
 
         let (_, crossover) = c_note.try_into().map_err(|e| {
             anyhow!("Failed to convert note to crossover: {:?}", e)
         })?;
         let c_value_commitment = *crossover.value_commitment();
 
-        let c_schnorr_secret = SchnorrSecret::from(c_sk_r);
+        let c_schnorr_secret = SecretKey::from(c_sk_r);
         let c_commitment_hash =
             sponge::hash(&c_value_commitment.to_hash_inputs());
-        let c_signature = c_schnorr_secret.sign(&mut rng, c_commitment_hash);
+        let c_signature =
+            Signature::new(&c_schnorr_secret, &mut rng, c_commitment_hash);
 
         let mut circuit = SendToContractTransparentCircuit::new(
             c_value_commitment,

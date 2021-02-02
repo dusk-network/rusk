@@ -16,6 +16,7 @@ pub struct Contract<S: Store> {
     notes: Tree<S>,
     nullifiers: Map<BlsScalar, (), S>,
     roots: Map<BlsScalar, (), S>,
+    balance: Map<BlsScalar, u64, S>,
 }
 
 impl<S: Store> Contract<S> {
@@ -37,5 +38,13 @@ impl<S: Store> Contract<S> {
 
     pub fn root_exists(&self, root: &BlsScalar) -> Result<bool, S::Error> {
         self.roots.get(root).map(|t| t.is_some())
+    }
+
+    pub fn balance(&self) -> &Map<BlsScalar, u64, S> {
+        &self.balance
+    }
+
+    pub fn balance_mut(&mut self) -> &mut Map<BlsScalar, u64, S> {
+        &mut self.balance
     }
 }

@@ -17,12 +17,14 @@ use phoenix_core::{Note, NoteType};
 use dusk_plonk::proof_system::proof::Proof;
 
 extern "C" {
-    fn verify_sig(pk: &u8, sig: &u8, msg: &u8, ret_addr: &mut [u8; 32]);
     fn verify_proof(
         pub_inputs_len: usize,
         pub_inputs: &u8,
+        circuit_crate_len: usize,
+        circuit_crate: &u8,
+        circuit_label_len: usize,
+        circuit_label: &u8,
         proof: &u8,
-        verif_key: &u8,
     ) -> i32;
 }
 
@@ -78,35 +80,39 @@ impl<S: Store> Contract<S> {
 
     pub fn send_to_contract_transparent(
         &mut self,
-        note: Note,
-        spending_proof: Proof,
-        /*
-        pub_inputs: [[u8; 33]; 1],
-        */
+        address: BlsScalar,
+        value: u64,
+        spend_proof: Proof,
     ) -> bool {
-        /*
-        match note.note() {
-            NoteType::Transparent => (),
-            _ => return false,
-        }
-
         // 1. v < 2^{64}
         // This is automatically granted for transparent notes because the value representation
         // is `u64`
-        let _value: u64 = match note.value(None) {
-            Ok(v) => v,
-            _ => return false,
-        };
 
         // 2. map[contract address -> value] += v
-        // TODO
+        let balance = self.get_balance(address);
+        if self.balance_mut().insert(address, balance + value).is_err() {
+            return false;
+        }
 
         // 3. Validate address.isPayable()
         // TODO, `isPayable` is not defined
 
         // 4. Verify the crossover commitment, value and proof
-        let _proof = spending_proof.to_bytes();
-        */
+        let proof = spend_proof.to_bytes();
+        let proof = unsafe {
+            verify_proof(
+                0,
+                &[0u8][0],
+                17,
+                &b"transfer-circuits"[0],
+                37,
+                &b"transfer-send-to-contract-transparent"[0],
+                &proof[0],
+            )
+        };
+        if proof != 1 {
+            return false;
+        }
 
         true
     }

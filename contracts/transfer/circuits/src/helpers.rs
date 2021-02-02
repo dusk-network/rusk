@@ -20,6 +20,12 @@ mod leaf;
 
 pub use leaf::NoteLeaf;
 
+#[cfg(feature = "tests-generate-pub-params")]
+pub const FETCH_PP_FROM_RUSK_PROFILE: bool = false;
+
+#[cfg(not(feature = "tests-generate-pub-params"))]
+pub const FETCH_PP_FROM_RUSK_PROFILE: bool = true;
+
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
 {
@@ -57,9 +63,12 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
         let input_value = 100;
         let mut inputs_sum = 0;
+        let mut input_data = vec![];
+
+        // Generate the notes and mutate the global tree state
         for _ in 0..inputs {
             let ssk = SecretSpendKey::random(rng);
-            let psk = ssk.public_key();
+            let psk = ssk.public_spend_key();
 
             let (note, blinding_factor) =
                 Self::create_dummy_note(rng, &psk, transparent, input_value);
@@ -76,13 +85,29 @@ impl<const DEPTH: usize, const CAPACITY: usize>
                 .map(|n| Note::from(n))
                 .ok_or(anyhow!("Note not found in the tree after push!"))?;
 
+            let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
+            let nullifier = note.gen_nullifier(&ssk);
+
+            input_data.push((
+                sk_r,
+                note,
+                input_value,
+                blinding_factor,
+                nullifier,
+            ));
+
+            transparent = !transparent;
+            inputs_sum += input_value;
+        }
+
+        for (sk_r, note, input_value, blinding_factor, nullifier) in
+            input_data.into_iter()
+        {
             let branch = tree
-                .branch(pos)
+                .branch(note.pos() as usize)
                 .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
                 .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
 
-            let sk_r = ssk.sk_r(note.stealth_address());
-            let nullifier = note.gen_nullifier(&ssk);
             circuit.add_input(
                 rng,
                 branch,
@@ -92,9 +117,6 @@ impl<const DEPTH: usize, const CAPACITY: usize>
                 blinding_factor,
                 nullifier,
             )?;
-
-            transparent = !transparent;
-            inputs_sum += input_value;
         }
 
         let i = inputs as f64;
@@ -106,7 +128,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let mut outputs_sum = 0;
         for _ in 0..outputs {
             let ssk = SecretSpendKey::random(rng);
-            let psk = ssk.public_key();
+            let psk = ssk.public_spend_key();
 
             let (note, blinding_factor) =
                 Self::create_dummy_note(rng, &psk, transparent, output_value);
@@ -118,7 +140,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         }
 
         let ssk = SecretSpendKey::random(rng);
-        let psk = ssk.public_key();
+        let psk = ssk.public_spend_key();
         let value = inputs_sum - outputs_sum;
         let blinding_factor = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, &psk, value, blinding_factor);
@@ -153,8 +175,12 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let (pp, pk, vk) = if rusk_profile {
             // Verifier key from Rusk Profile is corrupted
             // https://github.com/dusk-network/rusk/issues/159
-            let (pp, pk, _) = circuit.rusk_circuit_args()?;
+            let (pp, pk, vk_p) = circuit.rusk_circuit_args()?;
             let (_, vk) = circuit.compile(&pp)?;
+
+            let vk = vk.to_bytes();
+            let vk = VerifierKey::from_bytes(vk.as_slice())?;
+            assert_eq!(vk_p.to_bytes(), vk.to_bytes());
 
             circuit.get_mut_pi_positions().clear();
 
@@ -168,7 +194,17 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
         let label = circuit.transcript_label();
         let proof = circuit.gen_proof(&pp, &pk, label)?;
-        let pi = circuit.get_pi_positions().clone();
+        let mut pi = circuit.get_pi_positions().clone();
+
+        // Reset PI positions to emulate real-world verification
+        pi.iter_mut().for_each(|p| match p {
+            PublicInput::BlsScalar(_, p) => *p = 0,
+            PublicInput::JubJubScalar(_, p) => *p = 0,
+            PublicInput::AffinePoint(_, p, q) => {
+                *p = 0;
+                *q = 0;
+            }
+        });
 
         Ok((circuit, pp, pk, vk, proof, pi))
     }

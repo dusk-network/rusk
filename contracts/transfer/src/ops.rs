@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 // Queries
+pub const QR_GET_BALANCE: u8 = 0x00;
 
 // Transactions
 pub const TX_EXECUTE: u8 = 0x00;

@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
-use schnorr::single_key::Signature;
+use schnorr::Signature;
 
 #[cfg(test)]
 mod tests;
@@ -48,9 +48,8 @@ impl SendToContractTransparentCircuit {
             anyhow!("Failed to fetch CRS from rusk profile: {}", e)
         })?;
 
-        let pp = bincode::deserialize(pp.as_slice()).map_err(|e| {
-            anyhow!("Failed to deserialize public parameters: {}", e)
-        })?;
+        let pp =
+            unsafe { PublicParameters::from_slice_unchecked(pp.as_slice())? };
 
         Ok((pp, pk, vk))
     }

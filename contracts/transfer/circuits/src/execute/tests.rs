@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::helpers::NoteLeaf;
+use crate::helpers::{NoteLeaf, FETCH_PP_FROM_RUSK_PROFILE};
 use crate::ExecuteCircuit;
 
 use anyhow::{anyhow, Result};
@@ -18,12 +18,6 @@ use rand::SeedableRng;
 use dusk_plonk::prelude::*;
 
 use std::convert::TryInto;
-
-#[cfg(feature = "tests-generate-pub-params")]
-const FETCH_PP_FROM_RUSK_PROFILE: bool = false;
-
-#[cfg(not(feature = "tests-generate-pub-params"))]
-const FETCH_PP_FROM_RUSK_PROFILE: bool = true;
 
 macro_rules! test_execute {
     ( $f:ident, $c:expr, $i:expr, $o:expr ) => {
@@ -72,7 +66,7 @@ fn wrong_note_value_one() -> Result<()> {
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
-    let a_psk = a_ssk.public_key();
+    let a_psk = a_ssk.public_spend_key();
     let a_value = 600;
     let a_note = Note::transparent(&mut rng, &a_psk, a_value);
     let a_blinding_factor = a_note.blinding_factor(None).expect(
@@ -90,7 +84,7 @@ fn wrong_note_value_one() -> Result<()> {
         .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
         .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
 
-    let a_sk_r = a_ssk.sk_r(a_note.stealth_address());
+    let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let a_nullifier = a_note.gen_nullifier(&a_ssk);
     circuit.add_input(
         &mut rng,
@@ -103,14 +97,14 @@ fn wrong_note_value_one() -> Result<()> {
     )?;
 
     let b_ssk = SecretSpendKey::random(&mut rng);
-    let b_psk = b_ssk.public_key();
+    let b_psk = b_ssk.public_spend_key();
     let b_value = 150;
     let b_blinding_factor = JubJubScalar::random(&mut rng);
     let b_note = Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
     circuit.add_output(b_note, b_value, b_blinding_factor);
 
     let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_psk = c_ssk.public_key();
+    let c_psk = c_ssk.public_spend_key();
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
     let c_note = Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
@@ -121,7 +115,7 @@ fn wrong_note_value_one() -> Result<()> {
     circuit.set_crossover(c_value_commitment, c_value, c_blinding_factor);
 
     let d_ssk = SecretSpendKey::random(&mut rng);
-    let d_psk = d_ssk.public_key();
+    let d_psk = d_ssk.public_spend_key();
     let d_value_note = 351;
     let d_value_circuit = 350;
     let d_note = Note::transparent(&mut rng, &d_psk, d_value_note);
@@ -130,10 +124,19 @@ fn wrong_note_value_one() -> Result<()> {
     );
     circuit.add_output(d_note, d_value_circuit, d_blinding_factor);
 
-    // Verifier key from Rusk Profile is corrupted
-    // https://github.com/dusk-network/rusk/issues/159
-    let (pp, pk, _) = circuit.rusk_circuit_args()?;
-    let (_, vk) = circuit.compile(&pp)?;
+    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
+        // Verifier key from Rusk Profile is corrupted
+        // https://github.com/dusk-network/rusk/issues/159
+        let (pp, pk, _) = circuit.rusk_circuit_args()?;
+        let (_, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    } else {
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
+        let (pk, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    };
 
     circuit.get_mut_pi_positions().clear();
 
@@ -161,7 +164,7 @@ fn wrong_nullifier() -> Result<()> {
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
-    let a_psk = a_ssk.public_key();
+    let a_psk = a_ssk.public_spend_key();
     let a_value = 600;
     let a_note = Note::transparent(&mut rng, &a_psk, a_value);
     let a_blinding_factor = a_note.blinding_factor(None).expect(
@@ -179,7 +182,7 @@ fn wrong_nullifier() -> Result<()> {
         .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
         .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
 
-    let a_sk_r = a_ssk.sk_r(a_note.stealth_address());
+    let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let mut a_nullifier = a_note.gen_nullifier(&a_ssk);
     a_nullifier += BlsScalar::one();
     circuit.add_input(
@@ -193,14 +196,14 @@ fn wrong_nullifier() -> Result<()> {
     )?;
 
     let b_ssk = SecretSpendKey::random(&mut rng);
-    let b_psk = b_ssk.public_key();
+    let b_psk = b_ssk.public_spend_key();
     let b_value = 150;
     let b_blinding_factor = JubJubScalar::random(&mut rng);
     let b_note = Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
     circuit.add_output(b_note, b_value, b_blinding_factor);
 
     let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_psk = c_ssk.public_key();
+    let c_psk = c_ssk.public_spend_key();
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
     let c_note = Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
@@ -211,7 +214,7 @@ fn wrong_nullifier() -> Result<()> {
     circuit.set_crossover(c_value_commitment, c_value, c_blinding_factor);
 
     let d_ssk = SecretSpendKey::random(&mut rng);
-    let d_psk = d_ssk.public_key();
+    let d_psk = d_ssk.public_spend_key();
     let d_value = 350;
     let d_note = Note::transparent(&mut rng, &d_psk, d_value);
     let d_blinding_factor = d_note.blinding_factor(None).expect(
@@ -219,10 +222,19 @@ fn wrong_nullifier() -> Result<()> {
     );
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
-    // Verifier key from Rusk Profile is corrupted
-    // https://github.com/dusk-network/rusk/issues/159
-    let (pp, pk, _) = circuit.rusk_circuit_args()?;
-    let (_, vk) = circuit.compile(&pp)?;
+    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
+        // Verifier key from Rusk Profile is corrupted
+        // https://github.com/dusk-network/rusk/issues/159
+        let (pp, pk, _) = circuit.rusk_circuit_args()?;
+        let (_, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    } else {
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
+        let (pk, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    };
 
     circuit.get_mut_pi_positions().clear();
 
@@ -251,7 +263,7 @@ fn wrong_fee() -> Result<()> {
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
     let a_ssk = SecretSpendKey::random(&mut rng);
-    let a_psk = a_ssk.public_key();
+    let a_psk = a_ssk.public_spend_key();
     let a_value = 600;
     let a_note = Note::transparent(&mut rng, &a_psk, a_value);
     let a_blinding_factor = a_note.blinding_factor(None).expect(
@@ -269,7 +281,7 @@ fn wrong_fee() -> Result<()> {
         .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
         .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
 
-    let a_sk_r = a_ssk.sk_r(a_note.stealth_address());
+    let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let a_nullifier = a_note.gen_nullifier(&a_ssk);
     circuit.add_input(
         &mut rng,
@@ -282,14 +294,14 @@ fn wrong_fee() -> Result<()> {
     )?;
 
     let b_ssk = SecretSpendKey::random(&mut rng);
-    let b_psk = b_ssk.public_key();
+    let b_psk = b_ssk.public_spend_key();
     let b_value = 150;
     let b_blinding_factor = JubJubScalar::random(&mut rng);
     let b_note = Note::obfuscated(&mut rng, &b_psk, b_value, b_blinding_factor);
     circuit.add_output(b_note, b_value, b_blinding_factor);
 
     let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_psk = c_ssk.public_key();
+    let c_psk = c_ssk.public_spend_key();
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
     let c_note = Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
@@ -300,7 +312,7 @@ fn wrong_fee() -> Result<()> {
     circuit.set_crossover(c_value_commitment, c_value, c_blinding_factor);
 
     let d_ssk = SecretSpendKey::random(&mut rng);
-    let d_psk = d_ssk.public_key();
+    let d_psk = d_ssk.public_spend_key();
     let d_value = 350;
     let d_note = Note::transparent(&mut rng, &d_psk, d_value);
     let d_blinding_factor = d_note.blinding_factor(None).expect(
@@ -308,10 +320,19 @@ fn wrong_fee() -> Result<()> {
     );
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
-    // Verifier key from Rusk Profile is corrupted
-    // https://github.com/dusk-network/rusk/issues/159
-    let (pp, pk, _) = circuit.rusk_circuit_args()?;
-    let (_, vk) = circuit.compile(&pp)?;
+    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
+        // Verifier key from Rusk Profile is corrupted
+        // https://github.com/dusk-network/rusk/issues/159
+        let (pp, pk, _) = circuit.rusk_circuit_args()?;
+        let (_, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    } else {
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
+        let (pk, vk) = circuit.compile(&pp)?;
+
+        (pp, pk, vk)
+    };
 
     circuit.get_mut_pi_positions().clear();
 

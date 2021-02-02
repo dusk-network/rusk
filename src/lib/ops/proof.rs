@@ -9,7 +9,10 @@ use super::RuskExtenalError;
 use super::RuskExternals;
 use canonical_host::MemoryHolder;
 use dusk_plonk::prelude::*;
-use wasmi::{FuncRef, RuntimeArgs, RuntimeValue, Trap, TrapKind};
+use wasmi::{
+    FuncInstance, FuncRef, RuntimeArgs, RuntimeValue, Signature, Trap,
+    TrapKind, ValueType,
+};
 
 pub(crate) const INDEX: usize = 103;
 pub(crate) const NAME: &'static str = "verify_proof";
@@ -19,7 +22,77 @@ pub(crate) fn external(
     external: &mut RuskExternals,
     args: RuntimeArgs,
 ) -> Result<Option<RuntimeValue>, Trap> {
-    if let [wasmi::RuntimeValue::I32(pub_inp_len), wasmi::RuntimeValue::I32(pub_inp), wasmi::RuntimeValue::I32(proof), wasmi::RuntimeValue::I32(verif_key)] =
+    match args.as_ref() {
+        [RuntimeValue::I32(pub_inputs_len), RuntimeValue::I32(pub_inputs), RuntimeValue::I32(circuit_crate_len), RuntimeValue::I32(circuit_crate), RuntimeValue::I32(circuit_label_len), RuntimeValue::I32(circuit_label), RuntimeValue::I32(proof)] =>
+        {
+            let pub_inputs_len = *pub_inputs_len as usize;
+            let pub_inputs = *pub_inputs as usize;
+            let circuit_crate_len = *circuit_label_len as usize;
+            let circuit_crate = *circuit_label as usize;
+            let circuit_label_len = *circuit_label_len as usize;
+            let circuit_label = *circuit_label as usize;
+            let proof = *proof as usize;
+
+            external.memory()?.with_direct_access_mut(|mem| {
+                let pi: Vec<PublicInput> = mem[pub_inputs
+                    ..pub_inputs
+                        + pub_inputs_len * PublicInput::serialized_size()]
+                    .chunks(PublicInput::serialized_size())
+                    .map(|chunk| {
+                        PublicInput::from_bytes(chunk).map_err(|_| {
+                            Trap::new(TrapKind::Host(Box::new(
+                                RuskExtenalError::WrongArgsNumber,
+                            )))
+                        })
+                    })
+                    .collect::<Result<_, Trap>>()?;
+
+                let circuit_crate = String::from_utf8(
+                    mem[circuit_crate..circuit_crate + circuit_crate_len]
+                        .into(),
+                )
+                .map_err(|_| {
+                    Trap::new(TrapKind::Host(Box::new(
+                        RuskExtenalError::InvalidFFIEncoding,
+                    )))
+                })?;
+
+                let circuit_label = String::from_utf8(
+                    mem[circuit_label..circuit_label + circuit_label_len]
+                        .into(),
+                )
+                .map_err(|_| {
+                    Trap::new(TrapKind::Host(Box::new(
+                        RuskExtenalError::InvalidFFIEncoding,
+                    )))
+                })?;
+
+                let keys = rusk_profile::keys_for(circuit_crate.as_str());
+                let (_, vk) = keys.get(circuit_label.as_str()).ok_or(
+                    Trap::new(TrapKind::Host(Box::new(
+                        RuskExtenalError::InvalidFFIEncoding,
+                    ))),
+                )?;
+
+                let proof = Proof::from_bytes(
+                    &mem[proof..proof + Proof::serialised_size()],
+                )
+                .map_err(|_| {
+                    Trap::new(TrapKind::Host(Box::new(
+                        RuskExtenalError::InvalidFFIEncoding,
+                    )))
+                })?;
+
+                Ok(Some(RuntimeValue::I32(1i32)))
+            })
+        }
+
+        _ => Err(Trap::new(TrapKind::Host(Box::new(
+            RuskExtenalError::WrongArgsNumber,
+        )))),
+    }
+    /*
+    if let [RuntimeValue::I32(pub_inp_len), RuntimeValue::I32(pub_inp), RuntimeValue::I32(proof), RuntimeValue::I32(verif_key)] =
         args.as_ref()[..]
     {
         let pub_inp = pub_inp as usize;
@@ -72,19 +145,23 @@ pub(crate) fn external(
             RuskExtenalError::WrongArgsNumber,
         ))))
     }
+    */
 }
 
 #[inline]
 pub(crate) fn wasmi_signature() -> FuncRef {
-    wasmi::FuncInstance::alloc_host(
-        wasmi::Signature::new(
+    FuncInstance::alloc_host(
+        Signature::new(
             &[
-                wasmi::ValueType::I32,
-                wasmi::ValueType::I32,
-                wasmi::ValueType::I32,
-                wasmi::ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
+                ValueType::I32,
             ][..],
-            Some(wasmi::ValueType::I32),
+            Some(ValueType::I32),
         ),
         INDEX,
     )

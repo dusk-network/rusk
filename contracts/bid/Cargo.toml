@@ -11,21 +11,21 @@ crate-type = ["cdylib", "rlib"]
 canonical = {version = "0.4"}
 canonical_derive = "0.4"
 canonical_host = { version = "0.4", optional = true }
-dusk-blindbid = {git = "https://github.com/dusk-network/dusk-blindbid", tag = "v0.4.1", default-features = false}
-dusk-bls12_381 = { version = "0.3", default-features = false, features = ["canon"] }
-dusk-jubjub = {version = "0.5", default-features = false, features = ["canon"]}
-dusk-plonk = "0.3"
-poseidon252 = { git = "https://github.com/dusk-network/poseidon252", tag = "v0.15.0", default-features = false, features = ["canon"]}
-dusk-pki = { git = "https://github.com/dusk-network/dusk-pki", tag = "v0.4.1", default-features = false, features = ["canon"]}
+dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls", default-features=false}
+dusk-bls12_381 = {git="https://github.com/dusk-network/bls12_381", branch="vlopes11/g1affine-raw-bytes", default-features=false, features=["canon"]}
+dusk-jubjub = {git="https://github.com/dusk-network/jubjub", branch="vlopes11/g1affine-unchecked-bytes", default-features=false, features=["canon"]}
+dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
+poseidon252 = {git="https://github.com/dusk-network/Poseidon252", branch="vlopes11/bump-plonk", default-features=false, features=["canon"]}
+dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", branch="vlopes11/bump-bls", default-features=false, features=["canon"]}
 cfg-if = "1"
-schnorr = {git = "https://github.com/dusk-network/schnorr", default-features = false, branch = "main"}
+schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/bump-bls", default-features=false}
 dusk-kelvin-map = "0.1"
 
 [dev-dependencies]
 rand = "0.7"
 bid-circuits = {path = "./circuits"}
 wasmi = "0.6"
-canonical_host = { version = "0.4" }
+canonical_host = "0.4"
 
 [features]
 default = ["dusk-blindbid/canon","poseidon252/canon", "schnorr/canon"]

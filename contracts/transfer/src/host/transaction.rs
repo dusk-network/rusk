@@ -8,24 +8,21 @@ use crate::{ops, Contract};
 
 use canonical::Store;
 use canonical_host::{MemStore, Transaction};
+use dusk_bls12_381::BlsScalar;
 use dusk_plonk::proof_system::proof::Proof;
 use phoenix_core::Note;
 
 impl<S: Store> Contract<S> {
     pub fn send_to_contract_transparent(
-        note: Note,
-        spending_proof: Proof,
-        /*
-        pub_inputs: [[u8; 33]; 1],
-        */
-    ) -> Transaction<(u8, Note, Proof), bool> {
+        address: BlsScalar,
+        value: u64,
+        spend_proof: Proof,
+    ) -> Transaction<(u8, BlsScalar, u64, Proof), bool> {
         Transaction::new((
             ops::TX_SEND_TO_CONTRACT_TRANSPARENT,
-            note,
-            spending_proof,
-            /*
-            pub_inputs,
-            */
+            address,
+            value,
+            spend_proof,
         ))
     }
 }

@@ -6,7 +6,7 @@
 
 use crate::ExecuteCircuit;
 
-use dusk_pki::Ownable;
+use dusk_pki::{Ownable, SecretKey};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base;
 use dusk_plonk::constraint_system::ecc::Point;
@@ -15,7 +15,7 @@ use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use poseidon252::tree::PoseidonBranch;
 use rand_core::{CryptoRng, RngCore};
-use schnorr::double_key::{SecretKey as SchnorrSecret, Signature};
+use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;
 
@@ -83,7 +83,7 @@ pub struct CircuitInput<const DEPTH: usize> {
     note: Note,
     value: u64,
     blinding_factor: JubJubScalar,
-    signature: Signature,
+    signature: SchnorrProof,
     nullifier: BlsScalar,
 }
 
@@ -98,7 +98,8 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         nullifier: BlsScalar,
     ) -> Self {
         let message = ExecuteCircuit::<DEPTH, 0>::sign_message();
-        let signature = SchnorrSecret::from(&sk_r).sign(rng, message);
+        let secret = SecretKey::from(&sk_r);
+        let signature = SchnorrProof::new(&secret, rng, message);
 
         Self {
             sk_r,
@@ -171,9 +172,9 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
             composer.add_witness_to_circuit_description(schnorr_message);
         let schnorr_u = *self.signature.u();
         let schnorr_u = composer.add_input(schnorr_u.into());
-        let schnorr_r = self.signature.R().into();
+        let schnorr_r = self.signature.keys().R().as_ref().into();
         let schnorr_r = Point::from_private_affine(composer, schnorr_r);
-        let schnorr_r_prime = self.signature.R_prime().into();
+        let schnorr_r_prime = self.signature.keys().R_prime().as_ref().into();
         let schnorr_r_prime =
             Point::from_private_affine(composer, schnorr_r_prime);
 
