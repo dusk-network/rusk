@@ -7,11 +7,11 @@
 mod execute;
 mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
-mod withdraw_from_obfuscated;
 
 pub mod gadgets;
 
 pub use execute::ExecuteCircuit;
+pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 
 #[cfg(any(test, feature = "helpers"))]

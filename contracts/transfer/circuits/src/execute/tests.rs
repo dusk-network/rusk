@@ -29,6 +29,7 @@ macro_rules! test_execute {
                 ExecuteCircuit::<17, $c>::create_dummy_proof::<_, MemStore>(
                     &mut rng,
                     FETCH_PP_FROM_RUSK_PROFILE,
+                    None,
                     $i,
                     $o,
                 )?;
@@ -125,20 +126,15 @@ fn wrong_note_value_one() -> Result<()> {
     circuit.add_output(d_note, d_value_circuit, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        // Verifier key from Rusk Profile is corrupted
-        // https://github.com/dusk-network/rusk/issues/159
-        let (pp, pk, _) = circuit.rusk_circuit_args()?;
-        let (_, vk) = circuit.compile(&pp)?;
-
-        (pp, pk, vk)
+        circuit.rusk_circuit_args()?
     } else {
         let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
         let (pk, vk) = circuit.compile(&pp)?;
 
+        circuit.get_mut_pi_positions().clear();
+
         (pp, pk, vk)
     };
-
-    circuit.get_mut_pi_positions().clear();
 
     let label = circuit.transcript_label();
     let proof = circuit.gen_proof(&pp, &pk, label)?;
@@ -223,20 +219,15 @@ fn wrong_nullifier() -> Result<()> {
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        // Verifier key from Rusk Profile is corrupted
-        // https://github.com/dusk-network/rusk/issues/159
-        let (pp, pk, _) = circuit.rusk_circuit_args()?;
-        let (_, vk) = circuit.compile(&pp)?;
-
-        (pp, pk, vk)
+        circuit.rusk_circuit_args()?
     } else {
         let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
         let (pk, vk) = circuit.compile(&pp)?;
 
+        circuit.get_mut_pi_positions().clear();
+
         (pp, pk, vk)
     };
-
-    circuit.get_mut_pi_positions().clear();
 
     let label = circuit.transcript_label();
     let proof = circuit.gen_proof(&pp, &pk, label)?;
@@ -321,20 +312,15 @@ fn wrong_fee() -> Result<()> {
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        // Verifier key from Rusk Profile is corrupted
-        // https://github.com/dusk-network/rusk/issues/159
-        let (pp, pk, _) = circuit.rusk_circuit_args()?;
-        let (_, vk) = circuit.compile(&pp)?;
-
-        (pp, pk, vk)
+        circuit.rusk_circuit_args()?
     } else {
         let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
         let (pk, vk) = circuit.compile(&pp)?;
 
+        circuit.get_mut_pi_positions().clear();
+
         (pp, pk, vk)
     };
-
-    circuit.get_mut_pi_positions().clear();
 
     let label = circuit.transcript_label();
     let proof = circuit.gen_proof(&pp, &pk, label)?;

@@ -126,10 +126,11 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
     /// Constant message for the schnorr signature generation
     ///
-    /// The signature is provided outside the circuit; so that's why it is constant
+    /// The signature is provided outside the circuit; so that's why it is
+    /// constant
     ///
-    /// The contents of the message are yet to be defined in the documentation. For now, it is
-    /// treated as a constant.
+    /// The contents of the message are yet to be defined in the documentation.
+    /// For now, it is treated as a constant.
     pub const fn sign_message() -> BlsScalar {
         BlsScalar::one()
     }
@@ -156,7 +157,8 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
                 // Test the public input only for the first root
                 //
-                // The remainder roots must be equal to the first (root is unique per proof)
+                // The remainder roots must be equal to the first (root is
+                // unique per proof)
                 match base_root {
                     None => {
                         let root = *branch.root();
@@ -318,7 +320,8 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             gadgets::range(composer, output.value);
         });
 
-        // 11. Prove that sum(inputs.value) - sum(outputs.value) - crossover_value = 0
+        // 11. Prove that sum(inputs.value) - sum(outputs.value) -
+        // crossover_value = 0
         {
             let zero =
                 composer.add_witness_to_circuit_description(BlsScalar::zero());
@@ -356,10 +359,12 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
         // 12. Inject the transaction hash to tie it to the circuit
         //
-        // This is a workaround while the transcript hash injection is not available in the API.
+        // This is a workaround while the transcript hash injection is not
+        // available in the API.
         //
-        // This step is necessary to guarantee the outputs were not tampered by a malicious actor.
-        // It is cheaper than checking individually for the pre-image of every output.
+        // This step is necessary to guarantee the outputs were not tampered by
+        // a malicious actor. It is cheaper than checking individually
+        // for the pre-image of every output.
         let tx_hash = composer.add_input(self.tx_hash);
         pi.push(PublicInput::BlsScalar(
             self.tx_hash,

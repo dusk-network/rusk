@@ -159,6 +159,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
     pub fn create_dummy_proof<R: RngCore + CryptoRng, S: Store>(
         rng: &mut R,
         rusk_profile: bool,
+        pp: Option<PublicParameters>,
         inputs: usize,
         outputs: usize,
     ) -> Result<(
@@ -173,20 +174,12 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             Self::create_dummy_circuit::<R, S>(rng, inputs, outputs)?;
 
         let (pp, pk, vk) = if rusk_profile {
-            // Verifier key from Rusk Profile is corrupted
-            // https://github.com/dusk-network/rusk/issues/159
-            let (pp, pk, vk_p) = circuit.rusk_circuit_args()?;
-            let (_, vk) = circuit.compile(&pp)?;
-
-            let vk = vk.to_bytes();
-            let vk = VerifierKey::from_bytes(vk.as_slice())?;
-            assert_eq!(vk_p.to_bytes(), vk.to_bytes());
-
-            circuit.get_mut_pi_positions().clear();
-
-            (pp, pk, vk)
+            circuit.rusk_circuit_args()?
         } else {
-            let pp = PublicParameters::setup(circuit.get_trim_size(), rng)?;
+            let pp = pp.map(|pp| Ok(pp)).unwrap_or(PublicParameters::setup(
+                circuit.get_trim_size(),
+                rng,
+            ))?;
             let (pk, vk) = circuit.compile(&pp)?;
 
             (pp, pk, vk)

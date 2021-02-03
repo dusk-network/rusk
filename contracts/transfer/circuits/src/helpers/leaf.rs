@@ -13,6 +13,12 @@ use poseidon252::tree::PoseidonLeaf;
 #[derive(Debug, Clone, Canon)]
 pub struct NoteLeaf(Note);
 
+impl AsRef<Note> for NoteLeaf {
+    fn as_ref(&self) -> &Note {
+        &self.0
+    }
+}
+
 impl From<Note> for NoteLeaf {
     fn from(note: Note) -> NoteLeaf {
         NoteLeaf(note)

@@ -9,7 +9,8 @@ use dusk_plonk::prelude::*;
 use poseidon252::sponge;
 use schnorr::gadgets as schnorr_gadgets;
 
-/// Prove a given point was signed by a given public key using schnorr single key
+/// Prove a given point was signed by a given public key using schnorr single
+/// key
 pub fn point_signature(
     composer: &mut StandardComposer,
     message: Point,

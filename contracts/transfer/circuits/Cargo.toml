@@ -16,9 +16,10 @@ dusk-pki = {git="https://github.com/dusk-network/dusk-pki", tag="v0.5.1"}
 schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/poseidon-bump"}
 rusk-profile = { path = "../../../profile" }
 
-[dev-dependencies]
 rand = "0.7"
 canonical_host = "0.5"
+
+[dev-dependencies]
 canonical_derive = "0.5"
 
 [features]

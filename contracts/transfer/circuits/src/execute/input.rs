@@ -24,11 +24,11 @@ use dusk_plonk::prelude::*;
 /// Currently, Plonk is not a dependency of phoenix-core. This means the circuit
 /// construction of the note must be done here.
 ///
-/// Ideally, there would be a `fn hash_inputs_witness(&self, composer)` implemented for
-/// `Note`.
+/// Ideally, there would be a `fn hash_inputs_witness(&self, composer)`
+/// implemented for `Note`.
 ///
-/// Since the circuit will perform a pre-image check over the result of this function, the
-/// structure is safe
+/// Since the circuit will perform a pre-image check over the result of this
+/// function, the structure is safe
 ///
 /// However, if `Note::hash_inputs` ever change, this circuit will be broken
 #[derive(Debug, Clone, Copy)]

@@ -10,8 +10,8 @@ use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 
 use dusk_plonk::prelude::*;
 
-/// Prove knowledge of the value and blinding factor, which make up the value commitment.
-/// This commitment gadget is using the pedersen commitments.
+/// Prove knowledge of the value and blinding factor, which make up the value
+/// commitment. This commitment gadget is using the pedersen commitments.
 /// C = a*g + b*h
 pub fn commitment(
     composer: &mut StandardComposer,

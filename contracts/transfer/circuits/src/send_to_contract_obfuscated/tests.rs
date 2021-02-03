@@ -5,12 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::helpers::FETCH_PP_FROM_RUSK_PROFILE;
-use crate::SendToContractTransparentCircuit;
+use crate::SendToContractObfuscatedCircuit;
+use std::convert::TryInto;
 
 use anyhow::{anyhow, Result};
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_plonk::jubjub::GENERATOR_EXTENDED;
-use phoenix_core::Note;
+use phoenix_core::{Message, Note};
 use poseidon252::sponge;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -18,20 +19,18 @@ use schnorr::Signature;
 
 use dusk_plonk::prelude::*;
 
-use std::convert::TryInto;
-
 #[test]
-fn send_transparent() -> Result<()> {
+fn send_obfuscated() -> Result<()> {
     let mut rng = StdRng::seed_from_u64(2322u64);
 
-    let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_psk = c_ssk.public_spend_key();
+    let ssk = SecretSpendKey::random(&mut rng);
+    let psk = ssk.public_spend_key();
 
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
 
-    let c_note = Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
-    let c_sk_r = c_ssk.sk_r(c_note.stealth_address()).as_ref().clone();
+    let c_note = Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
+    let c_sk_r = ssk.sk_r(c_note.stealth_address()).as_ref().clone();
     let c_pk_r = GENERATOR_EXTENDED * c_sk_r;
 
     let (_, crossover) = c_note.try_into().map_err(|e| {
@@ -44,12 +43,27 @@ fn send_transparent() -> Result<()> {
     let c_signature =
         Signature::new(&c_schnorr_secret, &mut rng, c_commitment_hash);
 
-    let mut circuit = SendToContractTransparentCircuit::new(
+    let message_r = JubJubScalar::random(&mut rng);
+    let message_value = 100;
+    let message = Message::new(&mut rng, &message_r, &psk, message_value);
+    let (message_value_p, message_blinding_factor) = message
+        .decrypt(&message_r, &psk)
+        .map_err(|e| anyhow!("Error decrypting the message: {:?}", e))?;
+    assert_eq!(message_value, message_value_p);
+
+    let mut circuit = SendToContractObfuscatedCircuit::new(
         c_value_commitment,
         c_pk_r,
         c_value,
         c_blinding_factor,
         c_signature,
+        message_value,
+        message_blinding_factor,
+        message_r,
+        *psk.A(),
+        *message.value_commitment(),
+        *message.nonce(),
+        *message.cipher(),
     );
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
@@ -63,11 +77,11 @@ fn send_transparent() -> Result<()> {
         (pp, pk, vk)
     };
 
-    let proof = circuit.gen_proof(&pp, &pk, b"send-transparent")?;
+    let proof = circuit.gen_proof(&pp, &pk, b"send-obfuscated")?;
     let pi = circuit.get_pi_positions().clone();
 
     let verify = circuit
-        .verify_proof(&pp, &vk, b"send-transparent", &proof, pi.as_slice())
+        .verify_proof(&pp, &vk, b"send-obfuscated", &proof, pi.as_slice())
         .is_ok();
     assert!(verify);
 
