@@ -28,10 +28,13 @@ test: contracts circuits ## Run the tests for the entire rusk repo
 		-- -C link-args=-s
 
 clear: ## Clear Rusk circuit keys
+	@cargo clean
+	@rm -f Cargo.lock
+	@rm -fr target
 	@rm -fr ~/.rusk/keys
 
 keys: ## Create Rusk keys
-	@cargo check --release
+	@cargo build --release
 
 contracts: ## Generate the WASM for all the contracts
 		@for file in `find contracts -maxdepth 2 -name "Cargo.toml"` ; do \

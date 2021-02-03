@@ -6,7 +6,6 @@
 
 #![allow(non_snake_case)]
 
-/*
 use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -15,7 +14,6 @@ use dusk_plonk::jubjub::{
     JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use poseidon252::tree::PoseidonBranch;
-*/
 
 use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
@@ -63,7 +61,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("schema/rusk.proto")?;
 
-    /*
     // Get the cached keys for bid-circuits crate from rusk profile, or
     // recompile and update them if they're outdated
     let bid_keys = rusk_profile::keys_for("bid-circuits");
@@ -77,11 +74,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if blindbid_keys.are_outdated() {
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
-    */
 
     // Get the cached keys for transfer contract crate from rusk profile, or
     // recompile and update them if they're outdated
     let transfer_keys = rusk_profile::keys_for("transfer-circuits");
+    let (id, pk, vk) = transfer::compile_stco_circuit()?;
+    transfer_keys.update(id.as_str(), (pk, vk))?;
     if transfer_keys.are_outdated() {
         let (id, pk, vk) = transfer::compile_stct_circuit()?;
         transfer_keys.update(id.as_str(), (pk, vk))?;
@@ -89,10 +87,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The execute circuit has multiple variations,
         // which is dependant upon the number of input
         // and output notes and is denoted in the table below:
-        for inputs in [/*1,  */ 2 , /* 3, 4 */].iter() {
-            for outputs in [/*0, 1, */ 2].iter() {
+        for inputs in 1..5 {
+            for outputs in 0..3 {
                 let (id, pk, vk) =
-                    transfer::compile_execute_circuit(*inputs, *outputs)?;
+                    transfer::compile_execute_circuit(inputs, outputs)?;
 
                 transfer_keys.update(id.as_str(), (pk, vk))?;
             }
@@ -102,7 +100,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/*
 mod bid {
     use super::*;
 
@@ -200,7 +197,6 @@ mod blindbid {
         .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
     }
 }
-*/
 
 mod transfer {
     use super::PUB_PARAMS;
@@ -211,10 +207,69 @@ mod transfer {
     use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use dusk_plonk::prelude::*;
-    use phoenix_core::Note;
+    use phoenix_core::{Message, Note};
     use poseidon252::sponge;
     use schnorr::Signature;
-    use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
+    use transfer_circuits::{
+        ExecuteCircuit, SendToContractObfuscatedCircuit,
+        SendToContractTransparentCircuit,
+    };
+
+    pub fn compile_stco_circuit() -> Result<(String, Vec<u8>, Vec<u8>)> {
+        let mut rng = rand::thread_rng();
+
+        let ssk = SecretSpendKey::random(&mut rng);
+        let psk = ssk.public_spend_key();
+
+        let c_value = 100;
+        let c_blinding_factor = JubJubScalar::random(&mut rng);
+
+        let c_note =
+            Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
+        let c_sk_r = ssk.sk_r(c_note.stealth_address()).as_ref().clone();
+        let c_pk_r = GENERATOR_EXTENDED * c_sk_r;
+
+        let (_, crossover) = c_note.try_into().map_err(|e| {
+            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
+        })?;
+        let c_value_commitment = *crossover.value_commitment();
+
+        let c_schnorr_secret = SecretKey::from(c_sk_r);
+        let c_commitment_hash =
+            sponge::hash(&c_value_commitment.to_hash_inputs());
+        let c_signature =
+            Signature::new(&c_schnorr_secret, &mut rng, c_commitment_hash);
+
+        let message_r = JubJubScalar::random(&mut rng);
+        let message_value = 100;
+        let message = Message::new(&mut rng, &message_r, &psk, message_value);
+        let (_, message_blinding_factor) = message
+            .decrypt(&message_r, &psk)
+            .map_err(|e| anyhow!("Error decrypting the message: {:?}", e))?;
+
+        let mut circuit = SendToContractObfuscatedCircuit::new(
+            c_value_commitment,
+            c_pk_r,
+            c_value,
+            c_blinding_factor,
+            c_signature,
+            message_value,
+            message_blinding_factor,
+            message_r,
+            *psk.A(),
+            *message.value_commitment(),
+            *message.nonce(),
+            *message.cipher(),
+        );
+
+        let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
+
+        let id = circuit.rusk_label();
+        let pk = pk.to_bytes();
+        let vk = vk.to_bytes();
+
+        Ok((id, pk, vk))
+    }
 
     pub fn compile_stct_circuit() -> Result<(String, Vec<u8>, Vec<u8>)> {
         let mut rng = rand::thread_rng();
@@ -283,6 +338,7 @@ mod transfer {
             ExecuteCircuit::<17, CAPACITY>::create_dummy_proof::<_, MemStore>(
                 &mut rand::thread_rng(),
                 false,
+                Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
                 inputs,
                 outputs,
             )?;
