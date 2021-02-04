@@ -54,9 +54,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2020-10-25
+          toolchain: nightly
           override: true
-      - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
       - run: make test
 
