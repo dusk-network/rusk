@@ -68,7 +68,7 @@ canonical_derive = "0.4"
 canonical_host = "0.4"
 
 [dev-dependencies]
-bid_contract = {path = "contracts/bid"}
+bid_contract = {path = "./contracts/bid"}
 bid-circuits = {path = "./contracts/bid/circuits"}
 
 [features]
