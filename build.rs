@@ -68,6 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // recompile and update them if they're outdated
     let bid_keys = rusk_profile::keys_for("bid-circuits");
     if bid_keys.are_outdated() {
+        bid_keys.clear_all()?;
         bid_keys.update("bid", bid::compile_circuit()?)?;
     }
 
@@ -75,6 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // recompile and update them if they're outdated
     let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
     if blindbid_keys.are_outdated() {
+        blindbid_keys.clear_all()?;
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
     */
