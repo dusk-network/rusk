@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 #![cfg(not(target_os = "windows"))]
 use std::{
     pin::Pin,
@@ -51,3 +52,4 @@ impl AsyncWrite for UnixStream {
         Pin::new(&mut self.0).poll_shutdown(cx)
     }
 }
+*/

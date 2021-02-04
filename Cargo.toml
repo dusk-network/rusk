@@ -19,17 +19,17 @@ path = "src/lib/lib.rs"
 #name = "rusk"
 #path = "src/bin/main.rs"
 #
-#[dependencies]
+[dependencies]
 #tonic = "0.3"
 #tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
 #poseidon252 = {git="https://github.com/dusk-network/Poseidon252", branch="vlopes11/bump-plonk"}
-#dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
+dusk-plonk = "0.5"
 #dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls"}
 #dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", branch="vlopes11/bump-bls"}
 #phoenix-core = {git="https://github.com/dusk-network/phoenix-core", branch="vlopes11/bump-bls", features=["canon"]}
 #schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/bump-bls"}
-#tracing = "0.1"
-#tracing-subscriber = "0.2"
+tracing = "0.1"
+tracing-subscriber = "0.2"
 #clap = "2.33.3"
 #prost = "0.6"
 #futures = "0.3"
@@ -39,12 +39,12 @@ path = "src/lib/lib.rs"
 #tower = "0.3"
 #rand = "0.7"
 #bincode = "1.3.1"
-#lazy_static = "1.4"
-#rusk-profile = { path = "./profile" }
-#canonical = "0.4"
-#canonical_derive = "0.4"
-#canonical_host = "0.4"
-#wasmi = "0.6"
+lazy_static = "1.4"
+rusk-profile = { path = "./profile" }
+canonical = "0.5"
+canonical_derive = "0.5"
+canonical_host = "0.5"
+wasmi = "0.6"
 #bid-circuits = {path = "./contracts/bid/circuits"}
 
 [build-dependencies]
@@ -52,13 +52,13 @@ tonic-build = "0.3"
 rustc_tools_util = "0.2"
 poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag="v0.17.0", features=["canon"]}
 dusk-plonk = "0.5"
-dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", tag="v0.5.0"}
+#dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", tag="v0.5.0"}
 dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", tag="v0.5.1"}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.7.2", features = ["canon"]}
 schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/poseidon-bump"}
 anyhow = "1.0"
 rand = "0.7"
-bid-circuits = {path ="./contracts/bid/circuits"}
+#bid-circuits = {path ="./contracts/bid/circuits"}
 transfer-circuits = {path ="./contracts/transfer/circuits", features=["helpers"]}
 rusk-profile = { path = "./profile" }
 lazy_static = "1.4"

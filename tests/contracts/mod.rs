@@ -4,4 +4,4 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod bid;
+//pub mod bid;

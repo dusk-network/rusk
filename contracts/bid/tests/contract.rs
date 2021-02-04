@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 #![cfg(test)]
 #![cfg(feature = "host")]
 
@@ -106,3 +107,4 @@ fn bid_contract_workflow_works() {
     assert!(err == false);
     assert!(idx == 0u64);
 }
+*/

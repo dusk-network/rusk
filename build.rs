@@ -6,6 +6,7 @@
 
 #![allow(non_snake_case)]
 
+/*
 use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{bid::Bid, BlindBidCircuit};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -14,6 +15,7 @@ use dusk_plonk::jubjub::{
     JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use poseidon252::tree::PoseidonBranch;
+*/
 
 use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
@@ -61,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("schema/rusk.proto")?;
 
+    /*
     // Get the cached keys for bid-circuits crate from rusk profile, or
     // recompile and update them if they're outdated
     let bid_keys = rusk_profile::keys_for("bid-circuits");
@@ -74,14 +77,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if blindbid_keys.are_outdated() {
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
+    */
 
     // Get the cached keys for transfer contract crate from rusk profile, or
     // recompile and update them if they're outdated
     let transfer_keys = rusk_profile::keys_for("transfer-circuits");
-    let (id, pk, vk) = transfer::compile_stco_circuit()?;
-    transfer_keys.update(id.as_str(), (pk, vk))?;
     if transfer_keys.are_outdated() {
         let (id, pk, vk) = transfer::compile_stct_circuit()?;
+        transfer_keys.update(id.as_str(), (pk, vk))?;
+
+        let (id, pk, vk) = transfer::compile_stco_circuit()?;
         transfer_keys.update(id.as_str(), (pk, vk))?;
 
         // The execute circuit has multiple variations,
@@ -100,6 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/*
 mod bid {
     use super::*;
 
@@ -197,6 +203,7 @@ mod blindbid {
         .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))
     }
 }
+*/
 
 mod transfer {
     use super::PUB_PARAMS;

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 #![cfg_attr(feature = "hosted", no_std)]
 #![feature(min_const_generics)]
 
@@ -21,3 +22,4 @@ pub mod hosted;
 pub use contract::Contract;
 pub use leaf::Leaf;
 pub use tree::Tree;
+*/

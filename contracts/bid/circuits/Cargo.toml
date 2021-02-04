@@ -4,10 +4,9 @@ version = "0.1.0"
 authors = ["Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 
-
-[dependencies]
-anyhow = "1"
-dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
-plonk_gadgets = {git="https://github.com/dusk-network/plonk_gadgets", branch="vlopes11/bump-bls"}
-dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls"}
-rand = "0.7"
+#[dependencies]
+#anyhow = "1"
+#dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
+#plonk_gadgets = {git="https://github.com/dusk-network/plonk_gadgets", branch="vlopes11/bump-bls"}
+#dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls"}
+#rand = "0.7"

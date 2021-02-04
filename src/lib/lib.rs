@@ -4,12 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
+use dusk_plonk::prelude::*;
+use lazy_static::lazy_static;
 use tracing::info;
-mod encoding;
+
+/*
 mod ops;
-pub mod services;
+mod encoding;
 mod transaction;
+
+pub mod services;
+pub use ops::{RuskExtenalError, RuskExternals};
+*/
+
+lazy_static! {
+    pub static ref PUB_PARAMS: PublicParameters = {
+        let buff =
+            rusk_profile::get_common_reference_string().expect("CRS not found");
+
+        unsafe {
+            PublicParameters::from_slice_unchecked(&buff)
+                .expect("CRS not decoded")
+        }
+    };
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rusk {}
@@ -25,18 +43,3 @@ impl Default for Rusk {
         Rusk {}
     }
 }
-
-use dusk_plonk::prelude::PublicParameters;
-use lazy_static::lazy_static;
-lazy_static! {
-    pub static ref PUB_PARAMS: PublicParameters = {
-        let buff =
-            rusk_profile::get_common_reference_string().expect("CRS not found");
-        let result: PublicParameters =
-            bincode::deserialize(&buff).expect("CRS not decoded");
-        result
-    };
-}
-
-pub use ops::{RuskExtenalError, RuskExternals};
-*/

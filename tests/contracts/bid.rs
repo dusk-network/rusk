@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use bid_circuits::CorrectnessCircuit;
 use bid_contract::Contract;
 use canonical_host::{MemStore, Remote, Wasm};
@@ -160,3 +161,4 @@ fn bid_call_wrong_proof_works() {
     cast.commit().expect("Commit couldn't be done");
     assert!(err == true);
 }
+*/

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use canonical_host::MemoryHolder;
 use dusk_plonk::prelude::*;
 use poseidon252::sponge::hash;
@@ -138,3 +139,4 @@ impl ModuleImportResolver for RuskExternals {
         }
     }
 }
+*/

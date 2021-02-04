@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use transfer_circuits::SendToContractTransparentCircuit;
 use transfer_contract::Contract;
 
@@ -101,3 +102,4 @@ fn send_to_contract_transparent() {
 
     assert_eq!(initial_balance + value, balance);
 }
+*/

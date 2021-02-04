@@ -7,42 +7,42 @@ edition = "2018"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[dependencies]
-canonical = {version = "0.4"}
-canonical_derive = "0.4"
-canonical_host = { version = "0.4", optional = true }
-dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls", default-features=false}
-dusk-bls12_381 = {git="https://github.com/dusk-network/bls12_381", branch="vlopes11/g1affine-raw-bytes", default-features=false, features=["canon"]}
-dusk-jubjub = {git="https://github.com/dusk-network/jubjub", branch="vlopes11/g1affine-unchecked-bytes", default-features=false, features=["canon"]}
-dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
-poseidon252 = {git="https://github.com/dusk-network/Poseidon252", branch="vlopes11/bump-plonk", default-features=false, features=["canon"]}
-dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", branch="vlopes11/bump-bls", default-features=false, features=["canon"]}
-cfg-if = "1"
-schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/bump-bls", default-features=false}
-dusk-kelvin-map = "0.1"
-
-[dev-dependencies]
-rand = "0.7"
-bid-circuits = {path = "./circuits"}
-wasmi = "0.6"
-canonical_host = "0.4"
-
-[features]
-default = ["dusk-blindbid/canon","poseidon252/canon", "schnorr/canon"]
-hosted = ["poseidon252/canon", "dusk-blindbid/canon", "dusk-plonk/canon", "schnorr/canon"]
-host = [
-        "canonical/host", 
-        "canonical_host", 
-        "poseidon252/canon_host", 
-        "poseidon252/default", 
-        "dusk-blindbid/default", 
-        "dusk-pki/default", 
-        "dusk-plonk/canon",
-        "schnorr/canon"
-        ]
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"
+#[dependencies]
+#canonical = {version = "0.4"}
+#canonical_derive = "0.4"
+#canonical_host = { version = "0.4", optional = true }
+#dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", branch="vlopes11/bump-bls", default-features=false}
+#dusk-bls12_381 = {git="https://github.com/dusk-network/bls12_381", branch="vlopes11/g1affine-raw-bytes", default-features=false, features=["canon"]}
+#dusk-jubjub = {git="https://github.com/dusk-network/jubjub", branch="vlopes11/g1affine-unchecked-bytes", default-features=false, features=["canon"]}
+#dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="vlopes11/332-proverkey-from-unchecked"}
+#poseidon252 = {git="https://github.com/dusk-network/Poseidon252", branch="vlopes11/bump-plonk", default-features=false, features=["canon"]}
+#dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", branch="vlopes11/bump-bls", default-features=false, features=["canon"]}
+#cfg-if = "1"
+#schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/bump-bls", default-features=false}
+#dusk-kelvin-map = "0.1"
+#
+#[dev-dependencies]
+#rand = "0.7"
+#bid-circuits = {path = "./circuits"}
+#wasmi = "0.6"
+#canonical_host = "0.4"
+#
+#[features]
+#default = ["dusk-blindbid/canon","poseidon252/canon", "schnorr/canon"]
+#hosted = ["poseidon252/canon", "dusk-blindbid/canon", "dusk-plonk/canon", "schnorr/canon"]
+#host = [
+#        "canonical/host", 
+#        "canonical_host", 
+#        "poseidon252/canon_host", 
+#        "poseidon252/default", 
+#        "dusk-blindbid/default", 
+#        "dusk-pki/default", 
+#        "dusk-plonk/canon",
+#        "schnorr/canon"
+#        ]
+#
+#[profile.dev]
+#panic = "abort"
+#
+#[profile.release]
+#panic = "abort"

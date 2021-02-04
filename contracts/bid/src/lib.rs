@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 #![cfg_attr(feature = "hosted", no_std)]
 #![feature(min_const_generics)]
 
@@ -88,3 +89,4 @@ pub mod host;
 
 #[cfg(feature = "hosted")]
 pub mod hosted;
+*/

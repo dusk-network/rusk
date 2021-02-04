@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 const VERIFY_PROOF: usize = 103;
 
 use canonical_host::MemoryHolder;
@@ -84,3 +85,4 @@ impl ModuleImportResolver for RuskExternals {
         }
     }
 }
+*/

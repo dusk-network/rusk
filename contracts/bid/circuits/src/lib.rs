@@ -4,5 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 mod correctness;
 pub use correctness::CorrectnessCircuit;
+*/
