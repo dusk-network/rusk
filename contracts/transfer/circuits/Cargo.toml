@@ -13,14 +13,13 @@ canonical_derive = {version="0.5", optional=true}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.7.2", features = ["canon"]}
 poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag="v0.17.0", features=["canon"]}
 dusk-pki = {git="https://github.com/dusk-network/dusk-pki", tag="v0.5.1"}
-schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/poseidon-bump"}
+schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.4.0"}
 rusk-profile = { path = "../../../profile" }
-
-rand = "0.7"
-canonical_host = "0.5"
 
 [dev-dependencies]
 canonical_derive = "0.5"
+rand = "0.7"
+canonical_host = "0.5"
 
 [features]
 helpers = ["canonical_derive"]
