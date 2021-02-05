@@ -85,10 +85,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // recompile and update them if they're outdated
     let transfer_keys = rusk_profile::keys_for("transfer-circuits");
     if transfer_keys.are_outdated() {
+        let (id, pk, vk) = transfer::compile_stco_circuit()?;
+        transfer_keys.update(id.as_str(), (pk, vk))?;
+
         let (id, pk, vk) = transfer::compile_stct_circuit()?;
         transfer_keys.update(id.as_str(), (pk, vk))?;
 
-        let (id, pk, vk) = transfer::compile_stco_circuit()?;
+        let (id, pk, vk) = transfer::compile_wfo_circuit()?;
         transfer_keys.update(id.as_str(), (pk, vk))?;
 
         // The execute circuit has multiple variations,
@@ -213,63 +216,46 @@ mod transfer {
 
     use anyhow::{anyhow, Result};
     use canonical_host::MemStore;
-    use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
-    use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use dusk_pki::SecretSpendKey;
     use dusk_plonk::prelude::*;
     use phoenix_core::{Message, Note};
-    use poseidon252::sponge;
-    use schnorr::Signature;
     use transfer_circuits::{
         ExecuteCircuit, SendToContractObfuscatedCircuit,
-        SendToContractTransparentCircuit,
+        SendToContractTransparentCircuit, WithdrawFromObfuscatedCircuit,
     };
 
     pub fn compile_stco_circuit() -> Result<(String, Vec<u8>, Vec<u8>)> {
         let mut rng = rand::thread_rng();
 
         let ssk = SecretSpendKey::random(&mut rng);
+        let vk = ssk.view_key();
         let psk = ssk.public_spend_key();
 
         let c_value = 100;
         let c_blinding_factor = JubJubScalar::random(&mut rng);
-
         let c_note =
             Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
-        let c_sk_r = ssk.sk_r(c_note.stealth_address()).as_ref().clone();
-        let c_pk_r = GENERATOR_EXTENDED * c_sk_r;
-
-        let (_, crossover) = c_note.try_into().map_err(|e| {
+        let (fee, crossover) = c_note.try_into().map_err(|e| {
             anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
         })?;
-        let c_value_commitment = *crossover.value_commitment();
-
-        let c_schnorr_secret = SecretKey::from(c_sk_r);
-        let c_commitment_hash =
-            sponge::hash(&c_value_commitment.to_hash_inputs());
-        let c_signature =
-            Signature::new(&c_schnorr_secret, &mut rng, c_commitment_hash);
+        let c_signature = SendToContractObfuscatedCircuit::sign(
+            &mut rng, &ssk, &fee, &crossover,
+        );
 
         let message_r = JubJubScalar::random(&mut rng);
         let message_value = 100;
         let message = Message::new(&mut rng, &message_r, &psk, message_value);
-        let (_, message_blinding_factor) = message
-            .decrypt(&message_r, &psk)
-            .map_err(|e| anyhow!("Error decrypting the message: {:?}", e))?;
 
         let mut circuit = SendToContractObfuscatedCircuit::new(
-            c_value_commitment,
-            c_pk_r,
-            c_value,
-            c_blinding_factor,
+            &crossover,
+            &fee,
+            &vk,
             c_signature,
-            message_value,
-            message_blinding_factor,
+            &message,
+            &psk,
             message_r,
-            *psk.A(),
-            *message.value_commitment(),
-            *message.nonce(),
-            *message.cipher(),
-        );
+        )
+        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
         let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
 
@@ -284,6 +270,7 @@ mod transfer {
         let mut rng = rand::thread_rng();
 
         let c_ssk = SecretSpendKey::random(&mut rng);
+        let c_vk = c_ssk.view_key();
         let c_psk = c_ssk.public_spend_key();
 
         let c_value = 100;
@@ -291,27 +278,66 @@ mod transfer {
 
         let c_note =
             Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
-        let c_sk_r = c_ssk.sk_r(c_note.stealth_address());
-        let c_pk_r = GENERATOR_EXTENDED * c_sk_r.as_ref();
-
-        let (_, crossover) = c_note.try_into().map_err(|e| {
-            anyhow!("Failed to convert note to crossover: {:?}", e)
+        let (fee, crossover) = c_note.try_into().map_err(|e| {
+            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
         })?;
-        let c_value_commitment = *crossover.value_commitment();
 
-        let c_schnorr_secret = SecretKey::from(c_sk_r);
-        let c_commitment_hash =
-            sponge::hash(&c_value_commitment.to_hash_inputs());
-        let c_signature =
-            Signature::new(&c_schnorr_secret, &mut rng, c_commitment_hash);
+        let c_signature = SendToContractTransparentCircuit::sign(
+            &mut rng, &c_ssk, &fee, &crossover,
+        );
 
         let mut circuit = SendToContractTransparentCircuit::new(
-            c_value_commitment,
-            c_pk_r,
-            c_value,
-            c_blinding_factor,
+            &fee,
+            &crossover,
+            &c_vk,
             c_signature,
-        );
+        )
+        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+
+        let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
+
+        let id = circuit.rusk_label();
+        let pk = pk.to_bytes();
+        let vk = vk.to_bytes();
+
+        Ok((id, pk, vk))
+    }
+
+    pub fn compile_wfo_circuit() -> Result<(String, Vec<u8>, Vec<u8>)> {
+        let mut rng = rand::thread_rng();
+
+        let i_ssk = SecretSpendKey::random(&mut rng);
+        let i_vk = i_ssk.view_key();
+        let i_psk = i_ssk.public_spend_key();
+        let i_value = 100;
+        let i_blinding_factor = JubJubScalar::random(&mut rng);
+        let i_note =
+            Note::obfuscated(&mut rng, &i_psk, i_value, i_blinding_factor);
+
+        let c_ssk = SecretSpendKey::random(&mut rng);
+        let c_psk = c_ssk.public_spend_key();
+        let c_r = JubJubScalar::random(&mut rng);
+        let c_value = 25;
+        let c = Message::new(&mut rng, &c_r, &c_psk, c_value);
+
+        let o_ssk = SecretSpendKey::random(&mut rng);
+        let o_vk = o_ssk.view_key();
+        let o_psk = o_ssk.public_spend_key();
+        let o_value = 75;
+        let o_blinding_factor = JubJubScalar::random(&mut rng);
+        let o_note =
+            Note::obfuscated(&mut rng, &o_psk, o_value, o_blinding_factor);
+
+        let mut circuit = WithdrawFromObfuscatedCircuit::new(
+            &i_note,
+            Some(&i_vk),
+            &c,
+            c_r,
+            &c_psk,
+            &o_note,
+            Some(&o_vk),
+        )
+        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
         let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
 

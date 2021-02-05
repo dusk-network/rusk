@@ -50,12 +50,10 @@ wasmi = "0.6"
 [build-dependencies]
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
-poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag="v0.17.0", features=["canon"]}
 dusk-plonk = "0.5"
 #dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", tag="v0.5.0"}
 dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", tag="v0.5.1"}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.7.2", features = ["canon"]}
-schnorr = {git="https://github.com/dusk-network/schnorr", branch="vlopes11/poseidon-bump"}
 anyhow = "1.0"
 rand = "0.7"
 #bid-circuits = {path ="./contracts/bid/circuits"}
