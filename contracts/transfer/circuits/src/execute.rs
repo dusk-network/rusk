@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets;
+use crate::{circuit_common_methods, gadgets, rusk_profile_methods};
 
 use crossover::CircuitCrossover;
 use input::{CircuitInput, WitnessInput};
@@ -46,34 +46,13 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         b"execute-circuit"
     }
 
-    pub fn rusk_label(&self) -> String {
+    rusk_profile_methods!(self, {
         format!(
             "transfer-execute-{}-{}",
             self.inputs.len(),
             self.outputs.len()
         )
-    }
-
-    pub fn rusk_circuit_args(
-        &self,
-    ) -> Result<(PublicParameters, ProverKey, VerifierKey)> {
-        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
-            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
-        })?;
-
-        let pp =
-            unsafe { PublicParameters::from_slice_unchecked(pp.as_slice())? };
-
-        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vk) = keys
-            .get(self.rusk_label().as_str())
-            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
-
-        let pk = ProverKey::from_bytes(pk.as_slice())?;
-        let vk = VerifierKey::from_bytes(vk.as_slice())?;
-
-        Ok((pp, pk, vk))
-    }
+    });
 
     pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         self.tx_hash = tx_hash;
@@ -139,6 +118,8 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
     for ExecuteCircuit<DEPTH, CAPACITY>
 {
+    circuit_common_methods!(CAPACITY);
+
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
         let mut base_root = None;
@@ -380,27 +361,5 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
 
         Ok(())
-    }
-
-    /// Returns the size at which we trim the `PublicParameters`
-    /// to compile the circuit or perform proving/verification
-    /// actions.
-    fn get_trim_size(&self) -> usize {
-        1 << CAPACITY
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A
-    }
-
-    /// Return a mutable reference to the Public Inputs storage of the
-    /// circuit.
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
     }
 }

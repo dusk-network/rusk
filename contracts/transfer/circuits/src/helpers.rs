@@ -20,6 +20,49 @@ mod leaf;
 
 pub use leaf::NoteLeaf;
 
+#[macro_export]
+macro_rules! test_circuit {
+    ( $f:ident, $c:block ) => {
+        #[test]
+        fn $f() -> Result<()> {
+            use rand::rngs::StdRng;
+            use rand::SeedableRng;
+
+            let mut rng = StdRng::seed_from_u64(2324u64);
+
+            let mut circuit = $c;
+
+            let (pp, pk, vk) = if crate::helpers::FETCH_PP_FROM_RUSK_PROFILE {
+                circuit.rusk_circuit_args()?
+            } else {
+                let pp =
+                    PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
+                let (pk, vk) = circuit.compile(&pp)?;
+
+                circuit.get_mut_pi_positions().clear();
+
+                (pp, pk, vk)
+            };
+
+            let proof = circuit.gen_proof(&pp, &pk, b"send-obfuscated")?;
+            let pi = circuit.get_pi_positions().clone();
+
+            let verify = circuit
+                .verify_proof(
+                    &pp,
+                    &vk,
+                    b"send-obfuscated",
+                    &proof,
+                    pi.as_slice(),
+                )
+                .is_ok();
+            assert!(verify);
+
+            Ok(())
+        }
+    };
+}
+
 #[cfg(feature = "tests-generate-pub-params")]
 pub const FETCH_PP_FROM_RUSK_PROFILE: bool = false;
 

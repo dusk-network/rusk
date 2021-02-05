@@ -4,18 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets;
+use crate::{circuit_common_methods, gadgets, rusk_profile_methods};
 
 use anyhow::{anyhow, Result};
+use dusk_bytes::Serializable;
+use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
+use phoenix_core::{Crossover, Error as PhoenixError, Fee, Message};
 use poseidon252::cipher::{self, PoseidonCipher};
+use poseidon252::sponge;
+use rand_core::{CryptoRng, RngCore};
 use schnorr::Signature;
-
-#[cfg(test)]
-mod tests;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractObfuscatedCircuit {
@@ -40,46 +42,60 @@ pub struct SendToContractObfuscatedCircuit {
 }
 
 impl SendToContractObfuscatedCircuit {
-    pub fn rusk_label(&self) -> String {
+    rusk_profile_methods!(self, {
         "transfer-send-to-contract-obfuscated".into()
-    }
+    });
 
-    pub fn rusk_circuit_args(
-        &self,
-    ) -> Result<(PublicParameters, ProverKey, VerifierKey)> {
-        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vk) = keys
-            .get(self.rusk_label().as_str())
-            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+    pub fn sign<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        ssk: &SecretSpendKey,
+        fee: &Fee,
+        crossover: &Crossover,
+    ) -> Signature {
+        let sk_r = ssk.sk_r(fee.stealth_address()).as_ref().clone();
 
-        let pk = ProverKey::from_bytes(pk.as_slice())?;
-        let vk = VerifierKey::from_bytes(vk.as_slice())?;
+        let secret = SecretKey::from(sk_r);
+        let commitment =
+            sponge::hash(&crossover.value_commitment().to_hash_inputs());
 
-        let pp = rusk_profile::get_common_reference_string().map_err(|e| {
-            anyhow!("Failed to fetch CRS from rusk profile: {}", e)
-        })?;
-
-        let pp =
-            unsafe { PublicParameters::from_slice_unchecked(pp.as_slice())? };
-
-        Ok((pp, pk, vk))
+        Signature::new(&secret, rng, commitment)
     }
 
     pub fn new(
-        value_commitment: JubJubExtended,
-        pk: JubJubExtended,
-        value: u64,
-        blinding_factor: JubJubScalar,
+        crossover: &Crossover,
+        fee: &Fee,
+        vk: &ViewKey,
         signature: Signature,
-        message_value: u64,
-        message_blinding_factor: JubJubScalar,
+        message: &Message,
+        message_psk: &PublicSpendKey,
         message_r: JubJubScalar,
-        message_pk: JubJubExtended,
-        message_value_commitment: JubJubExtended,
-        message_nonce: JubJubScalar,
-        message_cipher: [BlsScalar; PoseidonCipher::cipher_size()],
-    ) -> Self {
-        Self {
+    ) -> Result<Self, PhoenixError> {
+        let value_commitment = *crossover.value_commitment();
+        let pk = *fee.stealth_address().pk_r().as_ref();
+
+        let nonce = BlsScalar::from(*crossover.nonce());
+        let secret = fee.stealth_address().R() * vk.a();
+        let (value, blinding_factor) = crossover
+            .encrypted_data()
+            .decrypt(&secret.into(), &nonce)
+            .map(|d| {
+                let value = d[0].reduce().0[0];
+                let blinding_factor =
+                    JubJubScalar::from_bytes(&d[1].to_bytes())
+                        .unwrap_or_default();
+
+                (value, blinding_factor)
+            })?;
+
+        let (message_value, message_blinding_factor) =
+            message.decrypt(&message_r, message_psk)?;
+
+        let message_pk = *message_psk.A();
+        let message_value_commitment = *message.value_commitment();
+        let message_nonce = *message.nonce();
+        let message_cipher = *message.cipher();
+
+        Ok(Self {
             pi_positions: vec![],
             blinding_factor,
             signature,
@@ -93,11 +109,13 @@ impl SendToContractObfuscatedCircuit {
             message_value_commitment,
             message_nonce,
             message_cipher,
-        }
+        })
     }
 }
 
 impl Circuit<'_> for SendToContractObfuscatedCircuit {
+    circuit_common_methods!(14);
+
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
 
@@ -221,26 +239,43 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
 
         Ok(())
     }
-
-    /// Returns the size at which we trim the `PublicParameters`
-    /// to compile the circuit or perform proving/verification
-    /// actions.
-    fn get_trim_size(&self) -> usize {
-        1 << 14
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    /// Return a mutable reference to the Public Inputs storage of the
-    /// circuit.
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
-    }
 }
+
+#[cfg(test)]
+crate::test_circuit!(send_obfuscated, {
+    use std::convert::TryInto;
+
+    use phoenix_core::Note;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    let mut rng = StdRng::seed_from_u64(2322u64);
+
+    let ssk = SecretSpendKey::random(&mut rng);
+    let vk = ssk.view_key();
+    let psk = ssk.public_spend_key();
+
+    let c_value = 100;
+    let c_blinding_factor = JubJubScalar::random(&mut rng);
+    let c_note = Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
+    let (fee, crossover) = c_note.try_into().map_err(|e| {
+        anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
+    })?;
+    let c_signature =
+        SendToContractObfuscatedCircuit::sign(&mut rng, &ssk, &fee, &crossover);
+
+    let message_r = JubJubScalar::random(&mut rng);
+    let message_value = 100;
+    let message = Message::new(&mut rng, &message_r, &psk, message_value);
+
+    SendToContractObfuscatedCircuit::new(
+        &crossover,
+        &fee,
+        &vk,
+        c_signature,
+        &message,
+        &psk,
+        message_r,
+    )
+    .unwrap()
+});
