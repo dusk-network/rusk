@@ -4,11 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod balance;
-pub mod commitment;
-pub mod merkle;
-pub mod nullifier;
-pub mod preimage;
-pub mod range;
-pub mod schnorr;
-pub mod secret_key;
+mod commitment;
+mod point_signature;
+mod range;
+
+pub use commitment::commitment;
+pub use point_signature::point_signature;
+pub use range::range;
