@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{circuit_common_methods, gadgets, rusk_profile_methods};
+use crate::gadgets;
 
 use crossover::CircuitCrossover;
 use input::{CircuitInput, WitnessInput};
 use output::{CircuitOutput, WitnessOutput};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::JubJubExtended;
 use phoenix_core::Note;
@@ -46,13 +46,13 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         b"execute-circuit"
     }
 
-    rusk_profile_methods!(self, {
+    pub fn rusk_keys_id(&self) -> String {
         format!(
             "transfer-execute-{}-{}",
             self.inputs.len(),
             self.outputs.len()
         )
-    });
+    }
 
     pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         self.tx_hash = tx_hash;
@@ -118,8 +118,6 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
     for ExecuteCircuit<DEPTH, CAPACITY>
 {
-    circuit_common_methods!(CAPACITY);
-
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
         let mut base_root = None;
@@ -222,7 +220,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         // 6. Prove that the value of the openings of the commitments of the
         // input Notes is in range
         inputs.iter().for_each(|input| {
-            gadgets::range(composer, input.value);
+            composer.range_gate(input.value, 64);
         });
 
         // 7. Prove the knowledge of the commitment opening of the Crossover
@@ -262,7 +260,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
         // 8. Prove that the value of the opening of the commitment of the
         // Crossover is within range
-        gadgets::range(composer, crossover.value);
+        composer.range_gate(crossover.value, 64);
 
         // 9. Prove the knowledge of the commitment openings of the commitments
         // of the output Obfuscated Notes
@@ -298,7 +296,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         // 10. Prove that the value of the openings of the commitments of the
         // output Obfuscated Notes is in range
         outputs.iter().for_each(|output| {
-            gadgets::range(composer, output.value);
+            composer.range_gate(output.value, 64);
         });
 
         // 11. Prove that sum(inputs.value) - sum(outputs.value) -
@@ -361,5 +359,22 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
 
         Ok(())
+    }
+
+    fn get_trim_size(&self) -> usize {
+        1 << CAPACITY
+    }
+
+    fn set_trim_size(&mut self, _size: usize) {
+        // N/A, fixed size circuit
+    }
+
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
+    }
+
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
     }
 }

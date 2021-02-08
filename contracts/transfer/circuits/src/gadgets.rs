@@ -6,8 +6,6 @@
 
 mod commitment;
 mod point_signature;
-mod range;
 
 pub use commitment::commitment;
 pub use point_signature::point_signature;
-pub use range::range;

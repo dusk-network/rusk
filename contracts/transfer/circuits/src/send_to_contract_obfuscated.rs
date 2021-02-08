@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{circuit_common_methods, gadgets, rusk_profile_methods};
+use crate::gadgets;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
@@ -42,9 +42,9 @@ pub struct SendToContractObfuscatedCircuit {
 }
 
 impl SendToContractObfuscatedCircuit {
-    rusk_profile_methods!(self, {
-        "transfer-send-to-contract-obfuscated".into()
-    });
+    pub const fn rusk_keys_id() -> &'static str {
+        "transfer-send-to-contract-obfuscated"
+    }
 
     pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
@@ -114,8 +114,6 @@ impl SendToContractObfuscatedCircuit {
 }
 
 impl Circuit<'_> for SendToContractObfuscatedCircuit {
-    circuit_common_methods!(14);
-
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
 
@@ -142,7 +140,7 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
 
         // 2. Prove that the value of the opening of the commitment
         // of the Crossover is within range
-        gadgets::range(composer, value);
+        composer.range_gate(value, 64);
 
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
@@ -185,7 +183,7 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
 
         // 5. Prove that the value of the opening of the commitment of the
         // Message  is within range
-        gadgets::range(composer, message_value);
+        composer.range_gate(message_value, 64);
 
         // 6. Prove that the encrypted value of the opening of the commitment of
         // the Message  is within correctly encrypted to the derivative of pk
@@ -239,43 +237,74 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
 
         Ok(())
     }
+
+    fn get_trim_size(&self) -> usize {
+        1 << 14
+    }
+
+    fn set_trim_size(&mut self, _size: usize) {
+        // N/A, fixed size circuit
+    }
+
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
+    }
+
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
+    }
 }
 
-#[cfg(test)]
-crate::test_circuit!(send_obfuscated, {
+#[test]
+fn send_obfuscated() {
+    use crate::test_helpers;
     use std::convert::TryInto;
 
+    use anyhow::anyhow;
     use phoenix_core::Note;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
     let mut rng = StdRng::seed_from_u64(2322u64);
 
-    let ssk = SecretSpendKey::random(&mut rng);
-    let vk = ssk.view_key();
-    let psk = ssk.public_spend_key();
+    test_helpers::circuit(
+        &mut rng,
+        SendToContractObfuscatedCircuit::rusk_keys_id(),
+        |rng| {
+            let ssk = SecretSpendKey::random(rng);
+            let vk = ssk.view_key();
+            let psk = ssk.public_spend_key();
 
-    let c_value = 100;
-    let c_blinding_factor = JubJubScalar::random(&mut rng);
-    let c_note = Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
-    let (fee, crossover) = c_note.try_into().map_err(|e| {
-        anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
-    })?;
-    let c_signature =
-        SendToContractObfuscatedCircuit::sign(&mut rng, &ssk, &fee, &crossover);
+            let c_value = 100;
+            let c_blinding_factor = JubJubScalar::random(rng);
+            let c_note =
+                Note::obfuscated(rng, &psk, c_value, c_blinding_factor);
+            let (fee, crossover) = c_note.try_into().map_err(|e| {
+                anyhow!(
+                    "Failed to convert phoenix note into crossover: {:?}",
+                    e
+                )
+            })?;
+            let c_signature = SendToContractObfuscatedCircuit::sign(
+                rng, &ssk, &fee, &crossover,
+            );
 
-    let message_r = JubJubScalar::random(&mut rng);
-    let message_value = 100;
-    let message = Message::new(&mut rng, &message_r, &psk, message_value);
+            let message_r = JubJubScalar::random(rng);
+            let message_value = 100;
+            let message = Message::new(rng, &message_r, &psk, message_value);
 
-    SendToContractObfuscatedCircuit::new(
-        &crossover,
-        &fee,
-        &vk,
-        c_signature,
-        &message,
-        &psk,
-        message_r,
+            SendToContractObfuscatedCircuit::new(
+                &crossover,
+                &fee,
+                &vk,
+                c_signature,
+                &message,
+                &psk,
+                message_r,
+            )
+            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
+        },
     )
-    .unwrap()
-});
+    .expect("Failed to build and execute circuit!");
+}

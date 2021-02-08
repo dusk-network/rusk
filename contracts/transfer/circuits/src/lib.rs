@@ -6,7 +6,6 @@
 
 mod execute;
 mod gadgets;
-mod macros;
 mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
 mod withdraw_from_obfuscated;
@@ -16,5 +15,8 @@ pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;
 
-#[cfg(any(test, feature = "helpers"))]
-pub mod helpers;
+#[cfg(test)]
+pub mod test_helpers;
+
+#[cfg(any(test, feature = "builder"))]
+pub mod builder;

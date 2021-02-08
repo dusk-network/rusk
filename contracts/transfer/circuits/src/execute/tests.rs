@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::helpers::{NoteLeaf, FETCH_PP_FROM_RUSK_PROFILE};
-use crate::ExecuteCircuit;
+use crate::{builder, test_helpers, ExecuteCircuit};
 use std::convert::TryInto;
 
 use canonical_host::MemStore;
@@ -17,83 +16,64 @@ use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
 
-fn test_execute_circuit<const CAPACITY: usize>(inputs: usize, outputs: usize) {
-    let mut rng = StdRng::seed_from_u64(2324u64);
-
-    let (mut circuit, pp, _, vk, proof, pi) =
-        ExecuteCircuit::<17, CAPACITY>::create_dummy_proof::<_, MemStore>(
-            &mut rng,
-            FETCH_PP_FROM_RUSK_PROFILE,
-            None,
-            inputs,
-            outputs,
-        )
-        .expect("Failed to create the circuit!");
-
-    let label = circuit.transcript_label();
-    circuit
-        .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
-        .expect("Failed to verify the proof!");
-}
-
 #[test]
 fn execute_1_0() {
-    test_execute_circuit::<15>(1, 0);
+    test_helpers::execute_circuit::<15>(1, 0);
 }
 
 #[test]
 fn execute_1_1() {
-    test_execute_circuit::<15>(1, 1);
+    test_helpers::execute_circuit::<15>(1, 1);
 }
 
 #[test]
 fn execute_1_2() {
-    test_execute_circuit::<15>(1, 2);
+    test_helpers::execute_circuit::<15>(1, 2);
 }
 
 #[test]
 fn execute_2_0() {
-    test_execute_circuit::<16>(2, 0);
+    test_helpers::execute_circuit::<16>(2, 0);
 }
 
 #[test]
 fn execute_2_1() {
-    test_execute_circuit::<16>(2, 1);
+    test_helpers::execute_circuit::<16>(2, 1);
 }
 
 #[test]
 fn execute_2_2() {
-    test_execute_circuit::<16>(2, 2);
+    test_helpers::execute_circuit::<16>(2, 2);
 }
 
 #[test]
 fn execute_3_0() {
-    test_execute_circuit::<17>(3, 0);
+    test_helpers::execute_circuit::<17>(3, 0);
 }
 
 #[test]
 fn execute_3_1() {
-    test_execute_circuit::<17>(3, 1);
+    test_helpers::execute_circuit::<17>(3, 1);
 }
 
 #[test]
 fn execute_3_2() {
-    test_execute_circuit::<17>(3, 2);
+    test_helpers::execute_circuit::<17>(3, 2);
 }
 
 #[test]
 fn execute_4_0() {
-    test_execute_circuit::<17>(4, 0);
+    test_helpers::execute_circuit::<17>(4, 0);
 }
 
 #[test]
 fn execute_4_1() {
-    test_execute_circuit::<17>(4, 1);
+    test_helpers::execute_circuit::<17>(4, 1);
 }
 
 #[test]
 fn execute_4_2() {
-    test_execute_circuit::<17>(4, 2);
+    test_helpers::execute_circuit::<17>(4, 2);
 }
 
 #[test]
@@ -103,8 +83,12 @@ fn execute_4_2() {
 fn wrong_note_value_one() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
-    let mut tree =
-        PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+    let mut tree = PoseidonTree::<
+        builder::NoteLeaf,
+        PoseidonAnnotation,
+        MemStore,
+        17,
+    >::new();
 
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
@@ -169,19 +153,10 @@ fn wrong_note_value_one() {
     );
     circuit.add_output(d_note, d_value_circuit, d_blinding_factor);
 
-    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit
-            .rusk_circuit_args()
-            .expect("Failed to fetch keys from Rusk")
-    } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
-            .expect("Failed to generate public parameters");
-        let (pk, vk) = circuit.compile(&pp).expect("Failed to compile circuit");
-
-        circuit.get_mut_pi_positions().clear();
-
-        (pp, pk, vk)
-    };
+    let id = circuit.rusk_keys_id();
+    let (pp, pk, vk) =
+        builder::circuit_keys(&mut rng, None, &mut circuit, id.as_str())
+            .expect("Failed to fetch circuit keys!");
 
     let label = circuit.transcript_label();
     let proof = circuit
@@ -201,8 +176,12 @@ fn wrong_note_value_one() {
 fn wrong_nullifier() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
-    let mut tree =
-        PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+    let mut tree = PoseidonTree::<
+        builder::NoteLeaf,
+        PoseidonAnnotation,
+        MemStore,
+        17,
+    >::new();
 
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
@@ -267,19 +246,10 @@ fn wrong_nullifier() {
     );
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
-    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit
-            .rusk_circuit_args()
-            .expect("Failed to fetch keys from Rusk")
-    } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
-            .expect("Failed to generate public parameters");
-        let (pk, vk) = circuit.compile(&pp).expect("Failed to compile circuit");
-
-        circuit.get_mut_pi_positions().clear();
-
-        (pp, pk, vk)
-    };
+    let id = circuit.rusk_keys_id();
+    let (pp, pk, vk) =
+        builder::circuit_keys(&mut rng, None, &mut circuit, id.as_str())
+            .expect("Failed to fetch circuit keys!");
 
     let label = circuit.transcript_label();
     let proof = circuit
@@ -300,8 +270,12 @@ fn wrong_nullifier() {
 fn wrong_fee() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
-    let mut tree =
-        PoseidonTree::<NoteLeaf, PoseidonAnnotation, MemStore, 17>::new();
+    let mut tree = PoseidonTree::<
+        builder::NoteLeaf,
+        PoseidonAnnotation,
+        MemStore,
+        17,
+    >::new();
 
     let mut circuit = ExecuteCircuit::<17, 15>::default();
 
@@ -365,20 +339,10 @@ fn wrong_fee() {
     );
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
-    let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit
-            .rusk_circuit_args()
-            .expect("Failed to fetch keys from Rusk")
-    } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
-            .expect("Failed to generate public parameters");
-        let (pk, vk) =
-            circuit.compile(&pp).expect("Failed to compile circuits");
-
-        circuit.get_mut_pi_positions().clear();
-
-        (pp, pk, vk)
-    };
+    let id = circuit.rusk_keys_id();
+    let (pp, pk, vk) =
+        builder::circuit_keys(&mut rng, None, &mut circuit, id.as_str())
+            .expect("Failed to fetch circuit keys!");
 
     let label = circuit.transcript_label();
     let proof = circuit

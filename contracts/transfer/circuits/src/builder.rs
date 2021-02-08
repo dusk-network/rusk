@@ -5,69 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::ExecuteCircuit;
+use std::convert::TryInto;
 
 use anyhow::{anyhow, Result};
-use canonical::Store;
+use canonical::{Canon, Store};
+use canonical_derive::Canon;
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use phoenix_core::Note;
-use poseidon252::tree::{PoseidonAnnotation, PoseidonTree};
+use poseidon252::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
-use std::convert::TryInto;
-
-mod leaf;
-
-pub use leaf::NoteLeaf;
-
-#[macro_export]
-macro_rules! test_circuit {
-    ( $f:ident, $c:block ) => {
-        #[test]
-        fn $f() -> Result<()> {
-            use rand::rngs::StdRng;
-            use rand::SeedableRng;
-
-            let mut rng = StdRng::seed_from_u64(2324u64);
-
-            let mut circuit = $c;
-
-            let (pp, pk, vk) = if crate::helpers::FETCH_PP_FROM_RUSK_PROFILE {
-                circuit.rusk_circuit_args()?
-            } else {
-                let pp =
-                    PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
-                let (pk, vk) = circuit.compile(&pp)?;
-
-                circuit.get_mut_pi_positions().clear();
-
-                (pp, pk, vk)
-            };
-
-            let proof = circuit.gen_proof(&pp, &pk, b"send-obfuscated")?;
-            let pi = circuit.get_pi_positions().clone();
-
-            let verify = circuit
-                .verify_proof(
-                    &pp,
-                    &vk,
-                    b"send-obfuscated",
-                    &proof,
-                    pi.as_slice(),
-                )
-                .is_ok();
-            assert!(verify);
-
-            Ok(())
-        }
-    };
-}
-
-#[cfg(feature = "tests-generate-pub-params")]
-pub const FETCH_PP_FROM_RUSK_PROFILE: bool = false;
-
-#[cfg(not(feature = "tests-generate-pub-params"))]
-pub const FETCH_PP_FROM_RUSK_PROFILE: bool = true;
 
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
@@ -201,7 +149,6 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
     pub fn create_dummy_proof<R: RngCore + CryptoRng, S: Store>(
         rng: &mut R,
-        rusk_profile: bool,
         pp: Option<PublicParameters>,
         inputs: usize,
         outputs: usize,
@@ -216,17 +163,8 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let mut circuit =
             Self::create_dummy_circuit::<R, S>(rng, inputs, outputs)?;
 
-        let (pp, pk, vk) = if rusk_profile {
-            circuit.rusk_circuit_args()?
-        } else {
-            let pp = pp.map(|pp| Ok(pp)).unwrap_or(PublicParameters::setup(
-                circuit.get_trim_size(),
-                rng,
-            ))?;
-            let (pk, vk) = circuit.compile(&pp)?;
-
-            (pp, pk, vk)
-        };
+        let id = circuit.rusk_keys_id();
+        let (pp, pk, vk) = circuit_keys(rng, pp, &mut circuit, id.as_str())?;
 
         let label = circuit.transcript_label();
         let proof = circuit.gen_proof(&pp, &pk, label)?;
@@ -243,5 +181,90 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         });
 
         Ok((circuit, pp, pk, vk, proof, pi))
+    }
+}
+
+#[derive(Debug, Clone, Canon)]
+pub struct NoteLeaf(Note);
+
+impl AsRef<Note> for NoteLeaf {
+    fn as_ref(&self) -> &Note {
+        &self.0
+    }
+}
+
+impl From<Note> for NoteLeaf {
+    fn from(note: Note) -> NoteLeaf {
+        NoteLeaf(note)
+    }
+}
+
+impl From<NoteLeaf> for Note {
+    fn from(leaf: NoteLeaf) -> Note {
+        leaf.0
+    }
+}
+
+impl<S> PoseidonLeaf<S> for NoteLeaf
+where
+    S: Store,
+{
+    fn poseidon_hash(&self) -> BlsScalar {
+        self.0.hash()
+    }
+
+    fn pos(&self) -> u64 {
+        self.0.pos()
+    }
+
+    fn set_pos(&mut self, pos: u64) {
+        self.0.set_pos(pos)
+    }
+}
+
+#[allow(unused_variables)]
+pub fn circuit_keys<'a, R, C>(
+    rng: &mut R,
+    pp: Option<PublicParameters>,
+    circuit: &mut C,
+    id: &str,
+) -> Result<(PublicParameters, ProverKey, VerifierKey)>
+where
+    R: RngCore + CryptoRng,
+    C: Circuit<'a>,
+{
+    #[cfg(not(feature = "builder-no-rusk-profile-keys"))]
+    {
+        let pp = pp.map(|pp| Ok(pp)).unwrap_or({
+            rusk_profile::get_common_reference_string()
+                .map_err(|e| {
+                    anyhow!("Failed to fetch CRS from rusk profile: {}", e)
+                })
+                .and_then(|pp| unsafe {
+                    PublicParameters::from_slice_unchecked(pp.as_slice())
+                })
+        })?;
+
+        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
+        let (pk, vk) = keys
+            .get(id)
+            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+
+        let pk = ProverKey::from_bytes(pk.as_slice())?;
+        let vk = VerifierKey::from_bytes(vk.as_slice())?;
+
+        Ok((pp, pk, vk))
+    }
+
+    #[cfg(feature = "builder-no-rusk-profile-keys")]
+    {
+        let pp = pp
+            .map(|pp| Ok(pp))
+            .unwrap_or(PublicParameters::setup(circuit.get_trim_size(), rng))?;
+
+        let (pk, vk) = circuit.compile(&pp)?;
+        circuit.get_mut_pi_positions().clear();
+
+        Ok((pp, pk, vk))
     }
 }

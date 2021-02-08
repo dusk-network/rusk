@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{circuit_common_methods, gadgets, rusk_profile_methods};
+use crate::gadgets;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
@@ -37,7 +37,9 @@ pub struct WithdrawFromObfuscatedCircuit {
 }
 
 impl WithdrawFromObfuscatedCircuit {
-    rusk_profile_methods!(self, { "transfer-withdraw-from-obfuscated".into() });
+    pub const fn rusk_keys_id() -> &'static str {
+        "transfer-withdraw-from-obfuscated"
+    }
 
     pub fn new(
         input: &Note,
@@ -83,8 +85,6 @@ impl WithdrawFromObfuscatedCircuit {
 }
 
 impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
-    circuit_common_methods!(13);
-
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];
 
@@ -111,7 +111,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
 
         // 2. Prove that the value of the opening of the commitment of the input
         // is within range
-        gadgets::range(composer, input_value);
+        composer.range_gate(input_value, 64);
 
         // 3. Prove the knowledge of the commitment opening of the commitment of
         // the change
@@ -138,7 +138,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
 
         // 5. Prove that the value of the opening of the commitment of the
         // change Message is within range
-        gadgets::range(composer, change_value);
+        composer.range_gate(change_value, 64);
 
         // 6. Prove that the encrypted value of the opening of the commitment of
         // the Message  is within correctly encrypted to the derivative of pk
@@ -208,7 +208,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
 
         // 9. Prove that the value of the opening of the commitment of the
         // output obfuscated note is within range
-        gadgets::range(composer, output_value);
+        composer.range_gate(output_value, 64);
 
         // 10. Prove that v_i - v_c - v_o = 0
         composer.poly_gate(
@@ -227,44 +227,73 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
 
         Ok(())
     }
+
+    fn get_trim_size(&self) -> usize {
+        1 << 13
+    }
+
+    fn set_trim_size(&mut self, _size: usize) {
+        // N/A, fixed size circuit
+    }
+
+    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
+        &mut self.pi_positions
+    }
+
+    /// Return a reference to the Public Inputs storage of the circuit.
+    fn get_pi_positions(&self) -> &Vec<PublicInput> {
+        &self.pi_positions
+    }
 }
 
-#[cfg(test)]
-crate::test_circuit!(withdraw_from_obfuscated, {
+#[test]
+fn withdraw_from_obfuscated() {
+    use crate::test_helpers;
+
+    use anyhow::anyhow;
     use dusk_pki::SecretSpendKey;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
     let mut rng = StdRng::seed_from_u64(2324u64);
 
-    let i_ssk = SecretSpendKey::random(&mut rng);
-    let i_vk = i_ssk.view_key();
-    let i_psk = i_ssk.public_spend_key();
-    let i_value = 100;
-    let i_blinding_factor = JubJubScalar::random(&mut rng);
-    let i_note = Note::obfuscated(&mut rng, &i_psk, i_value, i_blinding_factor);
+    test_helpers::circuit(
+        &mut rng,
+        WithdrawFromObfuscatedCircuit::rusk_keys_id(),
+        |rng| {
+            let i_ssk = SecretSpendKey::random(rng);
+            let i_vk = i_ssk.view_key();
+            let i_psk = i_ssk.public_spend_key();
+            let i_value = 100;
+            let i_blinding_factor = JubJubScalar::random(rng);
+            let i_note =
+                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
 
-    let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_psk = c_ssk.public_spend_key();
-    let c_r = JubJubScalar::random(&mut rng);
-    let c_value = 25;
-    let c = Message::new(&mut rng, &c_r, &c_psk, c_value);
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_psk = c_ssk.public_spend_key();
+            let c_r = JubJubScalar::random(rng);
+            let c_value = 25;
+            let c = Message::new(rng, &c_r, &c_psk, c_value);
 
-    let o_ssk = SecretSpendKey::random(&mut rng);
-    let o_vk = o_ssk.view_key();
-    let o_psk = o_ssk.public_spend_key();
-    let o_value = 75;
-    let o_blinding_factor = JubJubScalar::random(&mut rng);
-    let o_note = Note::obfuscated(&mut rng, &o_psk, o_value, o_blinding_factor);
+            let o_ssk = SecretSpendKey::random(rng);
+            let o_vk = o_ssk.view_key();
+            let o_psk = o_ssk.public_spend_key();
+            let o_value = 75;
+            let o_blinding_factor = JubJubScalar::random(rng);
+            let o_note =
+                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
-    WithdrawFromObfuscatedCircuit::new(
-        &i_note,
-        Some(&i_vk),
-        &c,
-        c_r,
-        &c_psk,
-        &o_note,
-        Some(&o_vk),
+            WithdrawFromObfuscatedCircuit::new(
+                &i_note,
+                Some(&i_vk),
+                &c,
+                c_r,
+                &c_psk,
+                &o_note,
+                Some(&o_vk),
+            )
+            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
+        },
     )
-    .unwrap()
-});
+    .expect("Failed to build and execute circuit!");
+}
