@@ -7,7 +7,6 @@
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::prelude::*;
 use poseidon252::sponge;
-use schnorr::gadgets as schnorr_gadgets;
 
 /// Prove a given point was signed by a given public key using schnorr single
 /// key
@@ -20,5 +19,5 @@ pub fn point_signature(
 ) {
     let message = sponge::gadget(composer, &[*message.x(), *message.y()]);
 
-    schnorr_gadgets::single_key_verify(composer, r, u, pk, message);
+    schnorr::gadgets::single_key_verify(composer, r, u, pk, message);
 }
