@@ -10,14 +10,19 @@ use crossover::CircuitCrossover;
 use input::{CircuitInput, WitnessInput};
 use output::{CircuitOutput, WitnessOutput};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use canonical::Store;
+use dusk_bytes::Serializable;
+use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::JubJubExtended;
-use phoenix_core::Note;
+use phoenix_core::{Crossover, Fee, Note};
+use poseidon252::cipher::PoseidonCipher;
 use poseidon252::sponge;
-use poseidon252::tree::{self, PoseidonBranch};
+use poseidon252::tree::{
+    self, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
+};
 use rand_core::{CryptoRng, RngCore};
-use schnorr::gadgets as schnorr_gadgets;
+use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;
 
@@ -42,34 +47,76 @@ pub struct ExecuteCircuit<const DEPTH: usize, const CAPACITY: usize> {
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
 {
-    pub const fn transcript_label(&self) -> &'static [u8] {
-        b"execute-circuit"
-    }
-
-    pub fn rusk_keys_id(&self) -> String {
-        format!(
-            "transfer-execute-{}-{}",
-            self.inputs.len(),
-            self.outputs.len()
-        )
+    pub fn rusk_keys_id(&self) -> &'static str {
+        match (self.inputs.len(), self.outputs.len()) {
+            (1, 0) => "transfer-execute-1-0",
+            (1, 1) => "transfer-execute-1-1",
+            (1, 2) => "transfer-execute-1-2",
+            (2, 0) => "transfer-execute-2-0",
+            (2, 1) => "transfer-execute-2-1",
+            (2, 2) => "transfer-execute-2-2",
+            (3, 0) => "transfer-execute-3-0",
+            (3, 1) => "transfer-execute-3-1",
+            (3, 2) => "transfer-execute-3-2",
+            (4, 0) => "transfer-execute-4-0",
+            (4, 1) => "transfer-execute-4-1",
+            (4, 2) => "transfer-execute-4-2",
+            _ => unimplemented!(),
+        }
     }
 
     pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         self.tx_hash = tx_hash;
     }
 
-    pub fn add_input<R: RngCore + CryptoRng>(
-        &mut self,
+    pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
-        branch: PoseidonBranch<DEPTH>,
-        sk_r: JubJubScalar,
-        note: Note,
-        value: u64,
-        blinding_factor: JubJubScalar,
-        nullifier: BlsScalar,
-    ) -> Result<()> {
+        ssk: &SecretSpendKey,
+        note: &Note,
+    ) -> SchnorrProof {
+        let message = Self::sign_message();
+        let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
+        let secret = SecretKey::from(&sk_r);
+
+        SchnorrProof::new(&secret, rng, message)
+    }
+
+    pub fn add_input<S, L, A>(
+        &mut self,
+        ssk: &SecretSpendKey,
+        tree: &PoseidonTree<L, A, S, DEPTH>,
+        pos: usize,
+        signature: SchnorrProof,
+    ) -> Result<()>
+    where
+        S: Store,
+        L: PoseidonLeaf<S> + Into<Note>,
+        A: PoseidonTreeAnnotation<L, S>,
+    {
+        let vk = ssk.view_key();
+
+        let note = tree
+            .get(pos)
+            .map_err(|e| anyhow!("Failed to fetch note from the tree: {}", e))?
+            .map(|n| n.into())
+            .ok_or(anyhow!("Note not found in the tree after push!"))?;
+
+        let branch = tree
+            .branch(pos)
+            .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
+            .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
+
+        let value = note
+            .value(Some(&vk))
+            .map_err(|e| anyhow!("Failed to decrypt value: {:?}", e))?;
+        let blinding_factor = note.blinding_factor(Some(&vk)).map_err(|e| {
+            anyhow!("Failed to decrypt blinding factor: {:?}", e)
+        })?;
+        let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
+        let nullifier = note.gen_nullifier(&ssk);
+
         let input = CircuitInput::new(
-            rng,
+            signature,
             branch,
             sk_r,
             note,
@@ -85,22 +132,48 @@ impl<const DEPTH: usize, const CAPACITY: usize>
 
     pub fn set_crossover(
         &mut self,
-        value_commitment: JubJubExtended,
-        value: u64,
-        blinding_factor: JubJubScalar,
-    ) {
+        fee: &Fee,
+        crossover: &Crossover,
+        vk: &ViewKey,
+    ) -> Result<()> {
+        let shared_secret = fee.stealth_address().R() * vk.a();
+        let shared_secret = shared_secret.into();
+        let nonce = BlsScalar::from(*crossover.nonce());
+
+        let data: [BlsScalar; PoseidonCipher::capacity()] = crossover
+            .encrypted_data()
+            .decrypt(&shared_secret, &nonce)
+            .map_err(|e| anyhow!("Failed to decrypt crossover: {:?}", e))?;
+
+        let value = data[0].reduce();
+        let value = value.0[0];
+
+        let blinding_factor = JubJubScalar::from_bytes(&data[1].to_bytes())
+            .map_err(|e| anyhow!("Failed to convert bls to jubjub: {:?}", e))?;
+        let value_commitment = *crossover.value_commitment();
+
         self.crossover =
             CircuitCrossover::new(value_commitment, value, blinding_factor);
+
+        Ok(())
     }
 
     pub fn add_output(
         &mut self,
         note: Note,
-        value: u64,
-        blinding_factor: JubJubScalar,
-    ) {
+        vk: Option<&ViewKey>,
+    ) -> Result<()> {
+        let value = note
+            .value(vk)
+            .map_err(|e| anyhow!("Failed to decrypt value: {:?}", e))?;
+        let blinding_factor = note.blinding_factor(vk).map_err(|e| {
+            anyhow!("Failed to decrypt blinding factor: {:?}", e)
+        })?;
+
         let output = CircuitOutput::new(note, value, blinding_factor);
+
         self.outputs.push(output);
+        Ok(())
     }
 
     /// Constant message for the schnorr signature generation
@@ -110,6 +183,8 @@ impl<const DEPTH: usize, const CAPACITY: usize>
     ///
     /// The contents of the message are yet to be defined in the documentation.
     /// For now, it is treated as a constant.
+    ///
+    /// https://github.com/dusk-network/rusk/issues/178
     pub const fn sign_message() -> BlsScalar {
         BlsScalar::one()
     }
@@ -177,7 +252,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
         // 3. Prove the correctness of the Schnorr signatures.
         inputs.iter().for_each(|input| {
-            schnorr_gadgets::double_key_verify(
+            schnorr::gadgets::double_key_verify(
                 composer,
                 input.schnorr_r,
                 input.schnorr_r_prime,

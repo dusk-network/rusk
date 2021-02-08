@@ -6,7 +6,7 @@
 
 use crate::ExecuteCircuit;
 
-use dusk_pki::{Ownable, SecretKey};
+use dusk_pki::Ownable;
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base;
 use dusk_plonk::constraint_system::ecc::Point;
@@ -14,7 +14,6 @@ use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use phoenix_core::Note;
 use poseidon252::cipher::PoseidonCipher;
 use poseidon252::tree::PoseidonBranch;
-use rand_core::{CryptoRng, RngCore};
 use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;
@@ -88,8 +87,8 @@ pub struct CircuitInput<const DEPTH: usize> {
 }
 
 impl<const DEPTH: usize> CircuitInput<DEPTH> {
-    pub fn new<R: RngCore + CryptoRng>(
-        rng: &mut R,
+    pub fn new(
+        signature: SchnorrProof,
         branch: PoseidonBranch<DEPTH>,
         sk_r: JubJubScalar,
         note: Note,
@@ -97,10 +96,6 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
     ) -> Self {
-        let message = ExecuteCircuit::<DEPTH, 0>::sign_message();
-        let secret = SecretKey::from(&sk_r);
-        let signature = SchnorrProof::new(&secret, rng, message);
-
         Self {
             sk_r,
             branch,

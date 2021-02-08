@@ -10,7 +10,7 @@ use std::convert::TryInto;
 use anyhow::{anyhow, Result};
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use phoenix_core::Note;
 use poseidon252::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
 use rand_core::{CryptoRng, RngCore};
@@ -20,23 +20,22 @@ use dusk_plonk::prelude::*;
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
 {
+    pub const fn transcript_label() -> &'static [u8] {
+        b"execute-circuit"
+    }
+
     pub fn create_dummy_note<R: RngCore + CryptoRng>(
         rng: &mut R,
         psk: &PublicSpendKey,
         transparent: bool,
         value: u64,
-    ) -> (Note, JubJubScalar) {
+    ) -> Note {
         if transparent {
-            let note = Note::transparent(rng, &psk, value);
-            let blinding_factor =
-                note.blinding_factor(None).unwrap_or_default();
-
-            (note, blinding_factor)
+            Note::transparent(rng, &psk, value)
         } else {
             let blinding_factor = JubJubScalar::random(rng);
-            let note = Note::obfuscated(rng, &psk, value, blinding_factor);
 
-            (note, blinding_factor)
+            Note::obfuscated(rng, &psk, value, blinding_factor)
         }
     }
 
@@ -61,7 +60,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             let ssk = SecretSpendKey::random(rng);
             let psk = ssk.public_spend_key();
 
-            let (note, blinding_factor) =
+            let note =
                 Self::create_dummy_note(rng, &psk, transparent, input_value);
 
             let pos = tree.push(note.into()).map_err(|e| {
@@ -69,45 +68,21 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             })?;
 
             let note = tree
-                .get(pos)
-                .map_err(|e| {
-                    anyhow!("Failed to fetch note from the tree: {}", e)
-                })?
-                .map(|n| Note::from(n))
-                .ok_or(anyhow!("Note not found in the tree after push!"))?;
+                .get(pos as usize)
+                .map_err(|e| anyhow!("Internal poseidon tree error: {:?}", e))?
+                .map(|n| n.into())
+                .ok_or(anyhow!("Inserted note not found in the tree!"))?;
+            let signature =
+                ExecuteCircuit::<DEPTH, CAPACITY>::sign(rng, &ssk, &note);
 
-            let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
-            let nullifier = note.gen_nullifier(&ssk);
-
-            input_data.push((
-                sk_r,
-                note,
-                input_value,
-                blinding_factor,
-                nullifier,
-            ));
+            input_data.push((ssk, pos, signature));
 
             transparent = !transparent;
             inputs_sum += input_value;
         }
 
-        for (sk_r, note, input_value, blinding_factor, nullifier) in
-            input_data.into_iter()
-        {
-            let branch = tree
-                .branch(note.pos() as usize)
-                .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
-                .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
-
-            circuit.add_input(
-                rng,
-                branch,
-                sk_r,
-                note,
-                input_value,
-                blinding_factor,
-                nullifier,
-            )?;
+        for (ssk, pos, signature) in input_data.into_iter() {
+            circuit.add_input(&ssk, &tree, pos, signature)?;
         }
 
         let i = inputs as f64;
@@ -119,30 +94,31 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let mut outputs_sum = 0;
         for _ in 0..outputs {
             let ssk = SecretSpendKey::random(rng);
+            let vk = ssk.view_key();
             let psk = ssk.public_spend_key();
 
-            let (note, blinding_factor) =
+            let note =
                 Self::create_dummy_note(rng, &psk, transparent, output_value);
 
-            circuit.add_output(note, output_value, blinding_factor);
+            circuit.add_output(note, Some(&vk))?;
 
             transparent = !transparent;
             outputs_sum += output_value;
         }
 
         let ssk = SecretSpendKey::random(rng);
+        let vk = ssk.view_key();
         let psk = ssk.public_spend_key();
         let value = inputs_sum - outputs_sum;
         let blinding_factor = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, &psk, value, blinding_factor);
-        let (_, crossover) = note.try_into().map_err(|e| {
+        let (fee, crossover) = note.try_into().map_err(|e| {
             anyhow!(
                 "Failed to generate crossover from obfuscated note: {:?}",
                 e
             )
         })?;
-        let value_commitment = *crossover.value_commitment();
-        circuit.set_crossover(value_commitment, value, blinding_factor);
+        circuit.set_crossover(&fee, &crossover, &vk)?;
 
         Ok(circuit)
     }
@@ -164,9 +140,9 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             Self::create_dummy_circuit::<R, S>(rng, inputs, outputs)?;
 
         let id = circuit.rusk_keys_id();
-        let (pp, pk, vk) = circuit_keys(rng, pp, &mut circuit, id.as_str())?;
+        let (pp, pk, vk) = circuit_keys(rng, pp, &mut circuit, id)?;
 
-        let label = circuit.transcript_label();
+        let label = Self::transcript_label();
         let proof = circuit.gen_proof(&pp, &pk, label)?;
         let mut pi = circuit.get_pi_positions().clone();
 

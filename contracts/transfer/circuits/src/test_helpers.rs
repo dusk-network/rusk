@@ -23,7 +23,7 @@ pub fn execute_circuit<const CAPACITY: usize>(inputs: usize, outputs: usize) {
         )
         .expect("Failed to create the circuit!");
 
-    let label = circuit.transcript_label();
+    let label = ExecuteCircuit::<17, CAPACITY>::transcript_label();
     circuit
         .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
         .expect("Failed to verify the proof!");
