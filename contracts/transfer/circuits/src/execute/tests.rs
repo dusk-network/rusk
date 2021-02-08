@@ -6,8 +6,8 @@
 
 use crate::helpers::{NoteLeaf, FETCH_PP_FROM_RUSK_PROFILE};
 use crate::ExecuteCircuit;
+use std::convert::TryInto;
 
-use anyhow::{anyhow, Result};
 use canonical_host::MemStore;
 use dusk_pki::{Ownable, SecretSpendKey};
 use phoenix_core::Note;
@@ -17,48 +17,90 @@ use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
 
-use std::convert::TryInto;
+fn test_execute_circuit<const CAPACITY: usize>(inputs: usize, outputs: usize) {
+    let mut rng = StdRng::seed_from_u64(2324u64);
 
-macro_rules! test_execute {
-    ( $f:ident, $c:expr, $i:expr, $o:expr ) => {
-        #[test]
-        fn $f() -> Result<()> {
-            let mut rng = StdRng::seed_from_u64(2324u64);
+    let (mut circuit, pp, _, vk, proof, pi) =
+        ExecuteCircuit::<17, CAPACITY>::create_dummy_proof::<_, MemStore>(
+            &mut rng,
+            FETCH_PP_FROM_RUSK_PROFILE,
+            None,
+            inputs,
+            outputs,
+        )
+        .expect("Failed to create the circuit!");
 
-            let (mut circuit, pp, _, vk, proof, pi) =
-                ExecuteCircuit::<17, $c>::create_dummy_proof::<_, MemStore>(
-                    &mut rng,
-                    FETCH_PP_FROM_RUSK_PROFILE,
-                    None,
-                    $i,
-                    $o,
-                )?;
-
-            let label = circuit.transcript_label();
-            circuit.verify_proof(&pp, &vk, label, &proof, pi.as_slice())
-        }
-    };
+    let label = circuit.transcript_label();
+    circuit
+        .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
+        .expect("Failed to verify the proof!");
 }
 
-// Test all circuit variants
-test_execute!(execute_1_0, 15, 1, 0);
-test_execute!(execute_1_1, 15, 1, 1);
-test_execute!(execute_1_2, 15, 1, 2);
-test_execute!(execute_2_0, 16, 2, 0);
-test_execute!(execute_2_1, 16, 2, 1);
-test_execute!(execute_2_2, 16, 2, 2);
-test_execute!(execute_3_0, 17, 3, 0);
-test_execute!(execute_3_1, 17, 3, 1);
-test_execute!(execute_3_2, 17, 3, 2);
-test_execute!(execute_4_0, 17, 4, 0);
-test_execute!(execute_4_1, 17, 4, 1);
-test_execute!(execute_4_2, 17, 4, 2);
+#[test]
+fn execute_1_0() {
+    test_execute_circuit::<15>(1, 0);
+}
+
+#[test]
+fn execute_1_1() {
+    test_execute_circuit::<15>(1, 1);
+}
+
+#[test]
+fn execute_1_2() {
+    test_execute_circuit::<15>(1, 2);
+}
+
+#[test]
+fn execute_2_0() {
+    test_execute_circuit::<16>(2, 0);
+}
+
+#[test]
+fn execute_2_1() {
+    test_execute_circuit::<16>(2, 1);
+}
+
+#[test]
+fn execute_2_2() {
+    test_execute_circuit::<16>(2, 2);
+}
+
+#[test]
+fn execute_3_0() {
+    test_execute_circuit::<17>(3, 0);
+}
+
+#[test]
+fn execute_3_1() {
+    test_execute_circuit::<17>(3, 1);
+}
+
+#[test]
+fn execute_3_2() {
+    test_execute_circuit::<17>(3, 2);
+}
+
+#[test]
+fn execute_4_0() {
+    test_execute_circuit::<17>(4, 0);
+}
+
+#[test]
+fn execute_4_1() {
+    test_execute_circuit::<17>(4, 1);
+}
+
+#[test]
+fn execute_4_2() {
+    test_execute_circuit::<17>(4, 2);
+}
 
 #[test]
 // This test ensures the execute gadget is done correctly
 // by creating two notes and setting their field values
 // in the execute circuit
-fn wrong_note_value_one() -> Result<()> {
+fn wrong_note_value_one() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
     let mut tree =
@@ -82,20 +124,22 @@ fn wrong_note_value_one() -> Result<()> {
         .expect("a_note not found!");
     let a_branch = tree
         .branch(p)
-        .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
-        .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
+        .expect("Failed to get the branch!")
+        .expect("Failed to branch poseidon tree!");
 
     let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let a_nullifier = a_note.gen_nullifier(&a_ssk);
-    circuit.add_input(
-        &mut rng,
-        a_branch,
-        a_sk_r,
-        a_note,
-        a_value,
-        a_blinding_factor,
-        a_nullifier,
-    )?;
+    circuit
+        .add_input(
+            &mut rng,
+            a_branch,
+            a_sk_r,
+            a_note,
+            a_value,
+            a_blinding_factor,
+            a_nullifier,
+        )
+        .expect("Failed to add circuit input!");
 
     let b_ssk = SecretSpendKey::random(&mut rng);
     let b_psk = b_ssk.public_spend_key();
@@ -126,10 +170,13 @@ fn wrong_note_value_one() -> Result<()> {
     circuit.add_output(d_note, d_value_circuit, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit.rusk_circuit_args()?
+        circuit
+            .rusk_circuit_args()
+            .expect("Failed to fetch keys from Rusk")
     } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
-        let (pk, vk) = circuit.compile(&pp)?;
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
+            .expect("Failed to generate public parameters");
+        let (pk, vk) = circuit.compile(&pp).expect("Failed to compile circuit");
 
         circuit.get_mut_pi_positions().clear();
 
@@ -137,21 +184,21 @@ fn wrong_note_value_one() -> Result<()> {
     };
 
     let label = circuit.transcript_label();
-    let proof = circuit.gen_proof(&pp, &pk, label)?;
+    let proof = circuit
+        .gen_proof(&pp, &pk, label)
+        .expect("Failed to generate proof!");
     let pi = circuit.get_pi_positions().clone();
 
     let verify = circuit
         .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
         .is_ok();
     assert!(!verify);
-
-    Ok(())
 }
 
 #[test]
 // This circuit tests to see if a wrong nullifier
 // leads to a failed circuit
-fn wrong_nullifier() -> Result<()> {
+fn wrong_nullifier() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
     let mut tree =
@@ -175,21 +222,23 @@ fn wrong_nullifier() -> Result<()> {
         .expect("a_note not found!");
     let a_branch = tree
         .branch(p)
-        .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
-        .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
+        .expect("Internal error in poseidon tree")
+        .expect("Failed to fetch the branch from the tree");
 
     let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let mut a_nullifier = a_note.gen_nullifier(&a_ssk);
     a_nullifier += BlsScalar::one();
-    circuit.add_input(
-        &mut rng,
-        a_branch,
-        a_sk_r,
-        a_note,
-        a_value,
-        a_blinding_factor,
-        a_nullifier,
-    )?;
+    circuit
+        .add_input(
+            &mut rng,
+            a_branch,
+            a_sk_r,
+            a_note,
+            a_value,
+            a_blinding_factor,
+            a_nullifier,
+        )
+        .expect("Failed to append input to the circuit!");
 
     let b_ssk = SecretSpendKey::random(&mut rng);
     let b_psk = b_ssk.public_spend_key();
@@ -219,10 +268,13 @@ fn wrong_nullifier() -> Result<()> {
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit.rusk_circuit_args()?
+        circuit
+            .rusk_circuit_args()
+            .expect("Failed to fetch keys from Rusk")
     } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
-        let (pk, vk) = circuit.compile(&pp)?;
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
+            .expect("Failed to generate public parameters");
+        let (pk, vk) = circuit.compile(&pp).expect("Failed to compile circuit");
 
         circuit.get_mut_pi_positions().clear();
 
@@ -230,22 +282,22 @@ fn wrong_nullifier() -> Result<()> {
     };
 
     let label = circuit.transcript_label();
-    let proof = circuit.gen_proof(&pp, &pk, label)?;
+    let proof = circuit
+        .gen_proof(&pp, &pk, label)
+        .expect("Failed to generate proof");
     let pi = circuit.get_pi_positions().clone();
 
     let verify = circuit
         .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
         .is_ok();
     assert!(!verify);
-
-    Ok(())
 }
 
 #[test]
 // The fee is a public input and is the value
 // paid for processing a transaction. With an
 // incorrect value for PI, the test should fail.
-fn wrong_fee() -> Result<()> {
+fn wrong_fee() {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
     let mut tree =
@@ -269,20 +321,22 @@ fn wrong_fee() -> Result<()> {
         .expect("a_note not found!");
     let a_branch = tree
         .branch(p)
-        .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
-        .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
+        .expect("Failed to get the branch!")
+        .expect("Failed to fetch the branch from the tree");
 
     let a_sk_r = a_ssk.sk_r(a_note.stealth_address()).as_ref().clone();
     let a_nullifier = a_note.gen_nullifier(&a_ssk);
-    circuit.add_input(
-        &mut rng,
-        a_branch,
-        a_sk_r,
-        a_note,
-        a_value,
-        a_blinding_factor,
-        a_nullifier,
-    )?;
+    circuit
+        .add_input(
+            &mut rng,
+            a_branch,
+            a_sk_r,
+            a_note,
+            a_value,
+            a_blinding_factor,
+            a_nullifier,
+        )
+        .expect("Failed to append input to the circuit");
 
     let b_ssk = SecretSpendKey::random(&mut rng);
     let b_psk = b_ssk.public_spend_key();
@@ -312,10 +366,14 @@ fn wrong_fee() -> Result<()> {
     circuit.add_output(d_note, d_value, d_blinding_factor);
 
     let (pp, pk, vk) = if FETCH_PP_FROM_RUSK_PROFILE {
-        circuit.rusk_circuit_args()?
+        circuit
+            .rusk_circuit_args()
+            .expect("Failed to fetch keys from Rusk")
     } else {
-        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)?;
-        let (pk, vk) = circuit.compile(&pp)?;
+        let pp = PublicParameters::setup(circuit.get_trim_size(), &mut rng)
+            .expect("Failed to generate public parameters");
+        let (pk, vk) =
+            circuit.compile(&pp).expect("Failed to compile circuits");
 
         circuit.get_mut_pi_positions().clear();
 
@@ -323,7 +381,9 @@ fn wrong_fee() -> Result<()> {
     };
 
     let label = circuit.transcript_label();
-    let proof = circuit.gen_proof(&pp, &pk, label)?;
+    let proof = circuit
+        .gen_proof(&pp, &pk, label)
+        .expect("Failed to generate proof");
     let mut pi = circuit.get_pi_positions().clone();
 
     let fee = BlsScalar::from(c_value);
@@ -336,6 +396,4 @@ fn wrong_fee() -> Result<()> {
         .verify_proof(&pp, &vk, label, &proof, pi.as_slice())
         .is_ok();
     assert!(!verify);
-
-    Ok(())
 }
