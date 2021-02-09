@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use tracing::info;
 pub mod encoding;
 mod ops;
@@ -36,3 +37,4 @@ lazy_static! {
         result
     };
 }
+*/
