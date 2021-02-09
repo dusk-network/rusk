@@ -8,8 +8,7 @@ use super::super::ServiceRequestHandler;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
 use crate::encoding::decode_bls_scalar;
 use anyhow::Result;
-use dusk_blindbid::score_gen::Score;
-use dusk_blindbid::BlindBidCircuit;
+use dusk_blindbid::{BlindBidCircuit, Score};
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
@@ -38,7 +37,8 @@ where
             BlsScalar::from(self.request.get_ref().round as u64);
         let latest_consensus_step =
             BlsScalar::from(self.request.get_ref().step as u64);
-        // Get bid from storage (FIXME: Once Bid contract is done and working.)
+        // Get bid from storage (FIXME: Once Bid contract is done and this
+        // functionallity provided)
         let (bid, branch) = unimplemented!();
 
         // Create a BlindBidCircuit instance
@@ -98,10 +98,10 @@ fn verify_blindbid_proof(
     // Build PI array (safe to unwrap since we just created the circuit
     // with everything initialized).
     let pi = vec![
-        PublicInput::BlsScalar(circuit.branch.root(), 0),
+        PublicInput::BlsScalar(*circuit.branch.root(), 0),
         PublicInput::BlsScalar(circuit.bid.hash(), 0),
-        PublicInput::AffinePoint(circuit.bid.c, 0, 0),
-        PublicInput::BlsScalar(circuit.bid.hashed_secret, 0),
+        PublicInput::AffinePoint(circuit.bid.commitment(), 0, 0),
+        PublicInput::BlsScalar(circuit.bid.hashed_secret(), 0),
         PublicInput::BlsScalar(prover_id, 0),
         PublicInput::BlsScalar(score, 0),
     ];
