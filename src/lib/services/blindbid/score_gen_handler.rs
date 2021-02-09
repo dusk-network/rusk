@@ -6,9 +6,10 @@
 
 use super::super::ServiceRequestHandler;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
-use crate::encoding::{decode_affine, decode_bls_scalar};
+use crate::encoding;
 use anyhow::Result;
 use dusk_blindbid::{Bid, BlindBidCircuit, Score};
+use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
@@ -91,9 +92,15 @@ where
 fn parse_score_gen_params(
     request: &Request<GenerateScoreRequest>,
 ) -> Result<(BlsScalar, BlsScalar, JubJubAffine), Status> {
-    let k = decode_bls_scalar(&request.get_ref().k[..])?;
-    let seed = decode_bls_scalar(&request.get_ref().seed[..])?;
-    let secret = decode_affine(&request.get_ref().secret[..])?;
+    let k = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().k[..],
+    ))?;
+    let seed = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().seed[..],
+    ))?;
+    let secret = encoding::as_status_err(JubJubAffine::from_slice(
+        &request.get_ref().secret[..],
+    ))?;
     Ok((k, seed, secret))
 }
 

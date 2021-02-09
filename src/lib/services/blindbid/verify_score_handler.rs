@@ -6,9 +6,10 @@
 
 use super::super::ServiceRequestHandler;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
-use crate::encoding::decode_bls_scalar;
+use crate::encoding;
 use anyhow::Result;
 use dusk_blindbid::{BlindBidCircuit, Score};
+use dusk_bytes::DeserializableSlice;
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
@@ -74,9 +75,15 @@ fn parse_score_verify_params(
 ) -> Result<(Proof, BlsScalar, BlsScalar, BlsScalar), Status> {
     let proof = Proof::from_bytes(&request.get_ref().proof[..])
         .map_err(|e| Status::failed_precondition(format!("{:?}", e)))?;
-    let score = decode_bls_scalar(&request.get_ref().score[..])?;
-    let seed = decode_bls_scalar(&request.get_ref().seed[..])?;
-    let prover_id = decode_bls_scalar(&request.get_ref().prover_id[..])?;
+    let score = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().score[..],
+    ))?;
+    let seed = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().seed[..],
+    ))?;
+    let prover_id = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().prover_id[..],
+    ))?;
     Ok((proof, score, seed, prover_id))
 }
 
