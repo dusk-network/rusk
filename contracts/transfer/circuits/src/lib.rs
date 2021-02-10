@@ -4,9 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(non_snake_case)]
-pub mod dusk_contract;
-pub mod gadgets;
+mod execute;
+mod gadgets;
+mod send_to_contract_obfuscated;
+mod send_to_contract_transparent;
+mod withdraw_from_obfuscated;
+
+pub use execute::ExecuteCircuit;
+pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
+pub use send_to_contract_transparent::SendToContractTransparentCircuit;
+pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;
 
 #[cfg(test)]
-pub(crate) mod leaf;
+pub mod test_helpers;
+
+#[cfg(any(test, feature = "builder"))]
+pub mod builder;
