@@ -6,7 +6,7 @@
 
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::prelude::*;
-use poseidon252::sponge;
+use dusk_poseidon::sponge;
 
 /// Prove a given point was signed by a given public key using schnorr single
 /// key

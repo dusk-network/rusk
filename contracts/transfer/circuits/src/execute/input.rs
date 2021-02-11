@@ -11,9 +11,9 @@ use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base;
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
+use dusk_poseidon::cipher::PoseidonCipher;
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
-use poseidon252::cipher::PoseidonCipher;
-use poseidon252::tree::PoseidonBranch;
 use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;

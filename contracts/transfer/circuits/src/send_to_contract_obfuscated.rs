@@ -13,9 +13,9 @@ use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
+use dusk_poseidon::cipher::{self, PoseidonCipher};
+use dusk_poseidon::sponge;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Message};
-use poseidon252::cipher::{self, PoseidonCipher};
-use poseidon252::sponge;
 use rand_core::{CryptoRng, RngCore};
 use schnorr::Signature;
 
@@ -39,42 +39,6 @@ pub struct SendToContractObfuscatedCircuit {
     message_cipher: [BlsScalar; PoseidonCipher::cipher_size()],
     pk: JubJubExtended,
     message_pk: JubJubExtended,
-}
-
-// TODO
-// This unsafe implementation is done that way because the rusk structure
-// combined with plonk requires an instance of this struct to be able to verify
-// proofs.
-//
-// That should be different since only the keys, the proof and the public inputs
-// should provide the required data to run the verification
-//
-// The `schnorr::Signature` doesn't implement `Default`, and shouldn't. This
-// unsafe usage is a workaround until the following issue is solved:
-// https://github.com/dusk-network/plonk/issues/396
-//
-// After that, this `Default` implementation can be removed.
-// https://github.com/dusk-network/rusk/issues/183
-impl Default for SendToContractObfuscatedCircuit {
-    fn default() -> Self {
-        use std::mem;
-
-        Self {
-            pi_positions: Default::default(),
-            signature: unsafe { mem::zeroed() },
-            value: Default::default(),
-            blinding_factor: Default::default(),
-            message_value: Default::default(),
-            message_blinding_factor: Default::default(),
-            message_r: Default::default(),
-            value_commitment: Default::default(),
-            message_value_commitment: Default::default(),
-            message_nonce: Default::default(),
-            message_cipher: Default::default(),
-            pk: Default::default(),
-            message_pk: Default::default(),
-        }
-    }
 }
 
 impl SendToContractObfuscatedCircuit {

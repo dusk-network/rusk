@@ -12,10 +12,10 @@ use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
+use dusk_poseidon::cipher::{self, PoseidonCipher};
 use phoenix_core::{Error as PhoenixError, Message, Note};
-use poseidon252::cipher::{self, PoseidonCipher};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {
     pi_positions: Vec<PublicInput>,
 
