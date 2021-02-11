@@ -28,9 +28,12 @@ where
 {
     pub fn get(
         &self,
-        pos: usize,
+        pos: u64,
     ) -> Result<Option<Leaf>, PoseidonError<S::Error>> {
-        self.tree.get(pos)
+        // FIXME this cast will truncate positions greater than 2^32 for wasm32
+        // environments. The tree is set for 2^34, so that will happen
+        // https://github.com/dusk-network/Poseidon252/issues/116
+        self.tree.get(pos as usize)
     }
 
     pub fn push(
@@ -53,6 +56,7 @@ where
     > {
         // FIXME this cast will truncate positions greater than 2^32 for wasm32
         // environments. The tree is set for 2^34, so that will happen
+        // https://github.com/dusk-network/Poseidon252/issues/116
         self.tree.branch(pos as usize)
     }
 }
