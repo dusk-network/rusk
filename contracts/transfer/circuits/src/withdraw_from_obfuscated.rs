@@ -15,7 +15,7 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
 use phoenix_core::{Error as PhoenixError, Message, Note};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {
     pi_positions: Vec<PublicInput>,
 
