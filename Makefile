@@ -22,7 +22,7 @@ test: ## Run the tests
 			cargo test --release -- --nocapture  && \
 				rm /tmp/rusk_listener_*
 		cd contracts/bid/circuits && cargo test --release
-		# cd contracts/transfer/circuits && cargo test --release
+		$(MAKE) -C ./contracts/transfer/
 
 run: ## Run the server
 		@make contracts && \
