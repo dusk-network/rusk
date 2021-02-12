@@ -4,17 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, Call, Transfer};
+use crate::{ops, Transfer};
 
-use alloc::vec::Vec;
 use canonical::{
     BridgeStore as BridgeStoreCanon, ByteSink, ByteSource, Canon, Id32, Store,
 };
 use dusk_abi::{ContractState, ReturnValue};
-use dusk_bls12_381::BlsScalar;
-use phoenix_core::{Crossover, Fee, Note};
 
-const PAGE_SIZE: usize = 1024 * 4;
+const PAGE_SIZE: usize = 1024 * 8;
 
 type BridgeStore = BridgeStoreCanon<Id32>;
 
@@ -40,12 +37,32 @@ fn query(
     let contract: Transfer<BridgeStore> = Canon::read(&mut source)?;
 
     let query = Canon::read(&mut source)?;
-    match query {
-        _ => (), // TODO report unexpected ID
-    }
+    let ret = match query {
+        ops::QR_BALANCE => {
+            let address = Canon::read(&mut source)?;
 
-    // TODO Implement spurious functions
-    let _ = contract;
+            let ret = contract.balance(address);
+            ReturnValue::from_canon(&ret, &bridge)?
+        }
+
+        ops::QR_ROOT => {
+            let ret = contract.root();
+            ReturnValue::from_canon(&ret, &bridge)?
+        }
+
+        ops::QR_NOTES_FROM_HEIGHT => {
+            let block_height = Canon::read(&mut source)?;
+
+            let ret = contract.notes_from_height(block_height);
+            ReturnValue::from_canon(&ret, &bridge)?
+        }
+
+        _ => ReturnValue::from_canon(&(), &bridge)?, /* TODO report
+                                                      * unexpected ID */
+    };
+
+    let mut sink = ByteSink::new(&mut bytes[..], &bridge);
+    Canon::write(&ret, &mut sink)?;
 
     Ok(())
 }
@@ -57,30 +74,8 @@ fn transaction(
     let mut source = ByteSource::new(&bytes[..], &bridge);
     let mut contract: Transfer<BridgeStore> = Canon::read(&mut source)?;
 
-    let tx = Canon::read(&mut source)?;
-    let ret = match tx {
-        ops::TX_EXECUTE => {
-            let anchor: BlsScalar = Canon::read(&mut source)?;
-            let nullifiers: Vec<BlsScalar> = Canon::read(&mut source)?;
-            let crossover: Crossover = Canon::read(&mut source)?;
-            let notes: Vec<Note> = Canon::read(&mut source)?;
-            let fee: Fee = Canon::read(&mut source)?;
-            let spend_proof: Vec<u8> = Canon::read(&mut source)?;
-            let call: Call = Canon::read(&mut source)?;
-
-            contract.execute(
-                anchor,
-                nullifiers,
-                crossover,
-                notes,
-                fee,
-                spend_proof,
-                call,
-            )
-        }
-
-        _ => false, // TODO report unexpected ID
-    };
+    let call = Canon::read(&mut source)?;
+    let ret = contract.execute(call);
 
     let mut sink = ByteSink::new(&mut bytes[..], &bridge);
 

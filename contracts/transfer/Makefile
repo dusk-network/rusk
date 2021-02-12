@@ -7,15 +7,19 @@ check: hosted ## Run the Rust check on the project features
 	@cargo check
 	
 hosted: ## Build the WASM files
+	@mkdir -p ./target/verifier-keys/
+	@cp -fr ~/.rusk/keys/transfer-circuits/**/*.vk ./target/verifier-keys
 	@cargo rustc \
-		--manifest-path=./Cargo.toml \
 		--release \
 		--target wasm32-unknown-unknown \
+		--no-default-features \
 		-- -C link-args=-s
+	@cp ./target/wasm32-unknown-unknown/release/transfer_contract.wasm .
 
 test: hosted ## Perform the contract tests defined in the host module
 	@cargo test \
 		--release \
+		--features host
 
 help: ## Display this help screen
 	@grep -h \

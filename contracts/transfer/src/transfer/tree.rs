@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::{Canon, Store};
+use canonical::{Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
@@ -61,6 +61,35 @@ where
     S: Store,
 {
     tree: PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>,
+}
+
+impl<S: Store>
+    AsRef<PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>>
+    for Tree<S>
+{
+    fn as_ref(
+        &self,
+    ) -> &PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH> {
+        &self.tree
+    }
+}
+
+impl<S: Store>
+    AsMut<PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>>
+    for Tree<S>
+{
+    fn as_mut(
+        &mut self,
+    ) -> &mut PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>
+    {
+        &mut self.tree
+    }
+}
+
+impl<S: Store> Tree<S> {
+    pub fn root(&mut self) -> Result<BlsScalar, S::Error> {
+        self.tree.root().map_err(|_| InvalidEncoding.into())
+    }
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -18,4 +18,7 @@ mod wasm;
 pub mod ops;
 
 mod transfer;
-pub use transfer::{Call, PublicKeyBytes, Transfer};
+pub use transfer::{Call, PublicKeyBytes, Transfer, TransferExecute};
+
+#[cfg(test)]
+mod tests;

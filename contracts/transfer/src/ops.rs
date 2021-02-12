@@ -5,6 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 // Queries
+pub const QR_BALANCE: u8 = 0x00;
+pub const QR_ROOT: u8 = 0x01;
+pub const QR_NOTES_FROM_HEIGHT: u8 = 0x02;
 
 // Transactions
 pub const TX_EXECUTE: u8 = 0x00;

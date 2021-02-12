@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::internal;
-use crate::{Call, Transfer};
+use super::{internal, keys};
+use crate::{Call, Transfer, TransferExecute};
 
 use alloc::vec::Vec;
 use canonical::Store;
@@ -14,7 +14,7 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
 use dusk_pki::PublicKey;
 use dusk_poseidon::cipher::PoseidonCipher;
-use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
+use phoenix_core::{Message, Note, NoteType};
 
 impl<S: Store> Transfer<S> {
     fn call(&mut self, call: Call) -> bool {
@@ -73,7 +73,10 @@ impl<S: Store> Transfer<S> {
                 spend_proof,
             ),
 
-            _ => false,
+            // Recursion not allowed
+            Call::Execute { .. } => false,
+
+            Call::None => true,
         }
     }
 
@@ -106,7 +109,8 @@ impl<S: Store> Transfer<S> {
 
         //  4. verify(C.c, v, π)
         // TODO
-        let (_, _, _) = (pi, label, spend_proof);
+        let vk = keys::stct();
+        let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         //  5. C ← C(0,0,0)
         //  TODO
@@ -180,7 +184,8 @@ impl<S: Store> Transfer<S> {
 
         //  4. verify(C.c, M, pk, π)
         //  TODO
-        let (_, _, _) = (pi, label, spend_proof);
+        let vk = keys::stco();
+        let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         //  5. C←(0,0,0)
         //  TODO
@@ -240,21 +245,26 @@ impl<S: Store> Transfer<S> {
 
         //  7. verify(c, M_c, No.c, π)
         //  TODO
-        let (_, _, _) = (pi, label, spend_proof);
+        let vk = keys::wdfo();
+        let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         true
     }
 
-    pub fn execute(
-        &mut self,
-        anchor: BlsScalar,
-        nullifiers: Vec<BlsScalar>,
-        crossover: Crossover,
-        notes: Vec<Note>,
-        fee: Fee,
-        spend_proof: Vec<u8>,
-        call: Call,
-    ) -> bool {
+    pub fn execute(&mut self, call: TransferExecute) -> bool {
+        let TransferExecute {
+            anchor,
+            nullifiers,
+            crossover,
+            notes,
+            fee,
+            spend_proof,
+            call,
+        } = call;
+
+        let inputs = nullifiers.len();
+        let outputs = notes.len();
+
         // Build proof public inputs
         let scalars = (1 + BlsScalar::SIZE) * (3 + nullifiers.len());
         let points = (1 + JubJubAffine::SIZE) * (1 + notes.len());
@@ -318,7 +328,8 @@ impl<S: Store> Transfer<S> {
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
         // TODO
-        let (_, _, _) = (pi, label, spend_proof);
+        let vk = keys::exec(inputs, outputs);
+        let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         // 11. if ∣k∣≠0 then call(k)
         if !self.call(call) {
@@ -333,6 +344,10 @@ impl<S: Store> Transfer<S> {
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
         if self.push_fee_crossover(fee, crossover).is_err() {
+            return false;
+        }
+
+        if self.update_root().is_err() {
             return false;
         }
 

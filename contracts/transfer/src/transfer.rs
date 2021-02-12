@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::convert::TryFrom;
+
 use alloc::vec::Vec;
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
@@ -12,7 +14,7 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
-use phoenix_core::{Message, Note};
+use phoenix_core::{Crossover, Fee, Message, Note};
 
 mod tree;
 use tree::Tree;
@@ -39,9 +41,61 @@ pub struct Transfer<S: Store> {
         Map<BlsScalar, (PublicKey, JubJubAffine), S>,
 }
 
+impl<S: Store> Transfer<S> {
+    pub(crate) fn update_root(&mut self) -> Result<(), S::Error> {
+        let root = self.notes.root()?;
+
+        self.roots.insert(root, ())?;
+
+        Ok(())
+    }
+}
+
+impl<S: Store> TryFrom<Note> for Transfer<S> {
+    type Error = S::Error;
+
+    /// This implementation is intended for test purposes to initialize the
+    /// state with the provided note
+    ///
+    /// To avoid abuse, the block_height will always be `0`
+    fn try_from(note: Note) -> Result<Self, Self::Error> {
+        use canonical::InvalidEncoding;
+
+        let mut transfer = Self::default();
+
+        let block_height = 0;
+        transfer
+            .notes_mapping
+            .insert(block_height, [note].to_vec())?;
+
+        transfer
+            .notes
+            .as_mut()
+            .push((block_height, note).into())
+            .map_err(|_| InvalidEncoding.into())?;
+
+        transfer.update_root()?;
+
+        Ok(transfer)
+    }
+}
+
+#[derive(Debug, Clone, Canon)]
+pub struct TransferExecute {
+    pub anchor: BlsScalar,
+    pub nullifiers: Vec<BlsScalar>,
+    pub fee: Fee,
+    pub crossover: Crossover,
+    pub notes: Vec<Note>,
+    pub spend_proof: Vec<u8>,
+    pub call: Call,
+}
+
 #[derive(Debug, Clone, Canon)]
 pub enum Call {
     None,
+
+    Execute {},
 
     SendToContractTransparent {
         address: BlsScalar,

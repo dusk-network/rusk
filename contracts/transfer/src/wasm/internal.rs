@@ -63,10 +63,9 @@ impl<S: Store> Transfer<S> {
         fee: Fee,
         crossover: Crossover,
     ) -> Result<(), S::Error> {
-        // TODO Fetch the gas consumed
-        // https://github.com/dusk-network/rusk-vm/issues/120
-        let gas_consumed = 0u64;
+        let gas_consumed = dusk_abi::block_height();
         let remainder = fee.gen_remainder(gas_consumed);
+
         self.push_note(remainder.into())?;
 
         Note::try_from((fee, crossover))
@@ -123,8 +122,7 @@ impl<S: Store> Transfer<S> {
     }
 
     pub(crate) fn push_note(&mut self, note: Note) -> Result<(), S::Error> {
-        // FIXME let block_height = dusk_abi::block_height();
-        let block_height = 0;
+        let block_height = dusk_abi::block_height();
 
         let mut create = false;
         match self.notes_mapping.get_mut(&block_height)? {
@@ -149,8 +147,7 @@ impl<S: Store> Transfer<S> {
         &mut self,
         notes: Vec<Note>,
     ) -> Result<(), S::Error> {
-        // FIXME let block_height = dusk_abi::block_height();
-        let block_height = 0;
+        let block_height = dusk_abi::block_height();
 
         let mut create = false;
         match self.notes_mapping.get_mut(&block_height)? {
