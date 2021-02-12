@@ -4,27 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Call, Leaf, Transfer};
+use crate::{PublicKeyBytes, Transfer};
 use core::convert::TryFrom;
 
 use alloc::vec::Vec;
-use canonical::{Canon, InvalidEncoding, Store};
-use canonical_derive::Canon;
+use canonical::{InvalidEncoding, Store};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
 use phoenix_core::{Crossover, Fee, Message, Note};
-
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Canon)]
-pub(crate) struct PublicKeyBytes([u8; PublicKey::SIZE]);
-
-impl From<PublicKey> for PublicKeyBytes {
-    fn from(pk: PublicKey) -> Self {
-        Self(pk.to_bytes())
-    }
-}
 
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
@@ -84,66 +74,6 @@ impl<S: Store> Transfer<S> {
             .and_then(|note| self.push_note(note))?;
 
         Ok(())
-    }
-
-    pub(crate) fn internal_call(&mut self, call: Call) -> bool {
-        match call {
-            Call::SendToContractTransparent {
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            } => self.send_to_contract_transparent(
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            ),
-
-            Call::WithdrawFromTransparent { address, note } => {
-                self.withdraw_from_transparent(address, note)
-            }
-
-            Call::SendToContractObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                crossover_commitment,
-                crossover_pk,
-                spend_proof,
-            } => self.send_to_contract_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                crossover_commitment,
-                crossover_pk,
-                spend_proof,
-            ),
-
-            Call::WithdrawFromObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            } => self.withdraw_from_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            ),
-
-            _ => false,
-        }
     }
 
     // TODO convert to const fn
@@ -210,7 +140,7 @@ impl<S: Store> Transfer<S> {
         }
 
         self.notes
-            .push(Leaf::new(block_height, note))
+            .push((block_height, note).into())
             .map(|_| ())
             .map_err(|_| InvalidEncoding.into())
     }
@@ -237,7 +167,7 @@ impl<S: Store> Transfer<S> {
 
         for note in notes {
             self.notes
-                .push(Leaf::new(block_height, note))
+                .push((block_height, note).into())
                 .map_err(|_| InvalidEncoding.into())?;
         }
 

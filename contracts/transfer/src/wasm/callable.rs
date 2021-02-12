@@ -4,39 +4,80 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Tree;
+use super::internal;
+use crate::{Call, Transfer};
 
 use alloc::vec::Vec;
-use canonical::{Canon, Store};
-use canonical_derive::Canon;
+use canonical::Store;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
-use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
 use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
 
-mod call;
-mod internal;
-
-use internal::PublicKeyBytes;
-
-pub use call::Call;
-
-#[derive(Debug, Default, Clone, Canon)]
-pub struct Transfer<S: Store> {
-    notes: Tree<S>,
-    notes_mapping: Map<u64, Vec<Note>, S>,
-    nullifiers: Map<BlsScalar, (), S>,
-    roots: Map<BlsScalar, (), S>,
-    balance: Map<BlsScalar, u64, S>,
-    message_mapping: Map<BlsScalar, Map<PublicKeyBytes, Message, S>, S>,
-    message_mapping_set: Map<BlsScalar, (PublicKey, JubJubAffine), S>,
-}
-
 impl<S: Store> Transfer<S> {
-    pub(crate) fn send_to_contract_transparent(
+    fn call(&mut self, call: Call) -> bool {
+        match call {
+            Call::SendToContractTransparent {
+                address,
+                value,
+                value_commitment,
+                pk,
+                spend_proof,
+            } => self.send_to_contract_transparent(
+                address,
+                value,
+                value_commitment,
+                pk,
+                spend_proof,
+            ),
+
+            Call::WithdrawFromTransparent { address, note } => {
+                self.withdraw_from_transparent(address, note)
+            }
+
+            Call::SendToContractObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                crossover_commitment,
+                crossover_pk,
+                spend_proof,
+            } => self.send_to_contract_obfuscated(
+                address,
+                message,
+                r,
+                pk,
+                crossover_commitment,
+                crossover_pk,
+                spend_proof,
+            ),
+
+            Call::WithdrawFromObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                note,
+                input_value_commitment,
+                spend_proof,
+            } => self.withdraw_from_obfuscated(
+                address,
+                message,
+                r,
+                pk,
+                note,
+                input_value_commitment,
+                spend_proof,
+            ),
+
+            _ => false,
+        }
+    }
+
+    fn send_to_contract_transparent(
         &mut self,
         address: BlsScalar,
         value: u64,
@@ -73,7 +114,7 @@ impl<S: Store> Transfer<S> {
         true
     }
 
-    pub(crate) fn withdraw_from_transparent(
+    fn withdraw_from_transparent(
         &mut self,
         address: BlsScalar,
         note: Note,
@@ -99,7 +140,7 @@ impl<S: Store> Transfer<S> {
         true
     }
 
-    pub(crate) fn send_to_contract_obfuscated(
+    fn send_to_contract_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
@@ -147,7 +188,7 @@ impl<S: Store> Transfer<S> {
         true
     }
 
-    pub(crate) fn withdraw_from_obfuscated(
+    fn withdraw_from_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
@@ -280,7 +321,7 @@ impl<S: Store> Transfer<S> {
         let (_, _, _) = (pi, label, spend_proof);
 
         // 11. if ∣k∣≠0 then call(k)
-        if !self.internal_call(call) {
+        if !self.call(call) {
             return false;
         }
 

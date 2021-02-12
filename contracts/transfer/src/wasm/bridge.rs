@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{contract, ops, Transfer};
+use crate::{ops, Call, Transfer};
 
 use alloc::vec::Vec;
 use canonical::{
@@ -66,7 +66,7 @@ fn transaction(
             let notes: Vec<Note> = Canon::read(&mut source)?;
             let fee: Fee = Canon::read(&mut source)?;
             let spend_proof: Vec<u8> = Canon::read(&mut source)?;
-            let call: contract::Call = Canon::read(&mut source)?;
+            let call: Call = Canon::read(&mut source)?;
 
             contract.execute(
                 anchor,

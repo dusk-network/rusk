@@ -7,8 +7,10 @@
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::PoseidonLeaf;
+use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
 use phoenix_core::Note;
+
+pub const TRANSFER_TREE_DEPTH: usize = 17;
 
 #[derive(Debug, Clone, Copy, Canon)]
 pub struct Leaf {
@@ -16,8 +18,10 @@ pub struct Leaf {
     note: Note,
 }
 
-impl Leaf {
-    pub fn new(block_height: u64, note: Note) -> Self {
+impl From<(u64, Note)> for Leaf {
+    fn from(args: (u64, Note)) -> Self {
+        let (block_height, note) = args;
+
         Self { block_height, note }
     }
 }
@@ -48,5 +52,31 @@ where
 
     fn set_pos(&mut self, pos: u64) {
         self.note.set_pos(pos);
+    }
+}
+
+#[derive(Debug, Default, Clone, Canon)]
+pub struct Tree<S>
+where
+    S: Store,
+{
+    tree: PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>,
+}
+
+#[cfg(target_arch = "wasm32")]
+mod wasm {
+    use super::*;
+    use dusk_poseidon::Error as PoseidonError;
+
+    impl<S> Tree<S>
+    where
+        S: Store,
+    {
+        pub fn push(
+            &mut self,
+            leaf: Leaf,
+        ) -> Result<usize, PoseidonError<S::Error>> {
+            self.tree.push(leaf)
+        }
     }
 }

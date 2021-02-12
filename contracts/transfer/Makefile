@@ -16,7 +16,6 @@ hosted: ## Build the WASM files
 test: hosted ## Perform the contract tests defined in the host module
 	@cargo test \
 		--release \
-		--features host
 
 help: ## Display this help screen
 	@grep -h \

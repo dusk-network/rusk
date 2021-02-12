@@ -12,12 +12,10 @@
 
 extern crate alloc;
 
-mod bridge;
-mod contract;
-mod leaf;
-mod ops;
-mod tree;
+#[cfg(target_arch = "wasm32")]
+mod wasm;
 
-pub use contract::{Call, Transfer};
-pub use leaf::Leaf;
-pub use tree::{Tree, TRANSFER_TREE_DEPTH};
+pub mod ops;
+
+mod transfer;
+pub use transfer::{Call, PublicKeyBytes, Transfer};
