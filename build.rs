@@ -18,21 +18,32 @@ use poseidon252::tree::PoseidonBranch;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
-        let buff = match rusk_profile::get_common_reference_string() {
-            Ok(buff) => buff,
-            Err(_) => {
-                rusk_profile::set_common_reference_string("pub_params_dev.bin")
-                    .expect("Unable to copy the CRS")
-            }
-        };
+        match rusk_profile::get_common_reference_string() {
+            Ok(buff) => unsafe {
+                println!("Got the CRS from cache");
 
-        unsafe {
-            PublicParameters::from_slice_unchecked(&buff)
-                .expect("CRS not decoded")
+                PublicParameters::from_slice_unchecked(&buff[..])
+                    .expect("Cannot deserialize the CRS")
+            },
+            Err(_) => {
+                println!("New CRS needs to be generated and cached");
+
+                use rand::rngs::StdRng;
+                use rand::SeedableRng;
+
+                let mut rng = StdRng::seed_from_u64(0xbeef);
+
+                let pp_p = PublicParameters::setup(1 << 17, &mut rng)
+                    .expect("Cannot initialize Public Parameters");
+
+                rusk_profile::set_common_reference_string(pp_p.to_raw_bytes())
+                    .expect("Unable to write the CRS");
+
+                pp_p
+            }
         }
     };
 }
-
 /// Buildfile for the rusk crate.
 ///
 /// Main goals of the file at the moment are:
@@ -41,6 +52,10 @@ lazy_static! {
 /// support the `-v` argument properly.
 /// 3. Compile the contract-related circuits.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Ensure we run the build script again even if we change just the build.rs
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=path/to/Cargo.lock");
+
     // Get crate version + commit + toolchain for `-v` arg support.
     println!(
         "cargo:rustc-env=GIT_HASH={}",
@@ -54,6 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "cargo:rustc-env=RUSTC_RELEASE_CHANNEL={}",
         rustc_tools_util::get_channel().unwrap_or_default()
     );
+
+    // This will enforce the usage and therefore the cache / generation
+    // of the CRS even if it's not used to compiles circuits inside the
+    // build script.
+    lazy_static::initialize(&PUB_PARAMS);
 
     // Compile protos for tonic
     tonic_build::compile_protos("schema/rusk.proto")?;
