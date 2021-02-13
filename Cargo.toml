@@ -62,7 +62,7 @@ phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.7.
 anyhow = "1.0"
 rand = "0.7"
 bid-circuits = {path ="./contracts/bid/circuits"}
-transfer-circuits = {path ="./contracts/transfer/circuits", features=["builder"]}
+transfer-circuits = {path ="./contracts/transfer/circuits", features=["builder", "builder-no-rusk-profile-keys"]}
 rusk-profile = { path = "./profile" }
 lazy_static = "1.4"
 canonical = "0.5"
