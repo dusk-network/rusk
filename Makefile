@@ -20,7 +20,6 @@ contracts: ## Generate the WASM for all the contracts
 test: ## Run the tests
 		@make contracts && \
 			cargo test --release -- --nocapture  && \
-				rm /tmp/rusk_listener_*
 		cd contracts/bid/circuits && cargo test --release
 		# cd contracts/transfer/circuits && cargo test --release
 
