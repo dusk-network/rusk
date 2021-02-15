@@ -12,8 +12,8 @@ use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
+use dusk_poseidon::sponge;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee};
-use poseidon252::sponge;
 use rand_core::{CryptoRng, RngCore};
 use schnorr::Signature;
 

@@ -8,47 +8,16 @@
 use super::services::rusk_proto;
 use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::TryFrom;
-use dusk_pki::{
-    jubjub_decode, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
-};
-use dusk_plonk::jubjub::JubJubAffine;
-use dusk_plonk::prelude::*;
+use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
 use std::convert::TryInto;
 use tonic::{Code, Status};
 
-/// Wrapper over `jubjub_decode` fn
-pub(crate) fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
-    jubjub_decode::<JubJubAffine>(bytes).map_err(|_| {
-        Status::failed_precondition("Point was improperly encoded")
-    })
-}
-
-/// Wrapper over `jubjub_decode` fn
-pub(crate) fn decode_jubjub_scalar(
-    bytes: &[u8],
-) -> Result<JubJubScalar, Status> {
-    jubjub_decode::<JubJubScalar>(bytes).map_err(|_| {
-        Status::failed_precondition("JubjubScalar was improperly encoded")
-    })
-}
-
-/// Decoder fn used for `BlsScalar`
-pub(crate) fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
-    if bytes.len() < 32 {
-        Err(Status::failed_precondition(
-            "Not enough bytes to decode a BlsScalar",
-        ))
-    } else {
-        let bytes = <&[u8; 32]>::try_from(bytes).map_err(|_| {
-            Status::failed_precondition(
-                "Expecting 32 bytes to decode a BlsScalar",
-            )
-        })?;
-
-        Option::from(BlsScalar::from_bytes(&bytes)).ok_or_else(|| {
-            Status::failed_precondition("Point was improperly encoded")
-        })
-    }
+pub fn as_status_err<T, U: std::fmt::Debug>(
+    res: Result<T, U>,
+) -> Result<T, Status> {
+    res.map_err(|e| Status::new(Code::Unknown, format!("{:?}", e)))
 }
 
 impl From<PublicSpendKey> for rusk_proto::PublicKey {
@@ -82,7 +51,9 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
     fn from(value: StealthAddress) -> Self {
         rusk_proto::StealthAddress {
             r_g: JubJubAffine::from(value.R()).to_bytes().to_vec(),
-            pk_r: JubJubAffine::from(value.pk_r()).to_bytes().to_vec(),
+            pk_r: JubJubAffine::from(value.pk_r().as_ref())
+                .to_bytes()
+                .to_vec(),
         }
     }
 }
@@ -121,8 +92,8 @@ impl TryFrom<&rusk_proto::PublicKey> for PublicSpendKey {
         value: &rusk_proto::PublicKey,
     ) -> Result<PublicSpendKey, Status> {
         Ok(PublicSpendKey::new(
-            decode_affine(&value.a_g)?.into(),
-            decode_affine(&value.b_g)?.into(),
+            as_status_err(JubJubAffine::from_slice(&value.a_g))?.into(),
+            as_status_err(JubJubAffine::from_slice(&value.b_g))?.into(),
         ))
     }
 }
@@ -132,8 +103,8 @@ impl TryFrom<&rusk_proto::ViewKey> for ViewKey {
 
     fn try_from(value: &rusk_proto::ViewKey) -> Result<ViewKey, Status> {
         Ok(ViewKey::new(
-            decode_jubjub_scalar(&value.a)?,
-            decode_affine(&value.b_g)?.into(),
+            as_status_err(JubJubScalar::from_slice(&value.a))?,
+            as_status_err(JubJubAffine::from_slice(&value.b_g))?.into(),
         ))
     }
 }

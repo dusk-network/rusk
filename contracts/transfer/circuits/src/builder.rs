@@ -11,8 +11,8 @@ use anyhow::{anyhow, Result};
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
 use phoenix_core::Note;
-use poseidon252::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
@@ -222,9 +222,11 @@ where
         })?;
 
         let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vk) = keys
-            .get(id)
-            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+        let (pk, vk) = keys.get(id).ok_or(anyhow!(
+            "Failed to get '{}' keys for '{}' from Rusk profile",
+            id,
+            env!("CARGO_PKG_NAME")
+        ))?;
 
         let pk = ProverKey::from_bytes(pk.as_slice())?;
         let vk = VerifierKey::from_bytes(vk.as_slice())?;

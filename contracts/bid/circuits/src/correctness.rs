@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use anyhow::Result;
-use dusk_blindbid::{V_MAX, V_MIN};
+use dusk_blindbid::{V_RAW_MAX, V_RAW_MIN};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::jubjub::{
@@ -64,8 +64,8 @@ impl Circuit<'_> for CorrectnessCircuit {
         // 2. Range check - v_min <= value <= v_max
         let cond = range_check(
             composer,
-            BlsScalar::from(V_MIN),
-            BlsScalar::from(V_MAX),
+            BlsScalar::from(V_RAW_MIN),
+            BlsScalar::from(V_RAW_MAX),
             value,
         );
 

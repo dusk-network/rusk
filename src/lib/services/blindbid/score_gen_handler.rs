@@ -6,12 +6,14 @@
 
 use super::super::ServiceRequestHandler;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
-use crate::encoding::{decode_affine, decode_bls_scalar};
+use crate::encoding;
 use anyhow::Result;
-use dusk_blindbid::{bid::Bid, BlindBidCircuit};
+use dusk_blindbid::{Bid, BlindBidCircuit, Score};
+use dusk_bytes::DeserializableSlice;
+use dusk_bytes::Serializable;
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
-use poseidon252::tree::PoseidonBranch;
+use dusk_poseidon::tree::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
 
 /// Implementation of the ScoreGeneration Handler.
@@ -35,23 +37,25 @@ where
         // Parse the optional request fields and return an error if
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
+        // FIXME: `seed` should be sent as `u64`? No? What happens here?
         let (k, seed, secret) = parse_score_gen_params(self.request)?;
-        // FIXME: Once Bid contract is ready this will be implementable.
+        // TODO: This should fetch the Bid from the tree once this
+        // functionallity is enabled.
         let (bid, branch): (Bid, PoseidonBranch<17>) = unimplemented!();
 
         // Generate Score for the Bid
         let latest_consensus_round = self.request.get_ref().round as u64;
         let latest_consensus_step = self.request.get_ref().step as u64;
-        let score = bid
-            .compute_score(
-                &secret,
-                k,
-                branch.root(),
-                seed.reduce().0[0],
-                latest_consensus_round,
-                latest_consensus_step,
-            )
-            .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
+        let score = Score::compute(
+            &bid,
+            &secret,
+            k,
+            *branch.root(),
+            seed,
+            latest_consensus_round,
+            latest_consensus_step,
+        )
+        .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
         // Generate Prover ID
         let prover_id = bid.generate_prover_id(
             k,
@@ -77,7 +81,7 @@ where
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
         Ok(Response::new(GenerateScoreResponse {
             blindbid_proof: proof.to_bytes().to_vec(),
-            score: score.score.to_bytes().to_vec(),
+            score: score.to_bytes().to_vec(),
             prover_identity: prover_id.to_bytes().to_vec(),
         }))
     }
@@ -88,9 +92,15 @@ where
 fn parse_score_gen_params(
     request: &Request<GenerateScoreRequest>,
 ) -> Result<(BlsScalar, BlsScalar, JubJubAffine), Status> {
-    let k = decode_bls_scalar(&request.get_ref().k[..])?;
-    let seed = decode_bls_scalar(&request.get_ref().seed[..])?;
-    let secret = decode_affine(&request.get_ref().secret[..])?;
+    let k = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().k[..],
+    ))?;
+    let seed = encoding::as_status_err(BlsScalar::from_slice(
+        &request.get_ref().seed[..],
+    ))?;
+    let secret = encoding::as_status_err(JubJubAffine::from_slice(
+        &request.get_ref().secret[..],
+    ))?;
     Ok((k, seed, secret))
 }
 

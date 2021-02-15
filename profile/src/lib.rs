@@ -6,10 +6,13 @@
 
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
-use std::fs::{self, read, write, File};
+use std::fs::{self, read, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+static CRS_17: &str =
+    "e1ebe5dedabf87d8fe1232e04d18a111530edc0f4beeeb0251d545a123d944fe";
 
 pub struct Keys {
     crate_name: String,
@@ -87,7 +90,7 @@ impl Keys {
 
         dir.push(&self.crate_name);
         if dir.exists() {
-            fs::remove_dir_all(dir.clone())?;
+            fs::remove_dir_all(dir)?;
         }
 
         Ok(())
@@ -125,7 +128,6 @@ impl Keys {
 pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
     if let Some(mut dir) = home_dir() {
         dir.push(".rusk");
-        // PathBuf::from(BLINDBID_CIRCUIT_PK_PATH).exists(),
         fs::create_dir_all(dir.clone())?;
         Ok(dir)
     } else {
@@ -143,24 +145,40 @@ pub fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
     Ok(profile)
 }
 
-/// TODO: change name
 pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
     let mut profile = get_rusk_profile_dir()?;
     profile.push("dev.crs");
 
-    Ok(read(profile)?)
+    let buff = read(profile)?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&buff);
+    let hash = format!("{:x}", hasher.finalize());
+
+    if hash == CRS_17 {
+        Ok(buff)
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Cached CRS does not match the expected one",
+        ))
+    }
 }
 
-/// TODO: change name
-pub fn set_common_reference_string<P: AsRef<Path>>(
-    path: P,
-) -> Result<Vec<u8>, io::Error> {
+pub fn set_common_reference_string(buffer: Vec<u8>) -> Result<(), io::Error> {
     let mut profile = get_rusk_profile_dir()?;
     profile.push("dev.crs");
 
-    let buff = read(&path)?;
-    write(&profile, &buff)?;
-    Ok(buff)
+    write(&profile, &buffer)?;
+    Ok(())
+}
+
+pub fn delete_common_reference_string() -> Result<(), io::Error> {
+    let mut profile = get_rusk_profile_dir()?;
+    profile.push("dev.crs");
+
+    remove_file(&profile)?;
+    Ok(())
 }
 
 pub fn keys_for(crate_name: &str) -> Keys {

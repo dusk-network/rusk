@@ -7,6 +7,7 @@
 //! Phoenix transaction structure implementation.
 
 use anyhow::{anyhow, Result};
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
@@ -124,7 +125,9 @@ impl TransactionPayload {
 
             let mut s = [0u8; 32];
             s.copy_from_slice(&bytes[..32]);
-            let s: Option<BlsScalar> = BlsScalar::from_bytes(&s).into();
+            let s: Option<BlsScalar> = BlsScalar::from_bytes(&s)
+                .map_err(|e| anyhow!("{:?}", e))?
+                .into();
             let s = s.ok_or(anyhow!("Failed to deserialize a scalar!"))?;
 
             if bytes.len() > 32 {
@@ -182,8 +185,8 @@ impl TransactionPayload {
         let (bytes, crossover_present) = deser_bool(bytes)?;
         let (bytes, crossover) = if crossover_present {
             (
-                &bytes[Crossover::serialized_size()..],
-                Some(Crossover::from_bytes(bytes).map_err(|e| {
+                &bytes[Crossover::SIZE..],
+                Some(Crossover::from_slice(bytes).map_err(|e| {
                     anyhow!("Error deserializing crossover: {:?}", e)
                 })?),
             )
@@ -195,22 +198,22 @@ impl TransactionPayload {
         let mut notes = Vec::with_capacity(items);
         let bytes =
             (0..items).try_fold::<_, _, Result<&[u8]>>(bytes, |bytes, _| {
-                let note = Note::from_bytes(bytes).map_err(|e| {
+                let note = Note::from_slice(bytes).map_err(|e| {
                     anyhow!("Error deserializing note: {:?}", e)
                 })?;
 
                 notes.push(note);
 
-                if bytes.len() > Note::serialized_size() {
-                    Ok(&bytes[Note::serialized_size()..])
+                if bytes.len() > Note::SIZE {
+                    Ok(&bytes[Note::SIZE..])
                 } else {
                     Ok(&[])
                 }
             })?;
 
-        let fee = Fee::from_bytes(bytes)
+        let fee = Fee::from_slice(bytes)
             .map_err(|e| anyhow!("Error deserializing fee: {:?}", e))?;
-        let bytes = &bytes[Fee::serialized_size()..];
+        let bytes = &bytes[Fee::SIZE..];
 
         let spending_proof =
             Proof::from_bytes(&bytes[..Proof::serialised_size()])?;
