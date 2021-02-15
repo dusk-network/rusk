@@ -13,8 +13,8 @@ use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
-use lazy_static::lazy_static;
 use dusk_poseidon::tree::PoseidonBranch;
+use lazy_static::lazy_static;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {

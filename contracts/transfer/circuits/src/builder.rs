@@ -11,8 +11,8 @@ use anyhow::{anyhow, Result};
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::Note;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
+use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
