@@ -30,6 +30,35 @@ pub struct SendToContractTransparentCircuit {
     value: BlsScalar,
 }
 
+// TODO
+// This unsafe implementation is done that way because the rusk structure
+// combined with plonk requires an instance of this struct to be able to verify
+// proofs.
+//
+// That should be different since only the keys, the proof and the public inputs
+// should provide the required data to run the verification
+//
+// The `schnorr::Signature` doesn't implement `Default`, and shouldn't. This
+// unsafe usage is a workaround until the following issue is solved:
+// https://github.com/dusk-network/plonk/issues/396
+//
+// After that, this `Default` implementation can be removed.
+// https://github.com/dusk-network/rusk/issues/183
+impl Default for SendToContractTransparentCircuit {
+    fn default() -> Self {
+        use std::mem;
+
+        Self {
+            pi_positions: Default::default(),
+            blinding_factor: Default::default(),
+            signature: unsafe { mem::zeroed() },
+            value_commitment: Default::default(),
+            pk: Default::default(),
+            value: Default::default(),
+        }
+    }
+}
+
 impl SendToContractTransparentCircuit {
     pub const fn rusk_keys_id() -> &'static str {
         "transfer-send-to-contract-transparent"
