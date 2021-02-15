@@ -21,7 +21,7 @@ test: ## Run the tests
 		@make contracts && \
 			cargo test --release -- --nocapture  && \
 		cd contracts/bid/circuits && cargo test --release
-		# cd contracts/transfer/circuits && cargo test --release
+		cd contracts/transfer/circuits && cargo test --release
 
 run: ## Run the server
 		@make contracts && \
