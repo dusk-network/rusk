@@ -124,22 +124,26 @@ pub struct InternalCallResult {
 }
 
 #[cfg(target_arch = "wasm32")]
-impl InternalCallResult {
-    pub const fn error() -> Self {
-        Self {
-            status: false,
-            crossover: None,
-        }
-    }
+mod wasm {
+    use super::*;
 
-    pub const fn success(crossover: Option<Crossover>) -> Self {
-        Self {
-            status: true,
-            crossover,
+    impl InternalCallResult {
+        pub const fn error() -> Self {
+            Self {
+                status: false,
+                crossover: None,
+            }
         }
-    }
 
-    pub const fn is_success(&self) -> bool {
-        self.status
+        pub const fn success(crossover: Option<Crossover>) -> Self {
+            Self {
+                status: true,
+                crossover,
+            }
+        }
+
+        pub const fn is_success(&self) -> bool {
+            self.status
+        }
     }
 }

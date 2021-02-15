@@ -6,7 +6,6 @@
 
 use tracing::info;
 pub mod encoding;
-mod ops;
 pub mod services;
 pub mod transaction;
 

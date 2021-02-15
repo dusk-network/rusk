@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 pub mod encoding;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
@@ -64,3 +65,4 @@ pub async fn setup() -> Result<Channel, Box<dyn std::error::Error>> {
         .await?;
     Ok(channel)
 }
+*/

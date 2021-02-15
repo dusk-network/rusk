@@ -11,16 +11,7 @@ mod verify_score_handler;
 use super::rusk_proto;
 use crate::services::ServiceRequestHandler;
 use crate::Rusk;
-use canonical_host::MemStore;
-use dusk_blindbid::bid::Bid;
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::{
-    bls12_381::BlsScalar,
-    jubjub::{JubJubAffine, JubJubScalar},
-};
-use poseidon252::tree::{PoseidonAnnotation, PoseidonBranch, PoseidonTree};
 use score_gen_handler::ScoreGenHandler;
-use std::fs::{read, write};
 use tonic::{Request, Response, Status};
 use tracing::{info, warn};
 use verify_score_handler::VerifyScoreHandler;

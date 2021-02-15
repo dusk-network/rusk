@@ -61,16 +61,19 @@ impl<S: Store> Transfer<S> {
     pub(crate) fn push_fee_crossover(
         &mut self,
         fee: Fee,
-        crossover: Crossover,
+        crossover: Option<Crossover>,
     ) -> Result<(), S::Error> {
-        let gas_consumed = dusk_abi::block_height();
+        // TODO Get gas consumed
+        let gas_consumed = 1;
         let remainder = fee.gen_remainder(gas_consumed);
 
         self.push_note(remainder.into())?;
 
-        Note::try_from((fee, crossover))
-            .map_err(|_| InvalidEncoding.into())
-            .and_then(|note| self.push_note(note))?;
+        if let Some(crossover) = crossover {
+            Note::try_from((fee, crossover))
+                .map_err(|_| InvalidEncoding.into())
+                .and_then(|note| self.push_note(note))?;
+        }
 
         Ok(())
     }

@@ -234,9 +234,11 @@ where
         })?;
 
         let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vk) = keys
-            .get(id)
-            .ok_or(anyhow!("Failed to get keys from Rusk profile"))?;
+        let (pk, vk) = keys.get(id).ok_or(anyhow!(
+            "Failed to get '{}' keys for '{}' from Rusk profile",
+            id,
+            env!("CARGO_PKG_NAME")
+        ))?;
 
         let pk = ProverKey::from_bytes(pk.as_slice())?;
         let vk = VerifierKey::from_bytes(vk.as_slice())?;

@@ -400,10 +400,8 @@ impl<S: Store> Transfer<S> {
         // 16. N_p^*←encode(N_p^t)
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
-        if let Some(crossover) = call_result.crossover {
-            if self.push_fee_crossover(fee, crossover).is_err() {
-                return false;
-            }
+        if self.push_fee_crossover(fee, call_result.crossover).is_err() {
+            return false;
         }
 
         if self.update_root().is_err() {
