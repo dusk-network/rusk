@@ -15,6 +15,9 @@ use canonical::Store;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
+use dusk_plonk::jubjub::{
+    JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{
@@ -130,7 +133,24 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         Ok(())
     }
 
-    pub fn set_crossover(
+    pub fn set_fee(&mut self, fee: &Fee) -> Result<()> {
+        let value = 0;
+        let blinding_factor = JubJubScalar::zero();
+        let value_commitment = (GENERATOR_EXTENDED * JubJubScalar::zero())
+            + (GENERATOR_NUMS_EXTENDED * blinding_factor);
+
+        let fee = fee.gas_limit;
+        self.crossover = CircuitCrossover::new(
+            value_commitment,
+            value,
+            blinding_factor,
+            fee,
+        );
+
+        Ok(())
+    }
+
+    pub fn set_fee_crossover(
         &mut self,
         fee: &Fee,
         crossover: &Crossover,
