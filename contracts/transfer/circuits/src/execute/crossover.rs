@@ -12,6 +12,7 @@ pub struct CircuitCrossover {
     value_commitment: JubJubExtended,
     value: u64,
     blinding_factor: JubJubScalar,
+    fee: u64,
 }
 
 impl CircuitCrossover {
@@ -19,11 +20,13 @@ impl CircuitCrossover {
         value_commitment: JubJubExtended,
         value: u64,
         blinding_factor: JubJubScalar,
+        fee: u64,
     ) -> Self {
         Self {
             value_commitment,
             value,
             blinding_factor,
+            fee,
         }
     }
 
@@ -41,8 +44,10 @@ impl CircuitCrossover {
     ) -> WitnessCrossover {
         let value_commitment = self.value_commitment;
 
+        let fee_value = BlsScalar::from(self.fee);
+        let fee_value_witness = composer.add_input(fee_value);
+
         let value = BlsScalar::from(self.value);
-        let fee_value = value;
         let value = composer.add_input(value);
 
         let blinding_factor = BlsScalar::from(self.blinding_factor);
@@ -50,6 +55,7 @@ impl CircuitCrossover {
 
         WitnessCrossover {
             value,
+            fee_value_witness,
             blinding_factor,
             fee_value,
             value_commitment,
@@ -60,6 +66,7 @@ impl CircuitCrossover {
 #[derive(Debug, Clone, Copy)]
 pub struct WitnessCrossover {
     pub value: Variable,
+    pub fee_value_witness: Variable,
     pub blinding_factor: Variable,
 
     // Public data

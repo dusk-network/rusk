@@ -152,8 +152,13 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             .map_err(|e| anyhow!("Failed to convert bls to jubjub: {:?}", e))?;
         let value_commitment = *crossover.value_commitment();
 
-        self.crossover =
-            CircuitCrossover::new(value_commitment, value, blinding_factor);
+        let fee = fee.gas_limit;
+        self.crossover = CircuitCrossover::new(
+            value_commitment,
+            value,
+            blinding_factor,
+            fee,
+        );
 
         Ok(())
     }
@@ -314,7 +319,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             ));
 
             composer.constrain_to_constant(
-                crossover.value,
+                crossover.fee_value_witness,
                 BlsScalar::zero(),
                 -crossover.fee_value,
             );
@@ -375,7 +380,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         });
 
         // 11. Prove that sum(inputs.value) - sum(outputs.value) -
-        // crossover_value = 0
+        // crossover_value - fee_value = 0
         {
             let zero =
                 composer.add_witness_to_circuit_description(BlsScalar::zero());
@@ -398,10 +403,17 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 )
             });
 
+            let fee_crossover = composer.add(
+                (BlsScalar::one(), crossover.value),
+                (BlsScalar::one(), crossover.fee_value_witness),
+                BlsScalar::zero(),
+                BlsScalar::zero(),
+            );
+
             composer.poly_gate(
                 inputs_sum,
                 outputs_sum,
-                crossover.value,
+                fee_crossover,
                 BlsScalar::zero(),
                 BlsScalar::one(),
                 -BlsScalar::one(),

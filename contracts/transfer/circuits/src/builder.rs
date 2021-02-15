@@ -109,15 +109,16 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let ssk = SecretSpendKey::random(rng);
         let vk = ssk.view_key();
         let psk = ssk.public_spend_key();
-        let value = inputs_sum - outputs_sum;
+        let value = inputs_sum - outputs_sum - 5;
         let blinding_factor = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, &psk, value, blinding_factor);
-        let (fee, crossover) = note.try_into().map_err(|e| {
+        let (mut fee, crossover) = note.try_into().map_err(|e| {
             anyhow!(
                 "Failed to generate crossover from obfuscated note: {:?}",
                 e
             )
         })?;
+        fee.gas_limit = 5;
         circuit.set_crossover(&fee, &crossover, &vk)?;
 
         Ok(circuit)
