@@ -17,10 +17,14 @@ const VK_EXEC_4_0: &'static [u8] = include_bytes!("../../target/verifier-keys/8b
 const VK_EXEC_4_1: &'static [u8] = include_bytes!("../../target/verifier-keys/622a22b81114da4f1546d52d5aabc1a61739f493143523a8f3f5c9ac409fceae.vk");
 const VK_EXEC_4_2: &'static [u8] = include_bytes!("../../target/verifier-keys/500150fdb85ac0e8ed79dc69ec7f9649f0998589904ff3c3ac37c35b775d3985.vk");
 
-const VK_STCO: &'static [u8] = include_bytes!("../../target/verifier-keys/36c7ebec4a6311dcdcfb5f6c4df22b0f5813c46e4efb5cf70ac3004a409cc17d.vk");
+//const VK_STCO: &'static [u8] =
+// include_bytes!("../../target/verifier-keys/
+// 36c7ebec4a6311dcdcfb5f6c4df22b0f5813c46e4efb5cf70ac3004a409cc17d.vk");
 const VK_STCT: &'static [u8] = include_bytes!("../../target/verifier-keys/d61c0d1ce33ccb73fdb51248531cbfd2029041702d0235fd770192b1823e1fb0.vk");
 
-const VK_WDFO: &'static [u8] = include_bytes!("../../target/verifier-keys/638e2314bceee160e275eb5de1df4c9342f380bd5ec9234265fcba8257849b60.vk");
+//const VK_WDFO: &'static [u8] =
+// include_bytes!("../../target/verifier-keys/
+// 638e2314bceee160e275eb5de1df4c9342f380bd5ec9234265fcba8257849b60.vk");
 
 pub const fn exec(inputs: usize, outputs: usize) -> &'static [u8] {
     match (inputs, outputs) {
@@ -40,14 +44,18 @@ pub const fn exec(inputs: usize, outputs: usize) -> &'static [u8] {
     }
 }
 
+/*
 pub const fn stco() -> &'static [u8] {
     VK_STCO
 }
+*/
 
 pub const fn stct() -> &'static [u8] {
     VK_STCT
 }
 
+/*
 pub const fn wdfo() -> &'static [u8] {
     VK_WDFO
 }
+*/

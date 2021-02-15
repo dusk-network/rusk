@@ -20,5 +20,8 @@ pub mod ops;
 mod transfer;
 pub use transfer::{Call, PublicKeyBytes, Transfer, TransferExecute};
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) use transfer::{InternalCall, InternalCallResult};
+
 #[cfg(test)]
 mod tests;

@@ -5,18 +5,132 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{internal, keys};
-use crate::{Call, Transfer, TransferExecute};
+use crate::{InternalCall, InternalCallResult, Transfer, TransferExecute};
+use core::convert::TryInto;
 
 use alloc::vec::Vec;
 use canonical::Store;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubAffine;
+use dusk_jubjub::{
+    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+};
 use dusk_pki::PublicKey;
-use dusk_poseidon::cipher::PoseidonCipher;
-use phoenix_core::{Message, Note, NoteType};
+use phoenix_core::{Crossover, Note, NoteType};
 
 impl<S: Store> Transfer<S> {
+    fn call(&mut self, call: InternalCall) -> InternalCallResult {
+        match call {
+            InternalCall::None(crossover) => {
+                InternalCallResult::success(crossover)
+            }
+
+            InternalCall::SendToContractTransparent {
+                address,
+                value,
+                crossover,
+                pk,
+                spend_proof,
+            } => self.send_to_contract_transparent(
+                address,
+                value,
+                crossover,
+                pk,
+                spend_proof,
+            ),
+
+            InternalCall::WithdrawFromTransparent { address, note } => {
+                self.withdraw_from_transparent(address, note)
+            }
+        }
+    }
+
+    fn send_to_contract_transparent(
+        &mut self,
+        address: BlsScalar,
+        value: u64,
+        crossover: Crossover,
+        pk: PublicKey,
+        spend_proof: Vec<u8>,
+    ) -> InternalCallResult {
+        // Build proof public inputs
+        let scalars = 1 + BlsScalar::SIZE;
+        let points = (1 + JubJubAffine::SIZE) * 2;
+
+        let mut pi = Vec::with_capacity(scalars + points);
+        let label = "transfer-send-to-contract-transparent";
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover.value_commitment().clone().into(),
+        );
+        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().clone().into());
+        internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::from(value));
+
+        //  1. v < 2^64
+        //  2. B_a↦ = B_a↦ + v
+        if self.add_balance(address, value).is_err() {
+            return InternalCallResult::error();
+        }
+
+        //  3. if a.isPayable() ↦ true then continue
+        //  TODO
+
+        //  4. verify(C.c, v, π)
+        // TODO
+        let vk = keys::stct();
+        let (_, _, _, _) = (pi, label, spend_proof, vk);
+
+        //  5. C ← C(0,0,0)
+        InternalCallResult::success(None)
+    }
+
+    fn withdraw_from_transparent(
+        &mut self,
+        address: BlsScalar,
+        note: Note,
+    ) -> InternalCallResult {
+        let value = match (note.note(), note.value(None)) {
+            (NoteType::Transparent, Ok(v)) => v,
+            _ => return InternalCallResult::error(),
+        };
+
+        //  1. a ∈ B↦
+        //  2. B_a↦ ← B_a↦ − v
+        if self.sub_balance(address, value).is_err() {
+            return InternalCallResult::error();
+        }
+
+        //  3. N↦.append(N_p^t)
+        //  4. N_p^* ← encode(N_p^t)
+        //  5. N.append(N_p^*)
+        if self.push_note(note).is_err() {
+            return InternalCallResult::error();
+        }
+
+        InternalCallResult::success(None)
+    }
+
+    /*
+    fn internal_call(&mut self, call: InternalCall) -> bool {
+        match call {
+            InternalCall::SendToContractTransparent {
+                address,
+                value,
+                value_commitment,
+                pk,
+                spend_proof,
+            } => self.send_to_contract_transparent(
+                address,
+                value,
+                value_commitment,
+                pk,
+                spend_proof,
+            ),
+
+            _ => true,
+        }
+    }
+
     fn call(&mut self, call: Call) -> bool {
         match call {
             Call::SendToContractTransparent {
@@ -73,75 +187,8 @@ impl<S: Store> Transfer<S> {
                 spend_proof,
             ),
 
-            // Recursion not allowed
-            Call::Execute { .. } => false,
-
             Call::None => true,
         }
-    }
-
-    fn send_to_contract_transparent(
-        &mut self,
-        address: BlsScalar,
-        value: u64,
-        value_commitment: JubJubAffine,
-        pk: JubJubAffine,
-        spend_proof: Vec<u8>,
-    ) -> bool {
-        // Build proof public inputs
-        let scalars = 1 + BlsScalar::SIZE;
-        let points = (1 + JubJubAffine::SIZE) * 2;
-
-        let mut pi = Vec::with_capacity(scalars + points);
-        let label = "transfer-send-to-contract-transparent";
-        internal::extend_pi_jubjub_affine(&mut pi, &value_commitment);
-        internal::extend_pi_jubjub_affine(&mut pi, &pk);
-        internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::from(value));
-
-        //  1. v < 2^64
-        //  2. B_a↦ = B_a↦ + v
-        if self.add_balance(address, value).is_err() {
-            return false;
-        }
-
-        //  3. if a.isPayable() ↦ true then continue
-        //  TODO
-
-        //  4. verify(C.c, v, π)
-        // TODO
-        let vk = keys::stct();
-        let (_, _, _, _) = (pi, label, spend_proof, vk);
-
-        //  5. C ← C(0,0,0)
-        //  TODO
-
-        true
-    }
-
-    fn withdraw_from_transparent(
-        &mut self,
-        address: BlsScalar,
-        note: Note,
-    ) -> bool {
-        let value = match (note.note(), note.value(None)) {
-            (NoteType::Transparent, Ok(v)) => v,
-            _ => return false,
-        };
-
-        //  1. a ∈ B↦
-        //  2. B_a↦ ← B_a↦ − v
-        if self.sub_balance(address, value).is_err() {
-            return false;
-        }
-
-        //  3. N↦.append(N_p^t)
-        //  4. N_p^* ← encode(N_p^t)
-        //  5. N.append(N_p^*)
-        if self.push_note(note).is_err() {
-            return false;
-        }
-
-        true
     }
 
     fn send_to_contract_obfuscated(
@@ -250,8 +297,13 @@ impl<S: Store> Transfer<S> {
 
         true
     }
+    */
 
     pub fn execute(&mut self, call: TransferExecute) -> bool {
+        let internal_call = match call.clone().try_into() {
+            Ok(c) => c,
+            Err(_) => return false,
+        };
         let TransferExecute {
             anchor,
             nullifiers,
@@ -259,7 +311,7 @@ impl<S: Store> Transfer<S> {
             notes,
             fee,
             spend_proof,
-            call,
+            ..
         } = call;
 
         let inputs = nullifiers.len();
@@ -281,7 +333,11 @@ impl<S: Store> Transfer<S> {
         );
         internal::extend_pi_jubjub_affine(
             &mut pi,
-            &crossover.value_commitment().into(),
+            &crossover.map(|c| c.value_commitment().into()).unwrap_or(
+                ((GENERATOR_EXTENDED * JubJubScalar::zero())
+                    + (GENERATOR_NUMS_EXTENDED * JubJubScalar::zero()))
+                .into(),
+            ),
         );
         notes.iter().for_each(|n| {
             internal::extend_pi_jubjub_affine(
@@ -311,7 +367,7 @@ impl<S: Store> Transfer<S> {
         }
 
         //  4. if |C|=0 then set C ← (0,0,0)
-        //  TODO
+        //  Crossover is received as option
 
         //  5. N↦.append((No.R[], No.pk[])
         //  6. Notes.append(No[])
@@ -332,7 +388,8 @@ impl<S: Store> Transfer<S> {
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         // 11. if ∣k∣≠0 then call(k)
-        if !self.call(call) {
+        let call_result = self.call(internal_call);
+        if !call_result.is_success() {
             return false;
         }
 
@@ -343,8 +400,10 @@ impl<S: Store> Transfer<S> {
         // 16. N_p^*←encode(N_p^t)
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
-        if self.push_fee_crossover(fee, crossover).is_err() {
-            return false;
+        if let Some(crossover) = call_result.crossover {
+            if self.push_fee_crossover(fee, crossover).is_err() {
+                return false;
+            }
         }
 
         if self.update_root().is_err() {

@@ -4,17 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{PublicKeyBytes, Transfer};
+use crate::Transfer;
 use core::convert::TryFrom;
 
 use alloc::vec::Vec;
 use canonical::{InvalidEncoding, Store};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
-use dusk_kelvin_map::Map;
-use dusk_pki::PublicKey;
-use phoenix_core::{Crossover, Fee, Message, Note};
+use dusk_jubjub::JubJubAffine;
+use phoenix_core::{Crossover, Fee, Note};
 
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
@@ -23,12 +21,14 @@ pub fn extend_pi_bls_scalar(pi: &mut Vec<u8>, s: &BlsScalar) {
     pi.extend_from_slice(&s.to_bytes());
 }
 
+/*
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
 pub fn extend_pi_jubjub_scalar(pi: &mut Vec<u8>, s: &JubJubScalar) {
     pi.push(0x02);
     pi.extend_from_slice(&s.to_bytes());
 }
+*/
 
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
@@ -109,6 +109,7 @@ impl<S: Store> Transfer<S> {
         Ok(())
     }
 
+    /*
     pub(crate) fn take_message_from_address_key(
         &mut self,
         address: &BlsScalar,
@@ -120,6 +121,7 @@ impl<S: Store> Transfer<S> {
             .remove(&(*pk).into())?
             .ok_or(InvalidEncoding.into())
     }
+    */
 
     pub(crate) fn push_note(&mut self, note: Note) -> Result<(), S::Error> {
         let block_height = dusk_abi::block_height();
@@ -201,6 +203,7 @@ impl<S: Store> Transfer<S> {
         }
     }
 
+    /*
     pub(crate) fn push_message(
         &mut self,
         address: BlsScalar,
@@ -230,4 +233,5 @@ impl<S: Store> Transfer<S> {
 
         Ok(())
     }
+    */
 }
