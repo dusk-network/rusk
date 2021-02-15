@@ -13,7 +13,7 @@ use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
-use poseidon252::tree::PoseidonBranch;
+use dusk_poseidon::tree::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
 
 /// Implementation of the ScoreGeneration Handler.
@@ -46,12 +46,12 @@ where
         // Generate Score for the Bid
         let latest_consensus_round = self.request.get_ref().round as u64;
         let latest_consensus_step = self.request.get_ref().step as u64;
-        let score = Score::compute_score(
+        let score = Score::compute(
             &bid,
             &secret,
             k,
             *branch.root(),
-            seed.reduce().0[0],
+            seed,
             latest_consensus_round,
             latest_consensus_step,
         )

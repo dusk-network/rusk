@@ -13,7 +13,7 @@ use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
 use phoenix_core::{Error as PhoenixError, Message, Note};
-use poseidon252::cipher::{self, PoseidonCipher};
+use dusk_poseidon::cipher::{self, PoseidonCipher};
 
 #[derive(Debug, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {

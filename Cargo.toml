@@ -22,12 +22,12 @@ path = "src/bin/main.rs"
 [dependencies]
 tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
-poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag = "v0.17.0"}
+dusk-poseidon = "0.18"
 dusk-plonk = "0.5"
-dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", tag = "v0.5.1"}
-dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", tag = "v0.5.3"}
-phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.7.4"}
-schnorr = {git="https://github.com/dusk-network/schnorr", tag = "v0.4.1"}
+dusk-blindbid = "0.6"
+dusk-pki = "0.6"
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.9.1"}
+schnorr = {git="https://github.com/dusk-network/schnorr", tag = "v0.5.2"}
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"
@@ -55,10 +55,10 @@ dusk-bytes = "0.1"
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
 dusk-plonk = "0.5"
-poseidon252 = {git="https://github.com/dusk-network/Poseidon252", tag = "v0.17.0"}
-dusk-blindbid = {git="https://github.com/dusk-network/dusk-blindbid", tag = "v0.5.1"}
-dusk-pki = {git = "https://github.com/dusk-network/dusk-pki", tag = "v0.5.3"}
-phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.7.4", features = ["canon"]}
+dusk-poseidon = "0.18"
+dusk-blindbid = "0.6"
+dusk-pki = "0.6"
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.9.1"}
 anyhow = "1.0"
 rand = "0.7"
 bid-circuits = {path ="./contracts/bid/circuits"}

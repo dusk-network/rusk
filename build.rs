@@ -14,7 +14,7 @@ use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
 use lazy_static::lazy_static;
-use poseidon252::tree::PoseidonBranch;
+use dusk_poseidon::tree::PoseidonBranch;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -151,12 +151,12 @@ mod blindbid {
         let branch = PoseidonBranch::<17>::default();
 
         // Generate a `Score` for our Bid with the consensus parameters
-        let score = Score::compute_score(
+        let score = Score::compute(
             &bid,
             &secret,
             secret_k,
             *branch.root(),
-            consensus_round_seed,
+            BlsScalar::from(consensus_round_seed),
             latest_consensus_round,
             latest_consensus_step,
         )

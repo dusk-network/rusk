@@ -13,7 +13,7 @@ use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee};
-use poseidon252::sponge;
+use dusk_poseidon::sponge;
 use rand_core::{CryptoRng, RngCore};
 use schnorr::Signature;
 

@@ -16,9 +16,9 @@ use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Fee, Note};
-use poseidon252::cipher::PoseidonCipher;
-use poseidon252::sponge;
-use poseidon252::tree::{
+use dusk_poseidon::cipher::PoseidonCipher;
+use dusk_poseidon::sponge;
+use dusk_poseidon::tree::{
     self, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
 };
 use rand_core::{CryptoRng, RngCore};
