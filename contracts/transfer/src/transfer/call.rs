@@ -111,6 +111,7 @@ pub enum InternalCall {
 
 impl TryFrom<TransferExecute> for InternalCall {
     // TODO Use a concrete error definition
+    // https://github.com/dusk-network/rusk/issues/193
     type Error = ();
 
     fn try_from(execute: TransferExecute) -> Result<Self, Self::Error> {

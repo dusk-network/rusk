@@ -82,7 +82,8 @@ fn withdraw_from_transparent() {
         .unwrap();
     assert_eq!(0u64, balance);
 
-    // TODO Create valid proof
+    // TODO implement proof verification
+    // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let spend_proof_stct = vec![0xfa];
     let call = TransferExecute {
@@ -166,7 +167,8 @@ fn withdraw_from_transparent() {
     let alice_withdraw =
         Note::transparent(&mut rng, &alice_psk, alice_withdraw_value);
 
-    // TODO Create valid proof
+    // TODO implement proof verification
+    // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let call = TransferExecute {
         anchor: root,
@@ -276,7 +278,8 @@ fn withdraw_from_transparent_to_contract() {
         .unwrap();
     assert_eq!(0u64, balance);
 
-    // TODO Create valid proof
+    // TODO implement proof verification
+    // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let spend_proof_stct = vec![0xfa];
     let call = TransferExecute {
@@ -340,7 +343,8 @@ fn withdraw_from_transparent_to_contract() {
     let alice_address = BlsScalar::random(&mut rng);
     let alice_value = 45;
 
-    // TODO Create valid proof
+    // TODO implement proof verification
+    // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let call = TransferExecute {
         anchor: root,
@@ -408,7 +412,8 @@ fn withdraw_from_transparent_to_contract() {
     let eve_address = BlsScalar::random(&mut rng);
     let eve_value = bob_value;
 
-    // TODO Create valid proof
+    // TODO implement proof verification
+    // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let call = TransferExecute {
         anchor: root,
@@ -442,5 +447,6 @@ fn withdraw_from_transparent_to_contract() {
 
 #[test]
 fn withdraw_from_obfuscated() {
-    // TODO
+    // TODO Implement obfuscated tests
+    // https://github.com/dusk-network/rusk/issues/192
 }

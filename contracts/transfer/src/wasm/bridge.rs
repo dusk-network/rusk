@@ -19,6 +19,7 @@ type BridgeStore = BridgeStoreCanon<Id32>;
 fn q(bytes: &mut [u8; PAGE_SIZE]) {
     if let Err(_) = query(bytes) {
         // TODO handle error
+        // https://github.com/dusk-network/rusk/issues/193
     }
 }
 
@@ -26,6 +27,7 @@ fn q(bytes: &mut [u8; PAGE_SIZE]) {
 fn t(bytes: &mut [u8; PAGE_SIZE]) {
     if let Err(_) = transaction(bytes) {
         // TODO handle error
+        // https://github.com/dusk-network/rusk/issues/193
     }
 }
 
@@ -64,8 +66,9 @@ fn query(
             ReturnValue::from_canon(&ret, &bridge)?
         }
 
-        _ => ReturnValue::from_canon(&(), &bridge)?, /* TODO report
-                                                      * unexpected ID */
+        // TODO Define error strategy
+        // https://github.com/dusk-network/rusk/issues/193
+        _ => ReturnValue::from_canon(&(), &bridge)?,
     };
 
     let mut sink = ByteSink::new(&mut bytes[..], &bridge);

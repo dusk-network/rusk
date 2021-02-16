@@ -64,6 +64,7 @@ impl<S: Store> TransferContract<S> {
         crossover: Option<Crossover>,
     ) -> Result<(), S::Error> {
         // TODO Get gas consumed
+        // https://github.com/dusk-network/rusk/issues/195
         let gas_consumed = 1;
         let remainder = fee.gen_remainder(gas_consumed);
 
@@ -82,6 +83,7 @@ impl<S: Store> TransferContract<S> {
     // https://github.com/rust-lang/rust/issues/57563
     pub(crate) fn minimum_gas_price() -> u64 {
         // TODO define the mininum gas price
+        // https://github.com/dusk-network/rusk/issues/195
         0
     }
 
@@ -132,6 +134,7 @@ impl<S: Store> TransferContract<S> {
             // TODO evaluate options for efficient dedup
             // We can't call dedup here because the note `PartialEq` relies on
             // poseidon hash, that is supposed to be a host function
+            // https://github.com/dusk-network/rusk/issues/196
             Some(mut mapped) => mapped.push(note.clone()),
 
             None => create = true,
@@ -157,6 +160,7 @@ impl<S: Store> TransferContract<S> {
             // TODO evaluate options for efficient dedup
             // We can't call dedup here because the note `PartialEq` relies on
             // poseidon hash, that is supposed to be a host function
+            // https://github.com/dusk-network/rusk/issues/196
             Some(mut mapped) => mapped.extend_from_slice(notes.as_slice()),
 
             None => create = true,

@@ -118,10 +118,12 @@ impl<S: Store> TransferContract<S> {
         }
 
         //  3. if a.isPayable() ↦ true then continue
-        //  TODO
+        //  TODO Use isPayable definition
+        //  https://github.com/dusk-network/rusk-vm/issues/151
 
         //  4. verify(C.c, v, π)
-        // TODO
+        //  TODO implement proof verification
+        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::stct();
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
@@ -197,10 +199,12 @@ impl<S: Store> TransferContract<S> {
         }
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        //  TODO
+        //  TODO Use isPayable definition
+        //  https://github.com/dusk-network/rusk-vm/issues/151
 
         //  4. verify(C.c, M, pk, π)
-        //  TODO
+        //  TODO implement proof verification
+        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::stco();
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
@@ -208,13 +212,15 @@ impl<S: Store> TransferContract<S> {
         InternalCallResult::success(None)
     }
 
+    // FIXME nothing is done with the passed note
+    // https://github.com/dusk-network/rusk/issues/192
     fn withdraw_from_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        note: Note, // FIXME nothing is done with this note
+        note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> InternalCallResult {
@@ -244,6 +250,7 @@ impl<S: Store> TransferContract<S> {
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
         // FIXME This message is taken and nothing is verified with it
+        // https://github.com/dusk-network/rusk/issues/192
         let _message = match self.take_message_from_address_key(&address, &pk) {
             Ok(m) => m,
             Err(_) => return InternalCallResult::error(),
@@ -256,16 +263,20 @@ impl<S: Store> TransferContract<S> {
         }
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        //  TODO
+        //  TODO Use isPayable definition
+        //  https://github.com/dusk-network/rusk-vm/issues/151
 
         //  7. verify(c, M_c, No.c, π)
-        //  TODO
+        //  TODO implement proof verification
+        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::wdfo();
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         InternalCallResult::success(None)
     }
 
+    // FIXME Wrong documentation specification
+    // https://github.com/dusk-network/rusk/issues/198
     fn withdraw_from_transparent_to_contract(
         &mut self,
         from: BlsScalar,
@@ -333,6 +344,7 @@ impl<S: Store> TransferContract<S> {
             )
         });
         // FIXME fetch the tx hash
+        // https://github.com/dusk-network/rusk/issues/197
         internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::zero());
 
         //  1. α ∈ R
@@ -370,7 +382,8 @@ impl<S: Store> TransferContract<S> {
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        // TODO
+        //  TODO implement proof verification
+        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::exec(inputs, outputs);
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
