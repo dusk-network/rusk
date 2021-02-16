@@ -26,14 +26,7 @@ pub use call::{Call, InternalCall, InternalCallResult, TransferExecute};
 #[cfg(target_arch = "wasm32")]
 pub(crate) use tree::TRANSFER_TREE_DEPTH;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Canon)]
-pub struct PublicKeyBytes([u8; PublicKey::SIZE]);
-
-impl From<PublicKey> for PublicKeyBytes {
-    fn from(pk: PublicKey) -> Self {
-        Self(pk.to_bytes())
-    }
-}
+pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct Transfer<S: Store> {

@@ -120,7 +120,7 @@ impl<S: Store> Transfer<S> {
         self.message_mapping
             .get_mut(address)?
             .ok_or(InvalidEncoding.into())?
-            .remove(&(*pk).into())?
+            .remove(&(*pk).to_bytes())?
             .ok_or(InvalidEncoding.into())
     }
 
@@ -215,12 +215,12 @@ impl<S: Store> Transfer<S> {
 
         match self.message_mapping.get_mut(&address)? {
             Some(mut map) => {
-                map.insert(pk.into(), message)?;
+                map.insert(pk.to_bytes(), message)?;
             }
 
             None => {
                 let mut map: Map<PublicKeyBytes, Message, S> = Map::default();
-                map.insert(pk.into(), message)?;
+                map.insert(pk.to_bytes(), message)?;
                 to_insert.replace(map);
             }
         }
