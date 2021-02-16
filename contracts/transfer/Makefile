@@ -14,7 +14,6 @@ hosted: ## Build the WASM files
 		--target wasm32-unknown-unknown \
 		--no-default-features \
 		-- -C link-args=-s
-	@cp ./target/wasm32-unknown-unknown/release/transfer_contract.wasm .
 
 test: hosted ## Perform the contract tests defined in the host module
 	@cargo test \

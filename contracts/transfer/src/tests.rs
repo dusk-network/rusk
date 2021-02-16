@@ -17,7 +17,9 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_vm::{Contract, GasMeter, NetworkState, StandardABI};
 
-const CODE: &'static [u8] = include_bytes!("../transfer_contract.wasm");
+const CODE: &'static [u8] = include_bytes!(
+    "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+);
 
 #[test]
 fn withdraw_from_transparent() {
