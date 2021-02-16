@@ -29,7 +29,7 @@ pub(crate) use tree::TRANSFER_TREE_DEPTH;
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
-pub struct Transfer<S: Store> {
+pub struct TransferContract<S: Store> {
     pub(crate) notes: Tree<S>,
     pub(crate) notes_mapping: Map<u64, Vec<Note>, S>,
     pub(crate) nullifiers: Map<BlsScalar, (), S>,
@@ -41,7 +41,7 @@ pub struct Transfer<S: Store> {
         Map<BlsScalar, (PublicKey, JubJubAffine), S>,
 }
 
-impl<S: Store> Transfer<S> {
+impl<S: Store> TransferContract<S> {
     pub(crate) fn update_root(&mut self) -> Result<(), S::Error> {
         let root = self.notes.root()?;
 
@@ -51,7 +51,7 @@ impl<S: Store> Transfer<S> {
     }
 }
 
-impl<S: Store> TryFrom<Note> for Transfer<S> {
+impl<S: Store> TryFrom<Note> for TransferContract<S> {
     type Error = S::Error;
 
     /// This implementation is intended for test purposes to initialize the

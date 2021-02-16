@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{internal, keys};
-use crate::{InternalCall, InternalCallResult, Transfer, TransferExecute};
+use crate::{
+    InternalCall, InternalCallResult, TransferContract, TransferExecute,
+};
 use core::convert::TryInto;
 
 use alloc::vec::Vec;
@@ -19,7 +21,7 @@ use dusk_pki::PublicKey;
 use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::{Crossover, Message, Note, NoteType};
 
-impl<S: Store> Transfer<S> {
+impl<S: Store> TransferContract<S> {
     fn call(&mut self, call: InternalCall) -> InternalCallResult {
         match call {
             InternalCall::None(crossover) => {

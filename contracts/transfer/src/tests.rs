@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, Call, Transfer, TransferExecute};
+use crate::{ops, Call, TransferContract, TransferExecute};
 use core::convert::{TryFrom, TryInto};
 
 use alloc::vec::Vec;
@@ -29,7 +29,7 @@ fn withdraw_from_transparent() {
     let genesis_psk = genesis_ssk.public_spend_key();
     let genesis_value = 1_000;
     let genesis_note = Note::transparent(&mut rng, &genesis_psk, genesis_value);
-    let transfer = Transfer::try_from(genesis_note).unwrap();
+    let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
     let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
@@ -223,7 +223,7 @@ fn withdraw_from_transparent_to_contract() {
     let genesis_psk = genesis_ssk.public_spend_key();
     let genesis_value = 1_000;
     let genesis_note = Note::transparent(&mut rng, &genesis_psk, genesis_value);
-    let transfer = Transfer::try_from(genesis_note).unwrap();
+    let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
     let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();

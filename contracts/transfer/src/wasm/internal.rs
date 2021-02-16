@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{PublicKeyBytes, Transfer};
+use crate::{PublicKeyBytes, TransferContract};
 use core::convert::TryFrom;
 
 use alloc::vec::Vec;
@@ -37,7 +37,7 @@ pub fn extend_pi_jubjub_affine(pi: &mut Vec<u8>, p: &JubJubAffine) {
     pi.extend_from_slice(&p.to_bytes());
 }
 
-impl<S: Store> Transfer<S> {
+impl<S: Store> TransferContract<S> {
     // TODO should be const fn after rust stabilize the API
     // https://github.com/rust-lang/rust/issues/57563
     pub(crate) fn rusk_label(inputs: usize, outputs: usize) -> &'static str {

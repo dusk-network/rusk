@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Transfer, TRANSFER_TREE_DEPTH};
+use crate::{TransferContract, TRANSFER_TREE_DEPTH};
 
 use alloc::vec::Vec;
 use canonical::Store;
@@ -12,7 +12,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 
-impl<S: Store> Transfer<S> {
+impl<S: Store> TransferContract<S> {
     pub fn balance(&self, address: BlsScalar) -> u64 {
         self.balance
             .get(&address)

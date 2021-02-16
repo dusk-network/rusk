@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, Transfer};
+use crate::{ops, TransferContract};
 
 use canonical::{
     BridgeStore as BridgeStoreCanon, ByteSink, ByteSource, Canon, Id32, Store,
@@ -34,7 +34,7 @@ fn query(
 ) -> Result<(), <BridgeStore as Store>::Error> {
     let bridge = BridgeStore::default();
     let mut source = ByteSource::new(&bytes[..], &bridge);
-    let contract: Transfer<BridgeStore> = Canon::read(&mut source)?;
+    let contract: TransferContract<BridgeStore> = Canon::read(&mut source)?;
 
     let query = Canon::read(&mut source)?;
     let ret = match query {
@@ -79,7 +79,7 @@ fn transaction(
 ) -> Result<(), <BridgeStore as Store>::Error> {
     let bridge = BridgeStore::default();
     let mut source = ByteSource::new(&bytes[..], &bridge);
-    let mut contract: Transfer<BridgeStore> = Canon::read(&mut source)?;
+    let mut contract: TransferContract<BridgeStore> = Canon::read(&mut source)?;
 
     let call = Canon::read(&mut source)?;
     let ret = contract.execute(call);

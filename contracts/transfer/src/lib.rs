@@ -18,7 +18,7 @@ mod wasm;
 pub mod ops;
 
 mod transfer;
-pub use transfer::{Call, PublicKeyBytes, Transfer, TransferExecute};
+pub use transfer::{Call, PublicKeyBytes, TransferContract, TransferExecute};
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use transfer::TRANSFER_TREE_DEPTH;
