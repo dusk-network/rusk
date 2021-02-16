@@ -181,6 +181,14 @@ pub fn delete_common_reference_string() -> Result<(), io::Error> {
     Ok(())
 }
 
+pub fn verify_common_reference_string(buff: &[u8]) -> bool {
+    let mut hasher = Sha256::new();
+    hasher.update(&buff);
+    let hash = format!("{:x}", hasher.finalize());
+
+    hash == CRS_17
+}
+
 pub fn keys_for(crate_name: &str) -> Keys {
     use cargo_lock::{Lockfile, Package};
     let lockfile = Lockfile::load("./Cargo.lock").unwrap();
