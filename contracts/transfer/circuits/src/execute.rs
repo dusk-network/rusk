@@ -15,6 +15,9 @@ use canonical::Store;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
+use dusk_plonk::jubjub::{
+    JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{
@@ -130,7 +133,24 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         Ok(())
     }
 
-    pub fn set_crossover(
+    pub fn set_fee(&mut self, fee: &Fee) -> Result<()> {
+        let value = 0;
+        let blinding_factor = JubJubScalar::zero();
+        let value_commitment = (GENERATOR_EXTENDED * JubJubScalar::zero())
+            + (GENERATOR_NUMS_EXTENDED * blinding_factor);
+
+        let fee = fee.gas_limit;
+        self.crossover = CircuitCrossover::new(
+            value_commitment,
+            value,
+            blinding_factor,
+            fee,
+        );
+
+        Ok(())
+    }
+
+    pub fn set_fee_crossover(
         &mut self,
         fee: &Fee,
         crossover: &Crossover,
@@ -152,8 +172,13 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             .map_err(|e| anyhow!("Failed to convert bls to jubjub: {:?}", e))?;
         let value_commitment = *crossover.value_commitment();
 
-        self.crossover =
-            CircuitCrossover::new(value_commitment, value, blinding_factor);
+        let fee = fee.gas_limit;
+        self.crossover = CircuitCrossover::new(
+            value_commitment,
+            value,
+            blinding_factor,
+            fee,
+        );
 
         Ok(())
     }
@@ -314,7 +339,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             ));
 
             composer.constrain_to_constant(
-                crossover.value,
+                crossover.fee_value_witness,
                 BlsScalar::zero(),
                 -crossover.fee_value,
             );
@@ -375,7 +400,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         });
 
         // 11. Prove that sum(inputs.value) - sum(outputs.value) -
-        // crossover_value = 0
+        // crossover_value - fee_value = 0
         {
             let zero =
                 composer.add_witness_to_circuit_description(BlsScalar::zero());
@@ -398,10 +423,17 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 )
             });
 
+            let fee_crossover = composer.add(
+                (BlsScalar::one(), crossover.value),
+                (BlsScalar::one(), crossover.fee_value_witness),
+                BlsScalar::zero(),
+                BlsScalar::zero(),
+            );
+
             composer.poly_gate(
                 inputs_sum,
                 outputs_sum,
-                crossover.value,
+                fee_crossover,
                 BlsScalar::zero(),
                 BlsScalar::one(),
                 -BlsScalar::one(),

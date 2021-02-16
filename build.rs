@@ -388,6 +388,7 @@ mod transfer {
                 Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
                 inputs,
                 outputs,
+                true,
             )?;
 
         let id = ci.rusk_keys_id();

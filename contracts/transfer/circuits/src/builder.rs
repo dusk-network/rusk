@@ -43,6 +43,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         rng: &mut R,
         inputs: usize,
         outputs: usize,
+        use_crossover: bool,
     ) -> Result<Self> {
         let mut tree =
             PoseidonTree::<NoteLeaf, PoseidonAnnotation, S, DEPTH>::new();
@@ -109,16 +110,22 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         let ssk = SecretSpendKey::random(rng);
         let vk = ssk.view_key();
         let psk = ssk.public_spend_key();
-        let value = inputs_sum - outputs_sum;
+        let value = inputs_sum - outputs_sum - 5;
         let blinding_factor = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, &psk, value, blinding_factor);
-        let (fee, crossover) = note.try_into().map_err(|e| {
+        let (mut fee, crossover) = note.try_into().map_err(|e| {
             anyhow!(
                 "Failed to generate crossover from obfuscated note: {:?}",
                 e
             )
         })?;
-        circuit.set_crossover(&fee, &crossover, &vk)?;
+        if use_crossover {
+            fee.gas_limit = 5;
+            circuit.set_fee_crossover(&fee, &crossover, &vk)?;
+        } else {
+            fee.gas_limit = 5 + value;
+            circuit.set_fee(&fee)?;
+        }
 
         Ok(circuit)
     }
@@ -128,6 +135,7 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         pp: Option<PublicParameters>,
         inputs: usize,
         outputs: usize,
+        use_crossover: bool,
     ) -> Result<(
         Self,
         PublicParameters,
@@ -136,8 +144,12 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         Proof,
         Vec<PublicInput>,
     )> {
-        let mut circuit =
-            Self::create_dummy_circuit::<R, S>(rng, inputs, outputs)?;
+        let mut circuit = Self::create_dummy_circuit::<R, S>(
+            rng,
+            inputs,
+            outputs,
+            use_crossover,
+        )?;
 
         let id = circuit.rusk_keys_id();
         let (pp, pk, vk) = circuit_keys(rng, pp, &mut circuit, id)?;

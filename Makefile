@@ -22,6 +22,7 @@ test: ## Run the tests
 			cargo test --release -- --nocapture  && \
 		cd contracts/bid/circuits && cargo test --release
 		cd contracts/transfer/circuits && cargo test --release
+		$(MAKE) -C ./contracts/transfer/
 
 run: ## Run the server
 		@make contracts && \

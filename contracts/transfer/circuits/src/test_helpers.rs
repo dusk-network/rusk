@@ -14,12 +14,16 @@ use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
 
-pub fn execute_circuit<const CAPACITY: usize>(inputs: usize, outputs: usize) {
+pub fn execute_circuit<const CAPACITY: usize>(
+    inputs: usize,
+    outputs: usize,
+    crossover: bool,
+) {
     let mut rng = StdRng::seed_from_u64(2324u64);
 
     let (mut circuit, pp, _, vk, proof, pi) =
         ExecuteCircuit::<17, CAPACITY>::create_dummy_proof::<_, MemStore>(
-            &mut rng, None, inputs, outputs,
+            &mut rng, None, inputs, outputs, crossover,
         )
         .expect("Failed to create the circuit!");
 
