@@ -95,6 +95,7 @@ impl<S: Store> Tree<S> {
 #[cfg(target_arch = "wasm32")]
 mod wasm {
     use super::*;
+    use dusk_poseidon::tree::PoseidonBranch;
     use dusk_poseidon::Error as PoseidonError;
 
     impl<S> Tree<S>
@@ -106,6 +107,18 @@ mod wasm {
             leaf: Leaf,
         ) -> Result<usize, PoseidonError<S::Error>> {
             self.tree.push(leaf)
+        }
+
+        pub fn opening(
+            &self,
+            pos: u64,
+        ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, S::Error>
+        {
+            // FIXME invalid casting
+            // https://github.com/dusk-network/Poseidon252/issues/116
+            self.tree
+                .branch(pos as usize)
+                .map_err(|_| InvalidEncoding.into())
         }
     }
 }

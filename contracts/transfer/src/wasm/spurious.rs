@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Transfer;
+use crate::{Transfer, TRANSFER_TREE_DEPTH};
 
 use alloc::vec::Vec;
 use canonical::Store;
 use dusk_bls12_381::BlsScalar;
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 
 impl<S: Store> Transfer<S> {
@@ -30,5 +31,12 @@ impl<S: Store> Transfer<S> {
             .unwrap_or_default()
             .map(|s| s.clone())
             .unwrap_or_default()
+    }
+
+    pub fn opening(
+        &self,
+        pos: u64,
+    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
+        self.notes.opening(pos).unwrap_or_default()
     }
 }

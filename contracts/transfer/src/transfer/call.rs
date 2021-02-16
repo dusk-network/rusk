@@ -10,8 +10,9 @@ use alloc::vec::Vec;
 use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::PublicKey;
-use phoenix_core::{Crossover, Fee, Note};
+use phoenix_core::{Crossover, Fee, Message, Note};
 
 #[derive(Debug, Clone, Canon)]
 pub enum Call {
@@ -26,14 +27,13 @@ pub enum Call {
         address: BlsScalar,
         note: Note,
     },
-    /*
+
     SendToContractObfuscated {
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        crossover_commitment: JubJubAffine,
-        crossover_pk: JubJubAffine,
+        crossover_pk: PublicKey,
         spend_proof: Vec<u8>,
     },
 
@@ -46,7 +46,12 @@ pub enum Call {
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     },
-    */
+
+    WithdrawFromTransparentToContract {
+        from: BlsScalar,
+        to: BlsScalar,
+        value: u64,
+    },
 }
 
 #[derive(Debug, Clone, Canon)]
@@ -75,6 +80,32 @@ pub enum InternalCall {
     WithdrawFromTransparent {
         address: BlsScalar,
         note: Note,
+    },
+
+    SendToContractObfuscated {
+        address: BlsScalar,
+        message: Message,
+        r: JubJubAffine,
+        pk: PublicKey,
+        crossover: Crossover,
+        crossover_pk: PublicKey,
+        spend_proof: Vec<u8>,
+    },
+
+    WithdrawFromObfuscated {
+        address: BlsScalar,
+        message: Message,
+        r: JubJubAffine,
+        pk: PublicKey,
+        note: Note,
+        input_value_commitment: JubJubAffine,
+        spend_proof: Vec<u8>,
+    },
+
+    WithdrawFromTransparentToContract {
+        from: BlsScalar,
+        to: BlsScalar,
+        value: u64,
     },
 }
 
@@ -107,6 +138,56 @@ impl TryFrom<TransferExecute> for InternalCall {
             (None, Some(Call::WithdrawFromTransparent { address, note })) => {
                 Self::WithdrawFromTransparent { address, note }
             }
+
+            (
+                Some(crossover),
+                Some(Call::SendToContractObfuscated {
+                    address,
+                    message,
+                    r,
+                    pk,
+                    crossover_pk,
+                    spend_proof,
+                }),
+            ) => Self::SendToContractObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                crossover,
+                crossover_pk,
+                spend_proof,
+            },
+
+            (
+                None,
+                Some(Call::WithdrawFromObfuscated {
+                    address,
+                    message,
+                    r,
+                    pk,
+                    note,
+                    input_value_commitment,
+                    spend_proof,
+                }),
+            ) => Self::WithdrawFromObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                note,
+                input_value_commitment,
+                spend_proof,
+            },
+
+            (
+                None,
+                Some(Call::WithdrawFromTransparentToContract {
+                    from,
+                    to,
+                    value,
+                }),
+            ) => Self::WithdrawFromTransparentToContract { from, to, value },
 
             (_, None) => Self::None(crossover),
 

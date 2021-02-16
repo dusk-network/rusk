@@ -23,6 +23,9 @@ use tree::Tree;
 
 pub use call::{Call, InternalCall, InternalCallResult, TransferExecute};
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) use tree::TRANSFER_TREE_DEPTH;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Canon)]
 pub struct PublicKeyBytes([u8; PublicKey::SIZE]);
 
@@ -83,119 +86,3 @@ impl<S: Store> TryFrom<Note> for Transfer<S> {
         Ok(transfer)
     }
 }
-
-/*
-#[derive(Debug, Clone, Canon)]
-pub struct TransferExecute {
-    pub anchor: BlsScalar,
-    pub nullifiers: Vec<BlsScalar>,
-    pub fee: Fee,
-    pub crossover: Option<Crossover>,
-    pub notes: Vec<Note>,
-    pub spend_proof: Vec<u8>,
-    pub call: Call,
-}
-
-#[derive(Debug, Clone, Canon)]
-pub enum Call {
-    None,
-
-    SendToContractTransparent {
-        address: BlsScalar,
-        value: u64,
-        value_commitment: JubJubAffine,
-        pk: JubJubAffine,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromTransparent {
-        address: BlsScalar,
-        note: Note,
-    },
-
-    SendToContractObfuscated {
-        address: BlsScalar,
-        message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
-        crossover_commitment: JubJubAffine,
-        crossover_pk: JubJubAffine,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromObfuscated {
-        address: BlsScalar,
-        message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
-        note: Note,
-        input_value_commitment: JubJubAffine,
-        spend_proof: Vec<u8>,
-    },
-}
-
-#[derive(Debug, Clone, Canon)]
-pub enum InternalCall {
-    None,
-
-    SendToContractTransparent {
-        address: BlsScalar,
-        value: u64,
-        crossover: Crossover,
-        pk: JubJubAffine,
-        spend_proof: Vec<u8>,
-    },
-}
-
-impl From<&TransferExecute> for InternalCall {
-    fn from(execute: &TransferExecute) -> Self {
-        match (&execute.crossover, &execute.call) {
-            (
-                Some(crossover),
-                Call::SendToContractTransparent {
-                    address,
-                    value,
-                    spend_proof,
-                    pk,
-                    ..
-                },
-            ) => Self::SendToContractTransparent {
-                address: *address,
-                value: *value,
-                crossover: *crossover,
-                pk: *pk,
-                spend_proof: spend_proof.clone(),
-            },
-
-            _ => unimplemented!(),
-        }
-        match &execute.call {
-            Call::SendToContractTransparent {
-                address,
-                value,
-                spend_proof,
-                pk,
-                ..
-            } => Self::SendToContractTransparent {
-                address: *address,
-                value: *value,
-                value_commitment: execute
-                    .crossover
-                    .value_commitment()
-                    .clone()
-                    .into(),
-                pk: *pk,
-                spend_proof: spend_proof.clone(),
-            },
-
-            _ => unimplemented!(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct InternalCallResult {
-    pub status: bool,
-    pub crossover: Option<Crossover>,
-}
-*/

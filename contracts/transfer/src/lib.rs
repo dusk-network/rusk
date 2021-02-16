@@ -21,6 +21,9 @@ mod transfer;
 pub use transfer::{Call, PublicKeyBytes, Transfer, TransferExecute};
 
 #[cfg(target_arch = "wasm32")]
+pub(crate) use transfer::TRANSFER_TREE_DEPTH;
+
+#[cfg(target_arch = "wasm32")]
 pub(crate) use transfer::{InternalCall, InternalCallResult};
 
 #[cfg(test)]

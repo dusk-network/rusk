@@ -57,6 +57,13 @@ fn query(
             ReturnValue::from_canon(&ret, &bridge)?
         }
 
+        ops::QR_OPENING => {
+            let pos = Canon::read(&mut source)?;
+
+            let ret = contract.opening(pos);
+            ReturnValue::from_canon(&ret, &bridge)?
+        }
+
         _ => ReturnValue::from_canon(&(), &bridge)?, /* TODO report
                                                       * unexpected ID */
     };

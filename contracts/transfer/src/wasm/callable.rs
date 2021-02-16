@@ -16,7 +16,8 @@ use dusk_jubjub::{
     JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_pki::PublicKey;
-use phoenix_core::{Crossover, Note, NoteType};
+use dusk_poseidon::cipher::PoseidonCipher;
+use phoenix_core::{Crossover, Message, Note, NoteType};
 
 impl<S: Store> Transfer<S> {
     fn call(&mut self, call: InternalCall) -> InternalCallResult {
@@ -42,6 +43,48 @@ impl<S: Store> Transfer<S> {
             InternalCall::WithdrawFromTransparent { address, note } => {
                 self.withdraw_from_transparent(address, note)
             }
+
+            InternalCall::SendToContractObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                crossover,
+                crossover_pk,
+                spend_proof,
+            } => self.send_to_contract_obfuscated(
+                address,
+                message,
+                r,
+                pk,
+                crossover,
+                crossover_pk,
+                spend_proof,
+            ),
+
+            InternalCall::WithdrawFromObfuscated {
+                address,
+                message,
+                r,
+                pk,
+                note,
+                input_value_commitment,
+                spend_proof,
+            } => self.withdraw_from_obfuscated(
+                address,
+                message,
+                r,
+                pk,
+                note,
+                input_value_commitment,
+                spend_proof,
+            ),
+
+            InternalCall::WithdrawFromTransparentToContract {
+                from,
+                to,
+                value,
+            } => self.withdraw_from_transparent_to_contract(from, to, value),
         }
     }
 
@@ -110,105 +153,30 @@ impl<S: Store> Transfer<S> {
         InternalCallResult::success(None)
     }
 
-    /*
-    fn internal_call(&mut self, call: InternalCall) -> bool {
-        match call {
-            InternalCall::SendToContractTransparent {
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            } => self.send_to_contract_transparent(
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            ),
-
-            _ => true,
-        }
-    }
-
-    fn call(&mut self, call: Call) -> bool {
-        match call {
-            Call::SendToContractTransparent {
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            } => self.send_to_contract_transparent(
-                address,
-                value,
-                value_commitment,
-                pk,
-                spend_proof,
-            ),
-
-            Call::WithdrawFromTransparent { address, note } => {
-                self.withdraw_from_transparent(address, note)
-            }
-
-            Call::SendToContractObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                crossover_commitment,
-                crossover_pk,
-                spend_proof,
-            } => self.send_to_contract_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                crossover_commitment,
-                crossover_pk,
-                spend_proof,
-            ),
-
-            Call::WithdrawFromObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            } => self.withdraw_from_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            ),
-
-            Call::None => true,
-        }
-    }
-
     fn send_to_contract_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        crossover_commitment: JubJubAffine,
-        crossover_pk: JubJubAffine,
+        crossover: Crossover,
+        crossover_pk: PublicKey,
         spend_proof: Vec<u8>,
-    ) -> bool {
+    ) -> InternalCallResult {
         let scalars =
             (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
         let points = (1 + JubJubAffine::SIZE) * 4;
 
         let mut pi = Vec::with_capacity(scalars + points);
         let label = "transfer-send-to-contract-obfuscated";
-        internal::extend_pi_jubjub_affine(&mut pi, &crossover_commitment);
-        internal::extend_pi_jubjub_affine(&mut pi, &crossover_pk);
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover.value_commitment().clone().into(),
+        );
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover_pk.as_ref().clone().into(),
+        );
         internal::extend_pi_jubjub_affine(
             &mut pi,
             &message.value_commitment().into(),
@@ -223,7 +191,7 @@ impl<S: Store> Transfer<S> {
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
         if self.push_message(address, pk, r, message).is_err() {
-            return false;
+            return InternalCallResult::error();
         }
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
@@ -235,9 +203,7 @@ impl<S: Store> Transfer<S> {
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         //  5. C←(0,0,0)
-        //  TODO
-
-        true
+        InternalCallResult::success(None)
     }
 
     fn withdraw_from_obfuscated(
@@ -249,7 +215,7 @@ impl<S: Store> Transfer<S> {
         note: Note, // FIXME nothing is done with this note
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
-    ) -> bool {
+    ) -> InternalCallResult {
         let scalars =
             (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
         let points = (1 + JubJubAffine::SIZE) * 4;
@@ -278,13 +244,13 @@ impl<S: Store> Transfer<S> {
         // FIXME This message is taken and nothing is verified with it
         let _message = match self.take_message_from_address_key(&address, &pk) {
             Ok(m) => m,
-            Err(_) => return false,
+            Err(_) => return InternalCallResult::error(),
         };
 
         //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
         //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
         if self.push_message(address, pk, r, message).is_err() {
-            return false;
+            return InternalCallResult::error();
         }
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
@@ -295,9 +261,28 @@ impl<S: Store> Transfer<S> {
         let vk = keys::wdfo();
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
-        true
+        InternalCallResult::success(None)
     }
-    */
+
+    fn withdraw_from_transparent_to_contract(
+        &mut self,
+        from: BlsScalar,
+        to: BlsScalar,
+        value: u64,
+    ) -> InternalCallResult {
+        //  1. from ∈ B↦
+        //  2. B_from↦ ← B_from↦ − v
+        if self.sub_balance(from, value).is_err() {
+            return InternalCallResult::error();
+        }
+
+        //  3. B_to↦ = B_to↦ + v
+        if self.add_balance(to, value).is_err() {
+            return InternalCallResult::error();
+        }
+
+        InternalCallResult::success(None)
+    }
 
     pub fn execute(&mut self, call: TransferExecute) -> bool {
         let internal_call = match call.clone().try_into() {

@@ -8,6 +8,7 @@
 pub const QR_BALANCE: u8 = 0x00;
 pub const QR_ROOT: u8 = 0x01;
 pub const QR_NOTES_FROM_HEIGHT: u8 = 0x02;
+pub const QR_OPENING: u8 = 0x03;
 
 // Transactions
 pub const TX_EXECUTE: u8 = 0x00;
