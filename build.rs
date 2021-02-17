@@ -19,13 +19,13 @@ use lazy_static::lazy_static;
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
         match rusk_profile::get_common_reference_string() {
-            Ok(buff) => unsafe {
+            Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
                 println!("Got the CRS from cache");
 
                 PublicParameters::from_slice_unchecked(&buff[..])
                     .expect("Cannot deserialize the CRS")
             },
-            Err(_) => {
+            Ok(_) | Err(_) => {
                 println!("New CRS needs to be generated and cached");
 
                 use rand::rngs::StdRng;

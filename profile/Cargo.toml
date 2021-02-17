@@ -1,6 +1,6 @@
 [package]
 name = "rusk-profile"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["zer0 <matteo@dusk.network>"]
 edition = "2018"
 autobins = false
