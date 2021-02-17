@@ -36,9 +36,12 @@ lazy_static! {
                 let pp_p = PublicParameters::setup(1 << 17, &mut rng)
                     .expect("Cannot initialize Public Parameters");
 
+                println!("Public Parameters initialized");
+
                 rusk_profile::set_common_reference_string(pp_p.to_raw_bytes())
                     .expect("Unable to write the CRS");
 
+                println!("CRS cached");
                 pp_p
             }
         }
