@@ -149,20 +149,7 @@ pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
     let mut profile = get_rusk_profile_dir()?;
     profile.push("dev.crs");
 
-    let buff = read(profile)?;
-
-    let mut hasher = Sha256::new();
-    hasher.update(&buff);
-    let hash = format!("{:x}", hasher.finalize());
-
-    if hash == CRS_17 {
-        Ok(buff)
-    } else {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Cached CRS does not match the expected one",
-        ))
-    }
+    read(profile)
 }
 
 pub fn set_common_reference_string(buffer: Vec<u8>) -> Result<(), io::Error> {
