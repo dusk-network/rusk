@@ -18,7 +18,7 @@ use rand::SeedableRng;
 use rusk_vm::{Contract, GasMeter, NetworkState, StandardABI};
 
 const CODE: &'static [u8] = include_bytes!(
-    "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
 #[test]
