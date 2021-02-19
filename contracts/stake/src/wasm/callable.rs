@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::{Contract, Counter, Key, Stake};
+use alloc::vec::Vec;
 use canonical::Store;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{Signature, APK};
-use dusk_plonk::prelude::*;
+use phoenix_core::Note;
 
 /// TODO: Still waiting for values from the research side.
 /// t_m in the specs
@@ -31,12 +32,9 @@ extern "C" {
 impl<S: Store> Contract<S> {
     pub fn stake(
         &mut self,
-        block_height: u64,
         value: u64,
         public_key: APK,
-        /* _spending_proof: Proof,
-         * _pub_inputs_len: u8,
-         * _pub_inputs: [[u8; 33]; 1], */
+        _spending_proof: Vec<u8>,
     ) -> (Counter, bool) {
         if value > MAXIMUM_STAKE || value < MINIMUM_STAKE {
             return (Counter::default(), false);
@@ -135,7 +133,7 @@ impl<S: Store> Contract<S> {
         w_i: Counter,
         pk: APK,
         sig: Signature,
-        /* note */
+        note: Note,
     ) -> bool {
         let k = Key { pk, w_i };
         let stake: Stake;
@@ -182,7 +180,7 @@ impl<S: Store> Contract<S> {
         message_2: BlsScalar,
         signature_1: Signature,
         signature_2: Signature,
-        /* note */
+        note: Note,
     ) -> bool {
         if message_1 == message_2 {
             return false;

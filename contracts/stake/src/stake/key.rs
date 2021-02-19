@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Counter;
+use super::Counter;
 use canonical::Canon;
 use canonical_derive::Canon;
 use core::cmp::Ordering;

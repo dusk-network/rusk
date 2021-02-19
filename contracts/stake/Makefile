@@ -1,4 +1,4 @@
-PROJECT := "stake_contract"
+PROJECT := "stake-contract"
 
 RS_FILES := $(shell find . -name '*.rs')
 WASM_RELEASE := "./target/wasm32-unknown-unknown/release/$(PROJECT).wasm"
@@ -11,12 +11,10 @@ all: host hosted
 
 check: hosted ## Run the Rust check on the project features
 	@cargo check --features host
-	@cargo check --features hosted
 
 hosted: ## Build the WASM files
 	@cargo rustc \
 		--no-default-features \
-		--features hosted \
 		--release \
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s

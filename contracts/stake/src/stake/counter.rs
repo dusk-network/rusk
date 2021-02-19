@@ -12,7 +12,9 @@ use canonical_derive::Canon;
 /// the stake identifier map will be sorted in ascending order this way,
 /// as the `Ord` implementation for byte slices always checks for
 /// lexicographical ordering.
-#[derive(Debug, Clone, Copy, Default, Ord, PartialOrd, Eq, PartialEq, Canon)]
+#[derive(
+    Debug, Clone, Copy, Default, Ord, PartialOrd, Eq, PartialEq, Canon,
+)]
 pub struct Counter([u8; 32]);
 
 impl Counter {

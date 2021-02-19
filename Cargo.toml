@@ -4,6 +4,7 @@ members = [
     "circuits/transfer",
     "contracts/bid",
     "contracts/transfer",
+    "contracts/stake",
     "rusk-profile",
     "rusk-abi",
     "rusk",

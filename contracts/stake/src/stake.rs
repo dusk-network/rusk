@@ -4,21 +4,28 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::Canon;
-use canonical_derive::Canon;
-use dusk_bls12_381_sign::APK;
+mod counter;
+mod key;
+mod stake;
 
-/// Stake represents a stake transaction performed in the Dusk network, and
-/// contains info on it's size, sender, eligibility time, and expiration time.
-#[derive(Debug, Default, Clone, Canon)]
-pub struct Stake {
-    /// The amount of DUSK staked by the provisioner.
-    pub value: u64,
-    /// The provisioner's public key.
-    pub pk: APK,
-    /// The block height at which this stake becomes active, allowing the
-    /// provisioner to participate in SBA.
-    pub eligibility: u64,
-    /// The block height at which this stake becomes inactive.
-    pub expiration: u64,
+use canonical::{Canon, Store};
+use canonical_derive::Canon;
+use counter::Counter;
+use dusk_kelvin_map::Map;
+use key::Key;
+use stake::Stake;
+
+/// The staking contract. It contains a mapping of a provisioner's public key to
+/// his stake value and some extra info, as well as a set which contains all
+/// provisioner public keys in order of being added to the contract. The
+/// contract is responsible for maintaining the committee and allows users to
+/// start staking, extend their stakes, and withdraw their stakes.
+///
+/// Note that rewards are distributed in a separate contract, this contract is
+/// purely for management of stake lifetimes.
+#[derive(Default, Debug, Clone, Canon)]
+pub struct StakeContract<S: Store> {
+    pub(crate) stake_mapping: Map<Key, Stake, S>,
+    pub(crate) stake_identifier_set: Map<Counter, Key, S>,
+    pub(crate) counter: Counter,
 }
