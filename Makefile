@@ -9,19 +9,20 @@ wasm: ## Generate the WASM for the contract given (e.g. make wasm for=transfer)
 		-- -C link-args=-s
 
 contracts: ## Generate the WASM for all the contracts & test them
-	$(MAKE) -C ./contracts/transfer/
-	$(MAKE) -C ./contracts/bid/
+	$(MAKE) -C ./contracts/transfer/ test
+	$(MAKE) -C ./contracts/bid/ test
+
+keys: ## Create the keys for the circuits
+	cd rusk && cargo test --release -- --nocapture
 
 circuits: ## Build and test circuit crates
 	cd circuits/bid && cargo test --release
 	cd circuits/transfer && cargo test --release
 
-test: ## Run the tests
-	cargo test --release -- --nocapture  && \
-	@make contracts 
+test: keys contracts circuits ## Run the tests
 	
 run: ## Run the server
-		@make contracts && \
-			cargo run --release
+	@make contracts
+	cargo run --release
 
 .PHONY: help wasm contracts test run
