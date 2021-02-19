@@ -8,7 +8,6 @@ use super::{internal, keys};
 use crate::{
     InternalCall, InternalCallResult, TransferContract, TransferExecute,
 };
-use core::convert::TryInto;
 
 use alloc::vec::Vec;
 use canonical::Store;
@@ -24,6 +23,30 @@ use phoenix_core::{Crossover, Message, Note, NoteType};
 impl<S: Store> TransferContract<S> {
     fn call(&mut self, call: InternalCall) -> InternalCallResult {
         match call {
+            InternalCall::External {
+                contract,
+                transaction,
+                crossover,
+            } => {
+                let ret = match dusk_abi::transact_raw(&contract, &transaction)
+                {
+                    Ok(r) => r,
+                    Err(_) => return InternalCallResult::error(),
+                };
+
+                // FIXME Unnecessary ownership of `Store`
+                // https://github.com/dusk-network/rusk-vm/issues/159
+                let store: S = unsafe { core::mem::zeroed() };
+
+                // FIXME Assuming the called contract will return only the
+                // boolean result https://github.com/dusk-network/rusk/issues/204
+                match ret.cast::<bool, _>(store) {
+                    Ok(r) if r => InternalCallResult::success(crossover),
+
+                    _ => InternalCallResult::error(),
+                }
+            }
+
             InternalCall::None(crossover) => {
                 InternalCallResult::success(crossover)
             }
@@ -298,7 +321,7 @@ impl<S: Store> TransferContract<S> {
     }
 
     pub fn execute(&mut self, call: TransferExecute) -> bool {
-        let internal_call = match call.clone().try_into() {
+        let internal_call = match call.clone().into_internal::<S>() {
             Ok(c) => c,
             Err(_) => return false,
         };

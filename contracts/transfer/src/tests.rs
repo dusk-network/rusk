@@ -88,20 +88,22 @@ fn withdraw_from_transparent() {
     // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let spend_proof_stct = vec![0xfa];
-    let call = TransferExecute {
-        anchor: root,
-        nullifiers: [genesis_nullifier].into(),
-        fee: bob_fee,
-        crossover: Some(bob_crossover),
-        notes: [genesis_unspent_note].into(),
-        spend_proof: spend_proof_execute,
-        call: Some(Call::SendToContractTransparent {
-            address: bob_address,
-            value: bob_value,
-            pk: bob_psk.A().into(),
-            spend_proof: spend_proof_stct,
-        }),
-    };
+    let call = Call::send_to_contract_transparent::<MemStore>(
+        bob_address,
+        bob_value,
+        bob_psk.A().into(),
+        spend_proof_stct,
+    )
+    .unwrap();
+    let call = TransferExecute::new(
+        root,
+        [genesis_nullifier].into(),
+        bob_fee,
+        Some(bob_crossover),
+        [genesis_unspent_note].into(),
+        spend_proof_execute,
+        Some(call),
+    );
 
     let result = network
         .transact::<_, bool>(contract, call, &mut gas)
@@ -172,18 +174,20 @@ fn withdraw_from_transparent() {
     // TODO implement proof verification
     // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
-    let call = TransferExecute {
-        anchor: root,
-        nullifiers: [bob_nullifier].into(),
-        fee: bob_fee,
-        crossover: None,
-        notes: [bob_output].into(),
-        spend_proof: spend_proof_execute,
-        call: Some(Call::WithdrawFromTransparent {
-            address: bob_address,
-            note: alice_withdraw,
-        }),
-    };
+    let call = Call::withdraw_from_transparent::<MemStore>(
+        bob_address,
+        alice_withdraw,
+    )
+    .unwrap();
+    let call = TransferExecute::new(
+        root,
+        [bob_nullifier].into(),
+        bob_fee,
+        None,
+        [bob_output].into(),
+        spend_proof_execute,
+        Some(call),
+    );
 
     let result = network
         .transact::<_, bool>(contract, call, &mut gas)
@@ -284,20 +288,22 @@ fn withdraw_from_transparent_to_contract() {
     // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
     let spend_proof_stct = vec![0xfa];
-    let call = TransferExecute {
-        anchor: root,
-        nullifiers: [genesis_nullifier].into(),
-        fee: bob_fee,
-        crossover: Some(bob_crossover),
-        notes: [genesis_unspent_note].into(),
-        spend_proof: spend_proof_execute,
-        call: Some(Call::SendToContractTransparent {
-            address: bob_address,
-            value: bob_value,
-            pk: bob_psk.A().into(),
-            spend_proof: spend_proof_stct,
-        }),
-    };
+    let call = Call::send_to_contract_transparent::<MemStore>(
+        bob_address,
+        bob_value,
+        bob_psk.A().into(),
+        spend_proof_stct,
+    )
+    .unwrap();
+    let call = TransferExecute::new(
+        root,
+        [genesis_nullifier].into(),
+        bob_fee,
+        Some(bob_crossover),
+        [genesis_unspent_note].into(),
+        spend_proof_execute,
+        Some(call),
+    );
 
     let result = network
         .transact::<_, bool>(contract, call, &mut gas)
@@ -348,19 +354,21 @@ fn withdraw_from_transparent_to_contract() {
     // TODO implement proof verification
     // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
-    let call = TransferExecute {
-        anchor: root,
-        nullifiers: [bob_nullifier].into(),
-        fee: bob_fee,
-        crossover: None,
-        notes: [bob_output].into(),
-        spend_proof: spend_proof_execute,
-        call: Some(Call::WithdrawFromTransparentToContract {
-            from: bob_address,
-            to: alice_address,
-            value: alice_value,
-        }),
-    };
+    let call = Call::withdraw_from_transparent_to_contract::<MemStore>(
+        bob_address,
+        alice_address,
+        alice_value,
+    )
+    .unwrap();
+    let call = TransferExecute::new(
+        root,
+        [bob_nullifier].into(),
+        bob_fee,
+        None,
+        [bob_output].into(),
+        spend_proof_execute,
+        Some(call),
+    );
 
     let result = network
         .transact::<_, bool>(contract, call, &mut gas)
@@ -417,19 +425,21 @@ fn withdraw_from_transparent_to_contract() {
     // TODO implement proof verification
     // https://github.com/dusk-network/rusk/issues/194
     let spend_proof_execute = vec![0xfa];
-    let call = TransferExecute {
-        anchor: root,
-        nullifiers: [bob_nullifier].into(),
-        fee: bob_fee,
-        crossover: None,
-        notes: [bob_output].into(),
-        spend_proof: spend_proof_execute,
-        call: Some(Call::WithdrawFromTransparentToContract {
-            from: bob_address,
-            to: eve_address,
-            value: eve_value,
-        }),
-    };
+    let call = Call::withdraw_from_transparent_to_contract::<MemStore>(
+        bob_address,
+        eve_address,
+        eve_value,
+    )
+    .unwrap();
+    let call = TransferExecute::new(
+        root,
+        [bob_nullifier].into(),
+        bob_fee,
+        None,
+        [bob_output].into(),
+        spend_proof_execute,
+        Some(call),
+    );
 
     let result = network
         .transact::<_, bool>(contract, call, &mut gas)
