@@ -178,7 +178,8 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
 
 pub fn keys_for(crate_name: &str) -> Keys {
     use cargo_lock::{Lockfile, Package};
-    let lockfile = Lockfile::load("./Cargo.lock").unwrap();
+    // FIXME: This will only work for workspaces.
+    let lockfile = Lockfile::load("./../Cargo.lock").unwrap();
 
     let packages = lockfile
         .packages
