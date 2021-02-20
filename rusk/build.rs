@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     lazy_static::initialize(&PUB_PARAMS);
 
     // Compile protos for tonic
-    tonic_build::compile_protos("schema/rusk.proto")?;
+    tonic_build::compile_protos("../schema/rusk.proto")?;
 
     // Get the cached keys for bid-circuits crate from rusk profile, or
     // recompile and update them if they're outdated

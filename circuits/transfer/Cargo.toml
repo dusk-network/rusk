@@ -14,14 +14,14 @@ dusk-poseidon = {version="0.18", features=["canon"]}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.9.1", features = ["canon"]}
 dusk-pki = "0.6"
 schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.5.2"}
-rusk-profile = {path="../../../profile", optional=true}
+rusk-profile = {path="../../rusk-profile", optional=true}
 canonical_derive = {version="0.5", optional=true}
 
 [dev-dependencies]
 canonical_derive = "0.5"
 rand = "0.7"
 canonical_host = "0.5"
-rusk-profile = {path="../../../profile"}
+rusk-profile = {path="../../rusk-profile"}
 
 [features]
 builder = ["canonical_derive", "rusk-profile"]
