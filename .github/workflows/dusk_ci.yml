@@ -30,14 +30,11 @@ jobs:
       - name: Cache .rusk profile
         uses: actions/cache@v2
         env:
-          cache-name: cache-rusk-profile
+          cache-name: cache-rusk-profile-v2
         with:
           path: ~/.rusk
           key: ${{ runner.os }}-build-${{ env.cache-name }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
 
       - uses: actions-rs/toolchain@v1
         with:
