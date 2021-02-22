@@ -41,6 +41,7 @@ rand = "0.7"
 bincode = "1.3.1"
 lazy_static = "1.4"
 rusk-profile = { path = "../rusk-profile" }
+rusk-vm = {git="https://github.com/dusk-network/rusk-vm", tag = "v0.4.0"}
 canonical = "0.5"
 canonical_derive = "0.5"
 canonical_host = "0.5"
