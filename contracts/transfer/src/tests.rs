@@ -34,8 +34,11 @@ fn withdraw_from_transparent() {
     let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
-    let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
     let mut network = NetworkState::<MemStore>::with_block_height(block_height);
+    let rusk_mod = rusk_abi::RuskModule::new(store.clone());
+    network.register_host_module(rusk_mod);
+
+    let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
     let contract = network.deploy(contract).unwrap();
     let mut gas = GasMeter::with_limit(1_000);
 
@@ -231,8 +234,11 @@ fn withdraw_from_transparent_to_contract() {
     let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
-    let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
     let mut network = NetworkState::<MemStore>::with_block_height(block_height);
+    let rusk_mod = rusk_abi::RuskModule::new(store.clone());
+    network.register_host_module(rusk_mod);
+
+    let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
     let contract = network.deploy(contract).unwrap();
     let mut gas = GasMeter::with_limit(1_000);
 

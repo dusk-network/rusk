@@ -43,7 +43,7 @@ where
 
     #[cfg(target_arch = "wasm32")]
     fn poseidon_hash(&self) -> BlsScalar {
-        dusk_abi::poseidon_hash(self.note.hash_inputs().into())
+        rusk_abi::poseidon_hash(self.note.hash_inputs().into())
     }
 
     fn pos(&self) -> u64 {
