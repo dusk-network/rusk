@@ -69,3 +69,6 @@ canonical_derive = "0.5"
 canonical_host = "0.5"
 dusk-bls12_381 = "0.6"
 dusk-jubjub = "0.8"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.2.0", features = ["fmt"] }

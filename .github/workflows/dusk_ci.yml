@@ -39,18 +39,6 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
-      - name: Cache deps
-        uses: actions/cache@v2
-        with:
-          path: |-
-            .cargo_home
-            target/*/.*
-            target/*/build
-            target/*/deps
-          key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-
-
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal

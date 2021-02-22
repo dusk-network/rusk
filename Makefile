@@ -13,7 +13,7 @@ contracts: ## Generate the WASM for all the contracts & test them
 	$(MAKE) -C ./contracts/bid/ test
 
 keys: ## Create the keys for the circuits
-	cd rusk && cargo test --release -- --nocapture
+	cd rusk && cargo test --release -vv -- --nocapture
 
 circuits: ## Build and test circuit crates
 	cd circuits/bid && cargo test --release
