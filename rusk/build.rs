@@ -15,18 +15,20 @@ use dusk_plonk::circuit_builder::Circuit;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
+use tracing::{info, Level};
+use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
         match rusk_profile::get_common_reference_string() {
             Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
-                println!("Got the CRS from cache");
+                info!("Got the CRS from cache");
 
                 PublicParameters::from_slice_unchecked(&buff[..])
                     .expect("Cannot deserialize the CRS")
             },
             Ok(_) | Err(_) => {
-                println!("New CRS needs to be generated and cached");
+                info!("New CRS needs to be generated and cached");
 
                 use rand::rngs::StdRng;
                 use rand::SeedableRng;
@@ -36,12 +38,11 @@ lazy_static! {
                 let pp_p = PublicParameters::setup(1 << 17, &mut rng)
                     .expect("Cannot initialize Public Parameters");
 
-                println!("Public Parameters initialized");
+                info!("Public Parameters initialized");
 
                 rusk_profile::set_common_reference_string(pp_p.to_raw_bytes())
                     .expect("Unable to write the CRS");
 
-                println!("CRS cached");
                 pp_p
             }
         }
@@ -72,6 +73,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "cargo:rustc-env=RUSTC_RELEASE_CHANNEL={}",
         rustc_tools_util::get_channel().unwrap_or_default()
     );
+
+    let subscriber = FmtSubscriber::builder()
+        // all spans/events with a level higher than TRACE (e.g, debug, info,
+        // warn, etc.) will be written to stdout.
+        .with_max_level(Level::TRACE)
+        // completes the builder.
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
 
     // This will enforce the usage and therefore the cache / generation
     // of the CRS even if it's not used to compiles circuits inside the
