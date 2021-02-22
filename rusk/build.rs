@@ -92,26 +92,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
-    // Get the cached keys for bid-circuits crate from rusk profile, or
-    // recompile and update them if they're outdated
-    let bid_keys = rusk_profile::keys_for("bid-circuits");
-    if bid_keys.are_outdated() {
+    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
+        info!("Bulding Bid Keys");
+        let bid_keys = rusk_profile::keys_for("bid-circuits");
         bid_keys.clear_all()?;
         bid_keys.update("bid", bid::compile_circuit()?)?;
-    }
 
-    // Get the cached keys for dusk-blindbid crate from rusk profile, or
-    // recompile and update them if they're outdated
-    let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
-    if blindbid_keys.are_outdated() {
+        let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
         blindbid_keys.clear_all()?;
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
 
-    // Get the cached keys for transfer contract crate from rusk profile, or
-    // recompile and update them if they're outdated
-    let transfer_keys = rusk_profile::keys_for("transfer-circuits");
-    if transfer_keys.are_outdated() {
+    if option_env!("RUSK_BUILD_TRANSFER_KEYS").unwrap_or("0") != "0" {
+        info!("Building Transfer Keys");
+        let transfer_keys = rusk_profile::keys_for("transfer-circuits");
         let (id, pk, vk) = transfer::compile_stco_circuit()?;
         transfer_keys.update(id, (pk, vk))?;
 
