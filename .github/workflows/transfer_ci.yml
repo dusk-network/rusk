@@ -1,0 +1,32 @@
+on: [workflow_dispatch]
+
+name: Generate Transfer Keys
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache .rusk profile
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-rusk-profile
+        with:
+          path: ~/.rusk
+          key: ${{ runner.os }}-build-${{ env.cache-name }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSK_BUILD_TRANSFER_KEYS: 1
+        with:
+          command: build
+          args: --release
