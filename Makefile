@@ -19,7 +19,10 @@ circuits: ## Build and test circuit crates
 	cd circuits/bid && cargo test --release
 	cd circuits/transfer && cargo test --release
 
-test: keys contracts circuits ## Run the tests
+abi: ## Build the ABI and test it
+	$(MAKE) -C ./rusk-abi test
+
+test: keys contracts circuits abi ## Run the tests
 	
 run: ## Run the server
 	@make contracts

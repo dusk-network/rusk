@@ -1,0 +1,27 @@
+[package]
+name = "rusk-abi"
+version = "0.1.0"
+authors = [
+  "zer0 <matteo@dusk.network>",
+]
+edition = "2018"
+
+repository = "https://github.com/dusk-network/rusk-abi"
+description = "The ABI to develop dusk-network contracts for Rusk VM in Zero-Knowledge"
+license = "MPL-2.0"
+exclude = [".github/workflows/ci.yml", ".gitignore"]
+
+[dependencies]
+cfg-if = "0.1"
+canonical = "0.5"
+canonical_derive = "0.5"
+
+dusk-poseidon = { version = "0.18", default-features = false }
+dusk-bls12_381 = { version = "0.6", default-features = false, features = ["canon"] }
+dusk-abi = "0.5"
+
+[dev-dependencies]
+rusk-vm = { git = "https://github.com/dusk-network/rusk-vm", tag="v0.4.0" }
+dusk-bytes = "0.1"
+canonical_host = "0.5"
+host_fn = { path = "tests/contracts/host_fn" }
