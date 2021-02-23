@@ -1,3 +1,5 @@
+.PHONY: help wasm contracts keys circuits abi test run
+
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
@@ -27,5 +29,3 @@ test: abi keys contracts circuits ## Run the tests
 run: ## Run the server
 	@make contracts
 	cargo run --release
-
-.PHONY: help wasm contracts test run

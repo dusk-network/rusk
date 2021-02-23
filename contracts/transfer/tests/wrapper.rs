@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
 use transfer_contract::{ops, Call, TransferContract};
 
@@ -19,17 +19,17 @@ use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_vm::{Contract, ContractId, GasMeter, NetworkState, StandardABI};
+use rusk::vm::{Contract, ContractId, GasMeter, NetworkState};
 
 const TRANSFER_TREE_DEPTH: usize = 17;
 const CODE: &'static [u8] = include_bytes!(
-    "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
 pub struct TransferWrapper<S: Store> {
     rng: StdRng,
     pp: PublicParameters,
-    network: NetworkState<StandardABI<S>, S>,
+    network: NetworkState<S>,
     contract: ContractId,
     gas: GasMeter,
     genesis_ssk: SecretSpendKey,
@@ -48,8 +48,7 @@ impl<S: Store> TransferWrapper<S> {
             PublicParameters::from_slice_unchecked(pp.as_slice()).unwrap()
         };
 
-        let mut network =
-            NetworkState::<StandardABI<S>, S>::with_block_height(block_height);
+        let mut network = NetworkState::with_block_height(block_height);
 
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
@@ -112,7 +111,11 @@ impl<S: Store> TransferWrapper<S> {
         let note =
             Note::obfuscated(&mut self.rng, refund_psk, value, blinding_factor);
 
-        note.try_into_fee_crossover(gas_limit, gas_price).unwrap()
+        let (mut fee, crossover) = note.try_into().unwrap();
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
+
+        (fee, crossover)
     }
 
     pub fn notes(&mut self, block_height: u64) -> Vec<Note> {

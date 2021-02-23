@@ -65,10 +65,11 @@ impl<S: Store> TransferContract<S> {
         // TODO Get gas consumed
         // https://github.com/dusk-network/rusk/issues/195
         let gas_consumed = 1;
-        if let Some(remainder) = fee
-            .try_into_remainder_note(gas_consumed)
-            .map_err(|_| InvalidEncoding.into())?
-        {
+        let remainder = fee.gen_remainder(gas_consumed);
+        let remainder = Note::from(remainder);
+        let remainder_value =
+            remainder.value(None).map_err(|_| InvalidEncoding.into())?;
+        if remainder_value > 0 {
             self.push_note(remainder)?;
         }
 
