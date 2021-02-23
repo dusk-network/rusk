@@ -34,7 +34,7 @@ fn poseidon_hash() {
     let store = MS::new();
 
     let code = include_bytes!(
-        "contracts/host_fn/target/wasm32-unknown-unknown/release/host_fn.wasm"
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
     let contract = Contract::new(hash, code.to_vec(), &store).unwrap();
