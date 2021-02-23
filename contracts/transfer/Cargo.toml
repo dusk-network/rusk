@@ -10,7 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 canonical = {version="0.5", default-features=false}
 canonical_derive = "0.5"
-dusk-abi = {git="https://github.com/dusk-network/rusk-vm", tag="v0.3.0"}
+dusk-abi = "0.5"
+rusk-abi = { path = "../../rusk-abi", version = "0.1" }
 dusk-bytes = "0.1"
 dusk-bls12_381 = {version="0.6", features=["canon"], default-features=false}
 dusk-jubjub = {version="0.8", features=["canon"], default-features=false}
@@ -21,7 +22,7 @@ dusk-kelvin-map = "0.3"
 
 # Test dependencies
 rand = {version="0.7", optional=true}
-rusk-vm = {git="https://github.com/dusk-network/rusk-vm", tag="v0.3.0", optional=true}
+rusk = { path = "../../rusk", optional=true}
 canonical_host = {version="0.5", optional=true}
 
 [profile.dev]
@@ -31,4 +32,4 @@ panic = "abort"
 panic = "abort"
 
 [features]
-host=["rand", "rusk-vm", "canonical_host"]
+host=["rand", "rusk", "canonical_host"]

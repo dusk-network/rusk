@@ -9,6 +9,8 @@ pub mod encoding;
 pub mod services;
 pub mod transaction;
 
+pub use rusk_vm as vm;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Rusk {}
 
