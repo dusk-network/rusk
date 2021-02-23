@@ -9,10 +9,10 @@
 //! See: https://github.com/dusk-network/rusk-abi/issues/2
 
 #![allow(unused_variables)]
+use alloc::vec::Vec;
+use dusk_bls12_381::BlsScalar;
 use dusk_pki::PublicKey;
 use schnorr::Signature;
-use dusk_bls12_381::BlsScalar;
-use alloc::vec::Vec;
 
 // Verify a PLONK proof given the Proof, VerifierKey and PublicInputs
 pub(crate) fn verify_proof(
@@ -28,4 +28,6 @@ pub(crate) fn verify_schnorr_sig(
     pk: PublicKey,
     sig: Signature,
     msg: BlsScalar,
-) -> bool {true}
+) -> bool {
+    true
+}
