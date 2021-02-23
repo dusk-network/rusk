@@ -14,17 +14,15 @@ mod transaction;
 use crate::{ops, Contract};
 use alloc::vec::Vec;
 use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{PublicKey, StealthAddress};
-use dusk_poseidon::cipher::PoseidonCipher;
+use dusk_pki::{PublicKey};
 use phoenix_core::Note;
 use schnorr::Signature;
+use dusk_blindbid::Bid;
 
 const PAGE_SIZE: usize = 1024 * 4;
 
 type BS = BridgeStore<Id32>;
-type TransactionIndex = u16;
+type TransactionIndex = u8;
 
 fn transaction(
     bytes: &mut [u8; PAGE_SIZE],
@@ -39,25 +37,13 @@ fn transaction(
     match qid {
         ops::BID => {
             // Read host-sent args
-            let commitment: JubJubAffine = Canon::<BS>::read(&mut source)?;
-            let hashed_secret: BlsScalar = Canon::<BS>::read(&mut source)?;
-            let nonce: BlsScalar = Canon::<BS>::read(&mut source)?;
-            let encrypted_data: PoseidonCipher =
-                Canon::<BS>::read(&mut source)?;
-            let stealth_address: StealthAddress =
-                Canon::<BS>::read(&mut source)?;
-            let block_height: u64 = Canon::<BS>::read(&mut source)?;
+            let bid: Bid = Canon::<BS>::read(&mut source)?;
             // Fat pointer to the Proof objects.
             let correctness_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             // Call bid contract fn
             let (err_flag, idx) = slf.bid(
-                commitment,
-                hashed_secret,
-                nonce,
-                encrypted_data,
-                stealth_address,
-                block_height,
+                bid,
                 correctness_proof,
                 spending_proof,
             );
