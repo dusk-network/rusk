@@ -3,9 +3,3 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
-// Queries
-pub const QR_BALANCE: u8 = 0x00;
-pub const QR_ROOT: u8 = 0x01;
-pub const QR_NOTES_FROM_HEIGHT: u8 = 0x02;
-pub const QR_OPENING: u8 = 0x03;

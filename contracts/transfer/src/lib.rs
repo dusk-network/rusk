@@ -18,13 +18,10 @@ mod wasm;
 pub mod ops;
 
 mod transfer;
-pub use transfer::{Call, PublicKeyBytes, TransferContract, TransferExecute};
+pub use transfer::{Call, TransferContract};
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) use transfer::PublicKeyBytes;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use transfer::TRANSFER_TREE_DEPTH;
-
-#[cfg(target_arch = "wasm32")]
-pub(crate) use transfer::{InternalCall, InternalCallResult};
-
-#[cfg(test)]
-mod tests;

@@ -5,12 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{internal, keys};
-use crate::{
-    InternalCall, InternalCallResult, TransferContract, TransferExecute,
-};
+use crate::TransferContract;
 
 use alloc::vec::Vec;
 use canonical::Store;
+use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{
@@ -18,126 +17,61 @@ use dusk_jubjub::{
 };
 use dusk_pki::PublicKey;
 use dusk_poseidon::cipher::PoseidonCipher;
-use phoenix_core::{Crossover, Message, Note, NoteType};
+use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
 
 impl<S: Store> TransferContract<S> {
-    fn call(&mut self, call: InternalCall) -> InternalCallResult {
-        match call {
-            InternalCall::External {
-                contract,
-                transaction,
-                crossover,
-            } => {
-                let ret = match dusk_abi::transact_raw(&contract, &transaction)
-                {
-                    Ok(r) => r,
-                    Err(_) => return InternalCallResult::error(),
-                };
+    fn call(&mut self, contract: ContractId, tx: Transaction) -> bool {
+        let ret = match dusk_abi::transact_raw(&contract, &tx) {
+            Ok(r) => r,
+            Err(_) => return false,
+        };
 
-                // FIXME Unnecessary ownership of `Store`
-                // https://github.com/dusk-network/rusk-vm/issues/159
-                let store: S = unsafe { core::mem::zeroed() };
+        // FIXME Unnecessary ownership of `Store`
+        // https://github.com/dusk-network/rusk-vm/issues/159
+        let store: S = unsafe { core::mem::zeroed() };
 
-                // FIXME Assuming the called contract will return only the
-                // boolean result https://github.com/dusk-network/rusk/issues/204
-                match ret.cast::<bool, _>(store) {
-                    Ok(r) if r => InternalCallResult::success(crossover),
+        // FIXME Assuming the called contract will return only the
+        // boolean result https://github.com/dusk-network/rusk/issues/204
+        match ret.cast::<bool, _>(store) {
+            Ok(r) if r => true,
 
-                    _ => InternalCallResult::error(),
-                }
-            }
-
-            InternalCall::None(crossover) => {
-                InternalCallResult::success(crossover)
-            }
-
-            InternalCall::SendToContractTransparent {
-                address,
-                value,
-                crossover,
-                pk,
-                spend_proof,
-            } => self.send_to_contract_transparent(
-                address,
-                value,
-                crossover,
-                pk,
-                spend_proof,
-            ),
-
-            InternalCall::WithdrawFromTransparent { address, note } => {
-                self.withdraw_from_transparent(address, note)
-            }
-
-            InternalCall::SendToContractObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                crossover,
-                crossover_pk,
-                spend_proof,
-            } => self.send_to_contract_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                crossover,
-                crossover_pk,
-                spend_proof,
-            ),
-
-            InternalCall::WithdrawFromObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            } => self.withdraw_from_obfuscated(
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            ),
-
-            InternalCall::WithdrawFromTransparentToContract {
-                from,
-                to,
-                value,
-            } => self.withdraw_from_transparent_to_contract(from, to, value),
+            _ => false,
         }
     }
 
-    fn send_to_contract_transparent(
+    pub fn send_to_contract_transparent(
         &mut self,
         address: BlsScalar,
         value: u64,
-        crossover: Crossover,
-        pk: PublicKey,
         spend_proof: Vec<u8>,
-    ) -> InternalCallResult {
+    ) -> bool {
         // Build proof public inputs
         let scalars = 1 + BlsScalar::SIZE;
         let points = (1 + JubJubAffine::SIZE) * 2;
 
         let mut pi = Vec::with_capacity(scalars + points);
         let label = "transfer-send-to-contract-transparent";
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover.value_commitment().clone().into(),
-        );
-        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().clone().into());
+
+        match self.var_crossover {
+            Some(crossover) => internal::extend_pi_jubjub_affine(
+                &mut pi,
+                &crossover.value_commitment().clone().into(),
+            ),
+            None => return false,
+        }
+        match self.var_crossover_pk {
+            Some(pk) => internal::extend_pi_jubjub_affine(
+                &mut pi,
+                &pk.as_ref().clone().into(),
+            ),
+            None => return false,
+        }
         internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::from(value));
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
         if self.add_balance(address, value).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
         //  3. if a.isPayable() ↦ true then continue
@@ -151,59 +85,66 @@ impl<S: Store> TransferContract<S> {
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         //  5. C ← C(0,0,0)
-        InternalCallResult::success(None)
+        self.var_crossover.take();
+
+        true
     }
 
-    fn withdraw_from_transparent(
+    pub fn withdraw_from_transparent(
         &mut self,
         address: BlsScalar,
         note: Note,
-    ) -> InternalCallResult {
+    ) -> bool {
         let value = match (note.note(), note.value(None)) {
             (NoteType::Transparent, Ok(v)) => v,
-            _ => return InternalCallResult::error(),
+            _ => return false,
         };
 
         //  1. a ∈ B↦
         //  2. B_a↦ ← B_a↦ − v
         if self.sub_balance(address, value).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
         //  3. N↦.append(N_p^t)
         //  4. N_p^* ← encode(N_p^t)
         //  5. N.append(N_p^*)
         if self.push_note(note).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
-        InternalCallResult::success(None)
+        true
     }
 
-    fn send_to_contract_obfuscated(
+    pub fn send_to_contract_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        crossover: Crossover,
-        crossover_pk: PublicKey,
         spend_proof: Vec<u8>,
-    ) -> InternalCallResult {
+    ) -> bool {
         let scalars =
             (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
         let points = (1 + JubJubAffine::SIZE) * 4;
 
         let mut pi = Vec::with_capacity(scalars + points);
         let label = "transfer-send-to-contract-obfuscated";
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover.value_commitment().clone().into(),
-        );
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover_pk.as_ref().clone().into(),
-        );
+
+        match self.var_crossover {
+            Some(crossover) => internal::extend_pi_jubjub_affine(
+                &mut pi,
+                &crossover.value_commitment().clone().into(),
+            ),
+            None => return false,
+        }
+        match self.var_crossover_pk {
+            Some(pk) => internal::extend_pi_jubjub_affine(
+                &mut pi,
+                &pk.as_ref().clone().into(),
+            ),
+            None => return false,
+        }
         internal::extend_pi_jubjub_affine(
             &mut pi,
             &message.value_commitment().into(),
@@ -218,7 +159,7 @@ impl<S: Store> TransferContract<S> {
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
         if self.push_message(address, pk, r, message).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
@@ -232,12 +173,14 @@ impl<S: Store> TransferContract<S> {
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         //  5. C←(0,0,0)
-        InternalCallResult::success(None)
+        self.var_crossover.take();
+
+        true
     }
 
     // FIXME nothing is done with the passed note
     // https://github.com/dusk-network/rusk/issues/192
-    fn withdraw_from_obfuscated(
+    pub fn withdraw_from_obfuscated(
         &mut self,
         address: BlsScalar,
         message: Message,
@@ -246,7 +189,7 @@ impl<S: Store> TransferContract<S> {
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
-    ) -> InternalCallResult {
+    ) -> bool {
         let scalars =
             (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
         let points = (1 + JubJubAffine::SIZE) * 4;
@@ -276,13 +219,13 @@ impl<S: Store> TransferContract<S> {
         // https://github.com/dusk-network/rusk/issues/192
         let _message = match self.take_message_from_address_key(&address, &pk) {
             Ok(m) => m,
-            Err(_) => return InternalCallResult::error(),
+            Err(_) => return false,
         };
 
         //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
         //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
         if self.push_message(address, pk, r, message).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
@@ -295,46 +238,41 @@ impl<S: Store> TransferContract<S> {
         let vk = keys::wdfo();
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
-        InternalCallResult::success(None)
+        true
     }
 
     // FIXME Wrong documentation specification
     // https://github.com/dusk-network/rusk/issues/198
-    fn withdraw_from_transparent_to_contract(
+    pub fn withdraw_from_transparent_to_contract(
         &mut self,
         from: BlsScalar,
         to: BlsScalar,
         value: u64,
-    ) -> InternalCallResult {
+    ) -> bool {
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v
         if self.sub_balance(from, value).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
         //  3. B_to↦ = B_to↦ + v
         if self.add_balance(to, value).is_err() {
-            return InternalCallResult::error();
+            return false;
         }
 
-        InternalCallResult::success(None)
+        true
     }
 
-    pub fn execute(&mut self, call: TransferExecute) -> bool {
-        let internal_call = match call.clone().into_internal::<S>() {
-            Ok(c) => c,
-            Err(_) => return false,
-        };
-        let TransferExecute {
-            anchor,
-            nullifiers,
-            crossover,
-            notes,
-            fee,
-            spend_proof,
-            ..
-        } = call;
-
+    pub fn execute(
+        &mut self,
+        anchor: BlsScalar,
+        nullifiers: Vec<BlsScalar>,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        notes: Vec<Note>,
+        spend_proof: Vec<u8>,
+        call: Option<(ContractId, Transaction)>,
+    ) -> bool {
         let inputs = nullifiers.len();
         let outputs = notes.len();
 
@@ -411,9 +349,11 @@ impl<S: Store> TransferContract<S> {
         let (_, _, _, _) = (pi, label, spend_proof, vk);
 
         // 11. if ∣k∣≠0 then call(k)
-        let call_result = self.call(internal_call);
-        if !call_result.is_success() {
-            return false;
+        self.var_crossover = crossover;
+        if let Some((contract, tx)) = call {
+            if !self.call(contract, tx) {
+                return false;
+            }
         }
 
         // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)
@@ -423,7 +363,7 @@ impl<S: Store> TransferContract<S> {
         // 16. N_p^*←encode(N_p^t)
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
-        if self.push_fee_crossover(fee, call_result.crossover).is_err() {
+        if self.push_fee_crossover(fee).is_err() {
             return false;
         }
 

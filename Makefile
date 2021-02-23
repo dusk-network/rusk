@@ -8,24 +8,24 @@ wasm: ## Generate the WASM for the contract given (e.g. make wasm for=transfer)
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
 
-contracts: ## Generate the WASM for all the contracts
-		@for file in `find contracts -maxdepth 2 -name "Cargo.toml"` ; do \
-			cargo rustc \
-				--manifest-path=$${file} \
-				--release \
-				--target wasm32-unknown-unknown \
-				-- -C link-args=-s; \
-		done
+contracts: ## Generate the WASM for all the contracts & test them
+	$(MAKE) -C ./contracts/transfer/ test
+	$(MAKE) -C ./contracts/bid/ test
 
-test: ## Run the tests
-		@make contracts && \
-			cargo test --release -- --nocapture  && \
-		cd contracts/bid/circuits && cargo test --release
-		cd contracts/transfer/circuits && cargo test --release
-		$(MAKE) -C ./contracts/transfer/
+keys: ## Create the keys for the circuits
+	cd rusk && cargo test --release -vv -- --nocapture
 
+circuits: ## Build and test circuit crates
+	cd circuits/bid && cargo test --release
+	cd circuits/transfer && cargo test --release
+
+abi: ## Build the ABI and test it
+	$(MAKE) -C ./rusk-abi test
+
+test: abi keys contracts circuits ## Run the tests
+	
 run: ## Run the server
-		@make contracts && \
-			cargo run --release
+	@make contracts
+	cargo run --release
 
 .PHONY: help wasm contracts test run

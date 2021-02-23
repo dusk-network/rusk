@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, TransferContract};
+use crate::{ops, Call, TransferContract};
 
 use canonical::{
     BridgeStore as BridgeStoreCanon, ByteSink, ByteSource, Canon, Id32, Store,
@@ -84,11 +84,13 @@ fn transaction(
     let mut source = ByteSource::new(&bytes[..], &bridge);
     let mut contract: TransferContract<BridgeStore> = Canon::read(&mut source)?;
 
-    let call = Canon::read(&mut source)?;
-    let ret = contract.execute(call);
+    let call: Call = Canon::read(&mut source)?;
+    let ret = call.transact(&mut contract);
 
     let mut sink = ByteSink::new(&mut bytes[..], &bridge);
 
+    // FIXME Clarify if the state should be sent to the bridge if the execution
+    // fails https://github.com/dusk-network/rusk/issues/204
     let state = ContractState::from_canon(&contract, &bridge)?;
     let ret = ReturnValue::from_canon(&ret, &bridge)?;
 

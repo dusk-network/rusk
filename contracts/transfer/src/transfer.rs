@@ -14,14 +14,14 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
-use phoenix_core::{Message, Note};
+use phoenix_core::{Crossover, Message, Note};
 
 mod call;
 mod tree;
 
 use tree::Tree;
 
-pub use call::{Call, InternalCall, InternalCallResult, TransferExecute};
+pub use call::Call;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use tree::TRANSFER_TREE_DEPTH;
@@ -39,6 +39,13 @@ pub struct TransferContract<S: Store> {
         Map<BlsScalar, Map<PublicKeyBytes, Message, S>, S>,
     pub(crate) message_mapping_set:
         Map<BlsScalar, (PublicKey, JubJubAffine), S>,
+
+    // FIXME Variable space
+    // https://github.com/dusk-network/rusk/issues/213
+    pub(crate) var_crossover: Option<Crossover>,
+    pub(crate) var_crossover_pk: Option<PublicKey>,
+    // TODO not implemented
+    pub(crate) circulating_supply: Option<u64>,
 }
 
 impl<S: Store> TransferContract<S> {

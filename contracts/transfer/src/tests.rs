@@ -15,10 +15,10 @@ use dusk_pki::{Ownable, SecretSpendKey};
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_vm::{Contract, GasMeter, NetworkState, StandardABI};
+use rusk::vm::{Contract, GasMeter, NetworkState};
 
 const CODE: &'static [u8] = include_bytes!(
-    "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
 #[test]
@@ -34,11 +34,11 @@ fn withdraw_from_transparent() {
     let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
+    let mut network = NetworkState::<MemStore>::with_block_height(block_height);
+    let rusk_mod = rusk_abi::RuskModule::new(store.clone());
+    network.register_host_module(rusk_mod);
+
     let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
-    let mut network =
-        NetworkState::<StandardABI<MemStore>, MemStore>::with_block_height(
-            block_height,
-        );
     let contract = network.deploy(contract).unwrap();
     let mut gas = GasMeter::with_limit(1_000);
 
@@ -234,11 +234,11 @@ fn withdraw_from_transparent_to_contract() {
     let transfer = TransferContract::try_from(genesis_note).unwrap();
 
     let block_height = 1;
+    let mut network = NetworkState::<MemStore>::with_block_height(block_height);
+    let rusk_mod = rusk_abi::RuskModule::new(store.clone());
+    network.register_host_module(rusk_mod);
+
     let contract = Contract::new(transfer, CODE.to_vec(), &store).unwrap();
-    let mut network =
-        NetworkState::<StandardABI<MemStore>, MemStore>::with_block_height(
-            block_height,
-        );
     let contract = network.deploy(contract).unwrap();
     let mut gas = GasMeter::with_limit(1_000);
 

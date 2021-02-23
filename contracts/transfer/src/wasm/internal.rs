@@ -14,7 +14,7 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
-use phoenix_core::{Crossover, Fee, Message, Note};
+use phoenix_core::{Fee, Message, Note};
 
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
@@ -61,16 +61,18 @@ impl<S: Store> TransferContract<S> {
     pub(crate) fn push_fee_crossover(
         &mut self,
         fee: Fee,
-        crossover: Option<Crossover>,
     ) -> Result<(), S::Error> {
         // TODO Get gas consumed
         // https://github.com/dusk-network/rusk/issues/195
         let gas_consumed = 1;
-        let remainder = fee.gen_remainder(gas_consumed);
+        if let Some(remainder) = fee
+            .try_into_remainder_note(gas_consumed)
+            .map_err(|_| InvalidEncoding.into())?
+        {
+            self.push_note(remainder)?;
+        }
 
-        self.push_note(remainder.into())?;
-
-        if let Some(crossover) = crossover {
+        if let Some(crossover) = self.var_crossover {
             Note::try_from((fee, crossover))
                 .map_err(|_| InvalidEncoding.into())
                 .and_then(|note| self.push_note(note))?;

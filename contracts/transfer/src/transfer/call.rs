@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use canonical::{ByteSource, Canon, InvalidEncoding, Store};
+use canonical::{Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
@@ -15,15 +15,19 @@ use phoenix_core::{Crossover, Fee, Message, Note};
 
 #[derive(Debug, Clone, Canon)]
 pub enum Call {
-    External {
-        contract: ContractId,
-        transaction: Transaction,
+    Execute {
+        anchor: BlsScalar,
+        nullifiers: Vec<BlsScalar>,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        notes: Vec<Note>,
+        spend_proof: Vec<u8>,
+        call: Option<(ContractId, Transaction)>,
     },
 
     SendToContractTransparent {
         address: BlsScalar,
         value: u64,
-        pk: PublicKey,
         spend_proof: Vec<u8>,
     },
 
@@ -37,7 +41,6 @@ pub enum Call {
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        crossover_pk: PublicKey,
         spend_proof: Vec<u8>,
     },
 
@@ -59,7 +62,27 @@ pub enum Call {
 }
 
 impl Call {
-    // Can be trivially converted to `Into` once issue #71 is solved
+    pub fn execute(
+        anchor: BlsScalar,
+        nullifiers: Vec<BlsScalar>,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        notes: Vec<Note>,
+        spend_proof: Vec<u8>,
+        call: Option<(ContractId, Transaction)>,
+    ) -> Self {
+        Self::Execute {
+            anchor,
+            nullifiers,
+            fee,
+            crossover,
+            notes,
+            spend_proof,
+            call,
+        }
+    }
+
+    // Can be converted to `TryInto` once issue #71 is solved
     fn to_transaction<S>(&self) -> Result<Transaction, S::Error>
     where
         S: Store,
@@ -72,76 +95,72 @@ impl Call {
         Transaction::from_canon(self, store)
     }
 
-    pub fn external<S>(
+    // TODO Check the ID of self
+    pub fn to_execute<S>(
+        &self,
         contract: ContractId,
-        transaction: Transaction,
-    ) -> Result<Transaction, S::Error>
+        anchor: BlsScalar,
+        nullifiers: Vec<BlsScalar>,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        notes: Vec<Note>,
+        spend_proof: Vec<u8>,
+    ) -> Result<Self, S::Error>
     where
         S: Store,
     {
-        let call = Self::External {
-            contract,
-            transaction,
-        };
+        // Prevents invalid recursion
+        if let Self::Execute { .. } = self {
+            return Err(InvalidEncoding.into());
+        }
 
-        call.to_transaction::<S>()
+        let tx = self.to_transaction::<S>()?;
+        let execute = Self::execute(
+            anchor,
+            nullifiers,
+            fee,
+            crossover,
+            notes,
+            spend_proof,
+            Some((contract, tx)),
+        );
+
+        Ok(execute)
     }
 
-    pub fn send_to_contract_transparent<S>(
+    pub fn send_to_contract_transparent(
         address: BlsScalar,
         value: u64,
-        pk: PublicKey,
         spend_proof: Vec<u8>,
-    ) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        let call = Self::SendToContractTransparent {
+    ) -> Self {
+        Self::SendToContractTransparent {
             address,
             value,
-            pk,
             spend_proof,
-        };
-
-        call.to_transaction::<S>()
+        }
     }
 
-    pub fn withdraw_from_transparent<S>(
-        address: BlsScalar,
-        note: Note,
-    ) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        let call = Self::WithdrawFromTransparent { address, note };
-
-        call.to_transaction::<S>()
+    pub fn withdraw_from_transparent(address: BlsScalar, note: Note) -> Self {
+        Self::WithdrawFromTransparent { address, note }
     }
 
-    pub fn send_to_contract_obfuscated<S>(
+    pub fn send_to_contract_obfuscated(
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
-        crossover_pk: PublicKey,
         spend_proof: Vec<u8>,
-    ) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        let call = Self::SendToContractObfuscated {
+    ) -> Self {
+        Self::SendToContractObfuscated {
             address,
             message,
             r,
             pk,
-            crossover_pk,
             spend_proof,
-        };
-
-        call.to_transaction::<S>()
+        }
     }
 
-    pub fn withdraw_from_obfuscated<S>(
+    pub fn withdraw_from_obfuscated(
         address: BlsScalar,
         message: Message,
         r: JubJubAffine,
@@ -149,11 +168,8 @@ impl Call {
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
-    ) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        let call = Self::WithdrawFromObfuscated {
+    ) -> Self {
+        Self::WithdrawFromObfuscated {
             address,
             message,
             r,
@@ -161,186 +177,76 @@ impl Call {
             note,
             input_value_commitment,
             spend_proof,
-        };
-
-        call.to_transaction::<S>()
-    }
-
-    pub fn withdraw_from_transparent_to_contract<S>(
-        from: BlsScalar,
-        to: BlsScalar,
-        value: u64,
-    ) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        let call = Self::WithdrawFromTransparentToContract { from, to, value };
-
-        call.to_transaction::<S>()
-    }
-}
-
-#[derive(Debug, Clone, Canon)]
-pub enum InternalCall {
-    None(Option<Crossover>),
-
-    External {
-        contract: ContractId,
-        transaction: Transaction,
-        crossover: Option<Crossover>,
-    },
-
-    SendToContractTransparent {
-        address: BlsScalar,
-        value: u64,
-        crossover: Crossover,
-        pk: PublicKey,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromTransparent {
-        address: BlsScalar,
-        note: Note,
-    },
-
-    SendToContractObfuscated {
-        address: BlsScalar,
-        message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
-        crossover: Crossover,
-        crossover_pk: PublicKey,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromObfuscated {
-        address: BlsScalar,
-        message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
-        note: Note,
-        input_value_commitment: JubJubAffine,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromTransparentToContract {
-        from: BlsScalar,
-        to: BlsScalar,
-        value: u64,
-    },
-}
-
-#[derive(Debug, Clone, Canon)]
-pub struct TransferExecute {
-    pub(crate) anchor: BlsScalar,
-    pub(crate) nullifiers: Vec<BlsScalar>,
-    pub(crate) fee: Fee,
-    pub(crate) crossover: Option<Crossover>,
-    pub(crate) notes: Vec<Note>,
-    pub(crate) spend_proof: Vec<u8>,
-    pub(crate) call: Option<Transaction>,
-}
-
-impl TransferExecute {
-    pub fn new(
-        anchor: BlsScalar,
-        nullifiers: Vec<BlsScalar>,
-        fee: Fee,
-        crossover: Option<Crossover>,
-        notes: Vec<Note>,
-        spend_proof: Vec<u8>,
-        call: Option<Transaction>,
-    ) -> Self {
-        Self {
-            anchor,
-            nullifiers,
-            fee,
-            crossover,
-            notes,
-            spend_proof,
-            call,
         }
     }
 
-    pub fn into_internal<S: Store>(self) -> Result<InternalCall, S::Error> {
-        let TransferExecute {
-            crossover, call, ..
-        } = self;
+    pub fn withdraw_from_transparent_to_contract(
+        from: BlsScalar,
+        to: BlsScalar,
+        value: u64,
+    ) -> Self {
+        Self::WithdrawFromTransparentToContract { from, to, value }
+    }
+}
 
-        let call: Option<Call> = match call {
-            Some(tx) => {
-                // FIXME Transact should implement `cast` by its own.
-                // https://github.com/dusk-network/rusk-vm/issues/158
-                //
-                // FIXME BytesSource should not require `store`
-                // https://github.com/dusk-network/canonical/issues/71
-                let store: &S =
-                    unsafe { (&() as *const ()).cast::<S>().as_ref().unwrap() };
+#[cfg(target_arch = "wasm32")]
+mod wasm {
+    use super::*;
+    use crate::TransferContract;
 
-                let mut source = ByteSource::new(tx.as_bytes(), store);
+    impl Call {
+        pub fn transact<S>(self, contract: &mut TransferContract<S>) -> bool
+        where
+            S: Store,
+        {
+            match self {
+                Call::Execute {
+                    anchor,
+                    nullifiers,
+                    fee,
+                    crossover,
+                    notes,
+                    spend_proof,
+                    call,
+                } => contract.execute(
+                    anchor,
+                    nullifiers,
+                    fee,
+                    crossover,
+                    notes,
+                    spend_proof,
+                    call,
+                ),
 
-                Some(Canon::<S>::read(&mut source)?)
-            }
-
-            None => None,
-        };
-
-        let call = match (crossover, call) {
-            (
-                crossover,
-                Some(Call::External {
-                    contract,
-                    transaction,
-                }),
-            ) => InternalCall::External {
-                contract,
-                transaction,
-                crossover,
-            },
-
-            (
-                Some(crossover),
-                Some(Call::SendToContractTransparent {
+                Call::SendToContractTransparent {
                     address,
                     value,
-                    pk,
                     spend_proof,
-                }),
-            ) => InternalCall::SendToContractTransparent {
-                address,
-                value,
-                crossover,
-                pk,
-                spend_proof,
-            },
+                } => contract.send_to_contract_transparent(
+                    address,
+                    value,
+                    spend_proof,
+                ),
 
-            (None, Some(Call::WithdrawFromTransparent { address, note })) => {
-                InternalCall::WithdrawFromTransparent { address, note }
-            }
+                Call::WithdrawFromTransparent { address, note } => {
+                    contract.withdraw_from_transparent(address, note)
+                }
 
-            (
-                Some(crossover),
-                Some(Call::SendToContractObfuscated {
+                Call::SendToContractObfuscated {
                     address,
                     message,
                     r,
                     pk,
-                    crossover_pk,
                     spend_proof,
-                }),
-            ) => InternalCall::SendToContractObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                crossover,
-                crossover_pk,
-                spend_proof,
-            },
+                } => contract.send_to_contract_obfuscated(
+                    address,
+                    message,
+                    r,
+                    pk,
+                    spend_proof,
+                ),
 
-            (
-                None,
-                Some(Call::WithdrawFromObfuscated {
+                Call::WithdrawFromObfuscated {
                     address,
                     message,
                     r,
@@ -348,66 +254,21 @@ impl TransferExecute {
                     note,
                     input_value_commitment,
                     spend_proof,
-                }),
-            ) => InternalCall::WithdrawFromObfuscated {
-                address,
-                message,
-                r,
-                pk,
-                note,
-                input_value_commitment,
-                spend_proof,
-            },
+                } => contract.withdraw_from_obfuscated(
+                    address,
+                    message,
+                    r,
+                    pk,
+                    note,
+                    input_value_commitment,
+                    spend_proof,
+                ),
 
-            (
-                None,
-                Some(Call::WithdrawFromTransparentToContract {
-                    from,
-                    to,
-                    value,
-                }),
-            ) => InternalCall::WithdrawFromTransparentToContract {
-                from,
-                to,
-                value,
-            },
-
-            (_, None) => InternalCall::None(crossover),
-
-            _ => return Err(InvalidEncoding.into()),
-        };
-
-        Ok(call)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct InternalCallResult {
-    pub status: bool,
-    pub crossover: Option<Crossover>,
-}
-
-#[cfg(target_arch = "wasm32")]
-mod wasm {
-    use super::*;
-
-    impl InternalCallResult {
-        pub const fn error() -> Self {
-            Self {
-                status: false,
-                crossover: None,
+                Call::WithdrawFromTransparentToContract { from, to, value } => {
+                    contract
+                        .withdraw_from_transparent_to_contract(from, to, value)
+                }
             }
-        }
-
-        pub const fn success(crossover: Option<Crossover>) -> Self {
-            Self {
-                status: true,
-                crossover,
-            }
-        }
-
-        pub const fn is_success(&self) -> bool {
-            self.status
         }
     }
 }
