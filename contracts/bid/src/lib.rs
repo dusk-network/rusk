@@ -24,9 +24,9 @@ pub(crate) mod map;
 pub(crate) mod tree;
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) mod hosted;
-#[cfg(target_arch = "wasm32")]
 pub(crate) mod fake_abi;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod hosted;
 
 pub use leaf::BidLeaf;
 
@@ -137,4 +137,3 @@ impl<S: Store> Contract<S> {
         &mut self.key_idx_map
     }
 }
-

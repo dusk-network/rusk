@@ -52,11 +52,11 @@ impl<S: Store> Contract<S> {
         }
 
         // Obtain the current block_height.
-        let block_height  = dusk_abi::block_height();
+        let block_height = dusk_abi::block_height();
         // Compute maturity & expiration periods
         let expiration = block_height + MATURITY_PERIOD + EXPIRATION_PERIOD;
         let eligibility = block_height + MATURITY_PERIOD;
-        
+
         // Mutate the Bid and add the correct timestamps.
         bid.set_eligibility(eligibility);
         // FIXME: This should not be needed. We should have a better API in blindbid.
@@ -66,30 +66,32 @@ impl<S: Store> Contract<S> {
         assert!(bid.expiration() == 0u64);
         bid.extend_expiration(expiration);
 
-        
         // Panic and stop the execution if the same one-time-key tries to
         // bid more than one time.
         let idx = if self
-            .key_idx_map() 
+            .key_idx_map()
             // If no entries are found for this PK, add it to the map and the
             // tree
-            .get(*bid.stealth_address().pk_r()).unwrap().is_none(){
-                // Append Bid to the tree and obtain the position of it.
-                let idx = self.tree_mut().push(BidLeaf(bid));
-                // Link the One-time PK to the idx in the Map
-                // Since we checked on the `get` call that the value was not
-                // inside, there's no need to check that this
-                // returns `Ok(None)`. So we just unwrap
-                // the `Result` and keep the `Option` untouched.
-                self.key_idx_map_mut()
-                    .insert(*bid.stealth_address().pk_r(), idx)
-                    .unwrap();
-                idx
-            } else {
-                err_flag = true;
-                // Return whatever
-                usize::MAX
-            };
+            .get(*bid.stealth_address().pk_r())
+            .unwrap()
+            .is_none()
+        {
+            // Append Bid to the tree and obtain the position of it.
+            let idx = self.tree_mut().push(BidLeaf(bid));
+            // Link the One-time PK to the idx in the Map
+            // Since we checked on the `get` call that the value was not
+            // inside, there's no need to check that this
+            // returns `Ok(None)`. So we just unwrap
+            // the `Result` and keep the `Option` untouched.
+            self.key_idx_map_mut()
+                .insert(*bid.stealth_address().pk_r(), idx)
+                .unwrap();
+            idx
+        } else {
+            err_flag = true;
+            // Return whatever
+            usize::MAX
+        };
 
         // TODO: Inter-contract call
         (err_flag, idx)
