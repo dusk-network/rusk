@@ -23,6 +23,11 @@ pub(crate) mod leaf;
 pub(crate) mod map;
 pub(crate) mod tree;
 
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod hosted;
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod fake_abi;
+
 pub use leaf::BidLeaf;
 
 use canonical::{Canon, Sink, Source, Store};
@@ -32,15 +37,18 @@ use tree::BidTree;
 /// `VerifierKey` used by the `BidCorrectnessCircuit` to verify a
 /// Bid correctness `Proof` using the PLONK proving systyem.
 pub const BID_CORRECTNESS_VK: &[u8] = core::include_bytes!(
-    "../c0e0efc4fc56af4904d52e381eaf5c7090e91e217bc390997a119140dc672ff2.vk"
+    "../target/verifier-keys/c0e0efc4fc56af4904d52e381eaf5c7090e91e217bc390997a119140dc672ff2.vk"
 );
 
 /// OPCODEs for each contract method
-pub(crate) mod ops {
+pub mod ops {
     // Transactions
-    pub(crate) const BID: u16 = 0x01;
-    pub(crate) const WITHDRAW: u16 = 0x02;
-    pub(crate) const EXTEND_BID: u16 = 0x03;
+    /// Bid fn OPCODE.
+    pub const BID: u8 = 0x01;
+    /// WITHDRAW Bid OPCODE
+    pub const WITHDRAW: u8 = 0x02;
+    /// EXTEND Bid OPCODE
+    pub const EXTEND_BID: u8 = 0x03;
 }
 
 /// Constants related to the Bid Contract logic.
@@ -130,8 +138,3 @@ impl<S: Store> Contract<S> {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) mod host;
-
-#[cfg(target_arch = "wasm32")]
-pub(crate) mod hosted;

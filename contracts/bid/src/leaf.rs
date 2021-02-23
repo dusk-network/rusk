@@ -42,7 +42,7 @@ impl BidLeaf {
 
 impl Borrow<u64> for BidLeaf {
     fn borrow(&self) -> &u64 {
-        &self.0.pos()
+        &self.0.borrow()
     }
 }
 
@@ -72,7 +72,7 @@ where
 
     #[cfg(target_arch = "wasm32")]
     fn poseidon_hash(&self) -> BlsScalar {
-        dusk_abi::poseidon_hash(self.0.as_hash_inputs().into())
+        rusk_abi::hosted::poseidon_hash(self.0.as_hash_inputs().into())
     }
 
     fn pos(&self) -> u64 {
