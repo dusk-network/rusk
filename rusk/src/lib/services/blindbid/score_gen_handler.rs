@@ -31,6 +31,8 @@ where
         Self { request }
     }
 
+    #[allow(unreachable_code)]
+    #[allow(unused_variables)]
     fn handle_request(
         &self,
     ) -> Result<Response<GenerateScoreResponse>, Status> {
