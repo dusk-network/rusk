@@ -207,19 +207,25 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     hash == CRS_17
 }
 
-pub fn keys_for(crate_name: &str) -> Keys {
-    use cargo_lock::{Lockfile, Package};
-    // FIXME: This will only work for workspaces.
-    let mut lockfile = env::current_dir().expect("Failed to get current dir");
-    loop {
-        lockfile.push("Cargo.lock");
-        if lockfile.as_path().exists() {
-            break;
-        }
-        if !lockfile.pop() || !lockfile.pop() {
+pub fn get_lockfile_path() -> PathBuf {
+    let mut dir = env::current_dir().expect("Failed to get current dir");
+    let mut lockfile = dir.join("Cargo.lock");
+
+    while !lockfile.exists() {
+        if !dir.pop() {
             panic!("Failed to fetch Cargo.lock from upper dir!");
         }
+
+        lockfile = dir.join("Cargo.lock");
     }
+
+    lockfile
+}
+
+pub fn keys_for(crate_name: &str) -> Keys {
+    use cargo_lock::{Lockfile, Package};
+
+    let lockfile = get_lockfile_path();
     let lockfile = Lockfile::load(lockfile).expect("Cargo.lock not found!");
 
     let packages = lockfile
