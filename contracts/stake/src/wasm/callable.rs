@@ -4,12 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Contract, Counter, Key, Stake};
+use crate::stake::{Counter, Key, Stake, StakeContract};
 use alloc::vec::Vec;
 use canonical::Store;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{Signature, APK};
+use dusk_bytes::Serializable;
 use phoenix_core::Note;
+use transfer_contract::Call as TransferCall;
 
 /// TODO: Still waiting for values from the research side.
 /// t_m in the specs
@@ -29,20 +31,21 @@ extern "C" {
     fn verify_bls_sig(pk: &u8, sig: &u8, msg: &u8) -> i32;
 }
 
-impl<S: Store> Contract<S> {
+impl<S: Store> StakeContract<S> {
     pub fn stake(
         &mut self,
         value: u64,
         public_key: APK,
-        _spending_proof: Vec<u8>,
+        spending_proof: Vec<u8>,
     ) -> (Counter, bool) {
         if value > MAXIMUM_STAKE || value < MINIMUM_STAKE {
             return (Counter::default(), false);
         }
 
         // Compute maturity & expiration periods
-        let eligibility = block_height + MATURITY_PERIOD;
-        let expiration = block_height + MATURITY_PERIOD + EXPIRATION_PERIOD;
+        let eligibility = dusk_abi::block_height() + MATURITY_PERIOD;
+        let expiration =
+            dusk_abi::block_height() + MATURITY_PERIOD + EXPIRATION_PERIOD;
         // Generate the Stake instance
         let stake = Stake {
             value,
@@ -80,9 +83,19 @@ impl<S: Store> Contract<S> {
 
         self.counter.increment();
 
-        // TODO: Inter-contract call
+        let transaction = match TransferCall::send_to_contract_transparent(
+            dusk_abi::caller(),
+            value,
+            spending_proof,
+        ) {
+            Ok(t) => t,
+            _ => return (w_i, false),
+        };
 
-        (w_i, true)
+        (
+            w_i,
+            dusk_abi::transact_raw(&self.transfer_contract, &transaction)?,
+        )
     }
 
     pub fn extend_stake(
@@ -97,7 +110,7 @@ impl<S: Store> Contract<S> {
         let mut stake: Stake;
 
         match self.stake_mapping.get(&k) {
-            Ok(Some(s)) => stake = s,
+            Ok(Some(s)) => stake = *s,
             _ => {
                 return false;
             }
@@ -129,7 +142,6 @@ impl<S: Store> Contract<S> {
 
     pub fn withdraw_stake(
         &mut self,
-        block_height: u64,
         w_i: Counter,
         pk: APK,
         sig: Signature,
@@ -139,7 +151,7 @@ impl<S: Store> Contract<S> {
         let stake: Stake;
 
         match self.stake_mapping.get(&k) {
-            Ok(Some(s)) => stake = s,
+            Ok(Some(s)) => stake = *s,
             _ => {
                 return false;
             }
@@ -148,7 +160,7 @@ impl<S: Store> Contract<S> {
         let t_e = stake.expiration.clone();
 
         // Make sure that the stake has expired.
-        if t_e >= block_height + COOLDOWN_PERIOD as u64 {
+        if t_e >= dusk_abi::block_height() + COOLDOWN_PERIOD as u64 {
             return false;
         }
 
@@ -165,10 +177,17 @@ impl<S: Store> Contract<S> {
             return false;
         }
 
-        match self.stake_mapping.delete(&k) {
+        match self.stake_mapping.remove(&k) {
             Ok(Some(_)) => true,
             _ => false,
         }
+
+        // Withdraw note
+        let transaction = TransferCall::withdraw_from_contract_transparent(
+            dusk_abi::caller(),
+            note,
+        )?;
+        dusk_abi::transact_raw(&self.transfer_contract, &transaction)?
     }
 
     pub fn slash(
@@ -218,7 +237,38 @@ impl<S: Store> Contract<S> {
             return false;
         }
 
-        // TODO: it's not yet specified what happens after this point.
+        if let Ok(v) = note.value(None) {
+            if v != 5000e10 {
+                return false;
+            }
+
+            let transaction = TransferCall::withdraw_from_contract_transparent(
+                dusk_abi::caller(),
+                note,
+            )?;
+
+            if !dusk_abi::transact_raw(&self.transfer_contract, &transaction)? {
+                return false;
+            }
+
+            let stake = self.find_stake(pk);
+
+            let dest = match dusk_abi::block_height() {
+                v if v < 6311520 => self.arbitration_contract,
+                _ => ContractId::default(),
+            };
+
+            let transaction =
+                TransferCall::withdraw_from_transparent_to_contract(
+                    stake.value - 5000e10,
+                    dest,
+                    stake.value - 5000e10,
+                )?;
+
+            if !dusk_abi::transact_raw(&self.transfer_contract, &transaction)? {
+                return false;
+            }
+        }
 
         true
     }

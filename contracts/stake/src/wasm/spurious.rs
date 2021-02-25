@@ -4,26 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Contract, Counter, Stake};
+use crate::stake::{Counter, Stake, StakeContract};
 use canonical::Store;
 use dusk_bls12_381_sign::APK;
 
-impl<S: Store> Contract<S> {
+impl<S: Store> StakeContract<S> {
     pub fn find_stake(
         &self,
         w_i: Counter,
         pk: APK,
     ) -> Result<Option<Stake>, S::Error> {
-        let key = self.stake_identifier_set.get(w_i)?;
-        if key.is_none() {
-            return Ok(None);
-        }
+        let key = match self.stake_identifier_set.get(&w_i) {
+            Ok(Some(k)) => k,
+            Err(e) => return Err(e),
+            _ => return Ok(None),
+        };
 
-        let key = key.unwrap();
         if key.pk == pk {
-            return self.stake_mapping.get(&key);
+            match self.stake_mapping.get(&key) {
+                Ok(Some(stake)) => return Ok(Some(*stake)),
+                Err(e) => return Err(e),
+                _ => return Ok(None),
+            }
         }
 
-        return Ok(None);
+        Ok(None)
     }
 }

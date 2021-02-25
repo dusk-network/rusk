@@ -4,10 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::Counter;
 use alloc::vec::Vec;
 use canonical::{ByteSource, Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
 use dusk_abi::Transaction;
+use dusk_bls12_381::BlsScalar;
+use dusk_bls12_381_sign::{Signature, APK};
 use phoenix_core::Note;
 
 #[derive(Debug, Clone, Canon)]
@@ -44,7 +47,7 @@ pub enum Call {
 }
 
 impl Call {
-    fn to_transaction<S>(&self) -> result<Transaction, S::Error>
+    fn to_transaction<S>(&self) -> Result<Transaction, S::Error>
     where
         S: Store,
     {

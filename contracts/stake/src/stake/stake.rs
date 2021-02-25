@@ -10,7 +10,7 @@ use dusk_bls12_381_sign::APK;
 
 /// Stake represents a stake transaction performed in the Dusk network, and
 /// contains info on it's size, sender, eligibility time, and expiration time.
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Default, Clone, Copy, Canon)]
 pub struct Stake {
     /// The amount of DUSK staked by the provisioner.
     pub value: u64,

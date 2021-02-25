@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{ops, StakeContract};
+use crate::{
+    ops,
+    stake::{Call, StakeContract},
+};
 
 use canonical::{
     BridgeStore as BridgeStoreCanon, ByteSink, ByteSource, Canon, Id32, Store,
@@ -13,7 +16,7 @@ use dusk_abi::{ContractState, ReturnValue};
 
 const PAGE_SIZE: usize = 1024 * 8;
 
-type BridgeStore = BridgeStore<Id32>;
+type BridgeStore = BridgeStoreCanon<Id32>;
 
 #[no_mangle]
 fn q(bytes: &mut [u8; PAGE_SIZE]) {
@@ -72,7 +75,7 @@ fn transaction(
             public_key,
             spending_proof,
         } => {
-            let ret = contract.stake(value, public_key, spending_proof)?;
+            let ret = contract.stake(value, public_key, spending_proof);
             ReturnValue::from_canon(&ret, &bridge)?
         }
         Call::ExtendStake {
@@ -80,7 +83,7 @@ fn transaction(
             public_key,
             sig,
         } => {
-            let ret = contract.extend_stake(w_i, public_key, sig)?;
+            let ret = contract.extend_stake(w_i, public_key, sig);
             ReturnValue::from_canon(&ret, &bridge)?
         }
         Call::WithdrawStake {
@@ -89,7 +92,7 @@ fn transaction(
             sig,
             note,
         } => {
-            let ret = contract.withdraw_stake(w_i, public_key, sig, note)?;
+            let ret = contract.withdraw_stake(w_i, public_key, sig, note);
             ReturnValue::from_canon(&ret, &bridge)?
         }
         Call::Slash {
@@ -111,7 +114,7 @@ fn transaction(
                 signature_1,
                 signature_2,
                 note,
-            )?;
+            );
             ReturnValue::from_canon(&ret, &bridge)?
         }
         // TODO Define error strategy
