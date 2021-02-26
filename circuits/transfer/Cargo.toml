@@ -1,6 +1,6 @@
 [package]
 name = "transfer-circuits"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Bounce23 <luke@dusk.network>", "Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 

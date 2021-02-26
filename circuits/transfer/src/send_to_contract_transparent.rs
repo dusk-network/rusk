@@ -113,6 +113,57 @@ impl SendToContractTransparentCircuit {
     }
 }
 
+impl From<&[PublicInput]> for SendToContractTransparentCircuit {
+    // TODO
+    // This should be removed after the `Circuit` trait of PLONK is refactored.
+    //
+    // Also, this implementation should be `TryFrom` - this is only a temporary
+    // workaround to allow host verification. The invalid public points will
+    // just be ignored.
+    //
+    // This implementation intentionally don't benefit from `Default` because
+    // both need to be removed in the short term and its better if they are
+    // completely decoupled
+    fn from(pi: &[PublicInput]) -> Self {
+        use std::mem;
+
+        // TODO
+        // The pi_positions is expected to be reconstructed inside the
+        // `Circuit::gadget` function This will change as soon as
+        // `Circuit` is refactored
+        let pi_positions = vec![];
+
+        let blinding_factor = Default::default();
+        let signature = unsafe { mem::zeroed() };
+
+        // Public data
+        let mut value_commitment = Default::default();
+        let mut pk = Default::default();
+        let mut value = Default::default();
+
+        pi.iter().enumerate().for_each(|(i, p)| match (i, p) {
+            (0, PublicInput::AffinePoint(p, _, _)) => {
+                value_commitment = (*p).into()
+            }
+
+            (1, PublicInput::AffinePoint(p, _, _)) => pk = (*p).into(),
+
+            (2, PublicInput::BlsScalar(s, _)) => value = *s,
+
+            _ => (),
+        });
+
+        Self {
+            pi_positions,
+            blinding_factor,
+            signature,
+            value_commitment,
+            pk,
+            value,
+        }
+    }
+}
+
 impl Circuit<'_> for SendToContractTransparentCircuit {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
         let mut pi = vec![];

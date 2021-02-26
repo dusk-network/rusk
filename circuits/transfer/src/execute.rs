@@ -47,6 +47,24 @@ pub struct ExecuteCircuit<const DEPTH: usize, const CAPACITY: usize> {
     pub tx_hash: BlsScalar,
 }
 
+impl<const DEPTH: usize, const CAPACITY: usize> From<&[PublicInput]>
+    for ExecuteCircuit<DEPTH, CAPACITY>
+{
+    // TODO
+    // This should be removed after the `Circuit` trait of PLONK is refactored.
+    //
+    // Also, this implementation should be `TryFrom` - this is only a temporary
+    // workaround to allow host verification. The invalid public points will
+    // just be ignored.
+    //
+    // This implementation intentionally don't benefit from `Default` because
+    // both need to be removed in the short term and its better if they are
+    // completely decoupled
+    fn from(_pi: &[PublicInput]) -> Self {
+        todo!()
+    }
+}
+
 impl<const DEPTH: usize, const CAPACITY: usize>
     ExecuteCircuit<DEPTH, CAPACITY>
 {

@@ -36,6 +36,86 @@ pub struct WithdrawFromObfuscatedCircuit {
     output_value_commitment: JubJubExtended,
 }
 
+impl From<&[PublicInput]> for WithdrawFromObfuscatedCircuit {
+    // TODO
+    // This should be removed after the `Circuit` trait of PLONK is refactored.
+    //
+    // Also, this implementation should be `TryFrom` - this is only a temporary
+    // workaround to allow host verification. The invalid public points will
+    // just be ignored.
+    //
+    // This implementation intentionally don't benefit from `Default` because
+    // both need to be removed in the short term and its better if they are
+    // completely decoupled
+    fn from(pi: &[PublicInput]) -> Self {
+        // TODO
+        // The pi_positions is expected to be reconstructed inside the
+        // `Circuit::gadget` function This will change as soon as
+        // `Circuit` is refactored
+        let pi_positions = vec![];
+
+        let input_value = Default::default();
+        let input_blinding_factor = Default::default();
+        let change_r = Default::default();
+        let change_value = Default::default();
+        let change_blinding_factor = Default::default();
+        let output_value = Default::default();
+        let output_blinding_factor = Default::default();
+
+        // Public data
+        let mut input_value_commitment = Default::default();
+        let mut change_value_commitment = Default::default();
+        let mut change_nonce = Default::default();
+        let mut change_pk = Default::default();
+        let mut change_cipher: [BlsScalar; PoseidonCipher::cipher_size()] =
+            Default::default();
+        let mut output_value_commitment = Default::default();
+
+        pi.iter().enumerate().for_each(|(i, p)| match (i, p) {
+            (0, PublicInput::AffinePoint(p, _, _)) => {
+                input_value_commitment = (*p).into()
+            }
+
+            (1, PublicInput::AffinePoint(p, _, _)) => {
+                change_value_commitment = (*p).into()
+            }
+
+            (2, PublicInput::JubJubScalar(s, _)) => change_nonce = *s,
+
+            (3, PublicInput::AffinePoint(p, _, _)) => change_pk = (*p).into(),
+
+            (4, PublicInput::BlsScalar(s, _)) => change_cipher[0] = *s,
+
+            (5, PublicInput::BlsScalar(s, _)) => change_cipher[1] = *s,
+
+            (6, PublicInput::BlsScalar(s, _)) => change_cipher[2] = *s,
+
+            (7, PublicInput::AffinePoint(p, _, _)) => {
+                output_value_commitment = (*p).into()
+            }
+
+            _ => (),
+        });
+
+        Self {
+            pi_positions,
+            input_value,
+            input_blinding_factor,
+            change_r,
+            change_value,
+            change_blinding_factor,
+            output_value,
+            output_blinding_factor,
+            input_value_commitment,
+            change_value_commitment,
+            change_nonce,
+            change_cipher,
+            change_pk,
+            output_value_commitment,
+        }
+    }
+}
+
 impl WithdrawFromObfuscatedCircuit {
     pub const fn rusk_keys_id() -> &'static str {
         "transfer-withdraw-from-obfuscated"
