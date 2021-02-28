@@ -42,13 +42,13 @@ fn transaction(
             let correctness_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             // Call bid contract fn
-            let (err_flag, idx) =
+            let success =
                 slf.bid(bid, correctness_proof, spending_proof);
             let mut sink = ByteSink::new(&mut bytes[..], &store);
             // return new state
             Canon::<BS>::write(&slf, &mut sink)?;
             // return result
-            Canon::<BS>::write(&(err_flag, (idx as u64)), &mut sink)
+            Canon::<BS>::write(&success, &mut sink)
         }
         ops::WITHDRAW => {
             // Read host-sent args

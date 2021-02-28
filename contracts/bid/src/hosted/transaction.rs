@@ -34,9 +34,9 @@ impl<S: Store> Contract<S> {
         mut bid: Bid,
         correctness_proof: Vec<u8>,
         _spending_proof: Vec<u8>,
-    ) -> (bool, usize) {
-        // Setup error flag to false
-        let mut err_flag = false;
+    ) -> bool {
+        // Setup sucess var to true
+        let mut success = true;
 
         // Verify proof of Correctness of the Bid.
         if !fake_abi::verify_proof(
@@ -47,8 +47,7 @@ impl<S: Store> Contract<S> {
                 .to_bytes()
                 .to_vec(),
         ) {
-            err_flag = true;
-            return (err_flag, usize::MAX);
+            return false;
         }
 
         // Obtain the current block_height.
@@ -68,7 +67,7 @@ impl<S: Store> Contract<S> {
 
         // Panic and stop the execution if the same one-time-key tries to
         // bid more than one time.
-        let idx = if self
+        if self
             .key_idx_map()
             // If no entries are found for this PK, add it to the map and the
             // tree
@@ -86,15 +85,12 @@ impl<S: Store> Contract<S> {
             self.key_idx_map_mut()
                 .insert(*bid.stealth_address().pk_r(), idx)
                 .unwrap();
-            idx
         } else {
-            err_flag = true;
-            // Return whatever
-            usize::MAX
+            success = false;
         };
 
         // TODO: Inter-contract call
-        (err_flag, idx)
+        success
     }
 
     // TODO: Check wether we allow to extend long-time expired Bids.
@@ -105,26 +101,26 @@ impl<S: Store> Contract<S> {
     /// consensus process with the same `Bid` and therefore the same
     /// One-time identity.
     pub fn extend_bid(&mut self, sig: Signature, pk: PublicKey) -> bool {
-        // Setup error flag to false
-        let mut err_flag = false;
+        // Setup success to true
+        let mut success = true;
         // Check wether there's an entry on the map for the pk.
         let idx = match self.key_idx_map().get(pk) {
             // If no entries are found for this PK it's just an err since there
             // are no bids related to this PK to be extended.
             Ok(None) => {
-                err_flag = true;
+                success = false;
                 usize::MAX
             }
             Ok(Some(idx)) => *idx as usize,
             Err(_) => {
-                err_flag = true;
+                success = false;
                 usize::MAX
             }
         };
 
         // In case there was an error, we simply return
-        if err_flag && idx == usize::MAX {
-            return err_flag;
+        if !success && idx == usize::MAX {
+            return false;
         }
 
         // Verify the signature by getting `t_e` from the Bid and calling the
@@ -142,14 +138,13 @@ impl<S: Store> Contract<S> {
             sig,
             BlsScalar::from(bid.0.expiration()),
         ) {
-            err_flag = true;
-            return err_flag;
+            return false;
         }
 
         // Assuming now that the result of the verification is true, we now
         // should update the expiration of the Bid by `EXPIRATION_PERIOD`.
         bid.0.extend_expiration(EXPIRATION_PERIOD);
-        err_flag
+        success
     }
 
     /// This function allows to the contract caller to withdraw it's `Bid` and
@@ -170,26 +165,26 @@ impl<S: Store> Contract<S> {
         _spend_proof: Vec<u8>,
         block_height: u64,
     ) -> bool {
-        // Setup error flag to false
-        let mut err_flag = false;
+        // Setup success to true
+        let mut success = true;
         // Check wether there's an entry on the map for the pk.
         let idx = match self.key_idx_map().get(pk) {
             // If no entries are found for this PK it's just an err since there
             // are no bids related to this PK to be extended.
             Ok(None) => {
-                err_flag = true;
+                success = false;
                 usize::MAX
             }
             Ok(Some(idx)) => *idx as usize,
             Err(_) => {
-                err_flag = true;
+                success = false;
                 usize::MAX
             }
         };
 
         // In case there was an error, we simply return
-        if err_flag && idx == usize::MAX {
-            return err_flag;
+        if !success && idx == usize::MAX {
+            return false;
         }
 
         // Fetch bid info from the tree. Note that we can safely unwrap here due
@@ -208,8 +203,7 @@ impl<S: Store> Contract<S> {
                 sig,
                 BlsScalar::from(bid.0.expiration()),
             ) {
-                err_flag = true;
-                return err_flag;
+                return false;
             };
             // Inter contract call
 
@@ -225,10 +219,9 @@ impl<S: Store> Contract<S> {
             // TODO: Zeroize in the tree the leaf that corresponds to the idx
             // linked to `pk` in the map.
             // See: https://github.com/dusk-network/rusk/issues/164
-            err_flag
+            true
         } else {
-            err_flag = true;
-            err_flag
+            false
         }
     }
 }
