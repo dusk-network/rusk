@@ -77,6 +77,84 @@ impl Default for SendToContractObfuscatedCircuit {
     }
 }
 
+impl From<&[PublicInput]> for SendToContractObfuscatedCircuit {
+    // TODO
+    // This should be removed after the `Circuit` trait of PLONK is refactored.
+    //
+    // Also, this implementation should be `TryFrom` - this is only a temporary
+    // workaround to allow host verification. The invalid public points will
+    // just be ignored.
+    //
+    // This implementation intentionally don't benefit from `Default` because
+    // both need to be removed in the short term and its better if they are
+    // completely decoupled
+    fn from(pi: &[PublicInput]) -> Self {
+        use std::mem;
+
+        // TODO
+        // The pi_positions is expected to be reconstructed inside the
+        // `Circuit::gadget` function This will change as soon as
+        // `Circuit` is refactored
+        let pi_positions = vec![];
+
+        let signature = unsafe { mem::zeroed() };
+        let value = Default::default();
+        let blinding_factor = Default::default();
+        let message_value = Default::default();
+        let message_blinding_factor = Default::default();
+        let message_r = Default::default();
+
+        // Public data
+        let mut value_commitment = Default::default();
+        let mut pk = Default::default();
+        let mut message_value_commitment = Default::default();
+        let mut message_nonce = Default::default();
+        let mut message_pk = Default::default();
+        let mut message_cipher: [BlsScalar; PoseidonCipher::cipher_size()] =
+            Default::default();
+
+        pi.iter().enumerate().for_each(|(i, p)| match (i, p) {
+            (0, PublicInput::AffinePoint(p, _, _)) => {
+                value_commitment = (*p).into()
+            }
+
+            (1, PublicInput::AffinePoint(p, _, _)) => pk = (*p).into(),
+
+            (2, PublicInput::AffinePoint(p, _, _)) => {
+                message_value_commitment = (*p).into()
+            }
+
+            (3, PublicInput::JubJubScalar(s, _)) => message_nonce = *s,
+
+            (4, PublicInput::AffinePoint(p, _, _)) => message_pk = (*p).into(),
+
+            (5, PublicInput::BlsScalar(s, _)) => message_cipher[0] = *s,
+
+            (6, PublicInput::BlsScalar(s, _)) => message_cipher[1] = *s,
+
+            (7, PublicInput::BlsScalar(s, _)) => message_cipher[2] = *s,
+
+            _ => (),
+        });
+
+        Self {
+            pi_positions,
+            signature,
+            value,
+            blinding_factor,
+            message_value,
+            message_blinding_factor,
+            message_r,
+            value_commitment,
+            message_value_commitment,
+            message_nonce,
+            message_cipher,
+            pk,
+            message_pk,
+        }
+    }
+}
+
 impl SendToContractObfuscatedCircuit {
     pub const fn rusk_keys_id() -> &'static str {
         "transfer-send-to-contract-obfuscated"

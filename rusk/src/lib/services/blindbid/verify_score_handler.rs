@@ -29,6 +29,8 @@ where
         Self { request }
     }
 
+    #[allow(unreachable_code)]
+    #[allow(unused_variables)]
     fn handle_request(&self) -> Result<Response<VerifyScoreResponse>, Status> {
         // Get the optional parameters from the request.
         let (proof, score, seed, prover_id) =

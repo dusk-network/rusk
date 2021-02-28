@@ -7,9 +7,9 @@
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
 use std::fs::{self, read, remove_file, write, File};
-use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
+use std::{env, io};
 use tracing::info;
 
 static CRS_17: &str =
@@ -207,11 +207,26 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     hash == CRS_17
 }
 
+pub fn get_lockfile_path() -> PathBuf {
+    let mut dir = env::current_dir().expect("Failed to get current dir");
+    let mut lockfile = dir.join("Cargo.lock");
+
+    while !lockfile.exists() {
+        if !dir.pop() {
+            panic!("Failed to fetch Cargo.lock from upper dir!");
+        }
+
+        lockfile = dir.join("Cargo.lock");
+    }
+
+    lockfile
+}
+
 pub fn keys_for(crate_name: &str) -> Keys {
     use cargo_lock::{Lockfile, Package};
-    // FIXME: This will only work for workspaces.
-    let lockfile =
-        Lockfile::load("./../Cargo.lock").expect("Cargo.lock should exists");
+
+    let lockfile = get_lockfile_path();
+    let lockfile = Lockfile::load(lockfile).expect("Cargo.lock not found!");
 
     let packages = lockfile
         .packages
