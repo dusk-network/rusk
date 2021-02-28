@@ -25,6 +25,8 @@ pub struct RuskModule<S> {
 impl<S> RuskModule<S> {
     #[doc(hidden)]
     pub const POSEIDON_HASH: u8 = 0;
+    #[doc(hidden)]
+    pub const VERIFY_SCHNORR_SIGN: u8 = 2;
 }
 
 impl<S> Module for RuskModule<S> {

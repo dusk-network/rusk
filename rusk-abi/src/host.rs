@@ -10,6 +10,8 @@ use alloc::vec::Vec;
 use canonical::{ByteSource, Canon, Store};
 use dusk_abi::{HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
+use dusk_pki::PublicKey;
+use schnorr::Signature;
 
 use crate::RuskModule;
 
@@ -35,6 +37,14 @@ where
             Self::POSEIDON_HASH => {
                 let scalars: Vec<BlsScalar> = Canon::<S>::read(&mut source)?;
                 let ret = dusk_poseidon::sponge::hash(&scalars);
+
+                ReturnValue::from_canon(&ret, &self.store)
+            }
+            Self::VERIFY_SCHNORR_SIGN => {
+                let sign: Signature = Canon::<S>::read(&mut source)?;
+                let pk: PublicKey = Canon::<S>::read(&mut source)?;
+                let message: BlsScalar = Canon::<S>::read(&mut source)?;
+                let ret = sign.verify(&pk, message);
 
                 ReturnValue::from_canon(&ret, &self.store)
             }

@@ -12,6 +12,7 @@ use canonical_derive::Canon;
 
 // query ids
 pub const HASH: u8 = 0;
+pub const SCHNORR_SIGNATURE: u8 = 2;
 
 // transaction ids
 pub const SOMETHING: u8 = 0;
@@ -35,6 +36,8 @@ mod hosted {
     use dusk_abi::ReturnValue;
 
     use dusk_bls12_381::BlsScalar;
+    use dusk_pki::PublicKey;
+    use schnorr::Signature;
 
     const PAGE_SIZE: usize = 1024 * 4;
 
@@ -43,6 +46,15 @@ mod hosted {
     impl HostFnTest {
         pub fn hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
             rusk_abi::poseidon_hash(scalars)
+        }
+
+        pub fn schnorr_signature(
+            &self,
+            sig: Signature,
+            pk: PublicKey,
+            message: BlsScalar,
+        ) -> bool {
+            rusk_abi::verify_schnorr_sign(sig, pk, message)
         }
     }
 
@@ -73,6 +85,25 @@ mod hosted {
 
                 r
             }
+            SCHNORR_SIGNATURE => {
+                let sig: Signature = Canon::<BS>::read(&mut source)?;
+                let pk: PublicKey = Canon::<BS>::read(&mut source)?;
+                let message: BlsScalar = Canon::<BS>::read(&mut source)?;
+
+                let ret = slf.schnorr_signature(sig, pk, message);
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+
+                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+
+                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                };
+
+                r
+            }
+
             _ => panic!(""),
         }
     }
