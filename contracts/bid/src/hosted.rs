@@ -55,7 +55,6 @@ fn transaction(
             let pk: PublicKey = Canon::<BS>::read(&mut source)?;
             let note: Note = Canon::<BS>::read(&mut source)?;
             let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
-            let block_height: u64 = Canon::<BS>::read(&mut source)?;
             let exec_res =
                 slf.withdraw(sig, pk, note, spending_proof, block_height);
             let mut sink = ByteSink::new(&mut bytes[..], &store);

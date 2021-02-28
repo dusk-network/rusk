@@ -23,6 +23,7 @@ nstack = "0.7"
 microkelvin = "0.6"
 schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.5.1", default-features = false, features = ["canon"]}
 dusk-blindbid = {version = "0.7", default-features = false, features = ["canon"]}
+transfer-contract = { path = "../transfer" }
 
 # Test dependencies
 rand = {version="0.7", optional=true}

@@ -15,6 +15,7 @@ use dusk_jubjub::JubJubAffine;
 use dusk_pki::{Ownable, PublicKey};
 use phoenix_core::Note;
 use schnorr::Signature;
+use transfer_contract::Call as TransferCall;
 
 impl<S: Store> Contract<S> {
     /// This function allows to the contract caller to setup a Bid related to a
@@ -33,7 +34,7 @@ impl<S: Store> Contract<S> {
         &mut self,
         mut bid: Bid,
         correctness_proof: Vec<u8>,
-        _spending_proof: Vec<u8>,
+        spending_proof: Vec<u8>,
     ) -> bool {
         // Setup sucess var to true
         let mut success = true;
@@ -58,9 +59,10 @@ impl<S: Store> Contract<S> {
 
         // Mutate the Bid and add the correct timestamps.
         bid.set_eligibility(eligibility);
-        // FIXME: This should not be needed. We should have a better API in blindbid.
-        //  Since the API for blindbid was decided to be set as `extend_expiration` instead of
-        // `set_expiration`. We now are forced to ensure that the expiration is 0 here and then, we
+        // FIXME: This should not be needed. We should have a better API in
+        // blindbid.  Since the API for blindbid was decided to be set
+        // as `extend_expiration` instead of `set_expiration`. We now
+        // are forced to ensure that the expiration is 0 here and then, we
         // sum `expiration` to it.
         assert!(bid.expiration() == 0u64);
         bid.extend_expiration(expiration);
@@ -90,6 +92,11 @@ impl<S: Store> Contract<S> {
         };
 
         // TODO: Inter-contract call
+        /*let tx = match TransferCall::send_to_contract_obfuscated {
+            dusk_abi::caller(),
+             // NEed message::from_fields
+
+        }*/
         success
     }
 
@@ -161,9 +168,8 @@ impl<S: Store> Contract<S> {
         &mut self,
         sig: Signature,
         pk: PublicKey,
-        _note: Note,
-        _spend_proof: Vec<u8>,
-        block_height: u64,
+        note: Note,
+        spend_proof: Vec<u8>,
     ) -> bool {
         // Setup success to true
         let mut success = true;
@@ -194,6 +200,9 @@ impl<S: Store> Contract<S> {
             .get(idx as u64)
             .expect("Unexpected error. Map & Tree are out of sync.");
 
+        // Obtain the current block_height.
+        let block_height = dusk_abi::block_height();
+
         if bid.0.expiration() < (block_height + COOLDOWN_PERIOD) {
             // If we arrived here, the bid is elegible for withdrawal.
             // Now we need to check wether the signature is correct.
@@ -205,7 +214,11 @@ impl<S: Store> Contract<S> {
             ) {
                 return false;
             };
+            /*
             // Inter contract call
+            let tx = match TransferCall::withdraw_from_obfuscated{
+                 // Same issue with Message.
+            }*/
 
             // If the inter-contract call succeeds, we need to clean the
             // tree & map. Note that if we clean the entry
