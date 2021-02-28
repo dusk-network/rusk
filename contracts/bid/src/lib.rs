@@ -31,6 +31,7 @@ pub(crate) mod hosted;
 pub use leaf::BidLeaf;
 
 use canonical::{Canon, Sink, Source, Store};
+use canonical_derive::Canon;
 use map::KeyToIdxMap;
 use tree::BidTree;
 
@@ -80,32 +81,10 @@ pub mod contract_constants {
 /// This Smart Contract that acts as a decentralized interface to manage blind
 /// bids. It is complementary to the Proof Of Blind Bid algorithm used within
 /// the Dusk Network consensus.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Canon)]
 pub struct Contract<S: Store> {
     tree: BidTree<S>,
     key_idx_map: KeyToIdxMap<S>,
-}
-
-impl<S> Canon<S> for Contract<S>
-where
-    S: Store,
-{
-    fn read(source: &mut impl Source<S>) -> Result<Self, S::Error> {
-        Ok(Contract {
-            tree: Canon::<S>::read(source)?,
-            key_idx_map: Canon::<S>::read(source)?,
-        })
-    }
-
-    fn write(&self, sink: &mut impl Sink<S>) -> Result<(), S::Error> {
-        self.tree.write(sink)?;
-        self.key_idx_map.write(sink)
-    }
-
-    fn encoded_len(&self) -> usize {
-        Canon::<S>::encoded_len(&self.tree)
-            + Canon::<S>::encoded_len(&self.key_idx_map)
-    }
 }
 
 impl<S: Store> Contract<S> {

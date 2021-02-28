@@ -42,8 +42,7 @@ fn transaction(
             let correctness_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
             // Call bid contract fn
-            let success =
-                slf.bid(bid, correctness_proof, spending_proof);
+            let success = slf.bid(bid, correctness_proof, spending_proof);
             let mut sink = ByteSink::new(&mut bytes[..], &store);
             // return new state
             Canon::<BS>::write(&slf, &mut sink)?;
