@@ -13,6 +13,7 @@
 //! The ABI to develop Rusk's specific Contracts
 #![warn(missing_docs)]
 #![no_std]
+#![deny(clippy::all)]
 
 use dusk_abi::{ContractId, Module};
 

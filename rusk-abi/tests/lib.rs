@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(clippy::all)]
+
 mod contracts;
 
 use rusk_vm::{Contract, GasMeter, NetworkState};
@@ -42,7 +44,7 @@ fn poseidon_hash() {
     let contract = Contract::new(host, code.to_vec(), &store).unwrap();
 
     let mut network = NetworkState::<MS>::default();
-    let rusk_mod = RuskModule::new(store.clone());
+    let rusk_mod = RuskModule::new(store);
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -76,7 +78,7 @@ fn schnorr_signature() {
 
     let contract = Contract::new(host, code.to_vec(), &store).unwrap();
 
-    let rusk_mod = RuskModule::new(store.clone());
+    let rusk_mod = RuskModule::new(store);
     let mut network = NetworkState::<MS>::default();
     network.register_host_module(rusk_mod);
 

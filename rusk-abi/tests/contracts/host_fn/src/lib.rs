@@ -6,6 +6,8 @@
 
 #![cfg_attr(target_arch = "wasm32", no_std)]
 #![feature(core_intrinsics, lang_items, alloc_error_handler)]
+#![deny(clippy::all)]
+
 extern crate alloc;
 
 use canonical_derive::Canon;
@@ -17,7 +19,7 @@ pub const SCHNORR_SIGNATURE: u8 = 2;
 // transaction ids
 pub const SOMETHING: u8 = 0;
 
-#[derive(Clone, Canon, Debug)]
+#[derive(Clone, Canon, Debug, Default)]
 pub struct HostFnTest {}
 
 impl HostFnTest {
