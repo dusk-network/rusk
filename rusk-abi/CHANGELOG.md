@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `verify_proof` host function
+- Add `PublicInput` enum wrapper for input types
+- Add `PublicParameters` as field of `RuskModule`
 - Add Schnorr Signature verification host function
 
 ### Changed
