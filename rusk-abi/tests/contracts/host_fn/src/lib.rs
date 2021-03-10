@@ -14,6 +14,7 @@ use canonical_derive::Canon;
 
 // query ids
 pub const HASH: u8 = 0;
+pub const VERIFY: u8 = 1;
 pub const SCHNORR_SIGNATURE: u8 = 2;
 
 // transaction ids
@@ -41,6 +42,8 @@ mod hosted {
     use dusk_pki::PublicKey;
     use schnorr::Signature;
 
+    use rusk_abi::PublicInput;
+
     const PAGE_SIZE: usize = 1024 * 4;
 
     type BS = BridgeStore<Id32>;
@@ -48,6 +51,16 @@ mod hosted {
     impl HostFnTest {
         pub fn hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
             rusk_abi::poseidon_hash(scalars)
+        }
+
+        pub fn verify(
+            &self,
+            proof: Vec<u8>,
+            vk: Vec<u8>,
+            pi_values: Vec<PublicInput>,
+            pi_positions: Vec<u32>,
+        ) -> bool {
+            rusk_abi::verify_proof(proof, vk, pi_values, pi_positions)
         }
 
         pub fn schnorr_signature(
@@ -87,6 +100,28 @@ mod hosted {
 
                 r
             }
+
+            VERIFY => {
+                let proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
+                let vk: Vec<u8> = Canon::<BS>::read(&mut source)?;
+                let pi_values: Vec<rusk_abi::PublicInput> =
+                    Canon::<BS>::read(&mut source)?;
+                let pi_positions: Vec<u32> = Canon::<BS>::read(&mut source)?;
+
+                let ret = slf.verify(proof, vk, pi_values, pi_positions);
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+
+                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+
+                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                };
+
+                r
+            }
+
             SCHNORR_SIGNATURE => {
                 let sig: Signature = Canon::<BS>::read(&mut source)?;
                 let pk: PublicKey = Canon::<BS>::read(&mut source)?;
