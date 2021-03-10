@@ -6,7 +6,7 @@
 
 use std::convert::{TryFrom, TryInto};
 use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
-use transfer_contract::{ops, Call, TransferContract};
+use transfer_contract::{Call, TransferContract};
 
 use canonical::Store;
 use dusk_bls12_381::BlsScalar;
@@ -20,6 +20,7 @@ use phoenix_core::{Crossover, Fee, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk::vm::{Contract, ContractId, GasMeter, NetworkState};
+use rusk_abi::RuskModule;
 
 const TRANSFER_TREE_DEPTH: usize = 17;
 const CODE: &'static [u8] = include_bytes!(
@@ -50,6 +51,9 @@ impl<S: Store> TransferWrapper<S> {
 
         let mut network = NetworkState::with_block_height(block_height);
 
+        let rusk_mod = RuskModule::new(store.clone());
+        network.register_host_module(rusk_mod);
+
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
 
@@ -78,6 +82,12 @@ impl<S: Store> TransferWrapper<S> {
 }
 
 impl<S: Store> TransferWrapper<S> {
+    pub fn state(&self) -> TransferContract<S> {
+        self.network
+            .get_contract_cast_state(&self.contract)
+            .expect("Failed to fetch the state of the contract")
+    }
+
     pub fn genesis_identifier(
         &self,
     ) -> (SecretSpendKey, ViewKey, PublicSpendKey) {
@@ -119,13 +129,12 @@ impl<S: Store> TransferWrapper<S> {
     }
 
     pub fn notes(&mut self, block_height: u64) -> Vec<Note> {
-        self.network
-            .query::<_, Vec<Note>>(
-                self.contract,
-                (ops::QR_NOTES_FROM_HEIGHT, block_height),
-                &mut self.gas,
-            )
-            .unwrap()
+        self.state()
+            .notes_mapping()
+            .get(&block_height)
+            .unwrap_or_default()
+            .map(|s| s.clone())
+            .unwrap_or_default()
     }
 
     pub fn notes_owned_by(
@@ -140,34 +149,39 @@ impl<S: Store> TransferWrapper<S> {
             .collect()
     }
 
-    pub fn balance(&mut self, address: BlsScalar) -> u64 {
-        self.network
-            .query::<_, u64>(
-                self.contract,
-                (ops::QR_BALANCE, address),
-                &mut self.gas,
-            )
+    pub fn balance(&mut self, address: &BlsScalar) -> u64 {
+        *self
+            .state()
+            .balances()
+            .get(address)
             .unwrap()
+            .as_deref()
+            .unwrap_or(&0)
     }
 
     pub fn anchor(&mut self) -> BlsScalar {
-        self.network
-            .query::<_, BlsScalar>(self.contract, ops::QR_ROOT, &mut self.gas)
-            .unwrap()
+        self.state().notes().inner().root().unwrap_or_default()
     }
 
     pub fn opening(&mut self, pos: u64) -> PoseidonBranch<TRANSFER_TREE_DEPTH> {
-        self.network
-            .query::<_, PoseidonBranch<TRANSFER_TREE_DEPTH>>(
-                self.contract,
-                (ops::QR_OPENING, pos),
-                &mut self.gas,
+        self.state()
+            .notes()
+            .opening(pos)
+            .expect(
+                format!(
+                    "Failed to fetch note of position {:?} for opening",
+                    pos
+                )
+                .as_str(),
             )
-            .unwrap()
+            .expect(
+                format!("Note {:?} not found, opening is undefined!", pos)
+                    .as_str(),
+            )
     }
 
     fn prover_key(rusk_id: &str) -> ProverKey {
-        let keys = rusk_profile::keys_for("transker-circuits");
+        let keys = rusk_profile::keys_for("transfer-circuits");
         let (pk, _) = keys.get(rusk_id).unwrap();
 
         ProverKey::from_bytes(pk.as_slice()).unwrap()
@@ -285,9 +299,11 @@ impl<S: Store> TransferWrapper<S> {
         )
         .unwrap();
 
+        println!("STCT {:?}", self.contract);
+
         self.network
             .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap()
+            .unwrap_or(false)
     }
 
     pub fn withdraw_from_transparent(
@@ -380,9 +396,11 @@ impl<S: Store> TransferWrapper<S> {
             )
             .unwrap();
 
+        println!("Withdraw {:?}", self.contract);
+
         self.network
             .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap()
+            .unwrap_or(false)
     }
 
     pub fn withdraw_from_transparent_to_contract(
@@ -475,6 +493,6 @@ impl<S: Store> TransferWrapper<S> {
 
         self.network
             .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap()
+            .unwrap_or(false)
     }
 }

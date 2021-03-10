@@ -82,20 +82,6 @@ impl Call {
         }
     }
 
-    // Can be converted to `TryInto` once issue #71 is solved
-    fn to_transaction<S>(&self) -> Result<Transaction, S::Error>
-    where
-        S: Store,
-    {
-        // FIXME BytesSink should not require `store`
-        // https://github.com/dusk-network/canonical/issues/71
-        let store: &S =
-            unsafe { (&() as *const ()).cast::<S>().as_ref().unwrap() };
-
-        Transaction::from_canon(self, store)
-    }
-
-    // TODO Check the ID of self
     pub fn to_execute<S>(
         &self,
         contract: ContractId,
@@ -111,10 +97,10 @@ impl Call {
     {
         // Prevents invalid recursion
         if let Self::Execute { .. } = self {
-            return Err(InvalidEncoding.into());
+            Err(InvalidEncoding.into())?;
         }
 
-        let tx = self.to_transaction::<S>()?;
+        let tx = Transaction::from_canon(self, &S::default())?;
         let execute = Self::execute(
             anchor,
             nullifiers,

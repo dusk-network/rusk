@@ -14,7 +14,7 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
-use phoenix_core::{Fee, Message, Note};
+use phoenix_core::{Crossover, Fee, Message, Note};
 
 // FIXME provisory solution until this issue is fixed
 // https://github.com/dusk-network/rusk-vm/issues/123
@@ -62,21 +62,23 @@ impl<S: Store> TransferContract<S> {
         &mut self,
         fee: Fee,
     ) -> Result<(), S::Error> {
-        // TODO Get gas consumed
+        let block_height = dusk_abi::block_height();
+
+        // FIXME Get gas consumed
         // https://github.com/dusk-network/rusk/issues/195
-        let gas_consumed = 1;
+        let gas_consumed = 2;
         let remainder = fee.gen_remainder(gas_consumed);
         let remainder = Note::from(remainder);
         let remainder_value =
             remainder.value(None).map_err(|_| InvalidEncoding.into())?;
         if remainder_value > 0 {
-            self.push_note(remainder)?;
+            self.push_note(block_height, remainder)?;
         }
 
         if let Some(crossover) = self.var_crossover {
             Note::try_from((fee, crossover))
                 .map_err(|_| InvalidEncoding.into())
-                .and_then(|note| self.push_note(note))?;
+                .and_then(|note| self.push_note(block_height, note))?;
         }
 
         Ok(())
@@ -85,7 +87,7 @@ impl<S: Store> TransferContract<S> {
     // TODO convert to const fn
     // https://github.com/rust-lang/rust/issues/57563
     pub(crate) fn minimum_gas_price() -> u64 {
-        // TODO define the mininum gas price
+        // FIXME define the mininum gas price
         // https://github.com/dusk-network/rusk/issues/195
         0
     }
@@ -129,27 +131,13 @@ impl<S: Store> TransferContract<S> {
             .ok_or(InvalidEncoding.into())
     }
 
-    pub(crate) fn push_note(&mut self, note: Note) -> Result<(), S::Error> {
+    pub(crate) fn push_note_current_height(
+        &mut self,
+        note: Note,
+    ) -> Result<Note, S::Error> {
         let block_height = dusk_abi::block_height();
 
-        let mut create = false;
-        match self.notes_mapping.get_mut(&block_height)? {
-            // TODO evaluate options for efficient dedup
-            // We can't call dedup here because the note `PartialEq` relies on
-            // poseidon hash, that is supposed to be a host function
-            // https://github.com/dusk-network/rusk/issues/196
-            Some(mut mapped) => mapped.push(note.clone()),
-
-            None => create = true,
-        }
-        if create {
-            self.notes_mapping.insert(block_height, [note].to_vec())?;
-        }
-
-        self.notes
-            .push((block_height, note).into())
-            .map(|_| ())
-            .map_err(|_| InvalidEncoding.into())
+        self.push_note(block_height, note)
     }
 
     pub(crate) fn extend_notes(
@@ -158,24 +146,8 @@ impl<S: Store> TransferContract<S> {
     ) -> Result<(), S::Error> {
         let block_height = dusk_abi::block_height();
 
-        let mut create = false;
-        match self.notes_mapping.get_mut(&block_height)? {
-            // TODO evaluate options for efficient dedup
-            // We can't call dedup here because the note `PartialEq` relies on
-            // poseidon hash, that is supposed to be a host function
-            // https://github.com/dusk-network/rusk/issues/196
-            Some(mut mapped) => mapped.extend_from_slice(notes.as_slice()),
-
-            None => create = true,
-        }
-        if create {
-            self.notes_mapping.insert(block_height, notes.clone())?;
-        }
-
         for note in notes {
-            self.notes
-                .push((block_height, note).into())
-                .map_err(|_| InvalidEncoding.into())?;
+            self.push_note(block_height, note)?;
         }
 
         Ok(())
@@ -186,12 +158,14 @@ impl<S: Store> TransferContract<S> {
         address: BlsScalar,
         value: u64,
     ) -> Result<(), S::Error> {
-        if let Some(mut balance) = self.balance.get_mut(&address)? {
+        if let Some(mut balance) = self.balances.get_mut(&address)? {
             *balance += value;
+
             return Ok(());
         }
 
-        self.balance.insert(address, value)?;
+        self.balances.insert(address, value)?;
+
         Ok(())
     }
 
@@ -200,7 +174,7 @@ impl<S: Store> TransferContract<S> {
         address: BlsScalar,
         value: u64,
     ) -> Result<(), S::Error> {
-        match self.balance.get_mut(&address)? {
+        match self.balances.get_mut(&address)? {
             Some(mut balance) if value <= *balance => {
                 *balance -= value;
 
@@ -237,6 +211,37 @@ impl<S: Store> TransferContract<S> {
         }
 
         self.message_mapping_set.insert(address, (pk, r))?;
+
+        Ok(())
+    }
+
+    pub(crate) fn take_crossover(
+        &mut self,
+    ) -> Result<(Crossover, PublicKey), S::Error> {
+        let crossover =
+            self.var_crossover.take().ok_or(InvalidEncoding.into())?;
+        let pk = self.var_crossover_pk.take().ok_or(InvalidEncoding.into())?;
+
+        Ok((crossover, pk))
+    }
+
+    pub(crate) fn assert_paylable(
+        _address: &BlsScalar,
+    ) -> Result<(), S::Error> {
+        //  FIXME Use isPayable definition
+        //  https://github.com/dusk-network/rusk-vm/issues/151
+
+        Ok(())
+    }
+
+    pub(crate) fn assert_proof(
+        _label: &str,
+        _vk: &[u8],
+        _spend_proof: Vec<u8>,
+        _pi: Vec<u8>,
+    ) -> Result<(), S::Error> {
+        //  FIXME implement proof verification
+        //  https://github.com/dusk-network/rusk/issues/194
 
         Ok(())
     }

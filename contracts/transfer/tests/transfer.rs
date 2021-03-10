@@ -30,7 +30,7 @@ fn withdraw_from_transparent() {
     let unspent_note = notes[0];
 
     let account = wrapper.address();
-    let balance = wrapper.balance(account);
+    let balance = wrapper.balance(&account);
     assert_eq!(0, balance);
 
     let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
@@ -51,7 +51,7 @@ fn withdraw_from_transparent() {
     );
     assert!(result);
 
-    let balance = wrapper.balance(account);
+    let balance = wrapper.balance(&account);
     assert_eq!(account_value, balance);
 
     let notes = wrapper.notes(block_height);
@@ -77,7 +77,7 @@ fn withdraw_from_transparent() {
         remainder.value(Some(&remainder_vk)).unwrap()
     );
 
-    let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
+    let (withdraw_ssk, withdraw_vk, withdraw_psk) = wrapper.identifier();
     let withdraw_value = 35;
 
     let gas_limit = 10;
@@ -102,12 +102,66 @@ fn withdraw_from_transparent() {
         .unwrap()
         .into();
 
-    let balance = wrapper.balance(account);
+    let balance = wrapper.balance(&account);
     assert_eq!(account_value - withdraw_value, balance);
     assert_eq!(withdraw_value, withdraw.value(Some(&withdraw_vk)).unwrap());
 
-    // TODO Extend the test case until the balance is zero and assert it cant be
-    // negative https://github.com/dusk-network/rusk/issues/209
+    let withdraw_value = balance + 1;
+    let result = wrapper.withdraw_from_transparent(
+        &[withdraw],
+        &[withdraw_ssk],
+        &refund_psk,
+        true,
+        gas_limit,
+        gas_price,
+        account,
+        &withdraw_psk,
+        withdraw_value,
+    );
+    assert!(!result);
+
+    let balance_p = wrapper.balance(&account);
+    assert_eq!(balance, balance_p);
+
+    let withdraw_value = balance;
+    let result = wrapper.withdraw_from_transparent(
+        &[withdraw],
+        &[withdraw_ssk],
+        &refund_psk,
+        true,
+        gas_limit,
+        gas_price,
+        account,
+        &withdraw_psk,
+        withdraw_value,
+    );
+    assert!(result);
+
+    let withdraw: Note = wrapper
+        .notes_owned_by(1, &withdraw_vk)
+        .last()
+        .cloned()
+        .unwrap()
+        .into();
+
+    assert_eq!(balance, withdraw.value(Some(&withdraw_vk)).unwrap());
+
+    let balance = wrapper.balance(&account);
+    assert_eq!(0, balance);
+
+    let withdraw_value = 1;
+    let result = wrapper.withdraw_from_transparent(
+        &[withdraw],
+        &[withdraw_ssk],
+        &refund_psk,
+        true,
+        gas_limit,
+        gas_price,
+        account,
+        &withdraw_psk,
+        withdraw_value,
+    );
+    assert!(!result);
 }
 
 #[test]
@@ -129,7 +183,7 @@ fn withdraw_from_transparent_to_contract() {
     let unspent_note = notes[0];
 
     let account = wrapper.address();
-    let balance = wrapper.balance(account);
+    let balance = wrapper.balance(&account);
     assert_eq!(0, balance);
 
     let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
@@ -150,7 +204,7 @@ fn withdraw_from_transparent_to_contract() {
     );
     assert!(result);
 
-    let balance = wrapper.balance(account);
+    let balance = wrapper.balance(&account);
     assert_eq!(account_value, balance);
 
     let notes = wrapper.notes(block_height);
@@ -194,12 +248,37 @@ fn withdraw_from_transparent_to_contract() {
     );
     assert!(result);
 
-    let balance = wrapper.balance(account);
-    assert_eq!(account_value - withdraw_value, balance);
+    let balance_original = wrapper.balance(&account);
+    assert_eq!(account_value - withdraw_value, balance_original);
 
-    let balance = wrapper.balance(withdraw_account);
+    let balance = wrapper.balance(&withdraw_account);
     assert_eq!(withdraw_value, balance);
 
-    // TODO Extend the test case until the balance is zero and assert it cant be
-    // negative https://github.com/dusk-network/rusk/issues/209
+    let refund: Note = wrapper
+        .notes_owned_by(1, &refund_vk)
+        .last()
+        .cloned()
+        .unwrap()
+        .into();
+
+    let gas_limit = 10;
+    let gas_price = 1;
+    let result = wrapper.withdraw_from_transparent_to_contract(
+        &[refund],
+        &[refund_ssk],
+        &refund_psk,
+        true,
+        gas_limit,
+        gas_price,
+        account,
+        withdraw_account,
+        balance_original,
+    );
+    assert!(result);
+
+    let balance = wrapper.balance(&account);
+    assert_eq!(0, balance);
+
+    let balance = wrapper.balance(&withdraw_account);
+    assert_eq!(account_value, balance);
 }

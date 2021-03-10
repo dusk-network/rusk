@@ -7,7 +7,7 @@
 use core::convert::TryFrom;
 
 use alloc::vec::Vec;
-use canonical::{Canon, Store};
+use canonical::{Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
@@ -23,9 +23,6 @@ use tree::Tree;
 
 pub use call::Call;
 
-#[cfg(target_arch = "wasm32")]
-pub(crate) use tree::TRANSFER_TREE_DEPTH;
-
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
@@ -34,7 +31,7 @@ pub struct TransferContract<S: Store> {
     pub(crate) notes_mapping: Map<u64, Vec<Note>, S>,
     pub(crate) nullifiers: Map<BlsScalar, (), S>,
     pub(crate) roots: Map<BlsScalar, (), S>,
-    pub(crate) balance: Map<BlsScalar, u64, S>,
+    pub(crate) balances: Map<BlsScalar, u64, S>,
     pub(crate) message_mapping:
         Map<BlsScalar, Map<PublicKeyBytes, Message, S>, S>,
     pub(crate) message_mapping_set:
@@ -49,8 +46,57 @@ pub struct TransferContract<S: Store> {
 }
 
 impl<S: Store> TransferContract<S> {
+    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, S::Error> {
+        self.notes
+            .get(pos)
+            .map(|l| l.map(|l| l.note.clone().into()))
+            .map_err(|_| InvalidEncoding.into())
+    }
+
+    pub(crate) fn push_note(
+        &mut self,
+        block_height: u64,
+        note: Note,
+    ) -> Result<Note, S::Error> {
+        let pos = self
+            .notes
+            .push((block_height, note).into())
+            .map_err(|_| InvalidEncoding.into())?;
+
+        let note = self.get_note(pos)?.ok_or(InvalidEncoding.into())?;
+
+        let mut create = false;
+        match self.notes_mapping.get_mut(&block_height)? {
+            // TODO evaluate options for efficient dedup
+            // We can't call dedup here because the note `PartialEq` relies on
+            // poseidon hash, that is supposed to be a host function
+            // https://github.com/dusk-network/rusk/issues/196
+            Some(mut mapped) => mapped.push(note.clone()),
+
+            None => create = true,
+        }
+
+        if create {
+            self.notes_mapping.insert(block_height, [note].to_vec())?;
+        }
+
+        Ok(note)
+    }
+
+    pub fn notes(&self) -> &Tree<S> {
+        &self.notes
+    }
+
+    pub fn notes_mapping(&self) -> &Map<u64, Vec<Note>, S> {
+        &self.notes_mapping
+    }
+
+    pub fn balances(&self) -> &Map<BlsScalar, u64, S> {
+        &self.balances
+    }
+
     pub(crate) fn update_root(&mut self) -> Result<(), S::Error> {
-        let root = self.notes.root()?;
+        let root = self.notes.root().map_err(|_| InvalidEncoding.into())?;
 
         self.roots.insert(root, ())?;
 
@@ -66,21 +112,10 @@ impl<S: Store> TryFrom<Note> for TransferContract<S> {
     ///
     /// To avoid abuse, the block_height will always be `0`
     fn try_from(note: Note) -> Result<Self, Self::Error> {
-        use canonical::InvalidEncoding;
-
         let mut transfer = Self::default();
 
         let block_height = 0;
-        transfer
-            .notes_mapping
-            .insert(block_height, [note].to_vec())?;
-
-        transfer
-            .notes
-            .as_mut()
-            .push((block_height, note).into())
-            .map_err(|_| InvalidEncoding.into())?;
-
+        transfer.push_note(block_height, note)?;
         transfer.update_root()?;
 
         Ok(transfer)

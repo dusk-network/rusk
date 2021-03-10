@@ -15,30 +15,11 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{
     JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_pki::PublicKey;
+use dusk_pki::{Ownable, PublicKey};
 use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
 
 impl<S: Store> TransferContract<S> {
-    fn call(&mut self, contract: ContractId, tx: Transaction) -> bool {
-        let ret = match dusk_abi::transact_raw(&contract, &tx) {
-            Ok(r) => r,
-            Err(_) => return false,
-        };
-
-        // FIXME Unnecessary ownership of `Store`
-        // https://github.com/dusk-network/rusk-vm/issues/159
-        let store: S = unsafe { core::mem::zeroed() };
-
-        // FIXME Assuming the called contract will return only the
-        // boolean result https://github.com/dusk-network/rusk/issues/204
-        match ret.cast::<bool, _>(store) {
-            Ok(r) if r => true,
-
-            _ => false,
-        }
-    }
-
     pub fn send_to_contract_transparent(
         &mut self,
         address: BlsScalar,
@@ -52,40 +33,32 @@ impl<S: Store> TransferContract<S> {
         let mut pi = Vec::with_capacity(scalars + points);
         let label = "transfer-send-to-contract-transparent";
 
-        match self.var_crossover {
-            Some(crossover) => internal::extend_pi_jubjub_affine(
-                &mut pi,
-                &crossover.value_commitment().clone().into(),
-            ),
-            None => return false,
-        }
-        match self.var_crossover_pk {
-            Some(pk) => internal::extend_pi_jubjub_affine(
-                &mut pi,
-                &pk.as_ref().clone().into(),
-            ),
-            None => return false,
-        }
-        internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::from(value));
+        let (crossover, pk) = self
+            .take_crossover()
+            .expect("The crossover is mandatory for STCT!");
+
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover.value_commitment().clone().into(),
+        );
+        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().clone().into());
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
-        if self.add_balance(address, value).is_err() {
-            return false;
-        }
+        self.add_balance(address, value)
+            .expect("Failed to add the balance to the provided address!");
 
         //  3. if a.isPayable() ↦ true then continue
-        //  TODO Use isPayable definition
-        //  https://github.com/dusk-network/rusk-vm/issues/151
+        Self::assert_paylable(&address)
+            .expect("The provided address is not payable!");
 
         //  4. verify(C.c, v, π)
-        //  TODO implement proof verification
-        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::stct();
-        let (_, _, _, _) = (pi, label, spend_proof, vk);
+        Self::assert_proof(label, vk, spend_proof, pi)
+            .expect("Failed to verify the provided proof!");
 
         //  5. C ← C(0,0,0)
-        self.var_crossover.take();
+        //  Crossover is already taken
 
         true
     }
@@ -97,21 +70,19 @@ impl<S: Store> TransferContract<S> {
     ) -> bool {
         let value = match (note.note(), note.value(None)) {
             (NoteType::Transparent, Ok(v)) => v,
-            _ => return false,
+            _ => panic!("The provided note must be a transparent note!"),
         };
 
         //  1. a ∈ B↦
         //  2. B_a↦ ← B_a↦ − v
-        if self.sub_balance(address, value).is_err() {
-            return false;
-        }
+        self.sub_balance(address, value)
+            .expect("Failed to subtract the balance from the provided address");
 
         //  3. N↦.append(N_p^t)
         //  4. N_p^* ← encode(N_p^t)
         //  5. N.append(N_p^*)
-        if self.push_note(note).is_err() {
-            return false;
-        }
+        self.push_note_current_height(note)
+            .expect("Failed to append the provided note to the state!");
 
         true
     }
@@ -131,20 +102,18 @@ impl<S: Store> TransferContract<S> {
         let mut pi = Vec::with_capacity(scalars + points);
         let label = "transfer-send-to-contract-obfuscated";
 
-        match self.var_crossover {
-            Some(crossover) => internal::extend_pi_jubjub_affine(
-                &mut pi,
-                &crossover.value_commitment().clone().into(),
-            ),
-            None => return false,
-        }
-        match self.var_crossover_pk {
-            Some(pk) => internal::extend_pi_jubjub_affine(
-                &mut pi,
-                &pk.as_ref().clone().into(),
-            ),
-            None => return false,
-        }
+        let (crossover, crossover_pk) = self
+            .take_crossover()
+            .expect("The crossover is mandatory for STCT!");
+
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover.value_commitment().clone().into(),
+        );
+        internal::extend_pi_jubjub_affine(
+            &mut pi,
+            &crossover_pk.as_ref().clone().into(),
+        );
         internal::extend_pi_jubjub_affine(
             &mut pi,
             &message.value_commitment().into(),
@@ -158,28 +127,24 @@ impl<S: Store> TransferContract<S> {
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
-        if self.push_message(address, pk, r, message).is_err() {
-            return false;
-        }
+        self.push_message(address, pk, r, message)
+            .expect("Failed to append the message to the state!");
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        //  TODO Use isPayable definition
-        //  https://github.com/dusk-network/rusk-vm/issues/151
+        Self::assert_paylable(&address)
+            .expect("The provided address is not payable!");
 
         //  4. verify(C.c, M, pk, π)
-        //  TODO implement proof verification
-        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::stco();
-        let (_, _, _, _) = (pi, label, spend_proof, vk);
+        Self::assert_proof(label, vk, spend_proof, pi)
+            .expect("Failed to verify the provided proof!");
 
         //  5. C←(0,0,0)
-        self.var_crossover.take();
+        //  Crossover is already taken
 
         true
     }
 
-    // FIXME nothing is done with the passed note
-    // https://github.com/dusk-network/rusk/issues/192
     pub fn withdraw_from_obfuscated(
         &mut self,
         address: BlsScalar,
@@ -215,33 +180,39 @@ impl<S: Store> TransferContract<S> {
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
-        // FIXME This message is taken and nothing is verified with it
+        // FIXME Compute the sum of message commitments
         // https://github.com/dusk-network/rusk/issues/192
-        let _message = match self.take_message_from_address_key(&address, &pk) {
-            Ok(m) => m,
-            Err(_) => return false,
-        };
+        let _message = self
+            .take_message_from_address_key(&address, &pk)
+            .expect(
+            "Failed to take a message from the provided address/key mapping!",
+        );
 
         //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
         //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
-        if self.push_message(address, pk, r, message).is_err() {
-            return false;
-        }
+        self.push_message(address, pk, r, message)
+            .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        //  TODO Use isPayable definition
-        //  https://github.com/dusk-network/rusk-vm/issues/151
+        Self::assert_paylable(&address)
+            .expect("The provided address is not payable!");
 
         //  7. verify(c, M_c, No.c, π)
-        //  TODO implement proof verification
-        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::wdfo();
-        let (_, _, _, _) = (pi, label, spend_proof, vk);
+        Self::assert_proof(label, vk, spend_proof, pi)
+            .expect("Failed to verify the provided proof!");
+
+        // FIXME Non-documented step
+        // https://github.com/dusk-network/rusk/issues/192
+        self.push_note_current_height(note)
+            .expect("Failed to append the provided note to the state!");
 
         true
     }
 
     // FIXME Wrong documentation specification
+    // The documentation suggests we should threat the withdraw and deposit
+    // values differently. Its probably a nit and they should be the same
     // https://github.com/dusk-network/rusk/issues/198
     pub fn withdraw_from_transparent_to_contract(
         &mut self,
@@ -251,14 +222,13 @@ impl<S: Store> TransferContract<S> {
     ) -> bool {
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v
-        if self.sub_balance(from, value).is_err() {
-            return false;
-        }
+        self.sub_balance(from, value).expect(
+            "Failed to subtract the balance from the provided address!",
+        );
 
         //  3. B_to↦ = B_to↦ + v
-        if self.add_balance(to, value).is_err() {
-            return false;
-        }
+        self.add_balance(to, value)
+            .expect("Failed to add the balance to the provided address!");
 
         true
     }
@@ -309,50 +279,70 @@ impl<S: Store> TransferContract<S> {
         internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::zero());
 
         //  1. α ∈ R
-        if !self.root_exists(&anchor).unwrap_or(false) {
-            return false;
+        // FIXME Use proper root
+        // https://github.com/dusk-network/rusk/issues/224
+        let _ = anchor;
+        let anchor = BlsScalar::one();
+        if !self
+            .root_exists(&anchor)
+            .expect("Failed to check if the anchor exists!")
+        {
+            panic!("Anchor not found in the state!");
         }
 
         //  2. ν[] !∈ Nullifiers
         if self
             .any_nullifier_exists(nullifiers.as_slice())
-            .unwrap_or(true)
+            .expect("Failed to check if the nullifier already exists!")
         {
-            return false;
+            panic!("The provided nullifier already exists!");
         }
 
         //  3. Nullifiers.append(ν[])
-        if self.extend_nullifiers(nullifiers).is_err() {
-            return false;
-        }
+        self.extend_nullifiers(nullifiers)
+            .expect("Failed to append the nullifiers to the state!");
 
         //  4. if |C|=0 then set C ← (0,0,0)
         //  Crossover is received as option
 
         //  5. N↦.append((No.R[], No.pk[])
         //  6. Notes.append(No[])
-        if self.extend_notes(notes).is_err() {
-            return false;
-        }
+        self.extend_notes(notes)
+            .expect("Failed to append the notes to the state!");
 
         //  7. g_l < 2^64
         //  8. g_pmin < g_p
         //  9. fee ← g_l ⋅ g_p
-        if fee.gas_price <= Self::minimum_gas_price() {
-            return false;
+        let minimum_gas_price = Self::minimum_gas_price();
+        if fee.gas_price <= minimum_gas_price {
+            panic!(
+                "The gas price is below the minimum `{:?}`!",
+                minimum_gas_price
+            );
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        //  TODO implement proof verification
-        //  https://github.com/dusk-network/rusk/issues/194
         let vk = keys::exec(inputs, outputs);
-        let (_, _, _, _) = (pi, label, spend_proof, vk);
+        Self::assert_proof(label, vk, spend_proof, pi)
+            .expect("Failed to verify the provided proof!");
 
         // 11. if ∣k∣≠0 then call(k)
         self.var_crossover = crossover;
+        self.var_crossover_pk
+            .replace((*fee.stealth_address().pk_r().as_ref()).into());
         if let Some((contract, tx)) = call {
-            if !self.call(contract, tx) {
-                return false;
+            dusk_abi::debug!("Inter-contract call {:?}", contract);
+
+            let ret = dusk_abi::transact_raw(self, &contract, &tx)
+                .expect("Failed to execute the provided call transaction!");
+
+            dusk_abi::debug!("Inter-contract call finished {:?}", contract);
+
+            let ret: bool = ret.cast(S::default())
+                .expect("Failed to fetch the return value from the provided call transaction!");
+
+            if !ret {
+                panic!("The provided call transaction failed!");
             }
         }
 
@@ -363,13 +353,11 @@ impl<S: Store> TransferContract<S> {
         // 16. N_p^*←encode(N_p^t)
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
-        if self.push_fee_crossover(fee).is_err() {
-            return false;
-        }
+        self.push_fee_crossover(fee)
+            .expect("Failed to append the fee and the crossover to the state!");
 
-        if self.update_root().is_err() {
-            return false;
-        }
+        self.update_root()
+            .expect("Failed to update the state of the tree!");
 
         true
     }

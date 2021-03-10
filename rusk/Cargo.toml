@@ -50,7 +50,6 @@ dusk-bls12_381 = "0.6"
 dusk-jubjub = "0.8"
 dusk-bytes = "0.1"
 
-
 [build-dependencies]
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
