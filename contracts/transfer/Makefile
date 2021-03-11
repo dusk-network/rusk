@@ -10,6 +10,7 @@ wasm: ## Build the WASM files
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
+		-Zfeatures=itarget \
 		-- -C link-args=-s
 
 check: wasm ## Run the Rust check on the project features
