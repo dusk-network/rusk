@@ -8,6 +8,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
+use dusk_pki::PublicKey;
+use schnorr::Signature;
 
 use canonical::{BridgeStore, Id32};
 use dusk_abi::Module;
@@ -17,5 +19,17 @@ type RuskModule = crate::RuskModule<BS>;
 
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars))
-        .expect("query ZK Module for Poseidon Hash should not fail")
+        .expect("query RuskModule for Poseidon Hash should not fail")
+}
+
+pub fn verify_schnorr_sign(
+    sign: Signature,
+    pk: PublicKey,
+    message: BlsScalar,
+) -> bool {
+    dusk_abi::query(
+        &RuskModule::id(),
+        &(RuskModule::VERIFY_SCHNORR_SIGN, sign, pk, message),
+    )
+    .expect("query RuskModule for verifying schnorr signature should not fail")
 }

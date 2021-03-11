@@ -4,12 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(clippy::all)]
+
 mod contracts;
 
 use rusk_vm::{Contract, GasMeter, NetworkState};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::ParseHexStr;
+use dusk_pki::{PublicKey, SecretKey};
+use schnorr::Signature;
 
 use canonical_host::MemStore as MS;
 
@@ -29,7 +33,7 @@ fn poseidon_hash() {
         .map(|input| BlsScalar::from_hex_str(input).unwrap())
         .collect();
 
-    let hash = HostFnTest::new();
+    let host = HostFnTest::new();
 
     let store = MS::new();
 
@@ -37,12 +41,10 @@ fn poseidon_hash() {
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(hash, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
 
     let mut network = NetworkState::<MS>::default();
-
-    let rusk_mod = RuskModule::new(store.clone());
-
+    let rusk_mod = RuskModule::new(store);
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -61,5 +63,59 @@ fn poseidon_hash() {
                 )
                 .unwrap()
         )
+    );
+}
+
+#[test]
+fn schnorr_signature() {
+    let host = HostFnTest::new();
+
+    let store = MS::new();
+
+    let code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+    );
+
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+
+    let rusk_mod = RuskModule::new(store);
+    let mut network = NetworkState::<MS>::default();
+    network.register_host_module(rusk_mod);
+
+    let contract_id = network.deploy(contract).unwrap();
+
+    let mut gas = GasMeter::with_limit(1_000_000_000);
+
+    let sk = SecretKey::random(&mut rand::thread_rng());
+    let message = BlsScalar::random(&mut rand::thread_rng());
+    let pk = PublicKey::from(&sk);
+
+    let sign = Signature::new(&sk, &mut rand::thread_rng(), message);
+
+    assert!(sign.verify(&pk, message));
+
+    assert!(
+        network
+            .query::<_, bool>(
+                contract_id,
+                (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
+                &mut gas
+            )
+            .unwrap(),
+        "Signature verification expected to succeed"
+    );
+
+    let wrong_sk = SecretKey::random(&mut rand::thread_rng());
+    let pk = PublicKey::from(&wrong_sk);
+
+    assert!(
+        !network
+            .query::<_, bool>(
+                contract_id,
+                (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
+                &mut gas
+            )
+            .unwrap(),
+        "Signature verification expected to fail"
     );
 }
