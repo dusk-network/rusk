@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 canonical = {version="0.5", default-features=false}
 canonical_derive = "0.5"
 dusk-abi = "0.5"
-rusk-abi = { path = "../../rusk-abi", version = "0.1" }
+rusk-abi = { path = "../../rusk-abi" }
 dusk-bytes = "0.1"
 dusk-bls12_381 = {version="0.6", features=["canon"], default-features=false}
 dusk-jubjub = {version="0.8", features=["canon"], default-features=false}
