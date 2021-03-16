@@ -11,14 +11,13 @@ use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
 use phoenix_core::{Error as PhoenixError, Message, Note};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {
-    pi_positions: Vec<PublicInput>,
-
     input_value: u64,
     input_blinding_factor: JubJubScalar,
     change_r: JubJubScalar,
@@ -66,7 +65,6 @@ impl WithdrawFromObfuscatedCircuit {
         let output_value_commitment = *output.value_commitment();
 
         Ok(Self {
-            pi_positions: vec![],
             input_value,
             input_blinding_factor,
             input_value_commitment,
@@ -84,10 +82,14 @@ impl WithdrawFromObfuscatedCircuit {
     }
 }
 
-impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let mut pi = vec![];
+impl Circuit for WithdrawFromObfuscatedCircuit {
+    // TODO Define ID
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
 
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<(), PlonkError> {
         // 1. Prove the knowledge of the commitment opening of the commitment of
         // the input
         let input_value = composer.add_input(self.input_value.into());
@@ -99,11 +101,6 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
             gadgets::commitment(composer, input_value, input_blinding_factor);
 
         let input_value_commitment = self.input_value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            input_value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer.assert_equal_public_point(
             input_value_commitment_p,
             input_value_commitment,
@@ -124,11 +121,6 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
             gadgets::commitment(composer, change_value, change_blinding_factor);
 
         let change_value_commitment = self.change_value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            change_value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer.assert_equal_public_point(
             change_value_commitment_p,
             change_value_commitment,
@@ -146,24 +138,15 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
         // of the Message  is within correctly encrypted to the derivative of pk
         let change_nonce = self.change_nonce.into();
         let change_nonce_p = composer.add_input(change_nonce);
-        pi.push(PublicInput::BlsScalar(
-            change_nonce,
-            composer.circuit_size(),
-        ));
         composer.constrain_to_constant(
             change_nonce_p,
             BlsScalar::zero(),
-            -change_nonce,
+            Some(-change_nonce),
         );
         let change_nonce = change_nonce_p;
 
         let change_r = composer.add_input(self.change_r.into());
         let change_pk = self.change_pk.into();
-        pi.push(PublicInput::AffinePoint(
-            change_pk,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         let change_pk = Point::from_public_affine(composer, change_pk);
         let cipher_secret =
             variable_base_scalar_mul(composer, change_r, change_pk);
@@ -181,8 +164,7 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
             .for_each(|(c, w)| {
                 let c = *c;
 
-                pi.push(PublicInput::BlsScalar(c, composer.circuit_size()));
-                composer.constrain_to_constant(*w, BlsScalar::zero(), -c);
+                composer.constrain_to_constant(*w, BlsScalar::zero(), Some(-c));
             });
 
         // 8. Prove the knowledge of the commitment opening of the commitment of
@@ -196,11 +178,6 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
             gadgets::commitment(composer, output_value, output_blinding_factor);
 
         let output_value_commitment = self.output_value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            output_value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer.assert_equal_public_point(
             output_value_commitment_p,
             output_value_commitment,
@@ -220,29 +197,14 @@ impl Circuit<'_> for WithdrawFromObfuscatedCircuit {
             -BlsScalar::one(),
             -BlsScalar::one(),
             BlsScalar::zero(),
-            BlsScalar::zero(),
+            None,
         );
-
-        self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
 
         Ok(())
     }
 
-    fn get_trim_size(&self) -> usize {
+    fn padded_circuit_size(&self) -> usize {
         1 << 13
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
     }
 }
 

@@ -4,7 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(once_cell)]
+
+use std::borrow::Borrow;
 use std::convert::{TryFrom, TryInto};
+use std::lazy::SyncLazy;
 use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
 use transfer_contract::{Call, TransferContract};
 
@@ -12,9 +16,11 @@ use canonical::Store;
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::circuit_builder::Circuit;
-use dusk_plonk::commitment_scheme::kzg10::srs::PublicParameters;
-use dusk_plonk::proof_system::ProverKey;
+use dusk_plonk::circuit::Circuit;
+// TODO check if PLONK will share the PP outside prelude
+use dusk_plonk::prelude::PublicParameters;
+// TODO check if PLONK will share the PK outside prelude
+use dusk_plonk::prelude::ProverKey;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Note};
 use rand::rngs::StdRng;
@@ -27,9 +33,14 @@ const CODE: &'static [u8] = include_bytes!(
     "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
+static PP: SyncLazy<PublicParameters> = SyncLazy::new(|| unsafe {
+    let pp = rusk_profile::get_common_reference_string().unwrap();
+
+    PublicParameters::from_slice_unchecked(pp.as_slice())
+});
+
 pub struct TransferWrapper<S: Store> {
     rng: StdRng,
-    pp: PublicParameters,
     network: NetworkState<S>,
     contract: ContractId,
     gas: GasMeter,
@@ -44,14 +55,9 @@ impl<S: Store> TransferWrapper<S> {
         store: &S,
     ) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
-        let pp = rusk_profile::get_common_reference_string().unwrap();
-        let pp = unsafe {
-            PublicParameters::from_slice_unchecked(pp.as_slice()).unwrap()
-        };
-
         let mut network = NetworkState::with_block_height(block_height);
 
-        let rusk_mod = RuskModule::new(store.clone());
+        let rusk_mod = RuskModule::new(store.clone(), &*PP);
         network.register_host_module(rusk_mod);
 
         let genesis_ssk = SecretSpendKey::random(&mut rng);
@@ -72,7 +78,6 @@ impl<S: Store> TransferWrapper<S> {
 
         Self {
             rng,
-            pp,
             network,
             contract,
             gas,
@@ -184,7 +189,7 @@ impl<S: Store> TransferWrapper<S> {
         let keys = rusk_profile::keys_for("transfer-circuits");
         let (pk, _) = keys.get(rusk_id).unwrap();
 
-        ProverKey::from_bytes(pk.as_slice()).unwrap()
+        ProverKey::from_slice(pk.as_slice()).unwrap()
     }
 
     pub fn send_to_contract_transparent(
@@ -262,7 +267,7 @@ impl<S: Store> TransferWrapper<S> {
         let pk = Self::prover_key(execute_proof.rusk_keys_id());
         // TODO dusk-abi should use the same label
         let spend_proof_execute = execute_proof
-            .gen_proof(&self.pp, &pk, b"execute-proof")
+            .gen_proof(&*PP, &pk, b"execute-proof")
             .unwrap();
         let spend_proof_execute = spend_proof_execute.to_bytes().to_vec();
 
@@ -280,7 +285,7 @@ impl<S: Store> TransferWrapper<S> {
             Self::prover_key(SendToContractTransparentCircuit::rusk_keys_id());
         // TODO dusk-abi should use the same label
         let spend_proof_stct =
-            stct_proof.gen_proof(&self.pp, &pk, b"stct-proof").unwrap();
+            stct_proof.gen_proof(&*PP, &pk, b"stct-proof").unwrap();
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
         let call = Call::send_to_contract_transparent(
@@ -378,7 +383,7 @@ impl<S: Store> TransferWrapper<S> {
         let pk = Self::prover_key(execute_proof.rusk_keys_id());
         // TODO dusk-abi should use the same label
         let spend_proof_execute = execute_proof
-            .gen_proof(&self.pp, &pk, b"execute-proof")
+            .gen_proof(&*PP, &pk, b"execute-proof")
             .unwrap();
         let spend_proof_execute = spend_proof_execute.to_bytes().to_vec();
 
@@ -475,7 +480,7 @@ impl<S: Store> TransferWrapper<S> {
         let pk = Self::prover_key(execute_proof.rusk_keys_id());
         // TODO dusk-abi should use the same label
         let spend_proof_execute = execute_proof
-            .gen_proof(&self.pp, &pk, b"execute-proof")
+            .gen_proof(&*PP, &pk, b"execute-proof")
             .unwrap();
         let spend_proof_execute = spend_proof_execute.to_bytes().to_vec();
 

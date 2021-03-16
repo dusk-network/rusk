@@ -10,8 +10,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 canonical = {version="0.5", default-features=false}
 canonical_derive = "0.5"
-#dusk-abi = {git="https://github.com/dusk-network/dusk-abi", branch="fix-state"}
-dusk-abi = {path="/home/vlopes/dev/dusk/dusk-abi"}
+dusk-abi = {git="https://github.com/dusk-network/dusk-abi", branch="release-0.7"}
 rusk-abi = {path="../../rusk-abi"}
 dusk-bytes = "0.1"
 dusk-bls12_381 = {version="0.6", features=["canon"], default-features=false}
@@ -21,30 +20,16 @@ dusk-pki = { version = "0.6", default-features = false}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.9.1", features = ["canon"]}
 dusk-kelvin-map = "0.3"
 
-# Test dependencies
-rand = {version="0.7", optional=true}
-rusk = { path = "../../rusk", optional=true}
-canonical_host = {version="0.5", optional=true}
-transfer-circuits = {path="../../circuits/transfer", optional=true}
-dusk-plonk = {version="0.5", optional=true}
-rusk-profile = {path="../../rusk-profile", optional=true}
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rand = "0.7"
+canonical_host = "0.5"
+rusk = {path = "../../rusk"}
+transfer-circuits = {path="../../circuits/transfer"}
+dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="release-0.6", features=["canon"]}
+rusk-profile = {path="../../rusk-profile"}
 
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
-
-[features]
-default=["host"]
-host=[
-    "rand",
-    "canonical_host",
-    "dusk-plonk",
-    "rusk-profile",
-    "transfer-circuits",
-    "rusk"
-]
-
-#[patch.crates-io]
-#dusk-abi = {path="/home/vlopes/dev/dusk/dusk-abi/"}

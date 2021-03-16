@@ -49,7 +49,7 @@ impl<S: Store> TransferContract<S> {
             .expect("Failed to add the balance to the provided address!");
 
         //  3. if a.isPayable() ↦ true then continue
-        Self::assert_paylable(&address)
+        Self::assert_payable(&address)
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, v, π)
@@ -131,7 +131,7 @@ impl<S: Store> TransferContract<S> {
             .expect("Failed to append the message to the state!");
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_paylable(&address)
+        Self::assert_payable(&address)
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, M, pk, π)
@@ -194,7 +194,7 @@ impl<S: Store> TransferContract<S> {
             .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_paylable(&address)
+        Self::assert_payable(&address)
             .expect("The provided address is not payable!");
 
         //  7. verify(c, M_c, No.c, π)

@@ -4,17 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![deny(clippy::all)]
+
 mod contracts;
 
 use rusk_vm::{Contract, GasMeter, NetworkState};
 
+use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::ParseHexStr;
-
-use canonical_host::MemStore as MS;
+use dusk_jubjub::JubJubAffine;
+use dusk_pki::{PublicKey, SecretKey};
+use dusk_plonk::prelude::*;
+use schnorr::Signature;
 
 use host_fn::HostFnTest;
+use rusk_abi::PublicInput;
 use rusk_abi::RuskModule;
+
+lazy_static::lazy_static! {
+    static ref PUB_PARAMS: PublicParameters = {
+        let pp = include_bytes!("./pp_test.bin");
+        unsafe { PublicParameters::from_slice_unchecked(&pp[..]) }
+    };
+}
 
 #[test]
 fn poseidon_hash() {
@@ -29,7 +42,7 @@ fn poseidon_hash() {
         .map(|input| BlsScalar::from_hex_str(input).unwrap())
         .collect();
 
-    let hash = HostFnTest::new();
+    let host = HostFnTest::new();
 
     let store = MS::new();
 
@@ -37,12 +50,10 @@ fn poseidon_hash() {
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(hash, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
 
     let mut network = NetworkState::<MS>::default();
-
-    let rusk_mod = RuskModule::new(store.clone());
-
+    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -62,4 +73,112 @@ fn poseidon_hash() {
                 .unwrap()
         )
     );
+}
+
+#[test]
+fn schnorr_signature() {
+    let host = HostFnTest::new();
+
+    let store = MS::new();
+
+    let code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+    );
+
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+
+    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
+    let mut network = NetworkState::<MS>::default();
+    network.register_host_module(rusk_mod);
+
+    let contract_id = network.deploy(contract).unwrap();
+
+    let mut gas = GasMeter::with_limit(1_000_000_000);
+
+    let sk = SecretKey::random(&mut rand::thread_rng());
+    let message = BlsScalar::random(&mut rand::thread_rng());
+    let pk = PublicKey::from(&sk);
+
+    let sign = Signature::new(&sk, &mut rand::thread_rng(), message);
+
+    assert!(sign.verify(&pk, message));
+
+    assert!(
+        network
+            .query::<_, bool>(
+                contract_id,
+                (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
+                &mut gas
+            )
+            .unwrap(),
+        "Signature verification expected to succeed"
+    );
+
+    let wrong_sk = SecretKey::random(&mut rand::thread_rng());
+    let pk = PublicKey::from(&wrong_sk);
+
+    assert!(
+        !network
+            .query::<_, bool>(
+                contract_id,
+                (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
+                &mut gas
+            )
+            .unwrap(),
+        "Signature verification expected to fail"
+    );
+}
+
+#[test]
+fn verify_proof() {
+    let host = HostFnTest::new();
+
+    let store = MS::new();
+
+    let code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+    );
+
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+
+    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
+    let mut network = NetworkState::<MS>::default();
+    network.register_host_module(rusk_mod);
+
+    let contract_id = network.deploy(contract).unwrap();
+
+    let mut gas = GasMeter::with_limit(1_000_000_000);
+
+    // Read VerifierKey
+    let vk = include_bytes!("./vk_test.bin");
+
+    // Read the Proof
+    let proof = include_bytes!("./proof_test.bin");
+
+    // Public Input Values
+    let pi_values: Vec<PublicInput> = vec![
+        PublicInput::BlsScalar(BlsScalar::from(25u64)),
+        PublicInput::BlsScalar(BlsScalar::from(100u64)),
+        PublicInput::Point(dusk_jubjub::GENERATOR),
+        PublicInput::Point(JubJubAffine::from(
+            dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::from(2u64),
+        )),
+    ];
+
+    // Public Input Positions
+    let pi_positions = vec![3u32, 20, 21, 22, 2041, 2042];
+
+    assert!(network
+        .query::<_, bool>(
+            contract_id,
+            (
+                host_fn::VERIFY,
+                proof.to_vec(),
+                vk.to_vec(),
+                pi_values,
+                pi_positions
+            ),
+            &mut gas
+        )
+        .unwrap());
 }

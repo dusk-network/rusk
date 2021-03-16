@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(once_cell)]
+
 use canonical_host::MemStore;
 use phoenix_core::Note;
 

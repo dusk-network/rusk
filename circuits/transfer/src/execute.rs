@@ -18,6 +18,7 @@ use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::{
     JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{
@@ -36,11 +37,20 @@ mod output;
 #[cfg(test)]
 mod tests;
 
+/// Constant message for the schnorr signature generation
+///
+/// The signature is provided outside the circuit; so that's why it is
+/// constant
+///
+/// The contents of the message are yet to be defined in the documentation.
+/// For now, it is treated as a constant.
+///
+/// https://github.com/dusk-network/rusk/issues/178
+pub(crate) const SIGN_MESSAGE: BlsScalar = BlsScalar::one();
+
 /// The circuit responsible for creating a zero-knowledge proof
-/// for a 'send to contract transparent' transaction.
 #[derive(Debug, Default, Clone)]
 pub struct ExecuteCircuit {
-    pi_positions: Vec<PublicInput>,
     inputs: Vec<CircuitInput>,
     crossover: CircuitCrossover,
     outputs: Vec<CircuitOutput>,
@@ -75,7 +85,7 @@ impl ExecuteCircuit {
         ssk: &SecretSpendKey,
         note: &Note,
     ) -> SchnorrProof {
-        let message = Self::sign_message();
+        let message = SIGN_MESSAGE;
         let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
         let secret = SecretKey::from(&sk_r);
 
@@ -218,24 +228,16 @@ impl ExecuteCircuit {
 
         Ok(())
     }
-
-    /// Constant message for the schnorr signature generation
-    ///
-    /// The signature is provided outside the circuit; so that's why it is
-    /// constant
-    ///
-    /// The contents of the message are yet to be defined in the documentation.
-    /// For now, it is treated as a constant.
-    ///
-    /// https://github.com/dusk-network/rusk/issues/178
-    pub const fn sign_message() -> BlsScalar {
-        BlsScalar::one()
-    }
 }
 
-impl Circuit<'_> for ExecuteCircuit {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let mut pi = vec![];
+impl Circuit for ExecuteCircuit {
+    // TODO Define ID
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
+
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<(), PlonkError> {
         let mut base_root = None;
 
         // 1. Prove the knowledge of the input Note paths to Note Tree, via root
@@ -258,15 +260,10 @@ impl Circuit<'_> for ExecuteCircuit {
                     None => {
                         let root = *branch.root();
 
-                        pi.push(PublicInput::BlsScalar(
-                            root,
-                            composer.circuit_size(),
-                        ));
-
                         composer.constrain_to_constant(
                             root_p,
                             BlsScalar::zero(),
-                            -root,
+                            Some(-root),
                         );
 
                         base_root.replace(root_p);
@@ -312,11 +309,10 @@ impl Circuit<'_> for ExecuteCircuit {
 
             let nullifier_p = sponge::gadget(composer, &[sk_r, pos]);
 
-            pi.push(PublicInput::BlsScalar(nullifier, composer.circuit_size()));
             composer.constrain_to_constant(
                 nullifier_p,
                 BlsScalar::zero(),
-                -nullifier,
+                Some(-nullifier),
             );
         });
 
@@ -349,25 +345,14 @@ impl Circuit<'_> for ExecuteCircuit {
             );
 
             // fee value public input
-            pi.push(PublicInput::BlsScalar(
-                crossover.fee_value,
-                composer.circuit_size(),
-            ));
-
             composer.constrain_to_constant(
                 crossover.fee_value_witness,
                 BlsScalar::zero(),
-                -crossover.fee_value,
+                Some(-crossover.fee_value),
             );
 
             // value commitment public input
             let value_commitment = crossover.value_commitment.into();
-            pi.push(PublicInput::AffinePoint(
-                value_commitment,
-                composer.circuit_size(),
-                composer.circuit_size() + 1,
-            ));
-
             composer.assert_equal_public_point(
                 value_commitment_p,
                 value_commitment,
@@ -394,12 +379,6 @@ impl Circuit<'_> for ExecuteCircuit {
 
                 // value commitment public input
                 let value_commitment = output.value_commitment.into();
-                pi.push(PublicInput::AffinePoint(
-                    value_commitment,
-                    composer.circuit_size(),
-                    composer.circuit_size() + 1,
-                ));
-
                 composer.assert_equal_public_point(
                     value_commitment_p,
                     value_commitment,
@@ -426,7 +405,7 @@ impl Circuit<'_> for ExecuteCircuit {
                     (BlsScalar::one(), sum),
                     (BlsScalar::one(), input.value),
                     BlsScalar::zero(),
-                    BlsScalar::zero(),
+                    None,
                 )
             });
 
@@ -435,7 +414,7 @@ impl Circuit<'_> for ExecuteCircuit {
                     (BlsScalar::one(), sum),
                     (BlsScalar::one(), output.value),
                     BlsScalar::zero(),
-                    BlsScalar::zero(),
+                    None,
                 )
             });
 
@@ -443,7 +422,7 @@ impl Circuit<'_> for ExecuteCircuit {
                 (BlsScalar::one(), crossover.value),
                 (BlsScalar::one(), crossover.fee_value_witness),
                 BlsScalar::zero(),
-                BlsScalar::zero(),
+                None,
             );
 
             composer.poly_gate(
@@ -455,7 +434,7 @@ impl Circuit<'_> for ExecuteCircuit {
                 -BlsScalar::one(),
                 -BlsScalar::one(),
                 BlsScalar::zero(),
-                BlsScalar::zero(),
+                None,
             );
         }
 
@@ -468,40 +447,20 @@ impl Circuit<'_> for ExecuteCircuit {
         // a malicious actor. It is cheaper than checking individually
         // for the pre-image of every output.
         let tx_hash = composer.add_input(self.tx_hash);
-        pi.push(PublicInput::BlsScalar(
-            self.tx_hash,
-            composer.circuit_size(),
-        ));
-
         composer.constrain_to_constant(
             tx_hash,
             BlsScalar::zero(),
-            -self.tx_hash,
+            Some(-self.tx_hash),
         );
-
-        self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
 
         Ok(())
     }
 
-    fn get_trim_size(&self) -> usize {
+    fn padded_circuit_size(&self) -> usize {
         match self.inputs.len() {
             1 => 1 << 15,
             2 => 1 << 16,
             _ => 1 << 17,
         }
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
     }
 }

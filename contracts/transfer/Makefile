@@ -10,10 +10,13 @@ wasm: ## Build the WASM files
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
+		-Zfeatures=itarget \
 		-- -C link-args=-s
 
 check: wasm ## Run the Rust check on the project features
-	@cargo check --target wasm32-unknown-unknown --no-default-features
+	@cargo check --target wasm32-unknown-unknown \
+		--no-default-features \
+		-Zfeatures=itarget
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host module

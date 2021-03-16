@@ -12,6 +12,7 @@ use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
 use dusk_poseidon::sponge;
@@ -21,8 +22,6 @@ use schnorr::Signature;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractObfuscatedCircuit {
-    pi_positions: Vec<PublicInput>,
-
     signature: Signature,
 
     value: u64,
@@ -39,42 +38,6 @@ pub struct SendToContractObfuscatedCircuit {
     message_cipher: [BlsScalar; PoseidonCipher::cipher_size()],
     pk: JubJubExtended,
     message_pk: JubJubExtended,
-}
-
-// TODO
-// This unsafe implementation is done that way because the rusk structure
-// combined with plonk requires an instance of this struct to be able to verify
-// proofs.
-//
-// That should be different since only the keys, the proof and the public inputs
-// should provide the required data to run the verification
-//
-// The `schnorr::Signature` doesn't implement `Default`, and shouldn't. This
-// unsafe usage is a workaround until the following issue is solved:
-// https://github.com/dusk-network/plonk/issues/396
-//
-// After that, this `Default` implementation can be removed.
-// https://github.com/dusk-network/rusk/issues/183
-impl Default for SendToContractObfuscatedCircuit {
-    fn default() -> Self {
-        use std::mem;
-
-        Self {
-            pi_positions: Default::default(),
-            signature: unsafe { mem::zeroed() },
-            value: Default::default(),
-            blinding_factor: Default::default(),
-            message_value: Default::default(),
-            message_blinding_factor: Default::default(),
-            message_r: Default::default(),
-            value_commitment: Default::default(),
-            message_value_commitment: Default::default(),
-            message_nonce: Default::default(),
-            message_cipher: Default::default(),
-            pk: Default::default(),
-            message_pk: Default::default(),
-        }
-    }
 }
 
 impl SendToContractObfuscatedCircuit {
@@ -132,7 +95,6 @@ impl SendToContractObfuscatedCircuit {
         let message_cipher = *message.cipher();
 
         Ok(Self {
-            pi_positions: vec![],
             blinding_factor,
             signature,
             value,
@@ -149,10 +111,14 @@ impl SendToContractObfuscatedCircuit {
     }
 }
 
-impl Circuit<'_> for SendToContractObfuscatedCircuit {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let mut pi = vec![];
+impl Circuit for SendToContractObfuscatedCircuit {
+    // TODO Define ID
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
 
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<(), PlonkError> {
         // 1. Prove the knowledge of the commitment opening of the
         // commitment
         let value = composer.add_input(self.value.into());
@@ -164,11 +130,6 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
             gadgets::commitment(composer, value, blinding_factor);
 
         let value_commitment = self.value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer
             .assert_equal_public_point(value_commitment_p, value_commitment);
 
@@ -181,11 +142,6 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
         let pk = self.pk.into();
-        pi.push(PublicInput::AffinePoint(
-            pk,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         let pk = Point::from_public_affine(composer, pk);
 
         let r = Point::from_private_affine(composer, self.signature.R().into());
@@ -207,11 +163,6 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         );
 
         let message_value_commitment = self.message_value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            message_value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer.assert_equal_public_point(
             message_value_commitment_p,
             message_value_commitment,
@@ -227,24 +178,15 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
         // of the Message  is within correctly encrypted to the derivative of pk
         let message_nonce = self.message_nonce.into();
         let message_nonce_p = composer.add_input(message_nonce);
-        pi.push(PublicInput::BlsScalar(
-            message_nonce,
-            composer.circuit_size(),
-        ));
         composer.constrain_to_constant(
             message_nonce_p,
             BlsScalar::zero(),
-            -message_nonce,
+            Some(-message_nonce),
         );
         let message_nonce = message_nonce_p;
 
         let message_r = composer.add_input(self.message_r.into());
         let message_pk = self.message_pk.into();
-        pi.push(PublicInput::AffinePoint(
-            message_pk,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         let message_pk = Point::from_public_affine(composer, message_pk);
         let cipher_secret =
             variable_base_scalar_mul(composer, message_r, message_pk);
@@ -262,33 +204,17 @@ impl Circuit<'_> for SendToContractObfuscatedCircuit {
             .for_each(|(c, w)| {
                 let c = *c;
 
-                pi.push(PublicInput::BlsScalar(c, composer.circuit_size()));
-                composer.constrain_to_constant(*w, BlsScalar::zero(), -c);
+                composer.constrain_to_constant(*w, BlsScalar::zero(), Some(-c));
             });
 
         // 8. Prove that v_c - v_m = 0
         composer.assert_equal(value, message_value);
 
-        self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
-
         Ok(())
     }
 
-    fn get_trim_size(&self) -> usize {
+    fn padded_circuit_size(&self) -> usize {
         1 << 14
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
     }
 }
 

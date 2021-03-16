@@ -20,10 +20,6 @@ use dusk_plonk::prelude::*;
 const POSEIDON_BRANCH_DEPTH: usize = 17;
 
 impl ExecuteCircuit {
-    pub const fn transcript_label() -> &'static [u8] {
-        b"execute-circuit"
-    }
-
     pub fn create_dummy_note<R: RngCore + CryptoRng>(
         rng: &mut R,
         psk: &PublicSpendKey,
@@ -134,6 +130,7 @@ impl ExecuteCircuit {
         Ok(circuit)
     }
 
+    /*
     pub fn create_dummy_proof<R: RngCore + CryptoRng, S: Store>(
         rng: &mut R,
         pp: Option<PublicParameters>,
@@ -176,6 +173,7 @@ impl ExecuteCircuit {
 
         Ok((circuit, pp, pk, vk, proof, pi))
     }
+    */
 }
 
 #[derive(Debug, Clone, Canon)]
@@ -217,16 +215,16 @@ where
 }
 
 #[allow(unused_variables)]
-pub fn circuit_keys<'a, R, C>(
+pub fn circuit_keys<R, C>(
     rng: &mut R,
     pp: Option<PublicParameters>,
     circuit: &mut C,
     id: &str,
     use_rusk_profile: bool,
-) -> Result<(PublicParameters, ProverKey, VerifierKey)>
+) -> Result<(PublicParameters, ProverKey, VerifierKey, Vec<usize>)>
 where
     R: RngCore + CryptoRng,
-    C: Circuit<'a>,
+    C: Circuit,
 {
     if use_rusk_profile {
         let pp = pp.map(|pp| Ok(pp)).unwrap_or({
@@ -234,7 +232,7 @@ where
                 .map_err(|e| {
                     anyhow!("Failed to fetch CRS from rusk profile: {}", e)
                 })
-                .and_then(|pp| unsafe {
+                .map(|pp| unsafe {
                     PublicParameters::from_slice_unchecked(pp.as_slice())
                 })
         })?;
@@ -246,17 +244,17 @@ where
             env!("CARGO_PKG_NAME")
         ))?;
 
-        let pk = ProverKey::from_bytes(pk.as_slice())?;
-        let vk = VerifierKey::from_bytes(vk.as_slice())?;
+        let pk = ProverKey::from_slice(pk.as_slice())?;
+        let vk = VerifierKey::from_slice(vk.as_slice())?;
 
         Ok((pp, pk, vk))
     } else {
-        let pp = pp
-            .map(|pp| Ok(pp))
-            .unwrap_or(PublicParameters::setup(circuit.get_trim_size(), rng))?;
+        let pp = pp.map(|pp| Ok(pp)).unwrap_or(PublicParameters::setup(
+            circuit.padded_circuit_size(),
+            rng,
+        ))?;
 
-        let (pk, vk) = circuit.compile(&pp)?;
-        circuit.get_mut_pi_positions().clear();
+        let (pk, vk, pi) = circuit.compile(&pp)?;
 
         Ok((pp, pk, vk))
     }

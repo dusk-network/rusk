@@ -225,9 +225,7 @@ impl<S: Store> TransferContract<S> {
         Ok((crossover, pk))
     }
 
-    pub(crate) fn assert_paylable(
-        _address: &BlsScalar,
-    ) -> Result<(), S::Error> {
+    pub(crate) fn assert_payable(_address: &BlsScalar) -> Result<(), S::Error> {
         //  FIXME Use isPayable definition
         //  https://github.com/dusk-network/rusk-vm/issues/151
 
