@@ -6,6 +6,9 @@ help: ## Display this help screen
 abi: ## Build the ABI and test it
 	$(MAKE) -C ./rusk-abi test
 
+macros: ## Build the workspace macro libs and test them
+	$(MAKE) -C ./macros test
+
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk keys
 
