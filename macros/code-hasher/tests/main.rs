@@ -42,6 +42,14 @@ pub mod testing_module {
     }
 }
 
+#[code_hasher::hash(SOME_CONST_NAME)]
+pub mod testing_module_without_version {
+
+    pub fn this_does_something() -> [u8; 32] {
+        SOME_CONST_NAME
+    }
+}
+
 mod tests {
     use super::*;
 
@@ -65,5 +73,9 @@ mod tests {
     #[test]
     fn custom_mods_and_names_work() {
         assert_ne!(testing_module::this_does_something(), [0u8; 32]);
+        assert_ne!(
+            testing_module::this_does_something(),
+            testing_module_without_version::this_does_something()
+        );
     }
 }

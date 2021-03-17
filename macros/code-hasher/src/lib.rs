@@ -40,7 +40,7 @@ pub fn hash(_attr: TokenStream, _input: TokenStream) -> TokenStream {
     let attrs_split: Vec<&str> = attrs_string.split(",").collect();
 
     // Add the code version (passed as attribute) to the hasher.
-    hasher.update(attrs_split.get(1).expect("Missing code version").as_bytes());
+    hasher.update(attrs_split.get(1).unwrap_or(&"").as_bytes());
     hasher.update(_input.to_string().as_bytes());
 
     let id = hasher.finalize().as_bytes().clone();
