@@ -29,22 +29,22 @@ use blake3::Hasher;
 use proc_macro::TokenStream;
 
 #[proc_macro_attribute]
-pub fn hash(_attr: TokenStream, _input: TokenStream) -> TokenStream {
+pub fn hash(attr: TokenStream, input: TokenStream) -> TokenStream {
     let mut hasher = Hasher::new();
     // Add to the hasher the version of the crate used to create the code block
     // hash.
     hasher.update(env!("CARGO_PKG_VERSION_MINOR").as_bytes());
 
     // We need to `let` this otherways it gets freed while borrowed.
-    let attrs_string = format!("{}", _attr.to_string());
+    let attrs_string = format!("{}", attr.to_string());
     let attrs_split: Vec<&str> = attrs_string.split(",").collect();
 
     // Add the code version (passed as attribute) to the hasher.
     hasher.update(attrs_split.get(1).unwrap_or(&"").as_bytes());
-    hasher.update(_input.to_string().as_bytes());
+    hasher.update(input.to_string().as_bytes());
 
     let id = hasher.finalize().as_bytes().clone();
-    let mut token_stream = format!("{}", _input.to_string());
+    let mut token_stream = format!("{}", input.to_string());
     token_stream.pop();
     token_stream.push_str(&format!(
         "    const {}: [u8; 32] = {:?};",
