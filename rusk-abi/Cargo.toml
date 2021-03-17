@@ -24,7 +24,7 @@ dusk-pki = { version = "0.6", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.8", default-features = false, features = ["canon"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dusk-plonk = { version = "0.6", default-features = false, features = ["canon"] }
+dusk-plonk = { version = "0.7.0-pre", default-features = false, features = ["canon"] }
 rusk-profile = { path = "../rusk-profile", version = "0.3" }
 dusk-bytes = "0.1"
 

@@ -23,6 +23,9 @@ use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 
 /// Module that exports the ABI for Rusk's Contracts
+///
+/// Any proof to be verified with this module should use `b"dusk-network` as
+/// transcript initialization
 #[allow(dead_code)]
 pub struct RuskModule<S> {
     store: S,
@@ -55,6 +58,24 @@ pub enum PublicInput {
     BlsScalar(BlsScalar),
     /// A Public Input JubJub Scalar
     JubJubScalar(JubJubScalar),
+}
+
+impl From<BlsScalar> for PublicInput {
+    fn from(s: BlsScalar) -> PublicInput {
+        Self::BlsScalar(s)
+    }
+}
+
+impl From<JubJubScalar> for PublicInput {
+    fn from(s: JubJubScalar) -> PublicInput {
+        Self::JubJubScalar(s)
+    }
+}
+
+impl From<JubJubAffine> for PublicInput {
+    fn from(p: JubJubAffine) -> PublicInput {
+        Self::Point(p)
+    }
 }
 
 cfg_if::cfg_if! {
