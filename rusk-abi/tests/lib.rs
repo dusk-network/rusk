@@ -13,14 +13,14 @@ use rusk_vm::{Contract, GasMeter, NetworkState};
 use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::ParseHexStr;
-use dusk_jubjub::JubJubAffine;
+use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, SecretKey};
+use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
 use schnorr::Signature;
 
 use host_fn::HostFnTest;
-use rusk_abi::PublicInput;
-use rusk_abi::RuskModule;
+use rusk_abi::{PublicInput, RuskModule};
 
 lazy_static::lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -129,8 +129,78 @@ fn schnorr_signature() {
     );
 }
 
+#[derive(Debug)]
+pub struct TestCircuit {
+    pub a: BlsScalar,
+    pub b: BlsScalar,
+    pub c: BlsScalar,
+}
+
+impl TestCircuit {
+    pub fn new(a: u64, b: u64) -> Self {
+        let a = a.into();
+        let b = b.into();
+        let c = a + b;
+
+        Self { a, b, c }
+    }
+}
+
+impl Circuit for TestCircuit {
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
+
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
+        let zero =
+            composer.add_witness_to_circuit_description(BlsScalar::zero());
+        let a = composer.add_input(self.a);
+        let b = composer.add_input(self.b);
+
+        // Make first constraint a + b = c
+        composer.poly_gate(
+            a,
+            b,
+            zero,
+            BlsScalar::zero(),
+            BlsScalar::one(),
+            BlsScalar::one(),
+            BlsScalar::zero(),
+            BlsScalar::zero(),
+            Some(-self.c),
+        );
+
+        Ok(())
+    }
+
+    fn padded_circuit_size(&self) -> usize {
+        1 << 3
+    }
+}
+
 #[test]
 fn verify_proof() {
+    let mut circuit = TestCircuit::new(1, 2);
+
+    let label = b"dusk-network";
+    let (pk, verifier_data) = circuit
+        .compile(&PUB_PARAMS)
+        .expect("Failed to compile the circuit!");
+
+    let proof = circuit
+        .gen_proof(&PUB_PARAMS, &pk, label)
+        .expect("Failed to generate the proof!");
+    let pi = vec![circuit.c.into()];
+
+    // Sanity check
+    circuit::verify_proof(
+        &PUB_PARAMS,
+        &verifier_data.key(),
+        &proof,
+        pi.as_slice(),
+        verifier_data.pi_pos().as_slice(),
+        label,
+    )
+    .expect("Failed to verify the proof!");
+
     let host = HostFnTest::new();
 
     let store = MS::new();
@@ -149,36 +219,57 @@ fn verify_proof() {
 
     let mut gas = GasMeter::with_limit(1_000_000_000);
 
-    // Read VerifierKey
-    let vk = include_bytes!("./vk_test.bin");
+    let proof = proof.to_bytes().to_vec();
+    let verifier_data = verifier_data.to_var_bytes();
+    let pi: Vec<PublicInput> = vec![circuit.c.into()];
 
-    // Read the Proof
-    let proof = include_bytes!("./proof_test.bin");
+    let proof = (host_fn::VERIFY, proof, verifier_data, pi);
 
-    // Public Input Values
-    let pi_values: Vec<PublicInput> = vec![
-        PublicInput::BlsScalar(BlsScalar::from(25u64)),
-        PublicInput::BlsScalar(BlsScalar::from(100u64)),
-        PublicInput::Point(dusk_jubjub::GENERATOR),
-        PublicInput::Point(JubJubAffine::from(
-            dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::from(2u64),
-        )),
-    ];
+    let ret = network
+        .query::<_, bool>(contract_id, proof, &mut gas)
+        .expect("Failed to verify the proof with rusk-abi!");
+    assert!(ret);
+}
 
-    // Public Input Positions
-    let pi_positions = vec![3u32, 20, 21, 22, 2041, 2042];
+#[test]
+fn verify_proof_should_fail() {
+    let mut circuit = TestCircuit::new(1, 2);
 
-    assert!(network
-        .query::<_, bool>(
-            contract_id,
-            (
-                host_fn::VERIFY,
-                proof.to_vec(),
-                vk.to_vec(),
-                pi_values,
-                pi_positions
-            ),
-            &mut gas
-        )
-        .unwrap());
+    let label = b"dusk-network";
+    let (pk, verifier_data) = circuit
+        .compile(&PUB_PARAMS)
+        .expect("Failed to compile the circuit!");
+
+    let proof = circuit
+        .gen_proof(&PUB_PARAMS, &pk, label)
+        .expect("Failed to generate the proof!");
+
+    let host = HostFnTest::new();
+
+    let store = MS::new();
+
+    let code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+    );
+
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+
+    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
+    let mut network = NetworkState::<MS>::default();
+    network.register_host_module(rusk_mod);
+
+    let contract_id = network.deploy(contract).unwrap();
+
+    let mut gas = GasMeter::with_limit(1_000_000_000);
+
+    let proof = proof.to_bytes().to_vec();
+    let verifier_data = verifier_data.to_var_bytes();
+    let pi: Vec<PublicInput> = vec![BlsScalar::from(4).into()];
+
+    let proof = (host_fn::VERIFY, proof, verifier_data, pi);
+
+    let ret = network
+        .query::<_, bool>(contract_id, proof, &mut gas)
+        .expect("Failed to verify the proof with rusk-abi!");
+    assert!(!ret);
 }
