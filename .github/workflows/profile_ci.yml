@@ -24,10 +24,4 @@ jobs:
           toolchain: nightly-2021-01-31
           override: true
       - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        env:
-          RUSK_BUILD_BID_KEYS: 1
-          RUSK_BUILD_TRANSFER_KEYS: 1
-        with:
-          command: build
-          args: --release -vv
+      - run: make keys

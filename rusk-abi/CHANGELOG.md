@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Change `verify_proof` to accept verifier data [#247]
+
+## [0.2.0] - 2021-03-12
+
 ### Added
 
-- Add `verify_proof` host function
+- Add `verify_proof` host function [#227]
 - Add `PublicInput` enum wrapper for input types
 - Add `PublicParameters` as field of `RuskModule`
 - Add Schnorr Signature verification host function
@@ -33,4 +39,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#227]: https://github.com/dusk-network/rusk/issues/227
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/v0.1.0

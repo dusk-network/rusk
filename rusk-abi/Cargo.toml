@@ -1,6 +1,6 @@
 [package]
 name = "rusk-abi"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   "zer0 <matteo@dusk.network>",
 ]
@@ -18,18 +18,18 @@ canonical_derive = "0.5"
 
 dusk-poseidon = { version = "0.18", default-features = false }
 dusk-bls12_381 = { version = "0.6", default-features = false, features = ["canon"] }
-dusk-abi = { git = "https://github.com/dusk-network/dusk-abi", branch = "release-0.7" }
+dusk-abi = "0.7"
 schnorr = {git = "https://github.com/dusk-network/schnorr", tag = "v0.5.2", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.6", default-features = false, features = ["canon"] }
-dusk-jubjub = { version = "0.8", default-features = false, featgures = ["canon"] }
+dusk-jubjub = { version = "0.8", default-features = false, features = ["canon"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dusk-plonk = { git = "https://github.com/dusk-network/plonk", branch = "release-0.6", default-features = false, features = ["canon"] }
+dusk-plonk = { version = "0.7.0-pre", default-features = false, features = ["canon"] }
 rusk-profile = { path = "../rusk-profile", version = "0.3" }
 dusk-bytes = "0.1"
 
 [dev-dependencies]
-rusk-vm = { git = "https://github.com/dusk-network/rusk-vm", branch = "release-0.5.1" }
+rusk-vm = { git = "https://github.com/dusk-network/rusk-vm", tag = "v0.5.1" }
 dusk-bytes = "0.1"
 canonical_host = "0.5"
 host_fn = { path = "tests/contracts/host_fn" }
