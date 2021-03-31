@@ -22,12 +22,12 @@ path = "src/bin/main.rs"
 [dependencies]
 tonic = "0.3"
 tokio = { version = "0.2", features = ["rt-threaded", "time", "stream", "fs", "macros", "uds"] }
-dusk-poseidon = "0.18"
-dusk-plonk = "0.5"
+dusk-poseidon = {version="0.20.0-pre", features=["canon"]}
+dusk-plonk = { version = "0.7.0-pre", default-features = false, features = ["canon"] }
 dusk-blindbid = "0.6"
 dusk-pki = "0.6"
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.9.1"}
-schnorr = {git="https://github.com/dusk-network/schnorr", tag = "v0.5.2"}
+schnorr = {git="https://github.com/dusk-network/schnorr", branch="release-0.6"}
 tracing = "0.1"
 tracing-subscriber = "0.2"
 clap = "2.33.3"
@@ -51,17 +51,19 @@ dusk-jubjub = "0.8"
 dusk-bytes = "0.1"
 
 [build-dependencies]
+sha2 = "0.9"
 tonic-build = "0.3"
 rustc_tools_util = "0.2"
-dusk-plonk = "0.5"
-dusk-poseidon = "0.18"
+dusk-bytes = "0.1"
+dusk-plonk = { version = "0.7.0-pre", default-features = false, features = ["canon"] }
+dusk-poseidon = {version="0.20.0-pre", features=["canon"]}
 dusk-blindbid = "0.6"
 dusk-pki = "0.6"
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag = "v0.9.1"}
 anyhow = "1.0"
 rand = "0.7"
 bid-circuits = {path = "../circuits/bid"}
-#transfer-circuits = {path ="../circuits/transfer", features=["builder", "builder-no-rusk-profile-keys"]}
+transfer-circuits = {path ="../circuits/transfer", features=["builder"]}
 rusk-profile = { path = "../rusk-profile" }
 lazy_static = "1.4"
 canonical = "0.5"

@@ -5,6 +5,7 @@ help: ## Display this help screen
 
 wasm: ## Build the WASM files
 	@mkdir -p ./target/verifier-keys/
+	@rm -fr ./target/verifier-keys/*.vk
 	@cp -fr ~/.rusk/keys/transfer-circuits/**/*.vk ./target/verifier-keys/
 	@cargo rustc \
 		--release \

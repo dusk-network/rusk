@@ -11,53 +11,13 @@ use alloc::vec::Vec;
 use canonical::{InvalidEncoding, Store};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_jubjub::JubJubAffine;
 use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
 use phoenix_core::{Crossover, Fee, Message, Note};
-
-// FIXME provisory solution until this issue is fixed
-// https://github.com/dusk-network/rusk-vm/issues/123
-pub fn extend_pi_bls_scalar(pi: &mut Vec<u8>, s: &BlsScalar) {
-    pi.push(0x01);
-    pi.extend_from_slice(&s.to_bytes());
-}
-
-// FIXME provisory solution until this issue is fixed
-// https://github.com/dusk-network/rusk-vm/issues/123
-pub fn extend_pi_jubjub_scalar(pi: &mut Vec<u8>, s: &JubJubScalar) {
-    pi.push(0x02);
-    pi.extend_from_slice(&s.to_bytes());
-}
-
-// FIXME provisory solution until this issue is fixed
-// https://github.com/dusk-network/rusk-vm/issues/123
-pub fn extend_pi_jubjub_affine(pi: &mut Vec<u8>, p: &JubJubAffine) {
-    pi.push(0x03);
-    pi.extend_from_slice(&p.to_bytes());
-}
+use rusk_abi::PublicInput;
 
 impl<S: Store> TransferContract<S> {
-    // TODO should be const fn after rust stabilize the API
-    // https://github.com/rust-lang/rust/issues/57563
-    pub(crate) fn rusk_label(inputs: usize, outputs: usize) -> &'static str {
-        match (inputs, outputs) {
-            (1, 0) => "transfer-execute-1-0",
-            (1, 1) => "transfer-execute-1-1",
-            (1, 2) => "transfer-execute-1-2",
-            (2, 0) => "transfer-execute-2-0",
-            (2, 1) => "transfer-execute-2-1",
-            (2, 2) => "transfer-execute-2-2",
-            (3, 0) => "transfer-execute-3-0",
-            (3, 1) => "transfer-execute-3-1",
-            (3, 2) => "transfer-execute-3-2",
-            (4, 0) => "transfer-execute-4-0",
-            (4, 1) => "transfer-execute-4-1",
-            (4, 2) => "transfer-execute-4-2",
-            _ => "unimplemented",
-        }
-    }
-
     pub(crate) fn push_fee_crossover(
         &mut self,
         fee: Fee,
@@ -233,14 +193,12 @@ impl<S: Store> TransferContract<S> {
     }
 
     pub(crate) fn assert_proof(
-        _label: &str,
-        _vk: &[u8],
-        _spend_proof: Vec<u8>,
-        _pi: Vec<u8>,
+        proof: Vec<u8>,
+        vd: &[u8],
+        pi: Vec<PublicInput>,
     ) -> Result<(), S::Error> {
-        //  FIXME implement proof verification
-        //  https://github.com/dusk-network/rusk/issues/194
-
-        Ok(())
+        rusk_abi::verify_proof(proof, vd.to_vec(), pi)
+            .then(|| ())
+            .ok_or(InvalidEncoding.into())
     }
 }

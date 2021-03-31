@@ -11,7 +11,7 @@ use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
 use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
@@ -108,6 +108,33 @@ impl SendToContractObfuscatedCircuit {
             message_nonce,
             message_cipher,
         })
+    }
+
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let mut pi = vec![];
+
+        // step 1
+        let value_commitment = JubJubAffine::from(self.value_commitment);
+        pi.push(value_commitment.into());
+
+        // step 3
+        let pk = JubJubAffine::from(self.pk);
+        pi.push(pk.into());
+
+        // step 4
+        let message_value_commitment =
+            JubJubAffine::from(self.message_value_commitment);
+        pi.push(message_value_commitment.into());
+
+        // step 7
+        pi.push(self.message_nonce.into());
+
+        let message_pk = JubJubAffine::from(self.message_pk);
+        pi.push(message_pk.into());
+
+        pi.extend(self.message_cipher.iter().map(|c| (*c).into()));
+
+        pi
     }
 }
 
@@ -216,59 +243,4 @@ impl Circuit for SendToContractObfuscatedCircuit {
     fn padded_circuit_size(&self) -> usize {
         1 << 14
     }
-}
-
-#[test]
-fn send_obfuscated() {
-    use crate::test_helpers;
-    use std::convert::TryInto;
-
-    use anyhow::anyhow;
-    use phoenix_core::Note;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-
-    let mut rng = StdRng::seed_from_u64(2322u64);
-
-    test_helpers::circuit(
-        &mut rng,
-        SendToContractObfuscatedCircuit::rusk_keys_id(),
-        |rng| {
-            let ssk = SecretSpendKey::random(rng);
-            let vk = ssk.view_key();
-            let psk = ssk.public_spend_key();
-
-            let c_value = 100;
-            let c_blinding_factor = JubJubScalar::random(rng);
-            let c_note =
-                Note::obfuscated(rng, &psk, c_value, c_blinding_factor);
-            let (mut fee, crossover) = c_note.try_into().map_err(|e| {
-                anyhow!(
-                    "Failed to convert phoenix note into crossover: {:?}",
-                    e
-                )
-            })?;
-            fee.gas_limit = 5;
-            fee.gas_price = 1;
-            let c_signature = SendToContractObfuscatedCircuit::sign(
-                rng, &ssk, &fee, &crossover,
-            );
-
-            let message_r = JubJubScalar::random(rng);
-            let message_value = 100;
-            let message = Message::new(rng, &message_r, &psk, message_value);
-
-            SendToContractObfuscatedCircuit::new(
-                &crossover,
-                &fee,
-                &vk,
-                c_signature,
-                &message,
-                &psk,
-                message_r,
-            )
-            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
-        },
-    )
-    .expect("Failed to build and execute circuit!");
 }

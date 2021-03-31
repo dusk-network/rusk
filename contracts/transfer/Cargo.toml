@@ -15,21 +15,16 @@ rusk-abi = {path="../../rusk-abi"}
 dusk-bytes = "0.1"
 dusk-bls12_381 = {version="0.6", features=["canon"], default-features=false}
 dusk-jubjub = {version="0.8", features=["canon"], default-features=false}
-dusk-poseidon = {version="0.18", features=["canon"], default-features=false}
-dusk-pki = { version = "0.6", default-features = false}
+dusk-poseidon = {version="0.20.0-pre", features=["canon"], default-features=false}
+dusk-pki = {version = "0.6", default-features = false}
 phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.9.1", features = ["canon"]}
 dusk-kelvin-map = "0.3"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+lazy_static = "1.4"
 rand = "0.7"
 canonical_host = "0.5"
 rusk = {path = "../../rusk"}
 transfer-circuits = {path="../../circuits/transfer"}
-dusk-plonk = {git="https://github.com/dusk-network/plonk", branch="release-0.6", features=["canon"]}
+dusk-plonk = { version = "0.7.0-pre", default-features = false, features = ["canon", "trace-print"] }
 rusk-profile = {path="../../rusk-profile"}
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-panic = "abort"

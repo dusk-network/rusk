@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(once_cell)]
-
 use canonical_host::MemStore;
 use phoenix_core::Note;
 
@@ -208,7 +206,6 @@ fn withdraw_from_transparent_to_contract() {
 
     let balance = wrapper.balance(&account);
     assert_eq!(account_value, balance);
-
     let notes = wrapper.notes(block_height);
     assert_eq!(2, notes.len());
 

@@ -10,7 +10,7 @@ use anyhow::Result;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
 use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
@@ -79,6 +79,35 @@ impl WithdrawFromObfuscatedCircuit {
             output_blinding_factor,
             output_value_commitment,
         })
+    }
+
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let mut pi = vec![];
+
+        // step 1
+        let input_value_commitment =
+            JubJubAffine::from(self.input_value_commitment);
+        pi.push(input_value_commitment.into());
+
+        // step 3
+        let change_value_commitment =
+            JubJubAffine::from(self.change_value_commitment);
+        pi.push(change_value_commitment.into());
+
+        // step 7
+        pi.push(self.change_nonce.into());
+
+        let change_pk = JubJubAffine::from(self.change_pk);
+        pi.push(change_pk.into());
+
+        pi.extend(self.change_cipher.iter().map(|c| (*c).into()));
+
+        // step 8
+        let output_value_commitment =
+            JubJubAffine::from(self.output_value_commitment);
+        pi.push(output_value_commitment.into());
+
+        pi
     }
 }
 
@@ -206,56 +235,4 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
     fn padded_circuit_size(&self) -> usize {
         1 << 13
     }
-}
-
-#[test]
-fn withdraw_from_obfuscated() {
-    use crate::test_helpers;
-
-    use anyhow::anyhow;
-    use dusk_pki::SecretSpendKey;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-
-    let mut rng = StdRng::seed_from_u64(2324u64);
-
-    test_helpers::circuit(
-        &mut rng,
-        WithdrawFromObfuscatedCircuit::rusk_keys_id(),
-        |rng| {
-            let i_ssk = SecretSpendKey::random(rng);
-            let i_vk = i_ssk.view_key();
-            let i_psk = i_ssk.public_spend_key();
-            let i_value = 100;
-            let i_blinding_factor = JubJubScalar::random(rng);
-            let i_note =
-                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
-
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_psk = c_ssk.public_spend_key();
-            let c_r = JubJubScalar::random(rng);
-            let c_value = 25;
-            let c = Message::new(rng, &c_r, &c_psk, c_value);
-
-            let o_ssk = SecretSpendKey::random(rng);
-            let o_vk = o_ssk.view_key();
-            let o_psk = o_ssk.public_spend_key();
-            let o_value = 75;
-            let o_blinding_factor = JubJubScalar::random(rng);
-            let o_note =
-                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
-
-            WithdrawFromObfuscatedCircuit::new(
-                &i_note,
-                Some(&i_vk),
-                &c,
-                c_r,
-                &c_psk,
-                &o_note,
-                Some(&o_vk),
-            )
-            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
-        },
-    )
-    .expect("Failed to build and execute circuit!");
 }

@@ -7,7 +7,7 @@
 use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
 
 /// Enum that represents all possible types of public inputs
 #[derive(Canon, Clone)]
@@ -26,6 +26,12 @@ impl From<BlsScalar> for PublicInput {
     }
 }
 
+impl From<u64> for PublicInput {
+    fn from(n: u64) -> PublicInput {
+        Self::BlsScalar(n.into())
+    }
+}
+
 impl From<JubJubScalar> for PublicInput {
     fn from(s: JubJubScalar) -> PublicInput {
         Self::JubJubScalar(s)
@@ -35,6 +41,21 @@ impl From<JubJubScalar> for PublicInput {
 impl From<JubJubAffine> for PublicInput {
     fn from(p: JubJubAffine) -> PublicInput {
         Self::Point(p)
+    }
+}
+
+impl From<JubJubExtended> for PublicInput {
+    fn from(p: JubJubExtended) -> PublicInput {
+        JubJubAffine::from(p).into()
+    }
+}
+
+impl<T> From<&T> for PublicInput
+where
+    T: Clone + Into<PublicInput>,
+{
+    fn from(t: &T) -> PublicInput {
+        t.clone().into()
     }
 }
 

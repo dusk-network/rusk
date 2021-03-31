@@ -4,19 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{internal, keys};
+use super::keys;
 use crate::TransferContract;
 
 use alloc::vec::Vec;
 use canonical::Store;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Serializable;
-use dusk_jubjub::{
-    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::{Ownable, PublicKey};
-use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
 
 impl<S: Store> TransferContract<S> {
@@ -26,22 +22,15 @@ impl<S: Store> TransferContract<S> {
         value: u64,
         spend_proof: Vec<u8>,
     ) -> bool {
-        // Build proof public inputs
-        let scalars = 1 + BlsScalar::SIZE;
-        let points = (1 + JubJubAffine::SIZE) * 2;
-
-        let mut pi = Vec::with_capacity(scalars + points);
-        let label = "transfer-send-to-contract-transparent";
-
         let (crossover, pk) = self
             .take_crossover()
             .expect("The crossover is mandatory for STCT!");
 
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover.value_commitment().clone().into(),
-        );
-        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().clone().into());
+        let mut pi = Vec::with_capacity(3);
+
+        pi.push(crossover.value_commitment().into());
+        pi.push(pk.as_ref().into());
+        pi.push(value.into());
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
@@ -53,8 +42,8 @@ impl<S: Store> TransferContract<S> {
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, v, π)
-        let vk = keys::stct();
-        Self::assert_proof(label, vk, spend_proof, pi)
+        let vd = keys::stct();
+        Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
         //  5. C ← C(0,0,0)
@@ -95,35 +84,18 @@ impl<S: Store> TransferContract<S> {
         pk: PublicKey,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let scalars =
-            (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
-        let points = (1 + JubJubAffine::SIZE) * 4;
-
-        let mut pi = Vec::with_capacity(scalars + points);
-        let label = "transfer-send-to-contract-obfuscated";
-
         let (crossover, crossover_pk) = self
             .take_crossover()
             .expect("The crossover is mandatory for STCT!");
 
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover.value_commitment().clone().into(),
-        );
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover_pk.as_ref().clone().into(),
-        );
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &message.value_commitment().into(),
-        );
-        internal::extend_pi_jubjub_scalar(&mut pi, &message.nonce());
-        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().into());
-        message
-            .cipher()
-            .iter()
-            .for_each(|c| internal::extend_pi_bls_scalar(&mut pi, c));
+        let mut pi = Vec::with_capacity(5 + message.cipher().len());
+
+        pi.push(crossover.value_commitment().into());
+        pi.push(crossover_pk.as_ref().into());
+        pi.push(message.value_commitment().into());
+        pi.push(message.nonce().into());
+        pi.push(pk.as_ref().into());
+        pi.extend(message.cipher().iter().map(|c| c.into()));
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
@@ -135,8 +107,8 @@ impl<S: Store> TransferContract<S> {
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, M, pk, π)
-        let vk = keys::stco();
-        Self::assert_proof(label, vk, spend_proof, pi)
+        let vd = keys::stco();
+        Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
         //  5. C←(0,0,0)
@@ -155,27 +127,14 @@ impl<S: Store> TransferContract<S> {
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let scalars =
-            (1 + BlsScalar::SIZE) * (1 + PoseidonCipher::cipher_size());
-        let points = (1 + JubJubAffine::SIZE) * 4;
+        let mut pi = Vec::with_capacity(5 + message.cipher().len());
 
-        let mut pi = Vec::with_capacity(scalars + points);
-        let label = "transfer-withdraw-from-obfuscated";
-        internal::extend_pi_jubjub_affine(&mut pi, &input_value_commitment);
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &message.value_commitment().into(),
-        );
-        internal::extend_pi_jubjub_scalar(&mut pi, &message.nonce());
-        internal::extend_pi_jubjub_affine(&mut pi, &pk.as_ref().into());
-        message
-            .cipher()
-            .iter()
-            .for_each(|c| internal::extend_pi_bls_scalar(&mut pi, c));
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &note.value_commitment().into(),
-        );
+        pi.push(input_value_commitment.into());
+        pi.push(message.value_commitment().into());
+        pi.push(message.nonce().into());
+        pi.push(pk.as_ref().into());
+        pi.extend(message.cipher().iter().map(|c| c.into()));
+        pi.push(note.value_commitment().into());
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
@@ -198,8 +157,8 @@ impl<S: Store> TransferContract<S> {
             .expect("The provided address is not payable!");
 
         //  7. verify(c, M_c, No.c, π)
-        let vk = keys::wdfo();
-        Self::assert_proof(label, vk, spend_proof, pi)
+        let vd = keys::wdfo();
+        Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
         // FIXME Non-documented step
@@ -243,40 +202,22 @@ impl<S: Store> TransferContract<S> {
         spend_proof: Vec<u8>,
         call: Option<(ContractId, Transaction)>,
     ) -> bool {
+        let crossover_commitment = crossover
+            .map(|c| c.value_commitment().clone())
+            .unwrap_or_default();
         let inputs = nullifiers.len();
         let outputs = notes.len();
 
-        // Build proof public inputs
-        let scalars = (1 + BlsScalar::SIZE) * (3 + nullifiers.len());
-        let points = (1 + JubJubAffine::SIZE) * (1 + notes.len());
+        let mut pi = Vec::with_capacity(4 + inputs + outputs);
 
-        let mut pi = Vec::with_capacity(scalars + points);
-        let label = Self::rusk_label(nullifiers.len(), notes.len());
-        internal::extend_pi_bls_scalar(&mut pi, &anchor);
-        nullifiers
-            .iter()
-            .for_each(|n| internal::extend_pi_bls_scalar(&mut pi, n));
-        internal::extend_pi_bls_scalar(
-            &mut pi,
-            &BlsScalar::from(fee.gas_limit),
-        );
-        internal::extend_pi_jubjub_affine(
-            &mut pi,
-            &crossover.map(|c| c.value_commitment().into()).unwrap_or(
-                ((GENERATOR_EXTENDED * JubJubScalar::zero())
-                    + (GENERATOR_NUMS_EXTENDED * JubJubScalar::zero()))
-                .into(),
-            ),
-        );
-        notes.iter().for_each(|n| {
-            internal::extend_pi_jubjub_affine(
-                &mut pi,
-                &n.value_commitment().into(),
-            )
-        });
+        pi.push(anchor.into());
+        pi.extend(nullifiers.iter().map(|n| n.into()));
+        pi.push(fee.gas_limit.into());
+        pi.push(crossover_commitment.into());
+        pi.extend(notes.iter().map(|n| n.value_commitment().into()));
         // FIXME fetch the tx hash
         // https://github.com/dusk-network/rusk/issues/197
-        internal::extend_pi_bls_scalar(&mut pi, &BlsScalar::zero());
+        pi.push(BlsScalar::zero().into());
 
         //  1. α ∈ R
         // FIXME Use proper root
@@ -322,8 +263,8 @@ impl<S: Store> TransferContract<S> {
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        let vk = keys::exec(inputs, outputs);
-        Self::assert_proof(label, vk, spend_proof, pi)
+        let vd = keys::exec(inputs, outputs);
+        Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
         // 11. if ∣k∣≠0 then call(k)

@@ -10,7 +10,7 @@ use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::Point;
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
 use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
@@ -80,6 +80,19 @@ impl SendToContractTransparentCircuit {
             pk,
         })
     }
+
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        // step 1
+        let value_commitment = JubJubAffine::from(self.value_commitment);
+
+        // step 3
+        let pk = JubJubAffine::from(self.pk);
+
+        // step 4
+        let value = self.value.into();
+
+        vec![value_commitment.into(), pk.into(), value]
+    }
 }
 
 impl Circuit for SendToContractTransparentCircuit {
@@ -134,53 +147,4 @@ impl Circuit for SendToContractTransparentCircuit {
     fn padded_circuit_size(&self) -> usize {
         1 << 13
     }
-}
-
-#[test]
-fn send_transparent() {
-    use crate::test_helpers;
-    use std::convert::TryInto;
-
-    use anyhow::anyhow;
-    use phoenix_core::Note;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-
-    let mut rng = StdRng::seed_from_u64(2322u64);
-    test_helpers::circuit(
-        &mut rng,
-        SendToContractTransparentCircuit::rusk_keys_id(),
-        |rng| {
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_vk = c_ssk.view_key();
-            let c_psk = c_ssk.public_spend_key();
-
-            let c_value = 100;
-            let c_blinding_factor = JubJubScalar::random(rng);
-
-            let c_note =
-                Note::obfuscated(rng, &c_psk, c_value, c_blinding_factor);
-            let (mut fee, crossover) = c_note.try_into().map_err(|e| {
-                anyhow!(
-                    "Failed to convert phoenix note into crossover: {:?}",
-                    e
-                )
-            })?;
-            fee.gas_limit = 5;
-            fee.gas_price = 1;
-
-            let c_signature = SendToContractTransparentCircuit::sign(
-                rng, &c_ssk, &fee, &crossover,
-            );
-
-            SendToContractTransparentCircuit::new(
-                &fee,
-                &crossover,
-                &c_vk,
-                c_signature,
-            )
-            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
-        },
-    )
-    .expect("Failed to build and execute circuit!");
 }

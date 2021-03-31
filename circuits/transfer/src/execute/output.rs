@@ -25,6 +25,10 @@ impl CircuitOutput {
         }
     }
 
+    pub const fn note(&self) -> &Note {
+        &self.note
+    }
+
     pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessOutput {
         let value = composer.add_input(self.value.into());
         let blinding_factor = composer.add_input(self.blinding_factor.into());

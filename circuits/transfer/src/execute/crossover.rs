@@ -30,6 +30,14 @@ impl CircuitCrossover {
         }
     }
 
+    pub const fn fee(&self) -> u64 {
+        self.fee
+    }
+
+    pub const fn value_commitment(&self) -> &JubJubExtended {
+        &self.value_commitment
+    }
+
     pub fn to_witness(
         &self,
         composer: &mut StandardComposer,

@@ -16,7 +16,7 @@ use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::{
-    JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
 use dusk_plonk::prelude::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
@@ -34,8 +34,8 @@ mod crossover;
 mod input;
 mod output;
 
-#[cfg(test)]
-mod tests;
+#[cfg(any(test, feature = "builder"))]
+pub mod builder;
 
 /// Constant message for the schnorr signature generation
 ///
@@ -228,6 +228,50 @@ impl ExecuteCircuit {
 
         Ok(())
     }
+
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let mut pi = vec![];
+
+        // step 1
+        let root = self
+            .inputs
+            .first()
+            .map(|i| *i.branch().root())
+            .unwrap_or_default();
+        pi.push(root.into());
+
+        // step 4
+        pi.extend(
+            self.inputs
+                .iter()
+                .map(|input| input.nullifier().clone().into()),
+        );
+
+        // step 7
+        pi.push(BlsScalar::from(self.crossover.fee()).into());
+
+        let crossover_value_commitment =
+            JubJubAffine::from(self.crossover.value_commitment());
+        pi.push(crossover_value_commitment.into());
+
+        // step 9
+        pi.extend(self.outputs.iter().map(|output| {
+            JubJubAffine::from(output.note().value_commitment()).into()
+        }));
+
+        // step 12
+        pi.push(self.tx_hash.into());
+
+        pi
+    }
+
+    pub fn inputs(&self) -> &[CircuitInput] {
+        self.inputs.as_slice()
+    }
+
+    pub fn outputs(&self) -> &[CircuitOutput] {
+        self.outputs.as_slice()
+    }
 }
 
 impl Circuit for ExecuteCircuit {
@@ -249,8 +293,7 @@ impl Circuit for ExecuteCircuit {
                 let branch = input.branch();
                 let note = input.to_witness(composer);
 
-                let note_hash = note.note_hash;
-                let root_p = tree::merkle_opening(composer, branch, note_hash);
+                let root_p = tree::merkle_opening(composer, branch);
 
                 // Test the public input only for the first root
                 //
@@ -457,9 +500,9 @@ impl Circuit for ExecuteCircuit {
     }
 
     fn padded_circuit_size(&self) -> usize {
-        match self.inputs.len() {
-            1 => 1 << 15,
-            2 => 1 << 16,
+        match (self.inputs.len(), self.outputs.len()) {
+            (1, o) if o < 2 => 1 << 15,
+            (1, _) | (2, _) => 1 << 16,
             _ => 1 << 17,
         }
     }
