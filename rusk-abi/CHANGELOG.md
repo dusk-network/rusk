@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Changed
+### Added
+- Add `payment_info` host function [#254]
 
+### Changed
 - Change `verify_proof` to accept verifier data [#247]
+
 
 ## [0.2.0] - 2021-03-12
 
@@ -40,4 +43,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add README.md
 
 [#227]: https://github.com/dusk-network/rusk/issues/227
+[#254]: https://github.com/dusk-network/rusk/issues/254
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/v0.1.0
