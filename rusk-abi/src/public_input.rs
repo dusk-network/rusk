@@ -43,13 +43,13 @@ mod host {
     use super::PublicInput;
     use dusk_plonk::prelude::*;
 
-    impl Into<PublicInputValue> for PublicInput {
-        fn into(self) -> PublicInputValue {
-            match self {
+    impl From<PublicInput> for PublicInputValue {
+        fn from(pi: PublicInput) -> PublicInputValue {
+           match pi {
                 PublicInput::BlsScalar(v) => PublicInputValue::from(v),
                 PublicInput::JubJubScalar(v) => PublicInputValue::from(v),
                 PublicInput::Point(v) => PublicInputValue::from(v),
-            }
+            } 
         }
     }
 }
