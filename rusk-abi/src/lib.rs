@@ -21,6 +21,7 @@ use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_pki::PublicSpendKey;
 
 /// Module that exports the ABI for Rusk's Contracts
 #[allow(dead_code)]
@@ -56,6 +57,20 @@ pub enum PublicInput {
     /// A Public Input JubJub Scalar
     JubJubScalar(JubJubScalar),
 }
+
+/// Enum that represents all possible payment info configs
+#[derive(Canon, Clone)]
+pub enum PaymentInfo {
+    /// Only Transparent Notes are accepted
+    Transparent(Option<PublicSpendKey>),
+    /// Only Obfuscated Notes are accepted
+    Obfuscated(Option<PublicSpendKey>),
+    /// Notes of any type are accepted
+    Any(Option<PublicSpendKey>)
+}
+
+/// Common QueryId used for Payment info retrival.
+pub const PAYMENT_INFO: u8 = 100;
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
