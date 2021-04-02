@@ -8,16 +8,16 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::PublicKey;
 use schnorr::Signature;
-
+use dusk_abi::{ContractId};
+use dusk_pki::PublicKey;
 use canonical::{BridgeStore, Id32};
 use dusk_abi::Module;
 
 type BS = BridgeStore<Id32>;
 type RuskModule = crate::RuskModule<BS>;
 
-use crate::PublicInput;
+use crate::{PublicInput, PaymentInfo, PAYMENT_INFO};
 
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars))
@@ -47,4 +47,9 @@ pub fn verify_schnorr_sign(
         &(RuskModule::VERIFY_SCHNORR_SIGN, sign, pk, message),
     )
     .expect("query RuskModule for verifying schnorr signature should not fail")
+}
+
+/// FIXME: Until this is not moved to be part of Cake! we will reserve the 0 Query idx for this payable info.
+pub fn payment_info(addr: ContractId) -> PaymentInfo {
+    dusk_abi::query(&addr, &PAYMENT_INFO).expect("Failed to retrieve payment info from the specified address")
 }
