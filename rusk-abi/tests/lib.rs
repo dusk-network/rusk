@@ -12,14 +12,15 @@ use rusk_vm::{Contract, GasMeter, NetworkState};
 
 use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::ParseHexStr;
+use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_jubjub::JubJubAffine;
-use dusk_pki::{PublicKey, SecretKey};
+use dusk_pki::{PublicKey, SecretKey, PublicSpendKey};
 use dusk_plonk::prelude::*;
 use schnorr::Signature;
 
+
 use host_fn::HostFnTest;
-use rusk_abi::PublicInput;
+use rusk_abi::{PublicInput, PaymentInfo};
 use rusk_abi::RuskModule;
 
 lazy_static::lazy_static! {
@@ -182,3 +183,38 @@ fn verify_proof() {
         )
         .unwrap());
 }
+
+#[test]
+fn payment_info() {
+    let host = HostFnTest::new();
+
+    let store = MS::new();
+
+    let code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+    );
+
+    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+
+    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
+    let mut network = NetworkState::<MS>::default();
+    network.register_host_module(rusk_mod);
+
+    let contract_id = network.deploy(contract).unwrap();
+
+
+    let mut gas = GasMeter::with_limit(1_000_000_000);
+
+    let ret = network
+        .query::<_, PaymentInfo>(
+            contract_id,
+            host_fn::GET_PAYMENT_INFO,
+            &mut gas
+        )
+        .unwrap();
+
+    let expected = PublicSpendKey::new(dusk_jubjub::JubJubExtended::default(), dusk_jubjub::JubJubExtended::default()).to_bytes();
+
+    assert!(matches!(ret, PaymentInfo::Any(Some(key)) if key.to_bytes() == expected));
+}    
+
