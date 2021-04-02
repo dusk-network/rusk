@@ -17,8 +17,8 @@
 #![deny(clippy::all)]
 
 use dusk_abi::{ContractId, Module};
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use canonical::Canon;
+use canonical_derive::Canon;
 use dusk_pki::PublicSpendKey;
 mod public_input;
 pub use public_input::PublicInput;
@@ -49,17 +49,6 @@ impl<S> Module for RuskModule<S> {
     fn id() -> ContractId {
         ContractId::reserved(77)
     }
-}
-
-/// Enum that represents all possible types of public inputs
-#[derive(Canon, Clone)]
-pub enum PublicInput {
-    /// A Public Input Point
-    Point(JubJubAffine),
-    /// A Public Input BLS Scalar
-    BlsScalar(BlsScalar),
-    /// A Public Input JubJub Scalar
-    JubJubScalar(JubJubScalar),
 }
 
 /// Enum that represents all possible payment info configs

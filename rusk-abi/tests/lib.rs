@@ -13,7 +13,6 @@ use rusk_vm::{Contract, GasMeter, NetworkState};
 use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_jubjub::JubJubAffine;
 use dusk_pki::{PublicKey, SecretKey, PublicSpendKey};
 use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;

@@ -50,11 +50,11 @@ where
                 let pi: Vec<PublicInput> = Canon::<S>::read(&mut source)?;
 
                 let proof = Proof::from_slice(&proof)
-                    .map_err(|_| InvalidEncoding.into())?;
+                    .map_err(|_| InvalidEncoding)?;
 
                 let verifier_data =
                     VerifierData::from_slice(verifier_data.as_slice())
-                        .map_err(|_| InvalidEncoding.into())?;
+                        .map_err(|_| InvalidEncoding)?;
 
                 let pi: Vec<PublicInputValue> =
                     pi.into_iter().map(|pi| pi.into()).collect();
