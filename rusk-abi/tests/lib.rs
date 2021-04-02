@@ -13,15 +13,14 @@ use rusk_vm::{Contract, GasMeter, NetworkState};
 use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_pki::{PublicKey, SecretKey, PublicSpendKey};
+use dusk_pki::{PublicKey, PublicSpendKey, SecretKey};
 use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
 use schnorr::Signature;
 
-
 use host_fn::HostFnTest;
-use rusk_abi::{PublicInput, PaymentInfo};
 use rusk_abi::RuskModule;
+use rusk_abi::{PaymentInfo, PublicInput};
 
 lazy_static::lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -293,19 +292,23 @@ fn payment_info() {
 
     let contract_id = network.deploy(contract).unwrap();
 
-
     let mut gas = GasMeter::with_limit(1_000_000_000);
 
     let ret = network
         .query::<_, PaymentInfo>(
             contract_id,
             host_fn::GET_PAYMENT_INFO,
-            &mut gas
+            &mut gas,
         )
         .unwrap();
 
-    let expected = PublicSpendKey::new(dusk_jubjub::JubJubExtended::default(), dusk_jubjub::JubJubExtended::default()).to_bytes();
+    let expected = PublicSpendKey::new(
+        dusk_jubjub::JubJubExtended::default(),
+        dusk_jubjub::JubJubExtended::default(),
+    )
+    .to_bytes();
 
-    assert!(matches!(ret, PaymentInfo::Any(Some(key)) if key.to_bytes() == expected));
-}    
-
+    assert!(
+        matches!(ret, PaymentInfo::Any(Some(key)) if key.to_bytes() == expected)
+    );
+}

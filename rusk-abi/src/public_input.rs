@@ -45,11 +45,11 @@ mod host {
 
     impl From<PublicInput> for PublicInputValue {
         fn from(pi: PublicInput) -> PublicInputValue {
-           match pi {
+            match pi {
                 PublicInput::BlsScalar(v) => PublicInputValue::from(v),
                 PublicInput::JubJubScalar(v) => PublicInputValue::from(v),
                 PublicInput::Point(v) => PublicInputValue::from(v),
-            } 
+            }
         }
     }
 }

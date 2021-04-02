@@ -16,13 +16,12 @@
 #![no_std]
 #![deny(clippy::all)]
 
-use dusk_abi::{ContractId, Module};
 use canonical::Canon;
 use canonical_derive::Canon;
+use dusk_abi::{ContractId, Module};
 use dusk_pki::PublicSpendKey;
 mod public_input;
 pub use public_input::PublicInput;
-
 
 /// Module that exports the ABI for Rusk's Contracts
 ///
@@ -59,7 +58,7 @@ pub enum PaymentInfo {
     /// Only Obfuscated Notes are accepted
     Obfuscated(Option<PublicSpendKey>),
     /// Notes of any type are accepted
-    Any(Option<PublicSpendKey>)
+    Any(Option<PublicSpendKey>),
 }
 
 /// Common QueryId used for Payment info retrival.
