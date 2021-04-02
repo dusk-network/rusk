@@ -16,14 +16,18 @@
 #![no_std]
 #![deny(clippy::all)]
 
-use canonical::Canon;
-use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::PublicSpendKey;
+mod public_input;
+pub use public_input::PublicInput;
+
 
 /// Module that exports the ABI for Rusk's Contracts
+///
+/// Any proof to be verified with this module should use `b"dusk-network` as
+/// transcript initialization
 #[allow(dead_code)]
 pub struct RuskModule<S> {
     store: S,

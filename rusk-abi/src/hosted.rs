@@ -26,13 +26,12 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 
 pub fn verify_proof(
     proof: Vec<u8>,
-    vk: Vec<u8>,
-    pi_values: Vec<PublicInput>,
-    pi_positions: Vec<u32>,
+    verifier_data: Vec<u8>,
+    pi: Vec<PublicInput>,
 ) -> bool {
     dusk_abi::query(
         &RuskModule::id(),
-        &(RuskModule::VERIFY_PROOF, proof, vk, pi_values, pi_positions),
+        &(RuskModule::VERIFY_PROOF, proof, verifier_data, pi),
     )
     .expect("query RuskModule for verify a proof should not fail")
 }

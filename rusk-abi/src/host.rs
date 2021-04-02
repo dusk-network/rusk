@@ -7,17 +7,16 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use canonical::{ByteSource, Canon, Store};
+use canonical::{ByteSource, Canon, InvalidEncoding, Store};
 use dusk_abi::{HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
-use dusk_plonk::circuit;
+use dusk_plonk::circuit::{self, VerifierData};
 use dusk_plonk::prelude::*;
 use schnorr::Signature;
 
-use crate::PublicInput;
-use crate::RuskModule;
+use crate::{PublicInput, RuskModule};
 
 impl<S> RuskModule<S>
 where
@@ -47,35 +46,25 @@ where
 
             Self::VERIFY_PROOF => {
                 let proof: Vec<u8> = Canon::<S>::read(&mut source)?;
-                let vk: Vec<u8> = Canon::<S>::read(&mut source)?;
-                let pi_values: Vec<PublicInput> =
-                    Canon::<S>::read(&mut source)?;
-                let pi_positions: Vec<u32> = Canon::<S>::read(&mut source)?;
+                let verifier_data: Vec<u8> = Canon::<S>::read(&mut source)?;
+                let pi: Vec<PublicInput> = Canon::<S>::read(&mut source)?;
 
-                let pi_positions: Vec<_> =
-                    pi_positions.iter().map(|i| *i as usize).collect();
+                let proof = Proof::from_slice(&proof)
+                    .map_err(|_| InvalidEncoding.into())?;
 
-                let vk = VerifierKey::from_slice(&vk[..]).expect("a Key");
+                let verifier_data =
+                    VerifierData::from_slice(verifier_data.as_slice())
+                        .map_err(|_| InvalidEncoding.into())?;
 
-                let proof = Proof::from_slice(&proof).expect("a Proof");
-
-                let pi_values: Vec<PublicInputValue> = pi_values
-                    .iter()
-                    .map(|pi| match *pi {
-                        PublicInput::BlsScalar(v) => PublicInputValue::from(v),
-                        PublicInput::JubJubScalar(v) => {
-                            PublicInputValue::from(v)
-                        }
-                        PublicInput::Point(v) => PublicInputValue::from(v),
-                    })
-                    .collect();
+                let pi: Vec<PublicInputValue> =
+                    pi.into_iter().map(|pi| pi.into()).collect();
 
                 let ret = circuit::verify_proof(
                     &self.pp,
-                    &vk,
+                    verifier_data.key(),
                     &proof,
-                    &pi_values[..],
-                    &pi_positions[..],
+                    pi.as_slice(),
+                    verifier_data.pi_pos().as_slice(),
                     b"dusk-network",
                 )
                 .is_ok();
