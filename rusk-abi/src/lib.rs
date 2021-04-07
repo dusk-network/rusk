@@ -16,10 +16,11 @@
 #![no_std]
 #![deny(clippy::all)]
 
+use canonical::Canon;
+use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
-
+use dusk_pki::PublicSpendKey;
 mod public_input;
-
 pub use public_input::PublicInput;
 
 /// Module that exports the ABI for Rusk's Contracts
@@ -48,6 +49,20 @@ impl<S> Module for RuskModule<S> {
         ContractId::reserved(77)
     }
 }
+
+/// Enum that represents all possible payment info configs
+#[derive(Canon, Clone)]
+pub enum PaymentInfo {
+    /// Only Transparent Notes are accepted
+    Transparent(Option<PublicSpendKey>),
+    /// Only Obfuscated Notes are accepted
+    Obfuscated(Option<PublicSpendKey>),
+    /// Notes of any type are accepted
+    Any(Option<PublicSpendKey>),
+}
+
+/// Common QueryId used for Payment info retrival.
+pub const PAYMENT_INFO: u8 = 100;
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {

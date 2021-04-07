@@ -16,6 +16,7 @@ use canonical_derive::Canon;
 pub const HASH: u8 = 0;
 pub const VERIFY: u8 = 1;
 pub const SCHNORR_SIGNATURE: u8 = 2;
+pub const GET_PAYMENT_INFO: u8 = 3;
 
 // transaction ids
 pub const SOMETHING: u8 = 0;
@@ -39,10 +40,9 @@ mod hosted {
     use dusk_abi::ReturnValue;
 
     use dusk_bls12_381::BlsScalar;
-    use dusk_pki::PublicKey;
+    use dusk_pki::{PublicKey, PublicSpendKey};
+    use rusk_abi::{PaymentInfo, PublicInput};
     use schnorr::Signature;
-
-    use rusk_abi::PublicInput;
 
     const PAGE_SIZE: usize = 1024 * 4;
 
@@ -69,6 +69,10 @@ mod hosted {
             message: BlsScalar,
         ) -> bool {
             rusk_abi::verify_schnorr_sign(sig, pk, message)
+        }
+
+        pub fn get_payment_info(&self) -> rusk_abi::PaymentInfo {
+            rusk_abi::payment_info(dusk_abi::callee())
         }
     }
 
@@ -126,6 +130,39 @@ mod hosted {
                 let message: BlsScalar = Canon::<BS>::read(&mut source)?;
 
                 let ret = slf.schnorr_signature(sig, pk, message);
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+
+                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+
+                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                };
+
+                r
+            }
+
+            GET_PAYMENT_INFO => {
+                let ret = slf.get_payment_info();
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+
+                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+
+                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                };
+
+                r
+            }
+
+            rusk_abi::PAYMENT_INFO => {
+                let ret = PaymentInfo::Any(Some(PublicSpendKey::new(
+                    dusk_jubjub::JubJubExtended::default(),
+                    dusk_jubjub::JubJubExtended::default(),
+                )));
 
                 let r = {
                     // return value
