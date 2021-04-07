@@ -2,7 +2,7 @@
 name = "rusk-abi"
 version = "0.2.0"
 authors = [
-  "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>"
+  "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>", "CPerezz <carlos@dusk.network>",
 ]
 edition = "2018"
 
@@ -15,7 +15,6 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 cfg-if = "0.1"
 canonical = "0.5"
 canonical_derive = "0.5"
-
 dusk-poseidon = { version = "0.20", default-features = false }
 dusk-bls12_381 = { version = "0.6", default-features = false, features = ["canon"] }
 dusk-abi = "0.7"
