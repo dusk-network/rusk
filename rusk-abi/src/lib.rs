@@ -16,13 +16,16 @@
 #![no_std]
 #![deny(clippy::all)]
 
-use canonical::Canon;
-use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
+
+mod public_input;
+
+pub use public_input::PublicInput;
 
 /// Module that exports the ABI for Rusk's Contracts
+///
+/// Any proof to be verified with this module should use `b"dusk-network` as
+/// transcript initialization
 #[allow(dead_code)]
 pub struct RuskModule<S> {
     store: S,
@@ -44,17 +47,6 @@ impl<S> Module for RuskModule<S> {
     fn id() -> ContractId {
         ContractId::reserved(77)
     }
-}
-
-/// Enum that represents all possible types of public inputs
-#[derive(Canon, Clone)]
-pub enum PublicInput {
-    /// A Public Input Point
-    Point(JubJubAffine),
-    /// A Public Input BLS Scalar
-    BlsScalar(BlsScalar),
-    /// A Public Input JubJub Scalar
-    JubJubScalar(JubJubScalar),
 }
 
 cfg_if::cfg_if! {
