@@ -15,8 +15,5 @@ pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;
 
-#[cfg(test)]
-pub mod test_helpers;
-
 #[cfg(any(test, feature = "builder"))]
-pub mod builder;
+pub use execute::builder;

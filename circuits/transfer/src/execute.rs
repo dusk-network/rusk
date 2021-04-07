@@ -16,12 +16,13 @@ use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
 use dusk_plonk::jubjub::{
-    JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
+    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{
-    self, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
+    self, PoseidonBranch, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
 };
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{CryptoRng, RngCore};
@@ -33,41 +34,30 @@ mod crossover;
 mod input;
 mod output;
 
-#[cfg(test)]
-mod tests;
+#[cfg(any(test, feature = "builder"))]
+pub mod builder;
+
+/// Constant message for the schnorr signature generation
+///
+/// The signature is provided outside the circuit; so that's why it is
+/// constant
+///
+/// The contents of the message are yet to be defined in the documentation.
+/// For now, it is treated as a constant.
+///
+/// https://github.com/dusk-network/rusk/issues/178
+pub(crate) const SIGN_MESSAGE: BlsScalar = BlsScalar::one();
 
 /// The circuit responsible for creating a zero-knowledge proof
-/// for a 'send to contract transparent' transaction.
 #[derive(Debug, Default, Clone)]
-pub struct ExecuteCircuit<const DEPTH: usize, const CAPACITY: usize> {
-    pi_positions: Vec<PublicInput>,
-    pub inputs: Vec<CircuitInput<DEPTH>>,
-    pub crossover: CircuitCrossover,
-    pub outputs: Vec<CircuitOutput>,
-    pub tx_hash: BlsScalar,
+pub struct ExecuteCircuit {
+    inputs: Vec<CircuitInput>,
+    crossover: CircuitCrossover,
+    outputs: Vec<CircuitOutput>,
+    tx_hash: BlsScalar,
 }
 
-impl<const DEPTH: usize, const CAPACITY: usize> From<&[PublicInput]>
-    for ExecuteCircuit<DEPTH, CAPACITY>
-{
-    // TODO
-    // This should be removed after the `Circuit` trait of PLONK is refactored.
-    //
-    // Also, this implementation should be `TryFrom` - this is only a temporary
-    // workaround to allow host verification. The invalid public points will
-    // just be ignored.
-    //
-    // This implementation intentionally don't benefit from `Default` because
-    // both need to be removed in the short term and its better if they are
-    // completely decoupled
-    fn from(_pi: &[PublicInput]) -> Self {
-        todo!()
-    }
-}
-
-impl<const DEPTH: usize, const CAPACITY: usize>
-    ExecuteCircuit<DEPTH, CAPACITY>
-{
+impl ExecuteCircuit {
     pub fn rusk_keys_id(&self) -> &'static str {
         match (self.inputs.len(), self.outputs.len()) {
             (1, 0) => "transfer-execute-1-0",
@@ -95,37 +85,21 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         ssk: &SecretSpendKey,
         note: &Note,
     ) -> SchnorrProof {
-        let message = Self::sign_message();
+        let message = SIGN_MESSAGE;
         let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
         let secret = SecretKey::from(&sk_r);
 
         SchnorrProof::new(&secret, rng, message)
     }
 
-    pub fn add_input<S, L, A>(
+    pub fn add_input(
         &mut self,
         ssk: &SecretSpendKey,
-        tree: &PoseidonTree<L, A, S, DEPTH>,
-        pos: usize,
+        note: Note,
+        branch: PoseidonBranch<{ input::POSEIDON_BRANCH_DEPTH }>,
         signature: SchnorrProof,
-    ) -> Result<()>
-    where
-        S: Store,
-        L: PoseidonLeaf<S> + Into<Note>,
-        A: PoseidonTreeAnnotation<L, S>,
-    {
+    ) -> Result<()> {
         let vk = ssk.view_key();
-
-        let note = tree
-            .get(pos)
-            .map_err(|e| anyhow!("Failed to fetch note from the tree: {}", e))?
-            .map(|n| n.into())
-            .ok_or(anyhow!("Note not found in the tree after push!"))?;
-
-        let branch = tree
-            .branch(pos)
-            .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
-            .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
 
         let value = note
             .value(Some(&vk))
@@ -149,6 +123,32 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         self.inputs.push(input);
 
         Ok(())
+    }
+
+    pub fn add_input_from_tree<S, L, A>(
+        &mut self,
+        ssk: &SecretSpendKey,
+        tree: &PoseidonTree<L, A, S, { input::POSEIDON_BRANCH_DEPTH }>,
+        pos: usize,
+        signature: SchnorrProof,
+    ) -> Result<()>
+    where
+        S: Store,
+        L: PoseidonLeaf<S> + Into<Note>,
+        A: PoseidonTreeAnnotation<L, S>,
+    {
+        let note = tree
+            .get(pos)
+            .map_err(|e| anyhow!("Failed to fetch note from the tree: {}", e))?
+            .map(|n| n.into())
+            .ok_or(anyhow!("Note not found in the tree after push!"))?;
+
+        let branch = tree
+            .branch(pos)
+            .map_err(|e| anyhow!("Failed to get the branch: {}", e))?
+            .ok_or(anyhow!("Failed to fetch the branch from the tree"))?;
+
+        self.add_input(ssk, note, branch, signature)
     }
 
     pub fn set_fee(&mut self, fee: &Fee) -> Result<()> {
@@ -201,6 +201,17 @@ impl<const DEPTH: usize, const CAPACITY: usize>
         Ok(())
     }
 
+    pub fn add_output_with_data(
+        &mut self,
+        note: Note,
+        value: u64,
+        blinding_factor: JubJubScalar,
+    ) {
+        let output = CircuitOutput::new(note, value, blinding_factor);
+
+        self.outputs.push(output);
+    }
+
     pub fn add_output(
         &mut self,
         note: Note,
@@ -213,31 +224,64 @@ impl<const DEPTH: usize, const CAPACITY: usize>
             anyhow!("Failed to decrypt blinding factor: {:?}", e)
         })?;
 
-        let output = CircuitOutput::new(note, value, blinding_factor);
+        self.add_output_with_data(note, value, blinding_factor);
 
-        self.outputs.push(output);
         Ok(())
     }
 
-    /// Constant message for the schnorr signature generation
-    ///
-    /// The signature is provided outside the circuit; so that's why it is
-    /// constant
-    ///
-    /// The contents of the message are yet to be defined in the documentation.
-    /// For now, it is treated as a constant.
-    ///
-    /// https://github.com/dusk-network/rusk/issues/178
-    pub const fn sign_message() -> BlsScalar {
-        BlsScalar::one()
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let mut pi = vec![];
+
+        // step 1
+        let root = self
+            .inputs
+            .first()
+            .map(|i| *i.branch().root())
+            .unwrap_or_default();
+        pi.push(root.into());
+
+        // step 4
+        pi.extend(
+            self.inputs
+                .iter()
+                .map(|input| input.nullifier().clone().into()),
+        );
+
+        // step 7
+        pi.push(BlsScalar::from(self.crossover.fee()).into());
+
+        let crossover_value_commitment =
+            JubJubAffine::from(self.crossover.value_commitment());
+        pi.push(crossover_value_commitment.into());
+
+        // step 9
+        pi.extend(self.outputs.iter().map(|output| {
+            JubJubAffine::from(output.note().value_commitment()).into()
+        }));
+
+        // step 12
+        pi.push(self.tx_hash.into());
+
+        pi
+    }
+
+    pub fn inputs(&self) -> &[CircuitInput] {
+        self.inputs.as_slice()
+    }
+
+    pub fn outputs(&self) -> &[CircuitOutput] {
+        self.outputs.as_slice()
     }
 }
 
-impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
-    for ExecuteCircuit<DEPTH, CAPACITY>
-{
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let mut pi = vec![];
+impl Circuit for ExecuteCircuit {
+    // TODO Define ID
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
+
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<(), PlonkError> {
         let mut base_root = None;
 
         // 1. Prove the knowledge of the input Note paths to Note Tree, via root
@@ -249,8 +293,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 let branch = input.branch();
                 let note = input.to_witness(composer);
 
-                let note_hash = note.note_hash;
-                let root_p = tree::merkle_opening(composer, branch, note_hash);
+                let root_p = tree::merkle_opening(composer, branch);
 
                 // Test the public input only for the first root
                 //
@@ -260,15 +303,10 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                     None => {
                         let root = *branch.root();
 
-                        pi.push(PublicInput::BlsScalar(
-                            root,
-                            composer.circuit_size(),
-                        ));
-
                         composer.constrain_to_constant(
                             root_p,
                             BlsScalar::zero(),
-                            -root,
+                            Some(-root),
                         );
 
                         base_root.replace(root_p);
@@ -314,11 +352,10 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
             let nullifier_p = sponge::gadget(composer, &[sk_r, pos]);
 
-            pi.push(PublicInput::BlsScalar(nullifier, composer.circuit_size()));
             composer.constrain_to_constant(
                 nullifier_p,
                 BlsScalar::zero(),
-                -nullifier,
+                Some(-nullifier),
             );
         });
 
@@ -351,25 +388,14 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
             );
 
             // fee value public input
-            pi.push(PublicInput::BlsScalar(
-                crossover.fee_value,
-                composer.circuit_size(),
-            ));
-
             composer.constrain_to_constant(
                 crossover.fee_value_witness,
                 BlsScalar::zero(),
-                -crossover.fee_value,
+                Some(-crossover.fee_value),
             );
 
             // value commitment public input
             let value_commitment = crossover.value_commitment.into();
-            pi.push(PublicInput::AffinePoint(
-                value_commitment,
-                composer.circuit_size(),
-                composer.circuit_size() + 1,
-            ));
-
             composer.assert_equal_public_point(
                 value_commitment_p,
                 value_commitment,
@@ -396,12 +422,6 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
 
                 // value commitment public input
                 let value_commitment = output.value_commitment.into();
-                pi.push(PublicInput::AffinePoint(
-                    value_commitment,
-                    composer.circuit_size(),
-                    composer.circuit_size() + 1,
-                ));
-
                 composer.assert_equal_public_point(
                     value_commitment_p,
                     value_commitment,
@@ -428,7 +448,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                     (BlsScalar::one(), sum),
                     (BlsScalar::one(), input.value),
                     BlsScalar::zero(),
-                    BlsScalar::zero(),
+                    None,
                 )
             });
 
@@ -437,7 +457,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                     (BlsScalar::one(), sum),
                     (BlsScalar::one(), output.value),
                     BlsScalar::zero(),
-                    BlsScalar::zero(),
+                    None,
                 )
             });
 
@@ -445,7 +465,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 (BlsScalar::one(), crossover.value),
                 (BlsScalar::one(), crossover.fee_value_witness),
                 BlsScalar::zero(),
-                BlsScalar::zero(),
+                None,
             );
 
             composer.poly_gate(
@@ -457,7 +477,7 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
                 -BlsScalar::one(),
                 -BlsScalar::one(),
                 BlsScalar::zero(),
-                BlsScalar::zero(),
+                None,
             );
         }
 
@@ -470,36 +490,20 @@ impl<const DEPTH: usize, const CAPACITY: usize> Circuit<'_>
         // a malicious actor. It is cheaper than checking individually
         // for the pre-image of every output.
         let tx_hash = composer.add_input(self.tx_hash);
-        pi.push(PublicInput::BlsScalar(
-            self.tx_hash,
-            composer.circuit_size(),
-        ));
-
         composer.constrain_to_constant(
             tx_hash,
             BlsScalar::zero(),
-            -self.tx_hash,
+            Some(-self.tx_hash),
         );
-
-        self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
 
         Ok(())
     }
 
-    fn get_trim_size(&self) -> usize {
-        1 << CAPACITY
-    }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
+    fn padded_circuit_size(&self) -> usize {
+        match (self.inputs.len(), self.outputs.len()) {
+            (1, o) if o < 2 => 1 << 15,
+            (1, _) | (2, _) => 1 << 16,
+            _ => 1 << 17,
+        }
     }
 }

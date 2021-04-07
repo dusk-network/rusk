@@ -9,7 +9,7 @@
 use anyhow::{anyhow, Result};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::proof_system::Proof;
+use dusk_plonk::prelude::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
 use std::mem;

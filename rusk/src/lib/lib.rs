@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use tracing::info;
-pub mod encoding;
-pub mod services;
-pub mod transaction;
+//pub mod encoding;
+//pub mod services;
+//pub mod transaction;
 
 pub use rusk_vm as vm;
 
@@ -29,11 +29,9 @@ impl Default for Rusk {
 use dusk_plonk::prelude::PublicParameters;
 use lazy_static::lazy_static;
 lazy_static! {
-    pub(crate) static ref PUB_PARAMS: PublicParameters = {
-        let buff =
-            rusk_profile::get_common_reference_string().expect("CRS not found");
-        let result: PublicParameters =
-            bincode::deserialize(&buff).expect("CRS not decoded");
-        result
+    pub(crate) static ref PUB_PARAMS: PublicParameters = unsafe {
+        let pp = rusk_profile::get_common_reference_string().unwrap();
+
+        PublicParameters::from_slice_unchecked(pp.as_slice())
     };
 }

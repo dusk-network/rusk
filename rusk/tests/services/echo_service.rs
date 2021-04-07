@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use futures::stream::TryStreamExt;
 use rusk::services::echoer::{EchoRequest, EchoerClient};
 use rusk::Rusk;
@@ -35,7 +36,6 @@ pub async fn echo_works_uds(
     Ok(())
 }
 
-/*
 #[tokio::test(threaded_scheduler)]
 async fn echo_works_tcp_ip() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SERVER_ADDRESS.parse()?;
