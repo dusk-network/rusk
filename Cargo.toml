@@ -4,6 +4,7 @@ members = [
     "circuits/transfer",
     "contracts/bid",
     "contracts/transfer",
+    "macros/code-hasher",
     "rusk-profile",
     "rusk-abi",
     "rusk",

@@ -1,0 +1,14 @@
+[package]
+name = "code-hasher"
+version = "0.1.0"
+authors = ["CPerezz <carlos@dusk.network>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+blake3 = "0.3.7"
+
+[dev-dependencies]
+dusk-plonk = "0.6"
