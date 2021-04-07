@@ -25,8 +25,8 @@ impl CircuitOutput {
         }
     }
 
-    pub fn value_commitment(&self) -> &JubJubExtended {
-        self.note.value_commitment()
+    pub const fn note(&self) -> &Note {
+        &self.note
     }
 
     pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessOutput {

@@ -10,7 +10,8 @@ use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::Point;
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee};
@@ -19,8 +20,6 @@ use schnorr::Signature;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractTransparentCircuit {
-    pi_positions: Vec<PublicInput>,
-
     blinding_factor: JubJubScalar,
     signature: Signature,
 
@@ -28,35 +27,6 @@ pub struct SendToContractTransparentCircuit {
     value_commitment: JubJubExtended,
     pk: JubJubExtended,
     value: BlsScalar,
-}
-
-// TODO
-// This unsafe implementation is done that way because the rusk structure
-// combined with plonk requires an instance of this struct to be able to verify
-// proofs.
-//
-// That should be different since only the keys, the proof and the public inputs
-// should provide the required data to run the verification
-//
-// The `schnorr::Signature` doesn't implement `Default`, and shouldn't. This
-// unsafe usage is a workaround until the following issue is solved:
-// https://github.com/dusk-network/plonk/issues/396
-//
-// After that, this `Default` implementation can be removed.
-// https://github.com/dusk-network/rusk/issues/183
-impl Default for SendToContractTransparentCircuit {
-    fn default() -> Self {
-        use std::mem;
-
-        Self {
-            pi_positions: Default::default(),
-            blinding_factor: Default::default(),
-            signature: unsafe { mem::zeroed() },
-            value_commitment: Default::default(),
-            pk: Default::default(),
-            value: Default::default(),
-        }
-    }
 }
 
 impl SendToContractTransparentCircuit {
@@ -103,7 +73,6 @@ impl SendToContractTransparentCircuit {
             })?;
 
         Ok(Self {
-            pi_positions: vec![],
             blinding_factor,
             signature,
             value: BlsScalar::from(value),
@@ -111,63 +80,29 @@ impl SendToContractTransparentCircuit {
             pk,
         })
     }
-}
 
-impl From<&[PublicInput]> for SendToContractTransparentCircuit {
-    // TODO
-    // This should be removed after the `Circuit` trait of PLONK is refactored.
-    //
-    // Also, this implementation should be `TryFrom` - this is only a temporary
-    // workaround to allow host verification. The invalid public points will
-    // just be ignored.
-    //
-    // This implementation intentionally don't benefit from `Default` because
-    // both need to be removed in the short term and its better if they are
-    // completely decoupled
-    fn from(pi: &[PublicInput]) -> Self {
-        use std::mem;
+    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+        // step 1
+        let value_commitment = JubJubAffine::from(self.value_commitment);
 
-        // TODO
-        // The pi_positions is expected to be reconstructed inside the
-        // `Circuit::gadget` function This will change as soon as
-        // `Circuit` is refactored
-        let pi_positions = vec![];
+        // step 3
+        let pk = JubJubAffine::from(self.pk);
 
-        let blinding_factor = Default::default();
-        let signature = unsafe { mem::zeroed() };
+        // step 4
+        let value = self.value.into();
 
-        // Public data
-        let mut value_commitment = Default::default();
-        let mut pk = Default::default();
-        let mut value = Default::default();
-
-        pi.iter().enumerate().for_each(|(i, p)| match (i, p) {
-            (0, PublicInput::AffinePoint(p, _, _)) => {
-                value_commitment = (*p).into()
-            }
-
-            (1, PublicInput::AffinePoint(p, _, _)) => pk = (*p).into(),
-
-            (2, PublicInput::BlsScalar(s, _)) => value = *s,
-
-            _ => (),
-        });
-
-        Self {
-            pi_positions,
-            blinding_factor,
-            signature,
-            value_commitment,
-            pk,
-            value,
-        }
+        vec![value_commitment.into(), pk.into(), value]
     }
 }
 
-impl Circuit<'_> for SendToContractTransparentCircuit {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let mut pi = vec![];
+impl Circuit for SendToContractTransparentCircuit {
+    // TODO Define ID
+    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
 
+    fn gadget(
+        &mut self,
+        composer: &mut StandardComposer,
+    ) -> Result<(), PlonkError> {
         // 1. Prove the knowledge of the commitment opening of the
         // commitment
         let value = composer.add_input(self.value);
@@ -179,11 +114,6 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
             gadgets::commitment(composer, value, blinding_factor);
 
         let value_commitment = self.value_commitment.into();
-        pi.push(PublicInput::AffinePoint(
-            value_commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         composer
             .assert_equal_public_point(value_commitment_p, value_commitment);
 
@@ -196,11 +126,6 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
         let pk = self.pk.into();
-        pi.push(PublicInput::AffinePoint(
-            pk,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
         let pk = Point::from_public_affine(composer, pk);
 
         let r = Point::from_private_affine(composer, self.signature.R().into());
@@ -210,75 +135,16 @@ impl Circuit<'_> for SendToContractTransparentCircuit {
         gadgets::point_signature(composer, value_commitment, pk, r, u);
 
         // 4. Prove that v_c - v = 0
-        pi.push(PublicInput::BlsScalar(self.value, composer.circuit_size()));
-        composer.constrain_to_constant(value, BlsScalar::zero(), -self.value);
-
-        self.get_mut_pi_positions().extend_from_slice(pi.as_slice());
+        composer.constrain_to_constant(
+            value,
+            BlsScalar::zero(),
+            Some(-self.value),
+        );
 
         Ok(())
     }
 
-    fn get_trim_size(&self) -> usize {
+    fn padded_circuit_size(&self) -> usize {
         1 << 13
     }
-
-    fn set_trim_size(&mut self, _size: usize) {
-        // N/A, fixed size circuit
-    }
-
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    /// Return a reference to the Public Inputs storage of the circuit.
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
-    }
-}
-
-#[test]
-fn send_transparent() {
-    use crate::test_helpers;
-    use std::convert::TryInto;
-
-    use anyhow::anyhow;
-    use phoenix_core::Note;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-
-    let mut rng = StdRng::seed_from_u64(2322u64);
-    test_helpers::circuit(
-        &mut rng,
-        SendToContractTransparentCircuit::rusk_keys_id(),
-        |rng| {
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_vk = c_ssk.view_key();
-            let c_psk = c_ssk.public_spend_key();
-
-            let c_value = 100;
-            let c_blinding_factor = JubJubScalar::random(rng);
-
-            let c_note =
-                Note::obfuscated(rng, &c_psk, c_value, c_blinding_factor);
-            let (fee, crossover) = c_note.try_into().map_err(|e| {
-                anyhow!(
-                    "Failed to convert phoenix note into crossover: {:?}",
-                    e
-                )
-            })?;
-
-            let c_signature = SendToContractTransparentCircuit::sign(
-                rng, &c_ssk, &fee, &crossover,
-            );
-
-            SendToContractTransparentCircuit::new(
-                &fee,
-                &crossover,
-                &c_vk,
-                c_signature,
-            )
-            .map_err(|e| anyhow!("Error creating circuit: {:?}", e))
-        },
-    )
-    .expect("Failed to build and execute circuit!");
 }

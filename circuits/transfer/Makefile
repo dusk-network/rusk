@@ -4,6 +4,12 @@ help: ## Display this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 test: ## Run the transfer circuits tests
-	@cargo test --release
+	@cargo test --release \
+		--features builder
+
+test-no-rusk-profile: ## Run the transfer circuits tests
+	@RUSK_PROFILE_KEYS=false \
+		cargo test --release \
+		--features builder
 
 .PHONY: test help

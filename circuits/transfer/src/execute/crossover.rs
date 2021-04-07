@@ -30,11 +30,11 @@ impl CircuitCrossover {
         }
     }
 
-    pub fn value(&self) -> u64 {
-        self.value
+    pub const fn fee(&self) -> u64 {
+        self.fee
     }
 
-    pub fn value_commitment(&self) -> &JubJubExtended {
+    pub const fn value_commitment(&self) -> &JubJubExtended {
         &self.value_commitment
     }
 
