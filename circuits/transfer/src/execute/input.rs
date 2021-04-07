@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::ExecuteCircuit;
+use super::SIGN_MESSAGE;
 
 use dusk_pki::Ownable;
 use dusk_plonk::bls12_381::BlsScalar;
@@ -75,10 +75,12 @@ impl WitnessInput {
     }
 }
 
+pub const POSEIDON_BRANCH_DEPTH: usize = 17;
+
 #[derive(Debug, Clone)]
-pub struct CircuitInput<const DEPTH: usize> {
+pub struct CircuitInput {
     sk_r: JubJubScalar,
-    branch: PoseidonBranch<DEPTH>,
+    branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
     note: Note,
     value: u64,
     blinding_factor: JubJubScalar,
@@ -86,10 +88,10 @@ pub struct CircuitInput<const DEPTH: usize> {
     nullifier: BlsScalar,
 }
 
-impl<const DEPTH: usize> CircuitInput<DEPTH> {
+impl CircuitInput {
     pub fn new(
         signature: SchnorrProof,
-        branch: PoseidonBranch<DEPTH>,
+        branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
         sk_r: JubJubScalar,
         note: Note,
         value: u64,
@@ -107,7 +109,7 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         }
     }
 
-    pub const fn branch(&self) -> &PoseidonBranch<DEPTH> {
+    pub const fn branch(&self) -> &PoseidonBranch<POSEIDON_BRANCH_DEPTH> {
         &self.branch
     }
 
@@ -162,7 +164,7 @@ impl<const DEPTH: usize> CircuitInput<DEPTH> {
         let pk_r_prime =
             fixed_base::scalar_mul(composer, sk_r, GENERATOR_NUMS_EXTENDED);
         let pk_r_prime = *pk_r_prime.point();
-        let schnorr_message = ExecuteCircuit::<DEPTH, 0>::sign_message();
+        let schnorr_message = SIGN_MESSAGE;
         let schnorr_message =
             composer.add_witness_to_circuit_description(schnorr_message);
         let schnorr_u = *self.signature.u();

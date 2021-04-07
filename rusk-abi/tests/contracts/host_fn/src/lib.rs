@@ -56,11 +56,10 @@ mod hosted {
         pub fn verify(
             &self,
             proof: Vec<u8>,
-            vk: Vec<u8>,
+            verifier_data: Vec<u8>,
             pi_values: Vec<PublicInput>,
-            pi_positions: Vec<u32>,
         ) -> bool {
-            rusk_abi::verify_proof(proof, vk, pi_values, pi_positions)
+            rusk_abi::verify_proof(proof, verifier_data, pi_values)
         }
 
         pub fn schnorr_signature(
@@ -103,12 +102,11 @@ mod hosted {
 
             VERIFY => {
                 let proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
-                let vk: Vec<u8> = Canon::<BS>::read(&mut source)?;
+                let verifier_data: Vec<u8> = Canon::<BS>::read(&mut source)?;
                 let pi_values: Vec<rusk_abi::PublicInput> =
                     Canon::<BS>::read(&mut source)?;
-                let pi_positions: Vec<u32> = Canon::<BS>::read(&mut source)?;
 
-                let ret = slf.verify(proof, vk, pi_values, pi_positions);
+                let ret = slf.verify(proof, verifier_data, pi_values);
 
                 let r = {
                     // return value

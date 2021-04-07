@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 use super::super::common::encoding::*;
 use super::super::common::unix::*;
 use dusk_pki::{jubjub_decode, PublicSpendKey, SecretSpendKey, ViewKey};
@@ -63,3 +64,4 @@ pub async fn pki_walkthrough_uds(
 
     Ok(())
 }
+*/
