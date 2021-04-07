@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/*
 #![allow(dead_code)]
 use core::convert::TryFrom;
 use dusk_pki::jubjub_decode;
@@ -64,3 +65,4 @@ pub fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
         })
     }
 }
+*/
