@@ -4,6 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[tokio::main]
+async fn main() {
+    unimplemented!()
+}
+
+/*
 #[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
@@ -190,3 +196,4 @@ async fn startup_with_tcp_ip(
         .serve(addr)
         .await?)
 }
+*/
