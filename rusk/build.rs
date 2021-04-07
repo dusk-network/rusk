@@ -6,17 +6,19 @@
 
 #![allow(non_snake_case)]
 
+/*
 use bid_circuits::CorrectnessCircuit;
 use dusk_blindbid::{Bid, BlindBidCircuit, Score};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::circuit_builder::Circuit;
-use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
+*/
 use lazy_static::lazy_static;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
+
+use dusk_plonk::prelude::*;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -25,8 +27,8 @@ lazy_static! {
                 info!("Got the CRS from cache");
 
                 PublicParameters::from_slice_unchecked(&buff[..])
-                    .expect("Cannot deserialize the CRS")
             },
+
             Ok(_) | Err(_) => {
                 info!("New CRS needs to be generated and cached");
 
@@ -35,15 +37,17 @@ lazy_static! {
 
                 let mut rng = StdRng::seed_from_u64(0xbeef);
 
-                let pp_p = PublicParameters::setup(1 << 17, &mut rng)
+                let pp = PublicParameters::setup(1 << 17, &mut rng)
                     .expect("Cannot initialize Public Parameters");
 
                 info!("Public Parameters initialized");
 
-                rusk_profile::set_common_reference_string(pp_p.to_raw_bytes())
-                    .expect("Unable to write the CRS");
+                rusk_profile::set_common_reference_string(
+                    pp.to_raw_var_bytes(),
+                )
+                .expect("Unable to write the CRS");
 
-                pp_p
+                pp
             }
         }
     };
@@ -92,6 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
+    /*
     if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
         info!("Bulding Bid Keys");
         let bid_keys = rusk_profile::keys_for("bid-circuits");
@@ -102,34 +107,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         blindbid_keys.clear_all()?;
         blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
     }
+    */
 
     if option_env!("RUSK_BUILD_TRANSFER_KEYS").unwrap_or("0") != "0" {
         info!("Building Transfer Keys");
         let transfer_keys = rusk_profile::keys_for("transfer-circuits");
-        let (id, pk, vk) = transfer::compile_stco_circuit()?;
-        transfer_keys.update(id, (pk, vk))?;
+        info!("Transfer keys prepared!");
 
-        let (id, pk, vk) = transfer::compile_stct_circuit()?;
-        transfer_keys.update(id, (pk, vk))?;
+        let (id, pk, vd) = transfer::compile_stco_circuit()?;
+        transfer_keys.update(id, (pk, vd))?;
 
-        let (id, pk, vk) = transfer::compile_wfo_circuit()?;
-        transfer_keys.update(id, (pk, vk))?;
+        let (id, pk, vd) = transfer::compile_stct_circuit()?;
+        transfer_keys.update(id, (pk, vd))?;
 
-        // The execute circuit has multiple variations,
-        // which is dependant upon the number of input
-        // and output notes and is denoted in the table below:
+        let (id, pk, vd) = transfer::compile_wfo_circuit()?;
+        transfer_keys.update(id, (pk, vd))?;
+
         for inputs in 1..5 {
             for outputs in 0..3 {
-                let (id, pk, vk) =
+                let (id, pk, vd) =
                     transfer::compile_execute_circuit(inputs, outputs)?;
 
-                transfer_keys.update(id, (pk, vk))?;
+                transfer_keys.update(id, (pk, vd))?;
             }
         }
     }
+
     Ok(())
 }
 
+/*
 mod bid {
     use super::*;
 
@@ -229,6 +236,7 @@ mod blindbid {
         .expect("Error generating a Bid")
     }
 }
+*/
 
 mod transfer {
     use super::PUB_PARAMS;
@@ -236,13 +244,19 @@ mod transfer {
 
     use anyhow::{anyhow, Result};
     use canonical_host::MemStore;
+    use dusk_bytes::Serializable;
     use dusk_pki::SecretSpendKey;
-    use dusk_plonk::prelude::*;
+    use dusk_plonk::circuit;
+    use dusk_plonk::circuit::VerifierData;
     use phoenix_core::{Message, Note};
+    use sha2::{Digest, Sha256};
+    use tracing::info;
     use transfer_circuits::{
         ExecuteCircuit, SendToContractObfuscatedCircuit,
         SendToContractTransparentCircuit, WithdrawFromObfuscatedCircuit,
     };
+
+    use dusk_plonk::prelude::*;
 
     pub fn compile_stco_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
         let mut rng = rand::thread_rng();
@@ -277,13 +291,13 @@ mod transfer {
         )
         .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
-        let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
+        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
 
         let id = SendToContractObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_bytes();
-        let vk = vk.to_bytes();
+        let pk = pk.to_var_bytes();
+        let vd = vd.to_var_bytes();
 
-        Ok((id, pk, vk))
+        Ok((id, pk, vd))
     }
 
     pub fn compile_stct_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
@@ -314,13 +328,13 @@ mod transfer {
         )
         .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
-        let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
+        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
 
         let id = SendToContractTransparentCircuit::rusk_keys_id();
-        let pk = pk.to_bytes();
-        let vk = vk.to_bytes();
+        let pk = pk.to_var_bytes();
+        let vd = vd.to_var_bytes();
 
-        Ok((id, pk, vk))
+        Ok((id, pk, vd))
     }
 
     pub fn compile_wfo_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
@@ -359,47 +373,75 @@ mod transfer {
         )
         .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
-        let (pk, vk) = circuit.compile(&PUB_PARAMS)?;
+        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
 
         let id = WithdrawFromObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_bytes();
-        let vk = vk.to_bytes();
+        let pk = pk.to_var_bytes();
+        let vd = vd.to_var_bytes();
 
-        Ok((id, pk, vk))
+        Ok((id, pk, vd))
     }
 
     pub fn compile_execute_circuit(
         inputs: usize,
         outputs: usize,
     ) -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let (id, pk, vk) = match inputs {
-            1 => get_id_pk_vk::<15>(inputs, outputs)?,
-            2 => get_id_pk_vk::<16>(inputs, outputs)?,
-            3 | 4 => get_id_pk_vk::<17>(inputs, outputs)?,
-            _ => unimplemented!(),
-        };
+        info!(
+            "Starting the compilation of the circuit for {}/{}",
+            inputs, outputs
+        );
 
-        let pk = pk.to_bytes();
-        let vk = vk.to_bytes();
-
-        Ok((id, pk, vk))
-    }
-
-    fn get_id_pk_vk<const CAPACITY: usize>(
-        inputs: usize,
-        outputs: usize,
-    ) -> Result<(&'static str, ProverKey, VerifierKey)> {
-        let (ci, _, pk, vk, _, _) =
-            ExecuteCircuit::<17, CAPACITY>::create_dummy_proof::<_, MemStore>(
+        let (ci, _, pk, vd, proof, pi) =
+            ExecuteCircuit::create_dummy_proof::<_, MemStore>(
                 &mut rand::thread_rng(),
                 Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
                 inputs,
                 outputs,
                 true,
+                false,
             )?;
+
+        info!(
+            "Circuit generated with {}/{}",
+            ci.inputs().len(),
+            ci.outputs().len()
+        );
 
         let id = ci.rusk_keys_id();
 
-        Ok((id, pk, vk))
+        // Sanity check
+        circuit::verify_proof(
+            &*PUB_PARAMS,
+            vd.key(),
+            &proof,
+            pi.as_slice(),
+            vd.pi_pos(),
+            b"dusk-network",
+        )
+        .map_err(|_| anyhow!("Proof verification failed for {}", id))?;
+
+        let pk = pk.to_var_bytes();
+        let vd = vd.to_var_bytes();
+
+        let mut hasher = Sha256::new();
+        hasher.update(PUB_PARAMS.to_raw_var_bytes().as_slice());
+        let contents = hasher.finalize();
+        info!("Using PP {:x}", contents);
+
+        let mut hasher = Sha256::new();
+        hasher.update(vd.as_slice());
+        let contents = hasher.finalize();
+
+        let mut hasher = Sha256::new();
+        let vk_p = VerifierData::from_slice(vd.as_slice()).expect("Data");
+        hasher.update(&vk_p.key().to_bytes());
+        let contents_key = hasher.finalize();
+
+        info!(
+            "Execute circuit data generated for {} with verifier data {:x} and key {:x}",
+            id, contents, contents_key
+        );
+
+        Ok((id, pk, vd))
     }
 }

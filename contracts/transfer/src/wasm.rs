@@ -7,7 +7,6 @@
 mod bridge;
 mod callable;
 mod internal;
-mod spurious;
 
 // TODO deprecate wasm-keys module
 // https://github.com/dusk-network/rusk-vm/issues/141

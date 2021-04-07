@@ -6,6 +6,8 @@
 
 //! Helper functions to get the proper version of the crate to be
 //! displayed.
+
+/*
 use rustc_tools_util::VersionInfo;
 
 #[inline]
@@ -23,3 +25,4 @@ pub(crate) fn show_version(info: VersionInfo) -> String {
         version
     }
 }
+*/
