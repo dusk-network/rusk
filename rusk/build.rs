@@ -114,23 +114,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let transfer_keys = rusk_profile::keys_for("transfer-circuits");
         info!("Transfer keys prepared!");
 
-        let (id, pk, vd) = transfer::compile_stco_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
+        (0..3).into_par_iter().for_each(|i| match i {
+            0 => {
+               info!("Starting the compilation of the circuit \"transfer-send-to-contract-obfuscated\"");
 
-        let (id, pk, vd) = transfer::compile_stct_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        let (id, pk, vd) = transfer::compile_wfo_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        for inputs in 1..5 {
-            for outputs in 0..3 {
                 let (id, pk, vd) =
-                    transfer::compile_execute_circuit(inputs, outputs)?;
-
-                transfer_keys.update(id, (pk, vd))?;
+                    transfer::compile_stco_circuit().expect("Circuit Compiled");
+                transfer_keys.update(id, (pk, vd)).expect("Keys Updated");
             }
-        }
+            1 => {
+                info!("Starting the compilation of the circuit \"transfer-send-to-contract-transparent\"");
+                let (id, pk, vd) =
+                    transfer::compile_stct_circuit().expect("Circuit Compiled");
+                transfer_keys.update(id, (pk, vd)).expect("Keys Updated");
+            }
+            2 => {
+                info!("Starting the compilation of the circuit \"withdraw-from-obfuscated\"");
+                let (id, pk, vd) =
+                    transfer::compile_wfo_circuit().expect("Circuit Compiled");
+                transfer_keys.update(id, (pk, vd)).expect("Keys Updated")
+            }
+            _ => (),
+        });
+
+        use rayon::prelude::*;
+        let args = (1..5)
+            .flat_map(|i| (0..3).map(move |j| (i, j)))
+            .collect::<Vec<(usize, usize)>>();
+
+        args.par_iter().for_each(|(inputs, outputs)| {
+            let (id, pk, vd) =
+                transfer::compile_execute_circuit(*inputs, *outputs)
+                    .expect("Circuit Compiled");
+
+            transfer_keys.update(id, (pk, vd)).expect("Keys Updated");
+        });
     }
 
     Ok(())
