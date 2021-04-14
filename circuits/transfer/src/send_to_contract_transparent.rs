@@ -10,7 +10,7 @@ use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::constraint_system::ecc::Point;
-use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
@@ -20,12 +20,11 @@ use schnorr::Signature;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractTransparentCircuit {
-    blinding_factor: JubJubScalar,
+    crossover: Crossover,
+    crossover_blinder: JubJubScalar,
+    fee: Fee,
+    message: BlsScalar,
     signature: Signature,
-
-    // Public data
-    value_commitment: JubJubExtended,
-    pk: JubJubExtended,
     value: BlsScalar,
 }
 
@@ -34,64 +33,84 @@ impl SendToContractTransparentCircuit {
         "transfer-send-to-contract-transparent"
     }
 
+    pub fn sign_message(
+        crossover: &Crossover,
+        value: u64,
+        address: &BlsScalar,
+    ) -> BlsScalar {
+        let mut message = crossover.to_hash_inputs().to_vec();
+
+        message.push(value.into());
+        message.push(*address);
+
+        sponge::hash(message.as_slice())
+    }
+
     pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
         ssk: &SecretSpendKey,
         fee: &Fee,
         crossover: &Crossover,
+        value: u64,
+        address: &BlsScalar,
     ) -> Signature {
         let sk_r = ssk.sk_r(fee.stealth_address()).as_ref().clone();
-
         let secret = SecretKey::from(sk_r);
-        let commitment =
-            sponge::hash(&crossover.value_commitment().to_hash_inputs());
 
-        Signature::new(&secret, rng, commitment)
+        let message = Self::sign_message(crossover, value, address);
+
+        Signature::new(&secret, rng, message)
     }
 
     pub fn new(
-        fee: &Fee,
-        crossover: &Crossover,
+        fee: Fee,
+        crossover: Crossover,
         vk: &ViewKey,
+        address: &BlsScalar,
         signature: Signature,
     ) -> Result<Self, PhoenixError> {
-        let value_commitment = *crossover.value_commitment();
-        let pk = *fee.stealth_address().pk_r().as_ref();
-
         let nonce = BlsScalar::from(*crossover.nonce());
         let secret = fee.stealth_address().R() * vk.a();
-        let (value, blinding_factor) = crossover
+        let (value, crossover_blinder) = crossover
             .encrypted_data()
             .decrypt(&secret.into(), &nonce)
             .map(|d| {
                 let value = d[0].reduce().0[0];
-                let blinding_factor =
+                let crossover_blinder =
                     JubJubScalar::from_bytes(&d[1].to_bytes())
                         .unwrap_or_default();
 
-                (value, blinding_factor)
+                (value, crossover_blinder)
             })?;
 
+        let message = Self::sign_message(&crossover, value, address);
+        let value = BlsScalar::from(value);
+
         Ok(Self {
-            blinding_factor,
+            crossover,
+            crossover_blinder,
+            fee,
+            message,
             signature,
-            value: BlsScalar::from(value),
-            value_commitment,
-            pk,
+            value,
         })
     }
 
     pub fn public_inputs(&self) -> Vec<PublicInputValue> {
         // step 1
-        let value_commitment = JubJubAffine::from(self.value_commitment);
+        let value_commitment = self.crossover.value_commitment();
+        let value_commitment = JubJubAffine::from(value_commitment);
 
         // step 3
-        let pk = JubJubAffine::from(self.pk);
+        let pk = self.fee.stealth_address().pk_r().as_ref();
+        let pk = JubJubAffine::from(pk);
+
+        let message = self.message.into();
 
         // step 4
         let value = self.value.into();
 
-        vec![value_commitment.into(), pk.into(), value]
+        vec![value_commitment.into(), pk.into(), message, value]
     }
 }
 
@@ -107,17 +126,16 @@ impl Circuit for SendToContractTransparentCircuit {
         // commitment
         let value = composer.add_input(self.value);
 
-        let blinding_factor = self.blinding_factor.into();
-        let blinding_factor = composer.add_input(blinding_factor);
+        let crossover_blinder = self.crossover_blinder.into();
+        let crossover_blinder = composer.add_input(crossover_blinder);
 
         let value_commitment_p =
-            gadgets::commitment(composer, value, blinding_factor);
+            gadgets::commitment(composer, value, crossover_blinder);
 
-        let value_commitment = self.value_commitment.into();
+        let value_commitment = self.crossover.value_commitment();
+        let value_commitment = JubJubAffine::from(value_commitment);
         composer
             .assert_equal_public_point(value_commitment_p, value_commitment);
-
-        let value_commitment = value_commitment_p;
 
         // 2. Prove that the value of the opening of the commitment
         // of the Crossover is within range
@@ -125,14 +143,21 @@ impl Circuit for SendToContractTransparentCircuit {
 
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
-        let pk = self.pk.into();
+        let pk = self.fee.stealth_address().pk_r().as_ref().into();
         let pk = Point::from_public_affine(composer, pk);
 
         let r = Point::from_private_affine(composer, self.signature.R().into());
         let u = *self.signature.u();
         let u = composer.add_input(u.into());
 
-        gadgets::point_signature(composer, value_commitment, pk, r, u);
+        let message = composer.add_input(self.message);
+        composer.constrain_to_constant(
+            message,
+            BlsScalar::zero(),
+            Some(-self.message),
+        );
+
+        schnorr::gadgets::single_key_verify(composer, r, u, pk, message);
 
         // 4. Prove that v_c - v = 0
         composer.constrain_to_constant(
