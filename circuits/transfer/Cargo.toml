@@ -11,7 +11,7 @@ dusk-bytes = "0.1"
 dusk-plonk = "0.7"
 canonical = "0.5"
 dusk-poseidon = {version="0.20", features=["canon"]}
-phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.10.0", features = ["canon"]}
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", branch="release-0.11", features = ["canon"]}
 dusk-pki = "0.6"
 schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.6.0"}
 rusk-profile = {path="../../rusk-profile", optional=true}
