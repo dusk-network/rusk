@@ -43,7 +43,7 @@ fn send_to_contract_transparent() {
         fee,
         crossover,
         &c_vk,
-        &c_address,
+        c_address,
         c_signature,
     )
     .expect("Failed to create STCT circuit!");
