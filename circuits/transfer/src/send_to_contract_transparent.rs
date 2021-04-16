@@ -26,6 +26,7 @@ pub struct SendToContractTransparentCircuit {
     message: BlsScalar,
     signature: Signature,
     value: BlsScalar,
+    address: BlsScalar,
 }
 
 impl SendToContractTransparentCircuit {
@@ -66,7 +67,7 @@ impl SendToContractTransparentCircuit {
         fee: Fee,
         crossover: Crossover,
         vk: &ViewKey,
-        address: &BlsScalar,
+        address: BlsScalar,
         signature: Signature,
     ) -> Result<Self, PhoenixError> {
         let nonce = BlsScalar::from(*crossover.nonce());
@@ -83,7 +84,7 @@ impl SendToContractTransparentCircuit {
                 (value, crossover_blinder)
             })?;
 
-        let message = Self::sign_message(&crossover, value, address);
+        let message = Self::sign_message(&crossover, value, &address);
         let value = BlsScalar::from(value);
 
         Ok(Self {
@@ -93,6 +94,7 @@ impl SendToContractTransparentCircuit {
             message,
             signature,
             value,
+            address,
         })
     }
 
@@ -137,6 +139,8 @@ impl Circuit for SendToContractTransparentCircuit {
         composer
             .assert_equal_public_point(value_commitment_p, value_commitment);
 
+        let value_commitment = value_commitment_p;
+
         // 2. Prove that the value of the opening of the commitment
         // of the Crossover is within range
         composer.range_gate(value, 64);
@@ -150,7 +154,24 @@ impl Circuit for SendToContractTransparentCircuit {
         let u = *self.signature.u();
         let u = composer.add_input(u.into());
 
-        let message = composer.add_input(self.message);
+        let nonce = composer.add_input(self.crossover.nonce().clone().into());
+        let address = composer.add_input(self.address);
+
+        let mut inputs =
+            vec![*value_commitment.x(), *value_commitment.y(), nonce];
+
+        let encrypted_data = self
+            .crossover
+            .encrypted_data()
+            .cipher()
+            .iter()
+            .map(|d| composer.add_input(*d));
+        inputs.extend(encrypted_data);
+
+        inputs.push(value);
+        inputs.push(address);
+
+        let message = sponge::gadget(composer, inputs.as_slice());
         composer.constrain_to_constant(
             message,
             BlsScalar::zero(),
