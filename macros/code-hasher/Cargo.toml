@@ -4,6 +4,11 @@ version = "0.1.0"
 authors = ["CPerezz <carlos@dusk.network>"]
 edition = "2018"
 
+readme = "README.md"
+repository = "https://github.com/dusk-network/rusk"
+description = "Tiny macro which generates associated constants based on the associated item content"
+license = "MPL-2.0"
+
 [lib]
 proc-macro = true
 
@@ -11,4 +16,4 @@ proc-macro = true
 blake3 = "0.3.7"
 
 [dev-dependencies]
-dusk-plonk = "0.6"
+dusk-plonk = "0.8"
