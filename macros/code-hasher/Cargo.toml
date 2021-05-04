@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["CPerezz <carlos@dusk.network>"]
 edition = "2018"
 
+readme = "README.md"
+repository = "https://github.com/dusk-network/rusk"
+description = "Tiny macro which generates associated constants based on the associated item content"
 license = "MPL-2.0"
 
 [lib]
