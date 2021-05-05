@@ -4,13 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use anyhow::Result;
 use dusk_blindbid::{V_RAW_MAX, V_RAW_MIN};
-use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
-use dusk_plonk::jubjub::{
-    JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
+use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_plonk::prelude::*;
 use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 
@@ -23,22 +18,13 @@ pub struct CorrectnessCircuit {
     pub value: BlsScalar,
     /// The blinder, used to construct the value commitment.
     pub blinder: BlsScalar,
-    /// The size of the circuit
-    pub trim_size: usize,
-    /// Public input constructor, used when generating a proof.
-    pub pi_positions: Vec<PublicInput>,
 }
 
-impl Circuit<'_> for CorrectnessCircuit {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<()> {
-        let commitment = self.commitment;
-        let value = self.value;
-        let blinder = self.blinder;
-
-        let pi = self.get_mut_pi_positions();
+impl Circuit for CorrectnessCircuit {
+    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
         // Allocate all private inputs to the circuit.
-        let value = AllocatedScalar::allocate(composer, value);
-        let blinder = AllocatedScalar::allocate(composer, blinder);
+        let value = AllocatedScalar::allocate(composer, self.value);
+        let blinder = AllocatedScalar::allocate(composer, self.blinder);
 
         // ------------------------------------------------------- //
         //                                                         //
@@ -47,19 +33,14 @@ impl Circuit<'_> for CorrectnessCircuit {
         // ------------------------------------------------------- //
 
         // 1. Prove knowledge of commitment pre-image.
-        let p1 = scalar_mul(composer, value.var, GENERATOR_EXTENDED);
-        let p2 = scalar_mul(composer, blinder.var, GENERATOR_NUMS_EXTENDED);
-        let computed_commitment = p1.point().fast_add(composer, *p2.point());
-
-        // Add PI constraint for the commitment computation check.
-        pi.push(PublicInput::AffinePoint(
-            commitment,
-            composer.circuit_size(),
-            composer.circuit_size() + 1,
-        ));
+        let p1 = composer.fixed_base_scalar_mul(value.var, GENERATOR_EXTENDED);
+        let p2 = composer
+            .fixed_base_scalar_mul(blinder.var, GENERATOR_NUMS_EXTENDED);
+        let computed_commitment = composer.point_addition_gate(p1, p2);
 
         // Ensure equality between the computed commitment and the provided one.
-        composer.assert_equal_public_point(computed_commitment, commitment);
+        composer
+            .assert_equal_public_point(computed_commitment, self.commitment);
 
         // 2. Range check - v_min <= value <= v_max
         let cond = range_check(
@@ -69,30 +50,11 @@ impl Circuit<'_> for CorrectnessCircuit {
             value,
         );
 
-        // Constrain cond to be one - meaning that the range check holds.
-        composer.constrain_to_constant(
-            cond,
-            BlsScalar::one(),
-            BlsScalar::zero(),
-        );
-
         Ok(())
     }
 
-    fn get_mut_pi_positions(&mut self) -> &mut Vec<PublicInput> {
-        &mut self.pi_positions
-    }
-
-    fn get_pi_positions(&self) -> &Vec<PublicInput> {
-        &self.pi_positions
-    }
-
-    fn get_trim_size(&self) -> usize {
-        self.trim_size
-    }
-
-    fn set_trim_size(&mut self, size: usize) {
-        self.trim_size = size;
+    fn padded_circuit_size(&self) -> usize {
+        1 << 10
     }
 }
 
@@ -102,7 +64,7 @@ mod tests {
     use dusk_plonk::jubjub::JubJubAffine;
 
     #[test]
-    fn test_correctness_circuit() -> Result<()> {
+    fn test_correctness_circuit() -> Result<(), Error> {
         let value = JubJubScalar::from(100000 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
 
@@ -114,37 +76,27 @@ mod tests {
             commitment: c,
             value: value.into(),
             blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
         };
 
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk) = circuit.compile(&pub_params)?;
+        let (pk, vd) = circuit.compile(&pub_params)?;
 
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
-
-        let mut verifier_circuit = CorrectnessCircuit {
-            commitment: c,
-            value: value.into(),
-            blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
-        };
-        let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
-
-        verifier_circuit.verify_proof(
+        let pi = vec![c.into()];
+        circuit::verify_proof(
             &pub_params,
-            &vk,
-            b"BidCorrectness",
+            &vd.key(),
             &proof,
             &pi,
+            &vd.pi_pos(),
+            b"BidCorrectness",
         )?;
         Ok(())
     }
 
     #[test]
-    fn test_correctness_circuit_out_of_bounds() -> Result<()> {
+    fn test_correctness_circuit_out_of_bounds() -> Result<(), Error> {
         let value = JubJubScalar::from(100 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
 
@@ -156,27 +108,23 @@ mod tests {
             commitment: c,
             value: value.into(),
             blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
         };
 
         let pub_params =
             PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
-        let (pk, vk) = circuit.compile(&pub_params)?;
+        let (pk, vd) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
 
-        let mut verifier_circuit = CorrectnessCircuit {
-            commitment: c,
-            value: value.into(),
-            blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
-        };
-        let pi = vec![PublicInput::AffinePoint(c, 0, 0)];
-
-        assert!(verifier_circuit
-            .verify_proof(&pub_params, &vk, b"BidCorrectness", &proof, &pi,)
-            .is_err());
+        let pi = vec![c.into()];
+        assert!(circuit::verify_proof(
+            &pub_params,
+            &vd.key(),
+            &proof,
+            &pi,
+            &vd.pi_pos(),
+            b"BidCorrectness",
+        )
+        .is_err());
         Ok(())
     }
 }

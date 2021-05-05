@@ -6,8 +6,9 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1"
-dusk-plonk = "0.5"
-plonk_gadgets = "0.5"
-dusk-blindbid = "0.6"
-rand = "0.7"
+dusk-plonk = "0.8"
+plonk_gadgets = "0.6.0-rc"
+dusk-blindbid = "0.8.0-rc"
+
+[dev-dependencies]
+rand = "0.8"
