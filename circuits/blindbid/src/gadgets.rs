@@ -326,8 +326,13 @@ mod tests {
     #[test]
     fn bid_preimage_gadget() -> Result<(), BlindBidCircuitError> {
         // Generate Composer & Public Parameters
-        let pub_params =
-            PublicParameters::setup(1 << 14, &mut rand::thread_rng())?;
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
         let (ck, vk) = pub_params.trim(1 << 13)?;
 
         // Generate a correct Bid
@@ -396,8 +401,13 @@ mod tests {
     #[test]
     fn correct_score_gen_proof() -> Result<(), BlindBidCircuitError> {
         // Generate Composer & Public Parameters
-        let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
         let (ck, vk) = pub_params.trim(1 << 16)?;
 
         // Generate a correct Bid
@@ -501,8 +511,13 @@ mod tests {
     #[test]
     fn incorrect_score_gen_proof() -> Result<(), BlindBidCircuitError> {
         // Generate Composer & Public Parameters
-        let pub_params =
-            PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
         let (ck, vk) = pub_params.trim(1 << 16)?;
 
         // Generate a correct Bid

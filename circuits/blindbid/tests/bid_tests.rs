@@ -43,7 +43,13 @@ fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
 #[test]
 fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate Composer & Public Parameters
-    let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+    let pub_params = unsafe {
+        PublicParameters::from_slice_unchecked(
+            rusk_profile::get_common_reference_string()
+                .expect("Failed to fetch CRS from rusk_profile")
+                .as_slice(),
+        )
+    };
 
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
@@ -120,7 +126,13 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 #[test]
 fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate Composer & Public Parameters
-    let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+    let pub_params = unsafe {
+        PublicParameters::from_slice_unchecked(
+            rusk_profile::get_common_reference_string()
+                .expect("Failed to fetch CRS from rusk_profile")
+                .as_slice(),
+        )
+    };
 
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
@@ -210,7 +222,13 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 #[test]
 fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate Composer & Public Parameters
-    let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+    let pub_params = unsafe {
+        PublicParameters::from_slice_unchecked(
+            rusk_profile::get_common_reference_string()
+                .expect("Failed to fetch CRS from rusk_profile")
+                .as_slice(),
+        )
+    };
 
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
@@ -311,7 +329,13 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
 #[test]
 fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
     // Generate Composer & Public Parameters
-    let pub_params = PublicParameters::setup(1 << 17, &mut rand::thread_rng())?;
+    let pub_params = unsafe {
+        PublicParameters::from_slice_unchecked(
+            rusk_profile::get_common_reference_string()
+                .expect("Failed to fetch CRS from rusk_profile")
+                .as_slice(),
+        )
+    };
 
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
