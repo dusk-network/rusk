@@ -71,23 +71,29 @@ mod tests {
     fn test_correctness_circuit() -> Result<(), Error> {
         let value = JubJubScalar::from(100000 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
-
-        let c = JubJubAffine::from(
+        let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: c,
+            commitment: commitment,
             value: value.into(),
             blinder: blinder.into(),
         };
 
-        let pub_params =
-            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+        // Generate Composer & Public Parameters
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
+
         let (pk, vd) = circuit.compile(&pub_params)?;
 
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
-        let pi = vec![c.into()];
+        let pi = vec![commitment.into()];
         circuit::verify_proof(
             &pub_params,
             &vd.key(),
@@ -103,23 +109,29 @@ mod tests {
     fn test_correctness_circuit_out_of_bounds() -> Result<(), Error> {
         let value = JubJubScalar::from(100 as u64);
         let blinder = JubJubScalar::from(50000 as u64);
-
-        let c = JubJubAffine::from(
+        let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = CorrectnessCircuit {
-            commitment: c,
+            commitment: commitment,
             value: value.into(),
             blinder: blinder.into(),
         };
 
-        let pub_params =
-            PublicParameters::setup(1 << 11, &mut rand::thread_rng())?;
+        // Generate Composer & Public Parameters
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
+
         let (pk, vd) = circuit.compile(&pub_params)?;
         let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
 
-        let pi = vec![c.into()];
+        let pi = vec![commitment.into()];
         assert!(circuit::verify_proof(
             &pub_params,
             &vd.key(),
