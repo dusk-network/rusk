@@ -10,6 +10,10 @@ use dusk_plonk::prelude::*;
 use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 
 /// Circuit which proves the correctness of a Bid.
+///
+/// Specifically, the circuit makes sure that:
+/// 1. The public commitment is indeed the result of: `GENERATOR * bid_value + GENERATOR_NUMS * bid_blinder`.
+/// 2. The bid_value relies in the range [50_000, 250_000].
 #[derive(Debug, Clone, Default)]
 pub struct BidCorrectnessCircuit {
     /// The value commitment of the bid.
