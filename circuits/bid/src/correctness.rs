@@ -9,23 +9,23 @@ use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_plonk::prelude::*;
 use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 
-/// Circuit which proves the correctness of a blind bid.
+/// Circuit which proves the correctness of a Bid.
 #[derive(Debug, Clone, Default)]
 pub struct BidCorrectnessCircuit {
     /// The value commitment of the bid.
     pub commitment: JubJubAffine,
     /// The value of the bid, in clear.
-    pub value: BlsScalar,
+    pub value: JubJubScalar,
     /// The blinder, used to construct the value commitment.
-    pub blinder: BlsScalar,
+    pub blinder: JubJubScalar,
 }
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for BidCorrectnessCircuit {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
         // Allocate all private inputs to the circuit.
-        let value = AllocatedScalar::allocate(composer, self.value);
-        let blinder = AllocatedScalar::allocate(composer, self.blinder);
+        let value = AllocatedScalar::allocate(composer, self.value.into());
+        let blinder = AllocatedScalar::allocate(composer, self.blinder.into());
 
         // ------------------------------------------------------- //
         //                                                         //
@@ -77,8 +77,8 @@ mod tests {
 
         let mut circuit = BidCorrectnessCircuit {
             commitment: commitment,
-            value: value.into(),
-            blinder: blinder.into(),
+            value: value,
+            blinder: blinder,
         };
 
         // Generate Composer & Public Parameters
@@ -115,8 +115,8 @@ mod tests {
 
         let mut circuit = BidCorrectnessCircuit {
             commitment: commitment,
-            value: value.into(),
-            blinder: blinder.into(),
+            value: value,
+            blinder: blinder,
         };
 
         // Generate Composer & Public Parameters
