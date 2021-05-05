@@ -1,9 +1,19 @@
 [package]
 name = "bid-circuits"
 version = "0.1.0"
-authors = ["Jules de Smit <jules@dusk.network>"]
+authors = ["CPerezz <carlos@dusk.network>", "Jules de Smit <jules@dusk.network>"]
 edition = "2018"
-
+license = "MPL-2.0"
+readme = "README.md"
+repository = "https://github.com/dusk-network/rusk/tree/master/circuits/bid"
+categories =["algorithms", "cryptography", "science"]
+keywords = ["blindbid", "plonk", "lottery", "zero-knowledge", "crypto"]
+description = "Bid-Correctness Circuit implementation using PLONK proving system as backend"
+exclude = [
+    "README.md",
+    "Makefile",
+    "rustfmt.toml",
+]
 
 [dependencies]
 dusk-plonk = "0.8"
