@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added 
 - Add code-hasher to define CIRCUIT_ID [#277]
-- Add rusk-profile as CRS setup [#277]
-- Add crate docs [#277]
-- Add README.md
+- Add rusk-profile as CRS setup [#278]
+- Add crate docs [#278]
+- Add README.md [#278]
 
 ### Changed
 - Update `dusk-plonk` from `v0.6` to `v0.8` [#277]
@@ -33,4 +33,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#99]: https://github.com/dusk-network/rusk/issues/99
 [#207]: https://github.com/dusk-network/rusk/issues/207
 [#277]: https://github.com/dusk-network/rusk/issues/277
+[#278]: https://github.com/dusk-network/rusk/issues/278
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/bid-circuits-0.1.0
