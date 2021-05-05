@@ -11,7 +11,7 @@ use plonk_gadgets::{AllocatedScalar, RangeGadgets::range_check};
 
 /// Circuit which proves the correctness of a blind bid.
 #[derive(Debug, Clone, Default)]
-pub struct CorrectnessCircuit {
+pub struct BidCorrectnessCircuit {
     /// The value commitment of the bid.
     pub commitment: JubJubAffine,
     /// The value of the bid, in clear.
@@ -21,7 +21,7 @@ pub struct CorrectnessCircuit {
 }
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
-impl Circuit for CorrectnessCircuit {
+impl Circuit for BidCorrectnessCircuit {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
         // Allocate all private inputs to the circuit.
         let value = AllocatedScalar::allocate(composer, self.value);
@@ -75,7 +75,7 @@ mod tests {
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
-        let mut circuit = CorrectnessCircuit {
+        let mut circuit = BidCorrectnessCircuit {
             commitment: commitment,
             value: value.into(),
             blinder: blinder.into(),
@@ -113,7 +113,7 @@ mod tests {
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
-        let mut circuit = CorrectnessCircuit {
+        let mut circuit = BidCorrectnessCircuit {
             commitment: commitment,
             value: value.into(),
             blinder: blinder.into(),
