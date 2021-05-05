@@ -24,3 +24,4 @@ code-hasher = {version = "0.1", path = "../../macros/code-hasher"}
 [dev-dependencies]
 rand = "0.8"
 rusk-profile = {version = "0.3", path = "../../rusk-profile"}
+
