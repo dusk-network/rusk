@@ -5,12 +5,13 @@
 
 ### Contents
 
-This library provides the implementation of the `BlindBidCircuit` which allows the user
-to construct and verify a Proof of BlindBid.
+This library provides the implementation of the `BidCorrectnessCircuit`
+which allows the user to construct and verify a Proof of Bid correctness.
 
 Specifically, the circuit makes sure that:
-1. The public commitment is indeed the result of: `GENERATOR * bid_value + GENERATOR_NUMS * bid_blinder`.
-2. The bid_value relies in the range [50_000, 250_000].
+1. The public commitment is indeed the result of: `GENERATOR * bid_value +
+GENERATOR_NUMS * bid_blinder`. 2. The bid_value relies in the range [50_000,
+250_000].
 
 #### Example
 ```rust
@@ -66,16 +67,16 @@ every consensus round. Please note that 1 and 2 are run as part of the same
 algorithm.
 
 ### Documentation
-The best usage example of this library can actually be found in the rusk library.
-This is the place where this lib provides all it's functionallities in order to check the correctness of the
-Bids of the bidders.
-See: <https://github.com/dusk-network/rusk/tree/master/rusk for more info and detail.>
+The best usage example of this library can actually be found in the Bid
+contract. This is the place where this lib provides all it's
+functionallities together with PoseidonTrees and Zero Knowledge Proofs.
+See: <https://github.com/dusk-network/rusk/tree/master/contracts/bid> for more info and detail.
 
 You can also check the documentation of this crate [here](https://docs.rs/bid-circuits/0.1.0/).
 
 #### Licensing
 This code is licensed under Mozilla Public License Version 2.0 (MPL-2.0).
-Please see [LICENSE](https://github.com/dusk-network/rusk/blob/master/circuits/bid) for further info.
+Please see [LICENSE](https://github.com/dusk-network/rusk/blob/master/circuits/bid/LICENSE) for further info.
 
 #### About
 Protocol & Implementation designed by the [dusk](https://dusk.network) team.
