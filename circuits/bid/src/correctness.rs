@@ -20,6 +20,7 @@ pub struct CorrectnessCircuit {
     pub blinder: BlsScalar,
 }
 
+#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for CorrectnessCircuit {
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
         // Allocate all private inputs to the circuit.
@@ -49,6 +50,9 @@ impl Circuit for CorrectnessCircuit {
             BlsScalar::from(V_RAW_MAX),
             value,
         );
+
+        // Constrain cond to be one - meaning that the range check holds.
+        composer.constrain_to_constant(cond, BlsScalar::one(), None);
 
         Ok(())
     }
