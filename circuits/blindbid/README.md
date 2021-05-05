@@ -1,15 +1,15 @@
-# blindbid-circuits
-
 ## blindbid-circuits
 ![Build Status](https://github.com/dusk-network/rusk/workflows/Continuous%20integration/badge.svg)
-[![Repository](https://img.shields.io/badge/github-blindbid-circuits-blueviolet?logo=github)](https://github.com/dusk-network/rusk/circuits/blindbid)
-[![Documentation](https://img.shields.io/badge/docs-blindbid--circuits-blue?logo=rust)](https://docs.rs/dusk-blindbid/)
+[![Repository](https://img.shields.io/badge/github-blindbid--circuits-blueviolet?logo=github)](https://github.com/dusk-network/rusk/circuits/blindbid)
+[![Documentation](https://img.shields.io/badge/docs-blindbid--circuits-blue?logo=rust)](https://docs.rs/blindbid-circuits/)
 
 ### Contents
 
-This library provides the implementation of the [`BlindBidCircuit`] which allows the user
+This library provides the implementation of the `BlindBidCircuit` which allows the user
 to construct and verify a Proof of BlindBid.
+
 #### Example
+
 ```rust
 use rand::{Rng, thread_rng};
 use dusk_plonk::prelude::*;
@@ -136,21 +136,20 @@ The Block Generator that computed the highest score is considered to be the
 leader of the current iteration of the consensus.
 
 ## Documentation
-The best usage example of this library can actually be found in the Bid
-contract. This is the place where this lib provides all it's
-functionallities together with PoseidonTrees and Zero Knowledge Proofs.
-See: <https://github.com/dusk-network/rusk/tree/master/contracts/bid for more info and detail.>
+The best usage example of this library can actually be found in the rusk library.
+This is the place where this lib provides all it's functionallities in order to check
+the proofs of blindbid sent by the bidders.
+See: https://github.com/dusk-network/rusk/tree/master/rusk for more info and detail.
 
-You can also check the documentation of this crate [here](https://docs.rs/blindbid-circuits/0.1.0/).
 
 ### Licensing
 This code is licensed under Mozilla Public License Version 2.0 (MPL-2.0).
-Please see [LICENSE](https://github.com/dusk-network/dusk-blindbid/blob/master/LICENSE) for further info.
+Please see [LICENSE](https://github.com/dusk-network/rusk/blob/master/circuits/blindbid/LICENSE) for further info.
 
 ### About
 Protocol & Implementation designed by the [dusk](https://dusk.network) team.
 
 ### Contributing
-- If you want to contribute to this repository/project please, check [CONTRIBUTING.md](https://github.com/dusk-network/dusk-blindbid/blob/master/CONTRIBUTING.md)
+- If you want to contribute to this repository/project please, check [CONTRIBUTING.md](https://github.com/dusk-network/rusk/blob/master/CONTRIBUTING.md)
 - If you want to report a bug or request a new feature addition, please open
   an issue on this repository.

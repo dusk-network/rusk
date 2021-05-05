@@ -6,14 +6,16 @@
 
 //! # blindbid-circuits
 //! ![Build Status](https://github.com/dusk-network/rusk/workflows/Continuous%20integration/badge.svg)
-//! [![Repository](https://img.shields.io/badge/github-blindbid-circuits-blueviolet?logo=github)](https://github.com/dusk-network/rusk/circuits/blindbid)
-//! [![Documentation](https://img.shields.io/badge/docs-blindbid--circuits-blue?logo=rust)](https://docs.rs/dusk-blindbid/)
+//! [![Repository](https://img.shields.io/badge/github-blindbid--circuits-blueviolet?logo=github)](https://github.com/dusk-network/rusk/circuits/blindbid)
+//! [![Documentation](https://img.shields.io/badge/docs-blindbid--circuits-blue?logo=rust)](https://docs.rs/blindbid-circuits/)
 //!
 //! ## Contents
 //!
-//! This library provides the implementation of the [`BlindBidCircuit`] which allows the user
-//! to construct and verify a Proof of BlindBid.
+//! This library provides the implementation of the `BlindBidCircuit` which
+//! allows the user to construct and verify a Proof of BlindBid.
+//!
 //! ### Example
+//!
 //! ```rust,ignore
 //! use rand::{Rng, thread_rng};
 //! use dusk_plonk::prelude::*;
@@ -40,7 +42,6 @@
 //! // Assuming we got a proof from somewhere which we want to verify.
 //! circuit::verify_proof(&pub_params, &vd.key(), &proof, &pi, &vd.pi_pos(), b"CorrectnessBid")
 //! ```
-//!
 //!
 //! ## Rationale & Theory
 //!
@@ -87,6 +88,7 @@
 //! who together form the pillars of the Proof-of-Blind Bid procedure.
 //!
 //! #### Blind Bid Circuit
+//!
 //! ![Fig1](https://user-images.githubusercontent.com/1636833/107039495-4391ae00-67be-11eb-8c76-9314c0f3b77c.png)
 //!
 //! Some noteworthy proofs are:
@@ -117,6 +119,7 @@
 //! Once the process above has been completed we move to Score Generation.
 //!
 //! #### Score Generation Circuit
+//!
 //! ![Fig2](https://user-images.githubusercontent.com/1636833/107039501-455b7180-67be-11eb-8e69-f7a96cf98d52.png)
 //!
 //! Score generation needs to be understood as a continuation of the next
@@ -141,22 +144,22 @@
 //! leader of the current iteration of the consensus.
 //!
 //! # Documentation
-//! The best usage example of this library can actually be found in the Bid
-//! contract. This is the place where this lib provides all it's
-//! functionallities together with PoseidonTrees and Zero Knowledge Proofs.
-//! See: <https://github.com/dusk-network/rusk/tree/master/contracts/bid for more info and detail.>
+//! The best usage example of this library can actually be found in the rusk
+//! library. This is the place where this lib provides all it's functionallities
+//! in order to check the proofs of blindbid sent by the bidders.
+//! See: <https://github.com/dusk-network/rusk/tree/master/rusk> for more info and detail.
 //!
 //! You can also check the documentation of this crate [here](https://docs.rs/blindbid-circuits/0.1.0/).
 //!
 //! ## Licensing
 //! This code is licensed under Mozilla Public License Version 2.0 (MPL-2.0).
-//! Please see [LICENSE](https://github.com/dusk-network/dusk-blindbid/blob/master/LICENSE) for further info.
+//! Please see [LICENSE](https://github.com/dusk-network/rusk/blob/master/circuits/blindbid/LICENSE) for further info.
 //!
 //! ## About
 //! Protocol & Implementation designed by the [dusk](https://dusk.network) team.
 //!
 //! ## Contributing
-//! - If you want to contribute to this repository/project please, check [CONTRIBUTING.md](https://github.com/dusk-network/dusk-blindbid/blob/master/CONTRIBUTING.md)
+//! - If you want to contribute to this repository/project please, check [CONTRIBUTING.md](https://github.com/dusk-network/rusk/blob/master/CONTRIBUTING.md)
 //! - If you want to report a bug or request a new feature addition, please open
 //!   an issue on this repository.
 
