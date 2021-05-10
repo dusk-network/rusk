@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "circuits/bid",
+    "circuits/blindbid",
     "circuits/transfer",
     "contracts/bid",
     "contracts/transfer",
