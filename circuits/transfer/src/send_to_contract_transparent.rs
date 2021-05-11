@@ -9,14 +9,13 @@ use crate::gadgets;
 use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
-use dusk_plonk::constraint_system::ecc::Point;
+use dusk_plonk::error::Error as PlonkError;
 use dusk_plonk::jubjub::JubJubAffine;
-use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
+use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee};
 use rand_core::{CryptoRng, RngCore};
-use schnorr::Signature;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractTransparentCircuit {
@@ -148,9 +147,9 @@ impl Circuit for SendToContractTransparentCircuit {
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
         let pk = self.fee.stealth_address().pk_r().as_ref().into();
-        let pk = Point::from_public_affine(composer, pk);
+        let pk = composer.add_public_affine(pk);
 
-        let r = Point::from_private_affine(composer, self.signature.R().into());
+        let r = composer.add_affine(self.signature.R().into());
         let u = *self.signature.u();
         let u = composer.add_input(u.into());
 
@@ -178,7 +177,7 @@ impl Circuit for SendToContractTransparentCircuit {
             Some(-self.message),
         );
 
-        schnorr::gadgets::single_key_verify(composer, r, u, pk, message);
+        dusk_schnorr::gadgets::single_key_verify(composer, r, u, pk, message);
 
         // 4. Prove that v_c - v = 0
         composer.constrain_to_constant(

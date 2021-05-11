@@ -9,7 +9,6 @@ use std::convert::TryInto;
 use std::env;
 
 use anyhow::{anyhow, Result};
-use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit::VerifierData;
@@ -92,15 +91,12 @@ impl From<NoteLeaf> for Note {
     }
 }
 
-impl<S> PoseidonLeaf<S> for NoteLeaf
-where
-    S: Store,
-{
+impl PoseidonLeaf for NoteLeaf {
     fn poseidon_hash(&self) -> BlsScalar {
         self.0.hash()
     }
 
-    fn pos(&self) -> u64 {
+    fn pos(&self) -> &u64 {
         self.0.pos()
     }
 
@@ -125,7 +121,7 @@ impl ExecuteCircuit {
         }
     }
 
-    pub fn create_dummy_circuit<R: RngCore + CryptoRng, S: Store>(
+    pub fn create_dummy_circuit<R: RngCore + CryptoRng>(
         rng: &mut R,
         inputs: usize,
         outputs: usize,
@@ -134,7 +130,6 @@ impl ExecuteCircuit {
         let mut tree = PoseidonTree::<
             NoteLeaf,
             PoseidonAnnotation,
-            S,
             POSEIDON_BRANCH_DEPTH,
         >::new();
 
@@ -159,7 +154,7 @@ impl ExecuteCircuit {
             })?;
 
             let note = tree
-                .get(pos as usize)
+                .get(pos)
                 .map_err(|e| anyhow!("Internal poseidon tree error: {:?}", e))?
                 .map(|n| n.into())
                 .ok_or(anyhow!("Inserted note not found in the tree!"))?;
@@ -220,7 +215,7 @@ impl ExecuteCircuit {
         Ok(circuit)
     }
 
-    pub fn create_dummy_proof<R: RngCore + CryptoRng, S: Store>(
+    pub fn create_dummy_proof<R: RngCore + CryptoRng>(
         rng: &mut R,
         pp: Option<PublicParameters>,
         inputs: usize,
@@ -235,7 +230,7 @@ impl ExecuteCircuit {
         Proof,
         Vec<PublicInputValue>,
     )> {
-        let mut circuit = Self::create_dummy_circuit::<R, S>(
+        let mut circuit = Self::create_dummy_circuit::<R>(
             rng,
             inputs,
             outputs,

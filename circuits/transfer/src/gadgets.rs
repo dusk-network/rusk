@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base::scalar_mul;
 use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 
@@ -18,8 +17,8 @@ pub fn commitment(
     value: Variable,
     blinder: Variable,
 ) -> Point {
-    let p1 = scalar_mul(composer, value, GENERATOR_EXTENDED);
-    let p2 = scalar_mul(composer, blinder, GENERATOR_NUMS_EXTENDED);
+    let p1 = composer.fixed_base_scalar_mul(value, GENERATOR_EXTENDED);
+    let p2 = composer.fixed_base_scalar_mul(blinder, GENERATOR_NUMS_EXTENDED);
 
-    p1.point().fast_add(composer, *p2.point())
+    composer.point_addition_gate(p1, p2)
 }

@@ -11,7 +11,6 @@ use input::{CircuitInput, WitnessInput};
 use output::{CircuitOutput, WitnessOutput};
 
 use anyhow::{anyhow, Result};
-use canonical::Store;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::bls12_381::BlsScalar;
@@ -24,9 +23,9 @@ use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{
     self, PoseidonBranch, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
 };
+use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{CryptoRng, RngCore};
-use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;
 
@@ -125,17 +124,16 @@ impl ExecuteCircuit {
         Ok(())
     }
 
-    pub fn add_input_from_tree<S, L, A>(
+    pub fn add_input_from_tree<L, A>(
         &mut self,
         ssk: &SecretSpendKey,
-        tree: &PoseidonTree<L, A, S, { input::POSEIDON_BRANCH_DEPTH }>,
-        pos: usize,
+        tree: &PoseidonTree<L, A, { input::POSEIDON_BRANCH_DEPTH }>,
+        pos: u64,
         signature: SchnorrProof,
     ) -> Result<()>
     where
-        S: Store,
-        L: PoseidonLeaf<S> + Into<Note>,
-        A: PoseidonTreeAnnotation<L, S>,
+        L: PoseidonLeaf + Into<Note>,
+        A: PoseidonTreeAnnotation<L>,
     {
         let note = tree
             .get(pos)
@@ -333,7 +331,7 @@ impl Circuit for ExecuteCircuit {
 
         // 3. Prove the correctness of the Schnorr signatures.
         inputs.iter().for_each(|input| {
-            schnorr::gadgets::double_key_verify(
+            dusk_schnorr::gadgets::double_key_verify(
                 composer,
                 input.schnorr_r,
                 input.schnorr_r_prime,

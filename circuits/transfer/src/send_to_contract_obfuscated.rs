@@ -9,15 +9,13 @@ use crate::gadgets;
 use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
-use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
-use dusk_plonk::constraint_system::ecc::Point;
+use dusk_plonk::error::Error as PlonkError;
 use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
-use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::{cipher, sponge};
+use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Message};
 use rand_core::{CryptoRng, RngCore};
-use schnorr::Signature;
 
 #[derive(Debug, Clone)]
 pub struct SendToContractObfuscatedCircuit {
@@ -257,29 +255,29 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_r = composer.add_input(self.message_r.into());
 
         let message_pk = self.message_pk.into();
-        let message_pk = Point::from_public_affine(composer, message_pk);
+        let message_pk = composer.add_public_affine(message_pk);
 
         let message_private_pk = self.message_private_pk.into();
-        let message_private_pk =
-            Point::from_private_affine(composer, message_private_pk);
+        let message_private_pk = composer.add_affine(message_private_pk);
 
-        let message_pk_identity = message_private_pk.conditional_select(
-            composer,
-            public_message_pk,
+        let message_pk_identity = composer.conditional_point_select(
+            message_private_pk,
             message_pk,
+            public_message_pk,
         );
         composer.assert_equal_public_point(
             message_pk_identity,
             JubJubAffine::identity(),
         );
 
-        let message_pk = message_pk.add(composer, message_private_pk);
+        let message_pk =
+            composer.point_addition_gate(message_pk, message_private_pk);
         let cipher_secret =
-            variable_base_scalar_mul(composer, message_r, message_pk);
+            composer.variable_base_scalar_mul(message_r, message_pk);
 
         let message_cipher = cipher::encrypt(
             composer,
-            cipher_secret.point(),
+            &cipher_secret,
             message_nonce,
             &[message_value, message_blinding_factor],
         );
@@ -297,9 +295,9 @@ impl Circuit for SendToContractObfuscatedCircuit {
         // 3. Verify the Schnorr proof corresponding to the commitment
         // public key
         let pk = self.fee.stealth_address().pk_r().as_ref().into();
-        let pk = Point::from_public_affine(composer, pk);
+        let pk = composer.add_public_affine(pk);
 
-        let r = Point::from_private_affine(composer, self.signature.R().into());
+        let r = composer.add_affine(self.signature.R().into());
         let u = *self.signature.u();
         let u = composer.add_input(u.into());
 
@@ -330,7 +328,7 @@ impl Circuit for SendToContractObfuscatedCircuit {
             Some(-self.hash),
         );
 
-        schnorr::gadgets::single_key_verify(composer, r, u, pk, hash);
+        dusk_schnorr::gadgets::single_key_verify(composer, r, u, pk, hash);
 
         // 8. Prove that v_c - v_m = 0
         composer.assert_equal(value, message_value);

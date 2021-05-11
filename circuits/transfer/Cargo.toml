@@ -5,22 +5,21 @@ authors = ["Bounce23 <luke@dusk.network>", "Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
 [dependencies]
-rand_core = "0.5"
+rand_core = "0.6"
 anyhow = "1.0"
 dusk-bytes = "0.1"
-dusk-plonk = "0.7"
-canonical = "0.5"
-dusk-poseidon = {version="0.20", features=["canon"]}
-phoenix-core = {git="https://github.com/dusk-network/phoenix-core", branch="release-0.11", features = ["canon"]}
-dusk-pki = "0.6"
-schnorr = {git="https://github.com/dusk-network/schnorr", tag="v0.6.0"}
+dusk-plonk = "0.8"
+canonical = "0.6"
+canonical_derive = {version="0.6", optional=true}
+dusk-poseidon = {version="0.21.0-rc", features=["canon"]}
+phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.11.0-rc.0", features=["canon"]}
+dusk-pki = "0.7.0-rc"
+dusk-schnorr = "0.7.0-rc"
 rusk-profile = {path="../../rusk-profile", optional=true}
-canonical_derive = {version="0.5", optional=true}
 
 [dev-dependencies]
-canonical_derive = "0.5"
-rand = "0.7"
-canonical_host = "0.5"
+canonical_derive = "0.6"
+rand = "0.8"
 rusk-profile = {path="../../rusk-profile"}
 
 [features]
