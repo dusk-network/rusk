@@ -22,7 +22,7 @@ use dusk_plonk::prelude::*;
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
         match rusk_profile::get_common_reference_string() {
-            Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
+            Ok(buff) => unsafe {
                 info!("Got the CRS from cache");
 
                 PublicParameters::from_slice_unchecked(&buff[..])
@@ -99,10 +99,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     
     info!("Bid Keys cache checking stage");
-    match rusk_profile::keys_for(BidCorrectnessCircuit::CIRCUIT_ID) {
-        Ok(Some(keys)) => info!(
-            "BidCorrectnessCircuit already loaded correctly!"
-        ),
+    match rusk_profile::keys_for(&BidCorrectnessCircuit::CIRCUIT_ID) {
+        Ok(Some(_)) => {info!(
+            "BidCorrectnessCircuit already loaded correctly!");
+            Ok(())
+        },
         _ => {
             warn!(
                 "BidCorrectnessCircuit not cached!"
@@ -110,17 +111,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!(
                 "Compiling BidCorrectnessCircuit and adding to the cache"
             );
-            rusk_profile::add_keys_for(BidCorrectnessCircuit::CIRCUIT_ID)
+
+            let (pk, vd) = bid::compile_circuit()?;
+            rusk_profile::add_keys_for(&BidCorrectnessCircuit::CIRCUIT_ID, "bid", None, pk, vd)
         }
     }?;
-    info!("Bid Keys cache checking stage finnished");
+    info!("Bid Keys cache checking stage finished");
 
     
     info!("BlindBid Keys cache checking stage");
-    match rusk_profile::keys_for(BlindBidCircuit::CIRCUIT_ID) {
-        Ok(Some(keys)) => info!(
+    match rusk_profile::keys_for(&BlindBidCircuit::CIRCUIT_ID) {
+        Ok(Some(_)) => {info!(
             "BlindBidCircuit already loaded correctly!"
-        ),
+        );
+        Ok(())
+    },
         _ => {
             warn!(
                 "BlindBidCircuit not cached!"
@@ -128,10 +133,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!(
                 "Compiling BlindBidCircuit and adding to the cache"
             );
-            rusk_profile::add_keys_for(BlindBidCircuit::CIRCUIT_ID)
+            let (pk, vd) = blindbid::compile_circuit()?;
+            rusk_profile::add_keys_for(&BlindBidCircuit::CIRCUIT_ID, "blindbid", None, pk, vd)
         }
     }?;
-    info!("Bid Keys cache checking stage finnished");
+    info!("BlindBid Keys cache checking stage finished");
     
 
     /*
@@ -159,7 +165,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     */
-
     Ok(())
 }
 
