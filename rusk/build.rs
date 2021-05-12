@@ -28,7 +28,7 @@ lazy_static! {
                 PublicParameters::from_slice_unchecked(&buff[..])
             },
 
-            Ok(_) | Err(_) => {
+            _ => {
                 info!("New CRS needs to be generated and cached");
 
                 use rand::rngs::StdRng;
@@ -113,7 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
 
             let (pk, vd) = bid::compile_circuit()?;
-            rusk_profile::add_keys_for(&BidCorrectnessCircuit::CIRCUIT_ID, "bid", None, pk, vd)
+            rusk_profile::add_keys_for(&BidCorrectnessCircuit::CIRCUIT_ID, pk, vd)
         }
     }?;
     info!("Bid Keys cache checking stage finished");
@@ -134,7 +134,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Compiling BlindBidCircuit and adding to the cache"
             );
             let (pk, vd) = blindbid::compile_circuit()?;
-            rusk_profile::add_keys_for(&BlindBidCircuit::CIRCUIT_ID, "blindbid", None, pk, vd)
+            rusk_profile::add_keys_for(&BlindBidCircuit::CIRCUIT_ID, pk, vd)
         }
     }?;
     info!("BlindBid Keys cache checking stage finished");
@@ -165,6 +165,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     */
+
+    rusk_profile::clean_outdated_keys()?;
     Ok(())
 }
 
