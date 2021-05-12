@@ -6,18 +6,17 @@
 
 #![allow(non_snake_case)]
 
-/*
-use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{Bid, BlindBidCircuit, Score};
+
+use bid_circuits::BidCorrectnessCircuit;
+use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::{Bid, Score};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_poseidon::tree::PoseidonBranch;
-*/
 use lazy_static::lazy_static;
-use tracing::{info, Level};
+use tracing::{info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
-
 use dusk_plonk::prelude::*;
 
 lazy_static! {
@@ -52,6 +51,7 @@ lazy_static! {
         }
     };
 }
+
 /// Buildfile for the rusk crate.
 ///
 /// Main goals of the file at the moment are:
@@ -96,19 +96,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
+    
+    
+    info!("Bid Keys cache checking stage");
+    match rusk_profile::keys_for(BidCorrectnessCircuit::CIRCUIT_ID) {
+        Ok(Some(keys)) => info!(
+            "BidCorrectnessCircuit already loaded correctly!"
+        ),
+        _ => {
+            warn!(
+                "BidCorrectnessCircuit not cached!"
+            );
+            info!(
+                "Compiling BidCorrectnessCircuit and adding to the cache"
+            );
+            rusk_profile::add_keys_for(BidCorrectnessCircuit::CIRCUIT_ID)
+        }
+    }?;
+    info!("Bid Keys cache checking stage finnished");
+
+    
+    info!("BlindBid Keys cache checking stage");
+    match rusk_profile::keys_for(BlindBidCircuit::CIRCUIT_ID) {
+        Ok(Some(keys)) => info!(
+            "BlindBidCircuit already loaded correctly!"
+        ),
+        _ => {
+            warn!(
+                "BlindBidCircuit not cached!"
+            );
+            info!(
+                "Compiling BlindBidCircuit and adding to the cache"
+            );
+            rusk_profile::add_keys_for(BlindBidCircuit::CIRCUIT_ID)
+        }
+    }?;
+    info!("Bid Keys cache checking stage finnished");
+    
+
     /*
-    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
-        info!("Bulding Bid Keys");
-        let bid_keys = rusk_profile::keys_for("bid-circuits");
-        bid_keys.clear_all()?;
-        bid_keys.update("bid", bid::compile_circuit()?)?;
-
-        let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
-        blindbid_keys.clear_all()?;
-        blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
-    }
-    */
-
     if option_env!("RUSK_BUILD_TRANSFER_KEYS").unwrap_or("0") != "0" {
         info!("Building Transfer Keys");
         let transfer_keys = rusk_profile::keys_for("transfer-circuits");
@@ -132,11 +158,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+    */
 
     Ok(())
 }
 
-/*
+
 mod bid {
     use super::*;
 
@@ -150,16 +177,14 @@ mod bid {
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
-        let mut circuit = CorrectnessCircuit {
+        let mut circuit = BidCorrectnessCircuit {
             commitment: c,
             value: value.into(),
             blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
         };
 
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+        let (pk, vd) = circuit.compile(&pub_params)?;
+        Ok((pk.to_var_bytes(), vd.to_var_bytes()))
     }
 }
 
@@ -205,11 +230,10 @@ mod blindbid {
             latest_consensus_round: BlsScalar::from(latest_consensus_round),
             latest_consensus_step: BlsScalar::from(latest_consensus_step),
             branch: &branch,
-            trim_size: 1 << 15,
-            pi_positions: vec![],
         };
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+
+        let (pk, vd) = circuit.compile(&pub_params)?;
+        Ok((pk.to_var_bytes(), vd.to_var_bytes()))
     }
 
     fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
@@ -236,8 +260,8 @@ mod blindbid {
         .expect("Error generating a Bid")
     }
 }
-*/
 
+/*
 mod transfer {
     use super::PUB_PARAMS;
     use std::convert::TryInto;
@@ -445,3 +469,4 @@ mod transfer {
         Ok((id, pk, vd))
     }
 }
+*/
