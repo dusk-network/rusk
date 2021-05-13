@@ -121,9 +121,8 @@ pub struct BlindBidCircuit<'a> {
     pub secret: JubJubAffine,
 }
 
-//#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
+#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl<'a> Circuit for BlindBidCircuit<'a> {
-    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
     fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
         // Hash the Bid.
         let storage_bid = self.bid.hash();
