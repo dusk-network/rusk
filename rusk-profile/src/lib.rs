@@ -10,6 +10,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::{ io};
 use tracing::{info, warn};
+use sha2::{Sha256, Digest};
 
 static CRS_17: &str =
     "e1ebe5dedabf87d8fe1232e04d18a111530edc0f4beeeb0251d545a123d944fe";
@@ -87,6 +88,15 @@ pub fn delete_common_reference_string() -> Result<(), io::Error> {
     info!("CRS removed from cache");
 
     Ok(())
+}
+
+pub fn verify_common_reference_string(buff: &[u8]) -> bool {
+    info!("Checking integrity of CRS");
+    let mut hasher = Sha256::new();
+    hasher.update(&buff);
+    let hash = format!("{:x}", hasher.finalize());
+
+    hash == CRS_17
 }
 
 pub fn clean_outdated_keys(ids: &Vec<[u8;32]>) -> Result<(), io::Error> {

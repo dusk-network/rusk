@@ -9,3 +9,4 @@ autobins = false
 dirs = "3.0"
 tracing = "0.1"
 hex = "0.4"
+sha2 = "0.9"
