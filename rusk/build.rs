@@ -243,7 +243,6 @@ mod transfer {
     use std::convert::TryInto;
 
     use anyhow::{anyhow, Result};
-    use canonical_host::MemStore;
     use dusk_bytes::Serializable;
     use dusk_pki::SecretSpendKey;
     use dusk_plonk::circuit;
@@ -272,22 +271,26 @@ mod transfer {
         let (fee, crossover) = c_note.try_into().map_err(|e| {
             anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
         })?;
-        let c_signature = SendToContractObfuscatedCircuit::sign(
-            &mut rng, &ssk, &fee, &crossover,
-        );
 
+        let address = BlsScalar::random(&mut rng);
         let message_r = JubJubScalar::random(&mut rng);
         let message_value = 100;
         let message = Message::new(&mut rng, &message_r, &psk, message_value);
 
+        let c_signature = SendToContractObfuscatedCircuit::sign(
+            &mut rng, &ssk, &fee, &crossover, &message, &address,
+        );
+
         let mut circuit = SendToContractObfuscatedCircuit::new(
-            &crossover,
-            &fee,
+            fee,
+            crossover,
             &vk,
             c_signature,
-            &message,
+            true,
+            message,
             &psk,
             message_r,
+            address,
         )
         .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
 
@@ -316,14 +319,16 @@ mod transfer {
             anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
         })?;
 
+        let address = BlsScalar::random(&mut rng);
         let c_signature = SendToContractTransparentCircuit::sign(
-            &mut rng, &c_ssk, &fee, &crossover,
+            &mut rng, &c_ssk, &fee, &crossover, c_value, &address,
         );
 
         let mut circuit = SendToContractTransparentCircuit::new(
-            &fee,
-            &crossover,
+            fee,
+            crossover,
             &c_vk,
+            address,
             c_signature,
         )
         .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
@@ -391,15 +396,14 @@ mod transfer {
             inputs, outputs
         );
 
-        let (ci, _, pk, vd, proof, pi) =
-            ExecuteCircuit::create_dummy_proof::<_, MemStore>(
-                &mut rand::thread_rng(),
-                Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
-                inputs,
-                outputs,
-                true,
-                false,
-            )?;
+        let (ci, _, pk, vd, proof, pi) = ExecuteCircuit::create_dummy_proof(
+            &mut rand::thread_rng(),
+            Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
+            inputs,
+            outputs,
+            true,
+            false,
+        )?;
 
         info!(
             "Circuit generated with {}/{}",

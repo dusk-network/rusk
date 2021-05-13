@@ -4,8 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod commitment;
-mod point_signature;
+use dusk_plonk::constraint_system::ecc::Point;
+use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 
-pub use commitment::commitment;
-pub use point_signature::point_signature;
+use dusk_plonk::prelude::*;
+
+/// Prove knowledge of the value and blinding factor, which make up the value
+/// commitment. This commitment gadget is using the pedersen commitments.
+/// C = a*g + b*h
+pub fn commitment(
+    composer: &mut StandardComposer,
+    value: Variable,
+    blinder: Variable,
+) -> Point {
+    let p1 = composer.fixed_base_scalar_mul(value, GENERATOR_EXTENDED);
+    let p2 = composer.fixed_base_scalar_mul(blinder, GENERATOR_NUMS_EXTENDED);
+
+    composer.point_addition_gate(p1, p2)
+}

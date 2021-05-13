@@ -6,7 +6,6 @@
 
 use transfer_circuits::ExecuteCircuit;
 
-use canonical_host::MemStore;
 use dusk_plonk::circuit;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -20,7 +19,7 @@ fn execute() {
         for outputs in 0..3 {
             for use_crossover in [true, false].iter() {
                 let (_, pp, _, vd, proof, pi) =
-                    ExecuteCircuit::create_dummy_proof::<_, MemStore>(
+                    ExecuteCircuit::create_dummy_proof(
                         &mut rng,
                         None,
                         inputs,

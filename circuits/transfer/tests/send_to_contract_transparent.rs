@@ -23,6 +23,8 @@ fn send_to_contract_transparent() {
     let c_vk = c_ssk.view_key();
     let c_psk = c_ssk.public_spend_key();
 
+    let c_address = BlsScalar::random(&mut rng);
+
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
 
@@ -34,13 +36,14 @@ fn send_to_contract_transparent() {
     fee.gas_price = 1;
 
     let c_signature = SendToContractTransparentCircuit::sign(
-        &mut rng, &c_ssk, &fee, &crossover,
+        &mut rng, &c_ssk, &fee, &crossover, c_value, &c_address,
     );
 
     let mut circuit = SendToContractTransparentCircuit::new(
-        &fee,
-        &crossover,
+        fee,
+        crossover,
         &c_vk,
+        c_address,
         c_signature,
     )
     .expect("Failed to create STCT circuit!");
