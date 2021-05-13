@@ -5,11 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dirs::home_dir;
-use std::{fs::{self, read, remove_file, write, File}};
+use std::{fs::{self, File, read, remove_dir, remove_file, write}};
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::{ io};
 use tracing::{info, warn};
+
+static CRS_17: &str =
+    "e1ebe5dedabf87d8fe1232e04d18a111530edc0f4beeeb0251d545a123d944fe";
 
 #[derive(Debug, Clone)]
 pub struct Keys {
@@ -147,6 +150,33 @@ pub fn add_keys_for(id: &[u8;32], pk: Vec<u8>, vd: Vec<u8>) -> Result<(), io::Er
         "Entry added: {}.vd",
         hex::encode(id)
     );
+
+    Ok(())
+}
+
+pub fn clear_all_keys() -> Result<(), io::Error> {
+    info!(
+        "Clearing all the Keys folder contents"
+    );
+    
+    fs::read_dir(&get_rusk_keys_dir()?)?
+        .map(|res| res.map(|e| e.path()))
+        .filter(|res| res.is_ok())
+        .map(|res| res.unwrap())
+        .filter(|e| e.is_file())
+        .filter(|p| match p.extension() {
+            Some(os_str) => {
+                match os_str.to_str() {
+                    Some("pk" | "vd") => true,
+                    _ => false,
+                }
+        },
+            None => false
+        })
+        .map(|path| {
+            info!("Removing {:?}", path.clone());
+            remove_dir(path)
+        }).collect::<Result<Vec<()>, io::Error>>()?;    
 
     Ok(())
 }
