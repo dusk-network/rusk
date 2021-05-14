@@ -53,15 +53,15 @@ tonic-build = "0.3"
 rustc_tools_util = "0.2"
 dusk-bytes = "0.1"
 dusk-plonk = { version = "0.8", features = ["canon", "std"] }
-dusk-poseidon = {version="0.21.0-rc", features=["canon"]}
+dusk-poseidon = { version = "0.21.0-rc", features=["canon"] }
 dusk-blindbid = "0.8.0-rc"
 dusk-pki = "0.7.0-rc"
 phoenix-core = { git = "https://github.com/dusk-network/phoenix-core", tag = "v0.11.0-rc.0" }
 anyhow = "1.0"
 rand = "0.8"
-bid-circuits = {path = "../circuits/bid"}
-blindbid-circuits = {path = "../circuits/blindbid"}
-transfer-circuits = {path ="../circuits/transfer", features=["builder"]}
+bid-circuits = { path = "../circuits/bid" }
+blindbid-circuits = { path = "../circuits/blindbid" }
+transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
 rusk-profile = { path = "../rusk-profile" }
 lazy_static = "1.4"
 canonical = "0.6"
