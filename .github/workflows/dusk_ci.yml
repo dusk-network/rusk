@@ -39,10 +39,11 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-03-09
+          toolchain: nightly-2021-05-09
           override: true
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
+      - run: make keys
       - run: make test
 
   fmt:

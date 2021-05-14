@@ -7,6 +7,6 @@ autobins = false
 
 [dependencies]
 dirs = "3.0"
-cargo-lock = "6.0"
-sha2 = "0.9.1"
 tracing = "0.1"
+hex = "0.4"
+sha2 = "0.9"

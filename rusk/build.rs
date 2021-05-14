@@ -6,19 +6,18 @@
 
 #![allow(non_snake_case)]
 
-/*
-use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{Bid, BlindBidCircuit, Score};
+use bid_circuits::BidCorrectnessCircuit;
+use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::{Bid, Score};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_poseidon::tree::PoseidonBranch;
-*/
-use lazy_static::lazy_static;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
-
 use dusk_plonk::prelude::*;
+use dusk_poseidon::tree::PoseidonBranch;
+use lazy_static::lazy_static;
+use profile_tooling::CircuitLoader;
+use tracing::{info, warn, Level};
+use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -29,7 +28,7 @@ lazy_static! {
                 PublicParameters::from_slice_unchecked(&buff[..])
             },
 
-            Ok(_) | Err(_) => {
+            _ => {
                 info!("New CRS needs to be generated and cached");
 
                 use rand::rngs::StdRng;
@@ -52,6 +51,7 @@ lazy_static! {
         }
     };
 }
+
 /// Buildfile for the rusk crate.
 ///
 /// Main goals of the file at the moment are:
@@ -96,120 +96,122 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
-    /*
-    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
-        info!("Bulding Bid Keys");
-        let bid_keys = rusk_profile::keys_for("bid-circuits");
-        bid_keys.clear_all()?;
-        bid_keys.update("bid", bid::compile_circuit()?)?;
+    // Run the rusk-profile Circuit-keys checks
+    use bid::BidCircuitLoader;
+    use blindbid::BlindBidCircuitLoader;
 
-        let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
-        blindbid_keys.clear_all()?;
-        blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
-    }
-    */
+    // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
+    // set.
+    if let Some(_) = option_env!("DELETE_RUSK_KEYS") {
+        info!("DELETE_RUSK_KEYS env set!");
+        info!("Starting `keys/` folder wipe process..");
+        rusk_profile::clear_all_keys()?;
+        info!("Keys folder contents were removed successfully!");
+    };
 
-    if option_env!("RUSK_BUILD_TRANSFER_KEYS").unwrap_or("0") != "0" {
-        info!("Building Transfer Keys");
-        let transfer_keys = rusk_profile::keys_for("transfer-circuits");
-        info!("Transfer keys prepared!");
-
-        let (id, pk, vd) = transfer::compile_stco_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        let (id, pk, vd) = transfer::compile_stct_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        let (id, pk, vd) = transfer::compile_wfo_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        for inputs in 1..5 {
-            for outputs in 0..3 {
-                let (id, pk, vd) =
-                    transfer::compile_execute_circuit(inputs, outputs)?;
-
-                transfer_keys.update(id, (pk, vd))?;
-            }
-        }
-    }
+    profile_tooling::run_circuit_keys_checks(vec![
+        Box::new(BidCircuitLoader {}),
+        Box::new(BlindBidCircuitLoader {}),
+    ])?;
 
     Ok(())
 }
 
-/*
 mod bid {
     use super::*;
 
-    pub fn compile_circuit(
-    ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-        let pub_params = &PUB_PARAMS;
-        let value = JubJubScalar::from(100000 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+    pub struct BidCircuitLoader;
 
-        let c = JubJubAffine::from(
-            (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
-        );
+    impl CircuitLoader for BidCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &BidCorrectnessCircuit::CIRCUIT_ID
+        }
 
-        let mut circuit = CorrectnessCircuit {
-            commitment: c,
-            value: value.into(),
-            blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
-        };
+        fn circuit_name(&self) -> &'static str {
+            "BidCorrectness"
+        }
 
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let value = JubJubScalar::from(100000 as u64);
+            let blinder = JubJubScalar::from(50000 as u64);
+
+            let c = JubJubAffine::from(
+                (GENERATOR_EXTENDED * value)
+                    + (GENERATOR_NUMS_EXTENDED * blinder),
+            );
+
+            let mut circuit = BidCorrectnessCircuit {
+                commitment: c,
+                value: value.into(),
+                blinder: blinder.into(),
+            };
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 }
 
 mod blindbid {
     use super::*;
+    pub struct BlindBidCircuitLoader;
+    impl CircuitLoader for BlindBidCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &BlindBidCircuit::CIRCUIT_ID
+        }
 
-    pub fn compile_circuit(
-    ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-        let pub_params = &PUB_PARAMS;
+        fn circuit_name(&self) -> &'static str {
+            "BlindBid"
+        }
 
-        // Generate a correct Bid
-        let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let secret_k = BlsScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret, secret_k);
-        let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
 
-        // Generate fields for the Bid & required by the compute_score
-        let consensus_round_seed = 50u64;
-        let latest_consensus_round = 50u64;
-        let latest_consensus_step = 50u64;
+            // Generate a correct Bid
+            let secret = JubJubScalar::random(&mut rand::thread_rng());
+            let secret_k = BlsScalar::random(&mut rand::thread_rng());
+            let bid = random_bid(&secret, secret_k);
+            let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
 
-        // Extract the branch
-        let branch = PoseidonBranch::<17>::default();
+            // Generate fields for the Bid & required by the compute_score
+            let consensus_round_seed = 50u64;
+            let latest_consensus_round = 50u64;
+            let latest_consensus_step = 50u64;
 
-        // Generate a `Score` for our Bid with the consensus parameters
-        let score = Score::compute(
-            &bid,
-            &secret,
-            secret_k,
-            *branch.root(),
-            BlsScalar::from(consensus_round_seed),
-            latest_consensus_round,
-            latest_consensus_step,
-        )
-        .expect("Score gen error");
+            // Extract the branch
+            let branch = PoseidonBranch::<17>::default();
 
-        let mut circuit = BlindBidCircuit {
-            bid,
-            score,
-            secret_k,
-            secret,
-            seed: BlsScalar::from(consensus_round_seed),
-            latest_consensus_round: BlsScalar::from(latest_consensus_round),
-            latest_consensus_step: BlsScalar::from(latest_consensus_step),
-            branch: &branch,
-            trim_size: 1 << 15,
-            pi_positions: vec![],
-        };
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+            // Generate a `Score` for our Bid with the consensus parameters
+            let score = Score::compute(
+                &bid,
+                &secret,
+                secret_k,
+                *branch.root(),
+                BlsScalar::from(consensus_round_seed),
+                latest_consensus_round,
+                latest_consensus_step,
+            )
+            .expect("Score gen error");
+
+            let mut circuit = BlindBidCircuit {
+                bid,
+                score,
+                secret_k,
+                secret,
+                seed: BlsScalar::from(consensus_round_seed),
+                latest_consensus_round: BlsScalar::from(latest_consensus_round),
+                latest_consensus_step: BlsScalar::from(latest_consensus_step),
+                branch: &branch,
+            };
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
     fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
@@ -236,8 +238,8 @@ mod blindbid {
         .expect("Error generating a Bid")
     }
 }
-*/
 
+/*
 mod transfer {
     use super::PUB_PARAMS;
     use std::convert::TryInto;
@@ -447,5 +449,77 @@ mod transfer {
         );
 
         Ok((id, pk, vd))
+    }
+}
+*/
+
+mod profile_tooling {
+    use super::*;
+
+    pub trait CircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32];
+
+        fn circuit_name(&self) -> &'static str;
+
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>;
+    }
+
+    fn clear_outdated_keys(
+        loader_list: &Vec<Box<dyn CircuitLoader>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let id_list = loader_list
+            .iter()
+            .map(|loader| loader.circuit_id())
+            .cloned()
+            .collect();
+
+        Ok(rusk_profile::clean_outdated_keys(&id_list)?)
+    }
+
+    fn check_keys_cache(
+        loader_list: &Vec<Box<dyn CircuitLoader>>,
+    ) -> Result<Vec<()>, Box<dyn std::error::Error>> {
+        Ok(loader_list
+            .iter()
+            .map(|loader| {
+                info!("{} Keys cache checking stage", loader.circuit_name());
+                match rusk_profile::keys_for(loader.circuit_id()) {
+                    Ok(_) => {
+                        info!(
+                            "{} already loaded correctly!",
+                            loader.circuit_name()
+                        );
+                        Ok(())
+                    }
+                    _ => {
+                        warn!("{} not cached!", loader.circuit_name());
+                        info!(
+                            "Compiling {} and adding to the cache",
+                            loader.circuit_name()
+                        );
+                        let (pk, vd) = loader.compile_circuit()?;
+                        rusk_profile::add_keys_for(
+                            loader.circuit_id(),
+                            pk,
+                            vd,
+                        )?;
+                        info!(
+                            "{} Keys cache checking stage finished",
+                            loader.circuit_name()
+                        );
+                        Ok(())
+                    }
+                }
+            })
+            .collect::<Result<Vec<()>, Box<dyn std::error::Error>>>()?)
+    }
+
+    pub fn run_circuit_keys_checks(
+        loader_list: Vec<Box<dyn CircuitLoader>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        clear_outdated_keys(&loader_list)?;
+        check_keys_cache(&loader_list).map(|_| ())
     }
 }
