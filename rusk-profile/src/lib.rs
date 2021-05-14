@@ -134,20 +134,12 @@ pub fn clean_outdated_keys(ids: &Vec<[u8; 32]>) -> Result<(), io::Error> {
         .collect::<Vec<_>>();
 
     for entry in entries_to_delete {
-        let ext = entry.extension();
-        let id = entry.file_stem();
-
-        // We can safely unwrap here since in the inter above we already checked
-        // that this is always Some(&str)
-        let mut path = PathBuf::from(id.unwrap());
-        path.set_extension(ext.unwrap());
-
         info!(
             "Found file {:?} which is not included in the keys list obtained",
-            path.clone()
+            entry.clone()
         );
-        remove_file(get_rusk_keys_dir()?.join(path.clone()))?;
-        info!("{:?} was successfully removed outdated file", path);
+        remove_file(get_rusk_keys_dir()?.join(entry.clone()))?;
+        info!("{:?} was successfully removed outdated file", entry);
     }
 
     info!("Cleaning outdated keys process completed successfully");
@@ -162,7 +154,7 @@ pub fn keys_for(id: &[u8; 32]) -> Result<Keys, io::Error> {
     let mut vd_dir = dir.clone();
     vd_dir.push(format!("{}.vd", hex::encode(id)));
 
-    if pk_dir.exists() || vd_dir.exists() {
+    if pk_dir.exists() && vd_dir.exists() {
         return Ok(Keys { id: *id });
     }
 
