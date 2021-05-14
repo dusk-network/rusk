@@ -6,7 +6,7 @@
 
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
-use std::fs::{self, read, remove_dir, remove_file, write, File};
+use std::fs::{self, read, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -23,7 +23,8 @@ pub struct Keys {
 impl Keys {
     pub fn get_prover(&self) -> Result<Vec<u8>, io::Error> {
         let mut dir = get_rusk_keys_dir()?;
-        dir.push(format!("{}.pk", hex::encode(self.id)));
+        dir.push(hex::encode(self.id));
+        dir.with_extension("pk");
 
         match &dir.exists() {
             true => read(dir),
@@ -36,7 +37,8 @@ impl Keys {
 
     pub fn get_verifier(&self) -> Result<Vec<u8>, io::Error> {
         let mut dir = get_rusk_keys_dir()?;
-        dir.push(format!("{}.vd", hex::encode(self.id)));
+        dir.push(hex::encode(self.id));
+        dir.with_extension("vd");
 
         match &dir.exists() {
             true => read(dir),
@@ -175,15 +177,17 @@ pub fn add_keys_for(
     let dir = get_rusk_keys_dir()?;
 
     let mut pk_file = dir.clone();
-    pk_file.push(format!("{}.pk", hex::encode(id)));
+    pk_file.push(hex::encode(id));
+    pk_file.with_extension("pk");
 
-    let mut vk_file = dir.clone();
-    vk_file.push(format!("{}.vd", hex::encode(id)));
+    let mut vd_file = dir.clone();
+    vd_file.push(hex::encode(id));
+    vd_file.with_extension("vd");
 
-    File::create(pk_file)?.write_all(&pk)?;
-    info!("Entry added: {}.pk", hex::encode(id));
-    File::create(vk_file)?.write_all(&vd)?;
-    info!("Entry added: {}.vd", hex::encode(id));
+    File::create(&pk_file)?.write_all(&pk)?;
+    info!("Entry added: {:?}", pk_file);
+    File::create(&vd_file)?.write_all(&vd)?;
+    info!("Entry added: {:?}", vd_file);
 
     Ok(())
 }
