@@ -47,12 +47,8 @@ where
                 })
         })?;
 
-        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vd) = keys.get(id).ok_or(anyhow!(
-            "Failed to get '{}' keys for '{}' from Rusk profile",
-            id,
-            env!("CARGO_PKG_NAME")
-        ))?;
+        let keys = rusk_profile::keys_for(&C::CIRCUIT_ID)?;
+        let (pk, vd) = (keys.get_prover()?, keys.get_verifier()?);
 
         let pk = ProverKey::from_slice(pk.as_slice())?;
         let vd = VerifierData::from_slice(vd.as_slice())?;
