@@ -5,19 +5,22 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dirs::home_dir;
-use std::{fs::{self, File, read, remove_dir, remove_file, write}};
+use sha2::{Digest, Sha256};
+use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
-use std::{ io};
+use std::{
+    fs::{self, read, remove_dir, remove_file, write, File},
+    path::Path,
+};
 use tracing::{info, warn};
-use sha2::{Sha256, Digest};
 
 static CRS_17: &str =
     "e1ebe5dedabf87d8fe1232e04d18a111530edc0f4beeeb0251d545a123d944fe";
 
 #[derive(Debug, Clone)]
 pub struct Keys {
-    id: [u8;32]
+    id: [u8; 32],
 }
 
 impl Keys {
@@ -27,8 +30,11 @@ impl Keys {
 
         match &dir.exists() {
             true => read(dir),
-            false => Err(io::Error::new(io::ErrorKind::NotFound, "ProverKey not found"))
-        }        
+            false => Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "ProverKey not found",
+            )),
+        }
     }
 
     pub fn get_verifier(&self) -> Result<Vec<u8>, io::Error> {
@@ -37,8 +43,11 @@ impl Keys {
 
         match &dir.exists() {
             true => read(dir),
-            false => Err(io::Error::new(io::ErrorKind::NotFound, "VerifierData not found"))
-        }   
+            false => Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "VerifierData not found",
+            )),
+        }
     }
 }
 
@@ -99,32 +108,54 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     hash == CRS_17
 }
 
-pub fn clean_outdated_keys(ids: &Vec<[u8;32]>) -> Result<(), io::Error> {
+pub fn clean_outdated_keys(ids: &Vec<[u8; 32]>) -> Result<(), io::Error> {
     info!("Cleaning outdated keys (if any)");
-    let ids_as_str: Vec<String> = ids.iter().map(|id| {
-        hex::encode(id)
-    }).collect(); 
+    let ids_as_str: Vec<String> =
+        ids.iter().map(|id| hex::encode(id)).collect();
 
-    for entry in fs::read_dir(&get_rusk_keys_dir()?)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.ends_with("vd") || path.ends_with("pk") {
-            let id = path.file_stem().ok_or(io::Error::new(io::ErrorKind::Other, "Can't remove stem from file"))?
-            .to_str().ok_or(io::Error::new(io::ErrorKind::Other, "Can't transform path to str"))?;
+    let entries_to_delete = fs::read_dir(&get_rusk_keys_dir()?)?
+        .map(|res| res.map(|e| e.path()))
+        .filter(|res| res.is_ok())
+        .map(|res| res.unwrap())
+        .filter(|e| e.is_file())
+        .filter(|p| match p.extension() {
+            Some(os_str) => match os_str.to_str() {
+                Some("pk" | "vd") => match p.file_stem() {
+                    Some(os_str) => match os_str.to_str() {
+                        Some(id) => !ids_as_str.contains(&id.to_string()),
+                        _ => true,
+                    },
+                    _ => true,
+                },
 
-            if !ids_as_str.contains(&id.to_string()) {
-                info!("Found file {:?} which is not included in the keys list obtained", path.clone());
-                remove_file(path.clone())?;
-                info!("{:?} was successfully removed outdated file", path);
-            }
-        }
+                _ => true,
+            },
+            None => true,
+        })
+        .collect::<Vec<_>>();
+
+    for entry in entries_to_delete {
+        let ext = entry.extension();
+        let id = entry.file_stem();
+
+        // We can safely unwrap here since in the inter above we already checked
+        // that this is always Some(&str)
+        let mut path = PathBuf::from(id.unwrap());
+        path.set_extension(ext.unwrap());
+
+        info!(
+            "Found file {:?} which is not included in the keys list obtained",
+            path.clone()
+        );
+        remove_file(get_rusk_keys_dir()?.join(path.clone()))?;
+        info!("{:?} was successfully removed outdated file", path);
     }
 
     info!("Cleaning outdated keys process completed successfully");
     Ok(())
 }
 
-pub fn keys_for(id: &[u8;32]) -> Result<Keys, io::Error> {
+pub fn keys_for(id: &[u8; 32]) -> Result<Keys, io::Error> {
     let dir = get_rusk_keys_dir()?;
     let mut pk_dir = dir.clone();
     pk_dir.push(format!("{}.pk", hex::encode(id)));
@@ -132,16 +163,18 @@ pub fn keys_for(id: &[u8;32]) -> Result<Keys, io::Error> {
     let mut vd_dir = dir.clone();
     vd_dir.push(format!("{}.vd", hex::encode(id)));
 
-
-    if pk_dir.exists() || vd_dir.exists(){
-        return Ok(Keys{id: *id})
-    }   
+    if pk_dir.exists() || vd_dir.exists() {
+        return Ok(Keys { id: *id });
+    }
 
     Err(io::Error::new(io::ErrorKind::NotFound, "keys not found"))
 }
-    
 
-pub fn add_keys_for(id: &[u8;32], pk: Vec<u8>, vd: Vec<u8>) -> Result<(), io::Error> {
+pub fn add_keys_for(
+    id: &[u8; 32],
+    pk: Vec<u8>,
+    vd: Vec<u8>,
+) -> Result<(), io::Error> {
     let dir = get_rusk_keys_dir()?;
 
     let mut pk_file = dir.clone();
@@ -151,43 +184,33 @@ pub fn add_keys_for(id: &[u8;32], pk: Vec<u8>, vd: Vec<u8>) -> Result<(), io::Er
     vk_file.push(format!("{}.vd", hex::encode(id)));
 
     File::create(pk_file)?.write_all(&pk)?;
-    info!(
-        "Entry added: {}.pk",
-        hex::encode(id)
-    );
+    info!("Entry added: {}.pk", hex::encode(id));
     File::create(vk_file)?.write_all(&vd)?;
-    info!(
-        "Entry added: {}.vd",
-        hex::encode(id)
-    );
+    info!("Entry added: {}.vd", hex::encode(id));
 
     Ok(())
 }
 
 pub fn clear_all_keys() -> Result<(), io::Error> {
-    info!(
-        "Clearing all the Keys folder contents"
-    );
-    
+    info!("Clearing all the Keys folder contents");
+
     fs::read_dir(&get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
         .filter(|res| res.is_ok())
         .map(|res| res.unwrap())
         .filter(|e| e.is_file())
         .filter(|p| match p.extension() {
-            Some(os_str) => {
-                match os_str.to_str() {
-                    Some("pk" | "vd") => true,
-                    _ => false,
-                }
-        },
-            None => false
+            Some(os_str) => match os_str.to_str() {
+                Some("pk" | "vd") => true,
+                _ => false,
+            },
+            None => false,
         })
         .map(|path| {
             info!("Removing {:?}", path.clone());
             remove_dir(path)
-        }).collect::<Result<Vec<()>, io::Error>>()?;    
+        })
+        .collect::<Result<Vec<()>, io::Error>>()?;
 
     Ok(())
 }
-
