@@ -170,11 +170,11 @@ pub fn add_keys_for(
 
     let mut pk_file = dir.clone();
     pk_file.push(hex::encode(id));
-    pk_file.with_extension("pk");
+    pk_file.set_extension("pk");
 
     let mut vd_file = dir.clone();
     vd_file.push(hex::encode(id));
-    vd_file.with_extension("vd");
+    vd_file.set_extension("vd");
 
     File::create(&pk_file)?.write_all(&pk)?;
     info!("Entry added: {:?}", pk_file);
