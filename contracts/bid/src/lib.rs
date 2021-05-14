@@ -30,7 +30,7 @@ pub(crate) mod hosted;
 
 pub use leaf::BidLeaf;
 
-use canonical::{Canon, Sink, Source, Store};
+use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use map::KeyToIdxMap;
 use tree::BidTree;
