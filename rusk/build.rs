@@ -100,12 +100,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use bid::BidCircuitLoader;
     use blindbid::BlindBidCircuitLoader;
 
+    // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
+    // set.
+    if let Some(_) = option_env!("DELETE_RUSK_KEYS") {
+        info!("DELETE_RUSK_KEYS env set!");
+        info!("Starting `keys/` folder wipe process..");
+        rusk_profile::clear_all_keys()?;
+        info!("Keys folder contents were removed successfully!");
+    };
+
     profile_tooling::run_circuit_keys_checks(vec![
         Box::new(BidCircuitLoader {}),
         Box::new(BlindBidCircuitLoader {}),
     ])?;
-
-    panic!("Hekllo");
 
     Ok(())
 }
