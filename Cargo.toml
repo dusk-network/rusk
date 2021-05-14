@@ -10,6 +10,7 @@ members = [
     "rusk-abi",
     "rusk",
 ]
+resolver = "2"
 
 [profile.dev.build-override]
 opt-level = 3

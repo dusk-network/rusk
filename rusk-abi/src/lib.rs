@@ -28,14 +28,12 @@ pub use public_input::PublicInput;
 /// Any proof to be verified with this module should use `b"dusk-network` as
 /// transcript initialization
 #[allow(dead_code)]
-pub struct RuskModule<S> {
-    store: S,
-
+pub struct RuskModule {
     #[cfg(not(target_arch = "wasm32"))]
     pp: &'static dusk_plonk::prelude::PublicParameters,
 }
 
-impl<S> RuskModule<S> {
+impl RuskModule {
     #[doc(hidden)]
     pub const POSEIDON_HASH: u8 = 0;
     #[doc(hidden)]
@@ -44,7 +42,7 @@ impl<S> RuskModule<S> {
     pub const VERIFY_SCHNORR_SIGN: u8 = 2;
 }
 
-impl<S> Module for RuskModule<S> {
+impl Module for RuskModule {
     fn id() -> ContractId {
         ContractId::reserved(77)
     }
