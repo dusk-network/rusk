@@ -8,11 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+
 - Add `payment_info` host function [#254]
 
 ### Changed
-- Change `verify_proof` to accept verifier data [#247]
 
+- Change `verify_proof` to accept verifier data [#247]
+- Update `canonical` from `0.5` to `0.6`
+- Update `canonical_derive` from `0.5` to `0.6`
+- Update `dusk-poseidon` from `0.20` to `0.21.0-rc`
+- Update `dusk-bls12_381` from `0.26` to `0.8`
+- Update `dusk-abi` from `0.7` to `0.9-rc`
+- Update `dusk-schnorr` from `0.6` to `0.7.0-rc`
+- Update `dusk-pki` from `0.6` to `0.7.0-rc`
+- Update `dusk-jubjub` from `0.8` to `0.10`
+- Update `dusk-plonk` from `0.7` to `0.8`
+- Update `rusk-vm` from `0.5` to `0.6.0-rc`
+- Update `rusk-profile` from `0.3` to `0.4.0-rc`
+- Replace `rand` version `0.7` with `rand_core` version `0.6`
+
+### Remove
+
+- Remove unused `tests/proof_test.bin`
+- Remove unused `tests/vk_test.bin`
+
+### Fix
+
+- Fix the `repository` section in Cargo.toml
 
 ## [0.2.0] - 2021-03-12
 
@@ -44,4 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [#227]: https://github.com/dusk-network/rusk/issues/227
 [#254]: https://github.com/dusk-network/rusk/issues/254
+[unreleased]: https://github.com/dusk-network/dusk-abi/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/dusk-network/dusk-abi/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/v0.1.0
