@@ -6,13 +6,10 @@
 
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
+use std::fs::{self, read, remove_dir, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
-use std::{
-    fs::{self, read, remove_dir, remove_file, write, File},
-    path::Path,
-};
 use tracing::{info, warn};
 
 static CRS_17: &str =
@@ -208,7 +205,7 @@ pub fn clear_all_keys() -> Result<(), io::Error> {
         })
         .map(|path| {
             info!("Removing {:?}", path.clone());
-            remove_dir(path)
+            remove_file(path)
         })
         .collect::<Result<Vec<()>, io::Error>>()?;
 
