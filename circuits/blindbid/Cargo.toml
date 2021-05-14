@@ -30,5 +30,5 @@ microkelvin = "0.7"
 rand = "0.8"
 canonical_derive = "0.6"
 canonical = "0.6"
-rusk-profile = {version = "0.3", path = "../../rusk-profile"}
+rusk-profile = { path = "../../rusk-profile" }
 
