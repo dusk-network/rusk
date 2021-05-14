@@ -1,6 +1,6 @@
 [package]
 name = "rusk-abi"
-version = "0.2.0"
+version = "0.3.0-rc.0"
 authors = [
   "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>", "CPerezz <carlos@dusk.network>",
 ]
