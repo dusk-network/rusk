@@ -6,16 +6,13 @@
 
 extern crate alloc;
 
+use crate::RuskModule;
 use alloc::vec::Vec;
-use canonical::{BridgeStore, Id32};
 use dusk_abi::ContractId;
 use dusk_abi::Module;
 use dusk_bls12_381::BlsScalar;
 use dusk_pki::PublicKey;
-use schnorr::Signature;
-
-type BS = BridgeStore<Id32>;
-type RuskModule = crate::RuskModule<BS>;
+use dusk_schnorr::Signature;
 
 use crate::{PaymentInfo, PublicInput, PAYMENT_INFO};
 

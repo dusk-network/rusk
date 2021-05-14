@@ -10,13 +10,12 @@ mod contracts;
 
 use rusk_vm::{Contract, GasMeter, NetworkState};
 
-use canonical_host::MemStore as MS;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, PublicSpendKey, SecretKey};
 use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
-use schnorr::Signature;
+use dusk_schnorr::Signature;
 
 use host_fn::HostFnTest;
 use rusk_abi::RuskModule;
@@ -44,16 +43,14 @@ fn poseidon_hash() {
 
     let host = HostFnTest::new();
 
-    let store = MS::new();
-
     let code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec());
 
-    let mut network = NetworkState::<MS>::default();
-    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
+    let mut network = NetworkState::default();
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -79,27 +76,25 @@ fn poseidon_hash() {
 fn schnorr_signature() {
     let host = HostFnTest::new();
 
-    let store = MS::new();
-
     let code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec());
 
-    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
-    let mut network = NetworkState::<MS>::default();
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+    let mut network = NetworkState::default();
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
 
     let mut gas = GasMeter::with_limit(1_000_000_000);
 
-    let sk = SecretKey::random(&mut rand::thread_rng());
-    let message = BlsScalar::random(&mut rand::thread_rng());
+    let sk = SecretKey::random(&mut rand_core::OsRng);
+    let message = BlsScalar::random(&mut rand_core::OsRng);
     let pk = PublicKey::from(&sk);
 
-    let sign = Signature::new(&sk, &mut rand::thread_rng(), message);
+    let sign = Signature::new(&sk, &mut rand_core::OsRng, message);
 
     assert!(sign.verify(&pk, message));
 
@@ -114,7 +109,7 @@ fn schnorr_signature() {
         "Signature verification expected to succeed"
     );
 
-    let wrong_sk = SecretKey::random(&mut rand::thread_rng());
+    let wrong_sk = SecretKey::random(&mut rand_core::OsRng);
     let pk = PublicKey::from(&wrong_sk);
 
     assert!(
@@ -190,7 +185,7 @@ fn verify_proof() {
         .expect("Failed to generate the proof!");
     let pi = vec![circuit.c.into()];
 
-    // Sanity check
+    // Integrity check
     circuit::verify_proof(
         &PUB_PARAMS,
         &verifier_data.key(),
@@ -203,16 +198,14 @@ fn verify_proof() {
 
     let host = HostFnTest::new();
 
-    let store = MS::new();
-
     let code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec());
 
-    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
-    let mut network = NetworkState::<MS>::default();
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+    let mut network = NetworkState::default();
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -246,16 +239,14 @@ fn verify_proof_should_fail() {
 
     let host = HostFnTest::new();
 
-    let store = MS::new();
-
     let code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec());
 
-    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
-    let mut network = NetworkState::<MS>::default();
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+    let mut network = NetworkState::default();
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();
@@ -278,16 +269,14 @@ fn verify_proof_should_fail() {
 fn payment_info() {
     let host = HostFnTest::new();
 
-    let store = MS::new();
-
     let code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let contract = Contract::new(host, code.to_vec(), &store).unwrap();
+    let contract = Contract::new(host, code.to_vec());
 
-    let rusk_mod = RuskModule::new(store, &PUB_PARAMS);
-    let mut network = NetworkState::<MS>::default();
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+    let mut network = NetworkState::default();
     network.register_host_module(rusk_mod);
 
     let contract_id = network.deploy(contract).unwrap();

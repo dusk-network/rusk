@@ -36,17 +36,15 @@ mod hosted {
 
     use alloc::vec::Vec;
 
-    use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
+    use canonical::{Canon, CanonError, Sink, Source};
     use dusk_abi::ReturnValue;
 
     use dusk_bls12_381::BlsScalar;
     use dusk_pki::{PublicKey, PublicSpendKey};
+    use dusk_schnorr::Signature;
     use rusk_abi::{PaymentInfo, PublicInput};
-    use schnorr::Signature;
 
     const PAGE_SIZE: usize = 1024 * 4;
-
-    type BS = BridgeStore<Id32>;
 
     impl HostFnTest {
         pub fn hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
@@ -76,71 +74,69 @@ mod hosted {
         }
     }
 
-    fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), <BS as Store>::Error> {
-        let bs = BS::default();
-        let mut source = ByteSource::new(&bytes[..], &bs);
+    fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
+        let mut source = Source::new(&bytes[..]);
 
-        // read self.
-        let slf: HostFnTest = Canon::<BS>::read(&mut source)?;
+        // decode self.
+        let slf = HostFnTest::decode(&mut source)?;
 
-        // read query id
-        let qid: u8 = Canon::<BS>::read(&mut source)?;
+        // decode query id
+        let qid = u8::decode(&mut source)?;
         match qid {
-            // read_value (&Self) -> i32
             HASH => {
-                let arg: Vec<BlsScalar> = Canon::<BS>::read(&mut source)?;
+                let arg = Vec::<BlsScalar>::decode(&mut source)?;
 
                 let ret = slf.hash(arg);
 
                 let r = {
                     // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+                    let wrapped_return = ReturnValue::from_canon(&ret);
 
-                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+                    let mut sink = Sink::new(&mut bytes[..]);
 
-                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                    wrapped_return.encode(&mut sink)
                 };
 
-                r
+                Ok(r)
             }
 
             VERIFY => {
-                let proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
-                let verifier_data: Vec<u8> = Canon::<BS>::read(&mut source)?;
-                let pi_values: Vec<rusk_abi::PublicInput> =
-                    Canon::<BS>::read(&mut source)?;
+                let proof = Vec::<u8>::decode(&mut source)?;
+                let verifier_data = Vec::<u8>::decode(&mut source)?;
+                let pi_values =
+                    Vec::<rusk_abi::PublicInput>::decode(&mut source)?;
 
                 let ret = slf.verify(proof, verifier_data, pi_values);
 
                 let r = {
                     // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+                    let wrapped_return = ReturnValue::from_canon(&ret);
 
-                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+                    let mut sink = Sink::new(&mut bytes[..]);
 
-                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                    wrapped_return.encode(&mut sink)
                 };
 
-                r
+                Ok(r)
             }
 
             SCHNORR_SIGNATURE => {
-                let sig: Signature = Canon::<BS>::read(&mut source)?;
-                let pk: PublicKey = Canon::<BS>::read(&mut source)?;
-                let message: BlsScalar = Canon::<BS>::read(&mut source)?;
+                let sig = Signature::decode(&mut source)?;
+                let pk = PublicKey::decode(&mut source)?;
+                let message = BlsScalar::decode(&mut source)?;
 
                 let ret = slf.schnorr_signature(sig, pk, message);
 
                 let r = {
                     // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+                    let wrapped_return = ReturnValue::from_canon(&ret);
 
-                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+                    let mut sink = Sink::new(&mut bytes[..]);
 
-                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                    wrapped_return.encode(&mut sink)
                 };
 
-                r
+                Ok(r)
             }
 
             GET_PAYMENT_INFO => {
@@ -148,14 +144,14 @@ mod hosted {
 
                 let r = {
                     // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+                    let wrapped_return = ReturnValue::from_canon(&ret);
 
-                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+                    let mut sink = Sink::new(&mut bytes[..]);
 
-                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                    wrapped_return.encode(&mut sink)
                 };
 
-                r
+                Ok(r)
             }
 
             rusk_abi::PAYMENT_INFO => {
@@ -166,14 +162,14 @@ mod hosted {
 
                 let r = {
                     // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret, &bs)?;
+                    let wrapped_return = ReturnValue::from_canon(&ret);
 
-                    let mut sink = ByteSink::new(&mut bytes[..], &bs);
+                    let mut sink = Sink::new(&mut bytes[..]);
 
-                    Canon::<BS>::write(&wrapped_return, &mut sink)
+                    wrapped_return.encode(&mut sink)
                 };
 
-                r
+                Ok(r)
             }
 
             _ => panic!(""),
@@ -186,16 +182,13 @@ mod hosted {
         let _ = query(bytes);
     }
 
-    fn transaction(
-        bytes: &mut [u8; PAGE_SIZE],
-    ) -> Result<(), <BS as Store>::Error> {
-        let bs = BS::default();
-        let mut source = ByteSource::new(bytes, &bs);
+    fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
+        let mut source = Source::new(bytes);
 
-        // read self.
-        let mut _slf: HostFnTest = Canon::<BS>::read(&mut source)?;
-        // read transaction id
-        let tid: u8 = Canon::<BS>::read(&mut source)?;
+        // decode self.
+        let mut _slf = HostFnTest::decode(&mut source)?;
+        // decode transaction id
+        let tid = u8::decode(&mut source)?;
         match tid {
             _ => panic!(""),
         }
