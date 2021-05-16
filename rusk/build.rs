@@ -110,8 +110,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     profile_tooling::run_circuit_keys_checks(vec![
-        Box::new(BidCircuitLoader {}),
-        Box::new(BlindBidCircuitLoader {}),
+        &BidCircuitLoader {},
+        &BlindBidCircuitLoader {},
     ])?;
 
     Ok(())
@@ -467,7 +467,7 @@ mod profile_tooling {
     }
 
     fn clear_outdated_keys(
-        loader_list: &Vec<Box<dyn CircuitLoader>>,
+        loader_list: &Vec<&dyn CircuitLoader>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let id_list = loader_list
             .iter()
@@ -479,7 +479,7 @@ mod profile_tooling {
     }
 
     fn check_keys_cache(
-        loader_list: &Vec<Box<dyn CircuitLoader>>,
+        loader_list: &Vec<&dyn CircuitLoader>,
     ) -> Result<Vec<()>, Box<dyn std::error::Error>> {
         Ok(loader_list
             .iter()
@@ -517,7 +517,7 @@ mod profile_tooling {
     }
 
     pub fn run_circuit_keys_checks(
-        loader_list: Vec<Box<dyn CircuitLoader>>,
+        loader_list: Vec<&dyn CircuitLoader>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         clear_outdated_keys(&loader_list)?;
         check_keys_cache(&loader_list).map(|_| ())
