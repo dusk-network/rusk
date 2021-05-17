@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
 pub mod common;
 pub mod services;
 
 use futures::executor::block_on;
-use tonic::transport::Channel;
 #[tokio::test(threaded_scheduler)]
 async fn rusk_integration_tests() {
     let channel = block_on(common::setup()).expect("Error on the test setup");
@@ -24,4 +22,3 @@ async fn rusk_integration_tests() {
         .await
         .is_ok());
 }
-*/

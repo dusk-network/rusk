@@ -4,13 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
 pub mod encoding;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
-use dusk_plonk::prelude::*;
-use futures::prelude::*;
 use futures::stream::TryStreamExt;
 use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
@@ -65,4 +62,3 @@ pub async fn setup() -> Result<Channel, Box<dyn std::error::Error>> {
         .await?;
     Ok(channel)
 }
-*/
