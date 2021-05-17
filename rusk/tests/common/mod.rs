@@ -23,7 +23,7 @@ use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 /// Default UDS path that Rusk GRPC-server will connect to.
-const SOCKET_PATH: &'static str = "/tmp/rusk_listener_pki";
+const SOCKET_PATH: &'static str = "/tmp/rusk_listener";
 
 pub async fn setup() -> Result<Channel, Box<dyn std::error::Error>> {
     // Generate a subscriber with the desired log level.
