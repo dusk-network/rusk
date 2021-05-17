@@ -9,7 +9,7 @@ use super::{VerifyScoreRequest, VerifyScoreResponse};
 use crate::encoding;
 use anyhow::Result;
 use dusk_blindbid::{BlindBidCircuit, Score};
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{Serializable, DeserializableSlice};
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};

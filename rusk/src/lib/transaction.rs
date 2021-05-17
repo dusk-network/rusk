@@ -216,8 +216,8 @@ impl TransactionPayload {
         let bytes = &bytes[Fee::SIZE..];
 
         let spending_proof =
-            Proof::from_bytes(&bytes[..Proof::serialised_size()])?;
-        let bytes = &bytes[Proof::serialised_size()..];
+            Proof::from_slice(&bytes[..Proof::SIZE]).map_err(|e| anyhow!("Error deserializing fee: {:?}", e))?;
+        let bytes = &bytes[Proof::SIZE..];
 
         let (bytes, items) = deser_usize(bytes)?;
         if bytes.len() < items {
