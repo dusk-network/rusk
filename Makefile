@@ -23,6 +23,7 @@ contracts: ## Execute the test for all contracts
 
 test: abi ## Run the tests
 	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./rusk/ clean_uds
 	
 run: wasm ## Run the server
 	cargo run --release
