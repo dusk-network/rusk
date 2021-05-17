@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
 #![cfg(not(target_os = "windows"))]
 use std::{
     pin::Pin,

@@ -8,8 +8,9 @@ use super::super::ServiceRequestHandler;
 use super::{VerifyScoreRequest, VerifyScoreResponse};
 use crate::encoding;
 use anyhow::Result;
-use dusk_blindbid::{BlindBidCircuit, Score};
-use dusk_bytes::{Serializable, DeserializableSlice};
+use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::Score;
+use dusk_bytes::DeserializableSlice;
 use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
@@ -40,8 +41,10 @@ where
             BlsScalar::from(self.request.get_ref().round as u64);
         let latest_consensus_step =
             BlsScalar::from(self.request.get_ref().step as u64);
-        // Get bid from storage (FIXME: Once Bid contract is done and this
-        // functionallity provided)
+        // Get bid from storage
+
+        // FIXME: Once Bid contract is done and this
+        // functionallity provided via spurious-functions.
         let (bid, branch) = unimplemented!();
 
         // Create a BlindBidCircuit instance
@@ -54,8 +57,6 @@ where
             latest_consensus_round,
             latest_consensus_step,
             branch: &branch,
-            trim_size: 1 << 15,
-            pi_positions: vec![],
         };
 
         Ok(Response::new(VerifyScoreResponse {
@@ -75,16 +76,16 @@ where
 fn parse_score_verify_params(
     request: &Request<VerifyScoreRequest>,
 ) -> Result<(Proof, BlsScalar, BlsScalar, BlsScalar), Status> {
-    let proof = Proof::from_bytes(&request.get_ref().proof[..])
+    let proof = Proof::from_slice(&request.get_ref().proof)
         .map_err(|e| Status::failed_precondition(format!("{:?}", e)))?;
     let score = encoding::as_status_err(BlsScalar::from_slice(
-        &request.get_ref().score[..],
+        &request.get_ref().score,
     ))?;
     let seed = encoding::as_status_err(BlsScalar::from_slice(
-        &request.get_ref().seed[..],
+        &request.get_ref().seed,
     ))?;
     let prover_id = encoding::as_status_err(BlsScalar::from_slice(
-        &request.get_ref().prover_id[..],
+        &request.get_ref().prover_id,
     ))?;
     Ok((proof, score, seed, prover_id))
 }
@@ -98,28 +99,28 @@ fn verify_blindbid_proof(
     score: BlsScalar,
 ) -> Result<()> {
     // Read ProverKey of the circuit.
-    let verifier_key = rusk_profile::keys_for("dusk-blindbid")
-        .get_verifier("blindbid")
-        .expect("Rusk_profile failed to get verifier for \"dusk-blindbid\"");
+    let vd =
+        rusk_profile::keys_for(&BlindBidCircuit::CIRCUIT_ID)?.get_verifier()?;
 
-    let verifier_key = VerifierKey::from_bytes(&verifier_key[..])?;
+    let vd = VerifierData::from_slice(&vd)?;
 
-    // Build PI array (safe to unwrap since we just created the circuit
-    // with everything initialized).
-    let pi = vec![
-        PublicInput::BlsScalar(*circuit.branch.root(), 0),
-        PublicInput::BlsScalar(circuit.bid.hash(), 0),
-        PublicInput::AffinePoint(circuit.bid.commitment(), 0, 0),
-        PublicInput::BlsScalar(circuit.bid.hashed_secret(), 0),
-        PublicInput::BlsScalar(prover_id, 0),
-        PublicInput::BlsScalar(score, 0),
+    let pi: Vec<PublicInputValue> = vec![
+        (*circuit.branch.root()).into(),
+        circuit.bid.hash().into(),
+        (*circuit.bid.commitment()).into(),
+        (*circuit.bid.hashed_secret()).into(),
+        prover_id.into(),
+        score.into(),
     ];
+
     // Verify the proof.
-    circuit.verify_proof(
+    circuit::verify_proof(
         &crate::PUB_PARAMS,
-        &verifier_key,
-        b"BlindBid",
+        &vd.key(),
         proof,
         &pi,
+        &vd.pi_pos(),
+        super::BLINDBID_TRANSCRIPT_INIT,
     )
+    .map_err(|e| anyhow::anyhow!("{:?}", e))
 }

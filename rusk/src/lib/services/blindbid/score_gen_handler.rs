@@ -8,8 +8,8 @@ use super::super::ServiceRequestHandler;
 use super::{GenerateScoreRequest, GenerateScoreResponse};
 use crate::encoding;
 use anyhow::Result;
-use dusk_blindbid::{Bid, Score};
 use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::{Bid, Score};
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 use dusk_plonk::jubjub::JubJubAffine;
@@ -109,9 +109,12 @@ fn parse_score_gen_params(
 // desired inputs.
 fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     // Read ProverKey of the circuit.
-    let pk = rusk_profile::keys_for(&BlindBidCircuit::CIRCUIT_ID)?.get_prover()?;
+    let pk =
+        rusk_profile::keys_for(&BlindBidCircuit::CIRCUIT_ID)?.get_prover()?;
 
     let prover_key = ProverKey::from_slice(&pk)?;
     // Generate a proof using the circuit
-    circuit.gen_proof(&crate::PUB_PARAMS, &prover_key, b"BlindBidProof").map_err(|e| anyhow::anyhow!("{:?}", e))
+    circuit
+        .gen_proof(&crate::PUB_PARAMS, &prover_key, b"BlindBidProof")
+        .map_err(|e| anyhow::anyhow!("{:?}", e))
 }
