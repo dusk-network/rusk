@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use tracing::info;
-//pub mod encoding;
-//pub mod services;
-//pub mod transaction;
+pub mod encoding;
+pub mod services;
+pub mod transaction;
 
 pub use rusk_vm as vm;
 
