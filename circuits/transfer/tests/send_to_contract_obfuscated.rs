@@ -5,16 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::TryInto;
-use transfer_circuits::{builder, SendToContractObfuscatedCircuit};
+use transfer_circuits::{SendToContractObfuscatedCircuit, TRANSCRIPT_LABEL};
 
 use dusk_pki::SecretSpendKey;
 use dusk_plonk::circuit;
-use dusk_plonk::jubjub::JubJubAffine;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
+
+mod keys;
 
 #[test]
 fn send_to_contract_obfuscated_public_key() {
@@ -56,13 +57,11 @@ fn send_to_contract_obfuscated_public_key() {
     )
     .expect("Failed to generate circuit!");
 
-    let id = SendToContractObfuscatedCircuit::rusk_keys_id();
-    let (pp, pk, vd) =
-        builder::circuit_keys(&mut rng, None, &mut circuit, id, true)
-            .expect("Failed to generate circuit!");
+    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
+        .expect("Failed to generate circuit!");
 
     let proof = circuit
-        .gen_proof(&pp, &pk, b"dusk-network")
+        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
@@ -75,7 +74,7 @@ fn send_to_contract_obfuscated_public_key() {
         &proof,
         pi.as_slice(),
         vd.pi_pos(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .expect("Failed to verify the proof!");
 }
@@ -120,13 +119,11 @@ fn send_to_contract_obfuscated_private_key() {
     )
     .expect("Failed to generate circuit!");
 
-    let id = SendToContractObfuscatedCircuit::rusk_keys_id();
-    let (pp, pk, vd) =
-        builder::circuit_keys(&mut rng, None, &mut circuit, id, true)
-            .expect("Failed to generate circuit!");
+    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
+        .expect("Failed to generate circuit!");
 
     let proof = circuit
-        .gen_proof(&pp, &pk, b"dusk-network")
+        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
@@ -139,7 +136,7 @@ fn send_to_contract_obfuscated_private_key() {
         &proof,
         pi.as_slice(),
         vd.pi_pos(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .expect("Failed to verify the proof!");
 }

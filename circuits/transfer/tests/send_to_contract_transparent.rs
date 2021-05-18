@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::TryInto;
-use transfer_circuits::{builder, SendToContractTransparentCircuit};
+use transfer_circuits::{SendToContractTransparentCircuit, TRANSCRIPT_LABEL};
 
 use dusk_pki::SecretSpendKey;
 use dusk_plonk::circuit;
@@ -14,6 +14,8 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
+
+mod keys;
 
 #[test]
 fn send_to_contract_transparent() {
@@ -48,13 +50,11 @@ fn send_to_contract_transparent() {
     )
     .expect("Failed to create STCT circuit!");
 
-    let id = SendToContractTransparentCircuit::rusk_keys_id();
-    let (pp, pk, vd) =
-        builder::circuit_keys(&mut rng, None, &mut circuit, id, true)
-            .expect("Failed to generate circuit!");
+    let (pp, pk, vd) = keys::circuit_keys::<SendToContractTransparentCircuit>()
+        .expect("Failed to generate circuit!");
 
     let proof = circuit
-        .gen_proof(&pp, &pk, b"dusk-network")
+        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
@@ -64,7 +64,7 @@ fn send_to_contract_transparent() {
         &proof,
         pi.as_slice(),
         vd.pi_pos(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .expect("Failed to verify the proof!");
 }

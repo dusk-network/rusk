@@ -6,7 +6,6 @@
 
 use crate::gadgets;
 
-use anyhow::Result;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::error::Error as PlonkError;
@@ -172,10 +171,8 @@ impl SendToContractObfuscatedCircuit {
     }
 }
 
+#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for SendToContractObfuscatedCircuit {
-    // TODO Define ID
-    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
-
     fn gadget(
         &mut self,
         composer: &mut StandardComposer,

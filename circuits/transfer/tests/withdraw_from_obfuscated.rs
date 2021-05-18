@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::{builder, WithdrawFromObfuscatedCircuit};
+use transfer_circuits::{WithdrawFromObfuscatedCircuit, TRANSCRIPT_LABEL};
 
 use dusk_pki::SecretSpendKey;
 use dusk_plonk::circuit;
@@ -13,6 +13,8 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
+
+mod keys;
 
 #[test]
 fn withdraw_from_obfuscated() {
@@ -49,13 +51,11 @@ fn withdraw_from_obfuscated() {
     )
     .expect("Failed to generate circuit!");
 
-    let id = WithdrawFromObfuscatedCircuit::rusk_keys_id();
-    let (pp, pk, vd) =
-        builder::circuit_keys(&mut rng, None, &mut circuit, id, true)
-            .expect("Failed to generate circuit!");
+    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
+        .expect("Failed to generate circuit!");
 
     let proof = circuit
-        .gen_proof(&pp, &pk, b"dusk-network")
+        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
@@ -65,7 +65,7 @@ fn withdraw_from_obfuscated() {
         &proof,
         pi.as_slice(),
         vd.pi_pos(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .expect("Failed to verify the proof!");
 }

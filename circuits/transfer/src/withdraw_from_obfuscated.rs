@@ -6,7 +6,6 @@
 
 use crate::gadgets;
 
-use anyhow::Result;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::error::Error as PlonkError;
 use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
@@ -109,10 +108,8 @@ impl WithdrawFromObfuscatedCircuit {
     }
 }
 
+#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for WithdrawFromObfuscatedCircuit {
-    // TODO Define ID
-    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
-
     fn gadget(
         &mut self,
         composer: &mut StandardComposer,
