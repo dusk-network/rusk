@@ -8,7 +8,7 @@ pub mod encoding;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
-use futures::stream::TryStreamExt;
+use futures::TryFutureExt;
 use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
@@ -38,8 +38,17 @@ pub async fn setup() -> Result<Channel, Box<dyn std::error::Error>> {
     // Create the server binded to the default UDS path.
     tokio::fs::create_dir_all(Path::new(SOCKET_PATH).parent().unwrap()).await?;
 
-    let mut uds = UnixListener::bind(SOCKET_PATH)?;
+    let uds = UnixListener::bind(SOCKET_PATH)?;
     let rusk = Rusk::default();
+
+    let incoming = {
+        async_stream::stream! {
+            while let item = uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await {
+                yield item;
+            }
+        }
+    };
+
     // We can't avoid the unwrap here until the async closure (#62290)
     // lands. And therefore we can force the closure to return a
     // Result. See: https://github.com/rust-lang/rust/issues/62290
@@ -48,7 +57,7 @@ pub async fn setup() -> Result<Channel, Box<dyn std::error::Error>> {
             .add_service(BlindBidServiceServer::new(rusk))
             .add_service(KeysServer::new(rusk))
             .add_service(EchoerServer::new(rusk))
-            .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
+            .serve_with_incoming(incoming)
             .await
             .unwrap();
     });

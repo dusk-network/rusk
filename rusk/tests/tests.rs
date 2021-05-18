@@ -8,7 +8,7 @@ pub mod common;
 pub mod services;
 
 use futures::executor::block_on;
-#[tokio::test(threaded_scheduler)]
+#[tokio::test(flavor = "multi_thread")]
 async fn rusk_integration_tests() {
     let channel = block_on(common::setup()).expect("Error on the test setup");
     // Blindbid walkthrough tests
