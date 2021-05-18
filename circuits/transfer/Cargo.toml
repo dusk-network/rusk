@@ -6,21 +6,19 @@ edition = "2018"
 
 [dependencies]
 rand_core = "0.6"
-anyhow = "1.0"
 dusk-bytes = "0.1"
 dusk-plonk = "0.8"
 canonical = "0.6"
-canonical_derive = {version="0.6", optional=true}
-dusk-poseidon = {version="0.21.0-rc", features=["canon"]}
-phoenix-core = {git="https://github.com/dusk-network/phoenix-core", tag="v0.11.0-rc.0", features=["canon"]}
+dusk-poseidon = { version = "0.21.0-rc", features = ["canon"] }
 dusk-pki = "0.7.0-rc"
+phoenix-core = { version = "0.11.0-rc", features = ["canon"] }
 dusk-schnorr = "0.7.0-rc"
-rusk-profile = {path="../../rusk-profile", optional=true}
+code-hasher = { path = "../../macros/code-hasher" }
+rusk-profile = { path = "../../rusk-profile", optional = true }
+canonical_derive = { version = "0.6", optional = true }
 
 [dev-dependencies]
-canonical_derive = "0.6"
 rand = "0.8"
-rusk-profile = {path="../../rusk-profile"}
 
 [features]
-builder = ["canonical_derive", "rusk-profile"]
+builder = ["rusk-profile", "canonical_derive"]

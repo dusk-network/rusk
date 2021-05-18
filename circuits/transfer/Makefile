@@ -7,9 +7,4 @@ test: ## Run the transfer circuits tests
 	@cargo test --release \
 		--features builder
 
-test-no-rusk-profile: ## Run the transfer circuits tests
-	@RUSK_PROFILE_KEYS=false \
-		cargo test --release \
-		--features builder
-
 .PHONY: test help
