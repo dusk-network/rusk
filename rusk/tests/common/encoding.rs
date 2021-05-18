@@ -6,8 +6,9 @@
 
 #![allow(dead_code)]
 use core::convert::TryFrom;
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use dusk_plonk::prelude::*;
+use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a

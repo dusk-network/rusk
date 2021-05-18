@@ -7,6 +7,7 @@
 
 mod common;
 use dusk_plonk::prelude::*;
+use dusk_bls12_381::BlsScalar;
 use futures::stream::TryStreamExt;
 use rusk::services::blindbid::{
     BlindBidServiceClient, BlindBidServiceServer, GenerateScoreRequest,

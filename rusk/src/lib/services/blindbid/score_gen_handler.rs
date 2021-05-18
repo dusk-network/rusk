@@ -10,6 +10,7 @@ use crate::encoding;
 use anyhow::Result;
 use blindbid_circuits::BlindBidCircuit;
 use dusk_blindbid::{Bid, Score};
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 use dusk_plonk::jubjub::JubJubAffine;
