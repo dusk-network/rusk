@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(dead_code)]
 use core::convert::TryFrom;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
@@ -36,14 +35,12 @@ where
     Some(U::from(param))
 }
 
-/// Wrapper over `jubjub_decode` fn
 pub fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
     JubJubAffine::from_slice(bytes).map_err(|_| {
         Status::failed_precondition("Point was improperly encoded")
     })
 }
 
-/// Wrapper over `jubjub_decode` fn
 pub fn decode_jubjub_scalar(bytes: &[u8]) -> Result<JubJubScalar, Status> {
     JubJubScalar::from_slice(bytes).map_err(|_| {
         Status::failed_precondition("JubjubScalar was improperly encoded")
