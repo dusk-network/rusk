@@ -7,6 +7,7 @@ keys: ## Build circuit keys
 test: ## Run Rusk tests
 	@cargo test \
 		--release \
-		-- --nocapture
+		-- --nocapture \
+		--test-threads 1
 
 .PHONY: keys test help
