@@ -4,16 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::TestContext;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
 use rusk::services::rusk_proto::keys_client::KeysClient;
 use rusk::services::rusk_proto::GenerateKeysRequest;
-use tonic::transport::Channel;
+use test_context::test_context;
+#[test_context(TestContext)]
+#[tokio::test]
 pub async fn pki_walkthrough_uds(
-    channel: Channel,
+    ctx: &mut TestContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = KeysClient::new(channel);
+    let mut client = KeysClient::new(ctx.channel.clone());
     // Key generation
     let request = tonic::Request::new(GenerateKeysRequest {});
 
@@ -48,6 +51,5 @@ pub async fn pki_walkthrough_uds(
     let request = tonic::Request::new(pk);
 
     let _ = client.generate_stealth_address(request).await?;
-
     Ok(())
 }
