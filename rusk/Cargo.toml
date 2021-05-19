@@ -50,6 +50,8 @@ blindbid-circuits = { path = "../circuits/blindbid" }
 
 [dev-dependencies]
 tower = "0.4"
+test-context = "0.1"
+async-trait = "0.1"
 
 [build-dependencies]
 sha2 = "0.9"
