@@ -116,6 +116,10 @@ fn gen_blindbid_proof(circuit: &mut BlindBidCircuit) -> Result<Proof> {
     let prover_key = ProverKey::from_slice(&pk)?;
     // Generate a proof using the circuit
     circuit
-        .gen_proof(&crate::PUB_PARAMS, &prover_key, b"BlindBidProof")
+        .gen_proof(
+            &crate::PUB_PARAMS,
+            &prover_key,
+            super::BLINDBID_TRANSCRIPT_INIT,
+        )
         .map_err(|e| anyhow::anyhow!("{:?}", e))
 }

@@ -27,7 +27,7 @@ pub use rusk_proto::blind_bid_service_server::{
     BlindBidService, BlindBidServiceServer,
 };
 
-pub(crate) const BLINDBID_TRANSCRIPT_INIT: &'static [u8] = b"BlindBidProof";
+pub(crate) const BLINDBID_TRANSCRIPT_INIT: &'static [u8] = b"dusk-network";
 
 #[tonic::async_trait]
 impl BlindBidService for Rusk {
