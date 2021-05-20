@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
+
 mod common;
 use dusk_plonk::prelude::*;
+use dusk_bls12_381::BlsScalar;
 use futures::stream::TryStreamExt;
 use rusk::services::blindbid::{
     BlindBidServiceClient, BlindBidServiceServer, GenerateScoreRequest,
@@ -32,11 +33,13 @@ pub async fn gen_and_verify_blindbid(
     //                      Actual Testcase                         //
     //                                                              //
     // ------------------------------------------------------------ //
-    // let mut  client = BlindBidServiceClient::new(channel);
+    
+    let mut  client = BlindBidServiceClient::new(channel);
     // Declare the parameters needed to generate a blindbid proof which
     // were the ones used to generate the Bid that is now stored in the
     // Bid Tree.
-    /* FIXME: Once Bid contract is implemented
+
+    // FIXME: Once Bid contract is implemented
     let request = tonic::Request::new(GenerateScoreRequest {
         k: BlsScalar::one().to_bytes().to_vec(),
         seed: BlsScalar::one().to_bytes().to_vec(),
@@ -61,7 +64,6 @@ pub async fn gen_and_verify_blindbid(
         index_stored_bid: 0u64,
     });
     let verify_response = client.verify_score(verify_request).await?;
-    assert_eq!(verify_response.get_ref().success, true);*/
+    assert_eq!(verify_response.get_ref().success, true);
     Ok(())
 }
-*/

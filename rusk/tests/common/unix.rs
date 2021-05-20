@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
 #![cfg(not(target_os = "windows"))]
 use std::{
     pin::Pin,
     task::{Context, Poll},
 };
 
+use tokio::io::ReadBuf;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tonic::transport::server::Connected;
 
@@ -23,8 +23,8 @@ impl AsyncRead for UnixStream {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<std::io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<std::io::Result<()>> {
         Pin::new(&mut self.0).poll_read(cx, buf)
     }
 }
@@ -52,4 +52,3 @@ impl AsyncWrite for UnixStream {
         Pin::new(&mut self.0).poll_shutdown(cx)
     }
 }
-*/

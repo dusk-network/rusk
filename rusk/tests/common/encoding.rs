@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/*
-#![allow(dead_code)]
 use core::convert::TryFrom;
-use dusk_pki::jubjub_decode;
-use dusk_plonk::jubjub::JubJubAffine;
-use dusk_plonk::prelude::*;
+use dusk_bls12_381::BlsScalar;
+use dusk_bytes::DeserializableSlice;
+use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use tonic::{Code, Status};
 
 /// Generic function used to retrieve parameters that are optional from a
@@ -37,32 +35,21 @@ where
     Some(U::from(param))
 }
 
-/// Wrapper over `jubjub_decode` fn
 pub fn decode_affine(bytes: &[u8]) -> Result<JubJubAffine, Status> {
-    jubjub_decode::<JubJubAffine>(bytes).map_err(|_| {
+    JubJubAffine::from_slice(bytes).map_err(|_| {
         Status::failed_precondition("Point was improperly encoded")
     })
 }
 
-/// Wrapper over `jubjub_decode` fn
 pub fn decode_jubjub_scalar(bytes: &[u8]) -> Result<JubJubScalar, Status> {
-    jubjub_decode::<JubJubScalar>(bytes).map_err(|_| {
+    JubJubScalar::from_slice(bytes).map_err(|_| {
         Status::failed_precondition("JubjubScalar was improperly encoded")
     })
 }
 
 /// Decoder fn used for `BlsScalar`
 pub fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
-    if bytes.len() < 32 {
-        Err(Status::failed_precondition(
-            "Not enough bytes to decode a BlsScalar",
-        ))
-    } else {
-        let mut buff = [0u8; 32];
-        buff.copy_from_slice(&bytes[0..32]);
-        Option::from(BlsScalar::from_bytes(&buff)).ok_or_else(|| {
-            Status::failed_precondition("Point was improperly encoded")
-        })
-    }
+    BlsScalar::from_slice(&bytes).map_err(|_| {
+        Status::failed_precondition("Point was improperly encoded")
+    })
 }
-*/

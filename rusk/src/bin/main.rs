@@ -4,18 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[tokio::main]
-async fn main() {
-    unimplemented!()
-}
-
-/*
 #[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
 
 use clap::{App, Arg};
-use futures::stream::TryStreamExt;
+use futures::TryFutureExt;
 use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
@@ -157,18 +151,27 @@ async fn startup_with_uds(
 ) -> Result<(), Box<dyn std::error::Error>> {
     tokio::fs::create_dir_all(Path::new(path).parent().unwrap()).await?;
 
-    let mut uds = UnixListener::bind(path)?;
+    let uds = UnixListener::bind(path)?;
 
     let rusk = Rusk::default();
 
     let echoer = EchoerServer::new(rusk);
     let blindbid = BlindBidServiceServer::new(rusk);
     let keys = KeysServer::new(rusk);
+
+    let incoming = {
+        async_stream::stream! {
+            while let item = uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await {
+                yield item;
+            }
+        }
+    };
+
     Server::builder()
         .add_service(echoer)
         .add_service(blindbid)
         .add_service(keys)
-        .serve_with_incoming(uds.incoming().map_ok(unix::UnixStream))
+        .serve_with_incoming(incoming)
         .await?;
 
     Ok(())
@@ -196,4 +199,3 @@ async fn startup_with_tcp_ip(
         .serve(addr)
         .await?)
 }
-*/
