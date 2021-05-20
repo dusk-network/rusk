@@ -23,6 +23,7 @@ pub enum Error {
     KeysNotFound,
     CircuitMaximumInputs,
     CircuitMaximumOutputs,
+    IncorrectExecuteCircuitVariant(usize, usize),
 }
 
 impl fmt::Display for Error {

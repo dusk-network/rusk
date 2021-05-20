@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{
-    CircuitCrossover, CircuitInput, CircuitOutput, WitnessInput, WitnessOutput,
-    POSEIDON_BRANCH_DEPTH,
+    CircuitCrossover, CircuitInput, CircuitOutput, ExecuteCircuit,
+    WitnessInput, WitnessOutput, POSEIDON_BRANCH_DEPTH,
 };
 use crate::{gadgets, Error};
 
@@ -22,6 +22,8 @@ use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{self, PoseidonBranch};
 use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::{Crossover, Fee, Note};
+
+use std::convert::TryFrom;
 
 use dusk_plonk::prelude::*;
 
@@ -208,6 +210,20 @@ macro_rules! execute_circuit_variant {
 
             pub fn outputs(&self) -> &[CircuitOutput] {
                 self.outputs.as_slice()
+            }
+        }
+
+        impl TryFrom<ExecuteCircuit> for $i {
+            type Error = Error;
+
+            fn try_from(c: ExecuteCircuit) -> Result<Self, Self::Error> {
+                match c {
+                    ExecuteCircuit::$i(c) => Ok(c),
+                    _ => Err(Error::IncorrectExecuteCircuitVariant(
+                        c.inputs().len(),
+                        c.outputs().len(),
+                    )),
+                }
             }
         }
 
@@ -450,9 +466,9 @@ macro_rules! execute_circuit_variant {
 
 execute_circuit_variant!(ExecuteCircuitOneZero, 15);
 execute_circuit_variant!(ExecuteCircuitOneOne, 15);
-execute_circuit_variant!(ExecuteCircuitOneTwo, 15);
-execute_circuit_variant!(ExecuteCircuitTwoZero, 15);
-execute_circuit_variant!(ExecuteCircuitTwoOne, 15);
+execute_circuit_variant!(ExecuteCircuitOneTwo, 16);
+execute_circuit_variant!(ExecuteCircuitTwoZero, 16);
+execute_circuit_variant!(ExecuteCircuitTwoOne, 16);
 execute_circuit_variant!(ExecuteCircuitTwoTwo, 16);
 execute_circuit_variant!(ExecuteCircuitThreeZero, 17);
 execute_circuit_variant!(ExecuteCircuitThreeOne, 17);

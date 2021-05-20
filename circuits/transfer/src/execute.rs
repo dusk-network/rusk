@@ -29,7 +29,7 @@ mod input;
 mod output;
 mod variants;
 
-use variants::*;
+pub use variants::*;
 
 #[cfg(any(test, feature = "builder"))]
 pub mod builder;
@@ -109,7 +109,7 @@ impl ExecuteCircuit {
             Self::ExecuteCircuitOneZero(c) => {
                 let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
-                if c.inputs().len() > 1 {
+                if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoZero::new(
                         inputs, crossover, outputs, tx_hash,
                     );
@@ -127,7 +127,7 @@ impl ExecuteCircuit {
             Self::ExecuteCircuitOneOne(c) => {
                 let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
-                if c.inputs().len() > 1 {
+                if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoOne::new(
                         inputs, crossover, outputs, tx_hash,
                     );
@@ -145,7 +145,7 @@ impl ExecuteCircuit {
             Self::ExecuteCircuitOneTwo(c) => {
                 let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
-                if c.inputs().len() > 1 {
+                if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoTwo::new(
                         inputs, crossover, outputs, tx_hash,
                     );
