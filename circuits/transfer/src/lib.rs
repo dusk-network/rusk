@@ -16,7 +16,7 @@ mod withdraw_from_obfuscated;
 pub const TRANSCRIPT_LABEL: &'static [u8] = b"dusk-network";
 
 pub use error::Error;
-pub use execute::ExecuteCircuit;
+pub use execute::*;
 pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;
