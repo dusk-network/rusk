@@ -102,7 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
     // set.
-    if let Some(_) = option_env!("DELETE_RUSK_KEYS") {
+    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
         info!("DELETE_RUSK_KEYS env set!");
         info!("Starting `keys/` folder wipe process..");
         rusk_profile::clear_all_keys()?;
@@ -135,8 +135,8 @@ mod bid {
             &self,
         ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
             let pub_params = &PUB_PARAMS;
-            let value = JubJubScalar::from(100000 as u64);
-            let blinder = JubJubScalar::from(50000 as u64);
+            let value = JubJubScalar::from(100000_u64);
+            let blinder = JubJubScalar::from(50000_u64);
 
             let c = JubJubAffine::from(
                 (GENERATOR_EXTENDED * value)
@@ -145,8 +145,8 @@ mod bid {
 
             let mut circuit = BidCorrectnessCircuit {
                 commitment: c,
-                value: value.into(),
-                blinder: blinder.into(),
+                value,
+                blinder,
             };
 
             let (pk, vd) = circuit.compile(&pub_params)?;
@@ -467,9 +467,9 @@ mod profile_tooling {
     }
 
     fn clear_outdated_keys(
-        loader_list: &Vec<&dyn CircuitLoader>,
+        loader_list: &[&dyn CircuitLoader],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let id_list = loader_list
+        let id_list: Vec<_> = loader_list
             .iter()
             .map(|loader| loader.circuit_id())
             .cloned()
@@ -479,9 +479,9 @@ mod profile_tooling {
     }
 
     fn check_keys_cache(
-        loader_list: &Vec<&dyn CircuitLoader>,
+        loader_list: &[&dyn CircuitLoader],
     ) -> Result<Vec<()>, Box<dyn std::error::Error>> {
-        Ok(loader_list
+        loader_list
             .iter()
             .map(|loader| {
                 info!("{} Keys cache checking stage", loader.circuit_name());
@@ -513,7 +513,7 @@ mod profile_tooling {
                     }
                 }
             })
-            .collect::<Result<Vec<()>, Box<dyn std::error::Error>>>()?)
+            .collect::<Result<Vec<()>, Box<dyn std::error::Error>>>()
     }
 
     pub fn run_circuit_keys_checks(
