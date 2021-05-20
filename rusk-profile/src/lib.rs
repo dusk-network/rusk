@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use std::fs::{self, read, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
 static CRS_17: &str =
@@ -48,11 +48,11 @@ impl Keys {
     }
 }
 
-fn extension(p: &PathBuf) -> Option<&str> {
+fn extension(p: &Path) -> Option<&str> {
     p.extension()?.to_str()
 }
 
-fn file_stem(p: &PathBuf) -> Option<&str> {
+fn file_stem(p: &Path) -> Option<&str> {
     p.file_stem()?.to_str()
 }
 
@@ -113,10 +113,9 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     hash == CRS_17
 }
 
-pub fn clean_outdated_keys(ids: &Vec<[u8; 32]>) -> Result<(), io::Error> {
+pub fn clean_outdated_keys(ids: &[[u8; 32]]) -> Result<(), io::Error> {
     info!("Cleaning outdated keys (if any)");
-    let ids_as_string: Vec<String> =
-        ids.iter().map(|id| hex::encode(id)).collect();
+    let ids_as_string: Vec<_> = ids.iter().map(hex::encode).collect();
 
     fs::read_dir(&get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
@@ -129,7 +128,7 @@ pub fn clean_outdated_keys(ids: &Vec<[u8; 32]>) -> Result<(), io::Error> {
                 .is_some(),
             _ => true,
         })
-        .map(|p| {
+        .try_for_each(|p| {
             info!(
                 "Found file {:?} which is not included in the keys list obtained",
                 &p
@@ -138,15 +137,14 @@ pub fn clean_outdated_keys(ids: &Vec<[u8; 32]>) -> Result<(), io::Error> {
             info!("{:?} was successfully removed outdated file", &p);
             Ok(())
         })
-        .collect()
 }
 
 pub fn keys_for(id: &[u8; 32]) -> Result<Keys, io::Error> {
     let mut dir = get_rusk_keys_dir()?;
     dir.push(hex::encode(id));
 
-    let mut pk_dir = dir.with_extension("pk");
-    let mut vd_dir = dir.with_extension("vd");
+    let pk_dir = dir.with_extension("pk");
+    let vd_dir = dir.with_extension("vd");
 
     if pk_dir.exists() && vd_dir.exists() {
         Ok(Keys(*id))
@@ -183,9 +181,8 @@ pub fn clear_all_keys() -> Result<(), io::Error> {
         .map(|res| res.unwrap())
         .filter(|e| e.is_file())
         .filter(|p| matches!(extension(&p), Some("pk" | "vd")))
-        .map(|path| {
-            info!("Removing {:?}", path.clone());
+        .try_for_each(|path| {
+            info!("Removing {:?}", path);
             remove_file(path)
         })
-        .collect()
 }
