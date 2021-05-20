@@ -99,6 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Run the rusk-profile Circuit-keys checks
     use bid::BidCircuitLoader;
     use blindbid::BlindBidCircuitLoader;
+    use transfer::*;
 
     // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
     // set.
@@ -112,6 +113,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     profile_tooling::run_circuit_keys_checks(vec![
         &BidCircuitLoader {},
         &BlindBidCircuitLoader {},
+        &StctCircuitLoader {},
+        &StcoCircuitLoader {},
+        &WfoCircuitLoader {},
+        &ExecuteOneZeroCircuitLoader {},
+        &ExecuteOneOneCircuitLoader {},
+        &ExecuteOneTwoCircuitLoader {},
+        &ExecuteTwoZeroCircuitLoader {},
+        &ExecuteTwoOneCircuitLoader {},
+        &ExecuteTwoTwoCircuitLoader {},
+        &ExecuteThreeZeroCircuitLoader {},
+        &ExecuteThreeOneCircuitLoader {},
+        &ExecuteThreeTwoCircuitLoader {},
+        &ExecuteFourZeroCircuitLoader {},
+        &ExecuteFourOneCircuitLoader {},
+        &ExecuteFourTwoCircuitLoader {},
     ])?;
 
     Ok(())
@@ -239,219 +255,293 @@ mod blindbid {
     }
 }
 
-/*
 mod transfer {
-    use super::PUB_PARAMS;
-    use std::convert::TryInto;
-
-    use anyhow::{anyhow, Result};
-    use dusk_bytes::Serializable;
-    use dusk_pki::SecretSpendKey;
-    use dusk_plonk::circuit;
-    use dusk_plonk::circuit::VerifierData;
+    use super::*;
     use phoenix_core::{Message, Note};
-    use sha2::{Digest, Sha256};
-    use tracing::info;
-    use transfer_circuits::{
-        ExecuteCircuit, SendToContractObfuscatedCircuit,
-        SendToContractTransparentCircuit, WithdrawFromObfuscatedCircuit,
-    };
+    use std::convert::{TryFrom, TryInto};
+    use transfer_circuits::*;
 
-    use dusk_plonk::prelude::*;
+    pub struct StctCircuitLoader;
+    impl CircuitLoader for StctCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &SendToContractTransparentCircuit::CIRCUIT_ID
+        }
 
-    pub fn compile_stco_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
+        fn circuit_name(&self) -> &'static str {
+            "STCT"
+        }
 
-        let ssk = SecretSpendKey::random(&mut rng);
-        let vk = ssk.view_key();
-        let psk = ssk.public_spend_key();
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let c_value = 100;
-        let c_blinding_factor = JubJubScalar::random(&mut rng);
-        let c_note =
-            Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
-        let (fee, crossover) = c_note.try_into().map_err(|e| {
-            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
-        })?;
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_vk = c_ssk.view_key();
+            let c_psk = c_ssk.public_spend_key();
 
-        let address = BlsScalar::random(&mut rng);
-        let message_r = JubJubScalar::random(&mut rng);
-        let message_value = 100;
-        let message = Message::new(&mut rng, &message_r, &psk, message_value);
+            let c_address = BlsScalar::random(rng);
 
-        let c_signature = SendToContractObfuscatedCircuit::sign(
-            &mut rng, &ssk, &fee, &crossover, &message, &address,
-        );
+            let c_value = 100;
+            let c_blinding_factor = JubJubScalar::random(rng);
 
-        let mut circuit = SendToContractObfuscatedCircuit::new(
-            fee,
-            crossover,
-            &vk,
-            c_signature,
-            true,
-            message,
-            &psk,
-            message_r,
-            address,
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+            let c_note =
+                Note::obfuscated(rng, &c_psk, c_value, c_blinding_factor);
+            let (mut fee, crossover) = c_note
+                .try_into()
+                .expect("Failed to convert note into fee/crossover pair!");
 
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
+            fee.gas_limit = 5;
+            fee.gas_price = 1;
 
-        let id = SendToContractObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+            let c_signature = SendToContractTransparentCircuit::sign(
+                rng, &c_ssk, &fee, &crossover, c_value, &c_address,
+            );
 
-        Ok((id, pk, vd))
+            let mut circuit = SendToContractTransparentCircuit::new(
+                fee,
+                crossover,
+                &c_vk,
+                c_address,
+                c_signature,
+            )
+            .expect("Failed to create STCT circuit!");
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
-    pub fn compile_stct_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
+    pub struct StcoCircuitLoader;
+    impl CircuitLoader for StcoCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &SendToContractObfuscatedCircuit::CIRCUIT_ID
+        }
 
-        let c_ssk = SecretSpendKey::random(&mut rng);
-        let c_vk = c_ssk.view_key();
-        let c_psk = c_ssk.public_spend_key();
+        fn circuit_name(&self) -> &'static str {
+            "STCO"
+        }
 
-        let c_value = 100;
-        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let c_note =
-            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
-        let (fee, crossover) = c_note.try_into().map_err(|e| {
-            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
-        })?;
+            let ssk = SecretSpendKey::random(rng);
+            let vk = ssk.view_key();
+            let psk = ssk.public_spend_key();
 
-        let address = BlsScalar::random(&mut rng);
-        let c_signature = SendToContractTransparentCircuit::sign(
-            &mut rng, &c_ssk, &fee, &crossover, c_value, &address,
-        );
+            let c_address = BlsScalar::random(rng);
 
-        let mut circuit = SendToContractTransparentCircuit::new(
-            fee,
-            crossover,
-            &c_vk,
-            address,
-            c_signature,
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+            let c_value = 100;
+            let c_blinding_factor = JubJubScalar::random(rng);
+            let c_note =
+                Note::obfuscated(rng, &psk, c_value, c_blinding_factor);
+            let (mut fee, crossover) = c_note
+                .try_into()
+                .expect("Failed to convert note into fee/crossover pair!");
 
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
+            fee.gas_limit = 5;
+            fee.gas_price = 1;
 
-        let id = SendToContractTransparentCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+            let message_r = JubJubScalar::random(rng);
+            let message_value = 100;
+            let message = Message::new(rng, &message_r, &psk, message_value);
 
-        Ok((id, pk, vd))
+            let c_signature = SendToContractObfuscatedCircuit::sign(
+                rng, &ssk, &fee, &crossover, &message, &c_address,
+            );
+
+            let mut circuit = SendToContractObfuscatedCircuit::new(
+                fee,
+                crossover,
+                &vk,
+                c_signature,
+                true,
+                message,
+                &psk,
+                message_r,
+                c_address,
+            )
+            .expect("Failed to generate circuit!");
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
-    pub fn compile_wfo_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
+    pub struct WfoCircuitLoader;
+    impl CircuitLoader for WfoCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &WithdrawFromObfuscatedCircuit::CIRCUIT_ID
+        }
 
-        let i_ssk = SecretSpendKey::random(&mut rng);
-        let i_vk = i_ssk.view_key();
-        let i_psk = i_ssk.public_spend_key();
-        let i_value = 100;
-        let i_blinding_factor = JubJubScalar::random(&mut rng);
-        let i_note =
-            Note::obfuscated(&mut rng, &i_psk, i_value, i_blinding_factor);
+        fn circuit_name(&self) -> &'static str {
+            "WFO"
+        }
 
-        let c_ssk = SecretSpendKey::random(&mut rng);
-        let c_psk = c_ssk.public_spend_key();
-        let c_r = JubJubScalar::random(&mut rng);
-        let c_value = 25;
-        let c = Message::new(&mut rng, &c_r, &c_psk, c_value);
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let o_ssk = SecretSpendKey::random(&mut rng);
-        let o_vk = o_ssk.view_key();
-        let o_psk = o_ssk.public_spend_key();
-        let o_value = 75;
-        let o_blinding_factor = JubJubScalar::random(&mut rng);
-        let o_note =
-            Note::obfuscated(&mut rng, &o_psk, o_value, o_blinding_factor);
+            let i_ssk = SecretSpendKey::random(rng);
+            let i_vk = i_ssk.view_key();
+            let i_psk = i_ssk.public_spend_key();
+            let i_value = 100;
+            let i_blinding_factor = JubJubScalar::random(rng);
+            let i_note =
+                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
 
-        let mut circuit = WithdrawFromObfuscatedCircuit::new(
-            &i_note,
-            Some(&i_vk),
-            &c,
-            c_r,
-            &c_psk,
-            &o_note,
-            Some(&o_vk),
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_psk = c_ssk.public_spend_key();
+            let c_r = JubJubScalar::random(rng);
+            let c_value = 25;
+            let c = Message::new(rng, &c_r, &c_psk, c_value);
 
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
+            let o_ssk = SecretSpendKey::random(rng);
+            let o_vk = o_ssk.view_key();
+            let o_psk = o_ssk.public_spend_key();
+            let o_value = 75;
+            let o_blinding_factor = JubJubScalar::random(rng);
+            let o_note =
+                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
-        let id = WithdrawFromObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+            let mut circuit = WithdrawFromObfuscatedCircuit::new(
+                &i_note,
+                Some(&i_vk),
+                &c,
+                c_r,
+                &c_psk,
+                &o_note,
+                Some(&o_vk),
+            )
+            .expect("Failed to generate circuit!");
 
-        Ok((id, pk, vd))
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
-    pub fn compile_execute_circuit(
-        inputs: usize,
-        outputs: usize,
-    ) -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        info!(
-            "Starting the compilation of the circuit for {}/{}",
-            inputs, outputs
-        );
+    macro_rules! execute_circuit_variant {
+        ($c:ident,$b:ident,$s:expr,$i:expr,$o:expr) => {
+            pub struct $c;
+            impl CircuitLoader for $c {
+                fn circuit_id(&self) -> &[u8; 32] {
+                    &$b::CIRCUIT_ID
+                }
 
-        let (ci, _, pk, vd, proof, pi) = ExecuteCircuit::create_dummy_proof(
-            &mut rand::thread_rng(),
-            Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
-            inputs,
-            outputs,
-            true,
-            false,
-        )?;
+                fn circuit_name(&self) -> &'static str {
+                    $s
+                }
 
-        info!(
-            "Circuit generated with {}/{}",
-            ci.inputs().len(),
-            ci.outputs().len()
-        );
+                fn compile_circuit(
+                    &self,
+                ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>
+                {
+                    let pub_params = &PUB_PARAMS;
+                    let rng = &mut rand::thread_rng();
 
-        let id = ci.rusk_keys_id();
+                    let circuit = ExecuteCircuit::create_dummy_circuit(
+                        rng, $i, $o, true,
+                    )?;
+                    let mut circuit = $b::try_from(circuit)?;
 
-        // Sanity check
-        circuit::verify_proof(
-            &*PUB_PARAMS,
-            vd.key(),
-            &proof,
-            pi.as_slice(),
-            vd.pi_pos(),
-            b"dusk-network",
-        )
-        .map_err(|_| anyhow!("Proof verification failed for {}", id))?;
-
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
-
-        let mut hasher = Sha256::new();
-        hasher.update(PUB_PARAMS.to_raw_var_bytes().as_slice());
-        let contents = hasher.finalize();
-        info!("Using PP {:x}", contents);
-
-        let mut hasher = Sha256::new();
-        hasher.update(vd.as_slice());
-        let contents = hasher.finalize();
-
-        let mut hasher = Sha256::new();
-        let vk_p = VerifierData::from_slice(vd.as_slice()).expect("Data");
-        hasher.update(&vk_p.key().to_bytes());
-        let contents_key = hasher.finalize();
-
-        info!(
-            "Execute circuit data generated for {} with verifier data {:x} and key {:x}",
-            id, contents, contents_key
-        );
-
-        Ok((id, pk, vd))
+                    let (pk, vd) = circuit.compile(&pub_params)?;
+                    Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+                }
+            }
+        };
     }
+
+    execute_circuit_variant!(
+        ExecuteOneZeroCircuitLoader,
+        ExecuteCircuitOneZero,
+        "ExecuteOneZero",
+        1,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteOneOneCircuitLoader,
+        ExecuteCircuitOneOne,
+        "ExecuteOneOne",
+        1,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteOneTwoCircuitLoader,
+        ExecuteCircuitOneTwo,
+        "ExecuteOneTwo",
+        1,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteTwoZeroCircuitLoader,
+        ExecuteCircuitTwoZero,
+        "ExecuteTwoZero",
+        2,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteTwoOneCircuitLoader,
+        ExecuteCircuitTwoOne,
+        "ExecuteTwoOne",
+        2,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteTwoTwoCircuitLoader,
+        ExecuteCircuitTwoTwo,
+        "ExecuteTwoTwo",
+        2,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteThreeZeroCircuitLoader,
+        ExecuteCircuitThreeZero,
+        "ExecuteThreeZero",
+        3,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteThreeOneCircuitLoader,
+        ExecuteCircuitThreeOne,
+        "ExecuteThreeOne",
+        3,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteThreeTwoCircuitLoader,
+        ExecuteCircuitThreeTwo,
+        "ExecuteThreeTwo",
+        3,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteFourZeroCircuitLoader,
+        ExecuteCircuitFourZero,
+        "ExecuteFourZero",
+        4,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteFourOneCircuitLoader,
+        ExecuteCircuitFourOne,
+        "ExecuteFourOne",
+        4,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteFourTwoCircuitLoader,
+        ExecuteCircuitFourTwo,
+        "ExecuteFourTwo",
+        4,
+        2
+    );
 }
-*/
 
 mod profile_tooling {
     use super::*;
