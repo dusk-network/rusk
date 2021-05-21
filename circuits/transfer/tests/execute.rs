@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::ExecuteCircuit;
+use transfer_circuits::{ExecuteCircuit, TRANSCRIPT_LABEL};
 
-use canonical_host::MemStore;
 use dusk_plonk::circuit;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -14,19 +13,16 @@ use rand::SeedableRng;
 #[test]
 fn execute() {
     let mut rng = StdRng::seed_from_u64(2324u64);
-    let use_rusk_profile = true;
 
     for inputs in 1..5 {
         for outputs in 0..3 {
             for use_crossover in [true, false].iter() {
                 let (_, pp, _, vd, proof, pi) =
-                    ExecuteCircuit::create_dummy_proof::<_, MemStore>(
+                    ExecuteCircuit::create_dummy_proof(
                         &mut rng,
-                        None,
                         inputs,
                         outputs,
                         *use_crossover,
-                        use_rusk_profile,
                     )
                     .expect("Failed to create the circuit!");
 
@@ -36,7 +32,7 @@ fn execute() {
                     &proof,
                     pi.as_slice(),
                     vd.pi_pos(),
-                    b"dusk-network",
+                    TRANSCRIPT_LABEL,
                 )
                 .expect("Failed to verify the proof!");
             }

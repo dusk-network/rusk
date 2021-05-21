@@ -7,9 +7,9 @@
 //! Phoenix transaction structure implementation.
 
 use anyhow::{anyhow, Result};
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::prelude::Proof;
+use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 use std::io::{self, Read, Write};
 use std::mem;
@@ -215,9 +215,9 @@ impl TransactionPayload {
             .map_err(|e| anyhow!("Error deserializing fee: {:?}", e))?;
         let bytes = &bytes[Fee::SIZE..];
 
-        let spending_proof =
-            Proof::from_bytes(&bytes[..Proof::serialised_size()])?;
-        let bytes = &bytes[Proof::serialised_size()..];
+        let spending_proof = Proof::from_slice(&bytes[..Proof::SIZE])
+            .map_err(|e| anyhow!("Error deserializing fee: {:?}", e))?;
+        let bytes = &bytes[Proof::SIZE..];
 
         let (bytes, items) = deser_usize(bytes)?;
         if bytes.len() < items {

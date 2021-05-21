@@ -6,12 +6,9 @@
 
 use crate::gadgets;
 
-use anyhow::Result;
 use dusk_pki::{PublicSpendKey, ViewKey};
-use dusk_plonk::constraint_system::ecc::scalar_mul::variable_base::variable_base_scalar_mul;
-use dusk_plonk::constraint_system::ecc::Point;
+use dusk_plonk::error::Error as PlonkError;
 use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
-use dusk_plonk::prelude::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
 use phoenix_core::{Error as PhoenixError, Message, Note};
@@ -111,10 +108,8 @@ impl WithdrawFromObfuscatedCircuit {
     }
 }
 
+#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for WithdrawFromObfuscatedCircuit {
-    // TODO Define ID
-    const CIRCUIT_ID: [u8; 32] = [0xff; 32];
-
     fn gadget(
         &mut self,
         composer: &mut StandardComposer,
@@ -176,13 +171,13 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
 
         let change_r = composer.add_input(self.change_r.into());
         let change_pk = self.change_pk.into();
-        let change_pk = Point::from_public_affine(composer, change_pk);
+        let change_pk = composer.add_public_affine(change_pk);
         let cipher_secret =
-            variable_base_scalar_mul(composer, change_r, change_pk);
+            composer.variable_base_scalar_mul(change_r, change_pk);
 
         let change_cipher = cipher::encrypt(
             composer,
-            cipher_secret.point(),
+            &cipher_secret,
             change_nonce,
             &[change_value, change_blinding_factor],
         );

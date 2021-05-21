@@ -7,54 +7,48 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use canonical::{ByteSource, Canon, InvalidEncoding, Store};
+use canonical::{Canon, CanonError, Source};
 use dusk_abi::{HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
 use dusk_plonk::circuit::{self, VerifierData};
 use dusk_plonk::prelude::*;
-use schnorr::Signature;
+use dusk_schnorr::Signature;
 
 use crate::{PublicInput, RuskModule};
 
-impl<S> RuskModule<S>
-where
-    S: Store,
-{
-    pub fn new(store: S, pp: &'static PublicParameters) -> Self {
-        RuskModule { store, pp }
+impl RuskModule {
+    pub fn new(pp: &'static PublicParameters) -> Self {
+        RuskModule { pp }
     }
 }
 
-impl<S> HostModule<S> for RuskModule<S>
-where
-    S: Store,
-{
-    fn execute(&self, query: Query) -> Result<ReturnValue, S::Error> {
-        let mut source = ByteSource::new(query.as_bytes(), &self.store);
+impl HostModule for RuskModule {
+    fn execute(&self, query: Query) -> Result<ReturnValue, CanonError> {
+        let mut source = Source::new(query.as_bytes());
 
-        let qid: u8 = Canon::<S>::read(&mut source)?;
+        let qid = u8::decode(&mut source)?;
 
         match qid {
             Self::POSEIDON_HASH => {
-                let scalars: Vec<BlsScalar> = Canon::<S>::read(&mut source)?;
+                let scalars = Vec::<BlsScalar>::decode(&mut source)?;
                 let ret = dusk_poseidon::sponge::hash(&scalars);
 
-                ReturnValue::from_canon(&ret, &self.store)
+                Ok(ReturnValue::from_canon(&ret))
             }
 
             Self::VERIFY_PROOF => {
-                let proof: Vec<u8> = Canon::<S>::read(&mut source)?;
-                let verifier_data: Vec<u8> = Canon::<S>::read(&mut source)?;
-                let pi: Vec<PublicInput> = Canon::<S>::read(&mut source)?;
+                let proof = Vec::<u8>::decode(&mut source)?;
+                let verifier_data = Vec::<u8>::decode(&mut source)?;
+                let pi = Vec::<PublicInput>::decode(&mut source)?;
 
-                let proof =
-                    Proof::from_slice(&proof).map_err(|_| InvalidEncoding)?;
+                let proof = Proof::from_slice(&proof)
+                    .map_err(|_| CanonError::InvalidEncoding)?;
 
                 let verifier_data =
                     VerifierData::from_slice(verifier_data.as_slice())
-                        .map_err(|_| InvalidEncoding)?;
+                        .map_err(|_| CanonError::InvalidEncoding)?;
 
                 let pi: Vec<PublicInputValue> =
                     pi.into_iter().map(|pi| pi.into()).collect();
@@ -69,16 +63,16 @@ where
                 )
                 .is_ok();
 
-                ReturnValue::from_canon(&ret, &self.store)
+                Ok(ReturnValue::from_canon(&ret))
             }
 
             Self::VERIFY_SCHNORR_SIGN => {
-                let sign: Signature = Canon::<S>::read(&mut source)?;
-                let pk: PublicKey = Canon::<S>::read(&mut source)?;
-                let message: BlsScalar = Canon::<S>::read(&mut source)?;
+                let sign = Signature::decode(&mut source)?;
+                let pk = PublicKey::decode(&mut source)?;
+                let message = BlsScalar::decode(&mut source)?;
                 let ret = sign.verify(&pk, message);
 
-                ReturnValue::from_canon(&ret, &self.store)
+                Ok(ReturnValue::from_canon(&ret))
             }
             _ => todo!(),
         }

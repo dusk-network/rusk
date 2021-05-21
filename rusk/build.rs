@@ -6,19 +6,18 @@
 
 #![allow(non_snake_case)]
 
-/*
-use bid_circuits::CorrectnessCircuit;
-use dusk_blindbid::{Bid, BlindBidCircuit, Score};
+use bid_circuits::BidCorrectnessCircuit;
+use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::{Bid, Score};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_poseidon::tree::PoseidonBranch;
-*/
-use lazy_static::lazy_static;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
-
 use dusk_plonk::prelude::*;
+use dusk_poseidon::tree::PoseidonBranch;
+use lazy_static::lazy_static;
+use profile_tooling::CircuitLoader;
+use tracing::{info, warn, Level};
+use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
     static ref PUB_PARAMS: PublicParameters = {
@@ -29,7 +28,7 @@ lazy_static! {
                 PublicParameters::from_slice_unchecked(&buff[..])
             },
 
-            Ok(_) | Err(_) => {
+            _ => {
                 info!("New CRS needs to be generated and cached");
 
                 use rand::rngs::StdRng;
@@ -52,6 +51,7 @@ lazy_static! {
         }
     };
 }
+
 /// Buildfile for the rusk crate.
 ///
 /// Main goals of the file at the moment are:
@@ -96,120 +96,138 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Compile protos for tonic
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
-    /*
+    // Run the rusk-profile Circuit-keys checks
+    use bid::BidCircuitLoader;
+    use blindbid::BlindBidCircuitLoader;
+    use transfer::*;
+
+    // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
+    // set.
     if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
-        info!("Bulding Bid Keys");
-        let bid_keys = rusk_profile::keys_for("bid-circuits");
-        bid_keys.clear_all()?;
-        bid_keys.update("bid", bid::compile_circuit()?)?;
+        info!("DELETE_RUSK_KEYS env set!");
+        info!("Starting `keys/` folder wipe process..");
+        rusk_profile::clear_all_keys()?;
+        info!("Keys folder contents were removed successfully!");
+    };
 
-        let blindbid_keys = rusk_profile::keys_for("dusk-blindbid");
-        blindbid_keys.clear_all()?;
-        blindbid_keys.update("blindbid", blindbid::compile_circuit()?)?;
-    }
-    */
-
-    if option_env!("RUSK_BUILD_TRANSFER_KEYS").unwrap_or("0") != "0" {
-        info!("Building Transfer Keys");
-        let transfer_keys = rusk_profile::keys_for("transfer-circuits");
-        info!("Transfer keys prepared!");
-
-        let (id, pk, vd) = transfer::compile_stco_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        let (id, pk, vd) = transfer::compile_stct_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        let (id, pk, vd) = transfer::compile_wfo_circuit()?;
-        transfer_keys.update(id, (pk, vd))?;
-
-        for inputs in 1..5 {
-            for outputs in 0..3 {
-                let (id, pk, vd) =
-                    transfer::compile_execute_circuit(inputs, outputs)?;
-
-                transfer_keys.update(id, (pk, vd))?;
-            }
-        }
-    }
+    profile_tooling::run_circuit_keys_checks(vec![
+        &BidCircuitLoader {},
+        &BlindBidCircuitLoader {},
+        &StctCircuitLoader {},
+        &StcoCircuitLoader {},
+        &WfoCircuitLoader {},
+        &ExecuteOneZeroCircuitLoader {},
+        &ExecuteOneOneCircuitLoader {},
+        &ExecuteOneTwoCircuitLoader {},
+        &ExecuteTwoZeroCircuitLoader {},
+        &ExecuteTwoOneCircuitLoader {},
+        &ExecuteTwoTwoCircuitLoader {},
+        &ExecuteThreeZeroCircuitLoader {},
+        &ExecuteThreeOneCircuitLoader {},
+        &ExecuteThreeTwoCircuitLoader {},
+        &ExecuteFourZeroCircuitLoader {},
+        &ExecuteFourOneCircuitLoader {},
+        &ExecuteFourTwoCircuitLoader {},
+    ])?;
 
     Ok(())
 }
 
-/*
 mod bid {
     use super::*;
 
-    pub fn compile_circuit(
-    ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-        let pub_params = &PUB_PARAMS;
-        let value = JubJubScalar::from(100000 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+    pub struct BidCircuitLoader;
 
-        let c = JubJubAffine::from(
-            (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
-        );
+    impl CircuitLoader for BidCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &BidCorrectnessCircuit::CIRCUIT_ID
+        }
 
-        let mut circuit = CorrectnessCircuit {
-            commitment: c,
-            value: value.into(),
-            blinder: blinder.into(),
-            trim_size: 1 << 10,
-            pi_positions: vec![],
-        };
+        fn circuit_name(&self) -> &'static str {
+            "BidCorrectness"
+        }
 
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let value = JubJubScalar::from(100000_u64);
+            let blinder = JubJubScalar::from(50000_u64);
+
+            let c = JubJubAffine::from(
+                (GENERATOR_EXTENDED * value)
+                    + (GENERATOR_NUMS_EXTENDED * blinder),
+            );
+
+            let mut circuit = BidCorrectnessCircuit {
+                commitment: c,
+                value,
+                blinder,
+            };
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 }
 
 mod blindbid {
     use super::*;
+    pub struct BlindBidCircuitLoader;
+    impl CircuitLoader for BlindBidCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &BlindBidCircuit::CIRCUIT_ID
+        }
 
-    pub fn compile_circuit(
-    ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-        let pub_params = &PUB_PARAMS;
+        fn circuit_name(&self) -> &'static str {
+            "BlindBid"
+        }
 
-        // Generate a correct Bid
-        let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let secret_k = BlsScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret, secret_k);
-        let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
 
-        // Generate fields for the Bid & required by the compute_score
-        let consensus_round_seed = 50u64;
-        let latest_consensus_round = 50u64;
-        let latest_consensus_step = 50u64;
+            // Generate a correct Bid
+            let secret = JubJubScalar::random(&mut rand::thread_rng());
+            let secret_k = BlsScalar::random(&mut rand::thread_rng());
+            let bid = random_bid(&secret, secret_k);
+            let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
 
-        // Extract the branch
-        let branch = PoseidonBranch::<17>::default();
+            // Generate fields for the Bid & required by the compute_score
+            let consensus_round_seed = 50u64;
+            let latest_consensus_round = 50u64;
+            let latest_consensus_step = 50u64;
 
-        // Generate a `Score` for our Bid with the consensus parameters
-        let score = Score::compute(
-            &bid,
-            &secret,
-            secret_k,
-            *branch.root(),
-            BlsScalar::from(consensus_round_seed),
-            latest_consensus_round,
-            latest_consensus_step,
-        )
-        .expect("Score gen error");
+            // Extract the branch
+            let branch = PoseidonBranch::<17>::default();
 
-        let mut circuit = BlindBidCircuit {
-            bid,
-            score,
-            secret_k,
-            secret,
-            seed: BlsScalar::from(consensus_round_seed),
-            latest_consensus_round: BlsScalar::from(latest_consensus_round),
-            latest_consensus_step: BlsScalar::from(latest_consensus_step),
-            branch: &branch,
-            trim_size: 1 << 15,
-            pi_positions: vec![],
-        };
-        let (pk, vk) = circuit.compile(&pub_params)?;
-        Ok((pk.to_bytes(), vk.to_bytes()))
+            // Generate a `Score` for our Bid with the consensus parameters
+            let score = Score::compute(
+                &bid,
+                &secret,
+                secret_k,
+                *branch.root(),
+                BlsScalar::from(consensus_round_seed),
+                latest_consensus_round,
+                latest_consensus_step,
+            )
+            .expect("Score gen error");
+
+            let mut circuit = BlindBidCircuit {
+                bid,
+                score,
+                secret_k,
+                secret,
+                seed: BlsScalar::from(consensus_round_seed),
+                latest_consensus_round: BlsScalar::from(latest_consensus_round),
+                latest_consensus_step: BlsScalar::from(latest_consensus_step),
+                branch: &branch,
+            };
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
     fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
@@ -236,212 +254,362 @@ mod blindbid {
         .expect("Error generating a Bid")
     }
 }
-*/
 
 mod transfer {
-    use super::PUB_PARAMS;
-    use std::convert::TryInto;
-
-    use anyhow::{anyhow, Result};
-    use canonical_host::MemStore;
-    use dusk_bytes::Serializable;
-    use dusk_pki::SecretSpendKey;
-    use dusk_plonk::circuit;
-    use dusk_plonk::circuit::VerifierData;
+    use super::*;
     use phoenix_core::{Message, Note};
-    use sha2::{Digest, Sha256};
-    use tracing::info;
-    use transfer_circuits::{
-        ExecuteCircuit, SendToContractObfuscatedCircuit,
-        SendToContractTransparentCircuit, WithdrawFromObfuscatedCircuit,
-    };
+    use std::convert::{TryFrom, TryInto};
+    use transfer_circuits::*;
 
-    use dusk_plonk::prelude::*;
+    pub struct StctCircuitLoader;
+    impl CircuitLoader for StctCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &SendToContractTransparentCircuit::CIRCUIT_ID
+        }
 
-    pub fn compile_stco_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
+        fn circuit_name(&self) -> &'static str {
+            "STCT"
+        }
 
-        let ssk = SecretSpendKey::random(&mut rng);
-        let vk = ssk.view_key();
-        let psk = ssk.public_spend_key();
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let c_value = 100;
-        let c_blinding_factor = JubJubScalar::random(&mut rng);
-        let c_note =
-            Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
-        let (fee, crossover) = c_note.try_into().map_err(|e| {
-            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
-        })?;
-        let c_signature = SendToContractObfuscatedCircuit::sign(
-            &mut rng, &ssk, &fee, &crossover,
-        );
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_vk = c_ssk.view_key();
+            let c_psk = c_ssk.public_spend_key();
 
-        let message_r = JubJubScalar::random(&mut rng);
-        let message_value = 100;
-        let message = Message::new(&mut rng, &message_r, &psk, message_value);
+            let c_address = BlsScalar::random(rng);
 
-        let mut circuit = SendToContractObfuscatedCircuit::new(
-            &crossover,
-            &fee,
-            &vk,
-            c_signature,
-            &message,
-            &psk,
-            message_r,
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+            let c_value = 100;
+            let c_blinding_factor = JubJubScalar::random(rng);
 
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
+            let c_note =
+                Note::obfuscated(rng, &c_psk, c_value, c_blinding_factor);
+            let (mut fee, crossover) = c_note
+                .try_into()
+                .expect("Failed to convert note into fee/crossover pair!");
 
-        let id = SendToContractObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+            fee.gas_limit = 5;
+            fee.gas_price = 1;
 
-        Ok((id, pk, vd))
+            let c_signature = SendToContractTransparentCircuit::sign(
+                rng, &c_ssk, &fee, &crossover, c_value, &c_address,
+            );
+
+            let mut circuit = SendToContractTransparentCircuit::new(
+                fee,
+                crossover,
+                &c_vk,
+                c_address,
+                c_signature,
+            )
+            .expect("Failed to create STCT circuit!");
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
     }
 
-    pub fn compile_stct_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
+    pub struct StcoCircuitLoader;
+    impl CircuitLoader for StcoCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &SendToContractObfuscatedCircuit::CIRCUIT_ID
+        }
 
-        let c_ssk = SecretSpendKey::random(&mut rng);
-        let c_vk = c_ssk.view_key();
-        let c_psk = c_ssk.public_spend_key();
+        fn circuit_name(&self) -> &'static str {
+            "STCO"
+        }
 
-        let c_value = 100;
-        let c_blinding_factor = JubJubScalar::random(&mut rng);
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let c_note =
-            Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
-        let (fee, crossover) = c_note.try_into().map_err(|e| {
-            anyhow!("Failed to convert phoenix note into crossover: {:?}", e)
-        })?;
+            let ssk = SecretSpendKey::random(rng);
+            let vk = ssk.view_key();
+            let psk = ssk.public_spend_key();
 
-        let c_signature = SendToContractTransparentCircuit::sign(
-            &mut rng, &c_ssk, &fee, &crossover,
-        );
+            let c_address = BlsScalar::random(rng);
 
-        let mut circuit = SendToContractTransparentCircuit::new(
-            &fee,
-            &crossover,
-            &c_vk,
-            c_signature,
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
+            let c_value = 100;
+            let c_blinding_factor = JubJubScalar::random(rng);
+            let c_note =
+                Note::obfuscated(rng, &psk, c_value, c_blinding_factor);
+            let (mut fee, crossover) = c_note
+                .try_into()
+                .expect("Failed to convert note into fee/crossover pair!");
 
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
+            fee.gas_limit = 5;
+            fee.gas_price = 1;
 
-        let id = SendToContractTransparentCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+            let message_r = JubJubScalar::random(rng);
+            let message_value = 100;
+            let message = Message::new(rng, &message_r, &psk, message_value);
 
-        Ok((id, pk, vd))
-    }
+            let c_signature = SendToContractObfuscatedCircuit::sign(
+                rng, &ssk, &fee, &crossover, &message, &c_address,
+            );
 
-    pub fn compile_wfo_circuit() -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        let mut rng = rand::thread_rng();
-
-        let i_ssk = SecretSpendKey::random(&mut rng);
-        let i_vk = i_ssk.view_key();
-        let i_psk = i_ssk.public_spend_key();
-        let i_value = 100;
-        let i_blinding_factor = JubJubScalar::random(&mut rng);
-        let i_note =
-            Note::obfuscated(&mut rng, &i_psk, i_value, i_blinding_factor);
-
-        let c_ssk = SecretSpendKey::random(&mut rng);
-        let c_psk = c_ssk.public_spend_key();
-        let c_r = JubJubScalar::random(&mut rng);
-        let c_value = 25;
-        let c = Message::new(&mut rng, &c_r, &c_psk, c_value);
-
-        let o_ssk = SecretSpendKey::random(&mut rng);
-        let o_vk = o_ssk.view_key();
-        let o_psk = o_ssk.public_spend_key();
-        let o_value = 75;
-        let o_blinding_factor = JubJubScalar::random(&mut rng);
-        let o_note =
-            Note::obfuscated(&mut rng, &o_psk, o_value, o_blinding_factor);
-
-        let mut circuit = WithdrawFromObfuscatedCircuit::new(
-            &i_note,
-            Some(&i_vk),
-            &c,
-            c_r,
-            &c_psk,
-            &o_note,
-            Some(&o_vk),
-        )
-        .map_err(|e| anyhow!("Error generating circuit: {:?}", e))?;
-
-        let (pk, vd) = circuit.compile(&PUB_PARAMS)?;
-
-        let id = WithdrawFromObfuscatedCircuit::rusk_keys_id();
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
-
-        Ok((id, pk, vd))
-    }
-
-    pub fn compile_execute_circuit(
-        inputs: usize,
-        outputs: usize,
-    ) -> Result<(&'static str, Vec<u8>, Vec<u8>)> {
-        info!(
-            "Starting the compilation of the circuit for {}/{}",
-            inputs, outputs
-        );
-
-        let (ci, _, pk, vd, proof, pi) =
-            ExecuteCircuit::create_dummy_proof::<_, MemStore>(
-                &mut rand::thread_rng(),
-                Some(<&PublicParameters>::from(&PUB_PARAMS).clone()),
-                inputs,
-                outputs,
+            let mut circuit = SendToContractObfuscatedCircuit::new(
+                fee,
+                crossover,
+                &vk,
+                c_signature,
                 true,
-                false,
-            )?;
+                message,
+                &psk,
+                message_r,
+                c_address,
+            )
+            .expect("Failed to generate circuit!");
 
-        info!(
-            "Circuit generated with {}/{}",
-            ci.inputs().len(),
-            ci.outputs().len()
-        );
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
+    }
 
-        let id = ci.rusk_keys_id();
+    pub struct WfoCircuitLoader;
+    impl CircuitLoader for WfoCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &WithdrawFromObfuscatedCircuit::CIRCUIT_ID
+        }
 
-        // Sanity check
-        circuit::verify_proof(
-            &*PUB_PARAMS,
-            vd.key(),
-            &proof,
-            pi.as_slice(),
-            vd.pi_pos(),
-            b"dusk-network",
-        )
-        .map_err(|_| anyhow!("Proof verification failed for {}", id))?;
+        fn circuit_name(&self) -> &'static str {
+            "WFO"
+        }
 
-        let pk = pk.to_var_bytes();
-        let vd = vd.to_var_bytes();
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
 
-        let mut hasher = Sha256::new();
-        hasher.update(PUB_PARAMS.to_raw_var_bytes().as_slice());
-        let contents = hasher.finalize();
-        info!("Using PP {:x}", contents);
+            let i_ssk = SecretSpendKey::random(rng);
+            let i_vk = i_ssk.view_key();
+            let i_psk = i_ssk.public_spend_key();
+            let i_value = 100;
+            let i_blinding_factor = JubJubScalar::random(rng);
+            let i_note =
+                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
 
-        let mut hasher = Sha256::new();
-        hasher.update(vd.as_slice());
-        let contents = hasher.finalize();
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_psk = c_ssk.public_spend_key();
+            let c_r = JubJubScalar::random(rng);
+            let c_value = 25;
+            let c = Message::new(rng, &c_r, &c_psk, c_value);
 
-        let mut hasher = Sha256::new();
-        let vk_p = VerifierData::from_slice(vd.as_slice()).expect("Data");
-        hasher.update(&vk_p.key().to_bytes());
-        let contents_key = hasher.finalize();
+            let o_ssk = SecretSpendKey::random(rng);
+            let o_vk = o_ssk.view_key();
+            let o_psk = o_ssk.public_spend_key();
+            let o_value = 75;
+            let o_blinding_factor = JubJubScalar::random(rng);
+            let o_note =
+                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
-        info!(
-            "Execute circuit data generated for {} with verifier data {:x} and key {:x}",
-            id, contents, contents_key
-        );
+            let mut circuit = WithdrawFromObfuscatedCircuit::new(
+                &i_note,
+                Some(&i_vk),
+                &c,
+                c_r,
+                &c_psk,
+                &o_note,
+                Some(&o_vk),
+            )
+            .expect("Failed to generate circuit!");
 
-        Ok((id, pk, vd))
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
+    }
+
+    macro_rules! execute_circuit_variant {
+        ($c:ident,$b:ident,$s:expr,$i:expr,$o:expr) => {
+            pub struct $c;
+            impl CircuitLoader for $c {
+                fn circuit_id(&self) -> &[u8; 32] {
+                    &$b::CIRCUIT_ID
+                }
+
+                fn circuit_name(&self) -> &'static str {
+                    $s
+                }
+
+                fn compile_circuit(
+                    &self,
+                ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>
+                {
+                    let pub_params = &PUB_PARAMS;
+                    let rng = &mut rand::thread_rng();
+
+                    let circuit = ExecuteCircuit::create_dummy_circuit(
+                        rng, $i, $o, true,
+                    )?;
+                    let mut circuit = $b::try_from(circuit)?;
+
+                    let (pk, vd) = circuit.compile(&pub_params)?;
+                    Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+                }
+            }
+        };
+    }
+
+    execute_circuit_variant!(
+        ExecuteOneZeroCircuitLoader,
+        ExecuteCircuitOneZero,
+        "ExecuteOneZero",
+        1,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteOneOneCircuitLoader,
+        ExecuteCircuitOneOne,
+        "ExecuteOneOne",
+        1,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteOneTwoCircuitLoader,
+        ExecuteCircuitOneTwo,
+        "ExecuteOneTwo",
+        1,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteTwoZeroCircuitLoader,
+        ExecuteCircuitTwoZero,
+        "ExecuteTwoZero",
+        2,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteTwoOneCircuitLoader,
+        ExecuteCircuitTwoOne,
+        "ExecuteTwoOne",
+        2,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteTwoTwoCircuitLoader,
+        ExecuteCircuitTwoTwo,
+        "ExecuteTwoTwo",
+        2,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteThreeZeroCircuitLoader,
+        ExecuteCircuitThreeZero,
+        "ExecuteThreeZero",
+        3,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteThreeOneCircuitLoader,
+        ExecuteCircuitThreeOne,
+        "ExecuteThreeOne",
+        3,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteThreeTwoCircuitLoader,
+        ExecuteCircuitThreeTwo,
+        "ExecuteThreeTwo",
+        3,
+        2
+    );
+    execute_circuit_variant!(
+        ExecuteFourZeroCircuitLoader,
+        ExecuteCircuitFourZero,
+        "ExecuteFourZero",
+        4,
+        0
+    );
+    execute_circuit_variant!(
+        ExecuteFourOneCircuitLoader,
+        ExecuteCircuitFourOne,
+        "ExecuteFourOne",
+        4,
+        1
+    );
+    execute_circuit_variant!(
+        ExecuteFourTwoCircuitLoader,
+        ExecuteCircuitFourTwo,
+        "ExecuteFourTwo",
+        4,
+        2
+    );
+}
+
+mod profile_tooling {
+    use super::*;
+
+    pub trait CircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32];
+
+        fn circuit_name(&self) -> &'static str;
+
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>;
+    }
+
+    fn clear_outdated_keys(
+        loader_list: &[&dyn CircuitLoader],
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let id_list: Vec<_> = loader_list
+            .iter()
+            .map(|loader| loader.circuit_id())
+            .cloned()
+            .collect();
+
+        Ok(rusk_profile::clean_outdated_keys(&id_list)?)
+    }
+
+    fn check_keys_cache(
+        loader_list: &[&dyn CircuitLoader],
+    ) -> Result<Vec<()>, Box<dyn std::error::Error>> {
+        loader_list
+            .iter()
+            .map(|loader| {
+                info!("{} Keys cache checking stage", loader.circuit_name());
+                match rusk_profile::keys_for(loader.circuit_id()) {
+                    Ok(_) => {
+                        info!(
+                            "{} already loaded correctly!",
+                            loader.circuit_name()
+                        );
+                        Ok(())
+                    }
+                    _ => {
+                        warn!("{} not cached!", loader.circuit_name());
+                        info!(
+                            "Compiling {} and adding to the cache",
+                            loader.circuit_name()
+                        );
+                        let (pk, vd) = loader.compile_circuit()?;
+                        rusk_profile::add_keys_for(
+                            loader.circuit_id(),
+                            pk,
+                            vd,
+                        )?;
+                        info!(
+                            "{} Keys cache checking stage finished",
+                            loader.circuit_name()
+                        );
+                        Ok(())
+                    }
+                }
+            })
+            .collect::<Result<Vec<()>, Box<dyn std::error::Error>>>()
+    }
+
+    pub fn run_circuit_keys_checks(
+        loader_list: Vec<&dyn CircuitLoader>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        clear_outdated_keys(&loader_list)?;
+        check_keys_cache(&loader_list).map(|_| ())
     }
 }

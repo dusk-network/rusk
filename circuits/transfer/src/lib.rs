@@ -4,13 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod error;
 mod execute;
 mod gadgets;
 mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
 mod withdraw_from_obfuscated;
 
-pub use execute::ExecuteCircuit;
+/// Label used for the ZK transcript initialization. Must be the same for prover
+/// and verifier.
+pub const TRANSCRIPT_LABEL: &'static [u8] = b"dusk-network";
+
+pub use error::Error;
+pub use execute::*;
 pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
 pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::TryInto;
-use transfer_circuits::{builder, SendToContractTransparentCircuit};
+use transfer_circuits::{SendToContractTransparentCircuit, TRANSCRIPT_LABEL};
 
 use dusk_pki::SecretSpendKey;
 use dusk_plonk::circuit;
@@ -15,6 +15,8 @@ use rand::SeedableRng;
 
 use dusk_plonk::prelude::*;
 
+mod keys;
+
 #[test]
 fn send_to_contract_transparent() {
     let mut rng = StdRng::seed_from_u64(2322u64);
@@ -22,6 +24,8 @@ fn send_to_contract_transparent() {
     let c_ssk = SecretSpendKey::random(&mut rng);
     let c_vk = c_ssk.view_key();
     let c_psk = c_ssk.public_spend_key();
+
+    let c_address = BlsScalar::random(&mut rng);
 
     let c_value = 100;
     let c_blinding_factor = JubJubScalar::random(&mut rng);
@@ -34,24 +38,23 @@ fn send_to_contract_transparent() {
     fee.gas_price = 1;
 
     let c_signature = SendToContractTransparentCircuit::sign(
-        &mut rng, &c_ssk, &fee, &crossover,
+        &mut rng, &c_ssk, &fee, &crossover, c_value, &c_address,
     );
 
     let mut circuit = SendToContractTransparentCircuit::new(
-        &fee,
-        &crossover,
+        fee,
+        crossover,
         &c_vk,
+        c_address,
         c_signature,
     )
     .expect("Failed to create STCT circuit!");
 
-    let id = SendToContractTransparentCircuit::rusk_keys_id();
-    let (pp, pk, vd) =
-        builder::circuit_keys(&mut rng, None, &mut circuit, id, true)
-            .expect("Failed to generate circuit!");
+    let (pp, pk, vd) = keys::circuit_keys::<SendToContractTransparentCircuit>()
+        .expect("Failed to generate circuit!");
 
     let proof = circuit
-        .gen_proof(&pp, &pk, b"dusk-network")
+        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
@@ -61,7 +64,7 @@ fn send_to_contract_transparent() {
         &proof,
         pi.as_slice(),
         vd.pi_pos(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .expect("Failed to verify the proof!");
 }

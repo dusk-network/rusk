@@ -15,13 +15,13 @@ keys: ## Create the keys for the circuits
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts wasm
 
-circuits: ## Build and test circuit crates
+circuits: keys ## Build and test circuit crates
 	$(MAKE) -C ./circuits test
 
 contracts: ## Execute the test for all contracts
 	$(MAKE) -C ./contracts test
 
-test: abi circuits contracts ## Run the tests
+test: abi circuits ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	
 run: wasm ## Run the server

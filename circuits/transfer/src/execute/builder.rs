@@ -4,72 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::ExecuteCircuit;
+use crate::{Error, ExecuteCircuit, TRANSCRIPT_LABEL};
 use std::convert::TryInto;
-use std::env;
 
-use anyhow::{anyhow, Result};
-use canonical::{Canon, Store};
 use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit::VerifierData;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
+use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
 
 const POSEIDON_BRANCH_DEPTH: usize = 17;
-
-pub fn circuit_keys<R, C>(
-    rng: &mut R,
-    pp: Option<PublicParameters>,
-    circuit: &mut C,
-    id: &str,
-    use_rusk_profile: bool,
-) -> Result<(PublicParameters, ProverKey, VerifierData)>
-where
-    R: RngCore + CryptoRng,
-    C: Circuit,
-{
-    let use_rusk_profile = match env::var("RUSK_PROFILE_KEYS") {
-        Ok(p) => p.parse()?,
-        _ => use_rusk_profile,
-    };
-
-    if use_rusk_profile {
-        let pp = pp.map(|pp| Ok(pp)).unwrap_or({
-            rusk_profile::get_common_reference_string()
-                .map_err(|e| {
-                    anyhow!("Failed to fetch CRS from rusk profile: {}", e)
-                })
-                .map(|pp| unsafe {
-                    PublicParameters::from_slice_unchecked(pp.as_slice())
-                })
-        })?;
-
-        let keys = rusk_profile::keys_for(env!("CARGO_PKG_NAME"));
-        let (pk, vd) = keys.get(id).ok_or(anyhow!(
-            "Failed to get '{}' keys for '{}' from Rusk profile",
-            id,
-            env!("CARGO_PKG_NAME")
-        ))?;
-
-        let pk = ProverKey::from_slice(pk.as_slice())?;
-        let vd = VerifierData::from_slice(vd.as_slice())?;
-
-        Ok((pp, pk, vd))
-    } else {
-        let pp = pp.map(|pp| Ok(pp)).unwrap_or(PublicParameters::setup(
-            circuit.padded_circuit_size(),
-            rng,
-        ))?;
-
-        let (pk, vd) = circuit.compile(&pp)?;
-
-        Ok((pp, pk, vd))
-    }
-}
 
 #[derive(Debug, Clone, Canon)]
 pub struct NoteLeaf(Note);
@@ -92,15 +40,12 @@ impl From<NoteLeaf> for Note {
     }
 }
 
-impl<S> PoseidonLeaf<S> for NoteLeaf
-where
-    S: Store,
-{
+impl PoseidonLeaf for NoteLeaf {
     fn poseidon_hash(&self) -> BlsScalar {
         self.0.hash()
     }
 
-    fn pos(&self) -> u64 {
+    fn pos(&self) -> &u64 {
         self.0.pos()
     }
 
@@ -125,16 +70,15 @@ impl ExecuteCircuit {
         }
     }
 
-    pub fn create_dummy_circuit<R: RngCore + CryptoRng, S: Store>(
+    pub fn create_dummy_circuit<R: RngCore + CryptoRng>(
         rng: &mut R,
         inputs: usize,
         outputs: usize,
         use_crossover: bool,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         let mut tree = PoseidonTree::<
             NoteLeaf,
             PoseidonAnnotation,
-            S,
             POSEIDON_BRANCH_DEPTH,
         >::new();
 
@@ -154,15 +98,12 @@ impl ExecuteCircuit {
             let note =
                 Self::create_dummy_note(rng, &psk, transparent, input_value);
 
-            let pos = tree.push(note.into()).map_err(|e| {
-                anyhow!("Failed append note to the tree: {}", e)
-            })?;
+            let pos = tree.push(note.into())?;
 
             let note = tree
-                .get(pos as usize)
-                .map_err(|e| anyhow!("Internal poseidon tree error: {:?}", e))?
+                .get(pos)?
                 .map(|n| n.into())
-                .ok_or(anyhow!("Inserted note not found in the tree!"))?;
+                .ok_or(PoseidonError::TreeGetFailed)?;
             let signature = ExecuteCircuit::sign(rng, &ssk, &note);
 
             input_data.push((ssk, pos, signature));
@@ -202,12 +143,8 @@ impl ExecuteCircuit {
         let value = inputs_sum - outputs_sum - 5;
         let blinding_factor = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, &psk, value, blinding_factor);
-        let (mut fee, crossover) = note.try_into().map_err(|e| {
-            anyhow!(
-                "Failed to generate crossover from obfuscated note: {:?}",
-                e
-            )
-        })?;
+
+        let (mut fee, crossover) = note.try_into()?;
         fee.gas_price = 1;
         if use_crossover {
             fee.gas_limit = 5;
@@ -220,37 +157,45 @@ impl ExecuteCircuit {
         Ok(circuit)
     }
 
-    pub fn create_dummy_proof<R: RngCore + CryptoRng, S: Store>(
+    pub fn create_dummy_proof<R: RngCore + CryptoRng>(
         rng: &mut R,
-        pp: Option<PublicParameters>,
         inputs: usize,
         outputs: usize,
         use_crossover: bool,
-        use_rusk_profile: bool,
-    ) -> Result<(
-        Self,
-        PublicParameters,
-        ProverKey,
-        VerifierData,
-        Proof,
-        Vec<PublicInputValue>,
-    )> {
-        let mut circuit = Self::create_dummy_circuit::<R, S>(
+    ) -> Result<
+        (
+            Self,
+            PublicParameters,
+            ProverKey,
+            VerifierData,
+            Proof,
+            Vec<PublicInputValue>,
+        ),
+        Error,
+    > {
+        let mut execute = Self::create_dummy_circuit::<R>(
             rng,
             inputs,
             outputs,
             use_crossover,
         )?;
 
-        let id = circuit.rusk_keys_id();
-        let (pp, pk, vd) =
-            circuit_keys(rng, pp, &mut circuit, id, use_rusk_profile)?;
+        let pi = execute.public_inputs();
 
-        // FIXME Repeated definition of circuit label
-        let label = b"dusk-network";
-        let proof = circuit.gen_proof(&pp, &pk, label)?;
-        let pi = circuit.public_inputs();
+        let pp =
+            rusk_profile::get_common_reference_string().map(|pp| unsafe {
+                PublicParameters::from_slice_unchecked(pp.as_slice())
+            })?;
 
-        Ok((circuit, pp, pk, vd, proof, pi))
+        let keys = rusk_profile::keys_for(execute.circuit_id())?;
+        let pk = keys.get_prover()?;
+        let vd = keys.get_verifier()?;
+
+        let pk = ProverKey::from_slice(pk.as_slice())?;
+        let vd = VerifierData::from_slice(vd.as_slice())?;
+
+        let proof = execute.gen_proof(&pp, &pk, TRANSCRIPT_LABEL)?;
+
+        Ok((execute, pp, pk, vd, proof, pi))
     }
 }

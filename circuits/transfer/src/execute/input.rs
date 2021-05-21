@@ -8,13 +8,11 @@ use super::SIGN_MESSAGE;
 
 use dusk_pki::Ownable;
 use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::constraint_system::ecc::scalar_mul::fixed_base;
-use dusk_plonk::constraint_system::ecc::Point;
 use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::Note;
-use schnorr::Proof as SchnorrProof;
 
 use dusk_plonk::prelude::*;
 
@@ -125,8 +123,7 @@ impl CircuitInput {
         let sk_r = self.sk_r;
         let sk_r = composer.add_input(sk_r.into());
 
-        let pk_r = fixed_base::scalar_mul(composer, sk_r, GENERATOR_EXTENDED);
-        let pk_r = *pk_r.point();
+        let pk_r = composer.fixed_base_scalar_mul(sk_r, GENERATOR_EXTENDED);
 
         let note_hash = note.hash();
         let note_hash = composer.add_input(note_hash);
@@ -138,14 +135,13 @@ impl CircuitInput {
 
         // Plonk API will not allow points to be constructed from variables
         let value_commitment = note.value_commitment().into();
-        let value_commitment =
-            Point::from_private_affine(composer, value_commitment);
+        let value_commitment = composer.add_affine(value_commitment);
 
         let nonce = hash_inputs[3];
         let nonce = composer.add_input(nonce);
 
         let r = note.stealth_address().R().into();
-        let r = Point::from_private_affine(composer, r);
+        let r = composer.add_affine(r);
 
         let pos = hash_inputs[8];
         let pos = composer.add_input(pos);
@@ -162,18 +158,16 @@ impl CircuitInput {
         let blinding_factor = composer.add_input(self.blinding_factor.into());
 
         let pk_r_prime =
-            fixed_base::scalar_mul(composer, sk_r, GENERATOR_NUMS_EXTENDED);
-        let pk_r_prime = *pk_r_prime.point();
+            composer.fixed_base_scalar_mul(sk_r, GENERATOR_NUMS_EXTENDED);
         let schnorr_message = SIGN_MESSAGE;
         let schnorr_message =
             composer.add_witness_to_circuit_description(schnorr_message);
         let schnorr_u = *self.signature.u();
         let schnorr_u = composer.add_input(schnorr_u.into());
         let schnorr_r = self.signature.keys().R().as_ref().into();
-        let schnorr_r = Point::from_private_affine(composer, schnorr_r);
+        let schnorr_r = composer.add_affine(schnorr_r);
         let schnorr_r_prime = self.signature.keys().R_prime().as_ref().into();
-        let schnorr_r_prime =
-            Point::from_private_affine(composer, schnorr_r_prime);
+        let schnorr_r_prime = composer.add_affine(schnorr_r_prime);
 
         WitnessInput {
             sk_r,
