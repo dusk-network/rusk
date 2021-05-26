@@ -57,7 +57,10 @@ fn file_stem(p: &Path) -> Option<&str> {
 }
 
 pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
-    if let Some(mut dir) = home_dir() {
+    if let Some(env_var) = option_env!("RUSK_PROFILE_PATH") {
+        fs::create_dir_all(env_var.clone())?;
+        Ok(PathBuf::from(env_var))
+    } else if let Some(mut dir) = home_dir() {
         dir.push(".rusk");
         fs::create_dir_all(dir.clone())?;
         Ok(dir)
