@@ -13,67 +13,63 @@ mod transaction;
 
 use crate::{ops, Contract};
 use alloc::vec::Vec;
-use canonical::{BridgeStore, ByteSink, ByteSource, Canon, Id32, Store};
+use canonical::{Canon, CanonError, Sink, Source};
 use dusk_blindbid::Bid;
 use dusk_pki::PublicKey;
+use dusk_schnorr::Signature;
 use phoenix_core::Note;
-use schnorr::Signature;
 
 const PAGE_SIZE: usize = 1024 * 4;
 
-type BS = BridgeStore<Id32>;
 type TransactionIndex = u8;
 
-fn transaction(
-    bytes: &mut [u8; PAGE_SIZE],
-) -> Result<(), <BS as Store>::Error> {
-    let store = BS::default();
-    let mut source = ByteSource::new(bytes, &store);
+fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
+    let mut source = Source::new(bytes);
 
     // read self.
-    let mut slf: Contract<BS> = Canon::<BS>::read(&mut source)?;
+    let mut slf = Contract::decode(&mut source)?;
     // read transaction id
-    let qid: TransactionIndex = Canon::<BS>::read(&mut source)?;
+    let qid = TransactionIndex::decode(&mut source)?;
     match qid {
         ops::BID => {
             // Read host-sent args
-            let bid: Bid = Canon::<BS>::read(&mut source)?;
+            let bid = Bid::decode(&mut source)?;
             // Fat pointer to the Proof objects.
-            let correctness_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
-            let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
+            let correctness_proof = Vec::<u8>::decode(&mut source)?;
+            let spending_proof = Vec::<u8>::decode(&mut source)?;
             // Call bid contract fn
             let success = slf.bid(bid, correctness_proof, spending_proof);
-            let mut sink = ByteSink::new(&mut bytes[..], &store);
+            let mut sink = Sink::new(&mut bytes[..]);
             // return new state
-            Canon::<BS>::write(&slf, &mut sink)?;
+            slf.encode(&mut sink);
             // return result
-            Canon::<BS>::write(&success, &mut sink)
+            Ok(success.encode(&mut sink))
         }
         ops::WITHDRAW => {
             // Read host-sent args
-            let sig: Signature = Canon::<BS>::read(&mut source)?;
-            let pk: PublicKey = Canon::<BS>::read(&mut source)?;
-            let note: Note = Canon::<BS>::read(&mut source)?;
-            let spending_proof: Vec<u8> = Canon::<BS>::read(&mut source)?;
-            let block_height: u64 = Canon::<BS>::read(&mut source)?;
+            let sig = Signature::decode(&mut source)?;
+            let pk = PublicKey::decode(&mut source)?;
+            let note = Note::decode(&mut source)?;
+            let spending_proof = Vec::<u8>::decode(&mut source)?;
+            let block_height = u64::decode(&mut source)?;
             let exec_res =
                 slf.withdraw(sig, pk, note, spending_proof, block_height);
-            let mut sink = ByteSink::new(&mut bytes[..], &store);
+            let mut sink = Sink::new(&mut bytes[..]);
             // Return new state
-            Canon::<BS>::write(&slf, &mut sink)?;
+            slf.encode(&mut sink);
             // Return result
-            Canon::<BS>::write(&exec_res, &mut sink)
+            Ok(exec_res.encode(&mut sink))
         }
         ops::EXTEND_BID => {
             // Read host-sent args
-            let sig: Signature = Canon::<BS>::read(&mut source)?;
-            let pk: PublicKey = Canon::<BS>::read(&mut source)?;
+            let sig = Signature::decode(&mut source)?;
+            let pk = PublicKey::decode(&mut source)?;
             let exec_res = slf.extend_bid(sig, pk);
-            let mut sink = ByteSink::new(&mut bytes[..], &store);
+            let mut sink = Sink::new(&mut bytes[..]);
             // return new state
-            Canon::<BS>::write(&slf, &mut sink)?;
+            slf.encode(&mut sink);
             // return result
-            Canon::<BS>::write(&exec_res, &mut sink)
+            Ok(exec_res.encode(&mut sink))
         }
         _ => panic!("Unimplemented OP"),
     }
