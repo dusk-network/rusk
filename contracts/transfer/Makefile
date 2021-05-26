@@ -4,20 +4,18 @@ help: ## Display this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 wasm: ## Build the WASM files
-	@mkdir -p ./target/verifier-keys/
-	@rm -fr ./target/verifier-keys/*.vk
-	@cp -fr ~/.rusk/keys/transfer-circuits/**/*.vk ./target/verifier-keys/
+	@mkdir -p ./target/verifier-data/
+	@rm -fr ./target/verifier-data/*.vd
+	@cp -fr ~/.rusk/keys/*.vd ./target/verifier-data/
 	@cargo rustc \
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
-		-Zfeatures=itarget \
 		-- -C link-args=-s
 
 check: wasm ## Run the Rust check on the project features
 	@cargo check --target wasm32-unknown-unknown \
-		--no-default-features \
-		-Zfeatures=itarget
+		--no-default-features
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host module

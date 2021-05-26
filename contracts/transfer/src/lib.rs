@@ -4,19 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![cfg_attr(target_arch = "wasm32", no_std)]
-#![cfg_attr(
-    target_arch = "wasm32",
-    feature(core_intrinsics, lang_items, alloc_error_handler)
-)]
+#![no_std]
 
 extern crate alloc;
+
+mod error;
+mod transfer;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
-mod transfer;
+pub use error::Error;
 pub use transfer::{Call, TransferContract};
+pub type Map<K, V> = dusk_hamt::Hamt<K, V, ()>;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use transfer::PublicKeyBytes;

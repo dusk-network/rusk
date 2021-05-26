@@ -4,19 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::convert::TryFrom;
+use crate::{Error, Map};
 
 use alloc::vec::Vec;
-use canonical::{Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
-use dusk_kelvin_map::Map;
 use dusk_pki::PublicKey;
 use phoenix_core::{Crossover, Message, Note};
 
+use core::convert::TryFrom;
+
 mod call;
+mod circuits;
 mod tree;
 
 use tree::Tree;
@@ -26,16 +27,14 @@ pub use call::Call;
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
-pub struct TransferContract<S: Store> {
-    pub(crate) notes: Tree<S>,
-    pub(crate) notes_mapping: Map<u64, Vec<Note>, S>,
-    pub(crate) nullifiers: Map<BlsScalar, (), S>,
-    pub(crate) roots: Map<BlsScalar, (), S>,
-    pub(crate) balances: Map<BlsScalar, u64, S>,
-    pub(crate) message_mapping:
-        Map<BlsScalar, Map<PublicKeyBytes, Message, S>, S>,
-    pub(crate) message_mapping_set:
-        Map<BlsScalar, (PublicKey, JubJubAffine), S>,
+pub struct TransferContract {
+    pub(crate) notes: Tree,
+    pub(crate) notes_mapping: Map<u64, Vec<Note>>,
+    pub(crate) nullifiers: Map<BlsScalar, ()>,
+    pub(crate) roots: Map<BlsScalar, ()>,
+    pub(crate) balances: Map<BlsScalar, u64>,
+    pub(crate) message_mapping: Map<BlsScalar, Map<PublicKeyBytes, Message>>,
+    pub(crate) message_mapping_set: Map<BlsScalar, (PublicKey, JubJubAffine)>,
 
     // FIXME Variable space
     // https://github.com/dusk-network/rusk/issues/213
@@ -45,25 +44,19 @@ pub struct TransferContract<S: Store> {
     pub(crate) circulating_supply: Option<u64>,
 }
 
-impl<S: Store> TransferContract<S> {
-    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, S::Error> {
-        self.notes
-            .get(pos)
-            .map(|l| l.map(|l| l.note.clone().into()))
-            .map_err(|_| InvalidEncoding.into())
+impl TransferContract {
+    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
+        Ok(self.notes.get(pos).map(|l| l.map(|l| l.into()))?)
     }
 
     pub(crate) fn push_note(
         &mut self,
         block_height: u64,
         note: Note,
-    ) -> Result<Note, S::Error> {
-        let pos = self
-            .notes
-            .push((block_height, note).into())
-            .map_err(|_| InvalidEncoding.into())?;
+    ) -> Result<Note, Error> {
+        let pos = self.notes.push((block_height, note).into())?;
 
-        let note = self.get_note(pos)?.ok_or(InvalidEncoding.into())?;
+        let note = self.get_note(pos)?.ok_or(Error::NoteNotFound)?;
 
         let mut create = false;
         match self.notes_mapping.get_mut(&block_height)? {
@@ -83,20 +76,20 @@ impl<S: Store> TransferContract<S> {
         Ok(note)
     }
 
-    pub fn notes(&self) -> &Tree<S> {
+    pub fn notes(&self) -> &Tree {
         &self.notes
     }
 
-    pub fn notes_mapping(&self) -> &Map<u64, Vec<Note>, S> {
+    pub fn notes_mapping(&self) -> &Map<u64, Vec<Note>> {
         &self.notes_mapping
     }
 
-    pub fn balances(&self) -> &Map<BlsScalar, u64, S> {
+    pub fn balances(&self) -> &Map<BlsScalar, u64> {
         &self.balances
     }
 
-    pub(crate) fn update_root(&mut self) -> Result<(), S::Error> {
-        let root = self.notes.root().map_err(|_| InvalidEncoding.into())?;
+    pub(crate) fn update_root(&mut self) -> Result<(), Error> {
+        let root = self.notes.root()?;
 
         self.roots.insert(root, ())?;
 
@@ -104,8 +97,8 @@ impl<S: Store> TransferContract<S> {
     }
 }
 
-impl<S: Store> TryFrom<Note> for TransferContract<S> {
-    type Error = S::Error;
+impl TryFrom<Note> for TransferContract {
+    type Error = Error;
 
     /// This implementation is intended for test purposes to initialize the
     /// state with the provided note

@@ -4,12 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::{Canon, InvalidEncoding, Store};
+use crate::Error;
+
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::PoseidonBranch;
-use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
-use dusk_poseidon::Error as PoseidonError;
+use dusk_poseidon::tree::{
+    PoseidonAnnotation, PoseidonBranch, PoseidonLeaf, PoseidonTree,
+};
 use phoenix_core::Note;
 
 pub const TRANSFER_TREE_DEPTH: usize = 17;
@@ -28,10 +29,13 @@ impl From<(u64, Note)> for Leaf {
     }
 }
 
-impl<S> PoseidonLeaf<S> for Leaf
-where
-    S: Store,
-{
+impl From<Leaf> for Note {
+    fn from(leaf: Leaf) -> Note {
+        leaf.note
+    }
+}
+
+impl PoseidonLeaf for Leaf {
     #[cfg(not(target_arch = "wasm32"))]
     fn poseidon_hash(&self) -> BlsScalar {
         self.note.hash()
@@ -42,7 +46,7 @@ where
         rusk_abi::poseidon_hash(self.note.hash_inputs().into())
     }
 
-    fn pos(&self) -> u64 {
+    fn pos(&self) -> &u64 {
         self.note.pos()
     }
 
@@ -52,43 +56,32 @@ where
 }
 
 #[derive(Debug, Default, Clone, Canon)]
-pub struct Tree<S>
-where
-    S: Store,
-{
-    tree: PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>,
+pub struct Tree {
+    tree: PoseidonTree<Leaf, PoseidonAnnotation, TRANSFER_TREE_DEPTH>,
 }
 
-impl<S: Store> Tree<S> {
+impl Tree {
     pub fn inner(
         &self,
-    ) -> &PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH> {
+    ) -> &PoseidonTree<Leaf, PoseidonAnnotation, TRANSFER_TREE_DEPTH> {
         &self.tree
     }
 
     pub fn inner_mut(
         &mut self,
-    ) -> &mut PoseidonTree<Leaf, PoseidonAnnotation, S, TRANSFER_TREE_DEPTH>
-    {
+    ) -> &mut PoseidonTree<Leaf, PoseidonAnnotation, TRANSFER_TREE_DEPTH> {
         &mut self.tree
     }
 
-    pub fn get(
-        &self,
-        pos: u64,
-    ) -> Result<Option<Leaf>, PoseidonError<S::Error>> {
-        // FIXME invalid casting
-        // https://github.com/dusk-network/Poseidon252/issues/116
-        self.tree.get(pos as usize)
+    pub fn get(&self, pos: u64) -> Result<Option<Leaf>, Error> {
+        Ok(self.tree.get(pos)?)
     }
 
-    pub fn push(&mut self, leaf: Leaf) -> Result<u64, PoseidonError<S::Error>> {
-        // FIXME invalid casting
-        // https://github.com/dusk-network/Poseidon252/issues/116
-        self.tree.push(leaf).map(|pos| pos as u64)
+    pub fn push(&mut self, leaf: Leaf) -> Result<u64, Error> {
+        Ok(self.tree.push(leaf).map(|pos| pos)?)
     }
 
-    pub fn root(&mut self) -> Result<BlsScalar, PoseidonError<S::Error>> {
+    pub fn root(&mut self) -> Result<BlsScalar, Error> {
         // FIXME Use proper root
         // https://github.com/dusk-network/rusk/issues/224
         // self.tree.root()
@@ -98,11 +91,7 @@ impl<S: Store> Tree<S> {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, S::Error> {
-        // FIXME invalid casting
-        // https://github.com/dusk-network/Poseidon252/issues/116
-        self.tree
-            .branch(pos as usize)
-            .map_err(|_| InvalidEncoding.into())
+    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
+        Ok(self.tree.branch(pos)?)
     }
 }

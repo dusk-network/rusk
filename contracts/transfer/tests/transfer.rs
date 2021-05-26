@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical_host::MemStore;
 use phoenix_core::Note;
 
 mod wrapper;
@@ -13,16 +12,9 @@ use wrapper::TransferWrapper;
 
 #[test]
 fn withdraw_from_transparent() {
-    let store = MemStore::new();
-
     let genesis_value = 1_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::<MemStore>::new(
-        2324,
-        block_height,
-        genesis_value,
-        &store,
-    );
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
@@ -166,16 +158,9 @@ fn withdraw_from_transparent() {
 
 #[test]
 fn withdraw_from_transparent_to_contract() {
-    let store = MemStore::new();
-
     let genesis_value = 1_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::<MemStore>::new(
-        2324,
-        block_height,
-        genesis_value,
-        &store,
-    );
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);

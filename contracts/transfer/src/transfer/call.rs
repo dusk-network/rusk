@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::Error;
+
 use alloc::vec::Vec;
-use canonical::{Canon, InvalidEncoding, Store};
+use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
@@ -82,7 +84,7 @@ impl Call {
         }
     }
 
-    pub fn to_execute<S>(
+    pub fn to_execute(
         &self,
         contract: ContractId,
         anchor: BlsScalar,
@@ -91,16 +93,12 @@ impl Call {
         crossover: Option<Crossover>,
         notes: Vec<Note>,
         spend_proof: Vec<u8>,
-    ) -> Result<Self, S::Error>
-    where
-        S: Store,
-    {
-        // Prevents invalid recursion
+    ) -> Result<Self, Error> {
         if let Self::Execute { .. } = self {
-            Err(InvalidEncoding.into())?;
+            Err(Error::ExecuteRecursion)?;
         }
 
-        let tx = Transaction::from_canon(self, &S::default())?;
+        let tx = Transaction::from_canon(self);
         let execute = Self::execute(
             anchor,
             nullifiers,
@@ -181,10 +179,7 @@ mod wasm {
     use crate::TransferContract;
 
     impl Call {
-        pub fn transact<S>(self, contract: &mut TransferContract<S>) -> bool
-        where
-            S: Store,
-        {
+        pub fn transact(self, contract: &mut TransferContract) -> bool {
             match self {
                 Call::Execute {
                     anchor,
