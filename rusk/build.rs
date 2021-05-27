@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(non_snake_case)]
-
 use bid_circuits::BidCorrectnessCircuit;
 use blindbid_circuits::BlindBidCircuit;
 use dusk_blindbid::{Bid, Score};
@@ -87,6 +85,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
+
+    // If `RUSK_PROFILE_PATH` is not set, panic.
+    if option_env!("RUSK_PROFILE_PATH").is_none() {
+        panic!("RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
+    };
 
     // This will enforce the usage and therefore the cache / generation
     // of the CRS even if it's not used to compiles circuits inside the
