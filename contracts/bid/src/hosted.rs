@@ -43,9 +43,9 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
-            let state = ContractState::from_canon(&slf).encode(&mut sink);
+            ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            let ret = ReturnValue::from_canon(&success).encode(&mut sink);
+            ReturnValue::from_canon(&success).encode(&mut sink);
             Ok(())
         }
         ops::WITHDRAW => {
@@ -60,9 +60,9 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
-            let state = ContractState::from_canon(&slf).encode(&mut sink);
+            ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            let ret = ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            ReturnValue::from_canon(&exec_res).encode(&mut sink);
             Ok(())
         }
         ops::EXTEND_BID => {
@@ -73,9 +73,9 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
-            let state = ContractState::from_canon(&slf).encode(&mut sink);
+            ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            let ret = ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            ReturnValue::from_canon(&exec_res).encode(&mut sink);
             Ok(())
         }
         _ => panic!("Unimplemented OP"),
