@@ -1,7 +1,7 @@
 [package]
 name = "rusk-profile"
-version = "0.4.0-rc.0"
-authors = ["zer0 <matteo@dusk.network>"]
+version = "0.4.0-rc.1"
+authors = ["zer0 <matteo@dusk.network>", "CPerezz <carlos@dusk.network>"]
 edition = "2018"
 autobins = false
 

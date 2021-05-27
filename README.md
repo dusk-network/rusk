@@ -13,10 +13,11 @@ is in development.
 To run tests:
 
 ```
+source .env
 make test
 ```
 
-That will also compile all the genesis contracts.
+That will also compile all the genesis contracts and it's associated circuits.
 
 ## Use
 

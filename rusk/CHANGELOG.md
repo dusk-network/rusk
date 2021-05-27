@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `async-stream` to deps [#292]
 - Add `test-context v0.1` to dev-dependencies [#292]
 - Add `async-trait v0.1` to dev-dependencies [#292]
+- Add `RUSK_PROFILE_PATH` env variable check in `build.rs` [#307]
 
 ### Changed
 
@@ -49,5 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 
+[#307]: https://github.com/dusk-network/rusk/issues/307
 [#292]: https://github.com/dusk-network/rusk/issues/292
+[#290]: https://github.com/dusk-network/rusk/issues/290
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-0.1.0
