@@ -9,7 +9,7 @@ test: $(SUBDIRS) ## Run all the tests in the subfolder
 
 wasm: $(SUBDIRS) ## Generate the WASM for all the contracts
 
-#$(SUBDIRS):
-#	$(MAKE) -C $@ $(MAKECMDGOALS)
+$(SUBDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
 
 .PHONY: test help $(SUBDIRS)
