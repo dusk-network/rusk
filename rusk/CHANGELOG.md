@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `async-stream` to deps [#292]
 - Add `test-context v0.1` to dev-dependencies [#292]
 - Add `async-trait v0.1` to dev-dependencies [#292]
-- Add `RUSK_PROFILE_PATH` env variable in MAKEFILE [#307]
+- Add `RUSK_PROFILE_PATH` env variable check in `build.rs` [#307]
 
 ### Changed
 
