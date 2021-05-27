@@ -57,20 +57,19 @@ fn file_stem(p: &Path) -> Option<&str> {
 }
 
 pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
-    if let Some(env_var) = option_env!("RUSK_PROFILE_PATH") {
-        fs::create_dir_all(env_var.clone())?;
-        Ok(PathBuf::from(env_var))
-    } else if let Some(mut dir) = home_dir() {
-        dir.push(".rusk");
-        fs::create_dir_all(dir.clone())?;
-        Ok(dir)
-    } else {
-        warn!("rusk-profile dir not found and impossible to create");
-        Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            "User Profile Dir not found",
-        ))
-    }
+    option_env!("RUSK_PROFILE_PATH")
+        .map_or(home_dir(), |e| Some(PathBuf::from(e)))
+        .and_then(|mut p| {
+            p.push("./rusk");
+            fs::create_dir_all(&p).map(|_| p).ok()
+        })
+        .ok_or_else(|| {
+            warn!("rusk-profile dir not found and impossible to create");
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                "User Profile Dir not found",
+            )
+        })
 }
 
 fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
