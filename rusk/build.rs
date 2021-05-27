@@ -86,7 +86,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
-    // If `RUSK_PROFILE_PATH` is not set, panic.
     if option_env!("RUSK_PROFILE_PATH").is_none() {
         panic!("RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
     };
