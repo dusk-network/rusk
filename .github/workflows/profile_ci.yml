@@ -13,7 +13,7 @@ jobs:
         env:
           cache-name: cache-rusk-profile-v2
         with:
-          path: ~/.rusk
+          path: ${{ github.workspace }}
           key: ${{ runner.os }}-build-${{ env.cache-name }}
           restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
 
@@ -25,4 +25,4 @@ jobs:
           override: true
       # This should not be required. But the workflow fails if we don't include it
       - run: rustup component add rustfmt
-      - run: make keys
+      - run: RUSK_PROFILE_PATH=$GITHUB_WORKSPACE make keys
