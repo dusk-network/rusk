@@ -14,6 +14,7 @@ mod transaction;
 use crate::{ops, Contract};
 use alloc::vec::Vec;
 use canonical::{Canon, CanonError, Sink, Source};
+use dusk_abi::{ContractState, ReturnValue};
 use dusk_blindbid::Bid;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
@@ -40,10 +41,12 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             // Call bid contract fn
             let success = slf.bid(bid, correctness_proof, spending_proof);
             let mut sink = Sink::new(&mut bytes[..]);
+
             // return new state
-            slf.encode(&mut sink);
+            let state = ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            Ok(success.encode(&mut sink))
+            let ret = ReturnValue::from_canon(&success).encode(&mut sink);
+            Ok(())
         }
         ops::WITHDRAW => {
             // Read host-sent args
@@ -55,10 +58,12 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let exec_res =
                 slf.withdraw(sig, pk, note, spending_proof, block_height);
             let mut sink = Sink::new(&mut bytes[..]);
-            // Return new state
-            slf.encode(&mut sink);
-            // Return result
-            Ok(exec_res.encode(&mut sink))
+
+            // return new state
+            let state = ContractState::from_canon(&slf).encode(&mut sink);
+            // return result
+            let ret = ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            Ok(())
         }
         ops::EXTEND_BID => {
             // Read host-sent args
@@ -66,10 +71,12 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let pk = PublicKey::decode(&mut source)?;
             let exec_res = slf.extend_bid(sig, pk);
             let mut sink = Sink::new(&mut bytes[..]);
+
             // return new state
-            slf.encode(&mut sink);
+            let state = ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            Ok(exec_res.encode(&mut sink))
+            let ret = ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            Ok(())
         }
         _ => panic!("Unimplemented OP"),
     }
