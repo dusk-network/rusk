@@ -60,7 +60,7 @@ pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
     option_env!("RUSK_PROFILE_PATH")
         .map_or(home_dir(), |e| Some(PathBuf::from(e)))
         .and_then(|mut p| {
-            p.push("./rusk");
+            p.push(".rusk");
             fs::create_dir_all(&p).map(|_| p).ok()
         })
         .ok_or_else(|| {
