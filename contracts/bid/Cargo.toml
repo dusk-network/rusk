@@ -16,8 +16,8 @@ dusk-bytes = "0.1"
 dusk-bls12_381 = { version="0.8", features=["canon"], default-features = false }
 dusk-jubjub = { version="0.10", features=["canon"], default-features = false }
 dusk-poseidon = { version="0.21.0-rc", features=["canon"], default-features = false }
-dusk-pki = { version = "0.7.0-rc", default-features = true,  features = ["canon"] }
-phoenix-core = { version = "0.11.0-rc", default-features = true, features = ["canon"] }
+dusk-pki = { version = "0.7.0-rc", features = ["canon"] }
+phoenix-core = { version = "0.11.0-rc", features = ["canon"] }
 dusk-hamt = "0.3"
 nstack = "0.8"
 microkelvin = "0.7"
