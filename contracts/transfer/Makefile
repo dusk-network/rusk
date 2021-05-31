@@ -21,6 +21,7 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host module
-	@cargo test --release
+	@cargo test -vvv --release
+		
 
 .PHONY: wasm check test help
