@@ -13,7 +13,7 @@ jobs:
         env:
           cache-name: cache-rusk-profile-v2
         with:
-          path: ${{ github.workspace }}
+          path: ${{ github.workspace }}/.rusk
           key: ${{ runner.os }}-build-${{ env.cache-name }}
           restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
 
