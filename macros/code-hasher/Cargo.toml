@@ -1,6 +1,6 @@
 [package]
 name = "code-hasher"
-version = "0.1.0"
+version = "0.2.0-rc.0"
 authors = ["CPerezz <carlos@dusk.network>"]
 edition = "2018"
 
