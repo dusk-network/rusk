@@ -8,6 +8,7 @@ wasm: ## Build the WASM files
 	@rm -fr ./target/verifier-data/*.vd
 	@cp -fr ~/.rusk/keys/*.vd ./target/verifier-data/
 	@cargo rustc \
+		-vvv \
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
@@ -19,6 +20,7 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check
 
 test: wasm ## Perform the contract tests defined in the host module
-	@cargo test --release
+	@cargo test -vvv --release
+		
 
 .PHONY: wasm check test help
