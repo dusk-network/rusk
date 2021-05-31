@@ -33,7 +33,7 @@ use map::KeyToIdxMap;
 /// `VerifierKey` used by the `BidCorrectnessCircuit` to verify a
 /// Bid correctness `Proof` using the PLONK proving systyem.
 pub const BID_CORRECTNESS_VD: &[u8] = core::include_bytes!(
-    "../ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.vd"
+    "../../../.rusk/keys/9213f1d9a165da07ceb3eafebefbd1216bb80ab151e7e1ae888ad4670c2bef70.vd"
 );
 
 /// OPCODEs for each contract method
