@@ -8,7 +8,6 @@ wasm: ## Build the WASM files
 	@rm -fr ./target/verifier-keys/*.vk
 	@cp -fr ~/.rusk/keys/transfer-circuits/**/*.vk ./target/verifier-keys/
 	@cargo rustc \
-		-vvv \
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
