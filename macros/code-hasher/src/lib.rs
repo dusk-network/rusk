@@ -39,18 +39,19 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn hash(attr: TokenStream, input: TokenStream) -> TokenStream {
     let mut hasher = Hasher::new();
+    let input_string = format!("{:?}", input);
 
     // We need to `let` this otherways it gets freed while borrowed.
-    let attrs_string = format!("{}", attr.to_string());
+    let attrs_string = attr.to_string();
     let attrs_split: Vec<&str> = attrs_string.split(",").collect();
 
     // Add the code version (passed as attribute) to the hasher.
     hasher.update(attrs_split.get(1).unwrap_or(&"").as_bytes());
     // Add code-block to the hasher.
-    hasher.update(input.to_string().as_bytes());
+    hasher.update(input_string.as_bytes());
 
     let id = hasher.finalize().as_bytes().clone();
-    let mut token_stream = format!("{}", input.to_string());
+    let mut token_stream = input.to_string();
     token_stream.pop();
     token_stream.push_str(&format!(
         "    const {}: [u8; 32] = {:?};",
