@@ -5,7 +5,6 @@ help: ## Display this help screen
 
 wasm: ## Build the WASM files
 	@cargo rustc \
-		-vvv \
 		--release \
 		--target wasm32-unknown-unknown \
 		--no-default-features \
