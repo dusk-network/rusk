@@ -28,10 +28,6 @@ pub struct SendToContractTransparentCircuit {
 }
 
 impl SendToContractTransparentCircuit {
-    pub const fn rusk_keys_id() -> &'static str {
-        "transfer-send-to-contract-transparent"
-    }
-
     pub fn sign_message(
         crossover: &Crossover,
         value: u64,

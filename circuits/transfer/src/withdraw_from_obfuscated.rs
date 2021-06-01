@@ -33,10 +33,6 @@ pub struct WithdrawFromObfuscatedCircuit {
 }
 
 impl WithdrawFromObfuscatedCircuit {
-    pub const fn rusk_keys_id() -> &'static str {
-        "transfer-withdraw-from-obfuscated"
-    }
-
     pub fn new(
         input: &Note,
         input_view_key: Option<&ViewKey>,
