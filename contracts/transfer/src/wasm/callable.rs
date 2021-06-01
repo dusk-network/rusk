@@ -11,7 +11,7 @@ use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubAffine;
 use dusk_pki::{Ownable, PublicKey};
-use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
+use phoenix_core::{Crossover, Fee, Message, Note};
 
 impl TransferContract {
     pub fn send_to_contract_transparent(
@@ -56,12 +56,14 @@ impl TransferContract {
     pub fn withdraw_from_transparent(
         &mut self,
         address: BlsScalar,
+        value: u64,
         note: Note,
+        spend_proof: Vec<u8>,
     ) -> bool {
-        let value = match (note.note(), note.value(None)) {
-            (NoteType::Transparent, Ok(v)) => v,
-            _ => panic!("The provided note must be a transparent note!"),
-        };
+        let mut pi = Vec::with_capacity(3);
+
+        pi.push(value.into());
+        pi.push(note.value_commitment().into());
 
         //  1. a ∈ B↦
         //  2. B_a↦ ← B_a↦ − v
@@ -73,6 +75,11 @@ impl TransferContract {
         //  5. N.append(N_p^*)
         self.push_note_current_height(note)
             .expect("Failed to append the provided note to the state!");
+
+        //  6. verify(C.c, M, pk, π)
+        let vd = Self::verifier_data_wdft();
+        Self::assert_proof(spend_proof, vd, pi)
+            .expect("Failed to verify the provided proof!");
 
         true
     }

@@ -33,6 +33,14 @@ fn verifier_data_stco() {
 }
 
 #[test]
+fn verifier_data_wdft() {
+    let contract = TransferContract::verifier_data_wdft().to_vec();
+    let rusk = verifier_data_bytes(&WithdrawFromTransparentCircuit::CIRCUIT_ID);
+
+    assert_eq!(rusk, contract);
+}
+
+#[test]
 fn verifier_data_wdfo() {
     let contract = TransferContract::verifier_data_wdfo().to_vec();
     let rusk = verifier_data_bytes(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID);

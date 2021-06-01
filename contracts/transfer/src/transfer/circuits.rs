@@ -24,6 +24,7 @@ const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../target/verifier-data/8c
 
 const VD_STCO: &'static [u8] = include_bytes!("../../target/verifier-data/ba5945c7eacae75ac4fa46a982e8e47de6dfc9b23ff2a3dae77a43b222605e75.vd");
 const VD_STCT: &'static [u8] = include_bytes!("../../target/verifier-data/e207aed29089b74f34977908bc3774c025d2d5c5e04d21341e9d7d0c3fe73a81.vd");
+const VD_WDFT: &'static [u8] = include_bytes!("../../target/verifier-data/27e50bdeaa558008de848e495b1735f7f881eeee0ffb773f47990683c1b7f4cd.vd");
 const VD_WDFO: &'static [u8] = include_bytes!("../../target/verifier-data/a38b7e89221f90b2e66201d9211c711f0b35284edfe69322342e84db7517bf16.vd");
 
 impl TransferContract {
@@ -54,6 +55,10 @@ impl TransferContract {
 
     pub const fn verifier_data_stct() -> &'static [u8] {
         VD_STCT
+    }
+
+    pub const fn verifier_data_wdft() -> &'static [u8] {
+        VD_WDFT
     }
 
     pub const fn verifier_data_wdfo() -> &'static [u8] {

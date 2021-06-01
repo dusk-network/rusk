@@ -35,7 +35,9 @@ pub enum Call {
 
     WithdrawFromTransparent {
         address: BlsScalar,
+        value: u64,
         note: Note,
+        spend_proof: Vec<u8>,
     },
 
     SendToContractObfuscated {
@@ -124,8 +126,18 @@ impl Call {
         }
     }
 
-    pub fn withdraw_from_transparent(address: BlsScalar, note: Note) -> Self {
-        Self::WithdrawFromTransparent { address, note }
+    pub fn withdraw_from_transparent(
+        address: BlsScalar,
+        value: u64,
+        note: Note,
+        spend_proof: Vec<u8>,
+    ) -> Self {
+        Self::WithdrawFromTransparent {
+            address,
+            value,
+            note,
+            spend_proof,
+        }
     }
 
     pub fn send_to_contract_obfuscated(
@@ -209,9 +221,17 @@ mod wasm {
                     spend_proof,
                 ),
 
-                Call::WithdrawFromTransparent { address, note } => {
-                    contract.withdraw_from_transparent(address, note)
-                }
+                Call::WithdrawFromTransparent {
+                    address,
+                    value,
+                    note,
+                    spend_proof,
+                } => contract.withdraw_from_transparent(
+                    address,
+                    value,
+                    note,
+                    spend_proof,
+                ),
 
                 Call::SendToContractObfuscated {
                     address,

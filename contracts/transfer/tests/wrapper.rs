@@ -5,7 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::{TryFrom, TryInto};
-use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
+use transfer_circuits::{
+    ExecuteCircuit, SendToContractTransparentCircuit,
+    WithdrawFromTransparentCircuit,
+};
 use transfer_contract::{Call, TransferContract};
 
 use dusk_bytes::Serializable;
@@ -380,10 +383,12 @@ impl TransferWrapper {
         gas_limit: u64,
         gas_price: u64,
         address: BlsScalar,
-        withdraw_psk: &PublicSpendKey,
+        withdraw_vk: &ViewKey,
         value: u64,
     ) -> bool {
-        let withdraw = Note::transparent(&mut self.rng, withdraw_psk, value);
+        let withdraw_psk = withdraw_vk.public_spend_key();
+
+        let withdraw = Note::transparent(&mut self.rng, &withdraw_psk, value);
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
             self.prepare_execute(
                 inputs,
@@ -396,17 +401,33 @@ impl TransferWrapper {
                 0,
             );
 
-        let call = Call::withdraw_from_transparent(address, withdraw)
-            .to_execute(
-                self.contract,
-                anchor,
-                nullifiers,
-                fee,
-                crossover,
-                outputs,
-                spend_proof_execute,
-            )
-            .unwrap();
+        let mut wft_proof =
+            WithdrawFromTransparentCircuit::new(&withdraw, Some(withdraw_vk))
+                .unwrap();
+
+        let (pk, _) =
+            Self::circuit_keys(&WithdrawFromTransparentCircuit::CIRCUIT_ID);
+
+        let spend_proof_wft =
+            wft_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
+        let spend_proof_wft = spend_proof_wft.to_bytes().to_vec();
+
+        let call = Call::withdraw_from_transparent(
+            address,
+            value,
+            withdraw,
+            spend_proof_wft,
+        )
+        .to_execute(
+            self.contract,
+            anchor,
+            nullifiers,
+            fee,
+            crossover,
+            outputs,
+            spend_proof_execute,
+        )
+        .unwrap();
 
         self.network
             .transact::<_, bool>(self.contract, call, &mut self.gas)

@@ -69,7 +69,7 @@ fn withdraw_from_transparent() {
         remainder.value(Some(&remainder_vk)).unwrap()
     );
 
-    let (withdraw_ssk, withdraw_vk, withdraw_psk) = wrapper.identifier();
+    let (withdraw_ssk, withdraw_vk, _) = wrapper.identifier();
     let withdraw_value = 35;
 
     let gas_limit = 10;
@@ -82,7 +82,7 @@ fn withdraw_from_transparent() {
         gas_limit,
         gas_price,
         account,
-        &withdraw_psk,
+        &withdraw_vk,
         withdraw_value,
     );
     assert!(result);
@@ -107,7 +107,7 @@ fn withdraw_from_transparent() {
         gas_limit,
         gas_price,
         account,
-        &withdraw_psk,
+        &withdraw_vk,
         withdraw_value,
     );
     assert!(!result);
@@ -124,7 +124,7 @@ fn withdraw_from_transparent() {
         gas_limit,
         gas_price,
         account,
-        &withdraw_psk,
+        &withdraw_vk,
         withdraw_value,
     );
     assert!(result);
@@ -150,7 +150,7 @@ fn withdraw_from_transparent() {
         gas_limit,
         gas_price,
         account,
-        &withdraw_psk,
+        &withdraw_vk,
         withdraw_value,
     );
     assert!(!result);
