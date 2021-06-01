@@ -115,6 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &BlindBidCircuitLoader {},
         &StctCircuitLoader {},
         &StcoCircuitLoader {},
+        &WftCircuitLoader {},
         &WfoCircuitLoader {},
         &ExecuteOneZeroCircuitLoader {},
         &ExecuteOneOneCircuitLoader {},
@@ -366,6 +367,40 @@ mod transfer {
                 c_address,
             )
             .expect("Failed to generate circuit!");
+
+            let (pk, vd) = circuit.compile(&pub_params)?;
+            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
+        }
+    }
+
+    pub struct WftCircuitLoader;
+    impl CircuitLoader for WftCircuitLoader {
+        fn circuit_id(&self) -> &[u8; 32] {
+            &WithdrawFromTransparentCircuit::CIRCUIT_ID
+        }
+
+        fn circuit_name(&self) -> &'static str {
+            "WFT"
+        }
+
+        fn compile_circuit(
+            &self,
+        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+            let pub_params = &PUB_PARAMS;
+            let rng = &mut rand::thread_rng();
+
+            let ssk = SecretSpendKey::random(rng);
+            let vk = ssk.view_key();
+            let psk = ssk.public_spend_key();
+
+            let value = 100;
+            let blinding_factor = JubJubScalar::random(rng);
+
+            let note = Note::obfuscated(rng, &psk, value, blinding_factor);
+
+            let mut circuit =
+                WithdrawFromTransparentCircuit::new(&note, Some(&vk))
+                    .expect("Failed to create WFT circuit!");
 
             let (pk, vd) = circuit.compile(&pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
