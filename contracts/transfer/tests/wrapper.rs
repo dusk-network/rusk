@@ -5,10 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::{TryFrom, TryInto};
-use transfer_circuits::{
-    ExecuteCircuit, SendToContractTransparentCircuit,
-    WithdrawFromTransparentCircuit,
-};
+use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
 use transfer_contract::{Call, TransferContract};
 
 use dusk_bytes::Serializable;
@@ -18,7 +15,7 @@ use lazy_static::lazy_static;
 use phoenix_core::{Crossover, Fee, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk::vm::{Contract, ContractId, GasMeter, NetworkState};
+use rusk::vm::{Contract, ContractId, GasMeter, NetworkState, VMError};
 use rusk_abi::RuskModule;
 
 use dusk_plonk::prelude::*;
@@ -125,11 +122,12 @@ impl TransferWrapper {
 
     pub fn notes(&mut self, block_height: u64) -> Vec<Note> {
         self.state()
-            .notes_mapping()
-            .get(&block_height)
-            .unwrap_or_default()
-            .map(|s| s.clone())
-            .unwrap_or_default()
+            .notes_from_height(block_height)
+            .expect("Failed to fetch notes iterator from state")
+            .map(|note| {
+                note.expect("Failed to fetch note from canonical").clone()
+            })
+            .collect()
     }
 
     pub fn notes_owned_by(
@@ -320,7 +318,7 @@ impl TransferWrapper {
         gas_price: u64,
         address: BlsScalar,
         value: u64,
-    ) -> bool {
+    ) -> Result<(), VMError> {
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
             self.prepare_execute(
@@ -370,156 +368,6 @@ impl TransferWrapper {
         .unwrap();
 
         self.network
-            .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap_or(false)
-    }
-
-    pub fn withdraw_from_transparent(
-        &mut self,
-        inputs: &[Note],
-        inputs_keys: &[SecretSpendKey],
-        output: &PublicSpendKey,
-        output_transparent: bool,
-        gas_limit: u64,
-        gas_price: u64,
-        address: BlsScalar,
-        withdraw_vk: &ViewKey,
-        value: u64,
-    ) -> bool {
-        let withdraw_psk = withdraw_vk.public_spend_key();
-
-        let withdraw = Note::transparent(&mut self.rng, &withdraw_psk, value);
-        let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
-            self.prepare_execute(
-                inputs,
-                inputs_keys,
-                None,
-                output,
-                output_transparent,
-                gas_limit,
-                gas_price,
-                0,
-            );
-
-        let mut wft_proof =
-            WithdrawFromTransparentCircuit::new(&withdraw, Some(withdraw_vk))
-                .unwrap();
-
-        let (pk, _) =
-            Self::circuit_keys(&WithdrawFromTransparentCircuit::CIRCUIT_ID);
-
-        let spend_proof_wft =
-            wft_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
-        let spend_proof_wft = spend_proof_wft.to_bytes().to_vec();
-
-        let call = Call::withdraw_from_transparent(
-            address,
-            value,
-            withdraw,
-            spend_proof_wft,
-        )
-        .to_execute(
-            self.contract,
-            anchor,
-            nullifiers,
-            fee,
-            crossover,
-            outputs,
-            spend_proof_execute,
-        )
-        .unwrap();
-
-        self.network
-            .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap_or(false)
-    }
-
-    pub fn withdraw_from_transparent_to_contract(
-        &mut self,
-        inputs: &[Note],
-        inputs_keys: &[SecretSpendKey],
-        output: &PublicSpendKey,
-        output_transparent: bool,
-        gas_limit: u64,
-        gas_price: u64,
-        from: BlsScalar,
-        to: BlsScalar,
-        value: u64,
-    ) -> bool {
-        let anchor = self.anchor();
-
-        let mut execute_proof = ExecuteCircuit::default();
-
-        let mut input = 0;
-        let nullifiers: Vec<BlsScalar> = inputs
-            .iter()
-            .zip(inputs_keys.iter())
-            .map(|(note, ssk)| {
-                let value = note.value(Some(&ssk.view_key())).unwrap();
-                input += value;
-
-                let opening = self.opening(*note.pos());
-                let signature = ExecuteCircuit::sign(&mut self.rng, &ssk, note);
-                execute_proof
-                    .add_input(&ssk, *note, opening, signature)
-                    .unwrap();
-
-                note.gen_nullifier(ssk)
-            })
-            .collect();
-
-        let output_value = input - gas_limit;
-        let output = if output_value == 0 {
-            vec![]
-        } else if output_transparent {
-            let note = Note::transparent(&mut self.rng, output, output_value);
-            let blinding_factor = note.blinding_factor(None).unwrap();
-
-            execute_proof
-                .add_output_with_data(note, output_value, blinding_factor)
-                .unwrap();
-
-            vec![note]
-        } else {
-            let blinding_factor = JubJubScalar::random(&mut self.rng);
-            let note = Note::obfuscated(
-                &mut self.rng,
-                output,
-                output_value,
-                blinding_factor,
-            );
-
-            execute_proof
-                .add_output_with_data(note, output_value, blinding_factor)
-                .unwrap();
-
-            vec![note]
-        };
-
-        let refund_psk =
-            SecretSpendKey::random(&mut self.rng).public_spend_key();
-        let (fee, _) = self.fee_crossover(gas_limit, gas_price, &refund_psk, 0);
-        execute_proof.set_fee(&fee).unwrap();
-
-        let (pk, _) = Self::circuit_keys(execute_proof.circuit_id());
-        let spend_proof_execute =
-            execute_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
-        let spend_proof_execute = spend_proof_execute.to_bytes().to_vec();
-
-        let call = Call::withdraw_from_transparent_to_contract(from, to, value)
-            .to_execute(
-                self.contract,
-                anchor,
-                nullifiers,
-                fee,
-                None,
-                output,
-                spend_proof_execute,
-            )
-            .unwrap();
-
-        self.network
-            .transact::<_, bool>(self.contract, call, &mut self.gas)
-            .unwrap_or(false)
+            .transact::<_, ()>(self.contract, call, &mut self.gas)
     }
 }

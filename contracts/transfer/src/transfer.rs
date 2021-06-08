@@ -6,7 +6,6 @@
 
 use crate::{Error, Map};
 
-use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
@@ -26,10 +25,10 @@ pub use call::Call;
 
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
+// TODO rename attributes
 #[derive(Debug, Default, Clone, Canon)]
 pub struct TransferContract {
     pub(crate) notes: Tree,
-    pub(crate) notes_mapping: Map<u64, Vec<Note>>,
     pub(crate) nullifiers: Map<BlsScalar, ()>,
     pub(crate) roots: Map<BlsScalar, ()>,
     pub(crate) balances: Map<BlsScalar, u64>,
@@ -55,23 +54,7 @@ impl TransferContract {
         note: Note,
     ) -> Result<Note, Error> {
         let pos = self.notes.push((block_height, note).into())?;
-
         let note = self.get_note(pos)?.ok_or(Error::NoteNotFound)?;
-
-        let mut create = false;
-        match self.notes_mapping.get_mut(&block_height)? {
-            // TODO evaluate options for efficient dedup
-            // We can't call dedup here because the note `PartialEq` relies on
-            // poseidon hash, that is supposed to be a host function
-            // https://github.com/dusk-network/rusk/issues/196
-            Some(mut mapped) => mapped.push(note.clone()),
-
-            None => create = true,
-        }
-
-        if create {
-            self.notes_mapping.insert(block_height, [note].to_vec())?;
-        }
 
         Ok(note)
     }
@@ -80,8 +63,11 @@ impl TransferContract {
         &self.notes
     }
 
-    pub fn notes_mapping(&self) -> &Map<u64, Vec<Note>> {
-        &self.notes_mapping
+    pub fn notes_from_height(
+        &self,
+        block_height: u64,
+    ) -> Result<impl Iterator<Item = Result<&Note, Error>>, Error> {
+        self.notes.notes(block_height)
     }
 
     pub fn balances(&self) -> &Map<BlsScalar, u64> {

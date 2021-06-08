@@ -55,11 +55,11 @@ impl TransferContract {
 
     pub fn withdraw_from_transparent(
         &mut self,
-        address: BlsScalar,
         value: u64,
         note: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
+        let address = Self::callee_address();
         let mut pi = Vec::with_capacity(3);
 
         pi.push(value.into());
@@ -132,7 +132,6 @@ impl TransferContract {
 
     pub fn withdraw_from_obfuscated(
         &mut self,
-        address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -140,6 +139,8 @@ impl TransferContract {
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> bool {
+        let address = Self::callee_address();
+
         let mut pi = Vec::with_capacity(9 + message.cipher().len());
 
         pi.push(input_value_commitment.into());
@@ -268,7 +269,7 @@ impl TransferContract {
         //  8. g_pmin < g_p
         //  9. fee ← g_l ⋅ g_p
         let minimum_gas_price = Self::minimum_gas_price();
-        if fee.gas_price <= minimum_gas_price {
+        if fee.gas_price < minimum_gas_price {
             panic!(
                 "The gas price is below the minimum `{:?}`!",
                 minimum_gas_price
@@ -288,12 +289,8 @@ impl TransferContract {
             let ret = dusk_abi::transact_raw(self, &contract, &tx)
                 .expect("Failed to execute the provided call transaction!");
 
-            let ret: bool = ret.cast()
-                .expect("Failed to fetch the return value from the provided call transaction!");
-
-            if !ret {
-                panic!("The provided call transaction failed!");
-            }
+            let _: bool =
+                ret.cast().expect("Failed to cast returned value to void!");
         }
 
         // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)

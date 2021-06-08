@@ -7,6 +7,7 @@
 use crate::{Error, Map, PublicKeyBytes, TransferContract};
 
 use alloc::vec::Vec;
+use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
@@ -37,9 +38,8 @@ impl TransferContract {
     }
 
     pub(crate) const fn minimum_gas_price() -> u64 {
-        // FIXME define the mininum gas price
-        // https://github.com/dusk-network/rusk/issues/195
-        0
+        // TODO link the docs
+        1
     }
 
     pub(crate) fn any_nullifier_exists(
@@ -100,6 +100,25 @@ impl TransferContract {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn contract_address(address: &ContractId) -> BlsScalar {
+        // TODO provisory fn until native ContractId -> BlsScalar conversion is
+        // implemented
+
+        // ContractId don't have an API to extract internal bytes - so we
+        // provisorily trust it is 32 bytes
+        let mut scalar = [0u8; 32];
+        scalar.copy_from_slice(address.as_bytes());
+
+        // Truncate the contract id to fit bls
+        scalar[31] &= 0x3f;
+
+        BlsScalar::from_bytes(&scalar).unwrap_or_default()
+    }
+
+    pub(crate) fn callee_address() -> BlsScalar {
+        Self::contract_address(&dusk_abi::callee())
     }
 
     pub(crate) fn add_balance(

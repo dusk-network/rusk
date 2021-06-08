@@ -34,7 +34,6 @@ pub enum Call {
     },
 
     WithdrawFromTransparent {
-        address: BlsScalar,
         value: u64,
         note: Note,
         spend_proof: Vec<u8>,
@@ -49,7 +48,6 @@ pub enum Call {
     },
 
     WithdrawFromObfuscated {
-        address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -127,13 +125,11 @@ impl Call {
     }
 
     pub fn withdraw_from_transparent(
-        address: BlsScalar,
         value: u64,
         note: Note,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromTransparent {
-            address,
             value,
             note,
             spend_proof,
@@ -157,7 +153,6 @@ impl Call {
     }
 
     pub fn withdraw_from_obfuscated(
-        address: BlsScalar,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -166,7 +161,6 @@ impl Call {
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
-            address,
             message,
             r,
             pk,
@@ -222,16 +216,12 @@ mod wasm {
                 ),
 
                 Call::WithdrawFromTransparent {
-                    address,
                     value,
                     note,
                     spend_proof,
-                } => contract.withdraw_from_transparent(
-                    address,
-                    value,
-                    note,
-                    spend_proof,
-                ),
+                } => {
+                    contract.withdraw_from_transparent(value, note, spend_proof)
+                }
 
                 Call::SendToContractObfuscated {
                     address,
@@ -248,7 +238,6 @@ mod wasm {
                 ),
 
                 Call::WithdrawFromObfuscated {
-                    address,
                     message,
                     r,
                     pk,
@@ -256,7 +245,6 @@ mod wasm {
                     input_value_commitment,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
-                    address,
                     message,
                     r,
                     pk,
