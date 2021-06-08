@@ -35,10 +35,6 @@ pub struct SendToContractObfuscatedCircuit {
 }
 
 impl SendToContractObfuscatedCircuit {
-    pub const fn rusk_keys_id() -> &'static str {
-        "transfer-send-to-contract-obfuscated"
-    }
-
     pub fn sign_message(
         crossover: &Crossover,
         message: &Message,
@@ -143,9 +139,6 @@ impl SendToContractObfuscatedCircuit {
 
         let message_pk = JubJubAffine::from(self.message_pk);
         pi.push(message_pk.into());
-
-        let identity = JubJubAffine::identity();
-        pi.push(identity.into());
 
         pi.extend(self.message.cipher().iter().map(|c| (*c).into()));
 
@@ -254,6 +247,8 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_pk = self.message_pk.into();
         let message_pk = composer.add_public_affine(message_pk);
 
+        // TODO message_private_pk should be calculated inside the circuit
+        // TODO create a gadget to use later on
         let message_private_pk = self.message_private_pk.into();
         let message_private_pk = composer.add_affine(message_private_pk);
 
@@ -262,10 +257,10 @@ impl Circuit for SendToContractObfuscatedCircuit {
             message_pk,
             public_message_pk,
         );
-        composer.assert_equal_public_point(
-            message_pk_identity,
-            JubJubAffine::identity(),
-        );
+
+        let identity = JubJubAffine::identity();
+        let identity = composer.add_affine_to_circuit_description(identity);
+        composer.assert_equal_point(message_pk_identity, identity);
 
         let message_pk =
             composer.point_addition_gate(message_pk, message_private_pk);

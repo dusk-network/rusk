@@ -39,11 +39,6 @@ macro_rules! execute_circuit_variant {
         }
 
         impl $i {
-            pub const fn identifier() {
-                // Workaround to generate different code hasher results for the
-                // gadget
-            }
-
             pub fn new(
                 inputs: Vec<CircuitInput>,
                 crossover: CircuitCrossover,
@@ -233,7 +228,7 @@ macro_rules! execute_circuit_variant {
                 &mut self,
                 composer: &mut StandardComposer,
             ) -> Result<(), PlonkError> {
-                let _ = $i::identifier();
+                let _ = $i::CIRCUIT_ID;
                 let mut base_root = None;
 
                 // 1. Prove the knowledge of the input Note paths to Note Tree,
@@ -396,9 +391,7 @@ macro_rules! execute_circuit_variant {
                 // 11. Prove that sum(inputs.value) - sum(outputs.value) -
                 // crossover_value - fee_value = 0
                 {
-                    let zero = composer
-                        .add_witness_to_circuit_description(BlsScalar::zero());
-
+                    let zero = composer.zero_var();
                     let inputs_sum = inputs.iter().fold(zero, |sum, input| {
                         composer.add(
                             (BlsScalar::one(), sum),
