@@ -5,24 +5,35 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::convert::{TryFrom, TryInto};
-use transfer_circuits::{ExecuteCircuit, SendToContractTransparentCircuit};
-use transfer_contract::{Call, TransferContract};
+use transfer_circuits::{
+    ExecuteCircuit, SendToContractObfuscatedCircuit,
+    SendToContractTransparentCircuit,
+};
+use transfer_contract::{Call, Error as TransferError, TransferContract};
 
+use dusk_abi::ContractId;
 use dusk_bytes::Serializable;
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_jubjub::GENERATOR_EXTENDED;
+use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
-use phoenix_core::{Crossover, Fee, Note};
+use phoenix_core::{Crossover, Fee, Message, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk::vm::{Contract, ContractId, GasMeter, NetworkState, VMError};
 use rusk_abi::RuskModule;
+use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
 
 use dusk_plonk::prelude::*;
 
 const TRANSFER_TREE_DEPTH: usize = 17;
-const CODE: &'static [u8] = include_bytes!(
-    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+const TRANSFER: &'static [u8] = include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+);
+const ALICE: &'static [u8] = include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/alice.wasm"
+);
+const BOB: &'static [u8] = include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/bob.wasm"
 );
 
 lazy_static! {
@@ -36,7 +47,9 @@ lazy_static! {
 pub struct TransferWrapper {
     rng: StdRng,
     network: NetworkState,
-    contract: ContractId,
+    transfer: ContractId,
+    alice: ContractId,
+    bob: ContractId,
     gas: GasMeter,
     genesis_ssk: SecretSpendKey,
 }
@@ -52,7 +65,7 @@ impl TransferWrapper {
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
 
-        let contract = if initial_balance > 0 {
+        let transfer = if initial_balance > 0 {
             let genesis =
                 Note::transparent(&mut rng, &genesis_psk, initial_balance);
 
@@ -60,15 +73,23 @@ impl TransferWrapper {
         } else {
             TransferContract::default()
         };
-        let contract = Contract::new(contract, CODE.to_vec());
-        let contract = network.deploy(contract).unwrap();
+
+        let transfer = Contract::new(transfer, TRANSFER.to_vec());
+        let alice = Contract::new(alice::Alice::default(), ALICE.to_vec());
+        let bob = Contract::new(bob::Bob::default(), BOB.to_vec());
+
+        let transfer = network.deploy(transfer).unwrap();
+        let alice = network.deploy(alice).unwrap();
+        let bob = network.deploy(bob).unwrap();
 
         let gas = GasMeter::with_limit(1_000);
 
         Self {
             rng,
             network,
-            contract,
+            transfer,
+            alice,
+            bob,
             gas,
             genesis_ssk,
         }
@@ -76,7 +97,7 @@ impl TransferWrapper {
 
     pub fn state(&self) -> TransferContract {
         self.network
-            .get_contract_cast_state(&self.contract)
+            .get_contract_cast_state(&self.transfer)
             .expect("Failed to fetch the state of the contract")
     }
 
@@ -98,8 +119,12 @@ impl TransferWrapper {
         (ssk, vk, psk)
     }
 
-    pub fn address(&mut self) -> BlsScalar {
-        BlsScalar::random(&mut self.rng)
+    pub fn alice(&self) -> &ContractId {
+        &self.alice
+    }
+
+    pub fn bob(&self) -> &ContractId {
+        &self.bob
     }
 
     pub fn fee_crossover(
@@ -142,7 +167,7 @@ impl TransferWrapper {
             .collect()
     }
 
-    pub fn balance(&mut self, address: &BlsScalar) -> u64 {
+    pub fn balance(&mut self, address: &ContractId) -> u64 {
         *self
             .state()
             .balances()
@@ -150,6 +175,14 @@ impl TransferWrapper {
             .unwrap()
             .as_deref()
             .unwrap_or(&0)
+    }
+
+    pub fn message(
+        &self,
+        contract: &ContractId,
+        pk: &PublicKey,
+    ) -> Result<Message, TransferError> {
+        self.state().message(contract, pk)
     }
 
     pub fn anchor(&mut self) -> BlsScalar {
@@ -316,9 +349,10 @@ impl TransferWrapper {
         output_transparent: bool,
         gas_limit: u64,
         gas_price: u64,
-        address: BlsScalar,
+        contract: ContractId,
         value: u64,
     ) -> Result<(), VMError> {
+        let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
             self.prepare_execute(
@@ -352,12 +386,12 @@ impl TransferWrapper {
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
         let call = Call::send_to_contract_transparent(
-            address,
+            contract,
             value,
             spend_proof_stct,
         )
         .to_execute(
-            self.contract,
+            self.transfer,
             anchor,
             nullifiers,
             fee,
@@ -368,6 +402,80 @@ impl TransferWrapper {
         .unwrap();
 
         self.network
-            .transact::<_, ()>(self.contract, call, &mut self.gas)
+            .transact::<_, ()>(self.transfer, call, &mut self.gas)
+    }
+
+    pub fn send_to_contract_obfuscated(
+        &mut self,
+        inputs: &[Note],
+        inputs_keys: &[SecretSpendKey],
+        refund_ssk: &SecretSpendKey,
+        output: &PublicSpendKey,
+        output_transparent: bool,
+        gas_limit: u64,
+        gas_price: u64,
+        contract: ContractId,
+        value: u64,
+    ) -> Result<(), VMError> {
+        let address = TransferContract::contract_to_scalar(&contract);
+        let refund_vk = refund_ssk.view_key();
+        let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
+            self.prepare_execute(
+                inputs,
+                inputs_keys,
+                Some(&refund_vk),
+                output,
+                output_transparent,
+                gas_limit,
+                gas_price,
+                value,
+            );
+
+        let crossover = crossover.unwrap();
+        let r = JubJubScalar::random(&mut self.rng);
+        let message = Message::new(&mut self.rng, &r, output, value);
+
+        let signature = SendToContractObfuscatedCircuit::sign(
+            &mut self.rng,
+            refund_ssk,
+            &fee,
+            &crossover,
+            &message,
+            &address,
+        );
+
+        let mut stco_proof = SendToContractObfuscatedCircuit::new(
+            fee, crossover, &refund_vk, signature, true, message, output, r,
+            address,
+        )
+        .unwrap();
+
+        let (pk, _) =
+            Self::circuit_keys(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
+        let spend_proof_stco =
+            stco_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
+        let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
+
+        let r = GENERATOR_EXTENDED * &r;
+        let call = Call::send_to_contract_obfuscated(
+            contract,
+            message,
+            r.into(),
+            output.A().into(),
+            spend_proof_stco,
+        )
+        .to_execute(
+            self.transfer,
+            anchor,
+            nullifiers,
+            fee,
+            Some(crossover),
+            outputs,
+            spend_proof_execute,
+        )
+        .unwrap();
+
+        self.network
+            .transact::<_, ()>(self.transfer, call, &mut self.gas)
     }
 }

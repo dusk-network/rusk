@@ -11,9 +11,9 @@ use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
-use dusk_pki::PublicKey;
+use dusk_pki::{PublicKey, PublicSpendKey};
 use phoenix_core::{Crossover, Fee, Message, Note};
-use rusk_abi::PublicInput;
+use rusk_abi::{PaymentInfo, PublicInput};
 
 impl TransferContract {
     pub(crate) fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
@@ -70,7 +70,7 @@ impl TransferContract {
 
     pub(crate) fn take_message_from_address_key(
         &mut self,
-        address: &BlsScalar,
+        address: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
         self.message_mapping
@@ -102,28 +102,9 @@ impl TransferContract {
         Ok(())
     }
 
-    pub(crate) fn contract_address(address: &ContractId) -> BlsScalar {
-        // TODO provisory fn until native ContractId -> BlsScalar conversion is
-        // implemented
-
-        // ContractId don't have an API to extract internal bytes - so we
-        // provisorily trust it is 32 bytes
-        let mut scalar = [0u8; 32];
-        scalar.copy_from_slice(address.as_bytes());
-
-        // Truncate the contract id to fit bls
-        scalar[31] &= 0x3f;
-
-        BlsScalar::from_bytes(&scalar).unwrap_or_default()
-    }
-
-    pub(crate) fn callee_address() -> BlsScalar {
-        Self::contract_address(&dusk_abi::callee())
-    }
-
     pub(crate) fn add_balance(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
     ) -> Result<(), Error> {
         if let Some(mut balance) = self.balances.get_mut(&address)? {
@@ -139,7 +120,7 @@ impl TransferContract {
 
     pub(crate) fn sub_balance(
         &mut self,
-        address: &BlsScalar,
+        address: &ContractId,
         value: u64,
     ) -> Result<(), Error> {
         // TODO workaround until deref is implemented for microkelvin branch
@@ -166,7 +147,7 @@ impl TransferContract {
 
     pub(crate) fn push_message(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         pk: PublicKey,
         r: JubJubAffine,
         message: Message,
@@ -208,11 +189,17 @@ impl TransferContract {
         Ok((crossover, pk))
     }
 
-    pub(crate) fn assert_payable(_address: &BlsScalar) -> Result<(), Error> {
-        //  FIXME Use isPayable definition
-        //  https://github.com/dusk-network/rusk-vm/issues/151
-
-        Ok(())
+    pub(crate) fn assert_payable(
+        address: &ContractId,
+        transparent: bool,
+        obfuscated: bool,
+    ) -> Result<Option<PublicSpendKey>, Error> {
+        match rusk_abi::payment_info(*address) {
+            PaymentInfo::Transparent(k) if transparent => Ok(k),
+            PaymentInfo::Obfuscated(k) if obfuscated => Ok(k),
+            PaymentInfo::Any(k) => Ok(k),
+            _ => Err(Error::PaymentTypeNotAccepted),
+        }
     }
 
     pub(crate) fn assert_proof(

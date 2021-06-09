@@ -6,12 +6,12 @@
 
 use transfer_contract::TransferContract;
 
-use dusk_bls12_381::BlsScalar;
+use dusk_abi::ContractId;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::SecretSpendKey;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{RngCore, SeedableRng};
 use transfer_circuits::{
     SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
 };
@@ -26,14 +26,17 @@ fn sign_message_stct() {
     let psk = ssk.public_spend_key();
 
     let value = 100;
-    let address = BlsScalar::random(&mut rng);
+    let mut address = ContractId::default();
+    rng.fill_bytes(address.as_bytes_mut());
 
     let blinding_factor = JubJubScalar::random(&mut rng);
     let note = Note::obfuscated(&mut rng, &psk, value, blinding_factor);
     let (_, crossover) = note.try_into().unwrap();
 
     let m = SendToContractTransparentCircuit::sign_message(
-        &crossover, value, &address,
+        &crossover,
+        value,
+        &TransferContract::contract_to_scalar(&address),
     );
 
     let m_p = TransferContract::sign_message_stct(&crossover, value, &address);
@@ -49,7 +52,8 @@ fn sign_message_stco() {
     let psk = ssk.public_spend_key();
 
     let value = 100;
-    let address = BlsScalar::random(&mut rng);
+    let mut address = ContractId::default();
+    rng.fill_bytes(address.as_bytes_mut());
 
     let r = JubJubScalar::random(&mut rng);
     let message = Message::new(&mut rng, &r, &psk, value);
@@ -58,7 +62,9 @@ fn sign_message_stco() {
     let (_, crossover) = note.try_into().unwrap();
 
     let m = SendToContractObfuscatedCircuit::sign_message(
-        &crossover, &message, &address,
+        &crossover,
+        &message,
+        &TransferContract::contract_to_scalar(&address),
     );
 
     let m_p =

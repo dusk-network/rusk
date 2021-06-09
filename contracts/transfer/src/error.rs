@@ -20,6 +20,8 @@ pub enum Error {
     ExecuteRecursion,
     NotEnoughBalance,
     ProofVerificationError,
+    PaymentTypeNotAccepted,
+    ContractNotFound,
 }
 
 impl From<PoseidonError> for Error {

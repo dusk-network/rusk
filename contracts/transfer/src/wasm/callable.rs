@@ -16,7 +16,7 @@ use phoenix_core::{Crossover, Fee, Message, Note};
 impl TransferContract {
     pub fn send_to_contract_transparent(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     ) -> bool {
@@ -39,7 +39,7 @@ impl TransferContract {
             .expect("Failed to add the balance to the provided address!");
 
         //  3. if a.isPayable() ↦ true then continue
-        Self::assert_payable(&address)
+        Self::assert_payable(&address, true, false)
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, v, π)
@@ -59,7 +59,7 @@ impl TransferContract {
         note: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = Self::callee_address();
+        let address = dusk_abi::callee();
         let mut pi = Vec::with_capacity(3);
 
         pi.push(value.into());
@@ -86,7 +86,7 @@ impl TransferContract {
 
     pub fn send_to_contract_obfuscated(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -105,7 +105,6 @@ impl TransferContract {
         pi.push(message.value_commitment().into());
         pi.push(message.nonce().into());
         pi.push(pk.as_ref().into());
-        pi.push(JubJubAffine::identity().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
         pi.push(crossover_pk.as_ref().into());
         pi.push(sign_message.into());
@@ -116,7 +115,7 @@ impl TransferContract {
             .expect("Failed to append the message to the state!");
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address)
+        Self::assert_payable(&address, false, true)
             .expect("The provided address is not payable!");
 
         //  4. verify(C.c, M, pk, π)
@@ -139,8 +138,7 @@ impl TransferContract {
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = Self::callee_address();
-
+        let address = dusk_abi::callee();
         let mut pi = Vec::with_capacity(9 + message.cipher().len());
 
         pi.push(input_value_commitment.into());
@@ -167,7 +165,7 @@ impl TransferContract {
             .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address)
+        Self::assert_payable(&address, true, false)
             .expect("The provided address is not payable!");
 
         //  7. verify(c, M_c, No.c, π)
@@ -189,8 +187,8 @@ impl TransferContract {
     // https://github.com/dusk-network/rusk/issues/198
     pub fn withdraw_from_transparent_to_contract(
         &mut self,
-        from: BlsScalar,
-        to: BlsScalar,
+        from: ContractId,
+        to: ContractId,
         value: u64,
     ) -> bool {
         //  1. from ∈ B↦

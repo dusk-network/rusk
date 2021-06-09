@@ -11,7 +11,7 @@ mod wrapper;
 use wrapper::TransferWrapper;
 
 #[test]
-fn withdraw_from_transparent() {
+fn send_to_contract_transparent() {
     let genesis_value = 1_000;
     let block_height = 1;
     let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
@@ -21,7 +21,7 @@ fn withdraw_from_transparent() {
     assert_eq!(1, notes.len());
     let unspent_note = notes[0];
 
-    let account = wrapper.address();
+    let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
     assert_eq!(0, balance);
 
@@ -69,4 +69,44 @@ fn withdraw_from_transparent() {
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
     );
+}
+
+#[test]
+fn send_to_contract_obfuscated() {
+    let genesis_value = 1_000;
+    let block_height = 1;
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+
+    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
+    let notes = wrapper.notes_owned_by(0, &genesis_vk);
+    assert_eq!(1, notes.len());
+    let unspent_note = notes[0];
+
+    let account = *wrapper.bob();
+    let balance = wrapper.balance(&account);
+    assert_eq!(0, balance);
+
+    let (refund_ssk, _, _) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
+    let account_value = 100;
+    let gas_limit = 50;
+    let gas_price = 2;
+    wrapper
+        .send_to_contract_obfuscated(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            account,
+            account_value,
+        )
+        .expect("Failed to load balance into contract");
+
+    let pk = remainder_psk.A().into();
+    wrapper
+        .message(&account, &pk)
+        .expect("Failed to find appended message");
 }

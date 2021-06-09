@@ -7,6 +7,7 @@
 use crate::{Error, Map};
 
 use canonical_derive::Canon;
+use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::JubJubAffine;
@@ -31,9 +32,9 @@ pub struct TransferContract {
     pub(crate) notes: Tree,
     pub(crate) nullifiers: Map<BlsScalar, ()>,
     pub(crate) roots: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<BlsScalar, u64>,
-    pub(crate) message_mapping: Map<BlsScalar, Map<PublicKeyBytes, Message>>,
-    pub(crate) message_mapping_set: Map<BlsScalar, (PublicKey, JubJubAffine)>,
+    pub(crate) balances: Map<ContractId, u64>,
+    pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
+    pub(crate) message_mapping_set: Map<ContractId, (PublicKey, JubJubAffine)>,
 
     // FIXME Variable space
     // https://github.com/dusk-network/rusk/issues/213
@@ -63,6 +64,21 @@ impl TransferContract {
         &self.notes
     }
 
+    pub fn message(
+        &self,
+        contract: &ContractId,
+        pk: &PublicKey,
+    ) -> Result<Message, Error> {
+        let map = self
+            .message_mapping
+            .get(contract)?
+            .ok_or(Error::ContractNotFound)?;
+
+        let message = map.get(&pk.to_bytes())?.ok_or(Error::MessageNotFound)?;
+
+        Ok(*message)
+    }
+
     pub fn notes_from_height(
         &self,
         block_height: u64,
@@ -70,7 +86,7 @@ impl TransferContract {
         self.notes.notes(block_height)
     }
 
-    pub fn balances(&self) -> &Map<BlsScalar, u64> {
+    pub fn balances(&self) -> &Map<ContractId, u64> {
         &self.balances
     }
 
@@ -80,6 +96,21 @@ impl TransferContract {
         self.roots.insert(root, ())?;
 
         Ok(())
+    }
+
+    pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
+        // TODO provisory fn until native ContractId -> BlsScalar conversion is
+        // implemented
+
+        // ContractId don't have an API to extract internal bytes - so we
+        // provisorily trust it is 32 bytes
+        let mut scalar = [0u8; 32];
+        scalar.copy_from_slice(address.as_bytes());
+
+        // Truncate the contract id to fit bls
+        scalar[31] &= 0x3f;
+
+        BlsScalar::from_bytes(&scalar).unwrap_or_default()
     }
 }
 

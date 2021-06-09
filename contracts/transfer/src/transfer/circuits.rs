@@ -6,26 +6,27 @@
 
 use super::TransferContract;
 
+use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
 
-const VD_EXEC_1_0: &'static [u8] = include_bytes!("../../target/verifier-data/ac821c81b8538e330616a83cba9af1cc7d8296201c648398d0028d0f2519f727.vd");
-const VD_EXEC_1_1: &'static [u8] = include_bytes!("../../target/verifier-data/98157019c0d11441ab9a6a36e29d9178983fffa32aba593b61727ef46025f840.vd");
-const VD_EXEC_1_2: &'static [u8] = include_bytes!("../../target/verifier-data/144557c8ee689d544220eaf61700f6e406b9673e6223e47a808e65415d6c27d4.vd");
-const VD_EXEC_2_0: &'static [u8] = include_bytes!("../../target/verifier-data/37446b4c3acebcf27472ef87522ee36c7bfffce33a6447a9368c51d41b3cb3d1.vd");
-const VD_EXEC_2_1: &'static [u8] = include_bytes!("../../target/verifier-data/e1954a07e78b5cb0f82b5e9ccf48790843cf82e7f6bc6d89557f50aa1ba11897.vd");
-const VD_EXEC_2_2: &'static [u8] = include_bytes!("../../target/verifier-data/e56ca2455aa786c4b867c314a9892e505f0c6c3978e7235dd1193eedbfb34e7b.vd");
-const VD_EXEC_3_0: &'static [u8] = include_bytes!("../../target/verifier-data/c74c1dbe923c3b6cfdeef6bb981136094aa4127cea5df0715fcc6888c3db5f13.vd");
-const VD_EXEC_3_1: &'static [u8] = include_bytes!("../../target/verifier-data/8894d295a4261f048c2e529f6b781721c663581e02eac496e18031d079d20e50.vd");
-const VD_EXEC_3_2: &'static [u8] = include_bytes!("../../target/verifier-data/d5993ad86816d6091a5499306108624c5b5a54cd2f88302e49cca311fbf4a6bd.vd");
-const VD_EXEC_4_0: &'static [u8] = include_bytes!("../../target/verifier-data/d41c3efa33b98bd3d35cb990341ff8193059eaeacd9e8b87087814426e71520a.vd");
-const VD_EXEC_4_1: &'static [u8] = include_bytes!("../../target/verifier-data/38a329a415077293671f4d867fe569fb62806a5d3747d2e152c458fd682d0322.vd");
-const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../target/verifier-data/625b011854b088a2f4b4b41eb72c40f18d584e7cb26a8d8ec1af47b635f4ca81.vd");
+const VD_EXEC_1_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/9220aa7d7aa9ab5731063e10fbed1ecd6430df7921235519e99f5c7414c2f004.vd");
+const VD_EXEC_1_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/addd677cdd85b781be6f1baf76678b8617370296978df7437df1a1d6e5bd8bc1.vd");
+const VD_EXEC_1_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/7c845e256eef308949849e1f1988a2902d320d1d4575b8a1cd387c993ac4d850.vd");
+const VD_EXEC_2_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/9b7680ea27836033c8df81ecb8f0abf592d402cecc7392d4cf5b61ee4919cb5f.vd");
+const VD_EXEC_2_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/e8a222ee1d5d08a19b4676dde866fa630258663826714c01966ad30cee8d2ec3.vd");
+const VD_EXEC_2_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/702d241dd437e76f6fd38674e6d117466cd22b5129bc9e3f5faf1862542c70ba.vd");
+const VD_EXEC_3_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/e55ea5240e0001e39453bd98a5854317977e921c3ec2457a799ea5281fa872d8.vd");
+const VD_EXEC_3_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/1cede7d18208f247b08ed50d319ccbbbdbe2731d1f74b74801f1fb7587a1097a.vd");
+const VD_EXEC_3_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/2484ebace4e04500289c2af16402ec2b9aa83c25b26c36afcf54a9fb8c4331e2.vd");
+const VD_EXEC_4_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/1de86e260f13683380061a4ff439e2a667fd752b2f08df70aec0937c64d4e2b6.vd");
+const VD_EXEC_4_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/39966923862ad04073ac17c5bce63c4ed4025804433988b634c0eb3a46e4e0ef.vd");
+const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/f1fb693440ac177dc0d17c8b10ad9f231d85c6ae706af5d2106ba9c93c3e26a3.vd");
 
-const VD_STCO: &'static [u8] = include_bytes!("../../target/verifier-data/37fad9011b7b9109728cdc2863bc045fbcafed4375c661e4c0bb1367333d99ae.vd");
-const VD_STCT: &'static [u8] = include_bytes!("../../target/verifier-data/f54d85616b97ec86874f7dac0bcd7dbeb9dbd5113f703a043d9ccd0ab7da1fee.vd");
-const VD_WDFT: &'static [u8] = include_bytes!("../../target/verifier-data/174423117055c3dddc823ab47f04d7853bb825ff249f65335be0cd958a8528ff.vd");
-const VD_WDFO: &'static [u8] = include_bytes!("../../target/verifier-data/303b12fe2a84e6e6a10cbad17d3d50679b873b3eb81792d07bf3b9ae9f370692.vd");
+const VD_STCO: &'static [u8] = include_bytes!("../../../../.rusk/keys/51dd1bd597d3f665d0e98a027af9859292236f21f5bf3dcb4a80983529bc8fc3.vd");
+const VD_STCT: &'static [u8] = include_bytes!("../../../../.rusk/keys/709f69ba81cd985c2c443cbb0ca7eaa7fe0db5b3aa8769ba3888ccc93053241d.vd");
+const VD_WDFT: &'static [u8] = include_bytes!("../../../../.rusk/keys/f7e93e251f330e245573c103cc6fcd8f2a59ff6fcdaa437740c408da243054c7.vd");
+const VD_WDFO: &'static [u8] = include_bytes!("../../../../.rusk/keys/ecf870e3a32f45ac0358769c0be66ded6c4d51ae7de715da013e3d327b4a384f.vd");
 
 impl TransferContract {
     pub const fn verifier_data_execute(
@@ -68,12 +69,12 @@ impl TransferContract {
     pub fn sign_message_stct(
         crossover: &Crossover,
         value: u64,
-        address: &BlsScalar,
+        address: &ContractId,
     ) -> BlsScalar {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.push(value.into());
-        m.push(*address);
+        m.push(Self::contract_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());
@@ -87,12 +88,12 @@ impl TransferContract {
     pub fn sign_message_stco(
         crossover: &Crossover,
         message: &Message,
-        address: &BlsScalar,
+        address: &ContractId,
     ) -> BlsScalar {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.extend(&message.to_hash_inputs());
-        m.push(*address);
+        m.push(Self::contract_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());

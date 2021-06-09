@@ -28,7 +28,7 @@ pub enum Call {
     },
 
     SendToContractTransparent {
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     },
@@ -40,7 +40,7 @@ pub enum Call {
     },
 
     SendToContractObfuscated {
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -57,8 +57,8 @@ pub enum Call {
     },
 
     WithdrawFromTransparentToContract {
-        from: BlsScalar,
-        to: BlsScalar,
+        from: ContractId,
+        to: ContractId,
         value: u64,
     },
 }
@@ -113,7 +113,7 @@ impl Call {
     }
 
     pub fn send_to_contract_transparent(
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     ) -> Self {
@@ -137,7 +137,7 @@ impl Call {
     }
 
     pub fn send_to_contract_obfuscated(
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
         r: JubJubAffine,
         pk: PublicKey,
@@ -171,8 +171,8 @@ impl Call {
     }
 
     pub fn withdraw_from_transparent_to_contract(
-        from: BlsScalar,
-        to: BlsScalar,
+        from: ContractId,
+        to: ContractId,
         value: u64,
     ) -> Self {
         Self::WithdrawFromTransparentToContract { from, to, value }
