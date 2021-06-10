@@ -15,11 +15,11 @@ check: wasm ## Run the Rust check on the project features
 		--no-default-features
 	@cargo check
 
-test-contracts: ## Build the test contracts
+dummy-test-contracts: ## Create a set of dummy contracts to be used in the tests
 	$(MAKE) -C tests wasm
 
-test: wasm test-contracts ## Perform the contract tests defined in the host module
-	@cargo test -vvv --release
+test: wasm dummy-test-contracts ## Perform the contract tests defined in the host module
+	@cargo test --release
 		
 
 .PHONY: wasm check test help
