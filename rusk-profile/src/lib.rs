@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 use tracing::{info, warn};
 
 static CRS_17: &str =
-    "e1ebe5dedabf87d8fe1232e04d18a111530edc0f4beeeb0251d545a123d944fe";
+    "caa176d248b24e6a324baf04c21a3c86a200767519cf5f823c68e3ab58cf9ef1";
 
 #[derive(Debug, Clone)]
 pub struct Keys([u8; 32]);
