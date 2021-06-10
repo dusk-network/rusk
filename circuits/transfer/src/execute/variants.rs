@@ -10,13 +10,13 @@ use super::{
 };
 use crate::{gadgets, Error};
 
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
-use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::{
+use dusk_jubjub::{
     JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
-use dusk_plonk::prelude::Error as PlonkError;
+use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
+use dusk_plonk::error::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{self, PoseidonBranch};

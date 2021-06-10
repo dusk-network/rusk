@@ -6,9 +6,9 @@
 
 use crate::gadgets;
 
+use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher::{self, PoseidonCipher};
 use phoenix_core::{Error as PhoenixError, Message, Note};

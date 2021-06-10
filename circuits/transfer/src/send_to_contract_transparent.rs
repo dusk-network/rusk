@@ -7,9 +7,9 @@
 use crate::gadgets;
 
 use dusk_bytes::Serializable;
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
 use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
 use dusk_schnorr::Signature;
