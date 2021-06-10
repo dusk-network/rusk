@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(not(feature = "no-bridge"))]
 mod bridge;
 mod callable;
 mod internal;

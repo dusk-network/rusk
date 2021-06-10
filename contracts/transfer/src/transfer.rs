@@ -101,6 +101,7 @@ impl TransferContract {
     pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
         // TODO provisory fn until native ContractId -> BlsScalar conversion is
         // implemented
+        // https://github.com/dusk-network/cargo-bake/issues/1
 
         // ContractId don't have an API to extract internal bytes - so we
         // provisorily trust it is 32 bytes

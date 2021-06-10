@@ -18,10 +18,8 @@ use rusk_abi::{PaymentInfo, PublicInput};
 impl TransferContract {
     pub(crate) fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
         let block_height = dusk_abi::block_height();
+        let gas_consumed = dusk_abi::gas_consumed();
 
-        // FIXME Get gas consumed
-        // https://github.com/dusk-network/rusk/issues/195
-        let gas_consumed = 2;
         let remainder = fee.gen_remainder(gas_consumed);
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;

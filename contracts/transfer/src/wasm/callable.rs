@@ -59,7 +59,7 @@ impl TransferContract {
         note: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = dusk_abi::callee();
+        let address = dusk_abi::caller();
         let mut pi = Vec::with_capacity(3);
 
         pi.push(value.into());
@@ -138,7 +138,7 @@ impl TransferContract {
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = dusk_abi::callee();
+        let address = dusk_abi::caller();
         let mut pi = Vec::with_capacity(9 + message.cipher().len());
 
         pi.push(input_value_commitment.into());
@@ -181,16 +181,13 @@ impl TransferContract {
         true
     }
 
-    // FIXME Wrong documentation specification
-    // The documentation suggests we should threat the withdraw and deposit
-    // values differently. Its probably a nit and they should be the same
-    // https://github.com/dusk-network/rusk/issues/198
     pub fn withdraw_from_transparent_to_contract(
         &mut self,
-        from: ContractId,
         to: ContractId,
         value: u64,
     ) -> bool {
+        let from = dusk_abi::caller();
+
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v
         self.sub_balance(&from, value).expect(

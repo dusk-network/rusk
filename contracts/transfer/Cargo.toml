@@ -28,5 +28,6 @@ transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 rusk-profile = { path = "../../rusk-profile" }
 dusk-plonk = "0.8"
 rusk-vm = "0.6.0-rc"
-alice = { path = "tests/wrapper/alice" }
-bob = { path = "tests/wrapper/bob" }
+
+[features]
+no-bridge = []

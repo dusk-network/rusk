@@ -57,7 +57,6 @@ pub enum Call {
     },
 
     WithdrawFromTransparentToContract {
-        from: ContractId,
         to: ContractId,
         value: u64,
     },
@@ -171,11 +170,10 @@ impl Call {
     }
 
     pub fn withdraw_from_transparent_to_contract(
-        from: ContractId,
         to: ContractId,
         value: u64,
     ) -> Self {
-        Self::WithdrawFromTransparentToContract { from, to, value }
+        Self::WithdrawFromTransparentToContract { to, value }
     }
 }
 
@@ -253,9 +251,8 @@ mod wasm {
                     spend_proof,
                 ),
 
-                Call::WithdrawFromTransparentToContract { from, to, value } => {
-                    contract
-                        .withdraw_from_transparent_to_contract(from, to, value)
+                Call::WithdrawFromTransparentToContract { to, value } => {
+                    contract.withdraw_from_transparent_to_contract(to, value)
                 }
             }
         }

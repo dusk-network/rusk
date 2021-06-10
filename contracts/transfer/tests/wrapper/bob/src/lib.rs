@@ -7,9 +7,18 @@
 #![no_std]
 
 use canonical_derive::Canon;
+use dusk_abi::ContractId;
 
-#[derive(Debug, Default, Clone, Canon)]
-pub struct Bob {}
+#[derive(Debug, Clone, Canon)]
+pub struct Bob {
+    transfer: ContractId,
+}
+
+impl From<ContractId> for Bob {
+    fn from(transfer: ContractId) -> Self {
+        Self { transfer }
+    }
+}
 
 #[cfg(target_arch = "wasm32")]
 mod hosted {
