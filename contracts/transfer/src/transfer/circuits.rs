@@ -10,23 +10,23 @@ use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
 
-const VD_EXEC_1_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/9220aa7d7aa9ab5731063e10fbed1ecd6430df7921235519e99f5c7414c2f004.vd");
-const VD_EXEC_1_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/addd677cdd85b781be6f1baf76678b8617370296978df7437df1a1d6e5bd8bc1.vd");
-const VD_EXEC_1_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/7c845e256eef308949849e1f1988a2902d320d1d4575b8a1cd387c993ac4d850.vd");
-const VD_EXEC_2_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/9b7680ea27836033c8df81ecb8f0abf592d402cecc7392d4cf5b61ee4919cb5f.vd");
-const VD_EXEC_2_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/e8a222ee1d5d08a19b4676dde866fa630258663826714c01966ad30cee8d2ec3.vd");
-const VD_EXEC_2_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/702d241dd437e76f6fd38674e6d117466cd22b5129bc9e3f5faf1862542c70ba.vd");
-const VD_EXEC_3_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/e55ea5240e0001e39453bd98a5854317977e921c3ec2457a799ea5281fa872d8.vd");
-const VD_EXEC_3_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/1cede7d18208f247b08ed50d319ccbbbdbe2731d1f74b74801f1fb7587a1097a.vd");
-const VD_EXEC_3_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/2484ebace4e04500289c2af16402ec2b9aa83c25b26c36afcf54a9fb8c4331e2.vd");
-const VD_EXEC_4_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/1de86e260f13683380061a4ff439e2a667fd752b2f08df70aec0937c64d4e2b6.vd");
-const VD_EXEC_4_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/39966923862ad04073ac17c5bce63c4ed4025804433988b634c0eb3a46e4e0ef.vd");
-const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/f1fb693440ac177dc0d17c8b10ad9f231d85c6ae706af5d2106ba9c93c3e26a3.vd");
+const VD_EXEC_1_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/a5c853e944fb47020b6fcf98c5d03046af6b5f8129bcd75f95603099b3b7e99f.vd");
+const VD_EXEC_1_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/3e6d01794d32bcf30ea57c325d934056f98f61549202c58e0874470bed573470.vd");
+const VD_EXEC_1_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/39327f93d5c9d952cf190fe4b5af878eacce5d887de9d3fd2775dbbf5c3e55fd.vd");
+const VD_EXEC_2_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/c6dd8004be10946f636217e623a8eb17f3d6a1fce609b9ace528938eb8739091.vd");
+const VD_EXEC_2_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/925858370cd6669b5e1acc4d273c4cc20d371e66691c8cfb3c7125cc345c4c0a.vd");
+const VD_EXEC_2_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/8d7bc723bc84ee98ae0f756e65dcf6ff195e057fd2475e3aea229f4f37d91693.vd");
+const VD_EXEC_3_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/61d84bf281d573f6f97dfdaa286b2a2ee2573a28130639f593719dccf8b35c7c.vd");
+const VD_EXEC_3_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/ecabf4a709a5429ee910bc9a64f5884b4afda82823a9ccec0452e40eb6964796.vd");
+const VD_EXEC_3_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/8664b8c5c82c6a16178874348b39441db5935e023ae6eb0b995216b262cb8375.vd");
+const VD_EXEC_4_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/4dffee2d24ed9488140ec0b5cf811b2d35e7d0e3b3245212b8bfd88bd9c8eeaf.vd");
+const VD_EXEC_4_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/f6d928c85be254137a6e60ae4e35022f0f5e4771c54d1d14ea38220c7968c450.vd");
+const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/bbc7a808769bd867ece4a8af005b8dfa61e22830c673d1e893994c097df2e1a3.vd");
 
-const VD_STCO: &'static [u8] = include_bytes!("../../../../.rusk/keys/51dd1bd597d3f665d0e98a027af9859292236f21f5bf3dcb4a80983529bc8fc3.vd");
-const VD_STCT: &'static [u8] = include_bytes!("../../../../.rusk/keys/709f69ba81cd985c2c443cbb0ca7eaa7fe0db5b3aa8769ba3888ccc93053241d.vd");
-const VD_WDFT: &'static [u8] = include_bytes!("../../../../.rusk/keys/f7e93e251f330e245573c103cc6fcd8f2a59ff6fcdaa437740c408da243054c7.vd");
-const VD_WDFO: &'static [u8] = include_bytes!("../../../../.rusk/keys/ecf870e3a32f45ac0358769c0be66ded6c4d51ae7de715da013e3d327b4a384f.vd");
+const VD_STCT: &'static [u8] = include_bytes!("../../../../.rusk/keys/be6e2038d52fb48c79d670315e131ff768d4bb0def2efdb70b7fe165bff62006.vd");
+const VD_STCO: &'static [u8] = include_bytes!("../../../../.rusk/keys/656d8dccb6922415d1ecaf64d2bd54c5463747f7394353e0cfbf70946f28f213.vd");
+const VD_WDFT: &'static [u8] = include_bytes!("../../../../.rusk/keys/3d768349c16af4ff922ccc06b233f874672f959a2dc781544739401996dc4c1c.vd");
+const VD_WDFO: &'static [u8] = include_bytes!("../../../../.rusk/keys/0ab52032e8fe94b5a549cc78c50058656387a55178b4333ac990c3c2a426f3c5.vd");
 
 impl TransferContract {
     pub const fn verifier_data_execute(
