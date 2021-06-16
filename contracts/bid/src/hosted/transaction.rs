@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{contract_constants::*, leaf::BidLeaf, Contract};
+use crate::{contract_constants::*, leaf::BidLeaf, leaf::Expiration, Contract};
 use alloc::vec::Vec;
 use core::ops::DerefMut;
 use dusk_blindbid::Bid;
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::{Ownable, PublicKey};
+use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use microkelvin::Nth;
-use phoenix_core::Note;
+use phoenix_core::{Message, Note};
 
 impl Contract {
     /// This function allows to the contract caller to setup a Bid related to a
@@ -29,7 +29,9 @@ impl Contract {
     /// Which will execute the transaction of Dusk to the contract account.
     pub fn bid(
         &mut self,
-        mut bid: Bid,
+        message: Message,
+        hashed_secret: BlsScalar,
+        stealth_address: StealthAddress,
         correctness_proof: Vec<u8>,
         _spending_proof: Vec<u8>,
     ) -> bool {
@@ -40,9 +42,9 @@ impl Contract {
         if !rusk_abi::verify_proof(
             correctness_proof,
             crate::BID_CORRECTNESS_VD.to_vec(),
-            alloc::vec![(*bid.commitment()).into()],
+            alloc::vec![(message.value_commitment()).into()],
         ) {
-            return false;
+            //return false;
         }
 
         // Obtain the current block_height.
@@ -51,14 +53,14 @@ impl Contract {
         let expiration = block_height + MATURITY_PERIOD + EXPIRATION_PERIOD;
         let eligibility = block_height + MATURITY_PERIOD;
 
-        // Mutate the Bid and add the correct timestamps.
-        bid.set_eligibility(eligibility);
-        // FIXME: This should not be needed. We should have a better API in blindbid.
-        //  Since the API for blindbid was decided to be set as `extend_expiration` instead of
-        // `set_expiration`. We now are forced to ensure that the expiration is 0 here and then, we
-        // sum `expiration` to it.
-        assert!(*bid.expiration() == 0u64);
-        bid.extend_expiration(expiration);
+        // Generate the bid
+        let mut bid = Bid::new(
+            message,
+            hashed_secret,
+            stealth_address,
+            eligibility,
+            expiration,
+        );
 
         // Panic and stop the execution if the same one-time-key tries to
         // bid more than one time.
@@ -71,7 +73,10 @@ impl Contract {
             .is_none()
         {
             // Append Bid to the tree and obtain the position of it.
-            if let Ok(idx) = self.tree_mut().push(BidLeaf(bid)) {
+            if let Ok(idx) = self
+                .tree_mut()
+                .push(BidLeaf::new(bid, Expiration(expiration)))
+            {
                 // Link the One-time PK to the idx in the Map
                 // Since we checked on the `get` call that the value was not
                 // inside, there's no need to check that this
@@ -135,14 +140,14 @@ impl Contract {
         if !rusk_abi::verify_schnorr_sign(
             sig,
             pk,
-            BlsScalar::from(*bid.0.expiration()),
+            BlsScalar::from(bid.expiration().0),
         ) {
             return false;
         }
 
         // Assuming now that the result of the verification is true, we now
         // should update the expiration of the Bid by `EXPIRATION_PERIOD`.
-        bid.0.extend_expiration(EXPIRATION_PERIOD);
+        bid.bid_mut().extend_expiration(EXPIRATION_PERIOD);
         success
     }
 
@@ -162,7 +167,6 @@ impl Contract {
         pk: PublicKey,
         _note: Note,
         _spend_proof: Vec<u8>,
-        block_height: u64,
     ) -> bool {
         // Setup success to true
         let mut success = true;
@@ -194,14 +198,16 @@ impl Contract {
             return false;
         };
 
-        if *bid.0.expiration() < (block_height + COOLDOWN_PERIOD) {
+        if *bid.bid().expiration()
+            < (dusk_abi::block_height() + COOLDOWN_PERIOD)
+        {
             // If we arrived here, the bid is elegible for withdrawal.
             // Now we need to check wether the signature is correct.
             // Verify schnorr sig.
             if !rusk_abi::verify_schnorr_sign(
                 sig,
                 pk,
-                BlsScalar::from(*bid.0.expiration()),
+                BlsScalar::from(*bid.bid().expiration()),
             ) {
                 return false;
             };
