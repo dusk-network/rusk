@@ -9,9 +9,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dusk-abi = "0.9.0-rc"
-canonical = { version="0.6", default-features = false }
+canonical = {version="0.6", default-features=false}
 canonical_derive = "0.6"
-rusk-abi = { path = "../../rusk-abi" }
+rusk-abi = {path = "../../rusk-abi"}
 dusk-bytes = "0.1"
 dusk-bls12_381 = { version="0.8", features=["canon"], default-features = false }
 dusk-jubjub = { version="0.10", features=["canon"], default-features = false }
@@ -23,3 +23,12 @@ nstack = "0.8"
 microkelvin = "0.7"
 dusk-schnorr = { version = "0.7.0-rc", default-features = false, features = ["canon"] }
 dusk-blindbid = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
+
+[dev-dependencies]
+bid-circuits = {path = "../../circuits/bid"}
+wasmi = "0.7"
+rand = "0.8"
+rusk-profile = {path = "../../rusk-profile"}
+dusk-plonk = "0.8"
+rusk-vm = "0.6.0-rc.2"
+lazy_static = "1.4"
