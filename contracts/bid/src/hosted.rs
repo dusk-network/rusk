@@ -15,10 +15,10 @@ use crate::{ops, Contract};
 use alloc::vec::Vec;
 use canonical::{Canon, CanonError, Sink, Source};
 use dusk_abi::{ContractState, ReturnValue};
-use dusk_blindbid::Bid;
-use dusk_pki::PublicKey;
+use dusk_bls12_381::BlsScalar;
+use dusk_pki::{PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
-use phoenix_core::Note;
+use phoenix_core::{Message, Note};
 
 const PAGE_SIZE: usize = 1024 * 4;
 
@@ -34,12 +34,20 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
     match qid {
         ops::BID => {
             // Read host-sent args
-            let bid = Bid::decode(&mut source)?;
+            let message = Message::decode(&mut source)?;
+            let hashed_secret = BlsScalar::decode(&mut source)?;
+            let stealth_addr = StealthAddress::decode(&mut source)?;
             // Fat pointer to the Proof objects.
             let correctness_proof = Vec::<u8>::decode(&mut source)?;
             let spending_proof = Vec::<u8>::decode(&mut source)?;
             // Call bid contract fn
-            let success = slf.bid(bid, correctness_proof, spending_proof);
+            let success = slf.bid(
+                message,
+                hashed_secret,
+                stealth_addr,
+                correctness_proof,
+                spending_proof,
+            );
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
@@ -54,9 +62,7 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let pk = PublicKey::decode(&mut source)?;
             let note = Note::decode(&mut source)?;
             let spending_proof = Vec::<u8>::decode(&mut source)?;
-            let block_height = u64::decode(&mut source)?;
-            let exec_res =
-                slf.withdraw(sig, pk, note, spending_proof, block_height);
+            let exec_res = slf.withdraw(sig, pk, note, spending_proof);
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
