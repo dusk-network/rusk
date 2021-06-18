@@ -10,21 +10,16 @@ use alloc::vec::Vec;
 use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{PublicKey, PublicSpendKey};
+use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
-use rusk_abi::{PaymentInfo, PublicInput};
+use rusk_abi::PublicInput;
 
 impl TransferContract {
     pub(crate) fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
         let block_height = dusk_abi::block_height();
 
-        // TODO use ABI after the functionality is deployed
-        // https://github.com/dusk-network/rusk-vm/pull/176
-        //let gas_consumed = dusk_abi::gas_consumed();
-        let gas_consumed = 2;
-
-        let remainder = fee.gen_remainder(gas_consumed);
+        let gas_left = dusk_abi::gas_left();
+        let remainder = fee.gen_remainder(fee.gas_limit - gas_left);
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
         if remainder_value > 0 {
@@ -39,8 +34,10 @@ impl TransferContract {
         Ok(())
     }
 
+    /// Minimum accepted price per unit of gas
+    ///
+    /// The gas is always calculated in nano-dusk
     pub(crate) const fn minimum_gas_price() -> u64 {
-        // TODO link the docs
         1
     }
 
@@ -78,7 +75,7 @@ impl TransferContract {
         self.message_mapping
             .get_mut(address)?
             .ok_or(Error::MessageNotFound)?
-            .remove(&(*pk).to_bytes())?
+            .remove(&pk.to_bytes())?
             .ok_or(Error::MessageNotFound)
     }
 
@@ -150,20 +147,19 @@ impl TransferContract {
     pub(crate) fn push_message(
         &mut self,
         address: ContractId,
-        pk: PublicKey,
-        r: JubJubAffine,
+        message_address: StealthAddress,
         message: Message,
     ) -> Result<(), Error> {
         let mut to_insert: Option<Map<PublicKeyBytes, Message>> = None;
 
         match self.message_mapping.get_mut(&address)? {
             Some(mut map) => {
-                map.insert(pk.to_bytes(), message)?;
+                map.insert(message_address.pk_r().to_bytes(), message)?;
             }
 
             None => {
                 let mut map: Map<PublicKeyBytes, Message> = Map::default();
-                map.insert(pk.to_bytes(), message)?;
+                map.insert(message_address.pk_r().to_bytes(), message)?;
                 to_insert.replace(map);
             }
         }
@@ -172,7 +168,7 @@ impl TransferContract {
             self.message_mapping.insert(address, map)?;
         }
 
-        self.message_mapping_set.insert(address, (pk, r))?;
+        self.message_mapping_set.insert(address, message_address)?;
 
         Ok(())
     }
@@ -189,19 +185,6 @@ impl TransferContract {
             .ok_or(Error::CrossoverNotFound)?;
 
         Ok((crossover, pk))
-    }
-
-    pub(crate) fn assert_payable(
-        address: &ContractId,
-        transparent: bool,
-        obfuscated: bool,
-    ) -> Result<Option<PublicSpendKey>, Error> {
-        match rusk_abi::payment_info(*address) {
-            PaymentInfo::Transparent(k) if transparent => Ok(k),
-            PaymentInfo::Obfuscated(k) if obfuscated => Ok(k),
-            PaymentInfo::Any(k) => Ok(k),
-            _ => Err(Error::PaymentTypeNotAccepted),
-        }
     }
 
     pub(crate) fn assert_proof(

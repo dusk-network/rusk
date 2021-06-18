@@ -10,8 +10,7 @@ use canonical_derive::Canon;
 use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::PublicKey;
+use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Message, Note};
 
 use core::convert::TryFrom;
@@ -26,7 +25,6 @@ pub use call::Call;
 
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
-// TODO rename attributes
 #[derive(Debug, Default, Clone, Canon)]
 pub struct TransferContract {
     pub(crate) notes: Tree,
@@ -34,14 +32,9 @@ pub struct TransferContract {
     pub(crate) roots: Map<BlsScalar, ()>,
     pub(crate) balances: Map<ContractId, u64>,
     pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
-    pub(crate) message_mapping_set: Map<ContractId, (PublicKey, JubJubAffine)>,
-
-    // FIXME Variable space
-    // https://github.com/dusk-network/rusk/issues/213
+    pub(crate) message_mapping_set: Map<ContractId, StealthAddress>,
     pub(crate) var_crossover: Option<Crossover>,
     pub(crate) var_crossover_pk: Option<PublicKey>,
-    // TODO not implemented
-    pub(crate) circulating_supply: Option<u64>,
 }
 
 impl TransferContract {

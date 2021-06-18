@@ -23,10 +23,10 @@ const VD_EXEC_4_0: &'static [u8] = include_bytes!("../../../../.rusk/keys/4dffee
 const VD_EXEC_4_1: &'static [u8] = include_bytes!("../../../../.rusk/keys/f6d928c85be254137a6e60ae4e35022f0f5e4771c54d1d14ea38220c7968c450.vd");
 const VD_EXEC_4_2: &'static [u8] = include_bytes!("../../../../.rusk/keys/bbc7a808769bd867ece4a8af005b8dfa61e22830c673d1e893994c097df2e1a3.vd");
 
-const VD_STCT: &'static [u8] = include_bytes!("../../../../.rusk/keys/be6e2038d52fb48c79d670315e131ff768d4bb0def2efdb70b7fe165bff62006.vd");
-const VD_STCO: &'static [u8] = include_bytes!("../../../../.rusk/keys/656d8dccb6922415d1ecaf64d2bd54c5463747f7394353e0cfbf70946f28f213.vd");
-const VD_WDFT: &'static [u8] = include_bytes!("../../../../.rusk/keys/3d768349c16af4ff922ccc06b233f874672f959a2dc781544739401996dc4c1c.vd");
-const VD_WDFO: &'static [u8] = include_bytes!("../../../../.rusk/keys/0ab52032e8fe94b5a549cc78c50058656387a55178b4333ac990c3c2a426f3c5.vd");
+const VD_STCT: &'static [u8] = include_bytes!("../../../../.rusk/keys/438ebc8572f9b5a072bed2647f2d36764e2a12dda56762624ffe42ab52e678f8.vd");
+const VD_STCO: &'static [u8] = include_bytes!("../../../../.rusk/keys/86fe9e513cf12715b5b3f3c1205ac24d66a77cf1a71b8cd759bee2646282ecbb.vd");
+const VD_WDFT: &'static [u8] = include_bytes!("../../../../.rusk/keys/b9c7cf0c3b4550dc1c74be17e76506b735456e1cd382866b6de6d24259290d43.vd");
+const VD_WDFO: &'static [u8] = include_bytes!("../../../../.rusk/keys/63a45dac1c0826d73162aba35fb2bf7783bd9fa03560b9d9e05de331bbdd23c2.vd");
 
 impl TransferContract {
     pub const fn verifier_data_execute(

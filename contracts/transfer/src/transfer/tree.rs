@@ -185,10 +185,7 @@ impl Tree {
     }
 
     pub fn root(&mut self) -> Result<BlsScalar, Error> {
-        // FIXME Use proper root
-        // https://github.com/dusk-network/rusk/issues/224
-        // self.tree.root()
-        Ok(BlsScalar::one())
+        Ok(self.tree.root()?)
     }
 
     pub fn opening(

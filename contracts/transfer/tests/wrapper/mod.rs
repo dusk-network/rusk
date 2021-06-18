@@ -14,8 +14,9 @@ use transfer_contract::{Call, Error as TransferError, TransferContract};
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bytes::Serializable;
-use dusk_jubjub::GENERATOR_EXTENDED;
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_pki::{
+    Ownable, PublicKey, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
+};
 use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
 use phoenix_core::{Crossover, Fee, Message, Note};
@@ -93,8 +94,7 @@ impl TransferWrapper {
         let bob = Contract::new(bob, BOB.to_vec());
         let bob = network.deploy(bob).unwrap();
 
-        let gas = GasMeter::with_limit(1_000);
-
+        let gas = GasMeter::with_limit(1);
         Self {
             rng,
             network,
@@ -289,6 +289,7 @@ impl TransferWrapper {
         Vec<Note>,
         Vec<u8>,
     ) {
+        self.gas = GasMeter::with_limit(gas_limit);
         let anchor = self.anchor();
 
         let mut execute_proof = ExecuteCircuit::default();
@@ -508,7 +509,7 @@ impl TransferWrapper {
         gas_price: u64,
         contract: ContractId,
         value: u64,
-    ) -> Result<(), VMError> {
+    ) -> Result<StealthAddress, VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
@@ -537,7 +538,7 @@ impl TransferWrapper {
         );
 
         let mut stco_proof = SendToContractObfuscatedCircuit::new(
-            fee, crossover, &refund_vk, signature, true, message, output, r,
+            fee, crossover, &refund_vk, signature, false, message, output, r,
             address,
         )
         .unwrap();
@@ -548,12 +549,11 @@ impl TransferWrapper {
             stco_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
-        let r = GENERATOR_EXTENDED * &r;
+        let message_address = output.gen_stealth_address(&r);
         let call = Call::send_to_contract_obfuscated(
             contract,
             message,
-            r.into(),
-            output.A().into(),
+            message_address,
             spend_proof_stco,
         )
         .to_execute(
@@ -568,6 +568,8 @@ impl TransferWrapper {
         .unwrap();
 
         self.network
-            .transact::<_, ()>(self.transfer, call, &mut self.gas)
+            .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
+
+        Ok(message_address)
     }
 }

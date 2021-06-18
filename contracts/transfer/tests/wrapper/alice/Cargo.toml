@@ -16,4 +16,6 @@ dusk-abi = "0.9.0-rc"
 rusk-abi = { path = "../../../../../rusk-abi" }
 transfer-contract = { path = "../../../", features = ["no-bridge"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+
 [workspace]

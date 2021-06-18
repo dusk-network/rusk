@@ -12,7 +12,7 @@ use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubAffine;
-use dusk_pki::PublicKey;
+use dusk_pki::StealthAddress;
 use phoenix_core::{Crossover, Fee, Message, Note};
 
 #[derive(Debug, Clone, Canon)]
@@ -42,15 +42,13 @@ pub enum Call {
     SendToContractObfuscated {
         address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     },
 
     WithdrawFromObfuscated {
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
@@ -138,31 +136,27 @@ impl Call {
     pub fn send_to_contract_obfuscated(
         address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::SendToContractObfuscated {
             address,
             message,
-            r,
-            pk,
+            message_address,
             spend_proof,
         }
     }
 
     pub fn withdraw_from_obfuscated(
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
             message,
-            r,
-            pk,
+            message_address,
             note,
             input_value_commitment,
             spend_proof,
@@ -224,28 +218,24 @@ mod wasm {
                 Call::SendToContractObfuscated {
                     address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     spend_proof,
                 } => contract.send_to_contract_obfuscated(
                     address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     spend_proof,
                 ),
 
                 Call::WithdrawFromObfuscated {
                     message,
-                    r,
-                    pk,
+                    message_address,
                     note,
                     input_value_commitment,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
                     message,
-                    r,
-                    pk,
+                    message_address,
                     note,
                     input_value_commitment,
                     spend_proof,

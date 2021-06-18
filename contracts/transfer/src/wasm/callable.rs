@@ -9,9 +9,10 @@ use crate::TransferContract;
 use alloc::vec::Vec;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, PublicKey};
+use dusk_jubjub::{JubJubAffine, JubJubExtended};
+use dusk_pki::{Ownable, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
+use rusk_abi::PaymentInfo;
 
 impl TransferContract {
     pub fn send_to_contract_transparent(
@@ -39,8 +40,10 @@ impl TransferContract {
             .expect("Failed to add the balance to the provided address!");
 
         //  3. if a.isPayable() ↦ true then continue
-        Self::assert_payable(&address, true, false)
-            .expect("The provided address is not payable!");
+        match rusk_abi::payment_info(address) {
+            PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
+            _ => panic!("The caller doesn't accept transparent notes"),
+        }
 
         //  4. verify(C.c, v, π)
         let vd = Self::verifier_data_stct();
@@ -88,8 +91,7 @@ impl TransferContract {
         &mut self,
         address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     ) -> bool {
         let (crossover, crossover_pk) = self
@@ -99,25 +101,39 @@ impl TransferContract {
         let sign_message =
             Self::sign_message_stco(&crossover, &message, &address);
 
+        let (message_psk_a, message_psk_b) =
+            match rusk_abi::payment_info(address) {
+                PaymentInfo::Obfuscated(Some(k))
+                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
+
+                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
+                    (JubJubExtended::identity(), JubJubExtended::identity())
+                }
+
+                _ => panic!("The caller doesn't accept transparent notes"),
+            };
+
         let mut pi = Vec::with_capacity(12 + message.cipher().len());
 
         pi.push(crossover.value_commitment().into());
         pi.push(message.value_commitment().into());
+        pi.push(message_psk_a.into());
+        pi.push(message_psk_b.into());
+        pi.push(message_address.pk_r().as_ref().into());
         pi.push(message.nonce().into());
-        pi.push(pk.as_ref().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
-        pi.push(crossover_pk.as_ref().into());
+        pi.push(Self::contract_to_scalar(&address).into());
+        pi.push(crossover.nonce().into());
+        pi.extend(crossover.encrypted_data().cipher().iter().map(|c| c.into()));
         pi.push(sign_message.into());
+        pi.push(crossover_pk.as_ref().into());
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
-        self.push_message(address, pk, r, message)
+        self.push_message(address, message_address, message)
             .expect("Failed to append the message to the state!");
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address, false, true)
-            .expect("The provided address is not payable!");
-
         //  4. verify(C.c, M, pk, π)
         let vd = Self::verifier_data_stco();
         Self::assert_proof(spend_proof, vd, pi)
@@ -132,8 +148,7 @@ impl TransferContract {
     pub fn withdraw_from_obfuscated(
         &mut self,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
@@ -144,37 +159,35 @@ impl TransferContract {
         pi.push(input_value_commitment.into());
         pi.push(message.value_commitment().into());
         pi.push(message.nonce().into());
-        pi.push(pk.as_ref().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
         pi.push(note.value_commitment().into());
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
-        // FIXME Compute the sum of message commitments
         // https://github.com/dusk-network/rusk/issues/192
         let _message = self
-            .take_message_from_address_key(&address, &pk)
+            .take_message_from_address_key(&address, message_address.pk_r())
             .expect(
             "Failed to take a message from the provided address/key mapping!",
         );
 
         //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
         //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
-        self.push_message(address, pk, r, message)
+        self.push_message(address, message_address, message)
             .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address, true, false)
-            .expect("The provided address is not payable!");
+        match rusk_abi::payment_info(address) {
+            PaymentInfo::Obfuscated(_) | PaymentInfo::Any(_) => (),
+            _ => panic!("This contract accepts only obfuscated notes!"),
+        }
 
         //  7. verify(c, M_c, No.c, π)
         let vd = Self::verifier_data_wdfo();
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
-        // FIXME Non-documented step
-        // https://github.com/dusk-network/rusk/issues/192
         self.push_note_current_height(note)
             .expect("Failed to append the provided note to the state!");
 
@@ -224,15 +237,9 @@ impl TransferContract {
         pi.push(fee.gas_limit.into());
         pi.push(crossover_commitment.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
-        // FIXME fetch the tx hash
-        // https://github.com/dusk-network/rusk/issues/197
         pi.push(BlsScalar::zero().into());
 
         //  1. α ∈ R
-        // FIXME Use proper root
-        // https://github.com/dusk-network/rusk/issues/224
-        let _ = anchor;
-        let anchor = BlsScalar::one();
         if !self
             .root_exists(&anchor)
             .expect("Failed to check if the anchor exists!")
