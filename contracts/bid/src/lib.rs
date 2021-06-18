@@ -67,6 +67,8 @@ pub mod contract_constants {
     /// Height of the `BidTree` used inside of the BidContract in order to
     /// store the `Bid`s and provide merkle openings to them.
     pub const BID_TREE_DEPTH: usize = 17;
+    /// PaymentInfo of the contract
+    pub const PAYMENT_INFO: rusk_abi::PaymentInfo::Transparent(None);
 }
 
 /// Alias for `PoseidonTree<BidLeaf, ExpirationAnnotation, BID_TREE_DEPTH>`.
