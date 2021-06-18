@@ -19,10 +19,33 @@ use dusk_bls12_381::BlsScalar;
 use dusk_pki::{PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use phoenix_core::{Message, Note};
+use rusk_abi::{PaymentInfo, PAYMENT_INFO};
 
 const PAGE_SIZE: usize = 1024 * 4;
 
 type TransactionIndex = u8;
+type QueryIndex = u8;
+
+fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
+    let mut source = Source::new(&bytes[..]);
+
+    // read self.
+    let slf = Counter::decode(&mut source)?;
+
+    // read query id
+    let qid = QueryIndex::decode(&mut source)?;
+    match qid {
+        // read_value (&Self) -> i32
+        PAYMENT_INFO => {
+            let mut sink = Sink::new(&mut bytes[..]);
+
+            ReturnValue::from_canon(&super::contract_constants::PAYMENT_INFO)
+                .encode(&mut sink);
+            Ok(())
+        }
+        _ => panic!("Unimplemented OP"),
+    }
+}
 
 fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
     let mut source = Source::new(bytes);
@@ -91,4 +114,9 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
 #[no_mangle]
 fn t(bytes: &mut [u8; PAGE_SIZE]) {
     transaction(bytes).unwrap()
+}
+
+#[no_mangle]
+fn q(bytes: &[u8; PAGE_SIZE]) {
+    query(bytes).unwrap()
 }
