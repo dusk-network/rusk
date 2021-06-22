@@ -102,11 +102,14 @@ fn bid_contract_workflow_works() {
 
     assert!(call_result);
 
+    // Set a valid block height so that the Bid is withdrawable.
+    // TODO
+
     // Sign the t_e (expiration) and call extend bid.
     let signature = Signature::new(
         &sk,
         &mut rand::thread_rng(),
-        BlsScalar::from(EXPIRATION_PERIOD + MATURITY_PERIOD + block_height),
+        BlsScalar::from(VALIDITY_PERIOD),
     );
 
     // Now that a Bid is inside the tree we should be able to extend it if the
@@ -121,24 +124,16 @@ fn bid_contract_workflow_works() {
 
     assert!(call_result);
 
-    // Sign the t_e (expiration) and call withdraw bid.
-    // Note that the block_height has to be set so that it
-    // surpasses t_e after the extension + COOLDOWN_PERIOD.
-    // Note also that we extended the bid. Therefore we need to
-    // sign the new expiration which equals: `original_block_height + 2*
-    // EXPIRATION_PERIOD + MATURITY_PERIOD`.
+    // Sign the t_e (expiration) and call withdraw bid..
     let signature = Signature::new(
         &sk,
         &mut rand::thread_rng(),
-        BlsScalar::from(block_height + 2 * EXPIRATION_PERIOD + MATURITY_PERIOD),
+        BlsScalar::from(block_height),
     );
 
     // Set a valid block height so that the Bid is withdrawable.
-    block_height = block_height
-        + 2 * EXPIRATION_PERIOD
-        + MATURITY_PERIOD
-        + COOLDOWN_PERIOD
-        + 1;
+    // TODO
+
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
     let note = Note::obfuscated(&mut rand::thread_rng(), &psk, 55, b);

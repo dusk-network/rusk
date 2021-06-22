@@ -50,8 +50,11 @@ impl Contract {
         // Obtain the current block_height.
         let block_height = dusk_abi::block_height();
         // Compute maturity & expiration periods
-        let expiration = block_height + MATURITY_PERIOD + EXPIRATION_PERIOD;
-        let eligibility = block_height + MATURITY_PERIOD;
+        let expiration = block_height + MATURITY_PERIOD + VALIDITY_PERIOD;
+        let eligibility = block_height
+            + MATURITY_PERIOD
+            + VALIDITY_PERIOD
+            + (EPOCH - (block_height % EPOCH));
 
         // Generate the bid
         let mut bid = Bid::new(
@@ -136,18 +139,27 @@ impl Contract {
         };
         let bid: &mut BidLeaf = branch_mut.deref_mut();
 
+        // Check wether the maturity and expiration periods are within bounds.
+        let block_height = dusk_abi::block_height();
+        let bid_expiration = bid.bid().expiration().clone();
+        // σh + Δmaturity​ ≥ B.Bhexpiration​)
+        assert!(block_height + MATURITY_PERIOD >= bid_expiration);
+        // B.Bhexpiration​ > σh
+        assert!(bid_expiration > block_height);
+
         // Verify schnorr sig.
         if !rusk_abi::verify_schnorr_sign(
             sig,
             pk,
-            BlsScalar::from(bid.expiration().0),
+            BlsScalar::from(bid_expiration),
         ) {
             return false;
         }
 
         // Assuming now that the result of the verification is true, we now
-        // should update the expiration of the Bid by `EXPIRATION_PERIOD`.
-        bid.bid_mut().extend_expiration(EXPIRATION_PERIOD);
+        // should update the expiration of the Bid by `VALIDITY_PERIOD`.
+        bid.bid_mut().extend_expiration(VALIDITY_PERIOD);
+        bid.expiration_mut().0 += VALIDITY_PERIOD;
         success
     }
 
@@ -198,9 +210,7 @@ impl Contract {
             return false;
         };
 
-        if *bid.bid().expiration()
-            < (dusk_abi::block_height() + COOLDOWN_PERIOD)
-        {
+        if *bid.bid().expiration() < dusk_abi::block_height() {
             // If we arrived here, the bid is elegible for withdrawal.
             // Now we need to check wether the signature is correct.
             // Verify schnorr sig.
