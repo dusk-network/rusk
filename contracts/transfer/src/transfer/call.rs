@@ -4,13 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::Error;
+
 use alloc::vec::Vec;
-use canonical::{Canon, InvalidEncoding, Store};
+use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubAffine;
-use dusk_pki::PublicKey;
+use dusk_pki::StealthAddress;
 use phoenix_core::{Crossover, Fee, Message, Note};
 
 #[derive(Debug, Clone, Canon)]
@@ -26,37 +28,34 @@ pub enum Call {
     },
 
     SendToContractTransparent {
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     },
 
     WithdrawFromTransparent {
-        address: BlsScalar,
+        value: u64,
         note: Note,
+        spend_proof: Vec<u8>,
     },
 
     SendToContractObfuscated {
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     },
 
     WithdrawFromObfuscated {
-        address: BlsScalar,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     },
 
     WithdrawFromTransparentToContract {
-        from: BlsScalar,
-        to: BlsScalar,
+        to: ContractId,
         value: u64,
     },
 }
@@ -82,7 +81,7 @@ impl Call {
         }
     }
 
-    pub fn to_execute<S>(
+    pub fn to_execute(
         &self,
         contract: ContractId,
         anchor: BlsScalar,
@@ -91,16 +90,12 @@ impl Call {
         crossover: Option<Crossover>,
         notes: Vec<Note>,
         spend_proof: Vec<u8>,
-    ) -> Result<Self, S::Error>
-    where
-        S: Store,
-    {
-        // Prevents invalid recursion
+    ) -> Result<Self, Error> {
         if let Self::Execute { .. } = self {
-            Err(InvalidEncoding.into())?;
+            Err(Error::ExecuteRecursion)?;
         }
 
-        let tx = Transaction::from_canon(self, &S::default())?;
+        let tx = Transaction::from_canon(self);
         let execute = Self::execute(
             anchor,
             nullifiers,
@@ -115,7 +110,7 @@ impl Call {
     }
 
     pub fn send_to_contract_transparent(
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     ) -> Self {
@@ -126,40 +121,42 @@ impl Call {
         }
     }
 
-    pub fn withdraw_from_transparent(address: BlsScalar, note: Note) -> Self {
-        Self::WithdrawFromTransparent { address, note }
+    pub fn withdraw_from_transparent(
+        value: u64,
+        note: Note,
+        spend_proof: Vec<u8>,
+    ) -> Self {
+        Self::WithdrawFromTransparent {
+            value,
+            note,
+            spend_proof,
+        }
     }
 
     pub fn send_to_contract_obfuscated(
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::SendToContractObfuscated {
             address,
             message,
-            r,
-            pk,
+            message_address,
             spend_proof,
         }
     }
 
     pub fn withdraw_from_obfuscated(
-        address: BlsScalar,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
-            address,
             message,
-            r,
-            pk,
+            message_address,
             note,
             input_value_commitment,
             spend_proof,
@@ -167,11 +164,10 @@ impl Call {
     }
 
     pub fn withdraw_from_transparent_to_contract(
-        from: BlsScalar,
-        to: BlsScalar,
+        to: ContractId,
         value: u64,
     ) -> Self {
-        Self::WithdrawFromTransparentToContract { from, to, value }
+        Self::WithdrawFromTransparentToContract { to, value }
     }
 }
 
@@ -181,10 +177,7 @@ mod wasm {
     use crate::TransferContract;
 
     impl Call {
-        pub fn transact<S>(self, contract: &mut TransferContract<S>) -> bool
-        where
-            S: Store,
-        {
+        pub fn transact(self, contract: &mut TransferContract) -> bool {
             match self {
                 Call::Execute {
                     anchor,
@@ -214,45 +207,42 @@ mod wasm {
                     spend_proof,
                 ),
 
-                Call::WithdrawFromTransparent { address, note } => {
-                    contract.withdraw_from_transparent(address, note)
+                Call::WithdrawFromTransparent {
+                    value,
+                    note,
+                    spend_proof,
+                } => {
+                    contract.withdraw_from_transparent(value, note, spend_proof)
                 }
 
                 Call::SendToContractObfuscated {
                     address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     spend_proof,
                 } => contract.send_to_contract_obfuscated(
                     address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     spend_proof,
                 ),
 
                 Call::WithdrawFromObfuscated {
-                    address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     note,
                     input_value_commitment,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
-                    address,
                     message,
-                    r,
-                    pk,
+                    message_address,
                     note,
                     input_value_commitment,
                     spend_proof,
                 ),
 
-                Call::WithdrawFromTransparentToContract { from, to, value } => {
-                    contract
-                        .withdraw_from_transparent_to_contract(from, to, value)
+                Call::WithdrawFromTransparentToContract { to, value } => {
+                    contract.withdraw_from_transparent_to_contract(to, value)
                 }
             }
         }

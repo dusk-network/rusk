@@ -4,21 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::keys;
 use crate::TransferContract;
 
 use alloc::vec::Vec;
-use canonical::Store;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, PublicKey};
-use phoenix_core::{Crossover, Fee, Message, Note, NoteType};
+use dusk_jubjub::{JubJubAffine, JubJubExtended};
+use dusk_pki::{Ownable, StealthAddress};
+use phoenix_core::{Crossover, Fee, Message, Note};
+use rusk_abi::PaymentInfo;
 
-impl<S: Store> TransferContract<S> {
+impl TransferContract {
     pub fn send_to_contract_transparent(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         value: u64,
         spend_proof: Vec<u8>,
     ) -> bool {
@@ -26,10 +25,13 @@ impl<S: Store> TransferContract<S> {
             .take_crossover()
             .expect("The crossover is mandatory for STCT!");
 
-        let mut pi = Vec::with_capacity(3);
+        let message = Self::sign_message_stct(&crossover, value, &address);
+
+        let mut pi = Vec::with_capacity(6);
 
         pi.push(crossover.value_commitment().into());
         pi.push(pk.as_ref().into());
+        pi.push(message.into());
         pi.push(value.into());
 
         //  1. v < 2^64
@@ -38,11 +40,13 @@ impl<S: Store> TransferContract<S> {
             .expect("Failed to add the balance to the provided address!");
 
         //  3. if a.isPayable() ↦ true then continue
-        Self::assert_payable(&address)
-            .expect("The provided address is not payable!");
+        match rusk_abi::payment_info(address) {
+            PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
+            _ => panic!("The caller doesn't accept transparent notes"),
+        }
 
         //  4. verify(C.c, v, π)
-        let vd = keys::stct();
+        let vd = Self::verifier_data_stct();
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -54,17 +58,19 @@ impl<S: Store> TransferContract<S> {
 
     pub fn withdraw_from_transparent(
         &mut self,
-        address: BlsScalar,
+        value: u64,
         note: Note,
+        spend_proof: Vec<u8>,
     ) -> bool {
-        let value = match (note.note(), note.value(None)) {
-            (NoteType::Transparent, Ok(v)) => v,
-            _ => panic!("The provided note must be a transparent note!"),
-        };
+        let address = dusk_abi::caller();
+        let mut pi = Vec::with_capacity(3);
+
+        pi.push(value.into());
+        pi.push(note.value_commitment().into());
 
         //  1. a ∈ B↦
         //  2. B_a↦ ← B_a↦ − v
-        self.sub_balance(address, value)
+        self.sub_balance(&address, value)
             .expect("Failed to subtract the balance from the provided address");
 
         //  3. N↦.append(N_p^t)
@@ -73,41 +79,63 @@ impl<S: Store> TransferContract<S> {
         self.push_note_current_height(note)
             .expect("Failed to append the provided note to the state!");
 
+        //  6. verify(C.c, M, pk, π)
+        let vd = Self::verifier_data_wdft();
+        Self::assert_proof(spend_proof, vd, pi)
+            .expect("Failed to verify the provided proof!");
+
         true
     }
 
     pub fn send_to_contract_obfuscated(
         &mut self,
-        address: BlsScalar,
+        address: ContractId,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         spend_proof: Vec<u8>,
     ) -> bool {
         let (crossover, crossover_pk) = self
             .take_crossover()
-            .expect("The crossover is mandatory for STCT!");
+            .expect("The crossover is mandatory for STCO!");
 
-        let mut pi = Vec::with_capacity(5 + message.cipher().len());
+        let sign_message =
+            Self::sign_message_stco(&crossover, &message, &address);
+
+        let (message_psk_a, message_psk_b) =
+            match rusk_abi::payment_info(address) {
+                PaymentInfo::Obfuscated(Some(k))
+                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
+
+                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
+                    (JubJubExtended::identity(), JubJubExtended::identity())
+                }
+
+                _ => panic!("The caller doesn't accept transparent notes"),
+            };
+
+        let mut pi = Vec::with_capacity(12 + message.cipher().len());
 
         pi.push(crossover.value_commitment().into());
-        pi.push(crossover_pk.as_ref().into());
         pi.push(message.value_commitment().into());
+        pi.push(message_psk_a.into());
+        pi.push(message_psk_b.into());
+        pi.push(message_address.pk_r().as_ref().into());
         pi.push(message.nonce().into());
-        pi.push(pk.as_ref().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
+        pi.push(Self::contract_to_scalar(&address).into());
+        pi.push(crossover.nonce().into());
+        pi.extend(crossover.encrypted_data().cipher().iter().map(|c| c.into()));
+        pi.push(sign_message.into());
+        pi.push(crossover_pk.as_ref().into());
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
-        self.push_message(address, pk, r, message)
+        self.push_message(address, message_address, message)
             .expect("Failed to append the message to the state!");
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address)
-            .expect("The provided address is not payable!");
-
         //  4. verify(C.c, M, pk, π)
-        let vd = keys::stco();
+        let vd = Self::verifier_data_stco();
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -119,69 +147,63 @@ impl<S: Store> TransferContract<S> {
 
     pub fn withdraw_from_obfuscated(
         &mut self,
-        address: BlsScalar,
         message: Message,
-        r: JubJubAffine,
-        pk: PublicKey,
+        message_address: StealthAddress,
         note: Note,
         input_value_commitment: JubJubAffine,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let mut pi = Vec::with_capacity(5 + message.cipher().len());
+        let address = dusk_abi::caller();
+        let mut pi = Vec::with_capacity(9 + message.cipher().len());
 
         pi.push(input_value_commitment.into());
         pi.push(message.value_commitment().into());
         pi.push(message.nonce().into());
-        pi.push(pk.as_ref().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
         pi.push(note.value_commitment().into());
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
-        // FIXME Compute the sum of message commitments
         // https://github.com/dusk-network/rusk/issues/192
         let _message = self
-            .take_message_from_address_key(&address, &pk)
+            .take_message_from_address_key(&address, message_address.pk_r())
             .expect(
             "Failed to take a message from the provided address/key mapping!",
         );
 
         //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
         //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
-        self.push_message(address, pk, r, message)
+        self.push_message(address, message_address, message)
             .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        Self::assert_payable(&address)
-            .expect("The provided address is not payable!");
+        match rusk_abi::payment_info(address) {
+            PaymentInfo::Obfuscated(_) | PaymentInfo::Any(_) => (),
+            _ => panic!("This contract accepts only obfuscated notes!"),
+        }
 
         //  7. verify(c, M_c, No.c, π)
-        let vd = keys::wdfo();
+        let vd = Self::verifier_data_wdfo();
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
-        // FIXME Non-documented step
-        // https://github.com/dusk-network/rusk/issues/192
         self.push_note_current_height(note)
             .expect("Failed to append the provided note to the state!");
 
         true
     }
 
-    // FIXME Wrong documentation specification
-    // The documentation suggests we should threat the withdraw and deposit
-    // values differently. Its probably a nit and they should be the same
-    // https://github.com/dusk-network/rusk/issues/198
     pub fn withdraw_from_transparent_to_contract(
         &mut self,
-        from: BlsScalar,
-        to: BlsScalar,
+        to: ContractId,
         value: u64,
     ) -> bool {
+        let from = dusk_abi::caller();
+
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v
-        self.sub_balance(from, value).expect(
+        self.sub_balance(&from, value).expect(
             "Failed to subtract the balance from the provided address!",
         );
 
@@ -208,22 +230,16 @@ impl<S: Store> TransferContract<S> {
         let inputs = nullifiers.len();
         let outputs = notes.len();
 
-        let mut pi = Vec::with_capacity(4 + inputs + outputs);
+        let mut pi = Vec::with_capacity(5 + inputs + 2 * outputs);
 
         pi.push(anchor.into());
         pi.extend(nullifiers.iter().map(|n| n.into()));
         pi.push(fee.gas_limit.into());
         pi.push(crossover_commitment.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
-        // FIXME fetch the tx hash
-        // https://github.com/dusk-network/rusk/issues/197
         pi.push(BlsScalar::zero().into());
 
         //  1. α ∈ R
-        // FIXME Use proper root
-        // https://github.com/dusk-network/rusk/issues/224
-        let _ = anchor;
-        let anchor = BlsScalar::one();
         if !self
             .root_exists(&anchor)
             .expect("Failed to check if the anchor exists!")
@@ -255,7 +271,7 @@ impl<S: Store> TransferContract<S> {
         //  8. g_pmin < g_p
         //  9. fee ← g_l ⋅ g_p
         let minimum_gas_price = Self::minimum_gas_price();
-        if fee.gas_price <= minimum_gas_price {
+        if fee.gas_price < minimum_gas_price {
             panic!(
                 "The gas price is below the minimum `{:?}`!",
                 minimum_gas_price
@@ -263,7 +279,7 @@ impl<S: Store> TransferContract<S> {
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        let vd = keys::exec(inputs, outputs);
+        let vd = Self::verifier_data_execute(inputs, outputs);
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -272,19 +288,11 @@ impl<S: Store> TransferContract<S> {
         self.var_crossover_pk
             .replace((*fee.stealth_address().pk_r().as_ref()).into());
         if let Some((contract, tx)) = call {
-            dusk_abi::debug!("Inter-contract call {:?}", contract);
-
             let ret = dusk_abi::transact_raw(self, &contract, &tx)
                 .expect("Failed to execute the provided call transaction!");
 
-            dusk_abi::debug!("Inter-contract call finished {:?}", contract);
-
-            let ret: bool = ret.cast(S::default())
-                .expect("Failed to fetch the return value from the provided call transaction!");
-
-            if !ret {
-                panic!("The provided call transaction failed!");
-            }
+            let _: bool =
+                ret.cast().expect("Failed to cast returned value to void!");
         }
 
         // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)

@@ -6,9 +6,9 @@
 
 use super::SIGN_MESSAGE;
 
+use dusk_bls12_381::BlsScalar;
+use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::Ownable;
-use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Proof as SchnorrProof;
