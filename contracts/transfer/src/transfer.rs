@@ -4,19 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::convert::TryFrom;
+use crate::{Error, Map};
 
-use alloc::vec::Vec;
-use canonical::{Canon, InvalidEncoding, Store};
 use canonical_derive::Canon;
+use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubAffine;
-use dusk_kelvin_map::Map;
-use dusk_pki::PublicKey;
+use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Message, Note};
 
+use core::convert::TryFrom;
+
 mod call;
+mod circuits;
 mod tree;
 
 use tree::Tree;
@@ -26,86 +26,90 @@ pub use call::Call;
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
-pub struct TransferContract<S: Store> {
-    pub(crate) notes: Tree<S>,
-    pub(crate) notes_mapping: Map<u64, Vec<Note>, S>,
-    pub(crate) nullifiers: Map<BlsScalar, (), S>,
-    pub(crate) roots: Map<BlsScalar, (), S>,
-    pub(crate) balances: Map<BlsScalar, u64, S>,
-    pub(crate) message_mapping:
-        Map<BlsScalar, Map<PublicKeyBytes, Message, S>, S>,
-    pub(crate) message_mapping_set:
-        Map<BlsScalar, (PublicKey, JubJubAffine), S>,
-
-    // FIXME Variable space
-    // https://github.com/dusk-network/rusk/issues/213
+pub struct TransferContract {
+    pub(crate) notes: Tree,
+    pub(crate) nullifiers: Map<BlsScalar, ()>,
+    pub(crate) roots: Map<BlsScalar, ()>,
+    pub(crate) balances: Map<ContractId, u64>,
+    pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
+    pub(crate) message_mapping_set: Map<ContractId, StealthAddress>,
     pub(crate) var_crossover: Option<Crossover>,
     pub(crate) var_crossover_pk: Option<PublicKey>,
-    // TODO not implemented
-    pub(crate) circulating_supply: Option<u64>,
 }
 
-impl<S: Store> TransferContract<S> {
-    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, S::Error> {
-        self.notes
-            .get(pos)
-            .map(|l| l.map(|l| l.note.clone().into()))
-            .map_err(|_| InvalidEncoding.into())
+impl TransferContract {
+    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
+        Ok(self.notes.get(pos).map(|l| l.map(|l| l.into()))?)
     }
 
     pub(crate) fn push_note(
         &mut self,
         block_height: u64,
         note: Note,
-    ) -> Result<Note, S::Error> {
-        let pos = self
-            .notes
-            .push((block_height, note).into())
-            .map_err(|_| InvalidEncoding.into())?;
-
-        let note = self.get_note(pos)?.ok_or(InvalidEncoding.into())?;
-
-        let mut create = false;
-        match self.notes_mapping.get_mut(&block_height)? {
-            // TODO evaluate options for efficient dedup
-            // We can't call dedup here because the note `PartialEq` relies on
-            // poseidon hash, that is supposed to be a host function
-            // https://github.com/dusk-network/rusk/issues/196
-            Some(mut mapped) => mapped.push(note.clone()),
-
-            None => create = true,
-        }
-
-        if create {
-            self.notes_mapping.insert(block_height, [note].to_vec())?;
-        }
+    ) -> Result<Note, Error> {
+        let pos = self.notes.push((block_height, note).into())?;
+        let note = self.get_note(pos)?.ok_or(Error::NoteNotFound)?;
 
         Ok(note)
     }
 
-    pub fn notes(&self) -> &Tree<S> {
+    pub fn notes(&self) -> &Tree {
         &self.notes
     }
 
-    pub fn notes_mapping(&self) -> &Map<u64, Vec<Note>, S> {
-        &self.notes_mapping
+    pub fn message(
+        &self,
+        contract: &ContractId,
+        pk: &PublicKey,
+    ) -> Result<Message, Error> {
+        let map = self
+            .message_mapping
+            .get(contract)?
+            .ok_or(Error::ContractNotFound)?;
+
+        let message = map.get(&pk.to_bytes())?.ok_or(Error::MessageNotFound)?;
+
+        Ok(*message)
     }
 
-    pub fn balances(&self) -> &Map<BlsScalar, u64, S> {
+    pub fn notes_from_height(
+        &self,
+        block_height: u64,
+    ) -> Result<impl Iterator<Item = Result<&Note, Error>>, Error> {
+        self.notes.notes(block_height)
+    }
+
+    pub fn balances(&self) -> &Map<ContractId, u64> {
         &self.balances
     }
 
-    pub(crate) fn update_root(&mut self) -> Result<(), S::Error> {
-        let root = self.notes.root().map_err(|_| InvalidEncoding.into())?;
+    pub(crate) fn update_root(&mut self) -> Result<(), Error> {
+        let root = self.notes.root()?;
 
         self.roots.insert(root, ())?;
 
         Ok(())
     }
+
+    pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
+        // TODO provisory fn until native ContractId -> BlsScalar conversion is
+        // implemented
+        // https://github.com/dusk-network/cargo-bake/issues/1
+
+        // ContractId don't have an API to extract internal bytes - so we
+        // provisorily trust it is 32 bytes
+        let mut scalar = [0u8; 32];
+        scalar.copy_from_slice(address.as_bytes());
+
+        // Truncate the contract id to fit bls
+        scalar[31] &= 0x3f;
+
+        BlsScalar::from_bytes(&scalar).unwrap_or_default()
+    }
 }
 
-impl<S: Store> TryFrom<Note> for TransferContract<S> {
-    type Error = S::Error;
+impl TryFrom<Note> for TransferContract {
+    type Error = Error;
 
     /// This implementation is intended for test purposes to initialize the
     /// state with the provided note

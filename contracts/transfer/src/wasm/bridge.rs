@@ -6,14 +6,10 @@
 
 use crate::{Call, TransferContract};
 
-use canonical::{
-    BridgeStore as BridgeStoreCanon, ByteSink, ByteSource, Canon, Id32, Store,
-};
+use canonical::{Canon, CanonError, Sink, Source};
 use dusk_abi::{ContractState, ReturnValue};
 
 const PAGE_SIZE: usize = 1024 * 32;
-
-type BridgeStore = BridgeStoreCanon<Id32>;
 
 #[no_mangle]
 fn q(_bytes: &mut [u8; PAGE_SIZE]) {
@@ -25,24 +21,17 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
     transaction(bytes).expect("Failed to execute the provided transaction!");
 }
 
-fn transaction(
-    bytes: &mut [u8; PAGE_SIZE],
-) -> Result<(), <BridgeStore as Store>::Error> {
-    let bridge = BridgeStore::default();
-    let mut source = ByteSource::new(&bytes[..], &bridge);
-    let mut contract: TransferContract<BridgeStore> = Canon::read(&mut source)?;
+fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
+    let mut source = Source::new(bytes);
+    let mut contract = TransferContract::decode(&mut source)?;
 
-    let call: Call = Canon::read(&mut source)?;
+    let call = Call::decode(&mut source)?;
     let ret = call.transact(&mut contract);
-    let mut sink = ByteSink::new(&mut bytes[..], &bridge);
 
-    // FIXME Clarify if the state should be sent to the bridge if the execution
-    // fails https://github.com/dusk-network/rusk/issues/204
-    let state = ContractState::from_canon(&contract, &bridge)?;
-    let ret = ReturnValue::from_canon(&ret, &bridge)?;
+    let mut sink = Sink::new(&mut bytes[..]);
 
-    Canon::write(&state, &mut sink)?;
-    Canon::write(&ret, &mut sink)?;
+    ContractState::from_canon(&contract).encode(&mut sink);
+    ReturnValue::from_canon(&ret).encode(&mut sink);
 
     Ok(())
 }

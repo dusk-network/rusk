@@ -6,9 +6,9 @@
 
 use canonical::{Canon, Store};
 use canonical_derive::Canon;
-use dusk_plonk::bls12_381::BlsScalar;
-use phoenix_core::Note;
+use dusk_bls12_381::BlsScalar;
 use dusk_poseidon::tree::PoseidonLeaf;
+use phoenix_core::Note;
 
 #[derive(Debug, Clone, Canon)]
 pub struct NoteLeaf(Note);

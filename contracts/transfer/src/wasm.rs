@@ -4,10 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(not(feature = "no-bridge"))]
 mod bridge;
 mod callable;
 mod internal;
-
-// TODO deprecate wasm-keys module
-// https://github.com/dusk-network/rusk-vm/issues/141
-mod keys;

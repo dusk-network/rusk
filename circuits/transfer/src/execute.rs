@@ -10,9 +10,9 @@ use crossover::CircuitCrossover;
 use input::{CircuitInput, WitnessInput};
 use output::{CircuitOutput, WitnessOutput};
 
+use dusk_bls12_381::BlsScalar;
+use dusk_jubjub::JubJubScalar;
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
-use dusk_plonk::bls12_381::BlsScalar;
-use dusk_plonk::jubjub::JubJubScalar;
 use dusk_poseidon::tree::{
     PoseidonBranch, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
 };

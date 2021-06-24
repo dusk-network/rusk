@@ -65,8 +65,7 @@ fn send_to_contract_obfuscated_public_key() {
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
-    assert!(!circuit.is_public_message_pk_identity());
-    assert!(circuit.is_private_message_pk_identity());
+    assert!(circuit.is_message_derive_key_public());
 
     circuit::verify_proof(
         &pp,
@@ -127,8 +126,7 @@ fn send_to_contract_obfuscated_private_key() {
         .expect("Failed to generate proof!");
     let pi = circuit.public_inputs();
 
-    assert!(circuit.is_public_message_pk_identity());
-    assert!(!circuit.is_private_message_pk_identity());
+    assert!(!circuit.is_message_derive_key_public());
 
     circuit::verify_proof(
         &pp,

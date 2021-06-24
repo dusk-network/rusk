@@ -12,7 +12,6 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
       - uses: actions-rs/cargo@v1
         with:
           command: install
@@ -39,8 +38,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-05-09
-          override: true
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
       - run: RUSK_PROFILE_PATH=$GITHUB_WORKSPACE make test
@@ -53,8 +50,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-05-09
-          override: true
       - run: rustup component add rustfmt
       - uses: actions-rs/cargo@v1
         with:

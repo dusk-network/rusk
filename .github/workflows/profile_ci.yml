@@ -21,8 +21,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2021-05-09
-          override: true
       # This should not be required. But the workflow fails if we don't include it
       - run: rustup component add rustfmt
       - run: RUSK_PROFILE_PATH=$GITHUB_WORKSPACE make keys
