@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::jubjub::JubJubExtended;
+use dusk_jubjub::JubJubExtended;
 use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
