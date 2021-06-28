@@ -8,7 +8,7 @@ use std::net;
 
 use bid_circuits::BidCorrectnessCircuit;
 use bid_contract::{contract_constants::*, Contract as BidContract};
-use dusk_blindbid::Bid;
+use dusk_blindbid::{Bid, V_RAW_MAX, V_RAW_MIN};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{
@@ -20,6 +20,7 @@ use dusk_poseidon::{cipher::PoseidonCipher, sponge};
 use dusk_schnorr::{PublicKeyPair, Signature};
 use lazy_static::lazy_static;
 use phoenix_core::{Message, Note};
+use rand::Rng;
 use rusk_abi::RuskModule;
 use rusk_vm::{Contract, ContractId, GasMeter, NetworkState};
 
@@ -52,7 +53,9 @@ fn create_proof(value: JubJubScalar, blinder: JubJubScalar) -> Proof {
         .expect("Failed to get proverkey data");
     let pk = ProverKey::from_slice(&pk)
         .expect("Failed to deserialize the ProverKey");
-    circuit.gen_proof(&PUB_PARAMS, &pk, b"Test").unwrap()
+    circuit
+        .gen_proof(&PUB_PARAMS, &pk, b"dusk-network")
+        .unwrap()
 }
 
 #[test]
@@ -60,8 +63,9 @@ fn bid_contract_workflow_works() {
     // Init Env & Contract
     let contract = Contract::new(BidContract::new(), BYTECODE.to_vec());
     // Create BidCorrectnessCircuit Proof and send it
+    let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
     let (a, b) = (
-        JubJubScalar::random(&mut rand::thread_rng()),
+        JubJubScalar::from(value),
         JubJubScalar::random(&mut rand::thread_rng()),
     );
     let secret = JubJubScalar::random(&mut rand::thread_rng());
@@ -72,8 +76,10 @@ fn bid_contract_workflow_works() {
     let sk_r = secret_spend_key.sk_r(&stealth_addr);
     let sk = SecretKey::from(sk_r);
     let pk = PublicKey::from(&sk);
-    let proof = create_proof(a, b);
-    let message = Message::new(&mut rand::thread_rng(), &secret, &psk, 25u64);
+    let message = Message::new(&mut rand::thread_rng(), &secret, &psk, value);
+    let (value, blinder) =
+        message.decrypt(&secret, &psk).expect("decryption error");
+    let proof = create_proof(JubJubScalar::from(value), blinder);
 
     // Generate env
     let mut block_height = 0u64;
@@ -102,15 +108,24 @@ fn bid_contract_workflow_works() {
 
     assert!(call_result);
 
-    // Set a valid block height so that the Bid is withdrawable.
-    // TODO
-
-    // Sign the t_e (expiration) and call extend bid.
+    // Sign the t_e (expiration) of the Bid.
+    // TODO: Fetch the correct expiration and put it as message!!!
     let signature = Signature::new(
         &sk,
         &mut rand::thread_rng(),
         BlsScalar::from(VALIDITY_PERIOD),
     );
+
+    // Without an increase in the block_height, the intent of extending the bid should fail.
+    assert!(network
+        .transact::<_, bool>(
+            contract_id,
+            (bid_contract::ops::EXTEND_BID, signature, pk),
+            &mut gas,
+        )
+        .is_err());
+
+    // TODO: Set a valid block height so that the Bid is extendable!!
 
     // Now that a Bid is inside the tree we should be able to extend it if the
     // correct signature is provided.
@@ -124,15 +139,15 @@ fn bid_contract_workflow_works() {
 
     assert!(call_result);
 
-    // Sign the t_e (expiration) and call withdraw bid..
+    // Sign the elegibility and call withdraw bid.
+    // TODO: Fetch the propper eligibility param!!!
     let signature = Signature::new(
         &sk,
         &mut rand::thread_rng(),
         BlsScalar::from(block_height),
     );
 
-    // Set a valid block height so that the Bid is withdrawable.
-    // TODO
+    // TODO: Set a valid block height so that the Bid is withdrawable.
 
     // Create a Note
     // TODO: Create a correct note once the inter-contract call is implemented.
