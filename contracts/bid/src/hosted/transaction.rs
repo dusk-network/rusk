@@ -13,6 +13,7 @@ use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use microkelvin::Nth;
 use phoenix_core::{Message, Note};
+use transfer_contract::Call;
 
 impl Contract {
     /// This function allows to the contract caller to setup a Bid related to a
@@ -33,7 +34,7 @@ impl Contract {
         hashed_secret: BlsScalar,
         stealth_address: StealthAddress,
         correctness_proof: Vec<u8>,
-        _spending_proof: Vec<u8>,
+        spending_proof: Vec<u8>,
     ) -> bool {
         // Setup sucess var to true
         let mut success = true;
@@ -44,7 +45,7 @@ impl Contract {
             crate::BID_CORRECTNESS_VD.to_vec(),
             alloc::vec![(message.value_commitment()).into()],
         ) {
-            //return false;
+            return false;
         }
 
         // Obtain the current block_height.
@@ -90,11 +91,18 @@ impl Contract {
                     .unwrap();
             }
         } else {
-            success = false;
+            return false;
         };
 
-        // TODO: Inter-contract call
-        success
+        // Inter-contract call to lock bidder's funds in the Bid contract.
+        Call::send_to_contract_obfuscated(
+            ContractId::from(
+                &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
+            ),
+            message,
+            stealth_address,
+            spending_proof,
+        )
     }
 
     // TODO: Check wether we allow to extend long-time expired Bids.
@@ -177,8 +185,8 @@ impl Contract {
         &mut self,
         sig: Signature,
         pk: PublicKey,
-        _note: Note,
-        _spend_proof: Vec<u8>,
+        note: Note,
+        spend_proof: Vec<u8>,
     ) -> bool {
         // Setup success to true
         let mut success = true;
@@ -221,7 +229,19 @@ impl Contract {
             ) {
                 return false;
             };
-            // Inter contract call
+
+            // Withdraw from Obfuscated call to retire the funds of the bidder.
+            if !Call::withdraw_from_obfuscated(
+                *bid.message(),
+                ContractId::from(
+                    &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
+                ),
+                note,
+                note.value_commitment().into(),
+                spend_proof,
+            ) {
+                return false;
+            }
 
             // If the inter-contract call succeeds, we need to clean the
             // tree & map. Note that if we clean the entry

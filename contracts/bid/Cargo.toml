@@ -23,6 +23,7 @@ nstack = "0.8"
 microkelvin = "0.7"
 dusk-schnorr = { version = "0.7.0-rc", default-features = false, features = ["canon"] }
 dusk-blindbid = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
+transfer-contract = { path = "../transfer", features = ["no-bridge"] }
 
 [dev-dependencies]
 bid-circuits = {path = "../../circuits/bid"}
@@ -32,3 +33,4 @@ rusk-profile = {path = "../../rusk-profile"}
 dusk-plonk = "0.8"
 rusk-vm = "0.6.0-rc.2"
 lazy_static = "1.4"
+
