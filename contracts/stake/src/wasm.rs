@@ -27,7 +27,8 @@ const PAGE_SIZE: usize = 1024 * 32;
 fn q(bytes: &mut [u8; PAGE_SIZE]) {
     let mut source = Source::new(&bytes[..]);
 
-    let _contract = StakeContract::decode(&mut source).expect("Failed to read state");
+    let _contract =
+        StakeContract::decode(&mut source).expect("Failed to read state");
     let qid = u8::decode(&mut source).expect("Failed to read query ID");
 
     let mut sink = Sink::new(&mut bytes[..]);
@@ -45,7 +46,8 @@ fn q(bytes: &mut [u8; PAGE_SIZE]) {
 fn t(bytes: &mut [u8; PAGE_SIZE]) {
     let mut source = Source::new(bytes);
 
-    let mut contract = StakeContract::decode(&mut source).expect("Failed to read state");
+    let mut contract =
+        StakeContract::decode(&mut source).expect("Failed to read state");
     let tid = u8::decode(&mut source).expect("Failed to read tx ID");
 
     match tid {
@@ -64,8 +66,12 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
         }
 
         TX_WITHDRAW => {
-            let (pk, signature, note, withdraw_proof): (PublicKey, Signature, Note, Vec<u8>) =
-                Canon::decode(&mut source).expect("Failed to parse arguments");
+            let (pk, signature, note, withdraw_proof): (
+                PublicKey,
+                Signature,
+                Note,
+                Vec<u8>,
+            ) = Canon::decode(&mut source).expect("Failed to parse arguments");
 
             contract.withdraw(pk, signature, note, withdraw_proof);
         }
@@ -109,14 +115,18 @@ impl StakeContract {
         let stake = Stake::new(value, eligibility, expiration);
 
         if self.push_stake(pk, stake) {
-            panic!("The provided key is already staked! It can only be extended");
+            panic!(
+                "The provided key is already staked! It can only be extended"
+            );
         }
 
-        let call = Call::send_to_contract_transparent(address, value, spend_proof);
+        let call =
+            Call::send_to_contract_transparent(address, value, spend_proof);
         let call = Transaction::from_canon(&call);
         let transfer = Self::transfer_contract();
 
-        dusk_abi::transact_raw(self, &transfer, &call).expect("Failed to send note to contract");
+        dusk_abi::transact_raw(self, &transfer, &call)
+            .expect("Failed to send note to contract");
     }
 
     pub fn extend(&mut self, pk: PublicKey, signature: Signature) {
