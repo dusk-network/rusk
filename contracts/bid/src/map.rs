@@ -8,11 +8,11 @@ use canonical::CanonError;
 use canonical_derive::Canon;
 use core::ops::Deref;
 use dusk_bytes::Serializable;
-use dusk_hamt::Hamt;
+use dusk_hamt::Map;
 use dusk_pki::PublicKey;
 
 #[derive(Default, Debug, Clone, Canon)]
-pub struct KeyToIdxMap(Hamt<[u8; 32], u64, ()>);
+pub struct KeyToIdxMap(Map<[u8; 32], u64>);
 
 impl KeyToIdxMap {
     /// Create a new instance of a [`KeyToIdxMap`].
@@ -31,22 +31,22 @@ impl KeyToIdxMap {
         pk: PublicKey,
         bid_idx: usize,
     ) -> Result<Option<u64>, CanonError> {
-        Ok(self.0.insert(pk.to_bytes(), bid_idx as u64)?)
+        self.0.insert(pk.to_bytes(), bid_idx as u64)
     }
 
     /// Fetch a previously inserted key -> value mapping, provided the key.
     ///
-    /// Will return `Ok(None)` if no correspondent key was found.
+    /// Will returnNone)` if no correspondent key was found.
     pub fn get(
         &self,
         pk: PublicKey,
     ) -> Result<Option<impl Deref<Target = u64> + '_>, CanonError> {
-        Ok(self.0.get(&pk.to_bytes())?)
+        self.0.get(&pk.to_bytes())
     }
 
     /// Remove an entry from the tree. It will return `Ok(Some(u64))` in case
     /// the key exists and `Ok(None)` otherways.
     pub fn remove(&mut self, pk: PublicKey) -> Result<Option<u64>, CanonError> {
-        Ok(self.0.remove(&pk.to_bytes())?)
+        self.0.remove(&pk.to_bytes())
     }
 }
