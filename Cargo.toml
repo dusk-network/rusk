@@ -27,3 +27,7 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 codegen-units = 16
+
+[patch.crates-io]
+phoenix-core = { git= "https://github.com/dusk-network/phoenix-core",branch = "from_err_impl", features = ["canon"], default-features = false }
+dusk-blindbid = { git ="https://github.com/dusk-network/dusk-blindbid", branch = "from_message", default-features = false, features = ["canon"] }

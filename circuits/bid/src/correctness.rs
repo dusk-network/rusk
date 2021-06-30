@@ -70,6 +70,7 @@ impl Circuit for BidCorrectnessCircuit {
 mod tests {
     use super::*;
     use dusk_plonk::jubjub::JubJubAffine;
+    use phoenix_core::Message;
 
     #[test]
     fn test_correctness_circuit() -> Result<(), Error> {
@@ -145,6 +146,64 @@ mod tests {
             b"BidCorrectness",
         )
         .is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_correctness_with_message() -> Result<(), Error> {
+        use dusk_blindbid::Bid;
+        use dusk_pki::{PublicSpendKey, SecretSpendKey};
+        use dusk_poseidon::sponge;
+        use rand::Rng;
+
+        let mut rng = rand::thread_rng();
+        let secret = JubJubScalar::random(&mut rand::thread_rng());
+        let secret_k = BlsScalar::random(&mut rand::thread_rng());
+        let psk = PublicSpendKey::from(SecretSpendKey::new(
+            JubJubScalar::one(),
+            -JubJubScalar::one(),
+        ));
+        let value: u64 =
+            (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
+
+        let bid = Bid::new(
+            Message::new(&mut rng, &secret, &psk, value),
+            sponge::sponge::sponge_hash(&[secret_k]),
+            psk.gen_stealth_address(&secret),
+            u64::MAX,
+            u64::MAX,
+        );
+
+        let (value, blinder) =
+            bid.decrypt_data(&secret, &psk).expect("decryption error");
+
+        let mut circuit = BidCorrectnessCircuit {
+            commitment: JubJubAffine::from(bid.commitment()),
+            value: value,
+            blinder: blinder,
+        };
+
+        // Generate Composer & Public Parameters
+        let pub_params = unsafe {
+            PublicParameters::from_slice_unchecked(
+                rusk_profile::get_common_reference_string()
+                    .expect("Failed to fetch CRS from rusk_profile")
+                    .as_slice(),
+            )
+        };
+
+        let (pk, vd) = circuit.compile(&pub_params)?;
+
+        let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
+        let pi = vec![JubJubAffine::from(bid.commitment()).into()];
+        circuit::verify_proof(
+            &pub_params,
+            &vd.key(),
+            &proof,
+            &pi,
+            &vd.pi_pos(),
+            b"BidCorrectness",
+        )?;
         Ok(())
     }
 }

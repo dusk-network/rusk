@@ -23,6 +23,16 @@ use dusk_pki::PublicSpendKey;
 mod public_input;
 pub use public_input::PublicInput;
 
+/// Module that contains the `ContractId` s of the Genesis Contracts of the
+/// Dusk Blockchain.
+pub mod genesis_contracts_ids {
+    pub const TRANSFER_CONTRACT_ID: [u8; 32] = [
+        0xd3, 0xf8, 0x7f, 0xfc, 0x1b, 0xc7, 0x43, 0x1d, 0xde, 0x81, 0x5f, 0xb1,
+        0xe1, 0x1b, 0xd0, 0xfe, 0x88, 0x37, 0x1a, 0x15, 0x4a, 0xec, 0x27, 0x5d,
+        0xed, 0x02, 0x4d, 0x8c, 0xc0, 0xf7, 0x99, 0x5f,
+    ];
+}
+
 /// Module that exports the ABI for Rusk's Contracts
 ///
 /// Any proof to be verified with this module should use `b"dusk-network` as

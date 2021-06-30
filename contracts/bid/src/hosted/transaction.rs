@@ -4,19 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::fake_abi;
-use crate::{contract_constants::*, leaf::BidLeaf, Contract};
+use crate::{contract_constants::*, leaf::BidLeaf, leaf::Expiration, Contract};
 use alloc::vec::Vec;
-use canonical::Store;
 use core::ops::DerefMut;
 use dusk_blindbid::Bid;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, PublicKey};
-use phoenix_core::Note;
-use schnorr::Signature;
+use dusk_pki::{Ownable, PublicKey, StealthAddress};
+use dusk_schnorr::Signature;
+use microkelvin::Nth;
+use phoenix_core::{Message, Note};
+use transfer_contract::Call;
 
-impl<S: Store> Contract<S> {
+impl Contract {
     /// This function allows to the contract caller to setup a Bid related to a
     /// one-time identity of his/her property that will allow the user to
     /// participate in the bidding process of the consensus as well as to
@@ -31,21 +30,20 @@ impl<S: Store> Contract<S> {
     /// Which will execute the transaction of Dusk to the contract account.
     pub fn bid(
         &mut self,
-        mut bid: Bid,
+        message: Message,
+        hashed_secret: BlsScalar,
+        stealth_address: StealthAddress,
         correctness_proof: Vec<u8>,
-        _spending_proof: Vec<u8>,
+        spending_proof: Vec<u8>,
     ) -> bool {
         // Setup sucess var to true
         let mut success = true;
 
         // Verify proof of Correctness of the Bid.
-        if !fake_abi::verify_proof(
+        if !rusk_abi::verify_proof(
             correctness_proof,
-            crate::BID_CORRECTNESS_VK.to_vec(),
-            b"bid-correctness".to_vec(),
-            PublicInput::AffinePoint(bid.commitment(), 0, 0)
-                .to_bytes()
-                .to_vec(),
+            crate::BID_CORRECTNESS_VD.to_vec(),
+            alloc::vec![(message.value_commitment()).into()],
         ) {
             return false;
         }
@@ -53,17 +51,20 @@ impl<S: Store> Contract<S> {
         // Obtain the current block_height.
         let block_height = dusk_abi::block_height();
         // Compute maturity & expiration periods
-        let expiration = block_height + MATURITY_PERIOD + EXPIRATION_PERIOD;
-        let eligibility = block_height + MATURITY_PERIOD;
+        let expiration = block_height + MATURITY_PERIOD + VALIDITY_PERIOD;
+        let eligibility = block_height
+            + MATURITY_PERIOD
+            + VALIDITY_PERIOD
+            + (EPOCH - (block_height % EPOCH));
 
-        // Mutate the Bid and add the correct timestamps.
-        bid.set_eligibility(eligibility);
-        // FIXME: This should not be needed. We should have a better API in blindbid.
-        //  Since the API for blindbid was decided to be set as `extend_expiration` instead of
-        // `set_expiration`. We now are forced to ensure that the expiration is 0 here and then, we
-        // sum `expiration` to it.
-        assert!(bid.expiration() == 0u64);
-        bid.extend_expiration(expiration);
+        // Generate the bid
+        let mut bid = Bid::new(
+            message,
+            hashed_secret,
+            stealth_address,
+            eligibility,
+            expiration,
+        );
 
         // Panic and stop the execution if the same one-time-key tries to
         // bid more than one time.
@@ -76,21 +77,32 @@ impl<S: Store> Contract<S> {
             .is_none()
         {
             // Append Bid to the tree and obtain the position of it.
-            let idx = self.tree_mut().push(BidLeaf(bid));
-            // Link the One-time PK to the idx in the Map
-            // Since we checked on the `get` call that the value was not
-            // inside, there's no need to check that this
-            // returns `Ok(None)`. So we just unwrap
-            // the `Result` and keep the `Option` untouched.
-            self.key_idx_map_mut()
-                .insert(*bid.stealth_address().pk_r(), idx)
-                .unwrap();
+            if let Ok(idx) = self
+                .tree_mut()
+                .push(BidLeaf::new(bid, Expiration(expiration)))
+            {
+                // Link the One-time PK to the idx in the Map
+                // Since we checked on the `get` call that the value was not
+                // inside, there's no need to check that this
+                // returns `Ok(None)`. So we just unwrap
+                // the `Result` and keep the `Option` untouched.
+                self.key_idx_map_mut()
+                    .insert(*bid.stealth_address().pk_r(), idx as usize)
+                    .unwrap();
+            }
         } else {
-            success = false;
+            return false;
         };
 
-        // TODO: Inter-contract call
-        success
+        // Inter-contract call to lock bidder's funds in the Bid contract.
+        Call::send_to_contract_obfuscated(
+            ContractId::from(
+                &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
+            ),
+            message,
+            stealth_address,
+            spending_proof,
+        )
     }
 
     // TODO: Check wether we allow to extend long-time expired Bids.
@@ -126,24 +138,36 @@ impl<S: Store> Contract<S> {
         // Verify the signature by getting `t_e` from the Bid and calling the
         // VERIFY_SIG host fn.
         // Fetch the bid object from the tree getting a &mut to it.
-        let tree = self.tree_mut();
-        let mut branch_mut = tree
-            .get_mut(idx as u64)
-            .expect("No leaf was attached to the provided idx");
+        let mut branch_mut = if let Ok(Some(branch)) =
+            self.tree_mut().as_mut().nth_mut(idx as u64)
+        {
+            branch
+        } else {
+            return false;
+        };
         let bid: &mut BidLeaf = branch_mut.deref_mut();
 
+        // Check wether the maturity and expiration periods are within bounds.
+        let block_height = dusk_abi::block_height();
+        let bid_expiration = bid.bid().expiration().clone();
+        // σh + Δmaturity​ ≥ B.Bhexpiration​)
+        assert!(block_height + MATURITY_PERIOD >= bid_expiration);
+        // B.Bhexpiration​ > σh
+        assert!(bid_expiration > block_height);
+
         // Verify schnorr sig.
-        if !fake_abi::verify_schnorr_sig(
-            pk,
+        if !rusk_abi::verify_schnorr_sign(
             sig,
-            BlsScalar::from(bid.0.expiration()),
+            pk,
+            BlsScalar::from(bid_expiration),
         ) {
             return false;
         }
 
         // Assuming now that the result of the verification is true, we now
-        // should update the expiration of the Bid by `EXPIRATION_PERIOD`.
-        bid.0.extend_expiration(EXPIRATION_PERIOD);
+        // should update the expiration of the Bid by `VALIDITY_PERIOD`.
+        bid.bid_mut().extend_expiration(VALIDITY_PERIOD);
+        bid.expiration_mut().0 += VALIDITY_PERIOD;
         success
     }
 
@@ -161,9 +185,8 @@ impl<S: Store> Contract<S> {
         &mut self,
         sig: Signature,
         pk: PublicKey,
-        _note: Note,
-        _spend_proof: Vec<u8>,
-        block_height: u64,
+        note: Note,
+        spend_proof: Vec<u8>,
     ) -> bool {
         // Setup success to true
         let mut success = true;
@@ -189,23 +212,36 @@ impl<S: Store> Contract<S> {
 
         // Fetch bid info from the tree. Note that we can safely unwrap here due
         // to the checks done previously while getting the idx from the map.
-        let bid = self
-            .tree()
-            .get(idx as u64)
-            .expect("Unexpected error. Map & Tree are out of sync.");
+        let bid = if let Ok(Some(bid)) = self.tree().get(idx as u64) {
+            bid
+        } else {
+            return false;
+        };
 
-        if bid.0.expiration() < (block_height + COOLDOWN_PERIOD) {
+        if *bid.bid().expiration() < dusk_abi::block_height() {
             // If we arrived here, the bid is elegible for withdrawal.
             // Now we need to check wether the signature is correct.
             // Verify schnorr sig.
-            if !fake_abi::verify_schnorr_sig(
-                pk,
+            if !rusk_abi::verify_schnorr_sign(
                 sig,
-                BlsScalar::from(bid.0.expiration()),
+                pk,
+                BlsScalar::from(*bid.bid().expiration()),
             ) {
                 return false;
             };
-            // Inter contract call
+
+            // Withdraw from Obfuscated call to retire the funds of the bidder.
+            if !Call::withdraw_from_obfuscated(
+                *bid.message(),
+                ContractId::from(
+                    &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
+                ),
+                note,
+                note.value_commitment().into(),
+                spend_proof,
+            ) {
+                return false;
+            }
 
             // If the inter-contract call succeeds, we need to clean the
             // tree & map. Note that if we clean the entry
@@ -222,58 +258,6 @@ impl<S: Store> Contract<S> {
             true
         } else {
             false
-        }
-    }
-}
-
-// TODO: Until PLONK is no_std compatible and we can serialize PublicInputs
-use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubScalar;
-
-const BLS_SCALAR: u8 = 1;
-const JUBJUB_SCALAR: u8 = 2;
-const JUBJUB_AFFINE: u8 = 3;
-
-/// Public Input
-#[derive(Debug, Copy, Clone)]
-enum PublicInput {
-    /// Scalar Input
-    BlsScalar(BlsScalar, usize),
-    /// Embedded Scalar Input
-    JubJubScalar(JubJubScalar, usize),
-    /// Point as Public Input
-    AffinePoint(JubJubAffine, usize, usize),
-}
-
-impl PublicInput {
-    /// Returns the serialized-size of the `PublicInput` structure.
-    const fn serialized_size() -> usize {
-        33usize
-    }
-
-    /// Returns the byte-representation of a [`PublicInput`].
-    /// Note that the underlying variants of this enum have different
-    /// sizes on it's byte-representation. Therefore, we need to return
-    /// the biggest one to set it as the default one.
-    fn to_bytes(&self) -> [u8; Self::serialized_size()] {
-        let mut bytes = [0u8; Self::serialized_size()];
-        match self {
-            Self::BlsScalar(scalar, _) => {
-                bytes[0] = BLS_SCALAR;
-                bytes[1..33].copy_from_slice(&scalar.to_bytes());
-                bytes
-            }
-            Self::JubJubScalar(scalar, _) => {
-                bytes[0] = JUBJUB_SCALAR;
-                bytes[1..33].copy_from_slice(&scalar.to_bytes());
-                bytes
-            }
-            Self::AffinePoint(point, _, _) => {
-                bytes[0] = JUBJUB_AFFINE;
-                bytes[1..Self::serialized_size()]
-                    .copy_from_slice(&point.to_bytes());
-                bytes
-            }
         }
     }
 }
