@@ -21,12 +21,12 @@ dusk-plonk = {version = "0.8", default-features = false, features = ["std"]}
 plonk_gadgets = {version = "0.6.0-rc", features = ["std"]}
 code-hasher = {path = "../../macros/code-hasher"}
 dusk-blindbid = "0.8.0-rc"
-dusk-poseidon = {version = "0.21.0-rc", features = ["std", "canon"] }
+dusk-poseidon = {version = "0.21", features = ["std", "canon"] }
 dusk-pki = "0.7.0-rc"
 dusk-bytes = "0.1"
 
 [dev-dependencies]
-microkelvin = "0.7"
+microkelvin = "0.9.1"
 rand = "0.8"
 canonical_derive = "0.6"
 canonical = "0.6"

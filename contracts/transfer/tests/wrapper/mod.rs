@@ -35,10 +35,12 @@ const TRANSFER_TREE_DEPTH: usize = 17;
 const TRANSFER: &'static [u8] = include_bytes!(
     "../../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
-const ALICE: &'static [u8] =
-    include_bytes!("alice/target/wasm32-unknown-unknown/release/alice.wasm");
-const BOB: &'static [u8] =
-    include_bytes!("bob/target/wasm32-unknown-unknown/release/bob.wasm");
+const ALICE: &'static [u8] = include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/alice.wasm"
+);
+const BOB: &'static [u8] = include_bytes!(
+    "../../../../target/wasm32-unknown-unknown/release/bob.wasm"
+);
 
 lazy_static! {
     static ref PP: PublicParameters = unsafe {
