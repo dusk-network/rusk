@@ -43,7 +43,8 @@ where
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
         // FIXME: `seed` should be sent as `u64`? No? What happens here?
-        let (k, seed, secret, psk) = parse_score_gen_params(self.request)?;
+        let (secret_k, seed, secret, psk) =
+            parse_score_gen_params(self.request)?;
         // TODO: This should fetch the Bid from the tree once this
         // functionallity is enabled.
         let (bid, branch): (Bid, PoseidonBranch<17>) = unimplemented!();
@@ -55,7 +56,7 @@ where
             &bid,
             &secret,
             &psk,
-            k,
+            secret_k,
             *branch.root(),
             seed,
             latest_consensus_round,
@@ -64,7 +65,7 @@ where
         .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
         // Generate Prover ID
         let prover_id = bid.generate_prover_id(
-            k,
+            secret_k,
             seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
@@ -74,7 +75,7 @@ where
         let mut circuit = BlindBidCircuit {
             bid,
             score,
-            secret_k: k,
+            secret_k,
             seed,
             latest_consensus_round: BlsScalar::from(latest_consensus_round),
             latest_consensus_step: BlsScalar::from(latest_consensus_step),

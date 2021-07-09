@@ -17,9 +17,9 @@ canonical = "0.6"
 canonical_derive = "0.6"
 dusk-poseidon = { version = "0.21", default-features = false }
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
-dusk-abi = "0.9.0-rc"
-dusk-schnorr = { version = "0.7.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.7.0-rc", default-features = false, features = ["canon"] }
+dusk-abi = "0.9"
+dusk-schnorr = { version = "0.7", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.7", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -28,7 +28,7 @@ rusk-profile = { path = "../rusk-profile" }
 dusk-bytes = "0.1"
 
 [dev-dependencies]
-rusk-vm = "0.6.0-rc"
+rusk-vm = "0.6"
 dusk-bytes = "0.1"
 host_fn = { path = "tests/contracts/host_fn" }
 rand_core = { version = "0.6", features = ["std"] }

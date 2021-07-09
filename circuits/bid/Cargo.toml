@@ -17,13 +17,13 @@ exclude = [
 
 [dependencies]
 dusk-plonk = "0.8"
-plonk_gadgets = "0.6.0-rc"
-dusk-blindbid = "0.8.0-rc"
+plonk_gadgets = "0.6"
+dusk-blindbid = "0.9"
 code-hasher = {path = "../../macros/code-hasher"}
 
 [dev-dependencies]
 rand = "0.8"
-phoenix-core = { version = "0.11.0-rc", features = ["canon"] }
-dusk-pki = "0.7.0-rc"
+phoenix-core = { version = "0.12", features = ["canon"] }
+dusk-pki = "0.7"
 rusk-profile = { path = "../../rusk-profile" }
 dusk-poseidon = {version = "0.21", features = ["std", "canon"] }
