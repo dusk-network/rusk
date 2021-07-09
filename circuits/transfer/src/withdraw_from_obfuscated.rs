@@ -26,7 +26,7 @@ pub struct WithdrawFromObfuscatedCircuit {
     // Public data
     input_value_commitment: JubJubExtended,
     change_value_commitment: JubJubExtended,
-    change_nonce: JubJubScalar,
+    change_nonce: BlsScalar,
     change_cipher: [BlsScalar; PoseidonCipher::cipher_size()],
     change_pk: JubJubExtended,
     output_value_commitment: JubJubExtended,
@@ -156,12 +156,11 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         // the Message  is within correctly encrypted to the derivative of pk
         // 7. Prove that the encrypted blinder of the opening of the commitment
         // of the Message  is within correctly encrypted to the derivative of pk
-        let change_nonce = self.change_nonce.into();
-        let change_nonce_p = composer.add_input(change_nonce);
+        let change_nonce_p = composer.add_input(self.change_nonce);
         composer.constrain_to_constant(
             change_nonce_p,
             BlsScalar::zero(),
-            Some(-change_nonce),
+            Some(-self.change_nonce),
         );
         let change_nonce = change_nonce_p;
 

@@ -10,14 +10,14 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 canonical = "0.6"
 canonical_derive = "0.6"
-dusk-abi = "0.9.0-rc"
+dusk-abi = "0.9"
 rusk-abi = { path = "../../rusk-abi" }
 dusk-bytes = "0.1"
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
-dusk-poseidon = { version = "0.21.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.7.0-rc", default-features = false }
-phoenix-core = { version = "0.11.0-rc", default-features = false, features = ["canon"] }
+dusk-poseidon = { version = "0.21", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.7", default-features = false }
+phoenix-core = { version = "0.12", default-features = false, features = ["canon"] }
 dusk-hamt = { version = "0.3", default-features = false }
 microkelvin = "0.7"
 
@@ -27,7 +27,7 @@ rand = "0.8"
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 rusk-profile = { path = "../../rusk-profile" }
 dusk-plonk = "0.8"
-rusk-vm = "0.6.0-rc"
+rusk-vm = "0.6"
 
 [features]
 no-bridge = []

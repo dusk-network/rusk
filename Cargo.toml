@@ -3,13 +3,13 @@ members = [
     "circuits/bid",
     "circuits/blindbid",
     "circuits/transfer",
-    "contracts/bid",
+    #"contracts/bid",
     "contracts/transfer",
-    "contracts/test-utils/transfer-wrapper",
     "macros/code-hasher",
     "rusk-profile",
     "rusk-abi",
     "rusk",
+    "test-utils/transfer-wrapper",
 ]
 resolver = "2"
 
