@@ -1,6 +1,6 @@
 [package]
 name = "bid-circuits"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["CPerezz <carlos@dusk.network>", "Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 license = "MPL-2.0"
