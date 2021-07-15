@@ -257,7 +257,6 @@ mod tests {
     use crate::BlindBidCircuitError;
     use dusk_blindbid::{Bid, V_RAW_MAX, V_RAW_MIN};
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
-    use dusk_plonk::jubjub::GENERATOR_EXTENDED;
     use phoenix_core::Message;
     use plonk_gadgets::AllocatedScalar;
     use rand::Rng;
@@ -333,7 +332,7 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let (bid, psk) = random_bid(&secret);
+        let (bid, _) = random_bid(&secret);
 
         let circuit = |composer: &mut StandardComposer, bid: &Bid| {
             // Allocate Bid-internal fields
