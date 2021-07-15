@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use canonical::Canon;
 use canonical_derive::Canon;
 use core::borrow::Borrow;
 use dusk_blindbid::Bid;
@@ -12,8 +13,8 @@ use dusk_poseidon::tree::{
     PoseidonAnnotation, PoseidonLeaf, PoseidonTreeAnnotation,
 };
 use microkelvin::{
-    Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey, Step,
-    Walk, Walker,
+    AnnoIter, Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey,
+    Step, Walk, Walker,
 };
 
 /// Alias for `u64` which relates to the expiration of a `Bid`.
@@ -47,6 +48,12 @@ impl Borrow<BlsScalar> for ExpirationAnnotation {
     }
 }
 
+impl Borrow<PoseidonAnnotation> for ExpirationAnnotation {
+    fn borrow(&self) -> &PoseidonAnnotation {
+        &self.ann
+    }
+}
+
 impl<L> Annotation<L> for ExpirationAnnotation
 where
     L: PoseidonLeaf,
@@ -61,19 +68,21 @@ where
     }
 }
 
-impl<C, A> Combine<C, A> for ExpirationAnnotation
+impl<A> Combine<A> for ExpirationAnnotation
 where
-    C: Compound<A>,
-    C::Leaf: PoseidonLeaf + Keyed<Expiration> + Borrow<u64>,
-    A: Annotation<C::Leaf>
-        + PoseidonTreeAnnotation<C::Leaf>
-        + Borrow<Cardinality>
-        + Borrow<MaxKey<Expiration>>,
+    A: Borrow<Cardinality>
+        + Borrow<MaxKey<Expiration>>
+        + Borrow<PoseidonAnnotation>
+        + Borrow<BlsScalar>,
 {
-    fn combine(node: &C) -> Self {
+    fn combine<C: Compound<A>>(iter: AnnoIter<C, A>) -> Self
+    where
+        C: Compound<A>,
+        A: Annotation<C::Leaf>,
+    {
         ExpirationAnnotation {
-            ann: PoseidonAnnotation::combine(node),
-            expiration: MaxKey::combine(node),
+            ann: PoseidonAnnotation::combine(iter.clone()),
+            expiration: MaxKey::combine(iter),
         }
     }
 }
@@ -86,8 +95,8 @@ pub struct ExpirationFilter(u64);
 impl<C, A> Walker<C, A> for ExpirationFilter
 where
     C: Compound<A>,
-    C::Leaf: Keyed<Expiration>,
-    A: Combine<C, A> + Borrow<MaxKey<Expiration>>,
+    C::Leaf: Keyed<Expiration> + PoseidonLeaf,
+    A: Combine<A> + Annotation<C::Leaf> + Borrow<MaxKey<Expiration>> + Canon,
 {
     fn walk(&mut self, walk: Walk<C, A>) -> Step {
         for i in 0.. {
@@ -101,7 +110,7 @@ where
                 }
                 Child::Node(n) => {
                     let max_node_block_height: u64 =
-                        match n.annotation().borrow() {
+                        match *(*n.annotation()).borrow() {
                             MaxKey::NegativeInfinity => return Step::Abort,
                             MaxKey::Maximum(value) => value.0,
                         };
