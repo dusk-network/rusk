@@ -62,7 +62,7 @@
 
 use crate::gadgets::{preimage_gadget, score_correctness_gadget};
 use dusk_blindbid::{Bid, Score};
-use dusk_pki::Ownable;
+use dusk_pki::{Ownable, PublicSpendKey};
 use dusk_plonk::jubjub::{
     JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
 };
@@ -118,7 +118,9 @@ pub struct BlindBidCircuit<'a> {
     /// Merkle Opening of the leaf that contains the Bid.
     pub branch: &'a PoseidonBranch<17>,
     /// Secret that derypts the Cipher.
-    pub secret: JubJubAffine,
+    pub secret: JubJubScalar,
+    /// Public Spend Key of the Bidder
+    pub psk: PublicSpendKey,
 }
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
@@ -131,10 +133,11 @@ impl<'a> Circuit for BlindBidCircuit<'a> {
         let bid_hashed_secret =
             AllocatedScalar::allocate(composer, *self.bid.hashed_secret());
         let bid_cipher = (
-            composer.add_input(self.bid.encrypted_data().cipher()[0]),
-            composer.add_input(self.bid.encrypted_data().cipher()[1]),
+            composer.add_input(self.bid.encrypted_data()[0]),
+            composer.add_input(self.bid.encrypted_data()[1]),
         );
-        let bid_commitment = composer.add_affine(*self.bid.commitment());
+        let bid_commitment =
+            composer.add_affine(JubJubAffine::from(self.bid.commitment()));
         let bid_stealth_addr = (
             composer
                 .add_affine(self.bid.stealth_address().pk_r().as_ref().into()),
@@ -168,7 +171,7 @@ impl<'a> Circuit for BlindBidCircuit<'a> {
         // secret can or not decrypt the cipher.
         let (value, blinder) = self
             .bid
-            .decrypt_data(&self.secret)
+            .decrypt_data(&self.secret, &self.psk)
             .unwrap_or((JubJubScalar::one(), JubJubScalar::one()));
         let bid_value = AllocatedScalar::allocate(composer, value.into());
         let bid_blinder = AllocatedScalar::allocate(composer, blinder.into());
@@ -273,7 +276,10 @@ impl<'a> Circuit for BlindBidCircuit<'a> {
         let computed_c = composer.point_addition_gate(p1, p2);
 
         // Assert computed_commitment == announced commitment.
-        composer.assert_equal_public_point(computed_c, *self.bid.commitment());
+        composer.assert_equal_public_point(
+            computed_c,
+            JubJubAffine::from(self.bid.commitment()),
+        );
 
         // 6. 0 < value <= 2^64 range check
         // v < 2^64

@@ -156,11 +156,12 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         // the Message  is within correctly encrypted to the derivative of pk
         // 7. Prove that the encrypted blinder of the opening of the commitment
         // of the Message  is within correctly encrypted to the derivative of pk
-        let change_nonce_p = composer.add_input(self.change_nonce);
+        let change_nonce = self.change_nonce;
+        let change_nonce_p = composer.add_input(change_nonce);
         composer.constrain_to_constant(
             change_nonce_p,
             BlsScalar::zero(),
-            Some(-self.change_nonce),
+            Some(-change_nonce),
         );
         let change_nonce = change_nonce_p;
 
