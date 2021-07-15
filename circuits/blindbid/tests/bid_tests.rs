@@ -7,8 +7,8 @@
 mod tree_assets;
 use blindbid_circuits::{BlindBidCircuit, BlindBidCircuitError};
 use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
-use dusk_pki::{PublicKey, PublicSpendKey, SecretSpendKey};
-use dusk_plonk::jubjub::{JubJubAffine, GENERATOR_EXTENDED};
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
 use phoenix_core::Message;
@@ -243,11 +243,6 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
         JubJubScalar::one(),
         -JubJubScalar::one(),
     ));
-    let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-    // Set the timestamps as the max values so the proofs do not fail
-    // for them (never expired or non-elegible).
-    let elegibility_ts = u64::MAX;
-    let expiration_ts = u64::MAX;
 
     // Create an expired bid.
     let secret = JubJubScalar::random(&mut rng);
@@ -355,12 +350,6 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
         JubJubScalar::one(),
         -JubJubScalar::one(),
     ));
-    let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-    // Set the timestamps as the max values so the proofs do not fail
-    // for them (never expired or non-elegible).
-    let elegibility_ts = u64::MAX;
-    let expiration_ts = u64::MAX;
-
     // Create a non-elegible Bid.
     let secret = JubJubScalar::random(&mut rng);
     let secret_k = BlsScalar::random(&mut rng);
