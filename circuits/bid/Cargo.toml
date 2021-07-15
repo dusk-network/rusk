@@ -18,7 +18,7 @@ exclude = [
 [dependencies]
 dusk-plonk = "0.8"
 plonk_gadgets = "0.6.0-rc"
-dusk-blindbid = "0.8.0-rc"
+dusk-blindbid = "0.10.0-rc"
 code-hasher = {path = "../../macros/code-hasher"}
 
 [dev-dependencies]
