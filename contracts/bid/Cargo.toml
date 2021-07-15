@@ -8,7 +8,7 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = "0.9.0-rc"
+dusk-abi = "0.9"
 canonical = { version="0.6", default-features = false }
 canonical_derive = "0.6"
 rusk-abi = { path = "../../rusk-abi" }
