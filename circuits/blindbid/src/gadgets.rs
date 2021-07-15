@@ -258,33 +258,29 @@ mod tests {
     use dusk_blindbid::{Bid, V_RAW_MAX, V_RAW_MIN};
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
     use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use phoenix_core::Message;
     use plonk_gadgets::AllocatedScalar;
     use rand::Rng;
 
-    fn random_bid(secret: &JubJubScalar) -> Bid {
+    fn random_bid(secret: &JubJubScalar) -> (Bid, PublicSpendKey) {
         let mut rng = rand::thread_rng();
-
         let secret_k = BlsScalar::from(*secret);
-        let pk_r = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
-        let stealth_addr = pk_r.gen_stealth_address(&secret);
-        let secret = GENERATOR_EXTENDED * secret;
+        let psk = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
         let value: u64 =
             (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-        let value = JubJubScalar::from(value);
+        let eligibility_ts = u64::MAX;
+        let expiration_ts = u64::MAX;
 
-        let eligibility = u64::MAX;
-        let expiration = u64::MAX;
-
-        Bid::new(
-            &mut rng,
-            &stealth_addr,
-            &value,
-            &secret.into(),
-            secret_k,
-            eligibility,
-            expiration,
+        (
+            Bid::new(
+                Message::new(&mut rng, &secret, &psk, value),
+                secret_k,
+                psk.gen_stealth_address(&secret),
+                eligibility_ts,
+                expiration_ts,
+            ),
+            psk,
         )
-        .expect("Bid creation error")
     }
 
     fn allocate_fields(
@@ -337,17 +333,18 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
+        let (bid, psk) = random_bid(&secret);
 
         let circuit = |composer: &mut StandardComposer, bid: &Bid| {
             // Allocate Bid-internal fields
             let bid_hashed_secret =
                 AllocatedScalar::allocate(composer, *bid.hashed_secret());
             let bid_cipher = (
-                composer.add_input(bid.encrypted_data().cipher()[0]),
-                composer.add_input(bid.encrypted_data().cipher()[1]),
+                composer.add_input(bid.encrypted_data()[0]),
+                composer.add_input(bid.encrypted_data()[1]),
             );
-            let bid_commitment = composer.add_affine(*bid.commitment());
+            let bid_commitment =
+                composer.add_affine(JubJubAffine::from(bid.commitment()));
             let bid_stealth_addr = (
                 composer
                     .add_affine(bid.stealth_address().pk_r().as_ref().into()),
@@ -412,10 +409,10 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
-        let secret = GENERATOR_EXTENDED * &secret;
-        let (value, _) =
-            bid.decrypt_data(&secret.into()).expect("Decryption error");
+        let (bid, psk) = random_bid(&secret);
+        let (value, _) = bid
+            .decrypt_data(&secret.into(), &psk)
+            .expect("Decryption error");
 
         // Generate fields for the Bid & required by the compute_score
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -431,6 +428,7 @@ mod tests {
         let score = Score::compute(
             &bid,
             &secret.into(),
+            &psk,
             secret_k,
             bid_tree_root,
             consensus_round_seed,
@@ -522,10 +520,9 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
-        let secret = GENERATOR_EXTENDED * &secret;
+        let (bid, psk) = random_bid(&secret);
         let (value, _) =
-            bid.decrypt_data(&secret.into()).expect("Decryption Error");
+            bid.decrypt_data(&secret, &psk).expect("Decryption Error");
 
         // Generate fields for the Bid & required by the compute_score
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
