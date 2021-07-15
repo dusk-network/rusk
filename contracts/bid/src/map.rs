@@ -4,23 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::{Canon, Store};
+use canonical::CanonError;
 use canonical_derive::Canon;
 use core::ops::Deref;
 use dusk_bytes::Serializable;
-use dusk_kelvin_map::Map;
+use dusk_hamt::Map;
 use dusk_pki::PublicKey;
 
 #[derive(Default, Debug, Clone, Canon)]
-pub struct KeyToIdxMap<S: Store>(Map<[u8; 32], u64, S>);
+pub struct KeyToIdxMap(Map<[u8; 32], u64>);
 
-impl<S> KeyToIdxMap<S>
-where
-    S: Store,
-{
+impl KeyToIdxMap {
     /// Create a new instance of a [`KeyToIdxMap`].
-    pub fn new() -> KeyToIdxMap<S> {
-        Self(Map::<[u8; 32], u64, S>::default())
+    pub fn new() -> KeyToIdxMap {
+        Self(Hamt::<[u8; 32], u64, ()>::default())
     }
 
     /// Include a key -> value mapping to the set.
@@ -33,23 +30,23 @@ where
         &mut self,
         pk: PublicKey,
         bid_idx: usize,
-    ) -> Result<Option<u64>, S::Error> {
+    ) -> Result<Option<u64>, CanonError> {
         self.0.insert(pk.to_bytes(), bid_idx as u64)
     }
 
     /// Fetch a previously inserted key -> value mapping, provided the key.
     ///
-    /// Will return `Ok(None)` if no correspondent key was found.
+    /// Will returnNone)` if no correspondent key was found.
     pub fn get(
         &self,
         pk: PublicKey,
-    ) -> Result<Option<impl Deref<Target = u64> + '_>, S::Error> {
+    ) -> Result<Option<impl Deref<Target = u64> + '_>, CanonError> {
         self.0.get(&pk.to_bytes())
     }
 
     /// Remove an entry from the tree. It will return `Ok(Some(u64))` in case
     /// the key exists and `Ok(None)` otherways.
-    pub fn remove(&mut self, pk: PublicKey) -> Result<Option<u64>, S::Error> {
+    pub fn remove(&mut self, pk: PublicKey) -> Result<Option<u64>, CanonError> {
         self.0.remove(&pk.to_bytes())
     }
 }

@@ -4,52 +4,46 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical_host::MemStore;
 use phoenix_core::Note;
+use transfer_circuits::WithdrawFromTransparentCircuit;
 
 mod wrapper;
 
 use wrapper::TransferWrapper;
 
 #[test]
-fn withdraw_from_transparent() {
-    let store = MemStore::new();
-
-    let genesis_value = 1_000;
+fn send_to_contract_transparent() {
+    let genesis_value = 10_000_000_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::<MemStore>::new(
-        2324,
-        block_height,
-        genesis_value,
-        &store,
-    );
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
     assert_eq!(1, notes.len());
     let unspent_note = notes[0];
 
-    let account = wrapper.address();
+    let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
     assert_eq!(0, balance);
 
-    let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
-    let (remainder_ssk, remainder_vk, remainder_psk) = wrapper.identifier();
+    let (refund_ssk, refund_vk, _) = wrapper.identifier();
+    let (_, remainder_vk, remainder_psk) = wrapper.identifier();
     let account_value = 100;
-    let gas_limit = 50;
+    let gas_limit = 175_000_000;
     let gas_price = 2;
-    let result = wrapper.send_to_contract_transparent(
-        &[unspent_note],
-        &[genesis_ssk],
-        &refund_ssk,
-        &remainder_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        account_value,
-    );
-    assert!(result);
+    wrapper
+        .send_to_contract_transparent(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            account,
+            account_value,
+        )
+        .expect("Failed to load balance into contract");
 
     let balance = wrapper.balance(&account);
     assert_eq!(account_value, balance);
@@ -76,136 +70,117 @@ fn withdraw_from_transparent() {
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
     );
-
-    let (withdraw_ssk, withdraw_vk, withdraw_psk) = wrapper.identifier();
-    let withdraw_value = 35;
-
-    let gas_limit = 10;
-    let gas_price = 3;
-    let result = wrapper.withdraw_from_transparent(
-        &[remainder],
-        &[remainder_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        &withdraw_psk,
-        withdraw_value,
-    );
-    assert!(result);
-
-    let withdraw: Note = wrapper
-        .notes_owned_by(1, &withdraw_vk)
-        .first()
-        .cloned()
-        .unwrap()
-        .into();
-
-    let balance = wrapper.balance(&account);
-    assert_eq!(account_value - withdraw_value, balance);
-    assert_eq!(withdraw_value, withdraw.value(Some(&withdraw_vk)).unwrap());
-
-    let withdraw_value = balance + 1;
-    let result = wrapper.withdraw_from_transparent(
-        &[withdraw],
-        &[withdraw_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        &withdraw_psk,
-        withdraw_value,
-    );
-    assert!(!result);
-
-    let balance_p = wrapper.balance(&account);
-    assert_eq!(balance, balance_p);
-
-    let withdraw_value = balance;
-    let result = wrapper.withdraw_from_transparent(
-        &[withdraw],
-        &[withdraw_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        &withdraw_psk,
-        withdraw_value,
-    );
-    assert!(result);
-
-    let withdraw: Note = wrapper
-        .notes_owned_by(1, &withdraw_vk)
-        .last()
-        .cloned()
-        .unwrap()
-        .into();
-
-    assert_eq!(balance, withdraw.value(Some(&withdraw_vk)).unwrap());
-
-    let balance = wrapper.balance(&account);
-    assert_eq!(0, balance);
-
-    let withdraw_value = 1;
-    let result = wrapper.withdraw_from_transparent(
-        &[withdraw],
-        &[withdraw_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        &withdraw_psk,
-        withdraw_value,
-    );
-    assert!(!result);
 }
 
 #[test]
-fn withdraw_from_transparent_to_contract() {
-    let store = MemStore::new();
-
-    let genesis_value = 1_000;
+fn send_to_contract_obfuscated() {
+    let genesis_value = 10_000_000_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::<MemStore>::new(
-        2324,
-        block_height,
-        genesis_value,
-        &store,
-    );
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
     assert_eq!(1, notes.len());
     let unspent_note = notes[0];
 
-    let account = wrapper.address();
+    let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
     assert_eq!(0, balance);
 
-    let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
-    let (remainder_ssk, remainder_vk, remainder_psk) = wrapper.identifier();
+    let (refund_ssk, _, _) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
     let account_value = 100;
-    let gas_limit = 50;
+    let gas_limit = 175_000_000;
     let gas_price = 2;
-    let result = wrapper.send_to_contract_transparent(
-        &[unspent_note],
-        &[genesis_ssk],
-        &refund_ssk,
-        &remainder_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        account_value,
-    );
-    assert!(result);
+    let message_address = wrapper
+        .send_to_contract_obfuscated(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            account,
+            account_value,
+        )
+        .expect("Failed to load balance into contract");
 
-    let balance = wrapper.balance(&account);
-    assert_eq!(account_value, balance);
+    wrapper
+        .message(&account, message_address.pk_r())
+        .expect("Failed to find appended message");
+}
+
+#[test]
+fn alice_ping() {
+    let genesis_value = 10_000_000_000;
+    let block_height = 1;
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+
+    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
+    let notes = wrapper.notes_owned_by(0, &genesis_vk);
+    assert_eq!(1, notes.len());
+    let unspent_note = notes[0];
+
+    let alice = *wrapper.alice();
+    let ping = TransferWrapper::tx_ping();
+
+    let (refund_ssk, _, _) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
+    let gas_limit = 175_000_000;
+    let gas_price = 2;
+    wrapper
+        .execute(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            0,
+            Some((alice, ping)),
+        )
+        .expect("Failed to ping alice");
+}
+
+#[test]
+fn withdraw_from_transparent() {
+    let genesis_value = 50_000_000_000;
+    let block_height = 1;
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+
+    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
+    let notes = wrapper.notes_owned_by(0, &genesis_vk);
+    assert_eq!(1, notes.len());
+    let unspent_note = notes[0];
+
+    let alice = *wrapper.alice();
+    let balance = wrapper.balance(&alice);
+    assert_eq!(0, balance);
+
+    let (refund_ssk, refund_vk, _) = wrapper.identifier();
+    let (remainder_ssk, remainder_vk, remainder_psk) = wrapper.identifier();
+    let alice_value = 100;
+    let gas_limit = 500_000_000;
+    let gas_price = 2;
+    wrapper
+        .send_to_contract_transparent(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            alice,
+            alice_value,
+        )
+        .expect("Failed to load balance into contract");
+
+    let balance = wrapper.balance(&alice);
+    assert_eq!(alice_value, balance);
+
     let notes = wrapper.notes(block_height);
     assert_eq!(2, notes.len());
 
@@ -223,61 +198,83 @@ fn withdraw_from_transparent_to_contract() {
         .cloned()
         .unwrap()
         .into();
-    let remainder_value = genesis_value - account_value - gas_limit;
+    let remainder_value = genesis_value - alice_value - gas_limit;
     assert_eq!(
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
     );
 
-    let withdraw_account = wrapper.address();
-    let withdraw_value = 35;
-
-    let gas_limit = 10;
-    let gas_price = 3;
-    let result = wrapper.withdraw_from_transparent_to_contract(
-        &[remainder],
-        &[remainder_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        withdraw_account,
+    let withdraw_value = 25;
+    let (withdraw_ssk, withdraw_note) =
+        wrapper.generate_note(true, withdraw_value);
+    let withdraw_vk = withdraw_ssk.view_key();
+    let withdraw_circuit =
+        WithdrawFromTransparentCircuit::new(&withdraw_note, Some(&withdraw_vk))
+            .expect("Failed to create withdraw circuit");
+    let withdraw_proof = wrapper.generate_proof(withdraw_circuit);
+    let withdraw_tx = TransferWrapper::tx_withdraw(
         withdraw_value,
+        withdraw_note,
+        withdraw_proof,
     );
-    assert!(result);
 
-    let balance_original = wrapper.balance(&account);
-    assert_eq!(account_value - withdraw_value, balance_original);
+    let (new_refund_ssk, new_refund_vk, _) = wrapper.identifier();
 
-    let balance = wrapper.balance(&withdraw_account);
-    assert_eq!(withdraw_value, balance);
+    let gas_price = 1;
+    wrapper
+        .execute(
+            &[refund],
+            &[refund_ssk],
+            &new_refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            withdraw_value,
+            Some((alice, withdraw_tx)),
+        )
+        .expect("Failed to withdraw from alice");
 
-    let refund: Note = wrapper
-        .notes_owned_by(1, &refund_vk)
-        .last()
+    let balance = wrapper.balance(&alice);
+    assert_eq!(alice_value - withdraw_value, balance);
+
+    let withdraw: Note = wrapper
+        .notes_owned_by(1, &withdraw_vk)
+        .first()
         .cloned()
         .unwrap()
         .into();
+    assert_eq!(withdraw_value, withdraw.value(Some(&withdraw_vk)).unwrap());
 
-    let gas_limit = 10;
-    let gas_price = 1;
-    let result = wrapper.withdraw_from_transparent_to_contract(
-        &[refund],
-        &[refund_ssk],
-        &refund_psk,
-        true,
-        gas_limit,
-        gas_price,
-        account,
-        withdraw_account,
-        balance_original,
-    );
-    assert!(result);
+    let refund: Note = wrapper
+        .notes_owned_by(1, &new_refund_vk)
+        .first()
+        .cloned()
+        .unwrap()
+        .into();
+    assert!(refund.value(Some(&new_refund_vk)).unwrap() > 0);
 
-    let balance = wrapper.balance(&account);
-    assert_eq!(0, balance);
+    let transfer_value = 15;
+    let bob = *wrapper.bob();
+    let transfer_tx =
+        TransferWrapper::tx_withdraw_to_contract(bob, transfer_value);
+    wrapper
+        .execute(
+            &[remainder],
+            &[remainder_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            0,
+            Some((alice, transfer_tx)),
+        )
+        .expect("Failed to withdraw from alice");
 
-    let balance = wrapper.balance(&withdraw_account);
-    assert_eq!(account_value, balance);
+    let balance = wrapper.balance(&alice);
+    assert_eq!(alice_value - withdraw_value - transfer_value, balance);
+
+    let balance = wrapper.balance(&bob);
+    assert_eq!(transfer_value, balance);
 }
