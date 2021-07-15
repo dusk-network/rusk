@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Update `dusk-poseidon` to `0.22.0-rc` [#327]
+- Update `dusk-pki` to `0.8.0-rc` [#327]
+- Update `phoenix-core` to `0.13.0-rc` [#327]
+- Update `dusk-schnorr` to `0.8.0-rc` [#327]
+- Update the blindbid service to use the new API of `dusk-blindbid` [#327]
+
+## [0.2.0] - 2021-05-19
 ### Added
 
 - Add setup/teardown system for tests [#292]
@@ -50,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add build system that generates keys for circuits and caches them.
 
 
+[#327]: https://github.com/dusk-network/rusk/issues/327
 [#307]: https://github.com/dusk-network/rusk/issues/307
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
