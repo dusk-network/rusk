@@ -62,6 +62,24 @@ pub enum PaymentInfo {
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
 
+/// Epoch used for stake and bid operations
+pub const EPOCH: u32 = 2160;
+
+/// Maturity of the stake and bid
+pub const MATURITY: u32 = 2 * EPOCH;
+
+/// Validity of the stake and bid
+pub const VALIDITY: u32 = 56 * EPOCH;
+
+/// Contract ID of the deployed transfer contract
+pub fn transfer_contract() -> ContractId {
+    ContractId::from([
+        0xd3, 0xf8, 0x7f, 0xfc, 0x1b, 0xc7, 0x43, 0x1d, 0xde, 0x81, 0x5f, 0xb1,
+        0xe1, 0x1b, 0xd0, 0xfe, 0x88, 0x37, 0x1a, 0x15, 0x4a, 0xec, 0x27, 0x5d,
+        0xed, 0x2, 0x4d, 0x8c, 0xc0, 0xf7, 0x99, 0x5f,
+    ])
+}
+
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
         #[doc(hidden)]
