@@ -7,6 +7,7 @@
 use crate::Error;
 use core::borrow::Borrow;
 
+use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_poseidon::tree::{
@@ -14,8 +15,8 @@ use dusk_poseidon::tree::{
     PoseidonTreeAnnotation,
 };
 use microkelvin::{
-    Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey, Step,
-    Walk, Walker,
+    AnnoIter, Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey,
+    Step, Walk, Walker,
 };
 use phoenix_core::Note;
 
@@ -46,6 +47,12 @@ impl Borrow<BlsScalar> for NotesAnnotation {
     }
 }
 
+impl Borrow<PoseidonAnnotation> for NotesAnnotation {
+    fn borrow(&self) -> &PoseidonAnnotation {
+        &self.poseidon
+    }
+}
+
 impl<L> Annotation<L> for NotesAnnotation
 where
     L: PoseidonLeaf,
@@ -63,24 +70,26 @@ where
     }
 }
 
-impl<C, A> Combine<C, A> for NotesAnnotation
+impl<A> Combine<A> for NotesAnnotation
 where
-    C: Compound<A>,
-    C::Leaf: PoseidonLeaf + Keyed<BlockHeight> + Borrow<u64>,
-    A: Annotation<C::Leaf>
-        + PoseidonTreeAnnotation<C::Leaf>
-        + Borrow<Cardinality>
-        + Borrow<MaxKey<BlockHeight>>,
+    A: Borrow<Cardinality>
+        + Borrow<MaxKey<BlockHeight>>
+        + Borrow<PoseidonAnnotation>
+        + Borrow<BlsScalar>,
 {
-    fn combine(node: &C) -> Self {
+    fn combine<C: Compound<A>>(iter: AnnoIter<C, A>) -> Self
+    where
+        C: Compound<A>,
+        A: Annotation<C::Leaf>,
+    {
         NotesAnnotation {
-            poseidon: PoseidonAnnotation::combine(node),
-            block_height: MaxKey::combine(node),
+            poseidon: PoseidonAnnotation::combine(iter.clone()),
+            block_height: MaxKey::combine(iter),
         }
     }
 }
 
-impl PoseidonTreeAnnotation<Leaf> for NotesAnnotation {}
+impl PoseidonTreeAnnotation<Leaf> for NotesAnnotation where Leaf:  {}
 
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Canon,
@@ -216,7 +225,7 @@ impl<C, A> Walker<C, A> for BlockHeightFilter
 where
     C: Compound<A>,
     C::Leaf: Keyed<BlockHeight>,
-    A: Combine<C, A> + Borrow<MaxKey<BlockHeight>>,
+    A: Combine<A> + Annotation<C::Leaf> + Borrow<MaxKey<BlockHeight>> + Canon,
 {
     fn walk(&mut self, walk: Walk<C, A>) -> Step {
         for i in 0.. {
@@ -230,7 +239,7 @@ where
                 }
                 Child::Node(n) => {
                     let max_node_block_height: u64 =
-                        match n.annotation().borrow() {
+                        match *(*n.annotation()).borrow() {
                             MaxKey::NegativeInfinity => return Step::Abort,
                             MaxKey::Maximum(value) => value.0,
                         };
