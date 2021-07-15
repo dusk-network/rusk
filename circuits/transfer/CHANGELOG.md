@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.2.0] - 2021-07-15
+
+### Changed
+
+- Update `dusk-poseidon` to `0.22.0-rc` [#327]
+- Update `dusk-pki` to `0.8.0-rc` [#327]
+- Update `phoenix-core` to `0.13.0-rc` [#327]
+- Update `dusk-schnorr` to `0.8.0-rc` [#327]
+- Change WFO `change_nonce` as BlsScalar [#327]
+
 ## [0.1.0] - 2021-05-20
 
 ### Added
 
 - Add `transfer-circuits` to Rusk keys scheme [#302]
 
+[#327]: https://github.com/dusk-network/rusk/issues/327
 [#302]: https://github.com/dusk-network/rusk/issues/302
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/transfer-circuits-0.1.0
