@@ -6,6 +6,7 @@
 
 extern crate alloc;
 
+use crate::genesis;
 use alloc::vec::Vec;
 use canonical::{Canon, CanonError, Source};
 use dusk_abi::{HostModule, Query, ReturnValue};
@@ -17,6 +18,16 @@ use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 
 use crate::{PublicInput, RuskModule};
+
+/// Returns the transfer address for the transfer contract in bytes
+pub const fn transfer_address() -> [u8; 32] {
+    genesis::TRANSFER_ADDRESS
+}
+
+/// Returns the stake address for the transfer contract in bytes
+pub const fn stake_address() -> [u8; 32] {
+    genesis::STAKE_ADDRESS
+}
 
 impl RuskModule {
     pub fn new(pp: &'static PublicParameters) -> Self {
@@ -54,7 +65,7 @@ impl HostModule for RuskModule {
                     pi.into_iter().map(|pi| pi.into()).collect();
 
                 let ret = circuit::verify_proof(
-                    &self.pp,
+                    self.pp,
                     verifier_data.key(),
                     &proof,
                     pi.as_slice(),
