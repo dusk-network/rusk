@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Changed
+
+- Update `dusk-abi` from `0.9.0-rc` to `0.9` [#327]
+- Update `dusk-schnorr` from `0.7.0-rc` to `0.8.0-rc` [#327]
+- Update `dusk-pki` from `0.7.0-rc` to `0.8.0-rc` [#327]
+- Update `rusk-vm` from `0.6.0-rc` to `0.7.0-rc` [#327]
+
+## [0.3.0] - 2021-05-14
 ### Added
 
 - Add `payment_info` host function [#254]
@@ -64,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#327]: https://github.com/dusk-network/rusk/issues/327
 [#227]: https://github.com/dusk-network/rusk/issues/227
 [#254]: https://github.com/dusk-network/rusk/issues/254
 [unreleased]: https://github.com/dusk-network/dusk-abi/compare/v0.2.0...HEAD

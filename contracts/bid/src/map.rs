@@ -8,16 +8,16 @@ use canonical::CanonError;
 use canonical_derive::Canon;
 use core::ops::Deref;
 use dusk_bytes::Serializable;
-use dusk_hamt::Map;
+use dusk_hamt::Hamt;
 use dusk_pki::PublicKey;
 
 #[derive(Default, Debug, Clone, Canon)]
-pub struct KeyToIdxMap(Map<[u8; 32], u64>);
+pub struct KeyToIdxMap(Hamt<[u8; PublicKey::SIZE], u64, ()>);
 
 impl KeyToIdxMap {
     /// Create a new instance of a [`KeyToIdxMap`].
     pub fn new() -> KeyToIdxMap {
-        Self(Hamt::<[u8; 32], u64, ()>::default())
+        Self(Hamt::<[u8; PublicKey::SIZE], u64, ()>::default())
     }
 
     /// Include a key -> value mapping to the set.

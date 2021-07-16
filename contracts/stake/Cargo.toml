@@ -1,0 +1,21 @@
+[package]
+name = "stake-contract"
+version = "0.1.0"
+authors = ["Victor Lopez <victor@dusk.network>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+canonical = "0.6"
+canonical_derive = "0.6"
+dusk-abi = "0.9"
+dusk-bytes = "0.1"
+rusk-abi = { path = "../../rusk-abi" }
+transfer-contract = { path = "../transfer", features = ["no-bridge"] }
+dusk-hamt = { version = "0.5.0-rc", default-features = false }
+dusk-pki = { version = "0.8.0-rc", default-features = false }
+dusk-schnorr = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
+dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
+phoenix-core = { version = "0.13.0-rc", default-features = false, features = ["canon"] }
