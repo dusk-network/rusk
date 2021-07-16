@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::net;
-
 use bid_circuits::BidCorrectnessCircuit;
 use bid_contract::{contract_constants::*, Contract as BidContract};
 use dusk_blindbid::{Bid, V_RAW_MAX, V_RAW_MIN};
@@ -23,9 +21,15 @@ use phoenix_core::{Message, Note};
 use rand::Rng;
 use rusk_abi::RuskModule;
 use rusk_vm::{Contract, ContractId, GasMeter, NetworkState};
+use std::{convert::TryFrom, net};
+use transfer_contract::TransferContract;
 
-const BYTECODE: &'static [u8] = include_bytes!(
+const BID_CONTRACT_BYTECODE: &'static [u8] = include_bytes!(
     "../../../target/wasm32-unknown-unknown/release/bid_contract.wasm"
+);
+
+const TRANSFER_CONTRACT_BYTECODE: &'static [u8] = include_bytes!(
+    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
 lazy_static! {
@@ -61,7 +65,8 @@ fn create_proof(value: JubJubScalar, blinder: JubJubScalar) -> Proof {
 #[test]
 fn bid_contract_workflow_works() {
     // Init Env & Contract
-    let contract = Contract::new(BidContract::new(), BYTECODE.to_vec());
+    let contract =
+        Contract::new(BidContract::new(), BID_CONTRACT_BYTECODE.to_vec());
     // Create BidCorrectnessCircuit Proof and send it
     let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
     let (a, b) = (
@@ -86,9 +91,14 @@ fn bid_contract_workflow_works() {
     let mut network = NetworkState::with_block_height(block_height);
     let rusk_mod = RuskModule::new(&*PUB_PARAMS);
     network.register_host_module(rusk_mod);
+    // Deploy Transfer Contract
+    let (bidder_ssk, transfer_contract) = initialize_transfer_contract();
+    network.deploy(transfer_contract).expect("Deploy failure");
     // Deploy contract
     let contract_id = network.deploy(contract).expect("Deploy failure");
-    let mut gas = GasMeter::with_limit(1_000_000_000);
+    let mut gas = GasMeter::with_limit(1_000_000_000_000);
+
+    // Transfer Dusk to the Bid Contract (STCO)
 
     // Add leaf to the Contract's tree and get it's pos index back
     let call_result = network
@@ -169,4 +179,23 @@ fn bid_contract_workflow_works() {
         .expect("Failed to call extend_bid method");
 
     assert!(call_result);
+}
+
+fn initialize_transfer_contract() -> (SecretSpendKey, Contract) {
+    let bidder_ssk = {
+        let (a, b) = (JubJubScalar::from(2u64), JubJubScalar::from(3u64));
+        SecretSpendKey::new(a, b)
+    };
+    let bidder_psk = PublicSpendKey::from(bidder_ssk);
+    let bidder_note = Note::transparent(
+        &mut rand::thread_rng(),
+        &bidder_psk,
+        10_000_000_000_000,
+    );
+    let contract = Contract::new(
+        TransferContract::try_from(bidder_note).unwrap(),
+        TRANSFER_CONTRACT_BYTECODE.to_vec(),
+    );
+
+    (bidder_ssk, contract)
 }
