@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change CIRCUIT_ID to use `code-hasher` to generate it [#284]
 - Update `dusk-plonk` to `0.22.0-rc` [#327]
-- Update `dusk-pki` to `0.9.0-rc` [#327]
+- Update `dusk-pki` to `0.8.0-rc` [#327]
 - Update `dusk-blindbid` to `0.10.0-rc` [#327]
 - Update `microkelvin` to `0.10.0-rc` [#327]
 
