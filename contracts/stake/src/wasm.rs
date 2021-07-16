@@ -144,10 +144,9 @@ impl StakeContract {
         }
 
         let block_height = dusk_abi::block_height() as u32;
-        let epoch = rusk_abi::EPOCH - block_height % rusk_abi::EPOCH;
-        let eligibility = block_height + rusk_abi::MATURITY + epoch;
-        let expiration =
-            block_height + rusk_abi::MATURITY + rusk_abi::VALIDITY + epoch;
+        let epoch = EPOCH - block_height % EPOCH;
+        let eligibility = block_height + MATURITY + epoch;
+        let expiration = block_height + MATURITY + VALIDITY + epoch;
 
         let address = dusk_abi::callee();
         let stake = Stake::new(value, eligibility, expiration);
@@ -173,7 +172,7 @@ impl StakeContract {
         let block_height = dusk_abi::block_height() as u32;
         let expiration = stake.expiration();
 
-        if block_height + rusk_abi::MATURITY < expiration {
+        if block_height + MATURITY < expiration {
             panic!("The provided stake is not matured yet");
         }
 
@@ -198,7 +197,7 @@ impl StakeContract {
         let stake = self.get_stake(&pk);
         let block_height = dusk_abi::block_height() as u32;
 
-        if block_height < stake.expiration() + rusk_abi::EPOCH {
+        if block_height < stake.expiration() + EPOCH {
             panic!("The provided stake is expired");
         }
 
