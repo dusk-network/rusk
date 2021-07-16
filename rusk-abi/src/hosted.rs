@@ -14,7 +14,12 @@ use dusk_bls12_381::BlsScalar;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
-use crate::{PaymentInfo, PublicInput, PAYMENT_INFO};
+use crate::{genesis, PaymentInfo, PublicInput, PAYMENT_INFO};
+
+/// Contract ID of the deployed transfer contract
+pub const fn transfer_contract() -> ContractId {
+    ContractId::from_raw(genesis::TRANSFER_ADDRESS)
+}
 
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars))

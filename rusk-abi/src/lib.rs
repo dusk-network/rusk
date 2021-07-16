@@ -20,6 +20,7 @@ use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
 use dusk_pki::PublicSpendKey;
+
 mod public_input;
 pub use public_input::PublicInput;
 
@@ -62,13 +63,19 @@ pub enum PaymentInfo {
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
 
-/// Contract ID of the deployed transfer contract
-pub fn transfer_contract() -> ContractId {
-    ContractId::from([
-        77, 26, 213, 37, 135, 191, 208, 11, 125, 250, 28, 58, 70, 96, 146, 99,
-        66, 82, 253, 79, 81, 12, 64, 50, 131, 247, 171, 177, 127, 197, 202,
-        140,
-    ])
+#[allow(dead_code)]
+pub(crate) mod genesis {
+    use dusk_bytes::hex;
+
+    /// Transfer Contract Address
+    pub const TRANSFER_ADDRESS: [u8; 32] = hex(
+        b"d3f87ffc1bc7431dde815fb1e11bd0fe88371a154aec275ded024d8cc0f7995f",
+    );
+
+    /// Stake Contract Adddress
+    pub const STAKE_ADDRESS: [u8; 32] = hex(
+        b"286589afe95df3cc324ed9d168065038ef1ea2923054584f588d1c9e06920ef1",
+    );
 }
 
 cfg_if::cfg_if! {
