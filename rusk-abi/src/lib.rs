@@ -62,15 +62,6 @@ pub enum PaymentInfo {
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
 
-/// Epoch used for stake and bid operations
-pub const EPOCH: u32 = 2160;
-
-/// Maturity of the stake and bid
-pub const MATURITY: u32 = 2 * EPOCH;
-
-/// Validity of the stake and bid
-pub const VALIDITY: u32 = 56 * EPOCH;
-
 /// Contract ID of the deployed transfer contract
 pub fn transfer_contract() -> ContractId {
     ContractId::from([
