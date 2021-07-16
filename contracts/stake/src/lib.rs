@@ -16,6 +16,15 @@ use dusk_pki::PublicKey;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
+/// Epoch used for stake and bid operations
+pub const EPOCH: u32 = 2160;
+
+/// Maturity of the stake and bid
+pub const MATURITY: u32 = 2 * EPOCH;
+
+/// Validity of the stake and bid
+pub const VALIDITY: u32 = 56 * EPOCH;
+
 pub const MINIMUM_STAKE: u64 = 100_000_000_000_000;
 pub const MAXIMUM_STAKE: u64 = 10_000_000_000_000_000;
 pub const SLASH_REWARD: u64 = 50_000_000_000_000;
@@ -52,7 +61,7 @@ impl Stake {
     }
 
     pub fn extend(&mut self) {
-        self.expiration += rusk_abi::VALIDITY;
+        self.expiration += VALIDITY;
     }
 }
 
