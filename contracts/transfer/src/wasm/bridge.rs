@@ -25,6 +25,8 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
     let mut source = Source::new(bytes);
     let mut contract = TransferContract::decode(&mut source)?;
 
+    dusk_abi::debug!("consumed {}", dusk_abi::gas_consumed());
+
     let call = Call::decode(&mut source)?;
     let ret = call.transact(&mut contract);
 

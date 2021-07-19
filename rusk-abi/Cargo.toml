@@ -1,3 +1,4 @@
+rusk-profile = { path = "../rusk-profile" }
 [package]
 name = "rusk-abi"
 version = "0.4.0"
@@ -28,7 +29,7 @@ dusk-plonk = { version = "0.8", default-features = false, features = ["canon"] }
 rusk-profile = { path = "../rusk-profile" }
 
 [dev-dependencies]
-rusk-vm = "0.6.0-rc"
+rusk-vm = "0.7.0-rc"
 dusk-bytes = "0.1"
 host_fn = { path = "tests/contracts/host_fn" }
 rand_core = { version = "0.6", features = ["std"] }
