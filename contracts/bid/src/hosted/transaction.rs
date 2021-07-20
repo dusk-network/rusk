@@ -7,7 +7,7 @@
 use crate::{contract_constants::*, leaf::BidLeaf, leaf::Expiration, Contract};
 use alloc::vec::Vec;
 use core::ops::DerefMut;
-use dusk_abi::{ContractId, Transaction};
+use dusk_abi::Transaction;
 use dusk_blindbid::Bid;
 use dusk_bls12_381::BlsScalar;
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
@@ -104,14 +104,8 @@ impl Contract {
         );
 
         let call = Transaction::from_canon(&call);
-        dusk_abi::transact_raw(
-            self,
-            &ContractId::from(
-                &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
-            ),
-            &call,
-        )
-        .expect("Failed to send dusk to Bid contract");
+        dusk_abi::transact_raw(self, &rusk_abi::transfer_contract(), &call)
+            .expect("Failed to send dusk to Bid contract");
 
         true
     }
@@ -243,18 +237,15 @@ impl Contract {
 
             // Withdraw from Obfuscated call to retire the funds of the bidder.
             let call = Call::withdraw_from_obfuscated(
-                *bid.message(),
-                ContractId::from(
-                    &rusk_abi::genesis_contracts_ids::TRANSFER_CONTRACT_ID,
-                ),
+                *bid.bid().message(),
+                *bid.bid().stealth_address(),
                 note,
                 note.value_commitment().into(),
                 spend_proof,
             );
 
             let call = Transaction::from_canon(&call);
-            let transfer = self.transfer;
-            dusk_abi::transact_raw(self, &transfer, &call)
+            dusk_abi::transact_raw(self, &rusk_abi::transfer_contract(), &call)
                 .expect("Failed to withdraw dusk from the Bid contract");
 
             // If the inter-contract call succeeds, we need to clean the
