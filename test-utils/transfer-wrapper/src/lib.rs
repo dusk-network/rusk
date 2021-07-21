@@ -63,7 +63,7 @@ where
         .deploy(transfer)
         .or(Err(TransferError::ContractNotFound))?;
 
-    assert_eq!(transfer, rusk_abi::transfer_contract());
+    assert_eq!(transfer, rusk_abi::transfer_address().into());
 
     Ok((network, ssk))
 }
@@ -73,7 +73,7 @@ pub fn transfer_state(
     network: &NetworkState,
 ) -> Result<TransferContract, TransferError> {
     network
-        .get_contract_cast_state(&rusk_abi::transfer_contract())
+        .get_contract_cast_state(&rusk_abi::transfer_address().into())
         .or(Err(TransferError::ContractNotFound))
 }
 
@@ -253,5 +253,9 @@ where
         call,
     );
 
-    network.transact::<_, ()>(rusk_abi::transfer_contract(), call, &mut meter)
+    network.transact::<_, ()>(
+        rusk_abi::transfer_address().into(),
+        call,
+        &mut meter,
+    )
 }
