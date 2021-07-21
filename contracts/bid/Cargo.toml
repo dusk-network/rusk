@@ -23,3 +23,14 @@ nstack = "0.10.0-rc"
 microkelvin = "0.10.0-rc"
 dusk-schnorr = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
 dusk-blindbid = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
+transfer-contract = { path = "../../contracts/transfer", features = ["no-bridge"] }
+
+[dev-dependencies]
+transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }
+dusk-plonk = "0.8"
+bid-circuits = { path = "../../circuits/bid" }
+transfer-circuits = { path = "../../circuits/transfer" }
+lazy_static = "1.4"
+rand = "0.8"
+rusk-profile = { path = "../../rusk-profile" }
+rusk-vm = "0.7.0-rc"
