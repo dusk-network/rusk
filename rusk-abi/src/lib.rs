@@ -69,12 +69,12 @@ pub(crate) mod genesis {
 
     /// Transfer Contract Address
     pub const TRANSFER_ADDRESS: [u8; 32] = hex(
-        b"d3f87ffc1bc7431dde815fb1e11bd0fe88371a154aec275ded024d8cc0f7995f",
+        b"5a1cd7c445cfd23bdf300bef21aa70ea7995417274c3ec62f4e3ad1a2421c45c",
     );
 
     /// Stake Contract Adddress
     pub const STAKE_ADDRESS: [u8; 32] = hex(
-        b"286589afe95df3cc324ed9d168065038ef1ea2923054584f588d1c9e06920ef1",
+        b"02db0c1b7401be50af6c7fe5e1bd2a5656464efc0c272528a790fb17930d9dfb",
     );
 }
 

@@ -301,3 +301,35 @@ fn payment_info() {
         matches!(ret, PaymentInfo::Any(Some(key)) if key.to_bytes() == expected)
     );
 }
+
+#[test]
+fn transfer_address() {
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+
+    let mut network = NetworkState::default();
+    network.register_host_module(rusk_mod);
+
+    let transfer = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+    );
+    let transfer = Contract::new((), transfer.to_vec());
+    let transfer = network.deploy(transfer).unwrap();
+
+    assert_eq!(transfer, rusk_abi::transfer_address().into());
+}
+
+#[test]
+fn stake_address() {
+    let rusk_mod = RuskModule::new(&PUB_PARAMS);
+
+    let mut network = NetworkState::default();
+    network.register_host_module(rusk_mod);
+
+    let stake = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+    );
+    let stake = Contract::new((), stake.to_vec());
+    let stake = network.deploy(stake).unwrap();
+
+    assert_eq!(stake, rusk_abi::stake_address().into());
+}
