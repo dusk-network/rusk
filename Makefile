@@ -21,7 +21,10 @@ circuits: keys ## Build and test circuit crates
 contracts: ## Execute the test for all contracts
 	$(MAKE) -C ./contracts test
 
-test: abi circuits macros contracts ## Run the tests
+testutils: ## Execute the test for utils 
+	$(MAKE) -C ./test-utils test
+
+test: abi circuits macros contracts testutils ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	
 run: wasm ## Run the server
