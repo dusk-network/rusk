@@ -8,8 +8,7 @@ help: ## Display this help screen
 test: ## Run all the tests in the subfolder
 	$(MAKE) -C transfer $(MAKECMDGOALS)
 
-wasm: ## Generate the WASM for all the contracts
-	$(MAKE) -C transfer $(MAKECMDGOALS)
+wasm: $(SUBDIRS) ## Generate the WASM for all the contracts
 
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)

@@ -10,10 +10,10 @@ macros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros test
 
 keys: ## Create the keys for the circuits
-	$(MAKE) -C ./rusk keys
+	$(MAKE) -C ./rusk $@
 
 wasm: ## Generate the WASM for all the contracts
-	$(MAKE) -C ./contracts wasm
+	$(MAKE) -C ./contracts $@
 
 circuits: keys ## Build and test circuit crates
 	$(MAKE) -C ./circuits test
@@ -21,7 +21,7 @@ circuits: keys ## Build and test circuit crates
 contracts: ## Execute the test for all contracts
 	$(MAKE) -C ./contracts test
 
-test: abi circuits macros contracts ## Run the tests
+test: circuits wasm abi macros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	
 run: wasm ## Run the server
