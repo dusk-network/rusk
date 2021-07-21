@@ -20,6 +20,7 @@ use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
 use dusk_pki::PublicSpendKey;
+
 mod public_input;
 pub use public_input::PublicInput;
 
@@ -62,22 +63,19 @@ pub enum PaymentInfo {
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
 
-/// Epoch used for stake and bid operations
-pub const EPOCH: u32 = 2160;
+#[allow(dead_code)]
+pub(crate) mod genesis {
+    use dusk_bytes::hex;
 
-/// Maturity of the stake and bid
-pub const MATURITY: u32 = 2 * EPOCH;
+    /// Transfer Contract Address
+    pub const TRANSFER_ADDRESS: [u8; 32] = hex(
+        b"d3f87ffc1bc7431dde815fb1e11bd0fe88371a154aec275ded024d8cc0f7995f",
+    );
 
-/// Validity of the stake and bid
-pub const VALIDITY: u32 = 56 * EPOCH;
-
-/// Contract ID of the deployed transfer contract
-pub fn transfer_contract() -> ContractId {
-    ContractId::from([
-        0xd3, 0xf8, 0x7f, 0xfc, 0x1b, 0xc7, 0x43, 0x1d, 0xde, 0x81, 0x5f, 0xb1,
-        0xe1, 0x1b, 0xd0, 0xfe, 0x88, 0x37, 0x1a, 0x15, 0x4a, 0xec, 0x27, 0x5d,
-        0xed, 0x2, 0x4d, 0x8c, 0xc0, 0xf7, 0x99, 0x5f,
-    ])
+    /// Stake Contract Adddress
+    pub const STAKE_ADDRESS: [u8; 32] = hex(
+        b"286589afe95df3cc324ed9d168065038ef1ea2923054584f588d1c9e06920ef1",
+    );
 }
 
 cfg_if::cfg_if! {
