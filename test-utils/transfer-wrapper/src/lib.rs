@@ -6,7 +6,7 @@
 
 use dusk_abi::{ContractId, Transaction};
 use dusk_bytes::Serializable;
-use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use lazy_static::lazy_static;
 use phoenix_core::{Crossover, Fee, Note};
 use rand::{CryptoRng, RngCore};
@@ -59,11 +59,12 @@ where
     network.register_host_module(rusk_mod);
 
     let transfer = Contract::new(transfer, TRANSFER.to_vec());
+    let transfer_id = rusk_abi::transfer_contract();
     let transfer = network
-        .deploy(transfer)
+        .deploy_with_id(transfer_id, transfer)
         .or(Err(TransferError::ContractNotFound))?;
 
-    assert_eq!(transfer, rusk_abi::transfer_address().into());
+    assert_eq!(transfer, rusk_abi::transfer_contract());
 
     Ok((network, ssk))
 }
@@ -73,8 +74,26 @@ pub fn transfer_state(
     network: &NetworkState,
 ) -> Result<TransferContract, TransferError> {
     network
-        .get_contract_cast_state(&rusk_abi::transfer_address().into())
+        .get_contract_cast_state(&rusk_abi::transfer_contract())
         .or(Err(TransferError::ContractNotFound))
+}
+
+/// Iterate all the notes, starting from the provided block height, and filter
+/// the ones owned by the provided `ViewKey`
+pub fn transfer_notes_owned_by(
+    network: &NetworkState,
+    block_height: u64,
+    vk: &ViewKey,
+) -> Result<Vec<Note>, TransferError> {
+    let notes = transfer_state(network)?
+        .notes_from_height(block_height)?
+        .map(|n| n.map(|n| n.clone()))
+        .collect::<Result<Vec<Note>, TransferError>>()?
+        .into_iter()
+        .filter(|n| vk.owns(n.stealth_address()))
+        .collect();
+
+    Ok(notes)
 }
 
 /// Helper private function to return the ProverKey from a given circuit id
@@ -253,9 +272,5 @@ where
         call,
     );
 
-    network.transact::<_, ()>(
-        rusk_abi::transfer_address().into(),
-        call,
-        &mut meter,
-    )
+    network.transact::<_, ()>(rusk_abi::transfer_contract(), call, &mut meter)
 }
