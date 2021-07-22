@@ -63,19 +63,14 @@ pub enum PaymentInfo {
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
 
-#[allow(dead_code)]
-pub(crate) mod genesis {
-    use dusk_bytes::hex;
+/// Contract ID of the genesis transfer contract
+pub const fn transfer_contract() -> ContractId {
+    ContractId::reserved(0x1)
+}
 
-    /// Transfer Contract Address
-    pub const TRANSFER_ADDRESS: [u8; 32] = hex(
-        b"d3f87ffc1bc7431dde815fb1e11bd0fe88371a154aec275ded024d8cc0f7995f",
-    );
-
-    /// Stake Contract Adddress
-    pub const STAKE_ADDRESS: [u8; 32] = hex(
-        b"286589afe95df3cc324ed9d168065038ef1ea2923054584f588d1c9e06920ef1",
-    );
+/// Contract ID of the genesis stake contract
+pub const fn stake_contract() -> ContractId {
+    ContractId::reserved(0x2)
 }
 
 cfg_if::cfg_if! {
