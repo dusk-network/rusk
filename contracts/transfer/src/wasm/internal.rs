@@ -72,11 +72,14 @@ impl TransferContract {
         address: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
-        self.message_mapping
+        let mut mm = self.message_mapping.inner_mut()?;
+
+        let x = mm
             .get_mut(address)?
             .ok_or(Error::MessageNotFound)?
             .remove(&pk.to_bytes())?
-            .ok_or(Error::MessageNotFound)
+            .ok_or(Error::MessageNotFound);
+        x
     }
 
     pub(crate) fn push_note_current_height(
@@ -152,7 +155,9 @@ impl TransferContract {
     ) -> Result<(), Error> {
         let mut to_insert: Option<Map<PublicKeyBytes, Message>> = None;
 
-        match self.message_mapping.get_mut(&address)? {
+        let mut mm = self.message_mapping.inner_mut()?;
+
+        match mm.get_mut(&address)? {
             Some(mut map) => {
                 map.insert(message_address.pk_r().to_bytes(), message)?;
             }
@@ -165,7 +170,7 @@ impl TransferContract {
         }
 
         if let Some(map) = to_insert {
-            self.message_mapping.insert(address, map)?;
+            mm.insert(address, map)?;
         }
 
         self.message_mapping_set.insert(address, message_address)?;

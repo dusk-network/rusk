@@ -11,6 +11,7 @@ use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
+use microkelvin::Link;
 use phoenix_core::{Crossover, Message, Note};
 
 use core::convert::TryFrom;
@@ -25,13 +26,16 @@ pub use call::Call;
 
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
-#[derive(Debug, Default, Clone, Canon)]
+type LinkBox<T> = Link<T, ()>;
+
+#[derive(Debug, Clone, Canon, Default)]
 pub struct TransferContract {
     pub(crate) notes: Tree,
     pub(crate) nullifiers: Map<BlsScalar, ()>,
     pub(crate) roots: Map<BlsScalar, ()>,
     pub(crate) balances: Map<ContractId, u64>,
-    pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
+    pub(crate) message_mapping:
+        LinkBox<Map<ContractId, Map<PublicKeyBytes, Message>>>,
     pub(crate) message_mapping_set: Map<ContractId, StealthAddress>,
     pub(crate) var_crossover: Option<Crossover>,
     pub(crate) var_crossover_pk: Option<PublicKey>,
@@ -62,10 +66,9 @@ impl TransferContract {
         contract: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
-        let map = self
-            .message_mapping
-            .get(contract)?
-            .ok_or(Error::ContractNotFound)?;
+        let mm = self.message_mapping.inner()?;
+
+        let map = mm.get(contract)?.ok_or(Error::ContractNotFound)?;
 
         let message = map.get(&pk.to_bytes())?.ok_or(Error::MessageNotFound)?;
 

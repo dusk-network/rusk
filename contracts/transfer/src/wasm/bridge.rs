@@ -27,9 +27,14 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
 
     dusk_abi::debug!("consumed {}", dusk_abi::gas_consumed());
 
+    dusk_abi::debug!(
+        "state struct size {}",
+        core::mem::size_of::<TransferContract>()
+    );
+    dusk_abi::debug!("encoded size {}", contract.encoded_len());
+
     let call = Call::decode(&mut source)?;
     let ret = call.transact(&mut contract);
-
     let mut sink = Sink::new(&mut bytes[..]);
 
     ContractState::from_canon(&contract).encode(&mut sink);
