@@ -26,6 +26,7 @@ dusk-bytes = "0.1"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dusk-plonk = { version = "0.8", default-features = false, features = ["canon"] }
 rusk-profile = { path = "../rusk-profile" }
+blake2b_simd = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 rusk-vm = "0.6.0-rc"
