@@ -8,10 +8,11 @@ extern crate alloc;
 
 use crate::genesis;
 use alloc::vec::Vec;
+use blake2b_simd::Params;
 use canonical::{Canon, CanonError, Source};
-use dusk_abi::{HostModule, Query, ReturnValue};
+use dusk_abi::{ContractId, HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicKey;
 use dusk_plonk::circuit::{self, VerifierData};
 use dusk_plonk::prelude::*;
@@ -19,14 +20,16 @@ use dusk_schnorr::Signature;
 
 use crate::{PublicInput, RuskModule};
 
-/// Returns the transfer address for the transfer contract in bytes
-pub const fn transfer_address() -> [u8; 32] {
-    genesis::TRANSFER_ADDRESS
-}
+/// Generate a [`ContractId`] address from the given slice of bytes, that is
+/// also a valid [`BlsScalar`]
+pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
+    let mut state = Params::new().hash_length(64).to_state();
+    state.update(bytes);
 
-/// Returns the stake address for the transfer contract in bytes
-pub const fn stake_address() -> [u8; 32] {
-    genesis::STAKE_ADDRESS
+    let mut buf = [0u8; 64];
+    buf.copy_from_slice(state.finalize().as_ref());
+
+    ContractId::from_raw(BlsScalar::from_bytes_wide(&buf).to_bytes())
 }
 
 impl RuskModule {
