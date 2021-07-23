@@ -160,7 +160,7 @@ impl BidLeaf {
     }
 
     /// Returns the internal expiration the `Bid`  
-    pub fn expiration(&self) -> &Expiration {
+    pub const fn expiration(&self) -> &Expiration {
         &self.expiration
     }
 
