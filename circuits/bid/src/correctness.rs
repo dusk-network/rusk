@@ -166,7 +166,7 @@ mod tests {
 
         let r = JubJubScalar::random(&mut rand::thread_rng());
         let bid = Bid::new(
-            Message::new(&mut rng, &secret, &psk, value),
+            Message::new(&mut rng, &r, &psk, value),
             sponge::sponge::sponge_hash(&[secret_k]),
             psk.gen_stealth_address(&secret),
             u64::MAX,
