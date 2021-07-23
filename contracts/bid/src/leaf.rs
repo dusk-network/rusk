@@ -149,7 +149,7 @@ impl BidLeaf {
 
     /// Returns the internal bid representation of the `BidLeaf` as with
     /// the `Bid` type.
-    pub fn bid(&self) -> &Bid {
+    pub const fn bid(&self) -> &Bid {
         &self.bid
     }
 
