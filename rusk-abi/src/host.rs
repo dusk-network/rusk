@@ -6,7 +6,6 @@
 
 extern crate alloc;
 
-use crate::genesis;
 use alloc::vec::Vec;
 use blake2b_simd::Params;
 use canonical::{Canon, CanonError, Source};
