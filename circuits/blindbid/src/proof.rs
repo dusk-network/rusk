@@ -337,6 +337,7 @@ impl<'a> Circuit for BlindBidCircuit<'a> {
             BlsScalar::zero(),
             Some(-self.score.value()),
         );
+
         Ok(())
     }
 

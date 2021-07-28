@@ -23,3 +23,4 @@ nstack = "0.10.0-rc"
 microkelvin = "0.10.0-rc"
 dusk-schnorr = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
 dusk-blindbid = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
+transfer-contract = { path = "../transfer", features= ["no-bridge"] }

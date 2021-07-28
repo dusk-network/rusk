@@ -49,24 +49,20 @@ pub mod ops {
 
 /// Constants related to the Bid Contract logic.
 pub mod contract_constants {
-    // TODO: Still waiting for values from the research side.
-    // See: https://github.com/dusk-network/rusk/issues/160
+    use rusk_abi::PaymentInfo;
 
-    /// t_m in the specs
-    /// Represents the time it takes for a Bid from the moment when it's
-    /// appended until the moment when it becomes elegible.
-    pub const MATURITY_PERIOD: u64 = 0;
-    /// t_b in the specs
-    /// Represents the ammount of time that takes for a Bid to become
-    /// expired from the time it was elegible.
-    pub const EXPIRATION_PERIOD: u64 = 10;
-    /// t_c in the specs
-    /// Represents the time it takes for a Bid to be withrawable from the
-    /// time it became expired.
-    pub const COOLDOWN_PERIOD: u64 = 0;
+    /// Value of an epoch in blocks. Unit computable against block_height values.
+    pub const EPOCH: u64 = 2_160;
+    /// Amount of blocks it takes for the bid to be eligible to participate in the consensus after
+    /// the originating bid transaction has been included in the block.
+    pub const MATURITY_PERIOD: u64 = 2 * EPOCH;
+    /// Amount of blocks the bid can be eligible to participate in the consensus before expiring.
+    pub const VALIDITY_PERIOD: u64 = 56 * EPOCH;
     /// Height of the `BidTree` used inside of the BidContract in order to
     /// store the `Bid`s and provide merkle openings to them.
     pub const BID_TREE_DEPTH: usize = 17;
+    /// PaymentInfo of the contract
+    pub const PAYMENT_INFO: PaymentInfo = PaymentInfo::Obfuscated(None);
 }
 
 /// Alias for `PoseidonTree<BidLeaf, ExpirationAnnotation, BID_TREE_DEPTH>`.

@@ -31,6 +31,11 @@ pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
     ContractId::from_raw(BlsScalar::from_bytes_wide(&buf).to_bytes())
 }
 
+/// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
+pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
+    dusk_poseidon::sponge::hash(&scalars)
+}
+
 impl RuskModule {
     pub fn new(pp: &'static PublicParameters) -> Self {
         RuskModule { pp }
