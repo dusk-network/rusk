@@ -170,7 +170,7 @@ mod bid {
                 blinder,
             };
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -231,7 +231,7 @@ mod blindbid {
                 psk,
             };
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -254,9 +254,9 @@ mod blindbid {
 
         (
             Bid::new(
-                Message::new(&mut rng, &secret, &psk, value),
+                Message::new(&mut rng, secret, &psk, value),
                 secret_k,
-                psk.gen_stealth_address(&secret),
+                psk.gen_stealth_address(secret),
                 elegibility_ts,
                 expiration_ts,
             ),
@@ -318,7 +318,7 @@ mod transfer {
             )
             .expect("Failed to create STCT circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -377,7 +377,7 @@ mod transfer {
             )
             .expect("Failed to generate circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -411,7 +411,7 @@ mod transfer {
                 WithdrawFromTransparentCircuit::new(&note, Some(&vk))
                     .expect("Failed to create WFT circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -465,7 +465,7 @@ mod transfer {
             )
             .expect("Failed to generate circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
