@@ -53,10 +53,7 @@ impl Contract {
         let block_height = dusk_abi::block_height();
         // Compute maturity & expiration periods
         let expiration = block_height + MATURITY_PERIOD + VALIDITY_PERIOD;
-        let eligibility = block_height
-            + MATURITY_PERIOD
-            + VALIDITY_PERIOD
-            + (EPOCH - (block_height % EPOCH));
+        let eligibility = expiration + (EPOCH - (block_height % EPOCH));
 
         // Generate the bid
         let mut bid = Bid::new(

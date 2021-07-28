@@ -192,14 +192,8 @@ impl From<BidLeaf> for Bid {
 // when executed in the `hosted` envoiroment would indeed call a host_function
 // to do the computations in Rust instead of WASM.
 impl PoseidonLeaf for BidLeaf {
-    #[cfg(not(target_arch = "wasm32"))]
     fn poseidon_hash(&self) -> BlsScalar {
-        self.bid().hash()
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    fn poseidon_hash(&self) -> BlsScalar {
-        rusk_abi::hosted::poseidon_hash(self.bid().as_hash_inputs().into())
+        rusk_abi::poseidon_hash(self.bid().as_hash_inputs().to_vec())
     }
 
     fn pos(&self) -> &u64 {
