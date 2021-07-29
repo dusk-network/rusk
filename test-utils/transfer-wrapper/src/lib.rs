@@ -20,7 +20,7 @@ use std::io;
 
 use dusk_plonk::prelude::*;
 
-static TRANSFER: &'static [u8] = include_bytes!(
+static TRANSFER: &[u8] = include_bytes!(
     "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 
@@ -87,7 +87,7 @@ pub fn transfer_notes_owned_by(
 ) -> Result<Vec<Note>, TransferError> {
     let notes = transfer_state(network)?
         .notes_from_height(block_height)?
-        .map(|n| n.map(|n| n.clone()))
+        .map(|n| n.map(|n| *n))
         .collect::<Result<Vec<Note>, TransferError>>()?
         .into_iter()
         .filter(|n| vk.owns(n.stealth_address()))
@@ -110,6 +110,8 @@ fn circuit_key(circuit_id: &[u8; 32]) -> Result<ProverKey, TransferError> {
 
 /// Helper function to generate a valid execute call with its ZK proof of
 /// validity.
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::type_complexity)]
 fn prepare_execute<'a, R, I>(
     rng: &mut R,
     network: &NetworkState,
@@ -146,9 +148,9 @@ where
                 .opening(*note.pos())?
                 .ok_or(TransferError::NoteNotFound)?;
 
-            let signature = ExecuteCircuit::sign(rng, &ssk, note);
+            let signature = ExecuteCircuit::sign(rng, ssk, note);
             execute_proof
-                .add_input(&ssk, *note, opening, signature)
+                .add_input(ssk, *note, opening, signature)
                 .or(Err(TransferError::ProofVerificationError))?;
 
             Ok(note.gen_nullifier(ssk))
@@ -223,6 +225,7 @@ where
 /// The `call` is an encoded transaction to be executed in the network. If no
 /// transaction is specified, no call is performed but the gas is still consumed
 /// and the operation is valid.
+#[allow(clippy::too_many_arguments)]
 pub fn execute<'a, R, I>(
     rng: &mut R,
     network: &mut NetworkState,
@@ -255,7 +258,7 @@ where
             inputs,
             output,
             transparent_output,
-            &gas_refund,
+            gas_refund,
             &fee,
             crossover.as_ref(),
             crossover_value,
