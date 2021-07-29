@@ -14,7 +14,6 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
-use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
@@ -36,6 +35,7 @@ where
 
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
+    #[allow(clippy::diverging_sub_expression)]
     fn handle_request(
         &self,
     ) -> Result<Response<GenerateScoreResponse>, Status> {

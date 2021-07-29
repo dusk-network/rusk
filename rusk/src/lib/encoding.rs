@@ -131,9 +131,9 @@ impl TryFrom<&rusk_proto::StealthAddress> for StealthAddress {
         bytes[..32].copy_from_slice(&r_g[..]);
         bytes[32..].copy_from_slice(&pk_r[..]);
 
-        Ok(StealthAddress::from_bytes(&bytes).map_err(|_| {
+        StealthAddress::from_bytes(&bytes).map_err(|_| {
             Status::failed_precondition("StealthAdress was improperly encoded")
-        })?)
+        })
     }
 }
 
