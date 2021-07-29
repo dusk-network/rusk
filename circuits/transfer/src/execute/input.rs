@@ -55,6 +55,7 @@ pub struct WitnessInput {
 }
 
 impl WitnessInput {
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_hash_inputs(&self) -> [Variable; 12] {
         [
             self.note_type,

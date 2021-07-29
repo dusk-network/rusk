@@ -92,7 +92,7 @@ impl ExecuteCircuit {
         note: &Note,
     ) -> SchnorrProof {
         let message = SIGN_MESSAGE;
-        let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
+        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
         let secret = SecretKey::from(&sk_r);
 
         SchnorrProof::new(&secret, rng, message)

@@ -62,11 +62,11 @@ impl ExecuteCircuit {
         value: u64,
     ) -> Note {
         if transparent {
-            Note::transparent(rng, &psk, value)
+            Note::transparent(rng, psk, value)
         } else {
             let blinding_factor = JubJubScalar::random(rng);
 
-            Note::obfuscated(rng, &psk, value, blinding_factor)
+            Note::obfuscated(rng, psk, value, blinding_factor)
         }
     }
 
@@ -157,6 +157,7 @@ impl ExecuteCircuit {
         Ok(circuit)
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn create_dummy_proof<R: RngCore + CryptoRng>(
         rng: &mut R,
         inputs: usize,
