@@ -29,6 +29,7 @@ const MINUS_ONE_MOD_2_POW_128: BlsScalar = BlsScalar::from_raw([
 /// Hashes the internal Bid parameters using the Poseidon hash
 /// function and the cannonical encoding for hashing returning a
 /// Variable which contains the hash of the Bid.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn preimage_gadget(
     composer: &mut StandardComposer,
     // TODO: We should switch to a different representation for this.
@@ -80,6 +81,7 @@ pub(crate) fn preimage_gadget(
 /// Prints the proving statements into the provided [`StandardComposer`].
 ///
 /// Returns the value of the computed score as a [`Variable`].
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn score_correctness_gadget(
     composer: &mut StandardComposer,
     score: &Score,
@@ -272,9 +274,9 @@ mod tests {
 
         (
             Bid::new(
-                Message::new(&mut rng, &secret, &psk, value),
+                Message::new(&mut rng, secret, &psk, value),
                 secret_k,
-                psk.gen_stealth_address(&secret),
+                psk.gen_stealth_address(secret),
                 eligibility_ts,
                 expiration_ts,
             ),
@@ -409,9 +411,8 @@ mod tests {
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
         let (bid, psk) = random_bid(&secret);
-        let (value, _) = bid
-            .decrypt_data(&secret.into(), &psk)
-            .expect("Decryption error");
+        let (value, _) =
+            bid.decrypt_data(&secret, &psk).expect("Decryption error");
 
         // Generate fields for the Bid & required by the compute_score
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -426,7 +427,7 @@ mod tests {
         // Edit score fields which should make the test fail
         let score = Score::compute(
             &bid,
-            &secret.into(),
+            &secret,
             &psk,
             secret_k,
             bid_tree_root,
@@ -451,7 +452,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -485,7 +486,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -502,7 +503,7 @@ mod tests {
         );
 
         verifier.preprocess(&ck)?;
-        Ok(verifier.verify(&proof, &vk, &vec![BlsScalar::zero()])?)
+        Ok(verifier.verify(&proof, &vk, &[BlsScalar::zero()])?)
     }
 
     #[test]
@@ -559,7 +560,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -593,7 +594,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -610,9 +611,7 @@ mod tests {
         );
 
         verifier.preprocess(&ck)?;
-        assert!(verifier
-            .verify(&proof, &vk, &vec![BlsScalar::zero()])
-            .is_err());
+        assert!(verifier.verify(&proof, &vk, &[BlsScalar::zero()]).is_err());
 
         Ok(())
     }
