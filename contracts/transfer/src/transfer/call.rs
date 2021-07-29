@@ -81,6 +81,7 @@ impl Call {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn to_execute(
         &self,
         contract: ContractId,
@@ -92,7 +93,7 @@ impl Call {
         spend_proof: Vec<u8>,
     ) -> Result<Self, Error> {
         if let Self::Execute { .. } = self {
-            Err(Error::ExecuteRecursion)?;
+            return Err(Error::ExecuteRecursion);
         }
 
         let tx = Transaction::from_canon(self);

@@ -39,7 +39,7 @@ pub struct TransferContract {
 
 impl TransferContract {
     pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
-        Ok(self.notes.get(pos).map(|l| l.map(|l| l.into()))?)
+        self.notes.get(pos).map(|l| l.map(|l| l.into()))
     }
 
     pub(crate) fn push_note(

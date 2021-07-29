@@ -190,7 +190,7 @@ impl Tree {
     }
 
     pub fn push(&mut self, leaf: Leaf) -> Result<u64, Error> {
-        Ok(self.tree.push(leaf).map(|pos| pos)?)
+        Ok(self.tree.push(leaf)?)
     }
 
     pub fn root(&mut self) -> Result<BlsScalar, Error> {

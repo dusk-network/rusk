@@ -55,16 +55,16 @@ fn send_to_contract_transparent() {
         .notes_owned_by(1, &refund_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     assert!(refund.value(Some(&refund_vk)).unwrap() > 0);
 
     let remainder: Note = wrapper
         .notes_owned_by(1, &remainder_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     let remainder_value = genesis_value - account_value - gas_limit;
     assert_eq!(
         remainder_value,
@@ -188,16 +188,16 @@ fn withdraw_from_transparent() {
         .notes_owned_by(1, &refund_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     assert!(refund.value(Some(&refund_vk)).unwrap() > 0);
 
     let remainder: Note = wrapper
         .notes_owned_by(1, &remainder_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     let remainder_value = genesis_value - alice_value - gas_limit;
     assert_eq!(
         remainder_value,
@@ -242,16 +242,16 @@ fn withdraw_from_transparent() {
         .notes_owned_by(1, &withdraw_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     assert_eq!(withdraw_value, withdraw.value(Some(&withdraw_vk)).unwrap());
 
     let refund: Note = wrapper
         .notes_owned_by(1, &new_refund_vk)
         .first()
         .cloned()
-        .unwrap()
-        .into();
+        .unwrap();
+
     assert!(refund.value(Some(&new_refund_vk)).unwrap() > 0);
 
     let transfer_value = 15;
