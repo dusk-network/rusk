@@ -188,7 +188,7 @@ fn verify_proof() {
     // Integrity check
     circuit::verify_proof(
         &PUB_PARAMS,
-        &verifier_data.key(),
+        verifier_data.key(),
         &proof,
         pi.as_slice(),
         verifier_data.pi_pos().as_slice(),
