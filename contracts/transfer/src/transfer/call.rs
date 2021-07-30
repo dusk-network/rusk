@@ -15,6 +15,7 @@ use dusk_jubjub::JubJubAffine;
 use dusk_pki::StealthAddress;
 use phoenix_core::{Crossover, Fee, Message, Note};
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Canon)]
 pub enum Call {
     Execute {
