@@ -54,6 +54,7 @@ test-context = "0.1"
 async-trait = "0.1"
 
 [build-dependencies]
+hex = "0.4"
 sha2 = "0.9"
 tonic-build = "0.3"
 rustc_tools_util = "0.2"

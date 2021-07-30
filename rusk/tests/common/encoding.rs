@@ -19,11 +19,13 @@ where
     T: Clone,
     U: TryFrom<T, Error = Status>,
 {
-    Ok(U::try_from(
+    U::try_from(
         possible_param
-            .ok_or(Status::new(Code::Unknown, "Missing required fields."))?
+            .ok_or_else(|| {
+                Status::new(Code::Unknown, "Missing required fields.")
+            })?
             .clone(),
-    )?)
+    )
 }
 
 /// Generic function used to encore parameters that are optional in a
@@ -49,7 +51,7 @@ pub fn decode_jubjub_scalar(bytes: &[u8]) -> Result<JubJubScalar, Status> {
 
 /// Decoder fn used for `BlsScalar`
 pub fn decode_bls_scalar(bytes: &[u8]) -> Result<BlsScalar, Status> {
-    BlsScalar::from_slice(&bytes).map_err(|_| {
+    BlsScalar::from_slice(bytes).map_err(|_| {
         Status::failed_precondition("Point was improperly encoded")
     })
 }

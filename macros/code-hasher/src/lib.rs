@@ -43,14 +43,14 @@ pub fn hash(attr: TokenStream, input: TokenStream) -> TokenStream {
 
     // We need to `let` this otherways it gets freed while borrowed.
     let attrs_string = attr.to_string();
-    let attrs_split: Vec<&str> = attrs_string.split(",").collect();
+    let attrs_split: Vec<&str> = attrs_string.split(',').collect();
 
     // Add the code version (passed as attribute) to the hasher.
     hasher.update(attrs_split.get(1).unwrap_or(&"").as_bytes());
     // Add code-block to the hasher.
     hasher.update(input_string.as_bytes());
 
-    let id = hasher.finalize().as_bytes().clone();
+    let id = *hasher.finalize().as_bytes();
     let mut token_stream = input.to_string();
     token_stream.pop();
     token_stream.push_str(&format!(

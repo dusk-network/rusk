@@ -128,7 +128,8 @@ impl TransactionPayload {
             let s: Option<BlsScalar> = BlsScalar::from_bytes(&s)
                 .map_err(|e| anyhow!("{:?}", e))?
                 .into();
-            let s = s.ok_or(anyhow!("Failed to deserialize a scalar!"))?;
+            let s =
+                s.ok_or_else(|| anyhow!("Failed to deserialize a scalar!"))?;
 
             if bytes.len() > 32 {
                 Ok((&bytes[32..], s))
@@ -158,7 +159,7 @@ impl TransactionPayload {
         }
 
         fn deser_bool(bytes: &[u8]) -> Result<(&[u8], bool)> {
-            if bytes.len() < 1 {
+            if bytes.is_empty() {
                 return Err(anyhow!("Not enough bytes to deserialize an u8!"));
             }
 

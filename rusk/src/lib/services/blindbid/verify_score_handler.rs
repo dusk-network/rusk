@@ -33,6 +33,7 @@ where
 
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
+    #[allow(clippy::diverging_sub_expression)]
     fn handle_request(&self) -> Result<Response<VerifyScoreResponse>, Status> {
         // Get the optional parameters from the request.
         let (proof, score, seed, prover_id) =
@@ -121,10 +122,10 @@ fn verify_blindbid_proof(
     // Verify the proof.
     circuit::verify_proof(
         &crate::PUB_PARAMS,
-        &vd.key(),
+        vd.key(),
         proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         super::BLINDBID_TRANSCRIPT_INIT,
     )
     .map_err(|e| anyhow::anyhow!("{:?}", e))

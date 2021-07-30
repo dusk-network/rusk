@@ -94,26 +94,26 @@ mod tests {
 
     #[test]
     fn test_correctness_circuit() -> Result<(), Error> {
-        let value = JubJubScalar::from(100000 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+        let value = JubJubScalar::from(100000_u64);
+        let blinder = JubJubScalar::from(50000_u64);
         let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = BidCorrectnessCircuit {
-            commitment: commitment,
-            value: value,
-            blinder: blinder,
+            commitment,
+            value,
+            blinder,
         };
 
         let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
         let pi = vec![commitment.into()];
         circuit::verify_proof(
             &PP,
-            &KEYS.1.key(),
+            KEYS.1.key(),
             &proof,
             &pi,
-            &KEYS.1.pi_pos(),
+            KEYS.1.pi_pos(),
             b"BidCorrectness",
         )?;
         Ok(())
@@ -121,16 +121,16 @@ mod tests {
 
     #[test]
     fn test_correctness_circuit_out_of_bounds() -> Result<(), Error> {
-        let value = JubJubScalar::from(100 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+        let value = JubJubScalar::from(100_u64);
+        let blinder = JubJubScalar::from(50000_u64);
         let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = BidCorrectnessCircuit {
-            commitment: commitment,
-            value: value,
-            blinder: blinder,
+            commitment,
+            value,
+            blinder,
         };
 
         let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
@@ -138,10 +138,10 @@ mod tests {
         let pi = vec![commitment.into()];
         assert!(circuit::verify_proof(
             &PP,
-            &KEYS.1.key(),
+            KEYS.1.key(),
             &proof,
             &pi,
-            &KEYS.1.pi_pos(),
+            KEYS.1.pi_pos(),
             b"BidCorrectness",
         )
         .is_err());
@@ -178,18 +178,18 @@ mod tests {
 
         let mut circuit = BidCorrectnessCircuit {
             commitment: JubJubAffine::from(bid.commitment()),
-            value: value,
-            blinder: blinder,
+            value,
+            blinder,
         };
 
         let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
         let pi = vec![JubJubAffine::from(bid.commitment()).into()];
         circuit::verify_proof(
             &PP,
-            &KEYS.1.key(),
+            KEYS.1.key(),
             &proof,
             &pi,
-            &KEYS.1.pi_pos(),
+            KEYS.1.pi_pos(),
             b"BidCorrectness",
         )?;
         Ok(())

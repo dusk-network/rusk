@@ -32,9 +32,9 @@ fn random_bid(
 
     (
         Bid::new(
-            Message::new(&mut rng, &secret, &psk, value),
+            Message::new(&mut rng, secret, &psk, value),
             sponge::sponge::sponge_hash(&[*secret_k]),
-            psk.gen_stealth_address(&secret),
+            psk.gen_stealth_address(secret),
             elegibility_ts,
             expiration_ts,
         ),
@@ -85,7 +85,7 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -94,7 +94,7 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
@@ -118,10 +118,10 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 
     Ok(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"CorrectBid",
     )?)
 }
@@ -182,7 +182,7 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -191,7 +191,7 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
@@ -214,10 +214,10 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"BidWithEditedScore"
     )
     .is_err());
@@ -289,7 +289,7 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -298,7 +298,7 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
@@ -321,10 +321,10 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"ExpiredBid"
     )
     .is_err());
@@ -391,7 +391,7 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -405,7 +405,7 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
@@ -428,10 +428,10 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"NonElegibleBid"
     )
     .is_err());

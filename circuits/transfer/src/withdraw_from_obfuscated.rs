@@ -51,7 +51,7 @@ impl WithdrawFromObfuscatedCircuit {
         let change_nonce = *change.nonce();
         let change_cipher = *change.cipher();
         let (change_value, change_blinding_factor) =
-            change.decrypt(&change_r, &change_psk)?;
+            change.decrypt(&change_r, change_psk)?;
 
         let output_value = output.value(output_view_key)?;
         let output_blinding_factor = output.blinding_factor(output_view_key)?;
