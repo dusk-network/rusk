@@ -625,6 +625,7 @@ mod profile_tooling {
                             "{} already loaded correctly!",
                             loader.circuit_name()
                         );
+                        info!("[{}]\n", hex::encode(loader.circuit_id()));
                         Ok(())
                     }
                     _ => {
