@@ -294,10 +294,14 @@ macro_rules! execute_circuit_variant {
                 // 4. Prove the correctness of the nullifiers
                 inputs.iter().for_each(|input| {
                     let nullifier = input.nullifier;
-                    let sk_r = input.sk_r;
+                    let pk_r_prime_x = *input.pk_r_prime.x();
+                    let pk_r_prime_y = *input.pk_r_prime.y();
                     let pos = input.pos;
 
-                    let nullifier_p = sponge::gadget(composer, &[sk_r, pos]);
+                    let nullifier_p = sponge::gadget(
+                        composer,
+                        &[pk_r_prime_x, pk_r_prime_y, pos],
+                    );
 
                     composer.constrain_to_constant(
                         nullifier_p,
