@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//use bid_circuits::BidCorrectnessCircuit;
-//use blindbid_circuits::BlindBidCircuit;
-//use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
+use bid_circuits::BidCorrectnessCircuit;
+use blindbid_circuits::BlindBidCircuit;
+use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -101,8 +101,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
     // Run the rusk-profile Circuit-keys checks
-    //use bid::BidCircuitLoader;
-    //use blindbid::BlindBidCircuitLoader;
+    use bid::BidCircuitLoader;
+    use blindbid::BlindBidCircuitLoader;
     use transfer::*;
 
     // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
@@ -115,8 +115,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     profile_tooling::run_circuit_keys_checks(vec![
-        //&BidCircuitLoader {},
-        //&BlindBidCircuitLoader {},
+        &BidCircuitLoader {},
+        &BlindBidCircuitLoader {},
         &StctCircuitLoader {},
         &StcoCircuitLoader {},
         &WftCircuitLoader {},
@@ -138,7 +138,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/*
 mod bid {
     use super::*;
 
@@ -265,7 +264,6 @@ mod blindbid {
         )
     }
 }
-*/
 
 mod transfer {
     use super::*;
