@@ -187,6 +187,23 @@ impl TransferContract {
         Ok((crossover, pk))
     }
 
+    pub(crate) fn tx_hash(pi: &[PublicInput]) -> BlsScalar {
+        let mut inputs = Vec::with_capacity(pi.len() + 4);
+
+        pi.iter().for_each(|pi| match pi {
+            PublicInput::Point(p) => {
+                inputs.push(p.get_x());
+                inputs.push(p.get_y());
+            }
+
+            PublicInput::BlsScalar(s) => inputs.push(*s),
+
+            PublicInput::JubJubScalar(s) => inputs.push(BlsScalar::from(*s)),
+        });
+
+        rusk_abi::poseidon_hash(inputs)
+    }
+
     pub(crate) fn assert_proof(
         proof: Vec<u8>,
         vd: &[u8],

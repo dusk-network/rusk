@@ -11,11 +11,13 @@ extern crate alloc;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
-use phoenix_core::Note;
+use dusk_pki::StealthAddress;
+use phoenix_core::{Message, Note};
 
 pub const TX_PING: u8 = 0x01;
 pub const TX_WITHDRAW: u8 = 0x02;
-pub const TX_WITHDRAW_TO_CONTRACT: u8 = 0x03;
+pub const TX_WITHDRAW_OBFUSCATED: u8 = 0x03;
+pub const TX_WITHDRAW_TO_CONTRACT: u8 = 0x04;
 
 #[derive(Debug, Clone, Canon)]
 pub struct Alice {
@@ -57,6 +59,26 @@ mod hosted {
 
             dusk_abi::transact_raw(self, &transfer, &call)
                 .expect("Failed to withdraw");
+        }
+
+        pub fn withdraw_obfuscated(
+            &mut self,
+            message: Message,
+            message_address: StealthAddress,
+            output: Note,
+            proof: Vec<u8>,
+        ) {
+            let call = Call::withdraw_from_obfuscated(
+                message,
+                message_address,
+                output,
+                proof,
+            );
+            let call = Transaction::from_canon(&call);
+            let transfer = self.transfer;
+
+            dusk_abi::transact_raw(self, &transfer, &call)
+                .expect("Failed to withdraw obfuscated!");
         }
 
         pub fn withdraw_to_contract(&mut self, to: ContractId, value: u64) {
@@ -114,6 +136,22 @@ mod hosted {
                     Canon::decode(&mut source)?;
 
                 contract.withdraw(value, note, proof);
+            }
+
+            TX_WITHDRAW_OBFUSCATED => {
+                let (message, message_address, note, proof): (
+                    Message,
+                    StealthAddress,
+                    Note,
+                    Vec<u8>,
+                ) = Canon::decode(&mut source)?;
+
+                contract.withdraw_obfuscated(
+                    message,
+                    message_address,
+                    note,
+                    proof,
+                );
             }
 
             TX_WITHDRAW_TO_CONTRACT => {
