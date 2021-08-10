@@ -147,12 +147,10 @@ impl SendToContractObfuscatedCircuit {
     }
 
     pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-        let mut pi = vec![];
-
         //  1. commitment(Cc,vc,bc)
         let value_commitment = self.crossover.value_commitment();
         let value_commitment = JubJubAffine::from(value_commitment);
-        pi.push(value_commitment.into());
+        let mut pi = vec![value_commitment.into()];
 
         //  3. commitment(Cm,vm,bm)
         let message_value_commitment = self.message.value_commitment();
