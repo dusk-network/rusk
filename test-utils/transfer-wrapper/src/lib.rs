@@ -148,9 +148,8 @@ where
                 .opening(*note.pos())?
                 .ok_or(TransferError::NoteNotFound)?;
 
-            let signature = ExecuteCircuit::sign(rng, ssk, note);
             execute_proof
-                .add_input(ssk, *note, opening, signature)
+                .add_input(*ssk, *note, opening, None)
                 .or(Err(TransferError::ProofVerificationError))?;
 
             Ok(note.gen_nullifier(ssk))
@@ -188,6 +187,8 @@ where
         None => execute_proof.set_fee(fee),
     }
     .or(Err(TransferError::ProofVerificationError))?;
+
+    execute_proof.compute_signatures(rng);
 
     let id = execute_proof.circuit_id();
     let pk = circuit_key(id)?;
