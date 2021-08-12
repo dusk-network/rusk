@@ -16,6 +16,7 @@ use alloc::vec::Vec;
 use canonical::{Canon, CanonError, Sink, Source};
 use dusk_abi::{ContractState, ReturnValue};
 use dusk_bls12_381::BlsScalar;
+use dusk_jubjub::JubJubAffine;
 use dusk_pki::{PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use phoenix_core::{Message, Note};
@@ -64,7 +65,7 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let correctness_proof = Vec::<u8>::decode(&mut source)?;
             let spending_proof = Vec::<u8>::decode(&mut source)?;
             // Call bid contract fn
-            let success = slf.bid(
+            slf.bid(
                 message,
                 hashed_secret,
                 stealth_addr,
@@ -76,7 +77,7 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             // return new state
             ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            ReturnValue::from_canon(&success).encode(&mut sink);
+            ReturnValue::from_canon(&true).encode(&mut sink);
             Ok(())
         }
         ops::WITHDRAW => {
@@ -85,26 +86,26 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
             let pk = PublicKey::decode(&mut source)?;
             let note = Note::decode(&mut source)?;
             let spending_proof = Vec::<u8>::decode(&mut source)?;
-            let exec_res = slf.withdraw(sig, pk, note, spending_proof);
+            slf.withdraw(sig, pk, note, spending_proof);
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
             ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            ReturnValue::from_canon(&true).encode(&mut sink);
             Ok(())
         }
         ops::EXTEND_BID => {
             // Read host-sent args
             let sig = Signature::decode(&mut source)?;
             let pk = PublicKey::decode(&mut source)?;
-            let exec_res = slf.extend_bid(sig, pk);
+            slf.extend_bid(sig, pk);
             let mut sink = Sink::new(&mut bytes[..]);
 
             // return new state
             ContractState::from_canon(&slf).encode(&mut sink);
             // return result
-            ReturnValue::from_canon(&exec_res).encode(&mut sink);
+            ReturnValue::from_canon(&true).encode(&mut sink);
             Ok(())
         }
         _ => panic!("Unimplemented OP"),
