@@ -4,11 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::SIGN_MESSAGE;
+use crate::Error;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::Ownable;
+use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Proof as SchnorrProof;
@@ -45,7 +45,6 @@ pub struct WitnessInput {
     pub blinding_factor: Variable,
 
     pub pk_r_prime: Point,
-    pub schnorr_message: Variable,
     pub schnorr_u: Variable,
     pub schnorr_r: Point,
     pub schnorr_r_prime: Point,
@@ -78,26 +77,30 @@ pub const POSEIDON_BRANCH_DEPTH: usize = 17;
 
 #[derive(Debug, Clone)]
 pub struct CircuitInput {
+    ssk: SecretSpendKey,
     sk_r: JubJubScalar,
     branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
     note: Note,
     value: u64,
     blinding_factor: JubJubScalar,
-    signature: SchnorrProof,
+    signature: Option<SchnorrProof>,
     nullifier: BlsScalar,
 }
 
 impl CircuitInput {
     pub fn new(
-        signature: SchnorrProof,
+        signature: Option<SchnorrProof>,
         branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
-        sk_r: JubJubScalar,
+        ssk: SecretSpendKey,
         note: Note,
         value: u64,
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
     ) -> Self {
+        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
+
         Self {
+            ssk,
             sk_r,
             branch,
             note,
@@ -108,6 +111,14 @@ impl CircuitInput {
         }
     }
 
+    pub const fn ssk(&self) -> &SecretSpendKey {
+        &self.ssk
+    }
+
+    pub const fn note(&self) -> &Note {
+        &self.note
+    }
+
     pub const fn branch(&self) -> &PoseidonBranch<POSEIDON_BRANCH_DEPTH> {
         &self.branch
     }
@@ -116,7 +127,14 @@ impl CircuitInput {
         &self.nullifier
     }
 
-    pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessInput {
+    pub fn set_signature(&mut self, signature: SchnorrProof) {
+        self.signature.replace(signature);
+    }
+
+    pub fn to_witness(
+        &self,
+        composer: &mut StandardComposer,
+    ) -> Result<WitnessInput, Error> {
         let nullifier = self.nullifier;
 
         let note = self.note;
@@ -160,17 +178,16 @@ impl CircuitInput {
 
         let pk_r_prime =
             composer.fixed_base_scalar_mul(sk_r, GENERATOR_NUMS_EXTENDED);
-        let schnorr_message = SIGN_MESSAGE;
-        let schnorr_message =
-            composer.add_witness_to_circuit_description(schnorr_message);
-        let schnorr_u = *self.signature.u();
+
+        let signature = self.signature.ok_or(Error::SignatureNotComputed)?;
+        let schnorr_u = *signature.u();
         let schnorr_u = composer.add_input(schnorr_u.into());
-        let schnorr_r = self.signature.keys().R().as_ref().into();
+        let schnorr_r = signature.keys().R().as_ref().into();
         let schnorr_r = composer.add_affine(schnorr_r);
-        let schnorr_r_prime = self.signature.keys().R_prime().as_ref().into();
+        let schnorr_r_prime = signature.keys().R_prime().as_ref().into();
         let schnorr_r_prime = composer.add_affine(schnorr_r_prime);
 
-        WitnessInput {
+        Ok(WitnessInput {
             sk_r,
             pk_r,
             note_hash,
@@ -186,12 +203,11 @@ impl CircuitInput {
             blinding_factor,
 
             pk_r_prime,
-            schnorr_message,
             schnorr_u,
             schnorr_r,
             schnorr_r_prime,
 
             nullifier,
-        }
+        })
     }
 }

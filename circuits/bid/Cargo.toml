@@ -23,7 +23,7 @@ code-hasher = { path = "../../macros/code-hasher" }
 
 [dev-dependencies]
 rand = "0.8"
-phoenix-core = { version = "0.13.0-rc", features = ["canon"] }
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }
 dusk-pki = "0.8.0-rc"
 rusk-profile = { path = "../../rusk-profile" }
 dusk-poseidon = { version = "0.22.0-rc", features = ["std", "canon"] }

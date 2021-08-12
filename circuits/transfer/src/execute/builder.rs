@@ -11,7 +11,6 @@ use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit::VerifierData;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
-use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
@@ -100,20 +99,14 @@ impl ExecuteCircuit {
 
             let pos = tree.push(note.into())?;
 
-            let note = tree
-                .get(pos)?
-                .map(|n| n.into())
-                .ok_or(PoseidonError::TreeGetFailed)?;
-            let signature = ExecuteCircuit::sign(rng, &ssk, &note);
-
-            input_data.push((ssk, pos, signature));
+            input_data.push((ssk, pos));
 
             transparent = !transparent;
             inputs_sum += input_value;
         }
 
-        for (ssk, pos, signature) in input_data.into_iter() {
-            circuit.add_input_from_tree(&ssk, &tree, pos, signature)?;
+        for (ssk, pos) in input_data.into_iter() {
+            circuit.add_input_from_tree(ssk, &tree, pos, None)?;
         }
 
         let i = inputs as f64;
@@ -153,6 +146,8 @@ impl ExecuteCircuit {
             fee.gas_limit = 5 + value;
             circuit.set_fee(&fee)?;
         }
+
+        circuit.compute_signatures(rng);
 
         Ok(circuit)
     }

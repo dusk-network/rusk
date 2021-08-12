@@ -11,7 +11,6 @@ use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
 use dusk_pki::StealthAddress;
 use phoenix_core::{Crossover, Fee, Message, Note};
 
@@ -50,8 +49,7 @@ pub enum Call {
     WithdrawFromObfuscated {
         message: Message,
         message_address: StealthAddress,
-        note: Note,
-        input_value_commitment: JubJubAffine,
+        output: Note,
         spend_proof: Vec<u8>,
     },
 
@@ -152,15 +150,13 @@ impl Call {
     pub fn withdraw_from_obfuscated(
         message: Message,
         message_address: StealthAddress,
-        note: Note,
-        input_value_commitment: JubJubAffine,
+        output: Note,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
             message,
             message_address,
-            note,
-            input_value_commitment,
+            output,
             spend_proof,
         }
     }
@@ -232,14 +228,12 @@ mod wasm {
                 Call::WithdrawFromObfuscated {
                     message,
                     message_address,
-                    note,
-                    input_value_commitment,
+                    output,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
                     message,
                     message_address,
-                    note,
-                    input_value_commitment,
+                    output,
                     spend_proof,
                 ),
 

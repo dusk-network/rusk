@@ -6,7 +6,7 @@
 
 use super::{
     CircuitCrossover, CircuitInput, CircuitOutput, ExecuteCircuit,
-    WitnessInput, WitnessOutput, POSEIDON_BRANCH_DEPTH,
+    POSEIDON_BRANCH_DEPTH,
 };
 use crate::{gadgets, Error};
 
@@ -22,6 +22,7 @@ use dusk_poseidon::sponge;
 use dusk_poseidon::tree::{self, PoseidonBranch};
 use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::{Crossover, Fee, Note};
+use rand_core::{CryptoRng, RngCore};
 
 use std::convert::TryFrom;
 
@@ -69,28 +70,63 @@ macro_rules! execute_circuit_variant {
                 (inputs, crossover, outputs, tx_hash)
             }
 
-            pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
-                self.tx_hash = tx_hash;
+            pub fn compute_tx_hash(&mut self) -> &BlsScalar {
+                let hash = [self.anchor()]
+                    .iter()
+                    .chain(self.inputs.iter().map(|input| input.nullifier()))
+                    .chain(
+                        self.crossover
+                            .value_commitment()
+                            .to_hash_inputs()
+                            .iter(),
+                    )
+                    .chain([self.crossover.fee().into()].iter())
+                    .copied()
+                    .chain(self.outputs.iter().flat_map(|output| {
+                        output.value_commitment().to_hash_inputs()
+                    }))
+                    .collect::<Vec<BlsScalar>>();
+
+                self.tx_hash = sponge::hash(hash.as_slice());
+
+                &self.tx_hash
+            }
+
+            pub fn compute_signatures<R: RngCore + CryptoRng>(
+                &mut self,
+                rng: &mut R,
+            ) {
+                let tx_hash = *self.compute_tx_hash();
+
+                self.inputs.iter_mut().for_each(|input| {
+                    let signature = ExecuteCircuit::sign(
+                        rng,
+                        input.ssk(),
+                        input.note(),
+                        tx_hash,
+                    );
+
+                    input.set_signature(signature);
+                });
             }
 
             pub fn add_input(
                 &mut self,
-                ssk: &SecretSpendKey,
+                ssk: SecretSpendKey,
                 note: Note,
                 branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
-                signature: SchnorrProof,
+                signature: Option<SchnorrProof>,
             ) -> Result<(), Error> {
                 let vk = ssk.view_key();
 
                 let value = note.value(Some(&vk))?;
                 let blinding_factor = note.blinding_factor(Some(&vk))?;
-                let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
                 let nullifier = note.gen_nullifier(&ssk);
 
                 let input = CircuitInput::new(
                     signature,
                     branch,
-                    sk_r,
+                    ssk,
                     note,
                     value,
                     blinding_factor,
@@ -163,37 +199,48 @@ macro_rules! execute_circuit_variant {
                 self.outputs.push(output);
             }
 
-            pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-                let mut pi = vec![];
-
-                // step 1
-                let root = self
-                    .inputs
+            /// Return the anchor root of the inputs.
+            ///
+            /// The circuit expects a single root for all the inputs.
+            ///
+            /// It will return `BlsScalar::default` in case no inputs are
+            /// provided to the circuit.
+            pub fn anchor(&self) -> BlsScalar {
+                self.inputs
                     .first()
-                    .map(|i| *i.branch().root())
-                    .unwrap_or_default();
-                pi.push(root.into());
+                    .map(|i| i.branch().root())
+                    .copied()
+                    .unwrap_or_default()
+            }
 
-                // step 4
-                pi.extend(
-                    self.inputs
-                        .iter()
-                        .map(|input| input.nullifier().clone().into()),
-                );
+            pub fn public_inputs(&self) -> Vec<PublicInputValue> {
+                // 1.c opening(A,io,ih)
+                let mut pi = vec![self.anchor().into()];
 
-                // step 7
+                // 1.f N == H(k',ip)
+                let nullifiers = self
+                    .inputs
+                    .iter()
+                    .map(CircuitInput::nullifier)
+                    .cloned()
+                    .map(|i| i.into());
+
+                pi.extend(nullifiers);
+
+                // 2. commitment(C,cv,cb)
+                let crossover =
+                    JubJubAffine::from(self.crossover.value_commitment());
+                pi.push(crossover.into());
+
                 pi.push(BlsScalar::from(self.crossover.fee()).into());
 
-                let crossover_value_commitment =
-                    JubJubAffine::from(self.crossover.value_commitment());
-                pi.push(crossover_value_commitment.into());
-
-                // step 9
-                pi.extend(self.outputs.iter().map(|output| {
+                // 4.a commitment(V,ov,ob)
+                let outputs = self.outputs.iter().map(|output| {
                     JubJubAffine::from(output.note().value_commitment()).into()
-                }));
+                });
+                pi.extend(outputs);
 
-                // step 12
+                // Transaction hash
                 pi.push(self.tx_hash.into());
 
                 pi
@@ -229,218 +276,155 @@ macro_rules! execute_circuit_variant {
                 composer: &mut StandardComposer,
             ) -> Result<(), PlonkError> {
                 let _ = $i::CIRCUIT_ID;
-                let mut base_root = None;
 
-                // 1. Prove the knowledge of the input Note paths to Note Tree,
-                // via root anchor
-                let inputs: Vec<WitnessInput> = self
+                // Set the common root/anchor for all inputs
+                let tx_hash = composer.add_input(self.tx_hash);
+                let anchor_s = self.anchor();
+                let anchor = composer.add_input(anchor_s);
+                composer.constrain_to_constant(
+                    anchor,
+                    BlsScalar::zero(),
+                    Some(-anchor_s),
+                );
+
+                let inputs = self
                     .inputs
                     .iter()
-                    .map(|input| {
-                        let branch = input.branch();
-                        let note = input.to_witness(composer);
+                    .try_fold::<_, _, Result<Variable, Error>>(
+                        composer.zero_var(),
+                        |sum, input| {
+                            let witness = input.to_witness(composer)?;
 
-                        let root_p = tree::merkle_opening(composer, branch);
+                            // 1.a k := is · G
+                            // 1.b k':= is · G∗
+                            let k = witness.pk_r;
+                            let k_p = witness.pk_r_prime;
 
-                        // Test the public input only for the first root
-                        //
-                        // The remainder roots must be equal to the first (root
-                        // is unique per proof)
-                        match base_root {
-                            None => {
-                                let root = *branch.root();
+                            // 1.c opening(A,io,ih)
+                            let anchor_p =
+                                tree::merkle_opening(composer, input.branch());
+                            composer.assert_equal(anchor, anchor_p);
 
-                                composer.constrain_to_constant(
-                                    root_p,
-                                    BlsScalar::zero(),
-                                    Some(-root),
-                                );
+                            // 1.d ih == H(it,ic,in,k,ir,ip,iψ)
+                            let hash = witness.to_hash_inputs();
+                            let hash = sponge::gadget(composer, &hash);
+                            composer.assert_equal(witness.note_hash, hash);
 
-                                base_root.replace(root_p);
-                            }
+                            // 1.e doubleSchnorr(iσ,k,k',T)
+                            dusk_schnorr::gadgets::double_key_verify(
+                                composer,
+                                witness.schnorr_r,
+                                witness.schnorr_r_prime,
+                                witness.schnorr_u,
+                                k,
+                                k_p,
+                                tx_hash,
+                            );
 
-                            Some(base) => {
-                                composer.assert_equal(base, root_p);
-                            }
-                        }
+                            // 1.f N == H(k',ip)
+                            let nullifier = sponge::gadget(
+                                composer,
+                                &[*k_p.x(), *k_p.y(), witness.pos],
+                            );
+                            composer.constrain_to_constant(
+                                nullifier,
+                                BlsScalar::zero(),
+                                Some(-input.nullifier()),
+                            );
 
-                        note
-                    })
-                    .collect();
+                            // 1.g commitment(ic,iv,ib)
+                            let commitment = gadgets::commitment(
+                                composer,
+                                witness.value,
+                                witness.blinding_factor,
+                            );
 
-                // 2. Prove the knowledge of the pre-images of the input Notes
-                inputs.iter().for_each(|input| {
-                    let note_hash = input.note_hash;
-                    let hash_inputs = input.to_hash_inputs();
+                            // 1.h range(iv,64)
+                            composer.range_gate(witness.value, 64);
 
-                    let note_hash_p = sponge::gadget(composer, &hash_inputs);
+                            Ok(composer.add(
+                                (BlsScalar::one(), sum),
+                                (BlsScalar::one(), witness.value),
+                                BlsScalar::zero(),
+                                None,
+                            ))
+                        },
+                    )
+                    .or(Err(PlonkError::CircuitInputsNotFound))?;
 
-                    composer.assert_equal(note_hash, note_hash_p);
-                });
-
-                // 3. Prove the correctness of the Schnorr signatures.
-                inputs.iter().for_each(|input| {
-                    dusk_schnorr::gadgets::double_key_verify(
-                        composer,
-                        input.schnorr_r,
-                        input.schnorr_r_prime,
-                        input.schnorr_u,
-                        input.pk_r,
-                        input.pk_r_prime,
-                        input.schnorr_message,
-                    );
-                });
-
-                // 4. Prove the correctness of the nullifiers
-                inputs.iter().for_each(|input| {
-                    let nullifier = input.nullifier;
-                    let sk_r = input.sk_r;
-                    let pos = input.pos;
-
-                    let nullifier_p = sponge::gadget(composer, &[sk_r, pos]);
-
-                    composer.constrain_to_constant(
-                        nullifier_p,
-                        BlsScalar::zero(),
-                        Some(-nullifier),
-                    );
-                });
-
-                // 5. Prove the knowledge of the commitment openings of the
-                // commitments of the input Notes
-                inputs.iter().for_each(|input| {
-                    let value_commitment = input.value_commitment;
-                    let value_commitment_p = gadgets::commitment(
-                        composer,
-                        input.value,
-                        input.blinding_factor,
-                    );
-
-                    composer.assert_equal_point(
-                        value_commitment,
-                        value_commitment_p,
-                    );
-                });
-
-                // 6. Prove that the value of the openings of the commitments of
-                // the input Notes is in range
-                inputs.iter().for_each(|input| {
-                    composer.range_gate(input.value, 64);
-                });
-
-                // 7. Prove the knowledge of the commitment opening of the
-                // Crossover
+                // 2. commitment(C,cv,cb)
                 let crossover = self.crossover.to_witness(composer);
-                {
-                    let value_commitment_p = gadgets::commitment(
-                        composer,
-                        crossover.value,
-                        crossover.blinding_factor,
-                    );
 
-                    // fee value public input
-                    composer.constrain_to_constant(
-                        crossover.fee_value_witness,
-                        BlsScalar::zero(),
-                        Some(-crossover.fee_value),
-                    );
+                let commitment = gadgets::commitment(
+                    composer,
+                    crossover.value,
+                    crossover.blinding_factor,
+                );
 
-                    // value commitment public input
-                    let value_commitment = crossover.value_commitment.into();
-                    composer.assert_equal_public_point(
-                        value_commitment_p,
-                        value_commitment,
-                    );
-                }
+                composer.assert_equal_public_point(
+                    commitment,
+                    self.crossover.value_commitment().into(),
+                );
 
-                // 8. Prove that the value of the opening of the commitment of
-                // the Crossover is within range
+                composer.constrain_to_constant(
+                    crossover.fee_value_witness,
+                    BlsScalar::zero(),
+                    Some(-crossover.fee_value),
+                );
+
+                // 3. range(cv,64)
                 composer.range_gate(crossover.value, 64);
 
-                // 9. Prove the knowledge of the commitment openings of the
-                // commitments of the output Obfuscated Notes
-                let outputs: Vec<WitnessOutput> = self
-                    .outputs
-                    .iter()
-                    .map(|output| {
-                        let output = output.to_witness(composer);
+                let outputs = self.outputs.iter().fold(
+                    composer.zero_var(),
+                    |sum, output| {
+                        let witness = output.to_witness(composer);
 
-                        let value_commitment_p = gadgets::commitment(
+                        // 4.a commitment(V,ov,ob)
+                        let commitment = gadgets::commitment(
                             composer,
-                            output.value,
-                            output.blinding_factor,
+                            witness.value,
+                            witness.blinding_factor,
                         );
 
-                        // value commitment public input
-                        let value_commitment = output.value_commitment.into();
+                        // 4.b range(ov,64)
+                        composer.range_gate(witness.value, 64);
+
                         composer.assert_equal_public_point(
-                            value_commitment_p,
-                            value_commitment,
+                            commitment,
+                            witness.value_commitment.into(),
                         );
 
-                        output
-                    })
-                    .collect();
-
-                // 10. Prove that the value of the openings of the commitments
-                // of the output Obfuscated Notes is in range
-                outputs.iter().for_each(|output| {
-                    composer.range_gate(output.value, 64);
-                });
-
-                // 11. Prove that sum(inputs.value) - sum(outputs.value) -
-                // crossover_value - fee_value = 0
-                {
-                    let zero = composer.zero_var();
-                    let inputs_sum = inputs.iter().fold(zero, |sum, input| {
                         composer.add(
                             (BlsScalar::one(), sum),
-                            (BlsScalar::one(), input.value),
+                            (BlsScalar::one(), witness.value),
                             BlsScalar::zero(),
                             None,
                         )
-                    });
+                    },
+                );
 
-                    let outputs_sum =
-                        outputs.iter().fold(zero, |sum, output| {
-                            composer.add(
-                                (BlsScalar::one(), sum),
-                                (BlsScalar::one(), output.value),
-                                BlsScalar::zero(),
-                                None,
-                            )
-                        });
+                // 5. ∑(iv ∈ I) − ∑(ov ∈ O) − cv − F = 0
+                let fee_crossover = composer.add(
+                    (BlsScalar::one(), crossover.value),
+                    (BlsScalar::one(), crossover.fee_value_witness),
+                    BlsScalar::zero(),
+                    None,
+                );
 
-                    let fee_crossover = composer.add(
-                        (BlsScalar::one(), crossover.value),
-                        (BlsScalar::one(), crossover.fee_value_witness),
-                        BlsScalar::zero(),
-                        None,
-                    );
+                composer.poly_gate(
+                    inputs,
+                    outputs,
+                    fee_crossover,
+                    BlsScalar::zero(),
+                    BlsScalar::one(),
+                    -BlsScalar::one(),
+                    -BlsScalar::one(),
+                    BlsScalar::zero(),
+                    None,
+                );
 
-                    composer.poly_gate(
-                        inputs_sum,
-                        outputs_sum,
-                        fee_crossover,
-                        BlsScalar::zero(),
-                        BlsScalar::one(),
-                        -BlsScalar::one(),
-                        -BlsScalar::one(),
-                        BlsScalar::zero(),
-                        None,
-                    );
-                }
-
-                // 12. Inject the transaction hash to tie it to the circuit
-                //
-                // This is a workaround while the transcript hash injection is
-                // not available in the API.
-                //
-                // This step is necessary to guarantee the outputs were not
-                // tampered by a malicious actor. It is cheaper than
-                // checking individually for the pre-image of every
-                // output.
-                let tx_hash = composer.add_input(self.tx_hash);
+                // 12. Verify the transaction hash
                 composer.constrain_to_constant(
                     tx_hash,
                     BlsScalar::zero(),

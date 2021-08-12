@@ -11,7 +11,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 canonical = "0.6"
 canonical_derive = "0.6"
-phoenix-core = { version = "0.13.0-rc", default-features = false, features = ["canon"] }
+phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.8.0-rc", default-features = false }
 dusk-abi = "0.9"
 rusk-abi = { path = "../../../../../rusk-abi" }
 transfer-contract = { path = "../../../", features = ["no-bridge"] }

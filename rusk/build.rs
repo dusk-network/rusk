@@ -432,35 +432,24 @@ mod transfer {
             let pub_params = &PUB_PARAMS;
             let rng = &mut rand::thread_rng();
 
-            let i_ssk = SecretSpendKey::random(rng);
-            let i_vk = i_ssk.view_key();
-            let i_psk = i_ssk.public_spend_key();
-            let i_value = 100;
-            let i_blinding_factor = JubJubScalar::random(rng);
-            let i_note =
-                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
-
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_psk = c_ssk.public_spend_key();
-            let c_r = JubJubScalar::random(rng);
-            let c_value = 25;
-            let c = Message::new(rng, &c_r, &c_psk, c_value);
+            let m_r = JubJubScalar::random(rng);
+            let m_ssk = SecretSpendKey::random(rng);
+            let m_psk = m_ssk.public_spend_key();
+            let m_value = 100;
+            let m = Message::new(rng, &m_r, &m_psk, m_value);
 
             let o_ssk = SecretSpendKey::random(rng);
             let o_vk = o_ssk.view_key();
             let o_psk = o_ssk.public_spend_key();
-            let o_value = 75;
+            let o_value = 100;
             let o_blinding_factor = JubJubScalar::random(rng);
-            let o_note =
-                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
+            let o = Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
             let mut circuit = WithdrawFromObfuscatedCircuit::new(
-                &i_note,
-                Some(&i_vk),
-                &c,
-                c_r,
-                &c_psk,
-                &o_note,
+                m_r,
+                &m_ssk,
+                &m,
+                &o,
                 Some(&o_vk),
             )
             .expect("Failed to generate circuit!");

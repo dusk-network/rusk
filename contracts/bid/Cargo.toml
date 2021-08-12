@@ -17,10 +17,20 @@ dusk-bls12_381 = { version="0.8", features=["canon"], default-features = false }
 dusk-jubjub = { version="0.10", features=["canon"], default-features = false }
 dusk-poseidon = { version="0.22.0-rc", features=["canon"], default-features = false }
 dusk-pki = { version = "0.8.0-rc", features = ["canon"] }
-phoenix-core = { version = "0.13.0-rc", features = ["canon"] }
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }
 dusk-hamt = "0.5.0-rc"
 nstack = "0.10.0-rc"
 microkelvin = "0.10.0-rc"
 dusk-schnorr = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
 dusk-blindbid = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
 transfer-contract = { path = "../transfer", features= ["no-bridge"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bid-circuits = { path = "../../circuits/bid" }
+dusk-plonk = "0.8"
+lazy_static = "1.4"
+rand = "0.8"
+rusk-profile = { path = "../../rusk-profile" }
+rusk-vm = "0.7.0-rc"
+transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
+transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }

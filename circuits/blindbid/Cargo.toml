@@ -32,4 +32,4 @@ rand = "0.8"
 canonical_derive = "0.6"
 canonical = "0.6"
 rusk-profile = { path = "../../rusk-profile" }
-phoenix-core = { version = "0.13.0-rc", features = ["canon"] }
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }

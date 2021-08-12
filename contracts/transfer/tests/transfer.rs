@@ -4,8 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_jubjub::JubJubScalar;
 use phoenix_core::Note;
-use transfer_circuits::WithdrawFromTransparentCircuit;
+use transfer_circuits::{
+    WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
+};
 
 mod wrapper;
 
@@ -89,10 +92,12 @@ fn send_to_contract_obfuscated() {
 
     let (refund_ssk, _, _) = wrapper.identifier();
     let (_, _, remainder_psk) = wrapper.identifier();
+    let (_, _, message_psk) = wrapper.identifier();
+
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
-    let message_address = wrapper
+    let message_r = wrapper
         .send_to_contract_obfuscated(
             &[unspent_note],
             &[genesis_ssk],
@@ -102,10 +107,12 @@ fn send_to_contract_obfuscated() {
             gas_limit,
             gas_price,
             account,
+            &message_psk,
             account_value,
         )
         .expect("Failed to load balance into contract");
 
+    let message_address = message_psk.gen_stealth_address(&message_r);
     wrapper
         .message(&account, message_address.pk_r())
         .expect("Failed to find appended message");
@@ -277,4 +284,118 @@ fn withdraw_from_transparent() {
 
     let balance = wrapper.balance(&bob);
     assert_eq!(transfer_value, balance);
+}
+
+#[test]
+fn withdraw_from_obfuscated() {
+    let genesis_value = 10_000_000_000;
+    let block_height = 1;
+    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+
+    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
+    let notes = wrapper.notes_owned_by(0, &genesis_vk);
+    assert_eq!(1, notes.len());
+    let unspent_note = notes[0];
+
+    let account = *wrapper.alice();
+    let balance = wrapper.balance(&account);
+    assert_eq!(0, balance);
+
+    let (refund_ssk, refund_vk, _) = wrapper.identifier();
+    let (_, remainder_vk, remainder_psk) = wrapper.identifier();
+    let (message_ssk, _, message_psk) = wrapper.identifier();
+
+    let account_value = 100;
+    let gas_limit = 175_000_000;
+    let gas_price = 2;
+    let message_r = wrapper
+        .send_to_contract_obfuscated(
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            account,
+            &message_psk,
+            account_value,
+        )
+        .expect("Failed to load balance into contract");
+
+    let message_address = message_psk.gen_stealth_address(&message_r);
+    let message = wrapper
+        .message(&account, message_address.pk_r())
+        .expect("Failed to find appended message");
+
+    let refund: Note = wrapper
+        .notes_owned_by(1, &refund_vk)
+        .first()
+        .cloned()
+        .unwrap();
+
+    let remainder: Note = wrapper
+        .notes_owned_by(1, &remainder_vk)
+        .first()
+        .cloned()
+        .unwrap();
+
+    let remainder_value = genesis_value - account_value - gas_limit;
+    assert_eq!(
+        remainder_value,
+        remainder.value(Some(&remainder_vk)).unwrap()
+    );
+
+    let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
+    let withdraw_blinder = JubJubScalar::random(wrapper.rng());
+    let withdraw = Note::obfuscated(
+        wrapper.rng(),
+        &withdraw_psk,
+        account_value,
+        withdraw_blinder,
+    );
+
+    let wfo_circuit = WithdrawFromObfuscatedCircuit::new(
+        message_r,
+        &message_ssk,
+        &message,
+        &withdraw,
+        Some(&withdraw_vk),
+    )
+    .unwrap();
+
+    let wfo_proof = wrapper.generate_proof(wfo_circuit);
+    let wfo_tx = TransferWrapper::tx_withdraw_obfuscated(
+        message,
+        message_address,
+        withdraw,
+        wfo_proof,
+    );
+
+    let (new_refund_ssk, _, _) = wrapper.identifier();
+
+    let gas_limit = 300_000_000;
+    let gas_price = 1;
+    wrapper
+        .execute(
+            &[refund],
+            &[refund_ssk],
+            &new_refund_ssk,
+            &remainder_psk,
+            true,
+            gas_limit,
+            gas_price,
+            0,
+            Some((account, wfo_tx)),
+        )
+        .expect("Failed to withdraw from alice");
+
+    let withdraw_notes = wrapper.notes_owned_by(1, &withdraw_vk);
+
+    assert_eq!(1, withdraw_notes.len());
+    assert!(wrapper.message(&account, message_address.pk_r()).is_err());
+    assert_eq!(
+        account_value,
+        withdraw_notes[0].value(Some(&withdraw_vk)).unwrap()
+    );
 }

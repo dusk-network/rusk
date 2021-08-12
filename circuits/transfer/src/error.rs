@@ -23,6 +23,7 @@ pub enum Error {
     KeysNotFound,
     CircuitMaximumInputs,
     CircuitMaximumOutputs,
+    SignatureNotComputed,
     IncorrectExecuteCircuitVariant(usize, usize),
 }
 
