@@ -70,40 +70,50 @@ impl Circuit for BidCorrectnessCircuit {
 mod tests {
     use super::*;
     use dusk_plonk::jubjub::JubJubAffine;
+    use lazy_static::lazy_static;
+    use phoenix_core::Message;
+
+    lazy_static! {
+        static ref PP: PublicParameters = unsafe {
+            let pp = rusk_profile::get_common_reference_string().unwrap();
+
+            PublicParameters::from_slice_unchecked(pp.as_slice())
+        };
+        static ref KEYS: (ProverKey, VerifierData) = {
+            let keys =
+                rusk_profile::keys_for(&BidCorrectnessCircuit::CIRCUIT_ID)
+                    .unwrap();
+
+            (
+                ProverKey::from_slice(&keys.get_prover().unwrap()).unwrap(),
+                VerifierData::from_slice(&keys.get_verifier().unwrap())
+                    .unwrap(),
+            )
+        };
+    }
 
     #[test]
     fn test_correctness_circuit() -> Result<(), Error> {
-        let value = JubJubScalar::from(100000 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+        let value = JubJubScalar::from(100000_u64);
+        let blinder = JubJubScalar::from(50000_u64);
         let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = BidCorrectnessCircuit {
-            commitment: commitment,
-            value: value,
-            blinder: blinder,
+            commitment,
+            value,
+            blinder,
         };
 
-        // Generate Composer & Public Parameters
-        let pub_params = unsafe {
-            PublicParameters::from_slice_unchecked(
-                rusk_profile::get_common_reference_string()
-                    .expect("Failed to fetch CRS from rusk_profile")
-                    .as_slice(),
-            )
-        };
-
-        let (pk, vd) = circuit.compile(&pub_params)?;
-
-        let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
+        let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
         let pi = vec![commitment.into()];
         circuit::verify_proof(
-            &pub_params,
-            &vd.key(),
+            &PP,
+            KEYS.1.key(),
             &proof,
             &pi,
-            &vd.pi_pos(),
+            KEYS.1.pi_pos(),
             b"BidCorrectness",
         )?;
         Ok(())
@@ -111,40 +121,77 @@ mod tests {
 
     #[test]
     fn test_correctness_circuit_out_of_bounds() -> Result<(), Error> {
-        let value = JubJubScalar::from(100 as u64);
-        let blinder = JubJubScalar::from(50000 as u64);
+        let value = JubJubScalar::from(100_u64);
+        let blinder = JubJubScalar::from(50000_u64);
         let commitment = JubJubAffine::from(
             (GENERATOR_EXTENDED * value) + (GENERATOR_NUMS_EXTENDED * blinder),
         );
 
         let mut circuit = BidCorrectnessCircuit {
-            commitment: commitment,
-            value: value,
-            blinder: blinder,
+            commitment,
+            value,
+            blinder,
         };
 
-        // Generate Composer & Public Parameters
-        let pub_params = unsafe {
-            PublicParameters::from_slice_unchecked(
-                rusk_profile::get_common_reference_string()
-                    .expect("Failed to fetch CRS from rusk_profile")
-                    .as_slice(),
-            )
-        };
-
-        let (pk, vd) = circuit.compile(&pub_params)?;
-        let proof = circuit.gen_proof(&pub_params, &pk, b"BidCorrectness")?;
+        let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
 
         let pi = vec![commitment.into()];
         assert!(circuit::verify_proof(
-            &pub_params,
-            &vd.key(),
+            &PP,
+            KEYS.1.key(),
             &proof,
             &pi,
-            &vd.pi_pos(),
+            KEYS.1.pi_pos(),
             b"BidCorrectness",
         )
         .is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_correctness_with_message() -> Result<(), Error> {
+        use dusk_blindbid::Bid;
+        use dusk_pki::{PublicSpendKey, SecretSpendKey};
+        use dusk_poseidon::sponge;
+        use rand::Rng;
+
+        let mut rng = rand::thread_rng();
+        let secret = JubJubScalar::random(&mut rand::thread_rng());
+        let secret_k = BlsScalar::random(&mut rand::thread_rng());
+        let psk = PublicSpendKey::from(SecretSpendKey::random(
+            &mut rand::thread_rng(),
+        ));
+        let value: u64 =
+            (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
+
+        let r = JubJubScalar::random(&mut rand::thread_rng());
+        let bid = Bid::new(
+            Message::new(&mut rng, &r, &psk, value),
+            sponge::sponge::sponge_hash(&[secret_k]),
+            psk.gen_stealth_address(&secret),
+            u64::MAX,
+            u64::MAX,
+        );
+
+        let (value, blinder) =
+            bid.decrypt_data(&r, &psk).expect("decryption error");
+
+        let mut circuit = BidCorrectnessCircuit {
+            commitment: JubJubAffine::from(bid.commitment()),
+            value,
+            blinder,
+        };
+
+        let proof = circuit.gen_proof(&PP, &KEYS.0, b"BidCorrectness")?;
+        let pi = vec![JubJubAffine::from(bid.commitment()).into()];
+        circuit::verify_proof(
+            &PP,
+            KEYS.1.key(),
+            &proof,
+            &pi,
+            KEYS.1.pi_pos(),
+            b"BidCorrectness",
+        )?;
         Ok(())
     }
 }

@@ -11,7 +11,6 @@ use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::circuit::VerifierData;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
-use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
@@ -62,11 +61,11 @@ impl ExecuteCircuit {
         value: u64,
     ) -> Note {
         if transparent {
-            Note::transparent(rng, &psk, value)
+            Note::transparent(rng, psk, value)
         } else {
             let blinding_factor = JubJubScalar::random(rng);
 
-            Note::obfuscated(rng, &psk, value, blinding_factor)
+            Note::obfuscated(rng, psk, value, blinding_factor)
         }
     }
 
@@ -100,20 +99,14 @@ impl ExecuteCircuit {
 
             let pos = tree.push(note.into())?;
 
-            let note = tree
-                .get(pos)?
-                .map(|n| n.into())
-                .ok_or(PoseidonError::TreeGetFailed)?;
-            let signature = ExecuteCircuit::sign(rng, &ssk, &note);
-
-            input_data.push((ssk, pos, signature));
+            input_data.push((ssk, pos));
 
             transparent = !transparent;
             inputs_sum += input_value;
         }
 
-        for (ssk, pos, signature) in input_data.into_iter() {
-            circuit.add_input_from_tree(&ssk, &tree, pos, signature)?;
+        for (ssk, pos) in input_data.into_iter() {
+            circuit.add_input_from_tree(ssk, &tree, pos, None)?;
         }
 
         let i = inputs as f64;
@@ -154,9 +147,12 @@ impl ExecuteCircuit {
             circuit.set_fee(&fee)?;
         }
 
+        circuit.compute_signatures(rng);
+
         Ok(circuit)
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn create_dummy_proof<R: RngCore + CryptoRng>(
         rng: &mut R,
         inputs: usize,

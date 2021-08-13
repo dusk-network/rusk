@@ -1,11 +1,8 @@
 [package]
-name = "transfer-contract"
-version = "0.5.0"
+name = "transfer-wrapper"
+version = "0.1.0"
 authors = ["Victor Lopez <victor@dusk.network>"]
 edition = "2018"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 canonical = "0.6"
@@ -15,19 +12,15 @@ rusk-abi = { path = "../../rusk-abi" }
 dusk-bytes = "0.1"
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
-dusk-poseidon = { version = "0.22.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.8.0-rc", default-features = false }
+dusk-poseidon = { version = "0.22", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.8", default-features = false }
 phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["canon"] }
 dusk-hamt = { version = "0.5.0-rc", default-features = false }
-microkelvin = "0.10.0-rc"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+microkelvin = "0.10"
 lazy_static = "1.4"
 rand = "0.8"
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
+transfer-contract = { path = "../../contracts/transfer" }
 rusk-profile = { path = "../../rusk-profile" }
 dusk-plonk = "0.8"
-rusk-vm = "0.6"
-
-[features]
-no-bridge = []
+rusk-vm = "0.7.0-rc"

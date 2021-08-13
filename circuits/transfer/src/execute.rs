@@ -7,8 +7,8 @@
 use crate::Error;
 
 use crossover::CircuitCrossover;
-use input::{CircuitInput, WitnessInput};
-use output::{CircuitOutput, WitnessOutput};
+use input::CircuitInput;
+use output::CircuitOutput;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubScalar;
@@ -34,17 +34,6 @@ pub use variants::*;
 #[cfg(any(test, feature = "builder"))]
 pub mod builder;
 
-/// Constant message for the schnorr signature generation
-///
-/// The signature is provided outside the circuit; so that's why it is
-/// constant
-///
-/// The contents of the message are yet to be defined in the documentation.
-/// For now, it is treated as a constant.
-///
-/// https://github.com/dusk-network/rusk/issues/178
-pub(crate) const SIGN_MESSAGE: BlsScalar = BlsScalar::one();
-
 /// The circuit responsible for creating a zero-knowledge proof
 #[derive(Debug, Clone)]
 pub enum ExecuteCircuit {
@@ -69,41 +58,24 @@ impl Default for ExecuteCircuit {
 }
 
 impl ExecuteCircuit {
-    pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
-        match self {
-            Self::ExecuteCircuitOneZero(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitOneOne(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitOneTwo(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitTwoZero(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitTwoOne(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitTwoTwo(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitThreeZero(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitThreeOne(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitThreeTwo(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitFourZero(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitFourOne(c) => c.set_tx_hash(tx_hash),
-            Self::ExecuteCircuitFourTwo(c) => c.set_tx_hash(tx_hash),
-        }
-    }
-
     pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
         ssk: &SecretSpendKey,
         note: &Note,
+        tx_hash: BlsScalar,
     ) -> SchnorrProof {
-        let message = SIGN_MESSAGE;
-        let sk_r = ssk.sk_r(note.stealth_address()).as_ref().clone();
+        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
         let secret = SecretKey::from(&sk_r);
 
-        SchnorrProof::new(&secret, rng, message)
+        SchnorrProof::new(&secret, rng, tx_hash)
     }
 
     pub fn add_input(
         &mut self,
-        ssk: &SecretSpendKey,
+        ssk: SecretSpendKey,
         note: Note,
         branch: PoseidonBranch<{ input::POSEIDON_BRANCH_DEPTH }>,
-        signature: SchnorrProof,
+        signature: Option<SchnorrProof>,
     ) -> Result<(), Error> {
         match self {
             Self::ExecuteCircuitOneZero(c) => {
@@ -220,10 +192,10 @@ impl ExecuteCircuit {
 
     pub fn add_input_from_tree<L, A>(
         &mut self,
-        ssk: &SecretSpendKey,
+        ssk: SecretSpendKey,
         tree: &PoseidonTree<L, A, { input::POSEIDON_BRANCH_DEPTH }>,
         pos: u64,
-        signature: SchnorrProof,
+        signature: Option<SchnorrProof>,
     ) -> Result<(), Error>
     where
         L: PoseidonLeaf + Into<Note>,
@@ -238,6 +210,23 @@ impl ExecuteCircuit {
             tree.branch(pos)?.ok_or(PoseidonError::TreeBranchFailed)?;
 
         self.add_input(ssk, note, branch, signature)
+    }
+
+    pub fn compute_signatures<R: RngCore + CryptoRng>(&mut self, rng: &mut R) {
+        match self {
+            Self::ExecuteCircuitOneZero(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitOneOne(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitOneTwo(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitTwoZero(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitTwoOne(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitTwoTwo(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitThreeZero(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitThreeOne(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitThreeTwo(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitFourZero(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitFourOne(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitFourTwo(c) => c.compute_signatures(rng),
+        }
     }
 
     pub fn set_fee(&mut self, fee: &Fee) -> Result<(), Error> {

@@ -11,10 +11,10 @@ use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
 use dusk_pki::StealthAddress;
 use phoenix_core::{Crossover, Fee, Message, Note};
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Canon)]
 pub enum Call {
     Execute {
@@ -49,8 +49,7 @@ pub enum Call {
     WithdrawFromObfuscated {
         message: Message,
         message_address: StealthAddress,
-        note: Note,
-        input_value_commitment: JubJubAffine,
+        output: Note,
         spend_proof: Vec<u8>,
     },
 
@@ -81,6 +80,7 @@ impl Call {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn to_execute(
         &self,
         contract: ContractId,
@@ -92,7 +92,7 @@ impl Call {
         spend_proof: Vec<u8>,
     ) -> Result<Self, Error> {
         if let Self::Execute { .. } = self {
-            Err(Error::ExecuteRecursion)?;
+            return Err(Error::ExecuteRecursion);
         }
 
         let tx = Transaction::from_canon(self);
@@ -150,15 +150,13 @@ impl Call {
     pub fn withdraw_from_obfuscated(
         message: Message,
         message_address: StealthAddress,
-        note: Note,
-        input_value_commitment: JubJubAffine,
+        output: Note,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
             message,
             message_address,
-            note,
-            input_value_commitment,
+            output,
             spend_proof,
         }
     }
@@ -230,14 +228,12 @@ mod wasm {
                 Call::WithdrawFromObfuscated {
                     message,
                     message_address,
-                    note,
-                    input_value_commitment,
+                    output,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
                     message,
                     message_address,
-                    note,
-                    input_value_commitment,
+                    output,
                     spend_proof,
                 ),
 

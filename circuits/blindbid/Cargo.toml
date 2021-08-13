@@ -1,6 +1,6 @@
 [package]
 name = "blindbid-circuits"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["CPerezz <carlos@dusk.network>"]
 edition = "2018"
 license = "MPL-2.0"
@@ -20,15 +20,16 @@ exclude = [
 dusk-plonk = {version = "0.8", default-features = false, features = ["std"]}
 plonk_gadgets = {version = "0.6.0-rc", features = ["std"]}
 code-hasher = {path = "../../macros/code-hasher"}
-dusk-blindbid = "0.8.0-rc"
-dusk-poseidon = {version = "0.21.0-rc", features = ["std", "canon"] }
-dusk-pki = "0.7.0-rc"
+dusk-blindbid = "0.10.0-rc"
+dusk-poseidon = {version = "0.22.0-rc", features = ["std", "canon"] }
+dusk-pki = "0.8.0-rc"
 dusk-bytes = "0.1"
 
+
 [dev-dependencies]
-microkelvin = "0.7"
+microkelvin = "0.10.0-rc"
 rand = "0.8"
 canonical_derive = "0.6"
 canonical = "0.6"
 rusk-profile = { path = "../../rusk-profile" }
-
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }

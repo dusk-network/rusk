@@ -20,6 +20,7 @@ use canonical::Canon;
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Module};
 use dusk_pki::PublicSpendKey;
+
 mod public_input;
 pub use public_input::PublicInput;
 
@@ -61,6 +62,16 @@ pub enum PaymentInfo {
 
 /// Common QueryId used for Payment info retrival.
 pub const PAYMENT_INFO: u8 = 100;
+
+/// Contract ID of the genesis transfer contract
+pub const fn transfer_contract() -> ContractId {
+    ContractId::reserved(0x1)
+}
+
+/// Contract ID of the genesis stake contract
+pub const fn stake_contract() -> ContractId {
+    ContractId::reserved(0x2)
+}
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {

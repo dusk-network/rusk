@@ -29,6 +29,7 @@ const MINUS_ONE_MOD_2_POW_128: BlsScalar = BlsScalar::from_raw([
 /// Hashes the internal Bid parameters using the Poseidon hash
 /// function and the cannonical encoding for hashing returning a
 /// Variable which contains the hash of the Bid.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn preimage_gadget(
     composer: &mut StandardComposer,
     // TODO: We should switch to a different representation for this.
@@ -80,6 +81,7 @@ pub(crate) fn preimage_gadget(
 /// Prints the proving statements into the provided [`StandardComposer`].
 ///
 /// Returns the value of the computed score as a [`Variable`].
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn score_correctness_gadget(
     composer: &mut StandardComposer,
     score: &Score,
@@ -257,34 +259,29 @@ mod tests {
     use crate::BlindBidCircuitError;
     use dusk_blindbid::{Bid, V_RAW_MAX, V_RAW_MIN};
     use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
-    use dusk_plonk::jubjub::GENERATOR_EXTENDED;
+    use phoenix_core::Message;
     use plonk_gadgets::AllocatedScalar;
     use rand::Rng;
 
-    fn random_bid(secret: &JubJubScalar) -> Bid {
+    fn random_bid(secret: &JubJubScalar) -> (Bid, PublicSpendKey) {
         let mut rng = rand::thread_rng();
-
         let secret_k = BlsScalar::from(*secret);
-        let pk_r = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
-        let stealth_addr = pk_r.gen_stealth_address(&secret);
-        let secret = GENERATOR_EXTENDED * secret;
+        let psk = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
         let value: u64 =
             (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-        let value = JubJubScalar::from(value);
+        let eligibility_ts = u64::MAX;
+        let expiration_ts = u64::MAX;
 
-        let eligibility = u64::MAX;
-        let expiration = u64::MAX;
-
-        Bid::new(
-            &mut rng,
-            &stealth_addr,
-            &value,
-            &secret.into(),
-            secret_k,
-            eligibility,
-            expiration,
+        (
+            Bid::new(
+                Message::new(&mut rng, secret, &psk, value),
+                secret_k,
+                psk.gen_stealth_address(secret),
+                eligibility_ts,
+                expiration_ts,
+            ),
+            psk,
         )
-        .expect("Bid creation error")
     }
 
     fn allocate_fields(
@@ -337,17 +334,18 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
+        let (bid, _) = random_bid(&secret);
 
         let circuit = |composer: &mut StandardComposer, bid: &Bid| {
             // Allocate Bid-internal fields
             let bid_hashed_secret =
                 AllocatedScalar::allocate(composer, *bid.hashed_secret());
             let bid_cipher = (
-                composer.add_input(bid.encrypted_data().cipher()[0]),
-                composer.add_input(bid.encrypted_data().cipher()[1]),
+                composer.add_input(bid.encrypted_data()[0]),
+                composer.add_input(bid.encrypted_data()[1]),
             );
-            let bid_commitment = composer.add_affine(*bid.commitment());
+            let bid_commitment =
+                composer.add_affine(JubJubAffine::from(bid.commitment()));
             let bid_stealth_addr = (
                 composer
                     .add_affine(bid.stealth_address().pk_r().as_ref().into()),
@@ -412,10 +410,9 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
-        let secret = GENERATOR_EXTENDED * &secret;
+        let (bid, psk) = random_bid(&secret);
         let (value, _) =
-            bid.decrypt_data(&secret.into()).expect("Decryption error");
+            bid.decrypt_data(&secret, &psk).expect("Decryption error");
 
         // Generate fields for the Bid & required by the compute_score
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -430,7 +427,8 @@ mod tests {
         // Edit score fields which should make the test fail
         let score = Score::compute(
             &bid,
-            &secret.into(),
+            &secret,
+            &psk,
             secret_k,
             bid_tree_root,
             consensus_round_seed,
@@ -454,7 +452,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -488,7 +486,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -505,7 +503,7 @@ mod tests {
         );
 
         verifier.preprocess(&ck)?;
-        Ok(verifier.verify(&proof, &vk, &vec![BlsScalar::zero()])?)
+        Ok(verifier.verify(&proof, &vk, &[BlsScalar::zero()])?)
     }
 
     #[test]
@@ -522,10 +520,9 @@ mod tests {
 
         // Generate a correct Bid
         let secret = JubJubScalar::random(&mut rand::thread_rng());
-        let bid = random_bid(&secret);
-        let secret = GENERATOR_EXTENDED * &secret;
+        let (bid, psk) = random_bid(&secret);
         let (value, _) =
-            bid.decrypt_data(&secret.into()).expect("Decryption Error");
+            bid.decrypt_data(&secret, &psk).expect("Decryption Error");
 
         // Generate fields for the Bid & required by the compute_score
         let secret_k = BlsScalar::random(&mut rand::thread_rng());
@@ -563,7 +560,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -597,7 +594,7 @@ mod tests {
             value,
             secret_k,
             bid_tree_root,
-            BlsScalar::from(consensus_round_seed),
+            consensus_round_seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
         );
@@ -614,9 +611,7 @@ mod tests {
         );
 
         verifier.preprocess(&ck)?;
-        assert!(verifier
-            .verify(&proof, &vk, &vec![BlsScalar::zero()])
-            .is_err());
+        assert!(verifier.verify(&proof, &vk, &[BlsScalar::zero()]).is_err());
 
         Ok(())
     }

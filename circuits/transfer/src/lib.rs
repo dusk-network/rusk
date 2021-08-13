@@ -14,7 +14,7 @@ mod withdraw_from_transparent;
 
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
-pub const TRANSCRIPT_LABEL: &'static [u8] = b"dusk-network";
+pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
 pub use error::Error;
 pub use execute::*;

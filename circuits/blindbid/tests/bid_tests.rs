@@ -8,36 +8,38 @@ mod tree_assets;
 use blindbid_circuits::{BlindBidCircuit, BlindBidCircuitError};
 use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::jubjub::{JubJubAffine, GENERATOR_EXTENDED};
+use dusk_plonk::jubjub::JubJubAffine;
 use dusk_plonk::prelude::*;
+use dusk_poseidon::sponge;
+use phoenix_core::Message;
 use rand::Rng;
 use tree_assets::BidTree;
 
-fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
+fn random_bid(
+    secret: &JubJubScalar,
+    secret_k: &BlsScalar,
+) -> (Bid, PublicSpendKey) {
     let mut rng = rand::thread_rng();
-    let pk_r = PublicSpendKey::from(SecretSpendKey::new(
+    let psk = PublicSpendKey::from(SecretSpendKey::new(
         JubJubScalar::one(),
         -JubJubScalar::one(),
     ));
-    let stealth_addr = pk_r.gen_stealth_address(&secret);
-    let secret = GENERATOR_EXTENDED * secret;
     let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-    let value = JubJubScalar::from(value);
-    // Set the timestamps as the max values so the proofs do not fail for them
-    // (never expired or non-elegible).
+    // Set the timestamps as the max values so the proofs do not fail
+    // for them (never expired or non-elegible).
     let elegibility_ts = u64::MAX;
     let expiration_ts = u64::MAX;
 
-    Bid::new(
-        &mut rng,
-        &stealth_addr,
-        &value,
-        &secret.into(),
-        secret_k,
-        elegibility_ts,
-        expiration_ts,
+    (
+        Bid::new(
+            Message::new(&mut rng, secret, &psk, value),
+            sponge::sponge::sponge_hash(&[*secret_k]),
+            psk.gen_stealth_address(secret),
+            elegibility_ts,
+            expiration_ts,
+        ),
+        psk,
     )
-    .expect("Bid creation error")
 }
 
 #[test]
@@ -57,8 +59,7 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate a correct Bid
     let secret = JubJubScalar::random(&mut rand::thread_rng());
     let secret_k = BlsScalar::random(&mut rand::thread_rng());
-    let bid = random_bid(&secret, secret_k);
-    let secret: JubJubAffine = (GENERATOR_EXTENDED * &secret).into();
+    let (bid, psk) = random_bid(&secret, &secret_k);
     // Generate fields for the Bid & required by the compute_score
     let consensus_round_seed = BlsScalar::random(&mut rand::thread_rng());
     let latest_consensus_round = 50u64;
@@ -74,6 +75,7 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     let score = Score::compute(
         &bid,
         &secret,
+        &psk,
         secret_k,
         *branch.root(),
         consensus_round_seed,
@@ -83,7 +85,7 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -92,11 +94,12 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        secret,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
+        secret,
+        psk,
     };
 
     let (pk, vd) = circuit
@@ -107,18 +110,18 @@ fn correct_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     let pi: Vec<PublicInputValue> = vec![
         (*branch.root()).into(),
         storage_bid.into(),
-        (*bid.commitment()).into(),
-        (*bid.hashed_secret()).into(),
+        JubJubAffine::from(*bid.commitment()).into(),
+        sponge::hash(&[secret_k]).into(),
         prover_id.into(),
         (*score.value()).into(),
     ];
 
     Ok(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"CorrectBid",
     )?)
 }
@@ -140,8 +143,8 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate a correct Bid
     let secret = JubJubScalar::random(&mut rand::thread_rng());
     let secret_k = BlsScalar::random(&mut rand::thread_rng());
-    let bid = random_bid(&secret, secret_k);
-    let secret: JubJubAffine = (GENERATOR_EXTENDED * &secret).into();
+    let (bid, psk) = random_bid(&secret, &secret_k);
+
     // Generate fields for the Bid & required by the compute_score
     let consensus_round_seed = BlsScalar::random(&mut rand::thread_rng());
     let latest_consensus_round = 50u64;
@@ -157,6 +160,7 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     let mut score = Score::compute(
         &bid,
         &secret,
+        &psk,
         secret_k,
         *branch.root(),
         consensus_round_seed,
@@ -178,7 +182,7 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -187,11 +191,12 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        secret,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
+        secret,
+        psk,
     };
 
     let (pk, vd) = circuit
@@ -202,17 +207,17 @@ fn edited_score_blindbid_proof() -> Result<(), BlindBidCircuitError> {
     let pi: Vec<PublicInputValue> = vec![
         (*branch.root()).into(),
         storage_bid.into(),
-        (*bid.commitment()).into(),
-        (*bid.hashed_secret()).into(),
+        JubJubAffine::from(*bid.commitment()).into(),
+        sponge::hash(&[secret_k]).into(),
         prover_id.into(),
         (*score.value()).into(),
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"BidWithEditedScore"
     )
     .is_err());
@@ -233,27 +238,25 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
 
-    // Create an expired bid.
     let mut rng = rand::thread_rng();
+    let psk = PublicSpendKey::from(SecretSpendKey::new(
+        JubJubScalar::one(),
+        -JubJubScalar::one(),
+    ));
+
+    // Create an expired bid.
     let secret = JubJubScalar::random(&mut rng);
-    let pk_r = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
-    let stealth_addr = pk_r.gen_stealth_address(&secret);
-    let secret = JubJubAffine::from(GENERATOR_EXTENDED * secret);
     let secret_k = BlsScalar::random(&mut rng);
     let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-    let value = JubJubScalar::from(value);
     let expiration_ts = 100u64;
     let elegibility_ts = 1000u64;
     let bid = Bid::new(
-        &mut rng,
-        &stealth_addr,
-        &value,
-        &secret.into(),
+        Message::new(&mut rng, &secret, &psk, value),
         secret_k,
+        psk.gen_stealth_address(&secret),
         elegibility_ts,
         expiration_ts,
-    )
-    .expect("Bid creation error");
+    );
 
     // Append the Bid to the tree.
     tree.push(bid.into())?;
@@ -271,6 +274,7 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
     let score = Score::compute(
         &bid,
         &secret,
+        &psk,
         secret_k,
         *branch.root(),
         consensus_round_seed,
@@ -285,7 +289,7 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -294,11 +298,12 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        secret,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
+        secret,
+        psk,
     };
 
     let (pk, vd) = circuit
@@ -309,17 +314,17 @@ fn expired_bid_proof() -> Result<(), BlindBidCircuitError> {
     let pi: Vec<PublicInputValue> = vec![
         (*branch.root()).into(),
         storage_bid.into(),
-        (*bid.commitment()).into(),
-        (*bid.hashed_secret()).into(),
+        JubJubAffine::from(*bid.commitment()).into(),
+        sponge::hash(&[secret_k]).into(),
         prover_id.into(),
         (*score.value()).into(),
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"ExpiredBid"
     )
     .is_err());
@@ -340,27 +345,24 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
     // Generate a BidTree and append the Bid.
     let mut tree = BidTree::new();
 
-    // Create a non-elegible Bid.
     let mut rng = rand::thread_rng();
+    let psk = PublicSpendKey::from(SecretSpendKey::new(
+        JubJubScalar::one(),
+        -JubJubScalar::one(),
+    ));
+    // Create a non-elegible Bid.
     let secret = JubJubScalar::random(&mut rng);
-    let pk_r = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
-    let stealth_addr = pk_r.gen_stealth_address(&secret);
-    let secret = JubJubAffine::from(GENERATOR_EXTENDED * secret);
     let secret_k = BlsScalar::random(&mut rng);
     let value: u64 = (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-    let value = JubJubScalar::from(value);
     let expiration_ts = 100u64;
     let elegibility_ts = 1000u64;
     let bid = Bid::new(
-        &mut rng,
-        &stealth_addr,
-        &value,
-        &secret.into(),
+        Message::new(&mut rng, &secret, &psk, value),
         secret_k,
+        psk.gen_stealth_address(&secret),
         elegibility_ts,
         expiration_ts,
-    )
-    .expect("Bid creation error");
+    );
 
     // Append the Bid to the tree.
     tree.push(bid.into())?;
@@ -379,6 +381,7 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
     let score = Score::compute(
         &bid,
         &secret,
+        &psk,
         secret_k,
         *branch.root(),
         consensus_round_seed,
@@ -388,7 +391,7 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
 
     let prover_id = bid.generate_prover_id(
         secret_k,
-        BlsScalar::from(consensus_round_seed),
+        consensus_round_seed,
         BlsScalar::from(latest_consensus_round),
         BlsScalar::from(latest_consensus_step),
     );
@@ -402,11 +405,12 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
         bid,
         score,
         secret_k,
-        secret,
-        seed: BlsScalar::from(consensus_round_seed),
+        seed: consensus_round_seed,
         latest_consensus_round: BlsScalar::from(latest_consensus_round),
         latest_consensus_step: BlsScalar::from(latest_consensus_step),
         branch: &branch,
+        secret,
+        psk,
     };
 
     let (pk, vd) = circuit
@@ -417,17 +421,17 @@ fn non_elegible_bid() -> Result<(), BlindBidCircuitError> {
     let pi: Vec<PublicInputValue> = vec![
         (*branch.root()).into(),
         storage_bid.into(),
-        (*bid.commitment()).into(),
-        (*bid.hashed_secret()).into(),
+        JubJubAffine::from(*bid.commitment()).into(),
+        sponge::hash(&[secret_k]).into(),
         prover_id.into(),
         (*score.value()).into(),
     ];
     assert!(circuit::verify_proof(
         &pub_params,
-        &vd.key(),
+        vd.key(),
         &proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         b"NonElegibleBid"
     )
     .is_err());

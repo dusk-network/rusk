@@ -7,16 +7,34 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+use blake2b_simd::Params;
 use canonical::{Canon, CanonError, Source};
-use dusk_abi::{HostModule, Query, ReturnValue};
+use dusk_abi::{ContractId, HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicKey;
 use dusk_plonk::circuit::{self, VerifierData};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 
 use crate::{PublicInput, RuskModule};
+
+/// Generate a [`ContractId`] address from the given slice of bytes, that is
+/// also a valid [`BlsScalar`]
+pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
+    let mut state = Params::new().hash_length(64).to_state();
+    state.update(bytes);
+
+    let mut buf = [0u8; 64];
+    buf.copy_from_slice(state.finalize().as_ref());
+
+    ContractId::from_raw(BlsScalar::from_bytes_wide(&buf).to_bytes())
+}
+
+/// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
+pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
+    dusk_poseidon::sponge::hash(&scalars)
+}
 
 impl RuskModule {
     pub fn new(pp: &'static PublicParameters) -> Self {
@@ -54,7 +72,7 @@ impl HostModule for RuskModule {
                     pi.into_iter().map(|pi| pi.into()).collect();
 
                 let ret = circuit::verify_proof(
-                    &self.pp,
+                    self.pp,
                     verifier_data.key(),
                     &proof,
                     pi.as_slice(),

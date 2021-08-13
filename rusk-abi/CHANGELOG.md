@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+
+- Add `stake_contract` method for host and hosted [#338]
+- Add `transfer_contract` method for host [#338]
+- Add `gen_contract_id` method for host [#337]
+
+## Remove
+
+- Remove `transfer_address` and `stake_address` methods for host [#338]
+
+## [0.4.0] - 2021-07-16
+
+## Added
+
+- Add `transfer_contract` method for hosted [#328]
+- Add `transfer_address` and `stake_address` methods for host [#328]
+
+## Changed
+
+- Update `dusk-abi` from `0.9.0-rc` to `0.9` [#327]
+- Update `dusk-schnorr` from `0.7.0-rc` to `0.8.0-rc` [#327]
+- Update `dusk-pki` from `0.7.0-rc` to `0.8.0-rc` [#327]
+- Update `rusk-vm` from `0.6.0-rc` to `0.7.0-rc` [#327]
+
+## [0.3.0] - 2021-05-14
+
 ### Added
 
 - Add `payment_info` host function [#254]
@@ -64,8 +90,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add LICENSE
 - Add README.md
 
+[#338]: https://github.com/dusk-network/rusk/issues/338
+[#337]: https://github.com/dusk-network/rusk/issues/337
+[#328]: https://github.com/dusk-network/rusk/issues/328
+[#327]: https://github.com/dusk-network/rusk/issues/327
 [#227]: https://github.com/dusk-network/rusk/issues/227
 [#254]: https://github.com/dusk-network/rusk/issues/254
-[unreleased]: https://github.com/dusk-network/dusk-abi/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/dusk-network/dusk-abi/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/v0.1.0
+[unreleased]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.4.0...HEAD
+[0.4.0]: https://github.com/dusk-network/dusk-abi/releases/tag/rusk-abi-0.4.0
+[0.3.0]: https://github.com/dusk-network/dusk-abi/releases/tag/rusk-abi-0.3.0
+[0.2.0]: https://github.com/dusk-network/dusk-abi/releases/tag/rusk-abi-0.2.0
+[0.1.0]: https://github.com/dusk-network/dusk-abi/releases/tag/rusk-abi-0.1.0

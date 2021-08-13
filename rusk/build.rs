@@ -6,14 +6,16 @@
 
 use bid_circuits::BidCorrectnessCircuit;
 use blindbid_circuits::BlindBidCircuit;
-use dusk_blindbid::{Bid, Score};
+use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
+use phoenix_core::Message;
 use profile_tooling::CircuitLoader;
+use rand::Rng;
 use tracing::{info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -168,7 +170,7 @@ mod bid {
                 blinder,
             };
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -194,8 +196,7 @@ mod blindbid {
             // Generate a correct Bid
             let secret = JubJubScalar::random(&mut rand::thread_rng());
             let secret_k = BlsScalar::random(&mut rand::thread_rng());
-            let bid = random_bid(&secret, secret_k);
-            let secret: JubJubAffine = (GENERATOR_EXTENDED * secret).into();
+            let (bid, psk) = random_bid(&secret, secret_k);
 
             // Generate fields for the Bid & required by the compute_score
             let consensus_round_seed = 50u64;
@@ -209,6 +210,7 @@ mod blindbid {
             let score = Score::compute(
                 &bid,
                 &secret,
+                &psk,
                 secret_k,
                 *branch.root(),
                 BlsScalar::from(consensus_round_seed),
@@ -221,40 +223,45 @@ mod blindbid {
                 bid,
                 score,
                 secret_k,
-                secret,
                 seed: BlsScalar::from(consensus_round_seed),
                 latest_consensus_round: BlsScalar::from(latest_consensus_round),
                 latest_consensus_step: BlsScalar::from(latest_consensus_step),
                 branch: &branch,
+                secret,
+                psk,
             };
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
 
-    fn random_bid(secret: &JubJubScalar, secret_k: BlsScalar) -> Bid {
+    fn random_bid(
+        secret: &JubJubScalar,
+        secret_k: BlsScalar,
+    ) -> (Bid, PublicSpendKey) {
         let mut rng = rand::thread_rng();
-        let pk_r = PublicSpendKey::from(SecretSpendKey::random(&mut rng));
-        let stealth_addr = pk_r.gen_stealth_address(&secret);
-        let secret = GENERATOR_EXTENDED * secret;
-        let value = 60_000u64;
-        let value = JubJubScalar::from(value);
-        // Set the timestamps as the max values so the proofs do not fail for
-        // them (never expired or non-elegible).
+        let psk = PublicSpendKey::from(SecretSpendKey::new(
+            JubJubScalar::one(),
+            -JubJubScalar::one(),
+        ));
+        let value: u64 =
+            (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
+        // Set the timestamps as the max values so the proofs do not fail
+        // for them (never expired or non-elegible).
         let elegibility_ts = u64::MAX;
         let expiration_ts = u64::MAX;
 
-        Bid::new(
-            &mut rng,
-            &stealth_addr,
-            &value,
-            &secret.into(),
-            secret_k,
-            elegibility_ts,
-            expiration_ts,
+        (
+            Bid::new(
+                Message::new(&mut rng, secret, &psk, value),
+                secret_k,
+                psk.gen_stealth_address(secret),
+                elegibility_ts,
+                expiration_ts,
+            ),
+            psk,
         )
-        .expect("Error generating a Bid")
     }
 }
 
@@ -311,7 +318,7 @@ mod transfer {
             )
             .expect("Failed to create STCT circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -370,7 +377,7 @@ mod transfer {
             )
             .expect("Failed to generate circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -404,7 +411,7 @@ mod transfer {
                 WithdrawFromTransparentCircuit::new(&note, Some(&vk))
                     .expect("Failed to create WFT circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -425,40 +432,29 @@ mod transfer {
             let pub_params = &PUB_PARAMS;
             let rng = &mut rand::thread_rng();
 
-            let i_ssk = SecretSpendKey::random(rng);
-            let i_vk = i_ssk.view_key();
-            let i_psk = i_ssk.public_spend_key();
-            let i_value = 100;
-            let i_blinding_factor = JubJubScalar::random(rng);
-            let i_note =
-                Note::obfuscated(rng, &i_psk, i_value, i_blinding_factor);
-
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_psk = c_ssk.public_spend_key();
-            let c_r = JubJubScalar::random(rng);
-            let c_value = 25;
-            let c = Message::new(rng, &c_r, &c_psk, c_value);
+            let m_r = JubJubScalar::random(rng);
+            let m_ssk = SecretSpendKey::random(rng);
+            let m_psk = m_ssk.public_spend_key();
+            let m_value = 100;
+            let m = Message::new(rng, &m_r, &m_psk, m_value);
 
             let o_ssk = SecretSpendKey::random(rng);
             let o_vk = o_ssk.view_key();
             let o_psk = o_ssk.public_spend_key();
-            let o_value = 75;
+            let o_value = 100;
             let o_blinding_factor = JubJubScalar::random(rng);
-            let o_note =
-                Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
+            let o = Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
             let mut circuit = WithdrawFromObfuscatedCircuit::new(
-                &i_note,
-                Some(&i_vk),
-                &c,
-                c_r,
-                &c_psk,
-                &o_note,
+                m_r,
+                &m_ssk,
+                &m,
+                &o,
                 Some(&o_vk),
             )
             .expect("Failed to generate circuit!");
 
-            let (pk, vd) = circuit.compile(&pub_params)?;
+            let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
         }
     }
@@ -618,6 +614,7 @@ mod profile_tooling {
                             "{} already loaded correctly!",
                             loader.circuit_name()
                         );
+                        info!("[{}]\n", hex::encode(loader.circuit_id()));
                         Ok(())
                     }
                     _ => {

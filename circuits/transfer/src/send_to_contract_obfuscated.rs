@@ -62,7 +62,7 @@ impl SendToContractObfuscatedCircuit {
         message: &Message,
         address: &BlsScalar,
     ) -> Signature {
-        let sk_r = ssk.sk_r(fee.stealth_address()).as_ref().clone();
+        let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
         let secret = SecretKey::from(sk_r);
 
         let message = Self::sign_message(crossover, message, address);
@@ -70,6 +70,7 @@ impl SendToContractObfuscatedCircuit {
         Signature::new(&secret, rng, message)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         fee: Fee,
         crossover: Crossover,
@@ -81,7 +82,7 @@ impl SendToContractObfuscatedCircuit {
         message_r: JubJubScalar,
         address: BlsScalar,
     ) -> Result<Self, PhoenixError> {
-        let nonce = BlsScalar::from(*crossover.nonce());
+        let nonce = *crossover.nonce();
         let secret = fee.stealth_address().R() * vk.a();
         let (crossover_value, crossover_blinding_factor) = crossover
             .encrypted_data()
@@ -146,12 +147,10 @@ impl SendToContractObfuscatedCircuit {
     }
 
     pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-        let mut pi = vec![];
-
         //  1. commitment(Cc,vc,bc)
         let value_commitment = self.crossover.value_commitment();
         let value_commitment = JubJubAffine::from(value_commitment);
-        pi.push(value_commitment.into());
+        let mut pi = vec![value_commitment.into()];
 
         //  3. commitment(Cm,vm,bm)
         let message_value_commitment = self.message.value_commitment();
@@ -174,12 +173,12 @@ impl SendToContractObfuscatedCircuit {
         pi.push(message_pk_r.into());
 
         //  9. Em==encrypt(es,Nm,[vm,bm])
-        pi.push(self.message.nonce().clone().into());
+        pi.push((*self.message.nonce()).into());
         pi.extend(self.message.cipher().iter().map(|c| (*c).into()));
 
         // 10. Hs==H([Cc,Nc,Ec,Cm,Nm,Em,Ac])
-        pi.push(self.address.clone().into());
-        pi.push(self.crossover.nonce().clone().into());
+        pi.push(self.address.into());
+        pi.push((*self.crossover.nonce()).into());
         pi.extend(
             self.crossover
                 .encrypted_data()

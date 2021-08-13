@@ -29,6 +29,10 @@ impl CircuitOutput {
         &self.note
     }
 
+    pub const fn value_commitment(&self) -> &JubJubExtended {
+        self.note.value_commitment()
+    }
+
     pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessOutput {
         let value = composer.add_input(self.value.into());
         let blinding_factor = composer.add_input(self.blinding_factor.into());

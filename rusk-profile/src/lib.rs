@@ -124,8 +124,8 @@ pub fn clean_outdated_keys(ids: &[[u8; 32]]) -> Result<(), io::Error> {
         .filter(|res| res.is_ok())
         .map(|res| res.unwrap())
         .filter(|e| e.is_file())
-        .filter(|p| match extension(&p) {
-            Some("pk" | "vd") => file_stem(&p)
+        .filter(|p| match extension(p) {
+            Some("pk" | "vd") => file_stem(p)
                 .filter(|id| !ids_as_string.contains(&id.to_string()))
                 .is_some(),
             _ => true,
@@ -182,7 +182,7 @@ pub fn clear_all_keys() -> Result<(), io::Error> {
         .filter(|res| res.is_ok())
         .map(|res| res.unwrap())
         .filter(|e| e.is_file())
-        .filter(|p| matches!(extension(&p), Some("pk" | "vd")))
+        .filter(|p| matches!(extension(p), Some("pk" | "vd")))
         .try_for_each(|path| {
             info!("Removing {:?}", path);
             remove_file(path)

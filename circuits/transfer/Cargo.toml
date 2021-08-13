@@ -1,6 +1,6 @@
 [package]
 name = "transfer-circuits"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Bounce23 <luke@dusk.network>", "Victor Lopez <victor@dusk.network>"]
 edition = "2018"
 
@@ -11,10 +11,10 @@ dusk-bls12_381 = "0.8"
 dusk-jubjub = "0.10"
 dusk-plonk = "0.8"
 canonical = "0.6"
-dusk-poseidon = { version = "0.21.0-rc", features = ["canon"] }
-dusk-pki = "0.7.0-rc"
-phoenix-core = { version = "0.11.0-rc", features = ["canon"] }
-dusk-schnorr = "0.7.0-rc"
+dusk-poseidon = { version = "0.22", features = ["canon"] }
+dusk-pki = "0.8"
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }
+dusk-schnorr = "0.8.0-rc"
 code-hasher = { path = "../../macros/code-hasher" }
 rusk-profile = { path = "../../rusk-profile", optional = true }
 canonical_derive = { version = "0.6", optional = true }

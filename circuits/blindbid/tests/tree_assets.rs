@@ -67,7 +67,7 @@ impl PoseidonLeaf for BidLeaf {
 
 impl Keyed<u64> for BidLeaf {
     fn key(&self) -> &u64 {
-        &self.0.pos()
+        self.0.pos()
     }
 }
 

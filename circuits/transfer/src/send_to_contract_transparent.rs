@@ -49,7 +49,7 @@ impl SendToContractTransparentCircuit {
         value: u64,
         address: &BlsScalar,
     ) -> Signature {
-        let sk_r = ssk.sk_r(fee.stealth_address()).as_ref().clone();
+        let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
         let secret = SecretKey::from(sk_r);
 
         let message = Self::sign_message(crossover, value, address);
@@ -64,11 +64,11 @@ impl SendToContractTransparentCircuit {
         address: BlsScalar,
         signature: Signature,
     ) -> Result<Self, PhoenixError> {
-        let nonce = BlsScalar::from(*crossover.nonce());
+        let nonce = crossover.nonce();
         let secret = fee.stealth_address().R() * vk.a();
         let (value, crossover_blinder) = crossover
             .encrypted_data()
-            .decrypt(&secret.into(), &nonce)
+            .decrypt(&secret.into(), nonce)
             .map(|d| {
                 let value = d[0].reduce().0[0];
                 let crossover_blinder =

@@ -12,7 +12,7 @@ use blindbid_circuits::BlindBidCircuit;
 use dusk_blindbid::Score;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use dusk_plonk::jubjub::JubJubAffine;
+use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::*;
 use tonic::{Request, Response, Status};
 
@@ -33,6 +33,7 @@ where
 
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
+    #[allow(clippy::diverging_sub_expression)]
     fn handle_request(&self) -> Result<Response<VerifyScoreResponse>, Status> {
         // Get the optional parameters from the request.
         let (proof, score, seed, prover_id) =
@@ -53,11 +54,15 @@ where
             bid,
             score: Score::default(),
             secret_k: BlsScalar::default(),
-            secret: JubJubAffine::default(),
             seed,
             latest_consensus_round,
             latest_consensus_step,
             branch: &branch,
+            secret: JubJubScalar::default(),
+            psk: PublicSpendKey::new(
+                JubJubAffine::default().into(),
+                JubJubAffine::default().into(),
+            ),
         };
 
         Ok(Response::new(VerifyScoreResponse {
@@ -108,7 +113,7 @@ fn verify_blindbid_proof(
     let pi: Vec<PublicInputValue> = vec![
         (*circuit.branch.root()).into(),
         circuit.bid.hash().into(),
-        (*circuit.bid.commitment()).into(),
+        JubJubAffine::from(*circuit.bid.commitment()).into(),
         (*circuit.bid.hashed_secret()).into(),
         prover_id.into(),
         score.into(),
@@ -117,10 +122,10 @@ fn verify_blindbid_proof(
     // Verify the proof.
     circuit::verify_proof(
         &crate::PUB_PARAMS,
-        &vd.key(),
+        vd.key(),
         proof,
         &pi,
-        &vd.pi_pos(),
+        vd.pi_pos(),
         super::BLINDBID_TRANSCRIPT_INIT,
     )
     .map_err(|e| anyhow::anyhow!("{:?}", e))

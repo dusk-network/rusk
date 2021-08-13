@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use canonical::Canon;
 use canonical_derive::Canon;
 use core::borrow::Borrow;
 use dusk_blindbid::Bid;
@@ -12,8 +13,8 @@ use dusk_poseidon::tree::{
     PoseidonAnnotation, PoseidonLeaf, PoseidonTreeAnnotation,
 };
 use microkelvin::{
-    Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey, Step,
-    Walk, Walker,
+    AnnoIter, Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey,
+    Step, Walk, Walker,
 };
 
 /// Alias for `u64` which relates to the expiration of a `Bid`.
@@ -47,6 +48,12 @@ impl Borrow<BlsScalar> for ExpirationAnnotation {
     }
 }
 
+impl Borrow<PoseidonAnnotation> for ExpirationAnnotation {
+    fn borrow(&self) -> &PoseidonAnnotation {
+        &self.ann
+    }
+}
+
 impl<L> Annotation<L> for ExpirationAnnotation
 where
     L: PoseidonLeaf,
@@ -61,19 +68,21 @@ where
     }
 }
 
-impl<C, A> Combine<C, A> for ExpirationAnnotation
+impl<A> Combine<A> for ExpirationAnnotation
 where
-    C: Compound<A>,
-    C::Leaf: PoseidonLeaf + Keyed<Expiration> + Borrow<u64>,
-    A: Annotation<C::Leaf>
-        + PoseidonTreeAnnotation<C::Leaf>
-        + Borrow<Cardinality>
-        + Borrow<MaxKey<Expiration>>,
+    A: Borrow<Cardinality>
+        + Borrow<MaxKey<Expiration>>
+        + Borrow<PoseidonAnnotation>
+        + Borrow<BlsScalar>,
 {
-    fn combine(node: &C) -> Self {
+    fn combine<C: Compound<A>>(iter: AnnoIter<C, A>) -> Self
+    where
+        C: Compound<A>,
+        A: Annotation<C::Leaf>,
+    {
         ExpirationAnnotation {
-            ann: PoseidonAnnotation::combine(node),
-            expiration: MaxKey::combine(node),
+            ann: PoseidonAnnotation::combine(iter.clone()),
+            expiration: MaxKey::combine(iter),
         }
     }
 }
@@ -86,8 +95,8 @@ pub struct ExpirationFilter(u64);
 impl<C, A> Walker<C, A> for ExpirationFilter
 where
     C: Compound<A>,
-    C::Leaf: Keyed<Expiration>,
-    A: Combine<C, A> + Borrow<MaxKey<Expiration>>,
+    C::Leaf: Keyed<Expiration> + PoseidonLeaf,
+    A: Combine<A> + Annotation<C::Leaf> + Borrow<MaxKey<Expiration>> + Canon,
 {
     fn walk(&mut self, walk: Walk<C, A>) -> Step {
         for i in 0.. {
@@ -101,7 +110,7 @@ where
                 }
                 Child::Node(n) => {
                     let max_node_block_height: u64 =
-                        match n.annotation().borrow() {
+                        match *(*n.annotation()).borrow() {
                             MaxKey::NegativeInfinity => return Step::Abort,
                             MaxKey::Maximum(value) => value.0,
                         };
@@ -127,42 +136,55 @@ where
 /// Aside from this difference, BidLeaf does not vary on anything
 /// from the original `Bid` struct at all.
 #[derive(Debug, Clone, Copy, Canon)]
-pub struct BidLeaf(pub(crate) Bid);
+pub struct BidLeaf {
+    bid: Bid,
+    expiration: Expiration,
+}
 
 impl BidLeaf {
     /// Generates a new BidLeaf instance from a `Bid`.
-    pub fn new(bid: Bid) -> Self {
-        BidLeaf(bid)
+    pub fn new(bid: Bid, expiration: Expiration) -> Self {
+        BidLeaf { bid, expiration }
     }
 
     /// Returns the internal bid representation of the `BidLeaf` as with
     /// the `Bid` type.
-    pub fn bid(&self) -> Bid {
-        self.0
+    pub const fn bid(&self) -> &Bid {
+        &self.bid
     }
 
     /// Returns a &mut to the internal bid representation of the `BidLeaf`
     /// as with the `Bid` type.
     pub fn bid_mut(&mut self) -> &mut Bid {
-        &mut self.0
+        &mut self.bid
+    }
+
+    /// Returns the internal expiration the `Bid`  
+    pub const fn expiration(&self) -> &Expiration {
+        &self.expiration
+    }
+
+    /// Returns a &mut to the internal expiration the `Bid`
+    pub fn expiration_mut(&mut self) -> &mut Expiration {
+        &mut self.expiration
     }
 }
 
 impl Borrow<u64> for BidLeaf {
     fn borrow(&self) -> &u64 {
-        &self.0.borrow()
+        self.bid().borrow()
     }
 }
 
 impl From<Bid> for BidLeaf {
     fn from(bid: Bid) -> BidLeaf {
-        BidLeaf(bid)
+        BidLeaf::new(bid, Expiration(*bid.expiration()))
     }
 }
 
 impl From<BidLeaf> for Bid {
     fn from(leaf: BidLeaf) -> Bid {
-        leaf.0
+        leaf.bid
     }
 }
 
@@ -170,29 +192,21 @@ impl From<BidLeaf> for Bid {
 // when executed in the `hosted` envoiroment would indeed call a host_function
 // to do the computations in Rust instead of WASM.
 impl PoseidonLeaf for BidLeaf {
-    #[cfg(not(target_arch = "wasm32"))]
     fn poseidon_hash(&self) -> BlsScalar {
-        self.0.hash()
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    fn poseidon_hash(&self) -> BlsScalar {
-        rusk_abi::hosted::poseidon_hash(self.0.as_hash_inputs().into())
+        rusk_abi::poseidon_hash(self.bid().as_hash_inputs().to_vec())
     }
 
     fn pos(&self) -> &u64 {
-        self.0.pos()
+        self.bid().pos()
     }
 
     fn set_pos(&mut self, pos: u64) {
-        self.0.set_pos(pos);
+        self.bid_mut().set_pos(pos);
     }
 }
 
 impl Keyed<Expiration> for BidLeaf {
     fn key(&self) -> &Expiration {
-        unsafe {
-            core::mem::transmute::<&u64, &Expiration>(self.0.expiration())
-        }
+        self.expiration()
     }
 }

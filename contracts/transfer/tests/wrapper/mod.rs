@@ -29,15 +29,16 @@ use dusk_plonk::prelude::*;
 
 const TX_PING: u8 = 0x01;
 const TX_WITHDRAW: u8 = 0x02;
-const TX_WITHDRAW_TO_CONTRACT: u8 = 0x03;
+const TX_WITHDRAW_OBFUSCATED: u8 = 0x03;
+const TX_WITHDRAW_TO_CONTRACT: u8 = 0x04;
 
 const TRANSFER_TREE_DEPTH: usize = 17;
-const TRANSFER: &'static [u8] = include_bytes!(
+const TRANSFER: &[u8] = include_bytes!(
     "../../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
-const ALICE: &'static [u8] =
+const ALICE: &[u8] =
     include_bytes!("alice/target/wasm32-unknown-unknown/release/alice.wasm");
-const BOB: &'static [u8] =
+const BOB: &[u8] =
     include_bytes!("bob/target/wasm32-unknown-unknown/release/bob.wasm");
 
 lazy_static! {
@@ -106,6 +107,10 @@ impl TransferWrapper {
         }
     }
 
+    pub fn rng(&mut self) -> &mut StdRng {
+        &mut self.rng
+    }
+
     pub fn state(&self) -> TransferContract {
         self.network
             .get_contract_cast_state(&self.transfer)
@@ -144,6 +149,21 @@ impl TransferWrapper {
 
     pub fn tx_withdraw(value: u64, note: Note, proof: Vec<u8>) -> Transaction {
         Transaction::from_canon(&(TX_WITHDRAW, value, note, proof))
+    }
+
+    pub fn tx_withdraw_obfuscated(
+        message: Message,
+        message_address: StealthAddress,
+        note: Note,
+        proof: Vec<u8>,
+    ) -> Transaction {
+        Transaction::from_canon(&(
+            TX_WITHDRAW_OBFUSCATED,
+            message,
+            message_address,
+            note,
+            proof,
+        ))
     }
 
     pub fn tx_withdraw_to_contract(to: ContractId, value: u64) -> Transaction {
@@ -202,9 +222,7 @@ impl TransferWrapper {
         self.state()
             .notes_from_height(block_height)
             .expect("Failed to fetch notes iterator from state")
-            .map(|note| {
-                note.expect("Failed to fetch note from canonical").clone()
-            })
+            .map(|note| *note.expect("Failed to fetch note from canonical"))
             .collect()
     }
 
@@ -216,7 +234,7 @@ impl TransferWrapper {
         self.notes(block_height)
             .iter()
             .filter(|n| vk.owns(n.stealth_address()))
-            .map(|n| n.clone())
+            .copied()
             .collect()
     }
 
@@ -246,17 +264,12 @@ impl TransferWrapper {
         self.state()
             .notes()
             .opening(pos)
-            .expect(
-                format!(
-                    "Failed to fetch note of position {:?} for opening",
-                    pos
-                )
-                .as_str(),
-            )
-            .expect(
-                format!("Note {:?} not found, opening is undefined!", pos)
-                    .as_str(),
-            )
+            .unwrap_or_else(|_| {
+                panic!("Failed to fetch note of position {:?} for opening", pos)
+            })
+            .unwrap_or_else(|| {
+                panic!("Note {:?} not found, opening is undefined!", pos)
+            })
     }
 
     fn circuit_keys(circuit_id: &[u8; 32]) -> (ProverKey, VerifierData) {
@@ -271,6 +284,7 @@ impl TransferWrapper {
         (pk, vd)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn prepare_execute(
         &mut self,
         inputs: &[Note],
@@ -303,10 +317,7 @@ impl TransferWrapper {
                 input += value;
 
                 let opening = self.opening(*note.pos());
-                let signature = ExecuteCircuit::sign(&mut self.rng, &ssk, note);
-                execute_proof
-                    .add_input(&ssk, *note, opening, signature)
-                    .unwrap();
+                execute_proof.add_input(*ssk, *note, opening, None).unwrap();
 
                 note.gen_nullifier(ssk)
             })
@@ -371,6 +382,8 @@ impl TransferWrapper {
                 }
             };
 
+        execute_proof.compute_signatures(&mut self.rng);
+
         let id = execute_proof.circuit_id();
         let (pk, vd) = Self::circuit_keys(id);
 
@@ -394,6 +407,7 @@ impl TransferWrapper {
         (anchor, nullifiers, fee, crossover, outputs, proof)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         &mut self,
         inputs: &[Note],
@@ -433,6 +447,7 @@ impl TransferWrapper {
             .transact::<_, ()>(self.transfer, execute, &mut self.gas)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn send_to_contract_transparent(
         &mut self,
         inputs: &[Note],
@@ -498,6 +513,7 @@ impl TransferWrapper {
             .transact::<_, ()>(self.transfer, call, &mut self.gas)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn send_to_contract_obfuscated(
         &mut self,
         inputs: &[Note],
@@ -508,8 +524,9 @@ impl TransferWrapper {
         gas_limit: u64,
         gas_price: u64,
         contract: ContractId,
+        message_psk: &PublicSpendKey,
         value: u64,
-    ) -> Result<StealthAddress, VMError> {
+    ) -> Result<JubJubScalar, VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
@@ -525,8 +542,9 @@ impl TransferWrapper {
             );
 
         let crossover = crossover.unwrap();
-        let r = JubJubScalar::random(&mut self.rng);
-        let message = Message::new(&mut self.rng, &r, output, value);
+        let message_r = JubJubScalar::random(&mut self.rng);
+        let message =
+            Message::new(&mut self.rng, &message_r, message_psk, value);
 
         let signature = SendToContractObfuscatedCircuit::sign(
             &mut self.rng,
@@ -538,7 +556,14 @@ impl TransferWrapper {
         );
 
         let mut stco_proof = SendToContractObfuscatedCircuit::new(
-            fee, crossover, &refund_vk, signature, false, message, output, r,
+            fee,
+            crossover,
+            &refund_vk,
+            signature,
+            false,
+            message,
+            message_psk,
+            message_r,
             address,
         )
         .unwrap();
@@ -549,7 +574,7 @@ impl TransferWrapper {
             stco_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
-        let message_address = output.gen_stealth_address(&r);
+        let message_address = message_psk.gen_stealth_address(&message_r);
         let call = Call::send_to_contract_obfuscated(
             contract,
             message,
@@ -570,6 +595,6 @@ impl TransferWrapper {
         self.network
             .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
 
-        Ok(message_address)
+        Ok(message_r)
     }
 }

@@ -9,7 +9,7 @@ use crate::TransferContract;
 use alloc::vec::Vec;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubExtended};
+use dusk_jubjub::JubJubExtended;
 use dusk_pki::{Ownable, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::PaymentInfo;
@@ -149,33 +149,23 @@ impl TransferContract {
         &mut self,
         message: Message,
         message_address: StealthAddress,
-        note: Note,
-        input_value_commitment: JubJubAffine,
+        output: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
         let address = dusk_abi::caller();
-        let mut pi = Vec::with_capacity(9 + message.cipher().len());
+        let mut pi = Vec::with_capacity(4);
 
-        pi.push(input_value_commitment.into());
         pi.push(message.value_commitment().into());
-        pi.push(message.nonce().into());
-        pi.extend(message.cipher().iter().map(|c| c.into()));
-        pi.push(note.value_commitment().into());
+        pi.push(output.value_commitment().into());
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
         //  3. M_a↦.delete(pk)
-        // https://github.com/dusk-network/rusk/issues/192
-        let _message = self
+        self
             .take_message_from_address_key(&address, message_address.pk_r())
             .expect(
             "Failed to take a message from the provided address/key mapping!",
         );
-
-        //  4. if |M_c|=1 then S_a↦.append((pk_c, R_c))
-        //  5. if |M_c|=1 then M_a↦.M_pk↦.append(M_c)
-        self.push_message(address, message_address, message)
-            .expect("Failed to push the provided message to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
         match rusk_abi::payment_info(address) {
@@ -183,13 +173,13 @@ impl TransferContract {
             _ => panic!("This contract accepts only obfuscated notes!"),
         }
 
+        self.push_note_current_height(output)
+            .expect("Failed to append the provided note to the state!");
+
         //  7. verify(c, M_c, No.c, π)
         let vd = Self::verifier_data_wdfo();
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
-
-        self.push_note_current_height(note)
-            .expect("Failed to append the provided note to the state!");
 
         true
     }
@@ -234,10 +224,12 @@ impl TransferContract {
 
         pi.push(anchor.into());
         pi.extend(nullifiers.iter().map(|n| n.into()));
-        pi.push(fee.gas_limit.into());
         pi.push(crossover_commitment.into());
+        pi.push(fee.gas_limit.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
-        pi.push(BlsScalar::zero().into());
+
+        let tx_hash = Self::tx_hash(pi.as_slice());
+        pi.push(tx_hash.into());
 
         //  1. α ∈ R
         if !self

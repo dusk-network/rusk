@@ -1,6 +1,6 @@
 [package]
 name = "bid-circuits"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["CPerezz <carlos@dusk.network>", "Jules de Smit <jules@dusk.network>"]
 edition = "2018"
 license = "MPL-2.0"
@@ -18,10 +18,13 @@ exclude = [
 [dependencies]
 dusk-plonk = "0.8"
 plonk_gadgets = "0.6.0-rc"
-dusk-blindbid = "0.8.0-rc"
-code-hasher = {path = "../../macros/code-hasher"}
+dusk-blindbid = "0.10.0-rc"
+code-hasher = { path = "../../macros/code-hasher" }
 
 [dev-dependencies]
 rand = "0.8"
+phoenix-core = { version = "0.14.0-rc", features = ["canon"] }
+dusk-pki = "0.8.0-rc"
 rusk-profile = { path = "../../rusk-profile" }
-
+dusk-poseidon = { version = "0.22.0-rc", features = ["std", "canon"] }
+lazy_static = "1.4"

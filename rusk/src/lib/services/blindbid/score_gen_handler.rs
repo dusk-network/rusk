@@ -13,7 +13,7 @@ use dusk_blindbid::{Bid, Score};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
-use dusk_plonk::jubjub::JubJubAffine;
+use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use tonic::{Code, Request, Response, Status};
@@ -35,6 +35,7 @@ where
 
     #[allow(unreachable_code)]
     #[allow(unused_variables)]
+    #[allow(clippy::diverging_sub_expression)]
     fn handle_request(
         &self,
     ) -> Result<Response<GenerateScoreResponse>, Status> {
@@ -42,7 +43,8 @@ where
         // any of them is missing since all are required to compute
         // the score and the blindbid proof.
         // FIXME: `seed` should be sent as `u64`? No? What happens here?
-        let (k, seed, secret) = parse_score_gen_params(self.request)?;
+        let (secret_k, seed, secret, psk) =
+            parse_score_gen_params(self.request)?;
         // TODO: This should fetch the Bid from the tree once this
         // functionallity is enabled.
         let (bid, branch): (Bid, PoseidonBranch<17>) = unimplemented!();
@@ -53,7 +55,8 @@ where
         let score = Score::compute(
             &bid,
             &secret,
-            k,
+            &psk,
+            secret_k,
             *branch.root(),
             seed,
             latest_consensus_round,
@@ -62,7 +65,7 @@ where
         .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
         // Generate Prover ID
         let prover_id = bid.generate_prover_id(
-            k,
+            secret_k,
             seed,
             BlsScalar::from(latest_consensus_round),
             BlsScalar::from(latest_consensus_step),
@@ -72,12 +75,13 @@ where
         let mut circuit = BlindBidCircuit {
             bid,
             score,
-            secret_k: k,
-            secret,
+            secret_k,
             seed,
             latest_consensus_round: BlsScalar::from(latest_consensus_round),
             latest_consensus_step: BlsScalar::from(latest_consensus_step),
             branch: &branch,
+            secret,
+            psk,
         };
         let proof = gen_blindbid_proof(&mut circuit)
             .map_err(|e| Status::new(Code::Unknown, format!("{}", e)))?;
@@ -93,17 +97,20 @@ where
 // any of them isn't present (is `None`).
 fn parse_score_gen_params(
     request: &Request<GenerateScoreRequest>,
-) -> Result<(BlsScalar, BlsScalar, JubJubAffine), Status> {
+) -> Result<(BlsScalar, BlsScalar, JubJubScalar, PublicSpendKey), Status> {
     let k = encoding::as_status_err(BlsScalar::from_slice(
         &request.get_ref().k[..],
     ))?;
     let seed = encoding::as_status_err(BlsScalar::from_slice(
         &request.get_ref().seed[..],
     ))?;
-    let secret = encoding::as_status_err(JubJubAffine::from_slice(
+    let secret = encoding::as_status_err(JubJubScalar::from_slice(
         &request.get_ref().secret[..],
     ))?;
-    Ok((k, seed, secret))
+    let psk = encoding::as_status_err(PublicSpendKey::from_slice(
+        &request.get_ref().secret[..],
+    ))?;
+    Ok((k, seed, secret, psk))
 }
 
 // Generate a blindbid proof given a circuit instance loaded with the
