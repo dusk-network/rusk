@@ -10,8 +10,7 @@ use core::ops::DerefMut;
 use dusk_abi::Transaction;
 use dusk_blindbid::Bid;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, StealthAddress};
+use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use microkelvin::Nth;
 use phoenix_core::{Message, Note};
@@ -54,7 +53,7 @@ impl Contract {
         let eligibility = expiration + (EPOCH - (block_height % EPOCH));
 
         // Generate the bid
-        let mut bid = Bid::new(
+        let bid = Bid::new(
             message,
             hashed_secret,
             stealth_address,
@@ -209,8 +208,14 @@ impl Contract {
         };
 
         // Withdraw from Obfuscated call to retire the funds of the bidder.
+
+        // Partial withdraw of the Bid is not possible
+        let change = Message::default();
+
         let call = Call::withdraw_from_obfuscated(
             *bid.bid().message(),
+            *bid.bid().stealth_address(),
+            change,
             *bid.bid().stealth_address(),
             note,
             spend_proof,

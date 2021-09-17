@@ -16,7 +16,6 @@ use alloc::vec::Vec;
 use canonical::{Canon, CanonError, Sink, Source};
 use dusk_abi::{ContractState, ReturnValue};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubAffine;
 use dusk_pki::{PublicKey, StealthAddress};
 use dusk_schnorr::Signature;
 use phoenix_core::{Message, Note};
@@ -31,7 +30,7 @@ fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
     let mut source = Source::new(&bytes[..]);
 
     // read self.
-    let slf = Contract::decode(&mut source)?;
+    let _slf = Contract::decode(&mut source)?;
 
     // read query id
     let qid = QueryIndex::decode(&mut source)?;
