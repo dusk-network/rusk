@@ -438,21 +438,30 @@ mod transfer {
             let m_value = 100;
             let m = Message::new(rng, &m_r, &m_psk, m_value);
 
+            let c_r = JubJubScalar::random(rng);
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_psk = c_ssk.public_spend_key();
+            let c_value = 25;
+            let c = Message::new(rng, &c_r, &c_psk, c_value);
+
             let o_ssk = SecretSpendKey::random(rng);
             let o_vk = o_ssk.view_key();
             let o_psk = o_ssk.public_spend_key();
-            let o_value = 100;
+            let o_value = 75;
             let o_blinding_factor = JubJubScalar::random(rng);
             let o = Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
-            let mut circuit = WithdrawFromObfuscatedCircuit::new(
-                m_r,
-                &m_ssk,
-                &m,
-                &o,
-                Some(&o_vk),
-            )
-            .expect("Failed to generate circuit!");
+            let input = CircuitValueOpening::from_message(&m, &m_psk, &m_r)
+                .expect("Failed to generate WFO input");
+
+            let change = WithdrawFromObfuscatedChange::new(c, c_r, c_psk, true)
+                .expect("Failed to generate WFO change");
+
+            let output = CircuitValueOpening::from_note(&o, Some(&o_vk))
+                .expect("Failed to generate WFO output");
+
+            let mut circuit =
+                WithdrawFromObfuscatedCircuit::new(input, change, output);
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
