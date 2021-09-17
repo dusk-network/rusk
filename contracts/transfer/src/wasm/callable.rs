@@ -149,14 +149,35 @@ impl TransferContract {
         &mut self,
         message: Message,
         message_address: StealthAddress,
+        change: Message,
+        change_address: StealthAddress,
         output: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
         let address = dusk_abi::caller();
+
+        let (change_psk_a, change_psk_b) =
+            match rusk_abi::payment_info(address) {
+                PaymentInfo::Obfuscated(Some(k))
+                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
+
+                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
+                    (JubJubExtended::identity(), JubJubExtended::identity())
+                }
+
+                _ => panic!("The caller doesn't accept transparent notes"),
+            };
+
         let mut pi = Vec::with_capacity(4);
 
         pi.push(message.value_commitment().into());
+        pi.push(change.value_commitment().into());
         pi.push(output.value_commitment().into());
+        pi.push(change_psk_a.into());
+        pi.push(change_psk_b.into());
+        pi.push(change_address.pk_r().as_ref().into());
+        pi.push(change.nonce().into());
+        pi.extend(change.cipher().iter().map(|c| c.into()));
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
@@ -166,6 +187,9 @@ impl TransferContract {
             .expect(
             "Failed to take a message from the provided address/key mapping!",
         );
+
+        self.push_message(address, change_address, change)
+            .expect("Failed to append the chanve to the state!");
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
         match rusk_abi::payment_info(address) {

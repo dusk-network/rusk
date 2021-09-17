@@ -154,6 +154,8 @@ impl TransferWrapper {
     pub fn tx_withdraw_obfuscated(
         message: Message,
         message_address: StealthAddress,
+        change: Message,
+        change_address: StealthAddress,
         note: Note,
         proof: Vec<u8>,
     ) -> Transaction {
@@ -161,6 +163,8 @@ impl TransferWrapper {
             TX_WITHDRAW_OBFUSCATED,
             message,
             message_address,
+            change,
+            change_address,
             note,
             proof,
         ))
