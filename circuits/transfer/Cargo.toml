@@ -24,3 +24,28 @@ rand = "0.8"
 
 [features]
 builder = ["rusk-profile", "canonical_derive"]
+
+[[test]]
+name = "test-execute"
+path = "tests/execute.rs"
+required-features = ["builder"]
+
+[[test]]
+name = "test-stct"
+path = "tests/send_to_contract_transparent.rs"
+required-features = ["rusk-profile"]
+
+[[test]]
+name = "test-stco"
+path = "tests/send_to_contract_obfuscated.rs"
+required-features = ["rusk-profile"]
+
+[[test]]
+name = "test-wft"
+path = "tests/withdraw_from_transparent.rs"
+required-features = ["rusk-profile"]
+
+[[test]]
+name = "test-wfo"
+path = "tests/withdraw_from_obfuscated.rs"
+required-features = ["rusk-profile"]

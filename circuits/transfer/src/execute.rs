@@ -31,7 +31,7 @@ mod variants;
 
 pub use variants::*;
 
-#[cfg(any(test, feature = "builder"))]
+#[cfg(feature = "builder")]
 pub mod builder;
 
 /// The circuit responsible for creating a zero-knowledge proof
