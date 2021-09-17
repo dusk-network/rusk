@@ -9,6 +9,7 @@ mod execute;
 mod gadgets;
 mod send_to_contract_obfuscated;
 mod send_to_contract_transparent;
+mod types;
 mod withdraw_from_obfuscated;
 mod withdraw_from_transparent;
 
@@ -20,8 +21,11 @@ pub use error::Error;
 pub use execute::*;
 pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
-pub use withdraw_from_obfuscated::WithdrawFromObfuscatedCircuit;
+pub use types::{CircuitDeriveKey, CircuitValueOpening};
+pub use withdraw_from_obfuscated::{
+    WithdrawFromObfuscatedChange, WithdrawFromObfuscatedCircuit,
+};
 pub use withdraw_from_transparent::WithdrawFromTransparentCircuit;
 
-#[cfg(any(test, feature = "builder"))]
+#[cfg(feature = "builder")]
 pub use execute::builder;
