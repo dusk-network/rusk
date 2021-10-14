@@ -21,6 +21,9 @@ phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["c
 dusk-hamt = { version = "0.5.0-rc", default-features = false }
 microkelvin = "0.10.0-rc"
 
+[dev-dependencies]
+criterion = "0.3.5"
+
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 lazy_static = "1.4"
 rand = "0.8"
@@ -31,3 +34,7 @@ rusk-vm = "0.6"
 
 [features]
 no-bridge = []
+
+[[bench]]
+name = "transfer"
+harness = false
