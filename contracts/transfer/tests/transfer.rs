@@ -10,9 +10,7 @@ use transfer_circuits::{
     WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
 
-mod wrapper;
-
-use wrapper::TransferWrapper;
+use test_utils::TransferWrapper;
 
 #[test]
 fn send_to_contract_transparent() {

@@ -23,6 +23,7 @@ microkelvin = "0.10.0-rc"
 
 [dev-dependencies]
 criterion = "0.3.5"
+test-utils = { path = "test-utils" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 lazy_static = "1.4"
