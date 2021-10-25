@@ -364,7 +364,7 @@ fn withdraw_from_obfuscated() {
         &withdraw,
         Some(&withdraw_vk),
     )
-        .unwrap();
+    .unwrap();
 
     let wfo_proof = wrapper.generate_proof(wfo_circuit);
     let wfo_tx = TransferWrapper::tx_withdraw_obfuscated(
