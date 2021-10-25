@@ -104,18 +104,17 @@ fn withdraw_from_transparent(c: &mut Criterion) {
 
     c.bench_function("withdraw transparent", |b| {
         b.iter(|| {
-            wrapper
-                .send_to_contract_transparent(
-                    black_box(&[unspent_note]),
-                    black_box(&[genesis_ssk]),
-                    black_box(&refund_ssk),
-                    black_box(&remainder_psk),
-                    black_box(true),
-                    black_box(gas_limit),
-                    black_box(gas_price),
-                    black_box(alice),
-                    black_box(alice_value),
-                )
+            wrapper.send_to_contract_transparent(
+                black_box(&[unspent_note]),
+                black_box(&[genesis_ssk]),
+                black_box(&refund_ssk),
+                black_box(&remainder_psk),
+                black_box(true),
+                black_box(gas_limit),
+                black_box(gas_price),
+                black_box(alice),
+                black_box(alice_value),
+            )
         })
     });
 }
@@ -141,19 +140,18 @@ fn withdraw_from_obfuscated(c: &mut Criterion) {
 
     c.bench_function("withdraw obfuscated", |b| {
         b.iter(|| {
-            wrapper
-                .send_to_contract_obfuscated(
-                    black_box(&[unspent_note]),
-                    black_box(&[genesis_ssk]),
-                    black_box(&refund_ssk),
-                    black_box(&remainder_psk),
-                    black_box(true),
-                    black_box(gas_limit),
-                    black_box(gas_price),
-                    black_box(account),
-                    black_box(&message_psk),
-                    black_box(account_value),
-                )
+            wrapper.send_to_contract_obfuscated(
+                black_box(&[unspent_note]),
+                black_box(&[genesis_ssk]),
+                black_box(&refund_ssk),
+                black_box(&remainder_psk),
+                black_box(true),
+                black_box(gas_limit),
+                black_box(gas_price),
+                black_box(account),
+                black_box(&message_psk),
+                black_box(account_value),
+            )
         })
     });
 }

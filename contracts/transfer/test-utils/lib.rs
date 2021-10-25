@@ -206,8 +206,8 @@ impl TransferWrapper {
     }
 
     pub fn generate_proof<C>(&mut self, mut circuit: C) -> Vec<u8>
-        where
-            C: Circuit,
+    where
+        C: Circuit,
     {
         let (pk, _) = Self::circuit_keys(&C::CIRCUIT_ID);
 
@@ -400,7 +400,7 @@ impl TransferWrapper {
             vd.pi_pos(),
             b"dusk-network",
         )
-            .unwrap();
+        .unwrap();
 
         let proof = proof.to_bytes().to_vec();
 
@@ -486,7 +486,7 @@ impl TransferWrapper {
         let mut stct_proof = SendToContractTransparentCircuit::new(
             fee, crossover, &refund_vk, address, signature,
         )
-            .unwrap();
+        .unwrap();
         let (pk, _) =
             Self::circuit_keys(&SendToContractTransparentCircuit::CIRCUIT_ID);
         let spend_proof_stct =
@@ -498,16 +498,16 @@ impl TransferWrapper {
             value,
             spend_proof_stct,
         )
-            .to_execute(
-                self.transfer,
-                anchor,
-                nullifiers,
-                fee,
-                Some(crossover),
-                outputs,
-                spend_proof_execute,
-            )
-            .unwrap();
+        .to_execute(
+            self.transfer,
+            anchor,
+            nullifiers,
+            fee,
+            Some(crossover),
+            outputs,
+            spend_proof_execute,
+        )
+        .unwrap();
 
         self.network
             .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
@@ -567,7 +567,7 @@ impl TransferWrapper {
             message_r,
             address,
         )
-            .unwrap();
+        .unwrap();
 
         let (pk, _) =
             Self::circuit_keys(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
@@ -582,16 +582,16 @@ impl TransferWrapper {
             message_address,
             spend_proof_stco,
         )
-            .to_execute(
-                self.transfer,
-                anchor,
-                nullifiers,
-                fee,
-                Some(crossover),
-                outputs,
-                spend_proof_execute,
-            )
-            .unwrap();
+        .to_execute(
+            self.transfer,
+            anchor,
+            nullifiers,
+            fee,
+            Some(crossover),
+            outputs,
+            spend_proof_execute,
+        )
+        .unwrap();
 
         self.network
             .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
