@@ -527,7 +527,7 @@ impl TransferWrapper {
         contract: ContractId,
         message_psk: &PublicSpendKey,
         value: u64,
-    ) -> Result<JubJubScalar, VMError> {
+    ) -> Result<(u64, JubJubScalar), VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
@@ -595,6 +595,6 @@ impl TransferWrapper {
 
         self.network
             .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
-        Ok(message_r)
+        Ok((self.gas.spent(), message_r))
     }
 }
