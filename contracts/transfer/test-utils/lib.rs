@@ -34,7 +34,7 @@ const TX_WITHDRAW_TO_CONTRACT: u8 = 0x04;
 
 const TRANSFER_TREE_DEPTH: usize = 17;
 const TRANSFER: &[u8] = include_bytes!(
-    "../../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
 );
 const ALICE: &[u8] =
     include_bytes!("alice/target/wasm32-unknown-unknown/release/alice.wasm");
@@ -353,34 +353,34 @@ impl TransferWrapper {
         }
 
         let (fee, crossover) = match refund_vk {
-                Some(vk) => {
-                    let psk = vk.public_spend_key();
-                    let (fee, crossover) = self.fee_crossover(
-                        gas_limit,
-                        gas_price,
-                        &psk,
-                        crossover_value,
-                    );
+            Some(vk) => {
+                let psk = vk.public_spend_key();
+                let (fee, crossover) = self.fee_crossover(
+                    gas_limit,
+                    gas_price,
+                    &psk,
+                    crossover_value,
+                );
 
-                    execute_proof
-                        .set_fee_crossover(&fee, &crossover, vk)
-                        .unwrap();
+                execute_proof
+                    .set_fee_crossover(&fee, &crossover, vk)
+                    .unwrap();
 
-                    (fee, Some(crossover))
-                }
+                (fee, Some(crossover))
+            }
 
-                None if crossover_value > 0 => panic!("The refund SSK is mandatory for transactions with a crossover value!"),
+            None if crossover_value > 0 => panic!("The refund SSK is mandatory for transactions with a crossover value!"),
 
-                None => {
-                    let psk =
-                        SecretSpendKey::random(&mut self.rng).public_spend_key();
-                    let (fee, _) =
-                        self.fee_crossover(gas_limit, gas_price, &psk, 0);
-                    execute_proof.set_fee(&fee).unwrap();
+            None => {
+                let psk =
+                    SecretSpendKey::random(&mut self.rng).public_spend_key();
+                let (fee, _) =
+                    self.fee_crossover(gas_limit, gas_price, &psk, 0);
+                execute_proof.set_fee(&fee).unwrap();
 
-                    (fee, None)
-                }
-            };
+                (fee, None)
+            }
+        };
 
         execute_proof.compute_signatures(&mut self.rng);
 
@@ -459,7 +459,7 @@ impl TransferWrapper {
         gas_price: u64,
         contract: ContractId,
         value: u64,
-    ) -> Result<(), VMError> {
+    ) -> Result<u64, VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
@@ -510,7 +510,8 @@ impl TransferWrapper {
         .unwrap();
 
         self.network
-            .transact::<_, ()>(self.transfer, call, &mut self.gas)
+            .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
+        Ok(self.gas.spent())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -526,7 +527,7 @@ impl TransferWrapper {
         contract: ContractId,
         message_psk: &PublicSpendKey,
         value: u64,
-    ) -> Result<JubJubScalar, VMError> {
+    ) -> Result<(u64, JubJubScalar), VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
         let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
@@ -594,7 +595,6 @@ impl TransferWrapper {
 
         self.network
             .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
-
-        Ok(message_r)
+        Ok((self.gas.spent(), message_r))
     }
 }
