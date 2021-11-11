@@ -32,9 +32,7 @@ use map::KeyToIdxMap;
 
 /// `VerifierKey` used by the `BidCorrectnessCircuit` to verify a
 /// Bid correctness `Proof` using the PLONK proving systyem.
-pub const BID_CORRECTNESS_VD: &[u8] = core::include_bytes!(
-    "../../../.rusk/keys/9213f1d9a165da07ceb3eafebefbd1216bb80ab151e7e1ae888ad4670c2bef70.vd"
-);
+pub const BID_CORRECTNESS_VD: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/9213f1d9a165da07ceb3eafebefbd1216bb80ab151e7e1ae888ad4670c2bef70.vd"));
 
 /// OPCODEs for each contract method
 pub mod ops {
@@ -51,12 +49,15 @@ pub mod ops {
 pub mod contract_constants {
     use rusk_abi::PaymentInfo;
 
-    /// Value of an epoch in blocks. Unit computable against block_height values.
+    /// Value of an epoch in blocks. Unit computable against block_height
+    /// values.
     pub const EPOCH: u64 = 2_160;
-    /// Amount of blocks it takes for the bid to be eligible to participate in the consensus after
-    /// the originating bid transaction has been included in the block.
+    /// Amount of blocks it takes for the bid to be eligible to participate in
+    /// the consensus after the originating bid transaction has been
+    /// included in the block.
     pub const MATURITY_PERIOD: u64 = 2 * EPOCH;
-    /// Amount of blocks the bid can be eligible to participate in the consensus before expiring.
+    /// Amount of blocks the bid can be eligible to participate in the consensus
+    /// before expiring.
     pub const VALIDITY_PERIOD: u64 = 56 * EPOCH;
     /// Height of the `BidTree` used inside of the BidContract in order to
     /// store the `Bid`s and provide merkle openings to them.
