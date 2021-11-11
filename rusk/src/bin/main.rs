@@ -161,8 +161,8 @@ async fn startup_with_uds(
 
     let incoming = {
         async_stream::stream! {
-            while let item = uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await {
-                yield item;
+            loop {
+                yield uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await
             }
         }
     };

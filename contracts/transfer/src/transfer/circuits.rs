@@ -25,8 +25,8 @@ const VD_EXEC_4_2: &[u8] = include_bytes!("../../../../.rusk/keys/4dd500add96f7a
 
 const VD_STCT: &[u8] = include_bytes!("../../../../.rusk/keys/5e80819a6fb131d3eb9631d53cc31e17dcdf300d8f998ada58d972cba1bb666e.vd");
 const VD_STCO: &[u8] = include_bytes!("../../../../.rusk/keys/119f07727cd7cb33aad7e0d53f22fdb398cbe7cb35dd0ad752e4d1fa5abf2799.vd");
-const VD_WDFT: &[u8] = include_bytes!("../../../../.rusk/keys/73abd6111a0fa21706a7b726f9a42ba6d38f2d67ec14773fd607049d6d38dc80.vd");
-const VD_WDFO: &[u8] = include_bytes!("../../../../.rusk/keys/ed244c4c269ad6b69626115d319995fe42e546251f1e51fa214fbe6e3ca65a6c.vd");
+const VD_WDFT: &[u8] = include_bytes!("../../../../.rusk/keys/ca00902797ac1d0cdf4d1b67e6959b2d79c4837c18bb60c49cffdfa5530f552a.vd");
+const VD_WDFO: &[u8] = include_bytes!("../../../../.rusk/keys/00001fbf781109d2867196fc5afb9b687e1394a414cf2bb3510af2bc199b9033.vd");
 
 impl TransferContract {
     pub const fn verifier_data_execute(

@@ -17,7 +17,18 @@ use tonic::transport::server::Connected;
 #[derive(Debug)]
 pub struct UnixStream(pub tokio::net::UnixStream);
 
-impl Connected for UnixStream {}
+#[derive(Clone)]
+pub struct UnixStreamInfo {
+    // Metadata about your connection
+}
+
+impl Connected for UnixStream {
+    type ConnectInfo = UnixStreamInfo;
+
+    fn connect_info(&self) -> Self::ConnectInfo {
+        UnixStreamInfo {}
+    }
+}
 
 impl AsyncRead for UnixStream {
     fn poll_read(

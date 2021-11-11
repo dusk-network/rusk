@@ -19,7 +19,7 @@ dusk-poseidon = { version = "0.22.0-rc", default-features = false, features = ["
 dusk-pki = { version = "0.8.0-rc", default-features = false }
 phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["canon"] }
 dusk-hamt = { version = "0.5.0-rc", default-features = false }
-microkelvin = "0.10.0-rc"
+microkelvin = { version = "0.10.0-rc", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 lazy_static = "1.4"

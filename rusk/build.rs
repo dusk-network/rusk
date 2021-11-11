@@ -88,9 +88,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
-    if option_env!("RUSK_PROFILE_PATH").is_none() {
-        panic!("RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
-    };
+    assert!(option_env!("RUSK_PROFILE_PATH").is_some(),
+        "RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
 
     // This will enforce the usage and therefore the cache / generation
     // of the CRS even if it's not used to compiles circuits inside the

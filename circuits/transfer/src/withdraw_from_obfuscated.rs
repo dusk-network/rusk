@@ -69,7 +69,7 @@ impl WithdrawFromObfuscatedChange {
     }
 
     pub fn stealth_address_pk_r(&self) -> &JubJubExtended {
-        &self.stealth_address.pk_r().as_ref()
+        self.stealth_address.pk_r().as_ref()
     }
 
     pub const fn nonce(&self) -> &BlsScalar {
@@ -103,13 +103,13 @@ impl WithdrawFromObfuscatedCircuit {
 
     pub fn public_inputs(&self) -> Vec<PublicInputValue> {
         let mut pi = vec![
-            self.input.commitment().clone().into(),
-            self.change.commitment().clone().into(),
-            self.output.commitment().clone().into(),
-            self.change.derive_key().public_a().clone().into(),
-            self.change.derive_key().public_b().clone().into(),
-            self.change.stealth_address_pk_r().clone().into(),
-            self.change.nonce().clone().into(),
+            (*self.input.commitment()).into(),
+            (*self.change.commitment()).into(),
+            (*self.output.commitment()).into(),
+            (*self.change.derive_key().public_a()).into(),
+            (*self.change.derive_key().public_b()).into(),
+            (*self.change.stealth_address_pk_r()).into(),
+            (*self.change.nonce()).into(),
         ];
 
         pi.extend(self.change.cipher().iter().map(|c| (*c).into()));
