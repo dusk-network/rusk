@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `dusk-schnorr` to `0.8.0-rc` [#327]
 - Update the blindbid service to use the new API of `dusk-blindbid` [#327]
 
+### Removed
+
+- Remove bid and blindbid contracts and circuits [#369]
+
 ## [0.2.0] - 2021-05-19
 ### Added
 
