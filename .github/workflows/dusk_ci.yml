@@ -5,7 +5,7 @@ name: Continuous integration
 jobs:
   analyze:
     name: Dusk Analyzer
-    runs-on: ubuntu-latest
+    runs-on: core
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -22,29 +22,32 @@ jobs:
 
   test_nightly:
     name: Nightly tests
-    runs-on: ubuntu-latest
+    runs-on: core
     steps:
       - uses: actions/checkout@v2
-
-      - name: Cache .rusk profile
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-rusk-profile-v2
-        with:
-          path: ${{ github.workspace }}/.rusk
-          key: ${{ runner.os }}-build-${{ env.cache-name }}
-          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
-
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
-      - run: RUSK_PROFILE_PATH=$GITHUB_WORKSPACE make test
+
+      - name: Cache Cargo home
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-cargo-home
+        with:
+          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{env.cache-name}}-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - run: RUSK_PROFILE_PATH="/var/opt/build-cache" make -j test
 
   fmt:
     name: Rustfmt
-    runs-on: ubuntu-latest
+    runs-on: core
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
