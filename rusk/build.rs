@@ -4,18 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bid_circuits::BidCorrectnessCircuit;
-use blindbid_circuits::BlindBidCircuit;
-use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_pki::SecretSpendKey;
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
-use phoenix_core::Message;
 use profile_tooling::CircuitLoader;
-use rand::Rng;
 use tracing::{info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -100,22 +93,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tonic_build::compile_protos("../schema/rusk.proto")?;
 
     // Run the rusk-profile Circuit-keys checks
-    use bid::BidCircuitLoader;
-    use blindbid::BlindBidCircuitLoader;
     use transfer::*;
 
-    // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
-    // set.
-    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
-        info!("DELETE_RUSK_KEYS env set!");
-        info!("Starting `keys/` folder wipe process..");
-        rusk_profile::clear_all_keys()?;
-        info!("Keys folder contents were removed successfully!");
-    };
-
     profile_tooling::run_circuit_keys_checks(vec![
-        &BidCircuitLoader {},
-        &BlindBidCircuitLoader {},
         &StctCircuitLoader {},
         &StcoCircuitLoader {},
         &WftCircuitLoader {},
@@ -135,133 +115,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ])?;
 
     Ok(())
-}
-
-mod bid {
-    use super::*;
-
-    pub struct BidCircuitLoader;
-
-    impl CircuitLoader for BidCircuitLoader {
-        fn circuit_id(&self) -> &[u8; 32] {
-            &BidCorrectnessCircuit::CIRCUIT_ID
-        }
-
-        fn circuit_name(&self) -> &'static str {
-            "BidCorrectness"
-        }
-
-        fn compile_circuit(
-            &self,
-        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-            let pub_params = &PUB_PARAMS;
-            let value = JubJubScalar::from(100000_u64);
-            let blinder = JubJubScalar::from(50000_u64);
-
-            let c = JubJubAffine::from(
-                (GENERATOR_EXTENDED * value)
-                    + (GENERATOR_NUMS_EXTENDED * blinder),
-            );
-
-            let mut circuit = BidCorrectnessCircuit {
-                commitment: c,
-                value,
-                blinder,
-            };
-
-            let (pk, vd) = circuit.compile(pub_params)?;
-            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
-        }
-    }
-}
-
-mod blindbid {
-    use super::*;
-    pub struct BlindBidCircuitLoader;
-    impl CircuitLoader for BlindBidCircuitLoader {
-        fn circuit_id(&self) -> &[u8; 32] {
-            &BlindBidCircuit::CIRCUIT_ID
-        }
-
-        fn circuit_name(&self) -> &'static str {
-            "BlindBid"
-        }
-
-        fn compile_circuit(
-            &self,
-        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-            let pub_params = &PUB_PARAMS;
-
-            // Generate a correct Bid
-            let secret = JubJubScalar::random(&mut rand::thread_rng());
-            let secret_k = BlsScalar::random(&mut rand::thread_rng());
-            let (bid, psk) = random_bid(&secret, secret_k);
-
-            // Generate fields for the Bid & required by the compute_score
-            let consensus_round_seed = 50u64;
-            let latest_consensus_round = 50u64;
-            let latest_consensus_step = 50u64;
-
-            // Extract the branch
-            let branch = PoseidonBranch::<17>::default();
-
-            // Generate a `Score` for our Bid with the consensus parameters
-            let score = Score::compute(
-                &bid,
-                &secret,
-                &psk,
-                secret_k,
-                *branch.root(),
-                BlsScalar::from(consensus_round_seed),
-                latest_consensus_round,
-                latest_consensus_step,
-            )
-            .expect("Score gen error");
-
-            let mut circuit = BlindBidCircuit {
-                bid,
-                score,
-                secret_k,
-                seed: BlsScalar::from(consensus_round_seed),
-                latest_consensus_round: BlsScalar::from(latest_consensus_round),
-                latest_consensus_step: BlsScalar::from(latest_consensus_step),
-                branch: &branch,
-                secret,
-                psk,
-            };
-
-            let (pk, vd) = circuit.compile(pub_params)?;
-            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
-        }
-    }
-
-    fn random_bid(
-        secret: &JubJubScalar,
-        secret_k: BlsScalar,
-    ) -> (Bid, PublicSpendKey) {
-        let mut rng = rand::thread_rng();
-        let psk = PublicSpendKey::from(SecretSpendKey::new(
-            JubJubScalar::one(),
-            -JubJubScalar::one(),
-        ));
-        let value: u64 =
-            (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-        // Set the timestamps as the max values so the proofs do not fail
-        // for them (never expired or non-elegible).
-        let elegibility_ts = u64::MAX;
-        let expiration_ts = u64::MAX;
-
-        (
-            Bid::new(
-                Message::new(&mut rng, secret, &psk, value),
-                secret_k,
-                psk.gen_stealth_address(secret),
-                elegibility_ts,
-                expiration_ts,
-            ),
-            psk,
-        )
-    }
 }
 
 mod transfer {

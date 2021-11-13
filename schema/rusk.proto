@@ -3,8 +3,6 @@ package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "echo.proto";
-import "bid.proto";
-import "blindbid.proto";
 import "transaction.proto";
 import "keys.proto";
 import "transfer.proto";

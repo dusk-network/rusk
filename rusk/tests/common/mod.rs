@@ -10,7 +10,6 @@ pub mod unix;
 
 use super::SOCKET_PATH;
 use futures::TryFutureExt;
-use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
@@ -50,8 +49,8 @@ impl AsyncTestContext for TestContext {
         let rusk = Rusk::default();
 
         let incoming = async_stream::stream! {
-            while let item = uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await {
-                yield item;
+            loop {
+                yield uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await
             }
         };
 
@@ -60,7 +59,6 @@ impl AsyncTestContext for TestContext {
         // Result. See: https://github.com/rust-lang/rust/issues/62290
         tokio::spawn(async move {
             Server::builder()
-                .add_service(BlindBidServiceServer::new(rusk))
                 .add_service(KeysServer::new(rusk))
                 .add_service(EchoerServer::new(rusk))
                 .serve_with_incoming(incoming)

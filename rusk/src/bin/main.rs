@@ -10,7 +10,6 @@ mod version;
 
 use clap::{App, Arg};
 use futures::TryFutureExt;
-use rusk::services::blindbid::BlindBidServiceServer;
 use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
@@ -156,7 +155,6 @@ async fn startup_with_uds(
     let rusk = Rusk::default();
 
     let echoer = EchoerServer::new(rusk);
-    let blindbid = BlindBidServiceServer::new(rusk);
     let keys = KeysServer::new(rusk);
 
     let incoming = {
@@ -169,7 +167,6 @@ async fn startup_with_uds(
 
     Server::builder()
         .add_service(echoer)
-        .add_service(blindbid)
         .add_service(keys)
         .serve_with_incoming(incoming)
         .await?;
@@ -188,13 +185,11 @@ async fn startup_with_tcp_ip(
     let rusk = Rusk::default();
 
     let echoer = EchoerServer::new(rusk);
-    let blindbid = BlindBidServiceServer::new(rusk);
     let keys = KeysServer::new(rusk);
 
     // Build the Server with the `Echo` service attached to it.
     Ok(Server::builder()
         .add_service(echoer)
-        .add_service(blindbid)
         .add_service(keys)
         .serve(addr)
         .await?)

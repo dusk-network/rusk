@@ -16,13 +16,13 @@ use dusk_pki::PublicKey;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
-/// Epoch used for stake and bid operations
+/// Epoch used for stake operations
 pub const EPOCH: u32 = 2160;
 
-/// Maturity of the stake and bid
+/// Maturity of the stake
 pub const MATURITY: u32 = 2 * EPOCH;
 
-/// Validity of the stake and bid
+/// Validity of the stake
 pub const VALIDITY: u32 = 56 * EPOCH;
 
 pub const MINIMUM_STAKE: u64 = 100_000_000_000_000;
