@@ -27,7 +27,6 @@ dusk-poseidon = { version = "0.22", features = ["canon"] }
 dusk-plonk = { version = "0.8", features = ["canon"] }
 dusk-bls12_381 = { version = "0.8", features = ["canon"] }
 dusk-jubjub = { version = "0.10", features = ["canon"] }
-dusk-blindbid = "0.10.0-rc"
 dusk-pki = "0.8"
 phoenix-core = "0.14.0-rc"
 dusk-schnorr = "0.8.0-rc"
@@ -60,7 +59,6 @@ rustc_tools_util = "0.2"
 dusk-bytes = "0.1"
 dusk-plonk = { version = "0.8", features = ["canon", "std"] }
 dusk-poseidon = { version = "0.22", features=["canon"] }
-dusk-blindbid = "0.10.0-rc"
 dusk-pki = "0.8"
 phoenix-core = "0.14.0-rc"
 anyhow = "1.0"
