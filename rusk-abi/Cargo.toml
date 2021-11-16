@@ -29,7 +29,7 @@ rusk-profile = { path = "../rusk-profile" }
 blake2b_simd = { version = "0.3", default-features = false }
 
 [dev-dependencies]
-rusk-vm = "0.6.0-rc"
+rusk-vm = "0.7.0-rc"
 dusk-bytes = "0.1"
 host_fn = { path = "tests/contracts/host_fn" }
 rand_core = { version = "0.6", features = ["std"] }
