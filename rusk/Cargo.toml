@@ -43,7 +43,6 @@ rusk-profile = { path = "../rusk-profile" }
 rusk-vm = "0.7.0-rc"
 canonical = "0.6"
 canonical_derive = "0.6"
-wasmi = "0.6"
 dusk-bytes = "0.1"
 
 [dev-dependencies]
