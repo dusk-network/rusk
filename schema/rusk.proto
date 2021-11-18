@@ -3,36 +3,51 @@ package rusk;
 option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "echo.proto";
+import "provisioner.proto";
 import "transaction.proto";
-import "keys.proto";
-import "transfer.proto";
-import "stake.proto";
-import "reward.proto";
-
-message VerifyStateTransitionRequest {
-    repeated Transaction txs = 1;
-    fixed64 height = 2;
-    bytes seed = 3;
-}
-
-message VerifyStateTransitionResponse {
-    repeated fixed64 failed_calls = 1;
-}
 
 message ExecuteStateTransitionRequest {
     repeated Transaction txs = 1;
-    fixed64 height = 2;
-    bytes seed = 3;
+    fixed64 block_gas_limit = 2;
+    fixed64 block_height = 3;
 }
 
 message ExecuteStateTransitionResponse {
     bool success = 1;
-    string error_message = 2;
+    repeated Transaction txs = 2;
+    bytes state_root = 3;
 }
 
-message Provisioner {
-    bytes public_key_bls = 1;
-    repeated Stake stakes = 2;
+message VerifyStateTransitionRequest {
+    repeated Transaction txs = 1;
+    fixed64 block_gas_limit = 2;
+    fixed64 block_height = 3;
+}
+
+message VerifyStateTransitionResponse {
+    bool success = 1;
+}
+
+message AcceptRequest {
+    repeated Transaction txs = 1;
+    fixed64 block_height = 2;
+    bytes state_root = 3;
+}
+
+message AcceptResponse {
+    bool success = 1;
+    bytes state_root = 2;
+}
+
+message FinalizeRequest {
+    repeated Transaction txs = 1;
+    fixed64 block_height = 2;
+    bytes state_root = 3;
+}
+
+message FinalizeResponse {
+    bool success = 1;
+    bytes state_root = 2;
 }
 
 message GetProvisionersRequest {}
@@ -41,8 +56,25 @@ message GetProvisionersResponse {
     repeated Provisioner provisioners = 1;
 }
 
+message GetEphemeralStateRootRequest {}
+
+message GetEphemeralStateRootResponse {
+    bytes state_root = 1;
+}
+
+message GetFinalizedStateRootRequest {}
+
+message GetFinalizedStateRootResponse {
+    bytes state_root = 1;
+}
+
 service State {
-    rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
+    rpc Echo(EchoRequest) returns (EchoResponse) {}
     rpc ExecuteStateTransition(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
+    rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
+    rpc Accept(AcceptRequest) returns (AcceptResponse) {}
+    rpc Finalize(FinalizeRequest) returns (FinalizeResponse) {}
     rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
+    rpc GetEphemeralStateRoot(GetEphemeralStateRootRequest) returns (GetEphemeralStateRootResponse) {}
+    rpc GetFinalizedStateRoot(GetFinalizedStateRootRequest) returns (GetFinalizedStateRootResponse) {}
 }
