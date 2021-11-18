@@ -9,7 +9,3 @@ message EchoRequest {
 message EchoResponse {
     string message = 1;
 }
-
-service Echoer {
-    rpc Echo (EchoRequest) returns (EchoResponse);
-}

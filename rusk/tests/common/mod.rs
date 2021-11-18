@@ -10,7 +10,6 @@ pub mod unix;
 
 use super::SOCKET_PATH;
 use futures::TryFutureExt;
-use rusk::services::echoer::EchoerServer;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
 use std::convert::TryFrom;
@@ -60,7 +59,6 @@ impl AsyncTestContext for TestContext {
         tokio::spawn(async move {
             Server::builder()
                 .add_service(KeysServer::new(rusk))
-                .add_service(EchoerServer::new(rusk))
                 .serve_with_incoming(incoming)
                 .await
                 .unwrap();
