@@ -41,7 +41,7 @@ rustc_tools_util = "0.2"
 rand = "0.8"
 lazy_static = "1.4"
 rusk-profile = { path = "../rusk-profile" }
-rusk-vm = { path = "../../rusk-vm" }
+rusk-vm = "0.8.0"
 canonical = "0.6"
 canonical_derive = "0.6"
 wasmi = "0.6"
