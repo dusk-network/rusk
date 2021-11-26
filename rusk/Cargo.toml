@@ -41,12 +41,14 @@ rustc_tools_util = "0.2"
 rand = "0.8"
 lazy_static = "1.4"
 rusk-profile = { path = "../rusk-profile" }
-rusk-vm = "0.6"
+rusk-vm = { path = "../../rusk-vm" }
 canonical = "0.6"
 canonical_derive = "0.6"
 wasmi = "0.6"
 dusk-bytes = "0.1"
 blindbid-circuits = { path = "../circuits/blindbid" }
+toml = "0.5.8"
+serde = { version = "1.0.130", features = ["derive"] }
 
 [dev-dependencies]
 tower = "0.4"

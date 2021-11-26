@@ -1,0 +1,28 @@
+# version of the schedule
+version = 0
+
+# Regular gas cost for one Wasm operation
+regular_op_cost = 1
+
+# Gas cost for adding one page of memory
+grow_mem_cost = 1
+
+# Maximum stack height
+max_stack_height = 65536 # = 64 * 1024
+
+# Maximum table size
+max_table_size = 16384 # = 16 * 1024
+
+# If `true`, all float operations are forbidden
+has_forbidden_floats = true
+
+#has_grow_cost = true
+has_metering = true
+has_table_size_limit = true
+
+# Optionally sets the Gas cost for different instruction types.
+# If set, this will override the regular operation costs
+# for all operations of the specified type.
+# To find out which operations belong to corresponding types, refer to:
+# https://github.com/paritytech/wasm-utils/blob/master/src/rules.rs
+per_type_op_cost = { bit = 1, add = 1, mul = 1, div = 1, load = 1, store = 1, const = 1, local = 1, global = 1, flow = 1, integer_comp = 1, float_comp = 1, float = 1, conversion = 1, float_conversion = 1, reinterpret = 1, unreachable = 1, nop = 1, current_mem = 1, grow_mem = 1 }

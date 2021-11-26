@@ -8,6 +8,7 @@ use tracing::info;
 pub mod encoding;
 pub mod services;
 pub mod transaction;
+pub mod schedule_loader;
 
 pub use rusk_vm as vm;
 
