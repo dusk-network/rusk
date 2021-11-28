@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod common;
-pub mod services;
 pub mod schedule;
+pub mod services;
 
 pub use common::TestContext;
 use lazy_static::lazy_static;
