@@ -5,11 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 
-use rusk::schedule_loader::{ScheduleLoader, Error::*};
+use rusk::schedule::{self, Error::*};
 
 #[test]
 fn valid_schedule_file() {
-    let schedule = ScheduleLoader::load("tests/schedule/schedule.toml").unwrap();
+    let schedule = schedule::Loader::load("tests/schedule/schedule.toml").unwrap();
     assert_eq!(
         schedule.max_table_size,
         16384
@@ -19,7 +19,7 @@ fn valid_schedule_file() {
 #[test]
 fn missing_schedule_file() {
     assert!(matches!(
-        ScheduleLoader::load("missing_schedule.toml"),
+        schedule::Loader::load("missing_schedule.toml"),
         Err(ScheduleLoaderError(_))
     ));
 }
@@ -27,7 +27,8 @@ fn missing_schedule_file() {
 #[test]
 fn invalid_schedule_file() {
     assert!(matches!(
-        ScheduleLoader::load("tests/schedule/invalid_schedule.toml"),
+        schedule::Loader::load("tests/schedule/invalid_schedule.toml"),
         Err(ScheduleDeserializationError(_))
     ));
 }
+

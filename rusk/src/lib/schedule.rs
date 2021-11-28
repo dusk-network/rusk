@@ -16,9 +16,9 @@ pub enum Error {
     ScheduleDeserializationError(toml::de::Error)
 }
 
-pub struct ScheduleLoader {}
+pub struct Loader {}
 
-impl ScheduleLoader {
+impl Loader {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Schedule, Error> {
         let schedule_string = fs::read_to_string(path)
             .map_err(Error::ScheduleLoaderError)?;

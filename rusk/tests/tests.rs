@@ -6,6 +6,7 @@
 
 pub mod common;
 pub mod services;
+pub mod schedule;
 
 pub use common::TestContext;
 use lazy_static::lazy_static;
