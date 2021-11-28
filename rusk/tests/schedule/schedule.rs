@@ -9,7 +9,7 @@ use rusk::schedule::{self, Error::*};
 
 #[test]
 fn valid_schedule_file() {
-    let schedule = schedule::Loader::load("tests/schedule/schedule.toml").unwrap();
+    let schedule = schedule::Loader::load("tests/resources/schedule.toml").unwrap();
     assert_eq!(
         schedule.max_table_size,
         16384
@@ -27,7 +27,7 @@ fn missing_schedule_file() {
 #[test]
 fn invalid_schedule_file() {
     assert!(matches!(
-        schedule::Loader::load("tests/schedule/invalid_schedule.toml"),
+        schedule::Loader::load("tests/resources/invalid_schedule.toml"),
         Err(ScheduleDeserializationError(_))
     ));
 }
