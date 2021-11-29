@@ -2,8 +2,8 @@
 name = "rusk"
 version = "0.2.0"
 authors = [
-  "CPerezz <carlos@dusk.network>", 
-  "zer0 <matteo@dusk.network>", 
+  "CPerezz <carlos@dusk.network>",
+  "zer0 <matteo@dusk.network>",
   "Victor Lopez <victor@dusk.network>",
   "Jules de Smit <jules@dusk.network>",
   "Luke Pearson <luke@dusk.network>"
@@ -48,7 +48,6 @@ wasmi = "0.6"
 dusk-bytes = "0.1"
 blindbid-circuits = { path = "../circuits/blindbid" }
 toml = "0.5.8"
-serde = { version = "1.0.130", features = ["derive"] }
 
 [dev-dependencies]
 tower = "0.4"
