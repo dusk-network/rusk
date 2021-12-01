@@ -90,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     lazy_static::initialize(&PUB_PARAMS);
 
     // Compile protos for tonic
-    tonic_build::compile_protos("../schema/rusk.proto")?;
+    tonic_build::compile_protos("../schema/state.proto")?;
 
     // Run the rusk-profile Circuit-keys checks
     use transfer::*;
