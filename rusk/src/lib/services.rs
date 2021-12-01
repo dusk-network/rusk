@@ -4,9 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use tonic::{Request, Response, Status};
+
 pub mod network;
 pub mod pki;
-use tonic::{Request, Response, Status};
+pub mod state;
 
 pub mod rusk_proto {
     tonic::include_proto!("rusk");
