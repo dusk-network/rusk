@@ -1,6 +1,5 @@
 syntax = "proto3";
 package rusk;
-option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 message BN256Point {
     bytes data = 1;
