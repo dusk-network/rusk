@@ -1,6 +1,5 @@
 syntax = "proto3";
 package rusk;
-option go_package = "github.com/dusk-network/rusk-schema;rusk";
 
 import "stake.proto";
 
