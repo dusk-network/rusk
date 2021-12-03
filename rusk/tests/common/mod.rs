@@ -10,6 +10,8 @@ pub mod unix;
 
 use super::SOCKET_PATH;
 use futures::TryFutureExt;
+use rusk::services::network::NetworkServer;
+use rusk::services::network::RuskNetwork;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
 use std::convert::TryFrom;
@@ -46,6 +48,7 @@ impl AsyncTestContext for TestContext {
         let uds = UnixListener::bind(&*SOCKET_PATH)
             .expect("Error binding the socket");
         let rusk = Rusk::default();
+        let network = RuskNetwork::default();
 
         let incoming = async_stream::stream! {
             loop {
@@ -59,6 +62,7 @@ impl AsyncTestContext for TestContext {
         tokio::spawn(async move {
             Server::builder()
                 .add_service(KeysServer::new(rusk))
+                .add_service(NetworkServer::new(network))
                 .serve_with_incoming(incoming)
                 .await
                 .unwrap();

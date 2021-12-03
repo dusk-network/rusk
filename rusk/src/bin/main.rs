@@ -10,7 +10,8 @@ mod version;
 
 use clap::{App, Arg};
 use futures::TryFutureExt;
-use rusk::services::pki::KeysServer;
+use rusk::services::network::RuskNetwork;
+use rusk::services::{network::NetworkServer, pki::KeysServer};
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
 use std::path::Path;
@@ -152,7 +153,9 @@ async fn startup_with_uds(
     let uds = UnixListener::bind(path)?;
 
     let rusk = Rusk::default();
+    let network = RuskNetwork::default();
     let keys = KeysServer::new(rusk);
+    let network = NetworkServer::new(network);
 
     let incoming = {
         async_stream::stream! {
@@ -164,6 +167,7 @@ async fn startup_with_uds(
 
     Server::builder()
         .add_service(keys)
+        .add_service(network)
         .serve_with_incoming(incoming)
         .await?;
 
@@ -180,8 +184,14 @@ async fn startup_with_tcp_ip(
     let addr: std::net::SocketAddr = full_address.parse()?;
 
     let rusk = Rusk::default();
+    let network = RuskNetwork::default();
     let keys = KeysServer::new(rusk);
+    let network = NetworkServer::new(network);
 
     // Build the Server with the `Echo` service attached to it.
-    Ok(Server::builder().add_service(keys).serve(addr).await?)
+    Ok(Server::builder()
+        .add_service(keys)
+        .add_service(network)
+        .serve(addr)
+        .await?)
 }
