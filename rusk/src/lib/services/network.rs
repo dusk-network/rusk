@@ -29,8 +29,11 @@ impl Default for RuskNetwork {
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
         };
+
+        // TODO: this should be instantiate with the correct config
         RuskNetwork {
-            peer: Peer::builder("".to_string(), vec![], listener).build(),
+            peer: Peer::builder("127.0.0.1:9999".to_string(), vec![], listener)
+                .build(),
             sender: grpc_sender,
         }
     }

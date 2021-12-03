@@ -30,6 +30,11 @@ pub struct TestContext {
 #[async_trait::async_trait]
 impl AsyncTestContext for TestContext {
     async fn setup() -> TestContext {
+        // First of all let's remove old stucked socket path
+        // This is required because the tear_down functions is not called if any
+        // test panics
+        let _ = std::fs::remove_file(&*SOCKET_PATH);
+
         // Initialize the subscriber
         // Generate a subscriber with the desired log level.
         let subscriber =
