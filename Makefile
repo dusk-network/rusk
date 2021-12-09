@@ -15,6 +15,9 @@ keys: ## Create the keys for the circuits
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -j -C ./contracts wasm
 
+wallet: ## Build and test the wallet
+	$(MAKE) -j -C ./rusk-wallet test
+
 circuits: keys ## Build and test circuit crates
 	$(MAKE) -j -C ./circuits test
 

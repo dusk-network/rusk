@@ -5,6 +5,7 @@ members = [
     "contracts/transfer",
     "macros/code-hasher",
     "rusk-profile",
+    "rusk-wallet",
     "rusk-abi",
     "rusk",
     "test-utils/transfer-wrapper",

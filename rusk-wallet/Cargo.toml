@@ -1,0 +1,9 @@
+[package]
+name = "rusk-wallet"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand_core = "^0.6"
+dusk-pki = "^0.8"
+dusk-bytes = "^0.1"
