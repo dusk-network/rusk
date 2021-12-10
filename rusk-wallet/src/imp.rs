@@ -6,6 +6,7 @@
 
 use crate::Store;
 
+use dusk_bytes::Error as BytesError;
 use dusk_pki::SecretSpendKey;
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 
@@ -15,6 +16,8 @@ pub enum Error<S: Store> {
     Store(S::Error),
     /// Random number generator error.
     Rng(RngError),
+    /// Serialization and deserialization of Dusk types.
+    Bytes(BytesError),
 }
 
 impl<S: Store> Error<S> {
@@ -30,32 +33,41 @@ impl<S: Store> From<RngError> for Error<S> {
     }
 }
 
+impl<S: Store> From<BytesError> for Error<S> {
+    fn from(be: BytesError) -> Self {
+        Self::Bytes(be)
+    }
+}
+
 /// A wallet implementation.
 ///
 /// This is responsible for holding the keys, and performing operations like
 /// creating transactions.
-pub struct Wallet<S, Rng> {
+pub struct Wallet<S> {
     store: S,
-    rng: Rng,
 }
 
-impl<S, Rng> Wallet<S, Rng> {
+impl<S> Wallet<S> {
     /// Creates a new wallet with the given backing store.
-    pub fn new(store: S, rng: Rng) -> Self {
-        Self { store, rng }
+    pub const fn new(store: S) -> Self {
+        Self { store }
     }
 }
 
-impl<S: Store, Rng: RngCore + CryptoRng> Wallet<S, Rng> {
+impl<S: Store> Wallet<S> {
     /// Create a secret spend key.
-    pub fn create_ssk(&mut self, id: &S::Id) -> Result<(), Error<S>> {
-        let ssk = SecretSpendKey::random(&mut self.rng);
+    pub fn create_ssk<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        id: &S::Id,
+    ) -> Result<(), Error<S>> {
+        let ssk = SecretSpendKey::random(rng);
         self.load_ssk(id, &ssk)
     }
 
     /// Loads a secret spend key into the wallet.
     pub fn load_ssk(
-        &mut self,
+        &self,
         id: &S::Id,
         ssk: &SecretSpendKey,
     ) -> Result<(), Error<S>> {
@@ -91,7 +103,7 @@ impl<S: Store, Rng: RngCore + CryptoRng> Wallet<S, Rng> {
     }
 
     /// Syncs the wallet with the blocks.
-    pub fn sync(&mut self) -> Result<(), Error<S>> {
+    pub fn sync(&self) -> Result<(), Error<S>> {
         todo!()
     }
 

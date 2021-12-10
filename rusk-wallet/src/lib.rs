@@ -26,7 +26,7 @@ pub trait Store {
 
     /// Stores the given key in the store under the given `id`.
     fn store_key(
-        &mut self,
+        &self,
         id: &Self::Id,
         key: &SecretSpendKey,
     ) -> Result<(), Self::Error>;

@@ -7,12 +7,13 @@
 //! The foreign function interface for the wallet.
 
 use core::num::NonZeroU32;
+use core::slice;
 
 use dusk_bytes::Serializable;
 use dusk_pki::SecretSpendKey;
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Store, Wallet};
+use crate::{Error, Store, Wallet};
 
 extern "C" {
     fn store_key(
@@ -36,59 +37,85 @@ macro_rules! error_if_not_zero {
     };
 }
 
-const FFI_WALLET: Wallet<FfiStore, FfiRng> = Wallet::new(FfiStore, FfiRng);
+macro_rules! unwrap_or_bail {
+    ($e: expr) => {
+        match $e {
+            Ok(v) => v,
+            Err(e) => {
+                return Error::<FfiStore>::from(e).into();
+            }
+        }
+    };
+}
+
+const FFI_WALLET: Wallet<FfiStore> = Wallet::new(FfiStore);
 
 /// Create a secret spend key.
 #[no_mangle]
-pub extern "C" fn create_ssk() {
-    todo!()
+pub unsafe extern "C" fn create_ssk(id: *const u8, id_len: u32) -> u8 {
+    let id = slice::from_raw_parts(id, id_len as usize);
+    let id = String::from_utf8_unchecked(id.to_vec());
+
+    unwrap_or_bail!(FFI_WALLET.create_ssk(&mut FfiRng, &id));
+
+    0
 }
 
 /// Loads a secret spend key into the wallet.
 #[no_mangle]
-pub extern "C" fn load_ssk() {
-    todo!()
+pub unsafe extern "C" fn load_ssk(
+    id: *const u8,
+    id_len: u32,
+    ssk: *const [u8; SecretSpendKey::SIZE],
+) -> u8 {
+    let id = slice::from_raw_parts(id, id_len as usize);
+    let id = String::from_utf8_unchecked(id.to_vec());
+
+    let ssk = unwrap_or_bail!(SecretSpendKey::from_bytes(&*ssk));
+    unwrap_or_bail!(FFI_WALLET.load_ssk(&id, &ssk));
+
+    0
 }
 
 /// Creates a transfer transaction.
 #[no_mangle]
-pub extern "C" fn create_transfer_tx() {
+pub unsafe extern "C" fn create_transfer_tx() {
     todo!()
 }
 
 /// Creates a stake transaction.
 #[no_mangle]
-pub extern "C" fn create_stake_tx() {
+pub unsafe extern "C" fn create_stake_tx() {
     todo!()
 }
 
 /// Stops staking for a key.
 #[no_mangle]
-pub extern "C" fn stop_stake() {
+pub unsafe extern "C" fn stop_stake() {
     todo!()
 }
 
 /// Extends staking for a particular key.
 #[no_mangle]
-pub extern "C" fn extend_stake() {
+pub unsafe extern "C" fn extend_stake() {
     todo!()
 }
 
 /// Withdraw a key's stake.
 #[no_mangle]
-pub extern "C" fn withdraw_stake() {
+pub unsafe extern "C" fn withdraw_stake() {
     todo!()
 }
 
 /// Syncs the wallet with the blocks.
 #[no_mangle]
-pub extern "C" fn sync() {
+pub unsafe extern "C" fn sync() {
     todo!()
 }
 
 /// Gets the balance of a key.
 #[no_mangle]
-pub extern "C" fn get_balance() {
+pub unsafe extern "C" fn get_balance() {
     todo!()
 }
 
@@ -99,7 +126,7 @@ impl Store for FfiStore {
     type Error = u8;
 
     fn store_key(
-        &mut self,
+        &self,
         id: &Self::Id,
         key: &SecretSpendKey,
     ) -> Result<(), Self::Error> {
@@ -169,6 +196,16 @@ impl RngCore for FfiRng {
                     Err(rand_core::Error::from(nzu))
                 }
             }
+        }
+    }
+}
+
+impl<S: Store> From<Error<S>> for u8 {
+    fn from(e: Error<S>) -> Self {
+        match e {
+            Error::Store(_) => 1,
+            Error::Rng(_) => 2,
+            Error::Bytes(_) => 3,
         }
     }
 }
