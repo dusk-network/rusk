@@ -25,18 +25,13 @@ pub trait Store {
     type Error;
 
     /// Stores the given key in the store under the given `id`.
-    fn store(
+    fn store_key(
         &mut self,
         id: &Self::Id,
         key: &SecretSpendKey,
     ) -> Result<(), Self::Error>;
 
-    /// Loads a key from the store.
-    fn load(
-        &self,
-        id: &Self::Id,
-    ) -> Result<Option<SecretSpendKey>, Self::Error>;
-
-    /// Deletes a key from the store.
-    fn delete(&mut self, id: &Self::Id) -> Result<(), Self::Error>;
+    /// Retrieves a key from the store.
+    fn key(&self, id: &Self::Id)
+        -> Result<Option<SecretSpendKey>, Self::Error>;
 }

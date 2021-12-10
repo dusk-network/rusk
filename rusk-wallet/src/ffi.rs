@@ -12,30 +12,84 @@ use dusk_bytes::Serializable;
 use dusk_pki::SecretSpendKey;
 use rand_core::{CryptoRng, RngCore};
 
-use crate::Store;
+use crate::{Store, Wallet};
 
 extern "C" {
-    fn wallet_store(
+    fn store_key(
         id: *const u8,
         id_len: u32,
         key: *const [u8; SecretSpendKey::SIZE],
     ) -> u8;
-    fn wallet_load(
+    fn get_key(
         id: *const u8,
         id_len: u32,
         key: *mut [u8; SecretSpendKey::SIZE],
     ) -> u8;
-    fn wallet_delete(id: *const u8, id_len: u32) -> u8;
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
 }
 
 macro_rules! error_if_not_zero {
     ($e: expr) => {
-        match $e {
-            0 => {}
-            c => return Err(c),
+        if $e != 0 {
+            return Err($e);
         }
     };
+}
+
+const FFI_WALLET: Wallet<FfiStore, FfiRng> = Wallet::new(FfiStore, FfiRng);
+
+/// Create a secret spend key.
+#[no_mangle]
+pub extern "C" fn create_ssk() {
+    todo!()
+}
+
+/// Loads a secret spend key into the wallet.
+#[no_mangle]
+pub extern "C" fn load_ssk() {
+    todo!()
+}
+
+/// Creates a transfer transaction.
+#[no_mangle]
+pub extern "C" fn create_transfer_tx() {
+    todo!()
+}
+
+/// Creates a stake transaction.
+#[no_mangle]
+pub extern "C" fn create_stake_tx() {
+    todo!()
+}
+
+/// Stops staking for a key.
+#[no_mangle]
+pub extern "C" fn stop_stake() {
+    todo!()
+}
+
+/// Extends staking for a particular key.
+#[no_mangle]
+pub extern "C" fn extend_stake() {
+    todo!()
+}
+
+/// Withdraw a key's stake.
+#[no_mangle]
+pub extern "C" fn withdraw_stake() {
+    todo!()
+}
+
+/// Syncs the wallet with the blocks.
+#[no_mangle]
+pub extern "C" fn sync() {
+    todo!()
+}
+
+/// Gets the balance of a key.
+#[no_mangle]
+pub extern "C" fn get_balance() {
+    todo!()
 }
 
 struct FfiStore;
@@ -44,14 +98,14 @@ impl Store for FfiStore {
     type Id = String;
     type Error = u8;
 
-    fn store(
+    fn store_key(
         &mut self,
         id: &Self::Id,
         key: &SecretSpendKey,
     ) -> Result<(), Self::Error> {
         let buf = key.to_bytes();
         unsafe {
-            error_if_not_zero!(wallet_store(
+            error_if_not_zero!(store_key(
                 &id.as_bytes()[0],
                 id.len() as u32,
                 &buf
@@ -60,29 +114,19 @@ impl Store for FfiStore {
         Ok(())
     }
 
-    fn load(
+    fn key(
         &self,
         id: &Self::Id,
     ) -> Result<Option<SecretSpendKey>, Self::Error> {
         let mut buf = [0u8; SecretSpendKey::SIZE];
         unsafe {
-            error_if_not_zero!(wallet_load(
+            error_if_not_zero!(get_key(
                 &id.as_bytes()[0],
                 id.len() as u32,
                 &mut buf
             ));
         }
         Ok(SecretSpendKey::from_bytes(&buf).ok())
-    }
-
-    fn delete(&mut self, id: &Self::Id) -> Result<(), Self::Error> {
-        unsafe {
-            error_if_not_zero!(wallet_delete(
-                &id.as_bytes()[0],
-                id.len() as u32
-            ));
-        }
-        Ok(())
     }
 }
 
