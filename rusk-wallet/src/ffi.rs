@@ -6,14 +6,16 @@
 
 //! The foreign function interface for the wallet.
 
+use alloc::vec::Vec;
 use core::num::NonZeroU32;
 use core::slice;
 
-use dusk_bytes::Serializable;
-use dusk_pki::SecretSpendKey;
+use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_pki::{SecretSpendKey, ViewKey};
+use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Error, Store, Wallet};
+use crate::{Error, NoteFinder, Store, Wallet};
 
 extern "C" {
     fn store_key(
@@ -27,6 +29,11 @@ extern "C" {
         key: *mut [u8; SecretSpendKey::SIZE],
     ) -> u8;
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
+    fn find_notes(
+        height: u64,
+        vk: *const [u8; ViewKey::SIZE],
+        notes: *mut u8,
+    ) -> u32;
 }
 
 macro_rules! error_if_not_zero {
@@ -42,13 +49,14 @@ macro_rules! unwrap_or_bail {
         match $e {
             Ok(v) => v,
             Err(e) => {
-                return Error::<FfiStore>::from(e).into();
+                return Error::<FfiStore, FfiNoteFinder>::from(e).into();
             }
         }
     };
 }
 
-const FFI_WALLET: Wallet<FfiStore> = Wallet::new(FfiStore);
+const FFI_WALLET: Wallet<FfiStore, FfiNoteFinder> =
+    Wallet::new(FfiStore, FfiNoteFinder);
 
 /// Create a secret spend key.
 #[no_mangle]
@@ -157,6 +165,36 @@ impl Store for FfiStore {
     }
 }
 
+// 1 MB for a buffer.
+const NOTES_BUF_SIZE: usize = 0x100000;
+
+struct FfiNoteFinder;
+
+impl NoteFinder for FfiNoteFinder {
+    type Error = u8;
+
+    fn find_notes(
+        &self,
+        height: u64,
+        vk: &ViewKey,
+    ) -> Result<Vec<Note>, Self::Error> {
+        let mut notes_buf = [0u8; NOTES_BUF_SIZE];
+
+        // SAFETY: this is unsa
+        let nnotes =
+            unsafe { find_notes(height, &vk.to_bytes(), &mut notes_buf[0]) };
+
+        let mut buf = &notes_buf[..Note::SIZE * nnotes as usize];
+
+        let mut notes = Vec::with_capacity(nnotes as usize);
+        for _ in 0..nnotes {
+            notes.push(Note::from_reader(&mut buf).map_err(|_| 1)?);
+        }
+
+        Ok(notes)
+    }
+}
+
 struct FfiRng;
 
 impl CryptoRng for FfiRng {}
@@ -200,12 +238,16 @@ impl RngCore for FfiRng {
     }
 }
 
-impl<S: Store> From<Error<S>> for u8 {
-    fn from(e: Error<S>) -> Self {
+impl<S: Store, NF: NoteFinder> From<Error<S, NF>> for u8 {
+    fn from(e: Error<S, NF>) -> Self {
         match e {
             Error::Store(_) => 1,
             Error::Rng(_) => 2,
             Error::Bytes(_) => 3,
+            Error::NoSuchKey(_) => 4,
+            Error::FindNotes(_) => 5,
+            Error::NotEnoughBalance => 6,
+            Error::NoteCombinationProblem => 7,
         }
     }
 }

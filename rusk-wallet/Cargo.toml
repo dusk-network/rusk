@@ -7,3 +7,6 @@ edition = "2021"
 rand_core = "^0.6"
 dusk-pki = "^0.8"
 dusk-bytes = "^0.1"
+dusk-jubjub = { version = "^0.10", default-features = false }
+phoenix-core = "0.14.0-rc.0"
+dusk-schnorr = "0.8.0-rc.0"

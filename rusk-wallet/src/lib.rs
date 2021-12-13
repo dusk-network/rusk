@@ -9,11 +9,15 @@
 #![deny(missing_docs)]
 #![deny(clippy::all)]
 
+extern crate alloc;
+
 #[cfg(target_family = "wasm")]
 mod ffi;
 mod imp;
 
-use dusk_pki::SecretSpendKey;
+use alloc::vec::Vec;
+use dusk_pki::{SecretSpendKey, ViewKey};
+use phoenix_core::Note;
 
 pub use imp::*;
 
@@ -34,4 +38,17 @@ pub trait Store {
     /// Retrieves a key from the store.
     fn key(&self, id: &Self::Id)
         -> Result<Option<SecretSpendKey>, Self::Error>;
+}
+
+/// Provides notes to the caller.
+pub trait NoteFinder {
+    /// Error returned by the note finder.
+    type Error;
+
+    /// Find notes for a view key, starting from the given block height.
+    fn find_notes(
+        &self,
+        height: u64,
+        vk: &ViewKey,
+    ) -> Result<Vec<Note>, Self::Error>;
 }
