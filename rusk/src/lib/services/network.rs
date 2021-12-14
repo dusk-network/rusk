@@ -9,7 +9,7 @@
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
-use tracing::{error, info, warn};
+use tracing::{error, trace, warn};
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
@@ -23,19 +23,36 @@ pub struct RuskNetwork {
     sender: Sender<(Vec<u8>, SocketAddr, u8)>,
 }
 
-impl Default for RuskNetwork {
-    fn default() -> RuskNetwork {
+impl RuskNetwork {
+    pub fn new(
+        public_addr: String,
+        listen_addr: Option<String>,
+        bootstrap: Vec<String>,
+    ) -> RuskNetwork {
+        // Creating a broadcast channel which each grpc `listen` calls will
+        // listen to.
+        // The sender is used by the KadcastListener to forward the received
+        // messages.
+        // The receiver is discarded because at the moment 0 there is no one
+        // listening.
+        // When a `listen` call is received, a new receiver is created using
+        // `sender.subscribe`
         let grpc_sender = broadcast::channel(100).0;
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
         };
-
-        // TODO: this should be instantiate with the correct config
         RuskNetwork {
-            peer: Peer::builder("127.0.0.1:9999".to_string(), vec![], listener)
+            peer: Peer::builder(public_addr, bootstrap, listener)
+                .with_listen_address(listen_addr)
                 .build(),
             sender: grpc_sender,
         }
+    }
+}
+
+impl Default for RuskNetwork {
+    fn default() -> RuskNetwork {
+        RuskNetwork::new("127.0.0.1:9999".to_string(), None, vec![])
     }
 }
 struct KadcastListener {
@@ -59,7 +76,7 @@ impl Network for RuskNetwork {
         &self,
         request: Request<SendMessage>,
     ) -> Result<Response<Null>, Status> {
-        info!("Recieved SendMessage request");
+        trace!("Recieved SendMessage request");
         self.peer
             .send(
                 &request.get_ref().message,
@@ -75,7 +92,7 @@ impl Network for RuskNetwork {
         &self,
         request: Request<BroadcastMessage>,
     ) -> Result<Response<Null>, Status> {
-        info!("Recieved BroadcastMessage request");
+        trace!("Recieved BroadcastMessage request");
         self.peer
             .broadcast(
                 &request.get_ref().message,
@@ -92,18 +109,17 @@ impl Network for RuskNetwork {
         &self,
         _: Request<Null>,
     ) -> Result<Response<Self::ListenStream>, Status> {
-        info!("Recieved Listen request");
+        trace!("Recieved Listen request");
         let mut rx = self.sender.subscribe();
         let output = async_stream::try_stream! {
             loop {
                 match rx.recv().await {
-                    Ok(ev) => {
+                    Ok((message, source_address, k_height)) => {
                         yield Message {
-                            message: ev.0,
+                            message,
                             metadata: Some(MessageMetadata {
-                                src_address: ev.1.to_string(),
-                                kadcast_height: ev.2 as u32,
-
+                                src_address: source_address.to_string(),
+                                kadcast_height: k_height as u32,
                             }),
                         }
                     }
