@@ -9,6 +9,7 @@ use dusk_schnorr::Proof;
 use phoenix_core::{Crossover, Fee, Note};
 
 /// The structure sent over the network representing a transaction.
+#[derive(Debug, Clone)]
 pub struct Transaction {
     inputs: Vec<BlsScalar>,
     outputs: Vec<Note>,
@@ -25,27 +26,22 @@ impl Transaction {
     /// Serializes the transaction into a variable length byte buffer.
     pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
         // compute the serialized size to preallocate space
-        let size = {
-            let mut size = u64::SIZE
-                + self.inputs.len() * BlsScalar::SIZE
-                + u64::SIZE
-                + self.outputs.len() * Note::SIZE
-                + BlsScalar::SIZE
-                + Fee::SIZE
-                + Proof::SIZE
-                + u64::SIZE
-                + u64::SIZE;
+        let size = u64::SIZE
+            + self.inputs.len() * BlsScalar::SIZE
+            + u64::SIZE
+            + self.outputs.len() * Note::SIZE
+            + BlsScalar::SIZE
+            + Fee::SIZE
+            + Proof::SIZE
+            + u64::SIZE
+            + self.crossover.map(|_| Crossover::SIZE).unwrap_or(0)
+            + u64::SIZE
+            + self
+                .call
+                .as_ref()
+                .map(|(_, cdata)| 32 + cdata.len())
+                .unwrap_or(0);
 
-            if self.crossover.is_some() {
-                size += Crossover::SIZE;
-            }
-
-            if let Some((_, cdata)) = &self.call {
-                size += 4 + cdata.len();
-            }
-
-            size
-        };
         let mut bytes = vec![0u8; size];
         let mut writer = &mut bytes[..];
 
@@ -88,8 +84,8 @@ impl Transaction {
     }
 
     /// Deserializes the transaction from a bytes buffer.
-    pub fn from_bytes(buf: &[u8]) -> Result<Self, BytesError> {
-        let mut buffer = buf;
+    pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, BytesError> {
+        let mut buffer = buf.as_ref();
 
         let ninputs = u64::from_reader(&mut buffer)? as usize;
         let mut inputs = Vec::with_capacity(ninputs);
@@ -120,15 +116,17 @@ impl Transaction {
 
             // needs to be at least the size of a contract ID and have some call
             // data.
-            if buf_len < 5 {
+            if buf_len < 32 {
                 return Err(BytesError::BadLength {
                     found: buf_len,
-                    expected: 5,
+                    expected: 32,
                 });
             }
+            let (cid_buffer, cdata_buffer) = buffer.split_at(32);
 
-            let contract_id = ContractId::from(&buffer[0..4]);
-            let call_data = Vec::from(&buffer[4..]);
+            let contract_id = ContractId::from(cid_buffer);
+            let call_data = Vec::from(cdata_buffer);
+
             call = Some((contract_id, call_data));
         }
 
@@ -141,5 +139,56 @@ impl Transaction {
             call,
             proof,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dusk_jubjub::JubJubScalar;
+    use dusk_pki::{Ownable, SecretSpendKey};
+
+    #[test]
+    fn serde() {
+        let mut rng = rand::thread_rng();
+        let ssk = SecretSpendKey::random(&mut rng);
+        let psk = ssk.public_spend_key();
+        let blinding_factor = JubJubScalar::random(&mut rng);
+
+        let inputs = vec![BlsScalar::from(1), BlsScalar::from(2)];
+        let outputs =
+            vec![Note::obfuscated(&mut rng, &psk, 42, blinding_factor)];
+        let anchor = BlsScalar::random(&mut rng);
+        let fee = Fee::new(&mut rng, 42, 24, &psk);
+        let crossover = None;
+        let call = Some((ContractId::from([1u8; 32]), vec![1, 2, 3, 4]));
+        let proof = Proof::new(
+            &ssk.sk_r(outputs[0].stealth_address()),
+            &mut rng,
+            anchor,
+        );
+
+        let tx = Transaction {
+            inputs: inputs.clone(),
+            outputs: outputs.clone(),
+            anchor,
+            fee,
+            crossover,
+            call: call.clone(),
+            proof,
+        };
+
+        let serde_tx = Transaction::from_bytes(
+            tx.to_var_bytes().expect("serializing to go ok"),
+        )
+        .expect("serialized to be deserializable");
+
+        assert_eq!(inputs, serde_tx.inputs);
+        assert_eq!(outputs, serde_tx.outputs);
+        assert_eq!(anchor, serde_tx.anchor);
+        assert_eq!(fee, serde_tx.fee);
+        assert_eq!(crossover, serde_tx.crossover);
+        assert_eq!(call, serde_tx.call);
+        assert_eq!(proof.to_bytes(), serde_tx.proof.to_bytes());
     }
 }

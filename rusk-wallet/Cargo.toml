@@ -12,3 +12,6 @@ phoenix-core = "0.14.0-rc.0"
 dusk-schnorr = "0.8.0-rc.0"
 dusk-poseidon = "0.23.0-rc.0"
 dusk-abi = "^0.10"
+
+[dev-dependencies]
+rand = "^0.8"
