@@ -14,12 +14,14 @@ extern crate alloc;
 #[cfg(target_family = "wasm")]
 mod ffi;
 mod imp;
+mod tx;
 
 use alloc::vec::Vec;
 use dusk_pki::{SecretSpendKey, ViewKey};
 use phoenix_core::Note;
 
 pub use imp::*;
+pub use tx::Transaction;
 
 /// The key store backend - where the keys live.
 pub trait Store {

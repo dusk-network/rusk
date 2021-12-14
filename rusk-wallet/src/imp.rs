@@ -120,7 +120,7 @@ where
             .ok_or_else(|| Error::NoSuchKey(sender.clone()))?;
         let sender_psk = sender.public_spend_key();
 
-        let input_notes = {
+        let inputs = {
             let sender_vk = sender.view_key();
 
             // TODO find a way to get the block height from somewhere
@@ -154,7 +154,7 @@ where
                 // is enough value in the notes.
                 let (note, val) = notes_and_values.pop().unwrap();
                 accumulated_value += val;
-                input_notes.push(note);
+                input_notes.push(note.gen_nullifier(&sender));
             }
 
             if input_notes.len() > MAX_INPUT_NOTES {
@@ -164,14 +164,17 @@ where
             input_notes
         };
 
-        let receiver_note =
-            generate_obfuscated_note(rng, receiver, value, ref_id);
-        let refund_note = generate_obfuscated_note(
-            rng,
-            &sender_psk,
-            gas_limit * gas_price,
-            ref_id,
-        );
+        let outputs = vec![
+            // receiver note
+            generate_obfuscated_note(rng, receiver, value, ref_id),
+            // refund/fee note
+            generate_obfuscated_note(
+                rng,
+                &sender_psk,
+                gas_limit * gas_price,
+                ref_id,
+            ),
+        ];
 
         Ok(())
     }
