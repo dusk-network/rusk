@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
+use core::iter::Extend;
 use core::mem;
 
 use dusk_abi::ContractId;
@@ -12,8 +13,12 @@ use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::BlsScalar;
+use dusk_pki::{Ownable, SecretSpendKey};
+use dusk_poseidon::cipher::PoseidonCipher;
+use dusk_poseidon::sponge::hash;
 use dusk_schnorr::Proof;
 use phoenix_core::{Crossover, Fee, Note};
+use rand_core::{CryptoRng, RngCore};
 
 const CONTRACT_ID_SIZE: usize = mem::size_of::<ContractId>();
 
@@ -22,11 +27,9 @@ const CONTRACT_ID_SIZE: usize = mem::size_of::<ContractId>();
 pub struct Transaction {
     inputs: Vec<BlsScalar>,
     outputs: Vec<Note>,
-
     anchor: BlsScalar,
     fee: Fee,
     proof: Proof,
-
     crossover: Option<Crossover>,
     call: Option<(ContractId, Vec<u8>)>,
 }
@@ -92,6 +95,18 @@ impl Transaction {
         Ok(bytes)
     }
 
+    /// Returns the hash of the transaction without the proof.
+    pub fn hash(&self) -> BlsScalar {
+        let clone = self.clone();
+        ProvableTransaction::from(clone).hash()
+    }
+
+    /// Return the internal representation of scalars to be hashed.
+    pub fn hash_inputs(&self) -> Vec<BlsScalar> {
+        let clone = self.clone();
+        ProvableTransaction::from(clone).hash_inputs()
+    }
+
     /// Deserializes the transaction from a bytes buffer.
     pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, BytesError> {
         let mut buffer = buf.as_ref();
@@ -149,6 +164,138 @@ impl Transaction {
             proof,
         })
     }
+}
+
+/// A transaction that is yet to be proven.
+pub(crate) struct ProvableTransaction {
+    inputs: Vec<BlsScalar>,
+    outputs: Vec<Note>,
+    anchor: BlsScalar,
+    fee: Fee,
+    crossover: Option<Crossover>,
+    call: Option<(ContractId, Vec<u8>)>,
+}
+
+impl From<Transaction> for ProvableTransaction {
+    fn from(tx: Transaction) -> Self {
+        Self {
+            anchor: tx.anchor,
+            call: tx.call,
+            crossover: tx.crossover,
+            fee: tx.fee,
+            outputs: tx.outputs,
+            inputs: tx.inputs,
+        }
+    }
+}
+
+impl ProvableTransaction {
+    /// Instantiates a new unproven transaction.
+    pub(crate) fn new(
+        inputs: Vec<BlsScalar>,
+        outputs: Vec<Note>,
+        anchor: BlsScalar,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        call: Option<(ContractId, Vec<u8>)>,
+    ) -> Self {
+        Self {
+            inputs,
+            outputs,
+            anchor,
+            fee,
+            crossover,
+            call,
+        }
+    }
+
+    /// Consumes this unproven transaction, proves it and returns a
+    /// [`Transaction`].
+    pub(crate) fn prove<Rng: RngCore + CryptoRng>(
+        self,
+        ssk: &SecretSpendKey,
+    ) -> Transaction {
+        todo!()
+    }
+
+    /// Hash the unproven transaction.
+    pub(crate) fn hash(&self) -> BlsScalar {
+        hash(&self.hash_inputs())
+    }
+
+    fn hash_inputs(&self) -> Vec<BlsScalar> {
+        let size = self.inputs.len()
+            + 12 * self.outputs.len()
+            + 1
+            + 4
+            + self
+                .crossover
+                .map(|_| 3 + PoseidonCipher::cipher_size())
+                .unwrap_or(0)
+            // When this lands the weird logic checking if there needs to be
+            // padding is gone. https://github.com/rust-lang/rust/issues/88581
+            + self
+                .call.as_ref()
+                .map(|(_, cdata)| {
+                    8 + cdata.len() / BlsScalar::SIZE
+                        + if cdata.len() % BlsScalar::SIZE == 0 { 0 } else { 1 }
+                })
+                .unwrap_or(0);
+
+        let mut hash_inputs = Vec::with_capacity(size);
+
+        hash_inputs.append(&mut self.inputs.clone());
+        self.outputs.iter().for_each(|note| {
+            hash_inputs.append(&mut note.hash_inputs().to_vec());
+        });
+        hash_inputs.push(self.anchor);
+        hash_inputs.append(&mut fee_hash_inputs(&self.fee).to_vec());
+
+        if let Some(c) = &self.crossover {
+            hash_inputs.append(&mut c.to_hash_inputs().to_vec())
+        }
+
+        if let Some((cid, cdata)) = &self.call {
+            hash_inputs.append(&mut hash_inputs_from_bytes(cid.as_bytes()));
+            hash_inputs.append(&mut hash_inputs_from_bytes(cdata));
+        }
+
+        hash_inputs
+    }
+}
+
+/// Returns hash inputs from a slice of bytes, padding to zero.
+fn hash_inputs_from_bytes<B: AsRef<[u8]>>(bytes: B) -> Vec<BlsScalar> {
+    let padded = {
+        let mut buf = bytes.as_ref().to_vec();
+        let padding = vec![0; buf.len() % BlsScalar::SIZE];
+
+        buf.extend(padding);
+
+        buf
+    };
+
+    padded
+        .chunks(BlsScalar::SIZE)
+        .map(|c| {
+            // Unwrapping here is ok because we've padded the last chunk to the
+            // correct size
+            BlsScalar::from_slice(c).unwrap()
+        })
+        .collect()
+}
+
+// Will become superfluous redundant
+// https://github.com/dusk-network/phoenix-core/issues/100
+fn fee_hash_inputs(fee: &Fee) -> [BlsScalar; 4] {
+    let pk_r = fee.stealth_address().pk_r().as_ref().to_hash_inputs();
+
+    [
+        BlsScalar::from(fee.gas_limit),
+        BlsScalar::from(fee.gas_price),
+        pk_r[0],
+        pk_r[1],
+    ]
 }
 
 #[cfg(test)]
