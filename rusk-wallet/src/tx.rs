@@ -268,9 +268,11 @@ impl ProvableTransaction {
 fn hash_inputs_from_bytes<B: AsRef<[u8]>>(bytes: B) -> Vec<BlsScalar> {
     let padded = {
         let mut buf = bytes.as_ref().to_vec();
-        let padding = vec![0; buf.len() % BlsScalar::SIZE];
+        let padding = vec![0; BlsScalar::SIZE - buf.len() % BlsScalar::SIZE];
 
-        buf.extend(padding);
+        if padding.len() != BlsScalar::SIZE {
+            buf.extend(padding);
+        }
 
         buf
     };
