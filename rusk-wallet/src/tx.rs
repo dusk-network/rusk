@@ -29,7 +29,7 @@ pub struct Transaction {
     outputs: Vec<Note>,
     anchor: BlsScalar,
     fee: Fee,
-    proof: Proof,
+    sig: Proof,
     crossover: Option<Crossover>,
     call: Option<(ContractId, Vec<u8>)>,
 }
@@ -69,7 +69,7 @@ impl Transaction {
 
         writer.write(&self.anchor.to_bytes())?;
         writer.write(&self.fee.to_bytes())?;
-        writer.write(&self.proof.to_bytes())?;
+        writer.write(&self.sig.to_bytes())?;
 
         match &self.crossover {
             None => {
@@ -95,16 +95,16 @@ impl Transaction {
         Ok(bytes)
     }
 
-    /// Returns the hash of the transaction without the proof.
+    /// Returns the hash of the transaction without the signature.
     pub fn hash(&self) -> BlsScalar {
         let clone = self.clone();
-        ProvableTransaction::from(clone).hash()
+        UnsignedTransaction::from(clone).hash()
     }
 
     /// Return the internal representation of scalars to be hashed.
     pub fn hash_inputs(&self) -> Vec<BlsScalar> {
         let clone = self.clone();
-        ProvableTransaction::from(clone).hash_inputs()
+        UnsignedTransaction::from(clone).hash_inputs()
     }
 
     /// Deserializes the transaction from a bytes buffer.
@@ -127,7 +127,7 @@ impl Transaction {
 
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
-        let proof = Proof::from_reader(&mut buffer)?;
+        let sig = Proof::from_reader(&mut buffer)?;
 
         let mut crossover = None;
         if u64::from_reader(&mut buffer)? != 0 {
@@ -161,13 +161,13 @@ impl Transaction {
             fee,
             crossover,
             call,
-            proof,
+            sig,
         })
     }
 }
 
-/// A transaction that is yet to be proven.
-pub(crate) struct ProvableTransaction {
+/// A transaction that is yet to be signed.
+pub(crate) struct UnsignedTransaction {
     inputs: Vec<BlsScalar>,
     outputs: Vec<Note>,
     anchor: BlsScalar,
@@ -176,7 +176,7 @@ pub(crate) struct ProvableTransaction {
     call: Option<(ContractId, Vec<u8>)>,
 }
 
-impl From<Transaction> for ProvableTransaction {
+impl From<Transaction> for UnsignedTransaction {
     fn from(tx: Transaction) -> Self {
         Self {
             anchor: tx.anchor,
@@ -189,8 +189,8 @@ impl From<Transaction> for ProvableTransaction {
     }
 }
 
-impl ProvableTransaction {
-    /// Instantiates a new unproven transaction.
+impl UnsignedTransaction {
+    /// Instantiates a new unsigned transaction.
     pub(crate) fn new(
         inputs: Vec<BlsScalar>,
         outputs: Vec<Note>,
@@ -209,16 +209,32 @@ impl ProvableTransaction {
         }
     }
 
-    /// Consumes this unproven transaction, proves it and returns a
+    /// Consumes this unsigned transaction, signs it and returns a
     /// [`Transaction`].
-    pub(crate) fn prove<Rng: RngCore + CryptoRng>(
+    pub(crate) fn sign<Rng: RngCore + CryptoRng>(
         self,
+        rng: &mut Rng,
         ssk: &SecretSpendKey,
     ) -> Transaction {
-        todo!()
+        let hash = self.hash();
+
+        // TODO should the stealth address be from the fee?
+        let sa = self.fee.stealth_address();
+
+        let sig = Proof::new(&ssk.sk_r(sa), rng, hash);
+
+        Transaction {
+            anchor: self.anchor,
+            call: self.call,
+            crossover: self.crossover,
+            fee: self.fee,
+            outputs: self.outputs,
+            inputs: self.inputs,
+            sig,
+        }
     }
 
-    /// Hash the unproven transaction.
+    /// Hash the unsigned transaction.
     pub(crate) fn hash(&self) -> BlsScalar {
         hash(&self.hash_inputs())
     }
@@ -320,7 +336,7 @@ mod tests {
         let fee = Fee::new(&mut rng, 42, 24, &psk);
         let crossover = None;
         let call = Some((ContractId::from([1u8; 32]), vec![1, 2, 3, 4]));
-        let proof = Proof::new(
+        let sig = Proof::new(
             &ssk.sk_r(outputs[0].stealth_address()),
             &mut rng,
             anchor,
@@ -333,7 +349,7 @@ mod tests {
             fee,
             crossover,
             call: call.clone(),
-            proof,
+            sig,
         };
 
         let serde_tx = Transaction::from_bytes(
@@ -347,6 +363,6 @@ mod tests {
         assert_eq!(fee, serde_tx.fee);
         assert_eq!(crossover, serde_tx.crossover);
         assert_eq!(call, serde_tx.call);
-        assert_eq!(proof.to_bytes(), serde_tx.proof.to_bytes());
+        assert_eq!(sig.to_bytes(), serde_tx.sig.to_bytes());
     }
 }
