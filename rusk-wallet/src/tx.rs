@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
+use core::mem;
 
 use dusk_abi::ContractId;
 use dusk_bytes::{
@@ -13,6 +14,8 @@ use dusk_bytes::{
 use dusk_jubjub::BlsScalar;
 use dusk_schnorr::Proof;
 use phoenix_core::{Crossover, Fee, Note};
+
+const CONTRACT_ID_SIZE: usize = mem::size_of::<ContractId>();
 
 /// The structure sent over the network representing a transaction.
 #[derive(Debug, Clone)]
@@ -45,7 +48,7 @@ impl Transaction {
             + self
                 .call
                 .as_ref()
-                .map(|(_, cdata)| 32 + cdata.len())
+                .map(|(_, cdata)| CONTRACT_ID_SIZE + cdata.len())
                 .unwrap_or(0);
 
         let mut bytes = vec![0u8; size];
@@ -122,13 +125,13 @@ impl Transaction {
 
             // needs to be at least the size of a contract ID and have some call
             // data.
-            if buf_len < 32 {
+            if buf_len < CONTRACT_ID_SIZE {
                 return Err(BytesError::BadLength {
                     found: buf_len,
-                    expected: 32,
+                    expected: CONTRACT_ID_SIZE,
                 });
             }
-            let (cid_buffer, cdata_buffer) = buffer.split_at(32);
+            let (cid_buffer, cdata_buffer) = buffer.split_at(CONTRACT_ID_SIZE);
 
             let contract_id = ContractId::from(cid_buffer);
             let call_data = Vec::from(cdata_buffer);
