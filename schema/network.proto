@@ -8,7 +8,7 @@ message MessageMetadata {
 
 message BroadcastMessage {
     bytes message = 1;
-    optional uint32 kadcast_height = 2;
+    uint32 kadcast_height = 2;
 }
 
 message Message {
