@@ -96,7 +96,7 @@ impl Network for RuskNetwork {
         self.peer
             .broadcast(
                 &request.get_ref().message,
-                request.get_ref().kadcast_height.map(|h| h as usize),
+                Some(request.get_ref().kadcast_height as usize),
             )
             .await;
         Ok(Response::new(Null {}))
