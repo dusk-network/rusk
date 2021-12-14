@@ -16,7 +16,7 @@ use dusk_jubjub::BlsScalar;
 use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge::hash;
-use dusk_schnorr::Proof;
+use dusk_schnorr::{Proof, PublicKeyPair};
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{CryptoRng, RngCore};
 
@@ -35,6 +35,12 @@ pub struct Transaction {
 }
 
 impl Transaction {
+    /// Returns true if this transaction contains a valid signature.
+    pub fn valid(&self, pkp: &PublicKeyPair) -> bool {
+        let unsigned = UnsignedTransaction::from(self.clone());
+        self.sig.verify(pkp, unsigned.hash())
+    }
+
     /// Serializes the transaction into a variable length byte buffer.
     pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
         // compute the serialized size to preallocate space
