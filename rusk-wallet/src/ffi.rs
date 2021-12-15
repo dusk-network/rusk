@@ -9,12 +9,17 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
+use core::ptr;
 use core::slice;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::{SecretSpendKey, ViewKey};
+use dusk_jubjub::BlsScalar;
+use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use phoenix_core::Note;
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{
+    impls::{next_u32_via_fill, next_u64_via_fill},
+    CryptoRng, RngCore,
+};
 
 use crate::{Error, NoteFinder, Store, Wallet};
 
@@ -59,11 +64,15 @@ macro_rules! unwrap_or_bail {
 const FFI_WALLET: Wallet<FfiStore, FfiNoteFinder> =
     Wallet::new(FfiStore, FfiNoteFinder);
 
+unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
+    let id = slice::from_raw_parts(id, id_len as usize);
+    String::from_utf8_unchecked(id.to_vec())
+}
+
 /// Create a secret spend key.
 #[no_mangle]
 pub unsafe extern "C" fn create_ssk(id: *const u8, id_len: u32) -> u8 {
-    let id = slice::from_raw_parts(id, id_len as usize);
-    let id = String::from_utf8_unchecked(id.to_vec());
+    let id = id_ptr_to_string(id, id_len);
 
     unwrap_or_bail!(FFI_WALLET.create_ssk(&mut FfiRng, &id));
 
@@ -77,8 +86,7 @@ pub unsafe extern "C" fn load_ssk(
     id_len: u32,
     ssk: *const [u8; SecretSpendKey::SIZE],
 ) -> u8 {
-    let id = slice::from_raw_parts(id, id_len as usize);
-    let id = String::from_utf8_unchecked(id.to_vec());
+    let id = id_ptr_to_string(id, id_len);
 
     let ssk = unwrap_or_bail!(SecretSpendKey::from_bytes(&*ssk));
     unwrap_or_bail!(FFI_WALLET.load_ssk(&id, &ssk));
@@ -88,8 +96,39 @@ pub unsafe extern "C" fn load_ssk(
 
 /// Creates a transfer transaction.
 #[no_mangle]
-pub unsafe extern "C" fn create_transfer_tx() {
-    todo!()
+pub unsafe extern "C" fn create_transfer_tx(
+    sender_id: *const u8,
+    id_len: u32,
+    receiver: *const [u8; PublicSpendKey::SIZE],
+    value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+    ref_id: Option<&u64>,
+    tx_buf: *mut u8,
+    tx_len: *mut u32,
+) -> u8 {
+    let id = id_ptr_to_string(sender_id, id_len);
+    let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
+
+    let ref_id = BlsScalar::from(
+        ref_id.map(|rid| *rid).unwrap_or((&mut FfiRng).next_u64()),
+    );
+
+    let tx = unwrap_or_bail!(FFI_WALLET.create_transfer_tx(
+        &mut FfiRng,
+        &id,
+        &receiver,
+        value,
+        gas_price,
+        gas_limit,
+        ref_id
+    ));
+
+    let tx_bytes = unwrap_or_bail!(tx.to_var_bytes());
+    ptr::copy_nonoverlapping(&tx_bytes[0], tx_buf, tx_bytes.len());
+    *tx_len = tx_bytes.len() as u32;
+
+    0
 }
 
 /// Creates a stake transaction.
@@ -202,15 +241,11 @@ impl CryptoRng for FfiRng {}
 
 impl RngCore for FfiRng {
     fn next_u32(&mut self) -> u32 {
-        let mut buf = [0u8; 4];
-        self.fill_bytes(&mut buf);
-        u32::from_ne_bytes(buf)
+        next_u32_via_fill(self)
     }
 
     fn next_u64(&mut self) -> u64 {
-        let mut buf = [0u8; 8];
-        self.fill_bytes(&mut buf);
-        u64::from_ne_bytes(buf)
+        next_u64_via_fill(self)
     }
 
     fn fill_bytes(&mut self, dest: &mut [u8]) {

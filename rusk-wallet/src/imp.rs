@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{NoteFinder, Store};
+use crate::{NoteFinder, Store, Transaction};
 
 use alloc::vec::Vec;
 
@@ -111,10 +111,10 @@ where
         sender: &S::Id,
         receiver: &PublicSpendKey,
         value: u64,
-        gas_price: u64,
         gas_limit: u64,
+        gas_price: u64,
         ref_id: BlsScalar,
-    ) -> Result<(), Error<S, NF>> {
+    ) -> Result<Transaction, Error<S, NF>> {
         let sender = self
             .store
             .key(sender)
@@ -178,7 +178,7 @@ where
             ),
         ];
 
-        Ok(())
+        todo!()
     }
 
     /// Creates a stake transaction.
