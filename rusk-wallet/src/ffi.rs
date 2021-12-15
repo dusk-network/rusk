@@ -6,6 +6,7 @@
 
 //! The foreign function interface for the wallet.
 
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
 use core::slice;

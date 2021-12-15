@@ -13,7 +13,7 @@ use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::BlsScalar;
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
+use dusk_pki::{Ownable, SecretKey};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge::hash;
 use dusk_schnorr::{Proof, PublicKeyPair};

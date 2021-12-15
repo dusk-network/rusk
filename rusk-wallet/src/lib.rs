@@ -8,7 +8,9 @@
 
 #![deny(missing_docs)]
 #![deny(clippy::all)]
+#![no_std]
 
+#[macro_use]
 extern crate alloc;
 
 #[cfg(target_family = "wasm")]

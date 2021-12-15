@@ -6,6 +6,8 @@
 
 use crate::{NoteFinder, Store};
 
+use alloc::vec::Vec;
+
 use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
