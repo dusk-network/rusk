@@ -13,7 +13,7 @@ use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::BlsScalar;
-use dusk_pki::{Ownable, SecretSpendKey};
+use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge::hash;
 use dusk_schnorr::{Proof, PublicKeyPair};
@@ -220,23 +220,16 @@ impl UnsignedTransaction {
     pub(crate) fn sign<Rng: RngCore + CryptoRng>(
         self,
         rng: &mut Rng,
-        ssk: &SecretSpendKey,
+        sk: &SecretKey,
     ) -> Transaction {
-        let hash = self.hash();
-
-        // TODO should the stealth address be from the fee?
-        let sa = self.fee.stealth_address();
-
-        let sig = Proof::new(&ssk.sk_r(sa), rng, hash);
-
         Transaction {
+            sig: Proof::new(sk, rng, self.hash()),
             anchor: self.anchor,
             call: self.call,
             crossover: self.crossover,
             fee: self.fee,
             outputs: self.outputs,
             inputs: self.inputs,
-            sig,
         }
     }
 
