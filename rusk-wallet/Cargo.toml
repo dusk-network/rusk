@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 rand_core = "^0.6"
+rand_chacha = { version = "^0.3", default-features = false }
 dusk-pki = "^0.8"
 dusk-bytes = "^0.1"
 dusk-jubjub = { version = "^0.10", default-features = false }
@@ -12,6 +13,7 @@ phoenix-core = "0.14.0-rc.0"
 dusk-schnorr = "0.8.0-rc.0"
 dusk-poseidon = { version = "0.23.0-rc.0", default-features = false }
 dusk-abi = "^0.10"
+sha2 = { version = "^0.10", default-features = false }
 
 [dev-dependencies]
 rand = "^0.8"

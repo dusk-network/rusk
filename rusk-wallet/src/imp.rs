@@ -12,7 +12,9 @@ use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use phoenix_core::{Note, NoteType};
-use rand_core::{CryptoRng, Error as RngError, RngCore};
+use rand_chacha::ChaCha12Rng;
+use rand_core::{CryptoRng, Error as RngError, RngCore, SeedableRng};
+use sha2::{Digest, Sha256};
 
 const MAX_INPUT_NOTES: usize = 0x4;
 
@@ -68,7 +70,7 @@ pub struct Wallet<S, NF> {
 }
 
 impl<S, NF> Wallet<S, NF> {
-    /// Creates a new wallet with the given backing store.
+    /// Creates a new walle/// t with the given backing store.
     pub const fn new(store: S, note_finder: NF) -> Self {
         Self {
             store,
@@ -82,24 +84,29 @@ impl<S: Store, NF: NoteFinder> Wallet<S, NF>
 where
     S::Id: Clone,
 {
-    /// Create a secret spend key.
-    pub fn create_ssk<Rng: RngCore + CryptoRng>(
+    /// Create a secret spend key given a seed and a store ID.
+    ///
+    /// This creates a key based on the number of keys that are already in the
+    /// store. Calling this function with different seeds for the same store is
+    /// heavily discouraged.
+    pub fn create_secret_spend_key<B: AsRef<[u8]>>(
         &self,
-        rng: &mut Rng,
         id: &S::Id,
+        seed: B,
     ) -> Result<(), Error<S, NF>> {
-        let ssk = SecretSpendKey::random(rng);
-        self.load_ssk(id, &ssk)
-    }
+        let key_num = self.store.key_num();
 
-    /// Loads a secret spend key into the wallet.
-    pub fn load_ssk(
-        &self,
-        id: &S::Id,
-        ssk: &SecretSpendKey,
-    ) -> Result<(), Error<S, NF>> {
+        let mut sha_256 = Sha256::new();
+        sha_256.update(seed);
+        sha_256.update(&(key_num as u32).to_le_bytes());
+        let hash = sha_256.finalize();
+
+        let mut rng = ChaCha12Rng::from_seed(hash.into());
+
+        let ssk = SecretSpendKey::random(&mut rng);
+
         self.store
-            .store_key(id, ssk)
+            .store_key(id, &ssk)
             .map_err(Error::from_store_err)?;
         Ok(())
     }

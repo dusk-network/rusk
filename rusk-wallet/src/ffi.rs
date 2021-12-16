@@ -34,12 +34,15 @@ extern "C" {
         id_len: u32,
         key: *mut [u8; SecretSpendKey::SIZE],
     ) -> u8;
+    fn key_num() -> u32;
+    fn get_seed(seed: *mut u8, seed_len: *mut u32) -> u8;
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
     fn find_notes(
         height: u64,
         vk: *const [u8; ViewKey::SIZE],
         notes: *mut u8,
-    ) -> u32;
+        notes_len: *mut u32,
+    ) -> u8;
 }
 
 macro_rules! error_if_not_zero {
@@ -69,27 +72,18 @@ unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
     String::from_utf8_unchecked(id.to_vec())
 }
 
-/// Create a secret spend key.
+/// Create and store secret spend key.
 #[no_mangle]
-pub unsafe extern "C" fn create_ssk(id: *const u8, id_len: u32) -> u8 {
-    let id = id_ptr_to_string(id, id_len);
-
-    unwrap_or_bail!(FFI_WALLET.create_ssk(&mut FfiRng, &id));
-
-    0
-}
-
-/// Loads a secret spend key into the wallet.
-#[no_mangle]
-pub unsafe extern "C" fn load_ssk(
+pub unsafe extern "C" fn create_secret_spend_key(
     id: *const u8,
     id_len: u32,
-    ssk: *const [u8; SecretSpendKey::SIZE],
+    seed: *const u8,
+    seed_len: u32,
 ) -> u8 {
     let id = id_ptr_to_string(id, id_len);
+    let seed = ptr::slice_from_raw_parts(seed, seed_len as usize);
 
-    let ssk = unwrap_or_bail!(SecretSpendKey::from_bytes(&*ssk));
-    unwrap_or_bail!(FFI_WALLET.load_ssk(&id, &ssk));
+    unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
 
     0
 }
@@ -111,7 +105,7 @@ pub unsafe extern "C" fn create_transfer_tx(
     let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
 
     let ref_id = BlsScalar::from(
-        ref_id.map(|rid| *rid).unwrap_or((&mut FfiRng).next_u64()),
+        ref_id.copied().unwrap_or_else(|| (&mut FfiRng).next_u64()),
     );
 
     let tx = unwrap_or_bail!(FFI_WALLET.create_transfer_tx(
@@ -203,6 +197,10 @@ impl Store for FfiStore {
         }
         Ok(SecretSpendKey::from_bytes(&buf).ok())
     }
+
+    fn key_num(&self) -> usize {
+        unsafe { key_num() as usize }
+    }
 }
 
 // 1 MB for a buffer.
@@ -220,9 +218,16 @@ impl NoteFinder for FfiNoteFinder {
     ) -> Result<Vec<Note>, Self::Error> {
         let mut notes_buf = [0u8; NOTES_BUF_SIZE];
 
-        // SAFETY: this is unsa
-        let nnotes =
-            unsafe { find_notes(height, &vk.to_bytes(), &mut notes_buf[0]) };
+        let mut nnotes = 0u32;
+
+        unsafe {
+            error_if_not_zero!(find_notes(
+                height,
+                &vk.to_bytes(),
+                &mut notes_buf[0],
+                &mut nnotes
+            ))
+        };
 
         let mut buf = &notes_buf[..Note::SIZE * nnotes as usize];
 

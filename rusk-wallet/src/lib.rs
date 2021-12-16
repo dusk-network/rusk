@@ -42,6 +42,9 @@ pub trait Store {
     /// Retrieves a key from the store.
     fn key(&self, id: &Self::Id)
         -> Result<Option<SecretSpendKey>, Self::Error>;
+
+    /// Returns the number of keys in the store.
+    fn key_num(&self) -> usize;
 }
 
 /// Provides notes to the caller.
