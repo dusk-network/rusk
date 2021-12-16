@@ -45,6 +45,14 @@ extern "C" {
     ) -> u8;
 }
 
+macro_rules! return_if_not_zero {
+    ($e: expr) => {
+        if $e != 0 {
+            return 0;
+        }
+    };
+}
+
 macro_rules! error_if_not_zero {
     ($e: expr) => {
         if $e != 0 {
@@ -77,11 +85,13 @@ unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
 pub unsafe extern "C" fn create_secret_spend_key(
     id: *const u8,
     id_len: u32,
-    seed: *const u8,
-    seed_len: u32,
 ) -> u8 {
     let id = id_ptr_to_string(id, id_len);
-    let seed = ptr::slice_from_raw_parts(seed, seed_len as usize);
+
+    let mut seed_buf = [0; 0x400];
+    let mut seed_len = 0;
+    return_if_not_zero!(get_seed(&mut seed_buf[0], &mut seed_len));
+    let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
 
     unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
 

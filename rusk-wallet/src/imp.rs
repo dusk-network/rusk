@@ -70,7 +70,7 @@ pub struct Wallet<S, NF> {
 }
 
 impl<S, NF> Wallet<S, NF> {
-    /// Creates a new walle/// t with the given backing store.
+    /// Creates a new wallet with the given backing store.
     pub const fn new(store: S, note_finder: NF) -> Self {
         Self {
             store,
