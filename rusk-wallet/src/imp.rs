@@ -4,14 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{NoteFinder, Store, Transaction};
+use crate::{NodeClient, Store, Transaction, POSEIDON_BRANCH_DEPTH};
 
 use alloc::vec::Vec;
+use canonical::CanonError;
 
+use crate::tx::{TransactionSkeleton, UnprovenTransactionInput};
 use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::{Note, NoteType};
+use dusk_poseidon::tree::PoseidonBranch;
+use phoenix_core::{Crossover, Fee, Note, NoteType};
 use rand_chacha::ChaCha12Rng;
 use rand_core::{CryptoRng, Error as RngError, RngCore, SeedableRng};
 use sha2::{Digest, Sha256};
@@ -19,11 +22,13 @@ use sha2::{Digest, Sha256};
 const MAX_INPUT_NOTES: usize = 0x4;
 
 /// The error type returned by this crate.
-pub enum Error<S: Store, NF: NoteFinder> {
+pub enum Error<S: Store, C: NodeClient> {
     /// Underlying store error.
     Store(S::Error),
-    /// Find notes error.
-    FindNotes(NF::Error),
+    /// Error originating from the node client.
+    Node(C::Error),
+    /// Canonical stores.
+    Canon(CanonError),
     /// Random number generator error.
     Rng(RngError),
     /// Serialization and deserialization of Dusk types.
@@ -37,26 +42,32 @@ pub enum Error<S: Store, NF: NoteFinder> {
     NoteCombinationProblem,
 }
 
-impl<S: Store, NF: NoteFinder> Error<S, NF> {
+impl<S: Store, C: NodeClient> Error<S, C> {
     /// Returns an error from the underlying store error.
     pub fn from_store_err(se: S::Error) -> Self {
         Self::Store(se)
     }
     /// Returns an error from the underlying note finder error.
-    pub fn from_note_finder_err(nfe: NF::Error) -> Self {
-        Self::FindNotes(nfe)
+    pub fn from_node_err(ne: C::Error) -> Self {
+        Self::Node(ne)
     }
 }
 
-impl<S: Store, NF: NoteFinder> From<RngError> for Error<S, NF> {
+impl<S: Store, C: NodeClient> From<RngError> for Error<S, C> {
     fn from(re: RngError) -> Self {
         Self::Rng(re)
     }
 }
 
-impl<S: Store, NF: NoteFinder> From<BytesError> for Error<S, NF> {
+impl<S: Store, C: NodeClient> From<BytesError> for Error<S, C> {
     fn from(be: BytesError) -> Self {
         Self::Bytes(be)
+    }
+}
+
+impl<S: Store, C: NodeClient> From<CanonError> for Error<S, C> {
+    fn from(ce: CanonError) -> Self {
+        Self::Canon(ce)
     }
 }
 
@@ -64,23 +75,20 @@ impl<S: Store, NF: NoteFinder> From<BytesError> for Error<S, NF> {
 ///
 /// This is responsible for holding the keys, and performing operations like
 /// creating transactions.
-pub struct Wallet<S, NF> {
+pub struct Wallet<S, C> {
     store: S,
-    nf: NF,
+    client: C,
 }
 
-impl<S, NF> Wallet<S, NF> {
+impl<S, C> Wallet<S, C> {
     /// Creates a new wallet with the given backing store.
-    pub const fn new(store: S, note_finder: NF) -> Self {
-        Self {
-            store,
-            nf: note_finder,
-        }
+    pub const fn new(store: S, client: C) -> Self {
+        Self { store, client }
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-impl<S: Store, NF: NoteFinder> Wallet<S, NF>
+impl<S: Store, C: NodeClient> Wallet<S, C>
 where
     S::Id: Clone,
 {
@@ -93,8 +101,8 @@ where
         &self,
         id: &S::Id,
         seed: B,
-    ) -> Result<(), Error<S, NF>> {
-        let key_num = self.store.key_num();
+    ) -> Result<(), Error<S, C>> {
+        let key_num = self.store.key_num().map_err(Error::from_store_err)?;
 
         let mut sha_256 = Sha256::new();
         sha_256.update(seed);
@@ -111,6 +119,17 @@ where
         Ok(())
     }
 
+    /// Get the public spend key with the given ID.
+    pub fn get_public_spend_key(
+        &self,
+        id: &S::Id,
+    ) -> Result<PublicSpendKey, Error<S, C>> {
+        self.store
+            .key(id)
+            .map(|ssk| ssk.public_spend_key())
+            .map_err(Error::from_store_err)
+    }
+
     /// Creates a transfer transaction.
     pub fn create_transfer_tx<Rng: RngCore + CryptoRng>(
         &self,
@@ -121,22 +140,18 @@ where
         gas_limit: u64,
         gas_price: u64,
         ref_id: BlsScalar,
-    ) -> Result<Transaction, Error<S, NF>> {
-        let sender = self
-            .store
-            .key(sender)
-            .map_err(Error::from_store_err)?
-            .ok_or_else(|| Error::NoSuchKey(sender.clone()))?;
+    ) -> Result<Transaction, Error<S, C>> {
+        let sender = self.store.key(sender).map_err(Error::from_store_err)?;
         let sender_psk = sender.public_spend_key();
 
-        let inputs = {
+        let input_notes = {
             let sender_vk = sender.view_key();
 
             // TODO find a way to get the block height from somewhere
             let mut notes = self
-                .nf
-                .find_notes(0, &sender_vk)
-                .map_err(Error::from_note_finder_err)?;
+                .client
+                .fetch_notes(0, &sender_vk)
+                .map_err(Error::from_node_err)?;
             let mut notes_and_values = Vec::with_capacity(notes.len());
 
             let mut accumulated_value = 0;
@@ -163,7 +178,7 @@ where
                 // is enough value in the notes.
                 let (note, val) = notes_and_values.pop().unwrap();
                 accumulated_value += val;
-                input_notes.push(note.gen_nullifier(&sender));
+                input_notes.push(note);
             }
 
             if input_notes.len() > MAX_INPUT_NOTES {
@@ -172,6 +187,20 @@ where
 
             input_notes
         };
+
+        let nullifiers: Vec<BlsScalar> = input_notes
+            .iter()
+            .map(|note| note.gen_nullifier(&sender))
+            .collect();
+
+        let mut openings = Vec::with_capacity(input_notes.len());
+        for note in &input_notes {
+            let opening = self
+                .client
+                .fetch_opening(note)
+                .map_err(Error::from_node_err)?;
+            openings.push(opening);
+        }
 
         let outputs = vec![
             // receiver note
@@ -185,36 +214,53 @@ where
             ),
         ];
 
+        let anchor =
+            self.client.fetch_anchor().map_err(Error::from_node_err)?;
+        let fee = Fee::new(rng, gas_limit, gas_price, &sender_psk);
+
+        let skel = TransactionSkeleton::new(
+            nullifiers, outputs, anchor, fee, None, None,
+        );
+        let hash = skel.hash();
+
+        let inputs: Vec<UnprovenTransactionInput> = input_notes
+            .into_iter()
+            .zip(openings.into_iter())
+            .map(|(note, opening)| {
+                UnprovenTransactionInput::new(rng, &sender, note, opening, hash)
+            })
+            .collect();
+
         todo!()
     }
 
     /// Creates a stake transaction.
-    pub fn create_stake_tx(&self, id: &S::Id) -> Result<(), Error<S, NF>> {
+    pub fn create_stake_tx(&self, id: &S::Id) -> Result<(), Error<S, C>> {
         todo!()
     }
 
     /// Stops staking for a key.
-    pub fn stop_stake(&self) -> Result<(), Error<S, NF>> {
+    pub fn stop_stake(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 
     /// Extends staking for a particular key.
-    pub fn extend_stake(&self) -> Result<(), Error<S, NF>> {
+    pub fn extend_stake(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 
     /// Withdraw a key's stake.
-    pub fn withdraw_stake(&self) -> Result<(), Error<S, NF>> {
+    pub fn withdraw_stake(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 
     /// Syncs the wallet with the blocks.
-    pub fn sync(&self) -> Result<(), Error<S, NF>> {
+    pub fn sync(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 
     /// Gets the balance of a key.
-    pub fn get_balance(&self) -> Result<(), Error<S, NF>> {
+    pub fn get_balance(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 }

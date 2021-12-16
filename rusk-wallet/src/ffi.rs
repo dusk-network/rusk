@@ -12,43 +12,70 @@ use core::num::NonZeroU32;
 use core::ptr;
 use core::slice;
 
+use canonical::{Canon, Source};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 use rand_core::{
     impls::{next_u32_via_fill, next_u64_via_fill},
     CryptoRng, RngCore,
 };
 
-use crate::{Error, NoteFinder, Store, Wallet};
+use crate::{Error, NodeClient, Store, Wallet};
 
 extern "C" {
+    /// Stores a secret spend in a key-value store.
     fn store_key(
         id: *const u8,
         id_len: u32,
-        key: *const [u8; SecretSpendKey::SIZE],
+        ssk: *const [u8; SecretSpendKey::SIZE],
     ) -> u8;
+
+    /// Retrieves a secret spend from a key-value store.
     fn get_key(
         id: *const u8,
         id_len: u32,
-        key: *mut [u8; SecretSpendKey::SIZE],
+        ssk: *mut [u8; SecretSpendKey::SIZE],
     ) -> u8;
-    fn key_num() -> u32;
+
+    /// Returns the number of secret spend keys stored in a key-value store.
+    fn key_num(num: *mut u32) -> u8;
+
+    /// Gets the seed for the CSPRNG used to generate secret spend keys.
     fn get_seed(seed: *mut u8, seed_len: *mut u32) -> u8;
+
+    /// Fills a buffer with random numbers.
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
-    fn find_notes(
+
+    /// Asks the node to finds the notes for a specific view key, starting from
+    /// a certain height.
+    ///
+    /// The notes are to be serialized in sequence and written to `notes`, and
+    /// the number of notes written should be put in `notes_len`.
+    fn fetch_notes(
         height: u64,
         vk: *const [u8; ViewKey::SIZE],
         notes: *mut u8,
         notes_len: *mut u32,
     ) -> u8;
+
+    /// Queries the node to find the opening for a specific note.
+    fn fetch_opening(
+        note: *const [u8; Note::SIZE],
+        opening: *mut u8,
+        opening_len: *mut u32,
+    ) -> u8;
+
+    /// Fetches the current anchor.
+    fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
 }
 
 macro_rules! return_if_not_zero {
     ($e: expr) => {
         if $e != 0 {
-            return 0;
+            return $e;
         }
     };
 }
@@ -61,19 +88,30 @@ macro_rules! error_if_not_zero {
     };
 }
 
-macro_rules! unwrap_or_bail {
+macro_rules! unwrap_or_err {
     ($e: expr) => {
         match $e {
             Ok(v) => v,
             Err(e) => {
-                return Error::<FfiStore, FfiNoteFinder>::from(e).into();
+                return Err(Error::<FfiStore, FfiNodeClient>::from(e).into());
             }
         }
     };
 }
 
-const FFI_WALLET: Wallet<FfiStore, FfiNoteFinder> =
-    Wallet::new(FfiStore, FfiNoteFinder);
+macro_rules! unwrap_or_bail {
+    ($e: expr) => {
+        match $e {
+            Ok(v) => v,
+            Err(e) => {
+                return Error::<FfiStore, FfiNodeClient>::from(e).into();
+            }
+        }
+    };
+}
+
+const FFI_WALLET: Wallet<FfiStore, FfiNodeClient> =
+    Wallet::new(FfiStore, FfiNodeClient);
 
 unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
     let id = slice::from_raw_parts(id, id_len as usize);
@@ -94,6 +132,27 @@ pub unsafe extern "C" fn create_secret_spend_key(
     let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
 
     unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
+
+    0
+}
+
+/// Get the public spend key.
+#[no_mangle]
+pub unsafe extern "C" fn get_public_spend_key(
+    id: *const u8,
+    id_len: u32,
+    psk: *mut [u8; PublicSpendKey::SIZE],
+) -> u8 {
+    let id = id_ptr_to_string(id, id_len);
+
+    let mut seed_buf = [0; 0x400];
+    let mut seed_len = 0;
+    return_if_not_zero!(get_seed(&mut seed_buf[0], &mut seed_len));
+    let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
+
+    unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
+
+    // ptr::copy_nonoverlapping()
 
     0
 }
@@ -193,10 +252,7 @@ impl Store for FfiStore {
         Ok(())
     }
 
-    fn key(
-        &self,
-        id: &Self::Id,
-    ) -> Result<Option<SecretSpendKey>, Self::Error> {
+    fn key(&self, id: &Self::Id) -> Result<SecretSpendKey, Self::Error> {
         let mut buf = [0u8; SecretSpendKey::SIZE];
         unsafe {
             error_if_not_zero!(get_key(
@@ -205,33 +261,39 @@ impl Store for FfiStore {
                 &mut buf
             ));
         }
-        Ok(SecretSpendKey::from_bytes(&buf).ok())
+        Ok(unwrap_or_err!(SecretSpendKey::from_bytes(&buf)))
     }
 
-    fn key_num(&self) -> usize {
-        unsafe { key_num() as usize }
+    fn key_num(&self) -> Result<usize, Self::Error> {
+        let mut num = 0;
+        unsafe {
+            error_if_not_zero!(key_num(&mut num));
+        }
+        Ok(num as usize)
     }
 }
 
 // 1 MB for a buffer.
 const NOTES_BUF_SIZE: usize = 0x100000;
+// 512 kb for a buffer.
+const OPENING_BUF_SIZE: usize = 0x10000;
 
-struct FfiNoteFinder;
+struct FfiNodeClient;
 
-impl NoteFinder for FfiNoteFinder {
+impl NodeClient for FfiNodeClient {
     type Error = u8;
 
-    fn find_notes(
+    fn fetch_notes(
         &self,
         height: u64,
         vk: &ViewKey,
     ) -> Result<Vec<Note>, Self::Error> {
         let mut notes_buf = [0u8; NOTES_BUF_SIZE];
 
-        let mut nnotes = 0u32;
+        let mut nnotes = 0;
 
         unsafe {
-            error_if_not_zero!(find_notes(
+            error_if_not_zero!(fetch_notes(
                 height,
                 &vk.to_bytes(),
                 &mut notes_buf[0],
@@ -243,10 +305,44 @@ impl NoteFinder for FfiNoteFinder {
 
         let mut notes = Vec::with_capacity(nnotes as usize);
         for _ in 0..nnotes {
-            notes.push(Note::from_reader(&mut buf).map_err(|_| 1)?);
+            notes.push(unwrap_or_err!(Note::from_reader(&mut buf)));
         }
 
         Ok(notes)
+    }
+
+    fn fetch_opening(
+        &self,
+        note: &Note,
+    ) -> Result<PoseidonBranch<17>, Self::Error> {
+        let mut opening_buf = [0u8; OPENING_BUF_SIZE];
+
+        let mut opening_len = 0;
+
+        let note = note.to_bytes();
+        unsafe {
+            error_if_not_zero!(fetch_opening(
+                &note,
+                &mut opening_buf[0],
+                &mut opening_len
+            ));
+        }
+
+        let mut source = Source::new(&opening_buf[..opening_len as usize]);
+        let branch = unwrap_or_err!(PoseidonBranch::decode(&mut source));
+
+        Ok(branch)
+    }
+
+    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
+        let mut bls_buf = [0; BlsScalar::SIZE];
+
+        unsafe {
+            error_if_not_zero!(fetch_anchor(&mut bls_buf));
+        }
+
+        let scalar = unwrap_or_err!(BlsScalar::from_bytes(&bls_buf));
+        Ok(scalar)
     }
 }
 
@@ -289,16 +385,17 @@ impl RngCore for FfiRng {
     }
 }
 
-impl<S: Store, NF: NoteFinder> From<Error<S, NF>> for u8 {
-    fn from(e: Error<S, NF>) -> Self {
+impl<S: Store, C: NodeClient> From<Error<S, C>> for u8 {
+    fn from(e: Error<S, C>) -> Self {
         match e {
             Error::Store(_) => 1,
             Error::Rng(_) => 2,
             Error::Bytes(_) => 3,
             Error::NoSuchKey(_) => 4,
-            Error::FindNotes(_) => 5,
+            Error::Node(_) => 5,
             Error::NotEnoughBalance => 6,
             Error::NoteCombinationProblem => 7,
+            Error::Canon(_) => 8,
         }
     }
 }

@@ -19,11 +19,15 @@ mod imp;
 mod tx;
 
 use alloc::vec::Vec;
+use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 
 pub use imp::*;
 pub use tx::Transaction;
+
+pub(crate) const POSEIDON_BRANCH_DEPTH: usize = 17;
 
 /// The key store backend - where the keys live.
 pub trait Store {
@@ -40,22 +44,30 @@ pub trait Store {
     ) -> Result<(), Self::Error>;
 
     /// Retrieves a key from the store.
-    fn key(&self, id: &Self::Id)
-        -> Result<Option<SecretSpendKey>, Self::Error>;
+    fn key(&self, id: &Self::Id) -> Result<SecretSpendKey, Self::Error>;
 
     /// Returns the number of keys in the store.
-    fn key_num(&self) -> usize;
+    fn key_num(&self) -> Result<usize, Self::Error>;
 }
 
-/// Provides notes to the caller.
-pub trait NoteFinder {
-    /// Error returned by the note finder.
+/// Types that are clients of the node's API.
+pub trait NodeClient {
+    /// Error returned by the node client.
     type Error;
 
     /// Find notes for a view key, starting from the given block height.
-    fn find_notes(
+    fn fetch_notes(
         &self,
         height: u64,
         vk: &ViewKey,
     ) -> Result<Vec<Note>, Self::Error>;
+
+    /// Queries the node to find the opening for a specific note.
+    fn fetch_opening(
+        &self,
+        note: &Note,
+    ) -> Result<PoseidonBranch<17>, Self::Error>;
+
+    /// Fetch the current anchor of the state.
+    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
 }

@@ -11,9 +11,11 @@ dusk-bytes = "^0.1"
 dusk-jubjub = { version = "^0.10", default-features = false }
 phoenix-core = "0.14.0-rc.0"
 dusk-schnorr = "0.8.0-rc.0"
-dusk-poseidon = { version = "0.23.0-rc.0", default-features = false }
+dusk-poseidon = { version = "0.23.0-rc.1", features = [ "canon" ], default-features = false }
 dusk-abi = "^0.10"
 sha2 = { version = "^0.10", default-features = false }
+dusk-plonk = { version = "^0.9", default-features = false }
+canonical = "0.6"
 
 [dev-dependencies]
 rand = "^0.8"
