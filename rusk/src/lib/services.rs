@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod network;
 pub mod pki;
 use tonic::{Request, Response, Status};
 

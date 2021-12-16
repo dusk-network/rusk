@@ -10,6 +10,8 @@ pub mod unix;
 
 use super::SOCKET_PATH;
 use futures::TryFutureExt;
+use rusk::services::network::NetworkServer;
+use rusk::services::network::RuskNetwork;
 use rusk::services::pki::KeysServer;
 use rusk::Rusk;
 use std::convert::TryFrom;
@@ -28,6 +30,11 @@ pub struct TestContext {
 #[async_trait::async_trait]
 impl AsyncTestContext for TestContext {
     async fn setup() -> TestContext {
+        // First of all let's remove old stucked socket path
+        // This is required because the tear_down functions is not called if any
+        // test panics
+        let _ = std::fs::remove_file(&*SOCKET_PATH);
+
         // Initialize the subscriber
         // Generate a subscriber with the desired log level.
         let subscriber =
@@ -46,6 +53,7 @@ impl AsyncTestContext for TestContext {
         let uds = UnixListener::bind(&*SOCKET_PATH)
             .expect("Error binding the socket");
         let rusk = Rusk::default();
+        let network = RuskNetwork::default();
 
         let incoming = async_stream::stream! {
             loop {
@@ -59,6 +67,7 @@ impl AsyncTestContext for TestContext {
         tokio::spawn(async move {
             Server::builder()
                 .add_service(KeysServer::new(rusk))
+                .add_service(NetworkServer::new(network))
                 .serve_with_incoming(incoming)
                 .await
                 .unwrap();
