@@ -9,11 +9,12 @@ use crate::POSEIDON_BRANCH_DEPTH;
 use alloc::vec::Vec;
 use core::mem;
 
+use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractId;
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
-use dusk_jubjub::{BlsScalar, JubJubExtended};
+use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_plonk::prelude::{JubJubScalar, Proof};
 use dusk_poseidon::cipher::PoseidonCipher;
@@ -288,13 +289,14 @@ impl TransactionSkeleton {
     }
 }
 
-pub(crate) struct UnprovenTransactionInput {
-    sig: SchnorrSig,
+/// An input to a transaction that is yet to be proven.
+#[derive(Debug, Clone)]
+pub struct UnprovenTransactionInput {
     nullifier: BlsScalar,
-    note: Note,
-    // FIXME magic number
     opening: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
-    pk_rprime: JubJubExtended,
+    note: Note,
+    pk_R: JubJubExtended,
+    sig: SchnorrSig,
 }
 
 impl UnprovenTransactionInput {
@@ -309,24 +311,97 @@ impl UnprovenTransactionInput {
         let sk_r = ssk.sk_r(note.stealth_address());
         let sig = SchnorrSig::new(&sk_r, rng, tx_hash);
 
-        let pk_rprime = dusk_jubjub::GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+        let pk_R = dusk_jubjub::GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
 
         Self {
             sig,
             nullifier,
             note,
             opening,
-            pk_rprime,
+            pk_R,
         }
     }
 
-    fn nullifier(&self) -> BlsScalar {
+    /// Serialize the input to a variable size byte buffer.
+    pub fn to_var_bytes(&self) -> Vec<u8> {
+        let affine_pkr = JubJubAffine::from(&self.pk_R);
+
+        // TODO Magic number for the buffer size here.
+        // Should be corrected once dusk-poseidon implements `Serializable` for
+        // `PoseidonBranch`.
+        let mut opening_bytes =
+            [0; (POSEIDON_BRANCH_DEPTH + 2) * (BlsScalar::SIZE * 5 + 8)];
+        let mut sink = Sink::new(&mut opening_bytes[..]);
+        self.opening.encode(&mut sink);
+
+        let mut bytes = Vec::with_capacity(
+            BlsScalar::SIZE
+                + Note::SIZE
+                + JubJubAffine::SIZE
+                + SchnorrSig::SIZE
+                + opening_bytes.len(),
+        );
+
+        bytes.extend_from_slice(&self.nullifier.to_bytes());
+        bytes.extend_from_slice(&self.note.to_bytes());
+        bytes.extend_from_slice(&affine_pkr.to_bytes());
+        bytes.extend_from_slice(&self.sig.to_bytes());
+        bytes.extend_from_slice(&opening_bytes);
+
+        bytes
+    }
+
+    /// Deserializes the the input from bytes.
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, BytesError> {
+        let mut bytes = buf;
+
+        let nullifier = BlsScalar::from_reader(&mut bytes)?;
+        let note = Note::from_reader(&mut bytes)?;
+        let pk_R = JubJubExtended::from(JubJubAffine::from_reader(&mut bytes)?);
+        let sig = SchnorrSig::from_reader(&mut bytes)?;
+
+        let mut source = Source::new(bytes);
+        let opening = PoseidonBranch::decode(&mut source)
+            .map_err(|_| BytesError::InvalidData)?;
+
+        Ok(Self {
+            nullifier,
+            note,
+            pk_R,
+            sig,
+            opening,
+        })
+    }
+
+    /// Returns the nullifier of the input.
+    pub fn nullifier(&self) -> BlsScalar {
         self.nullifier
+    }
+
+    /// Returns the opening of the input.
+    pub fn opening(&self) -> &PoseidonBranch<POSEIDON_BRANCH_DEPTH> {
+        &self.opening
+    }
+
+    /// Returns the note of the input.
+    pub fn note(&self) -> &Note {
+        &self.note
+    }
+
+    /// Returns the input's pk_r'.
+    pub fn pkr_prime(&self) -> JubJubExtended {
+        self.pk_R
+    }
+
+    /// Returns the input's signature.
+    pub fn signature(&self) -> &SchnorrSig {
+        &self.sig
     }
 }
 
 /// A transaction that is yet to be proven.
-pub(crate) struct UnprovenTransaction {
+#[derive(Debug, Clone)]
+pub struct UnprovenTransaction {
     inputs: Vec<UnprovenTransactionInput>,
     outputs: Vec<(Note, u64, JubJubScalar)>,
     anchor: BlsScalar,
@@ -336,10 +411,213 @@ pub(crate) struct UnprovenTransaction {
 }
 
 impl UnprovenTransaction {
-    pub(crate) fn delegate_prove(self) -> Transaction {
+    pub fn delegate_prove(&self) -> Transaction {
         // Keep in mind that this needs access to the prover key which is a
         // couple of gigs. This will probably have to be a network component.
         todo!()
+    }
+
+    /// Proves the given unproven transaction.
+    pub fn prove(&self) -> Transaction {
+        todo!()
+    }
+
+    /// Serialize the transaction to a variable length byte buffer.
+    pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
+        let serialized_inputs: Vec<Vec<u8>> = self
+            .inputs
+            .iter()
+            .map(UnprovenTransactionInput::to_var_bytes)
+            .collect();
+        let ninputs = self.inputs.len();
+        let total_input_len = serialized_inputs
+            .iter()
+            .fold(0, |len, input| len + input.len());
+
+        let serialized_outputs: Vec<
+            [u8; Note::SIZE + u64::SIZE + JubJubScalar::SIZE],
+        > = self
+            .outputs
+            .iter()
+            .map(|(note, value, blinder)| {
+                let mut buf = [0; Note::SIZE + u64::SIZE + JubJubScalar::SIZE];
+
+                buf[..Note::SIZE].copy_from_slice(&note.to_bytes());
+                buf[Note::SIZE..Note::SIZE + u64::SIZE]
+                    .copy_from_slice(&value.to_bytes());
+                buf[Note::SIZE + u64::SIZE
+                    ..Note::SIZE + u64::SIZE + JubJubScalar::SIZE]
+                    .copy_from_slice(&blinder.to_bytes());
+
+                buf
+            })
+            .collect();
+        let noutputs = self.outputs.len();
+        let total_output_len = serialized_outputs
+            .iter()
+            .fold(0, |len, output| len + output.len());
+
+        let size = u64::SIZE
+            + ninputs * u64::SIZE
+            + total_input_len
+            + u64::SIZE
+            + total_output_len
+            + u64::SIZE
+            + self.crossover.map(|_| Crossover::SIZE).unwrap_or(0)
+            + u64::SIZE
+            + self
+                .call
+                .as_ref()
+                .map(|(_, cdata)| CONTRACT_ID_SIZE + cdata.len())
+                .unwrap_or(0);
+
+        let mut buf = vec![0; size];
+        let mut writer = &mut buf[..];
+
+        writer.write(&(ninputs as u64).to_bytes())?;
+        for sinput in serialized_inputs {
+            writer.write(&(sinput.len() as u64).to_bytes())?;
+            writer.write(&sinput)?;
+        }
+
+        writer.write(&(noutputs as u64).to_bytes())?;
+        for soutput in serialized_outputs {
+            writer.write(&soutput)?;
+        }
+
+        writer.write(&self.anchor.to_bytes())?;
+        writer.write(&self.fee.to_bytes())?;
+
+        match &self.crossover {
+            None => {
+                writer.write(&0_u64.to_bytes())?;
+            }
+            Some((crossover, value, blinder)) => {
+                writer.write(&1_u64.to_bytes())?;
+                writer.write(&crossover.to_bytes())?;
+                writer.write(&value.to_bytes())?;
+                writer.write(&blinder.to_bytes())?;
+            }
+        }
+
+        match &self.call {
+            None => {
+                writer.write(&0_u64.to_bytes())?;
+            }
+            Some((cid, cdata)) => {
+                writer.write(&1_u64.to_bytes())?;
+                writer.write(cid.as_bytes())?;
+                writer.write(cdata)?;
+            }
+        }
+
+        Ok(buf)
+    }
+
+    /// Deserialize the transaction from a bytes buffer.
+    pub fn from_bytes(buf: &[u8]) -> Result<Self, BytesError> {
+        let mut buffer = buf;
+
+        let ninputs = u64::from_reader(&mut buffer)?;
+        let mut inputs = Vec::with_capacity(ninputs as usize);
+        for _ in 0..ninputs {
+            let size = u64::from_reader(&mut buffer)?;
+            inputs.push(UnprovenTransactionInput::from_bytes(
+                &buffer[..size as usize],
+            )?);
+            buffer = &buffer[..size as usize];
+        }
+
+        let noutputs = u64::from_reader(&mut buffer)?;
+        let mut outputs = Vec::with_capacity(noutputs as usize);
+        for _ in 0..noutputs {
+            let note = Note::from_reader(&mut buffer)?;
+            let value = u64::from_reader(&mut buffer)?;
+            let blinder = JubJubScalar::from_reader(&mut buffer)?;
+
+            outputs.push((note, value, blinder));
+        }
+
+        let anchor = BlsScalar::from_reader(&mut buffer)?;
+        let fee = Fee::from_reader(&mut buffer)?;
+
+        let mut crossover = None;
+        if u64::from_reader(&mut buffer)? != 0 {
+            let c = Crossover::from_reader(&mut buffer)?;
+            let value = u64::from_reader(&mut buffer)?;
+            let blinder = JubJubScalar::from_reader(&mut buffer)?;
+
+            crossover = Some((c, value, blinder))
+        }
+
+        let mut call = None;
+        if u64::from_reader(&mut buffer)? != 0 {
+            let buf_len = buffer.len();
+
+            // needs to be at least the size of a contract ID and have some call
+            // data.
+            if buf_len < CONTRACT_ID_SIZE {
+                return Err(BytesError::BadLength {
+                    found: buf_len,
+                    expected: CONTRACT_ID_SIZE,
+                });
+            }
+            let (cid_buffer, cdata_buffer) = buffer.split_at(CONTRACT_ID_SIZE);
+
+            let contract_id = ContractId::from(cid_buffer);
+            let call_data = Vec::from(cdata_buffer);
+
+            call = Some((contract_id, call_data));
+        }
+
+        Ok(Self {
+            inputs,
+            outputs,
+            anchor,
+            fee,
+            crossover,
+            call,
+        })
+    }
+
+    /// Returns the hash of the transaction.
+    pub fn hash(&self) -> BlsScalar {
+        TransactionSkeleton::from(self.clone()).hash()
+    }
+
+    /// Returns the inputs to a hash function.
+    pub fn hash_inputs(&self) -> Vec<BlsScalar> {
+        TransactionSkeleton::from(self.clone()).hash_inputs()
+    }
+
+    /// Returns the inputs to the transaction.
+    pub fn inputs(&self) -> &[UnprovenTransactionInput] {
+        &self.inputs
+    }
+
+    /// Returns the outputs of the transaction.
+    pub fn outputs(&self) -> &[(Note, u64, JubJubScalar)] {
+        &self.outputs
+    }
+
+    /// Returns the anchor of the transaction.
+    pub fn anchor(&self) -> BlsScalar {
+        self.anchor
+    }
+
+    /// Returns the fee of the transaction.
+    pub fn fee(&self) -> &Fee {
+        &self.fee
+    }
+
+    /// Returns the crossover of the transaction.
+    pub fn crossover(&self) -> Option<&(Crossover, u64, JubJubScalar)> {
+        self.crossover.as_ref()
+    }
+
+    /// Returns the call of the transaction.
+    pub fn call(&self) -> Option<&(ContractId, Vec<u8>)> {
+        self.call.as_ref()
     }
 }
 

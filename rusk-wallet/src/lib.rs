@@ -21,9 +21,11 @@ mod tx;
 use alloc::vec::Vec;
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
+use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 
+use crate::tx::UnprovenTransaction;
 pub use imp::*;
 pub use tx::Transaction;
 
@@ -70,4 +72,10 @@ pub trait NodeClient {
 
     /// Fetch the current anchor of the state.
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
+
+    /// Requests that a node prove the given transaction.
+    fn request_proof(
+        &self,
+        utx: &UnprovenTransaction,
+    ) -> Result<Proof, Self::Error>;
 }

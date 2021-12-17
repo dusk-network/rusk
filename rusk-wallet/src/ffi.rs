@@ -16,6 +16,7 @@ use canonical::{Canon, Source};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 use rand_core::{
@@ -23,6 +24,7 @@ use rand_core::{
     CryptoRng, RngCore,
 };
 
+use crate::tx::UnprovenTransaction;
 use crate::{Error, NodeClient, Store, Wallet};
 
 extern "C" {
@@ -70,6 +72,13 @@ extern "C" {
 
     /// Fetches the current anchor.
     fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
+
+    /// Request the node to prove the given unproven transaction.
+    fn request_proof(
+        utx: *const u8,
+        utx_len: u32,
+        proof: *mut [u8; Proof::SIZE],
+    ) -> u8;
 }
 
 macro_rules! return_if_not_zero {
@@ -343,6 +352,25 @@ impl NodeClient for FfiNodeClient {
 
         let scalar = unwrap_or_err!(BlsScalar::from_bytes(&bls_buf));
         Ok(scalar)
+    }
+
+    fn request_proof(
+        &self,
+        utx: &UnprovenTransaction,
+    ) -> Result<Proof, Self::Error> {
+        let utx_bytes = unwrap_or_err!(utx.to_var_bytes());
+        let mut proof_buf = [0; Proof::SIZE];
+
+        unsafe {
+            error_if_not_zero!(request_proof(
+                &utx_bytes[0],
+                utx_bytes.len() as u32,
+                &mut proof_buf
+            ));
+        }
+
+        let utx = unwrap_or_err!(Proof::from_bytes(&proof_buf));
+        Ok(utx)
     }
 }
 
