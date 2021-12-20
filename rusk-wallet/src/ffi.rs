@@ -6,6 +6,8 @@
 
 //! The foreign function interface for the wallet.
 
+use crate::imp;
+
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
@@ -46,7 +48,7 @@ extern "C" {
     fn key_num(num: *mut u32) -> u8;
 
     /// Gets the seed for the CSPRNG used to generate secret spend keys.
-    fn get_seed(seed: *mut u8, seed_len: *mut u32) -> u8;
+    fn get_mnemonic(seed: *mut u8, seed_len: *mut u32) -> u8;
 
     /// Fills a buffer with random numbers.
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
@@ -119,12 +121,34 @@ macro_rules! unwrap_or_bail {
     };
 }
 
-const FFI_WALLET: Wallet<FfiStore, FfiNodeClient> =
-    Wallet::new(FfiStore, FfiNodeClient);
+type FfiWallet = Wallet<FfiStore, FfiNodeClient>;
+const WALLET: FfiWallet = Wallet::new(FfiStore, FfiNodeClient);
 
 unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
     let id = slice::from_raw_parts(id, id_len as usize);
     String::from_utf8_unchecked(id.to_vec())
+}
+
+/// Generates a random mnemonic. These mnemonics **are** the user's wallet. They
+/// should be treated with care. The words are returned comma separated.
+pub unsafe extern "C" fn generate_mnemonic(
+    lang: imp::Language,
+    words: *mut u8,
+    words_len: *mut u32,
+) -> u8 {
+    let mnemonic =
+        unwrap_or_bail!(FfiWallet::generate_mnemonic(&mut FfiRng, lang));
+
+    let mnemonic_words: Vec<&'static str> = mnemonic.word_iter().collect();
+    let mnemonic_sentence = mnemonic_words.join(",");
+
+    let bytes = mnemonic_sentence.as_bytes();
+    let len = bytes.len();
+
+    ptr::copy_nonoverlapping(&bytes[0], words, len);
+    *words_len = len as u32;
+
+    0
 }
 
 /// Create and store secret spend key.
@@ -137,10 +161,10 @@ pub unsafe extern "C" fn create_secret_spend_key(
 
     let mut seed_buf = [0; 0x400];
     let mut seed_len = 0;
-    return_if_not_zero!(get_seed(&mut seed_buf[0], &mut seed_len));
+    return_if_not_zero!(get_mnemonic(&mut seed_buf[0], &mut seed_len));
     let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
 
-    unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
+    unwrap_or_bail!(WALLET.create_secret_spend_key(&id, &*seed));
 
     0
 }
@@ -154,14 +178,8 @@ pub unsafe extern "C" fn get_public_spend_key(
 ) -> u8 {
     let id = id_ptr_to_string(id, id_len);
 
-    let mut seed_buf = [0; 0x400];
-    let mut seed_len = 0;
-    return_if_not_zero!(get_seed(&mut seed_buf[0], &mut seed_len));
-    let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
-
-    unwrap_or_bail!(FFI_WALLET.create_secret_spend_key(&id, &*seed));
-
-    // ptr::copy_nonoverlapping()
+    let key = unwrap_or_bail!(WALLET.get_public_spend_key(&id)).to_bytes();
+    ptr::copy_nonoverlapping(&key[0], &mut (*psk)[0], key.len());
 
     0
 }
@@ -171,6 +189,7 @@ pub unsafe extern "C" fn get_public_spend_key(
 pub unsafe extern "C" fn create_transfer_tx(
     sender_id: *const u8,
     id_len: u32,
+    refund: *const [u8; PublicSpendKey::SIZE],
     receiver: *const [u8; PublicSpendKey::SIZE],
     value: u64,
     gas_limit: u64,
@@ -180,15 +199,17 @@ pub unsafe extern "C" fn create_transfer_tx(
     tx_len: *mut u32,
 ) -> u8 {
     let id = id_ptr_to_string(sender_id, id_len);
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
     let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
 
     let ref_id = BlsScalar::from(
         ref_id.copied().unwrap_or_else(|| (&mut FfiRng).next_u64()),
     );
 
-    let tx = unwrap_or_bail!(FFI_WALLET.create_transfer_tx(
+    let tx = unwrap_or_bail!(WALLET.create_transfer_tx(
         &mut FfiRng,
         &id,
+        &refund,
         &receiver,
         value,
         gas_price,
@@ -424,6 +445,8 @@ impl<S: Store, C: NodeClient> From<Error<S, C>> for u8 {
             Error::NotEnoughBalance => 6,
             Error::NoteCombinationProblem => 7,
             Error::Canon(_) => 8,
+            Error::Bip39(_) => 9,
+            Error::Phoenix(_) => 10,
         }
     }
 }

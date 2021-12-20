@@ -4,16 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{NodeClient, Store, Transaction, POSEIDON_BRANCH_DEPTH};
+use crate::{NodeClient, Store, Transaction};
 
 use alloc::vec::Vec;
 use canonical::CanonError;
 
-use crate::tx::{TransactionSkeleton, UnprovenTransactionInput};
+use crate::tx::{
+    TransactionSkeleton, UnprovenTransaction, UnprovenTransactionInput,
+};
+use bip39::Mnemonic;
 use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::{Fee, Note, NoteType};
+use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_chacha::ChaCha12Rng;
 use rand_core::{CryptoRng, Error as RngError, RngCore, SeedableRng};
 use sha2::{Digest, Sha256};
@@ -32,6 +35,8 @@ pub enum Error<S: Store, C: NodeClient> {
     Rng(RngError),
     /// Serialization and deserialization of Dusk types.
     Bytes(BytesError),
+    /// Originating from the transaction model.
+    Phoenix(PhoenixError),
     /// The key with the given ID does not exist.
     NoSuchKey(S::Id),
     /// Not enough balance to perform transaction.
@@ -39,6 +44,8 @@ pub enum Error<S: Store, C: NodeClient> {
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a transaction.
     NoteCombinationProblem,
+    /// Error generating or manipulating the mnemonic.
+    Bip39(bip39::Error),
 }
 
 impl<S: Store, C: NodeClient> Error<S, C> {
@@ -64,9 +71,61 @@ impl<S: Store, C: NodeClient> From<BytesError> for Error<S, C> {
     }
 }
 
+impl<S: Store, C: NodeClient> From<PhoenixError> for Error<S, C> {
+    fn from(pe: PhoenixError) -> Self {
+        Self::Phoenix(pe)
+    }
+}
+
 impl<S: Store, C: NodeClient> From<CanonError> for Error<S, C> {
     fn from(ce: CanonError) -> Self {
         Self::Canon(ce)
+    }
+}
+
+impl<S: Store, C: NodeClient> From<bip39::Error> for Error<S, C> {
+    fn from(be: bip39::Error) -> Self {
+        Self::Bip39(be)
+    }
+}
+
+/// The language of a mnemonic.
+#[repr(C)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Language {
+    /// English language mnemonic.
+    English,
+    /// Simplified chinese mnemonic.
+    SimplifiedChinese,
+    /// Traditional chinese mnemonic.
+    TraditionalChinese,
+    /// Czech mnemonic.
+    Czech,
+    /// French mnemonic.
+    French,
+    /// Italian mnemonic.
+    Italian,
+    /// Japanese mnemonic.
+    Japanese,
+    /// Korean mnemonic.
+    Korean,
+    /// Spanish mnemonic.
+    Spanish,
+}
+
+impl From<Language> for bip39::Language {
+    fn from(lang: Language) -> bip39::Language {
+        match lang {
+            Language::English => bip39::Language::English,
+            Language::SimplifiedChinese => bip39::Language::SimplifiedChinese,
+            Language::TraditionalChinese => bip39::Language::TraditionalChinese,
+            Language::Czech => bip39::Language::Czech,
+            Language::French => bip39::Language::French,
+            Language::Italian => bip39::Language::Italian,
+            Language::Japanese => bip39::Language::Japanese,
+            Language::Korean => bip39::Language::Korean,
+            Language::Spanish => bip39::Language::Spanish,
+        }
     }
 }
 
@@ -76,13 +135,13 @@ impl<S: Store, C: NodeClient> From<CanonError> for Error<S, C> {
 /// creating transactions.
 pub struct Wallet<S, C> {
     store: S,
-    client: C,
+    node: C,
 }
 
 impl<S, C> Wallet<S, C> {
     /// Creates a new wallet with the given backing store.
-    pub const fn new(store: S, client: C) -> Self {
-        Self { store, client }
+    pub const fn new(store: S, node: C) -> Self {
+        Self { store, node }
     }
 }
 
@@ -91,6 +150,17 @@ impl<S: Store, C: NodeClient> Wallet<S, C>
 where
     S::Id: Clone,
 {
+    /// Generates a random mnemonic. These mnemonics **are** the user's wallet.
+    /// They should be treated with care.
+    pub fn generate_mnemonic<Rng: RngCore + CryptoRng>(
+        rng: &mut Rng,
+        lang: Language,
+    ) -> Result<Mnemonic, Error<S, C>> {
+        let mut entropy = [0; 32];
+        rng.try_fill_bytes(&mut entropy[..])?;
+        Ok(Mnemonic::from_entropy_in(lang.into(), &entropy[..])?)
+    }
+
     /// Create a secret spend key given a seed and a store ID.
     ///
     /// This creates a key based on the number of keys that are already in the
@@ -134,6 +204,7 @@ where
         &self,
         rng: &mut Rng,
         sender: &S::Id,
+        refund: &PublicSpendKey,
         receiver: &PublicSpendKey,
         value: u64,
         gas_limit: u64,
@@ -141,23 +212,23 @@ where
         ref_id: BlsScalar,
     ) -> Result<Transaction, Error<S, C>> {
         let sender = self.store.key(sender).map_err(Error::from_store_err)?;
-        let sender_psk = sender.public_spend_key();
 
         let input_notes = {
             let sender_vk = sender.view_key();
 
             // TODO find a way to get the block height from somewhere
             let mut notes = self
-                .client
+                .node
                 .fetch_notes(0, &sender_vk)
                 .map_err(Error::from_node_err)?;
             let mut notes_and_values = Vec::with_capacity(notes.len());
 
             let mut accumulated_value = 0;
             for note in notes.drain(..) {
-                let val = note.value(Some(&sender_vk)).unwrap();
+                let val = note.value(Some(&sender_vk))?;
+                let blinder = note.blinding_factor(Some(&sender_vk))?;
                 accumulated_value += val;
-                notes_and_values.push((note, val));
+                notes_and_values.push((note, val, blinder));
             }
 
             if accumulated_value < value {
@@ -167,7 +238,8 @@ where
             // This sorts the notes from least valuable to most valuable. It
             // helps in the minimum gas spent algorithm, where the largest notes
             // are "popped" first.
-            notes_and_values.sort_by(|(_, aval), (_, bval)| aval.cmp(bval));
+            notes_and_values
+                .sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
 
             let mut input_notes = Vec::with_capacity(notes.len());
 
@@ -175,9 +247,9 @@ where
             while accumulated_value < value {
                 // This unwrap is ok because at this point we can be sure there
                 // is enough value in the notes.
-                let (note, val) = notes_and_values.pop().unwrap();
+                let (note, val, blinder) = notes_and_values.pop().unwrap();
                 accumulated_value += val;
-                input_notes.push(note);
+                input_notes.push((note, val, blinder));
             }
 
             if input_notes.len() > MAX_INPUT_NOTES {
@@ -189,48 +261,64 @@ where
 
         let nullifiers: Vec<BlsScalar> = input_notes
             .iter()
-            .map(|note| note.gen_nullifier(&sender))
+            .map(|(note, _, _)| note.gen_nullifier(&sender))
             .collect();
 
         let mut openings = Vec::with_capacity(input_notes.len());
-        for note in &input_notes {
+        for (note, _, _) in &input_notes {
             let opening = self
-                .client
+                .node
                 .fetch_opening(note)
                 .map_err(Error::from_node_err)?;
             openings.push(opening);
         }
 
+        let (output_note, output_blinder) =
+            generate_obfuscated_note(rng, receiver, value, ref_id);
+
+        // This is an implementation of sending funds from one key to another -
+        // not calling a contract. This means there's one output note.
         let outputs = vec![
             // receiver note
-            generate_obfuscated_note(rng, receiver, value, ref_id),
-            // refund/fee note
-            generate_obfuscated_note(
-                rng,
-                &sender_psk,
-                gas_limit * gas_price,
-                ref_id,
-            ),
+            (output_note, value, output_blinder),
         ];
 
-        let anchor =
-            self.client.fetch_anchor().map_err(Error::from_node_err)?;
-        let fee = Fee::new(rng, gas_limit, gas_price, &sender_psk);
+        let crossover = zero_crossover(rng);
+        let fee = Fee::new(rng, gas_limit, gas_price, refund);
+        let anchor = self.node.fetch_anchor().map_err(Error::from_node_err)?;
 
         let skel = TransactionSkeleton::new(
-            nullifiers, outputs, anchor, fee, None, None,
+            nullifiers,
+            vec![outputs[0].0],
+            anchor,
+            fee,
+            // The TX hash is not checked in the circuit - it's just a random
+            // number as far as the circuit is concerned. This means the
+            // crossover can be `None` without a problem.
+            None,
+            None,
         );
         let hash = skel.hash();
 
         let inputs: Vec<UnprovenTransactionInput> = input_notes
             .into_iter()
             .zip(openings.into_iter())
-            .map(|(note, opening)| {
-                UnprovenTransactionInput::new(rng, &sender, note, opening, hash)
+            .map(|((note, value, blinder), opening)| {
+                UnprovenTransactionInput::new(
+                    rng, &sender, note, value, blinder, opening, hash,
+                )
             })
             .collect();
 
-        todo!()
+        let utx = UnprovenTransaction::new(
+            inputs, outputs, anchor, fee, crossover, None,
+        );
+
+        let proof = self
+            .node
+            .request_proof(&utx)
+            .map_err(Error::from_node_err)?;
+        Ok(Transaction::new(skel, proof))
     }
 
     /// Creates a stake transaction.
@@ -264,22 +352,50 @@ where
     }
 }
 
+/// Since there is no link in the current circuit between the crossover
+/// and the fee, we can generate one at random, and use only the value
+/// commitment + value + blinder. We then generate one with value zero
+/// and random blinder.
+fn zero_crossover<Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+) -> (Crossover, u64, JubJubScalar) {
+    // FIXME Coupled to the logic of the circuit - should be solved by
+    //  changing the `phoenix_core` API.
+    let (a, b) = (
+        dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::random(rng),
+        dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::random(rng),
+    );
+    let psk = PublicSpendKey::new(a, b);
+
+    let nonce = BlsScalar::random(rng);
+    let (note, blinder) = generate_obfuscated_note(rng, &psk, 0, nonce);
+
+    // This only verifies if the note is obfuscated. Another example of coupled
+    // madness.
+    let (_, crossover) = note.try_into().unwrap();
+
+    (crossover, 0, blinder)
+}
+
 /// Generates an obfuscated note for the given public spend key.
 fn generate_obfuscated_note<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     psk: &PublicSpendKey,
     value: u64,
     nonce: BlsScalar,
-) -> Note {
+) -> (Note, JubJubScalar) {
     let r = JubJubScalar::random(rng);
-    let blinding_factor = JubJubScalar::random(rng);
+    let blinder = JubJubScalar::random(rng);
 
-    Note::deterministic(
-        NoteType::Obfuscated,
-        &r,
-        nonce,
-        psk,
-        value,
-        blinding_factor,
+    (
+        Note::deterministic(
+            NoteType::Obfuscated,
+            &r,
+            nonce,
+            psk,
+            value,
+            blinder,
+        ),
+        blinder,
     )
 }

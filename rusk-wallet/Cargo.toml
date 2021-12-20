@@ -16,6 +16,7 @@ dusk-abi = "^0.10"
 sha2 = { version = "^0.10", default-features = false }
 dusk-plonk = { version = "^0.9", default-features = false }
 canonical = "0.6"
+bip39 = { version = "^1.0", default-features = false, features = [ "chinese-simplified", "chinese-traditional", "czech", "french", "italian", "japanese", "korean", "spanish" ] }
 
 [dev-dependencies]
 rand = "^0.8"

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::POSEIDON_BRANCH_DEPTH;
+use crate::{imp, NodeClient};
 
 use alloc::vec::Vec;
 use core::mem;
@@ -15,7 +16,7 @@ use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubExtended};
-use dusk_pki::{Ownable, SecretSpendKey};
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
 use dusk_plonk::prelude::{JubJubScalar, Proof};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge::hash;
@@ -237,7 +238,7 @@ impl From<UnprovenTransaction> for TransactionSkeleton {
             outputs: utx.outputs.iter().map(|o| o.0).collect(),
             anchor: utx.anchor,
             fee: utx.fee,
-            crossover: utx.crossover.map(|c| c.0),
+            crossover: Some(utx.crossover.0),
             call: utx.call,
         }
     }
@@ -295,7 +296,9 @@ pub struct UnprovenTransactionInput {
     nullifier: BlsScalar,
     opening: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
     note: Note,
-    pk_R: JubJubExtended,
+    pk_r_prime: JubJubExtended,
+    value: u64,
+    blinder: JubJubScalar,
     sig: SchnorrSig,
 }
 
@@ -304,6 +307,8 @@ impl UnprovenTransactionInput {
         rng: &mut Rng,
         ssk: &SecretSpendKey,
         note: Note,
+        value: u64,
+        blinder: JubJubScalar,
         opening: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
         tx_hash: BlsScalar,
     ) -> Self {
@@ -311,20 +316,22 @@ impl UnprovenTransactionInput {
         let sk_r = ssk.sk_r(note.stealth_address());
         let sig = SchnorrSig::new(&sk_r, rng, tx_hash);
 
-        let pk_R = dusk_jubjub::GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+        let pk_r_prime = dusk_jubjub::GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
 
         Self {
             sig,
             nullifier,
             note,
             opening,
-            pk_R,
+            pk_r_prime,
+            value,
+            blinder,
         }
     }
 
     /// Serialize the input to a variable size byte buffer.
     pub fn to_var_bytes(&self) -> Vec<u8> {
-        let affine_pkr = JubJubAffine::from(&self.pk_R);
+        let affine_pkr = JubJubAffine::from(&self.pk_r_prime);
 
         // TODO Magic number for the buffer size here.
         // Should be corrected once dusk-poseidon implements `Serializable` for
@@ -339,11 +346,15 @@ impl UnprovenTransactionInput {
                 + Note::SIZE
                 + JubJubAffine::SIZE
                 + SchnorrSig::SIZE
+                + u64::SIZE
+                + JubJubScalar::SIZE
                 + opening_bytes.len(),
         );
 
         bytes.extend_from_slice(&self.nullifier.to_bytes());
         bytes.extend_from_slice(&self.note.to_bytes());
+        bytes.extend_from_slice(&self.value.to_bytes());
+        bytes.extend_from_slice(&self.blinder.to_bytes());
         bytes.extend_from_slice(&affine_pkr.to_bytes());
         bytes.extend_from_slice(&self.sig.to_bytes());
         bytes.extend_from_slice(&opening_bytes);
@@ -357,7 +368,10 @@ impl UnprovenTransactionInput {
 
         let nullifier = BlsScalar::from_reader(&mut bytes)?;
         let note = Note::from_reader(&mut bytes)?;
-        let pk_R = JubJubExtended::from(JubJubAffine::from_reader(&mut bytes)?);
+        let value = u64::from_reader(&mut bytes)?;
+        let blinder = JubJubScalar::from_reader(&mut bytes)?;
+        let pk_r_prime =
+            JubJubExtended::from(JubJubAffine::from_reader(&mut bytes)?);
         let sig = SchnorrSig::from_reader(&mut bytes)?;
 
         let mut source = Source::new(bytes);
@@ -367,7 +381,9 @@ impl UnprovenTransactionInput {
         Ok(Self {
             nullifier,
             note,
-            pk_R,
+            value,
+            blinder,
+            pk_r_prime,
             sig,
             opening,
         })
@@ -389,8 +405,8 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the input's pk_r'.
-    pub fn pkr_prime(&self) -> JubJubExtended {
-        self.pk_R
+    pub fn pk_r_prime(&self) -> JubJubExtended {
+        self.pk_r_prime
     }
 
     /// Returns the input's signature.
@@ -399,18 +415,37 @@ impl UnprovenTransactionInput {
     }
 }
 
-/// A transaction that is yet to be proven.
+/// A transaction that is yet to be proven. The purpose of this is solely to
+/// send to the node to perform a circuit proof.
 #[derive(Debug, Clone)]
 pub struct UnprovenTransaction {
     inputs: Vec<UnprovenTransactionInput>,
     outputs: Vec<(Note, u64, JubJubScalar)>,
     anchor: BlsScalar,
     fee: Fee,
-    crossover: Option<(Crossover, u64, JubJubScalar)>,
+    crossover: (Crossover, u64, JubJubScalar),
     call: Option<(ContractId, Vec<u8>)>,
 }
 
 impl UnprovenTransaction {
+    pub fn new(
+        inputs: Vec<UnprovenTransactionInput>,
+        outputs: Vec<(Note, u64, JubJubScalar)>,
+        anchor: BlsScalar,
+        fee: Fee,
+        crossover: (Crossover, u64, JubJubScalar),
+        call: Option<(ContractId, Vec<u8>)>,
+    ) -> Self {
+        Self {
+            inputs,
+            outputs,
+            anchor,
+            fee,
+            crossover,
+            call,
+        }
+    }
+
     pub fn delegate_prove(&self) -> Transaction {
         // Keep in mind that this needs access to the prover key which is a
         // couple of gigs. This will probably have to be a network component.
@@ -462,8 +497,9 @@ impl UnprovenTransaction {
             + total_input_len
             + u64::SIZE
             + total_output_len
+            + Crossover::SIZE
             + u64::SIZE
-            + self.crossover.map(|_| Crossover::SIZE).unwrap_or(0)
+            + JubJubScalar::SIZE
             + u64::SIZE
             + self
                 .call
@@ -488,17 +524,9 @@ impl UnprovenTransaction {
         writer.write(&self.anchor.to_bytes())?;
         writer.write(&self.fee.to_bytes())?;
 
-        match &self.crossover {
-            None => {
-                writer.write(&0_u64.to_bytes())?;
-            }
-            Some((crossover, value, blinder)) => {
-                writer.write(&1_u64.to_bytes())?;
-                writer.write(&crossover.to_bytes())?;
-                writer.write(&value.to_bytes())?;
-                writer.write(&blinder.to_bytes())?;
-            }
-        }
+        writer.write(&self.crossover.0.to_bytes())?;
+        writer.write(&self.crossover.1.to_bytes())?;
+        writer.write(&self.crossover.2.to_bytes())?;
 
         match &self.call {
             None => {
@@ -541,14 +569,11 @@ impl UnprovenTransaction {
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
 
-        let mut crossover = None;
-        if u64::from_reader(&mut buffer)? != 0 {
-            let c = Crossover::from_reader(&mut buffer)?;
-            let value = u64::from_reader(&mut buffer)?;
-            let blinder = JubJubScalar::from_reader(&mut buffer)?;
+        let c = Crossover::from_reader(&mut buffer)?;
+        let value = u64::from_reader(&mut buffer)?;
+        let blinder = JubJubScalar::from_reader(&mut buffer)?;
 
-            crossover = Some((c, value, blinder))
-        }
+        let crossover = (c, value, blinder);
 
         let mut call = None;
         if u64::from_reader(&mut buffer)? != 0 {
@@ -611,8 +636,8 @@ impl UnprovenTransaction {
     }
 
     /// Returns the crossover of the transaction.
-    pub fn crossover(&self) -> Option<&(Crossover, u64, JubJubScalar)> {
-        self.crossover.as_ref()
+    pub fn crossover(&self) -> &(Crossover, u64, JubJubScalar) {
+        &self.crossover
     }
 
     /// Returns the call of the transaction.
