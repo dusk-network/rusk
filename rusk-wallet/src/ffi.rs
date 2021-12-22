@@ -131,6 +131,7 @@ unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
 
 /// Generates a random mnemonic. These mnemonics **are** the user's wallet. They
 /// should be treated with care. The words are returned comma separated.
+#[no_mangle]
 pub unsafe extern "C" fn generate_mnemonic(
     lang: imp::Language,
     words: *mut u8,
