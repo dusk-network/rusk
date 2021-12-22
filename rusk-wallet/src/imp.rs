@@ -139,12 +139,19 @@ pub struct Wallet<S, C> {
     node: C,
 }
 
-impl<S, C> Wallet<S, C> {}
+impl<S, C> Wallet<S, C> {
+    /// Create a new wallet given the underlying store and node client.
+    pub const fn new(store: S, node: C) -> Self {
+        Self { store, node }
+    }
+}
 
 #[allow(clippy::too_many_arguments)]
-impl<S: Store, C: NodeClient> Wallet<S, C>
+impl<S, C> Wallet<S, C>
 where
+    S: Store,
     S::Id: Clone,
+    C: NodeClient,
 {
     /// Generates a random mnemonic. These mnemonics **are** the user's wallet.
     /// They should be treated with care.
@@ -344,7 +351,10 @@ where
         let sender = self.store.key(id).map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
-        let notes = self.node.fetch_notes(0, &vk)?;
+        let notes = self
+            .node
+            .fetch_notes(0, &vk)
+            .map_err(|e| Error::from_node_err(e))?;
 
         let mut balance = 0;
         for note in notes.iter() {

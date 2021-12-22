@@ -19,6 +19,7 @@ mod imp;
 mod tx;
 
 use alloc::vec::Vec;
+use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
@@ -28,7 +29,7 @@ use crate::tx::UnprovenTransaction;
 pub use imp::*;
 pub use tx::Transaction;
 
-pub const POSEIDON_DEPTH: usize = 17;
+pub(crate) const POSEIDON_DEPTH: usize = 17;
 
 /// The key store backend - where the keys live.
 pub trait Store {
@@ -62,6 +63,9 @@ pub trait NodeClient {
         height: u64,
         vk: &ViewKey,
     ) -> Result<Vec<Note>, Self::Error>;
+
+    /// Fetch the current anchor of the state.
+    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
 
     /// Queries the node to find the opening for a specific note.
     fn fetch_opening(

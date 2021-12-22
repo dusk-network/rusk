@@ -347,6 +347,16 @@ impl NodeClient for FfiNodeClient {
         Ok(notes)
     }
 
+    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
+        let mut scalar_buf = [0; BlsScalar::SIZE];
+        unsafe {
+            error_if_not_zero!(fetch_anchor(&mut scalar_buf));
+        }
+        let scalar = unwrap_or_err!(BlsScalar::from_bytes(&scalar_buf));
+
+        Ok(scalar)
+    }
+
     fn fetch_opening(
         &self,
         note: &Note,

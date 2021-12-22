@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::POSEIDON_DEPTH;
+
 use alloc::vec::Vec;
 use core::mem;
 
@@ -96,16 +98,7 @@ impl Transaction {
         writer.write(&self.anchor.to_bytes())?;
         writer.write(&self.fee.to_bytes())?;
         writer.write(&self.proof.to_bytes())?;
-
-        match &self.crossover {
-            None => {
-                writer.write(&0_u64.to_bytes())?;
-            }
-            Some(c) => {
-                writer.write(&1_u64.to_bytes())?;
-                writer.write(&c.to_bytes())?;
-            }
-        }
+        writer.write(&self.crossover.to_bytes())?;
 
         match &self.call {
             None => {
@@ -142,7 +135,6 @@ impl Transaction {
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
         let proof = Proof::from_reader(&mut buffer)?;
-
         let crossover = Crossover::from_reader(&mut buffer)?;
 
         let mut call = None;
@@ -220,9 +212,7 @@ impl From<Transaction> for TransactionSkeleton {
     }
 }
 
-impl From<UnprovenTransaction>
-    for TransactionSkeleton
-{
+impl From<UnprovenTransaction> for TransactionSkeleton {
     fn from(utx: UnprovenTransaction) -> Self {
         Self {
             inputs: utx
@@ -249,10 +239,7 @@ impl TransactionSkeleton {
             + 12 * self.outputs.len()
             + 1
             + 4
-            + self
-            .crossover
-            .map(|_| 3 + PoseidonCipher::cipher_size())
-            .unwrap_or(0)
+            + (3 + PoseidonCipher::cipher_size())
             // When this lands the weird logic checking if there needs to be
             // padding is gone. https://github.com/rust-lang/rust/issues/88581
             + self
@@ -271,10 +258,7 @@ impl TransactionSkeleton {
         });
         hash_inputs.push(self.anchor);
         hash_inputs.append(&mut fee_hash_inputs(&self.fee).to_vec());
-
-        if let Some(c) = &self.crossover {
-            hash_inputs.append(&mut c.to_hash_inputs().to_vec())
-        }
+        hash_inputs.append(&mut self.crossover.to_hash_inputs().to_vec());
 
         if let Some((cid, cdata)) = &self.call {
             hash_inputs.append(&mut hash_inputs_from_bytes(cid.as_bytes()));
