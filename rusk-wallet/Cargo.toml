@@ -18,17 +18,22 @@ dusk-plonk = { version = "^0.9", default-features = false }
 dusk-abi = "^0.10"
 canonical = "^0.6"
 
-clap =  "2.33.3"  
-tracing ="0.1" 
-tracing-subscriber = "0.2" 
-rustc_tools_util =  "0.2"
+clap = { version = "2.33.3", optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.2", optional = true }
+rustc_tools_util = { version = "0.2", optional = true }
 
 [dev-dependencies]
 rand = "^0.8"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = [ "cdylib", "rlib" ]
 
 [[bin]]
 name = "ruskwallet"
 path = "src/bin/main.rs"
+required-features = [ "build-binary" ]
+
+[features]
+default = [ "build-binary" ]
+build-binary = [ "clap", "tracing", "tracing-subscriber", "rustc_tools_util" ]
