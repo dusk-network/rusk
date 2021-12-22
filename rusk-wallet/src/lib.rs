@@ -19,7 +19,6 @@ mod imp;
 mod tx;
 
 use alloc::vec::Vec;
-use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
@@ -29,7 +28,7 @@ use crate::tx::UnprovenTransaction;
 pub use imp::*;
 pub use tx::Transaction;
 
-pub(crate) const POSEIDON_BRANCH_DEPTH: usize = 17;
+pub const POSEIDON_DEPTH: usize = 17;
 
 /// The key store backend - where the keys live.
 pub trait Store {
@@ -68,10 +67,7 @@ pub trait NodeClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonBranch<17>, Self::Error>;
-
-    /// Fetch the current anchor of the state.
-    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
+    ) -> Result<PoseidonBranch<POSEIDON_DEPTH>, Self::Error>;
 
     /// Requests that a node prove the given transaction.
     fn request_proof(

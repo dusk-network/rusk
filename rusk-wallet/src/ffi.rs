@@ -256,8 +256,14 @@ pub unsafe extern "C" fn sync() {
 
 /// Gets the balance of a key.
 #[no_mangle]
-pub unsafe extern "C" fn get_balance() {
-    todo!()
+pub unsafe extern "C" fn get_balance(
+    id: *const u8,
+    id_len: u32,
+    balance: *mut u64,
+) -> u8 {
+    let id = id_ptr_to_string(id, id_len);
+    *balance = unwrap_or_bail!(WALLET.get_balance(&id));
+    0
 }
 
 struct FfiStore;
@@ -362,17 +368,6 @@ impl NodeClient for FfiNodeClient {
         let branch = unwrap_or_err!(PoseidonBranch::decode(&mut source));
 
         Ok(branch)
-    }
-
-    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
-        let mut bls_buf = [0; BlsScalar::SIZE];
-
-        unsafe {
-            error_if_not_zero!(fetch_anchor(&mut bls_buf));
-        }
-
-        let scalar = unwrap_or_err!(BlsScalar::from_bytes(&bls_buf));
-        Ok(scalar)
     }
 
     fn request_proof(

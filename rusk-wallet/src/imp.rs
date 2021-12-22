@@ -8,6 +8,7 @@ use crate::{NodeClient, Store, Transaction};
 
 use alloc::vec::Vec;
 use canonical::CanonError;
+use core::marker::{PhantomData, PhantomPinned};
 
 use crate::tx::{
     TransactionSkeleton, UnprovenTransaction, UnprovenTransactionInput,
@@ -138,12 +139,7 @@ pub struct Wallet<S, C> {
     node: C,
 }
 
-impl<S, C> Wallet<S, C> {
-    /// Creates a new wallet with the given backing store.
-    pub const fn new(store: S, node: C) -> Self {
-        Self { store, node }
-    }
-}
+impl<S, C> Wallet<S, C> {}
 
 #[allow(clippy::too_many_arguments)]
 impl<S: Store, C: NodeClient> Wallet<S, C>
@@ -292,10 +288,7 @@ where
             vec![outputs[0].0],
             anchor,
             fee,
-            // The TX hash is not checked in the circuit - it's just a random
-            // number as far as the circuit is concerned. This means the
-            // crossover can be `None` without a problem.
-            None,
+            crossover.0,
             None,
         );
         let hash = skel.hash();
@@ -347,8 +340,18 @@ where
     }
 
     /// Gets the balance of a key.
-    pub fn get_balance(&self) -> Result<(), Error<S, C>> {
-        todo!()
+    pub fn get_balance(&self, id: &S::Id) -> Result<u64, Error<S, C>> {
+        let sender = self.store.key(id).map_err(Error::from_store_err)?;
+        let vk = sender.view_key();
+
+        let notes = self.node.fetch_notes(0, &vk)?;
+
+        let mut balance = 0;
+        for note in notes.iter() {
+            balance += note.value(Some(&vk))?;
+        }
+
+        Ok(balance)
     }
 }
 

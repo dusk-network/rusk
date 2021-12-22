@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::POSEIDON_BRANCH_DEPTH;
-use crate::{imp, NodeClient};
-
 use alloc::vec::Vec;
 use core::mem;
 
@@ -16,7 +13,7 @@ use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubExtended};
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey};
+use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_plonk::prelude::{JubJubScalar, Proof};
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge::hash;
@@ -35,7 +32,7 @@ pub struct Transaction {
     anchor: BlsScalar,
     proof: Proof,
     fee: Fee,
-    crossover: Option<Crossover>,
+    crossover: Crossover,
     call: Option<(ContractId, Vec<u8>)>,
 }
 
@@ -75,8 +72,7 @@ impl Transaction {
             + BlsScalar::SIZE
             + Fee::SIZE
             + Proof::SIZE
-            + u64::SIZE
-            + self.crossover.map(|_| Crossover::SIZE).unwrap_or(0)
+            + Crossover::SIZE
             + u64::SIZE
             + self
                 .call
@@ -147,10 +143,7 @@ impl Transaction {
         let fee = Fee::from_reader(&mut buffer)?;
         let proof = Proof::from_reader(&mut buffer)?;
 
-        let mut crossover = None;
-        if u64::from_reader(&mut buffer)? != 0 {
-            crossover = Some(Crossover::from_reader(&mut buffer)?);
-        }
+        let crossover = Crossover::from_reader(&mut buffer)?;
 
         let mut call = None;
         if u64::from_reader(&mut buffer)? != 0 {
@@ -190,7 +183,7 @@ pub(crate) struct TransactionSkeleton {
     outputs: Vec<Note>,
     anchor: BlsScalar,
     fee: Fee,
-    crossover: Option<Crossover>,
+    crossover: Crossover,
     call: Option<(ContractId, Vec<u8>)>,
 }
 
@@ -200,7 +193,7 @@ impl TransactionSkeleton {
         outputs: Vec<Note>,
         anchor: BlsScalar,
         fee: Fee,
-        crossover: Option<Crossover>,
+        crossover: Crossover,
         call: Option<(ContractId, Vec<u8>)>,
     ) -> Self {
         Self {
@@ -227,7 +220,9 @@ impl From<Transaction> for TransactionSkeleton {
     }
 }
 
-impl From<UnprovenTransaction> for TransactionSkeleton {
+impl From<UnprovenTransaction>
+    for TransactionSkeleton
+{
     fn from(utx: UnprovenTransaction) -> Self {
         Self {
             inputs: utx
@@ -238,7 +233,7 @@ impl From<UnprovenTransaction> for TransactionSkeleton {
             outputs: utx.outputs.iter().map(|o| o.0).collect(),
             anchor: utx.anchor,
             fee: utx.fee,
-            crossover: Some(utx.crossover.0),
+            crossover: utx.crossover.0,
             call: utx.call,
         }
     }
@@ -294,7 +289,7 @@ impl TransactionSkeleton {
 #[derive(Debug, Clone)]
 pub struct UnprovenTransactionInput {
     nullifier: BlsScalar,
-    opening: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
+    opening: PoseidonBranch<POSEIDON_DEPTH>,
     note: Note,
     pk_r_prime: JubJubExtended,
     value: u64,
@@ -309,7 +304,7 @@ impl UnprovenTransactionInput {
         note: Note,
         value: u64,
         blinder: JubJubScalar,
-        opening: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
+        opening: PoseidonBranch<POSEIDON_DEPTH>,
         tx_hash: BlsScalar,
     ) -> Self {
         let nullifier = note.gen_nullifier(ssk);
@@ -336,8 +331,7 @@ impl UnprovenTransactionInput {
         // TODO Magic number for the buffer size here.
         // Should be corrected once dusk-poseidon implements `Serializable` for
         // `PoseidonBranch`.
-        let mut opening_bytes =
-            [0; (POSEIDON_BRANCH_DEPTH + 2) * (BlsScalar::SIZE * 5 + 8)];
+        let mut opening_bytes = [0; opening_buf_size(POSEIDON_DEPTH)];
         let mut sink = Sink::new(&mut opening_bytes[..]);
         self.opening.encode(&mut sink);
 
@@ -395,7 +389,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the opening of the input.
-    pub fn opening(&self) -> &PoseidonBranch<POSEIDON_BRANCH_DEPTH> {
+    pub fn opening(&self) -> &PoseidonBranch<POSEIDON_DEPTH> {
         &self.opening
     }
 
@@ -413,6 +407,10 @@ impl UnprovenTransactionInput {
     pub fn signature(&self) -> &SchnorrSig {
         &self.sig
     }
+}
+
+const fn opening_buf_size(depth: usize) -> usize {
+    (depth + 2) * (BlsScalar::SIZE * 5 + 8)
 }
 
 /// A transaction that is yet to be proven. The purpose of this is solely to
