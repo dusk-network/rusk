@@ -4,16 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::tx::UnprovenTransaction;
 use crate::{NodeClient, Store, Transaction};
 
 use alloc::vec::Vec;
-use canonical::CanonError;
-use core::marker::{PhantomData, PhantomPinned};
 
-use crate::tx::{
-    TransactionSkeleton, UnprovenTransaction, UnprovenTransactionInput,
-};
 use bip39::Mnemonic;
+use canonical::CanonError;
 use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -216,10 +213,15 @@ where
     ) -> Result<Transaction, Error<S, C>> {
         let sender = self.store.key(sender).map_err(Error::from_store_err)?;
 
-        let input_notes = {
+        // Here we fetch the notes and perform a "minimum number of notes
+        // required" algorithm to select which ones to use for this TX. This is
+        // done by picking notes largest to smallest until they combined have
+        // enough accumulated value.
+        let inputs = {
             let sender_vk = sender.view_key();
 
-            // TODO find a way to get the block height from somewhere
+            // TODO find a way to get the block height from somewhere. Maybe it
+            //  should be determined by the client?
             let mut notes = self
                 .node
                 .fetch_notes(0, &sender_vk)
@@ -262,20 +264,6 @@ where
             input_notes
         };
 
-        let nullifiers: Vec<BlsScalar> = input_notes
-            .iter()
-            .map(|(note, _, _)| note.gen_nullifier(&sender))
-            .collect();
-
-        let mut openings = Vec::with_capacity(input_notes.len());
-        for (note, _, _) in &input_notes {
-            let opening = self
-                .node
-                .fetch_opening(note)
-                .map_err(Error::from_node_err)?;
-            openings.push(opening);
-        }
-
         let (output_note, output_blinder) =
             generate_obfuscated_note(rng, receiver, value, ref_id);
 
@@ -290,35 +278,17 @@ where
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
         let anchor = self.node.fetch_anchor().map_err(Error::from_node_err)?;
 
-        let skel = TransactionSkeleton::new(
-            nullifiers,
-            vec![outputs[0].0],
-            anchor,
-            fee,
-            crossover.0,
-            None,
-        );
-        let hash = skel.hash();
-
-        let inputs: Vec<UnprovenTransactionInput> = input_notes
-            .into_iter()
-            .zip(openings.into_iter())
-            .map(|((note, value, blinder), opening)| {
-                UnprovenTransactionInput::new(
-                    rng, &sender, note, value, blinder, opening, hash,
-                )
-            })
-            .collect();
-
         let utx = UnprovenTransaction::new(
-            inputs, outputs, anchor, fee, crossover, None,
-        );
+            rng, &self.node, &sender, inputs, outputs, anchor, fee, crossover,
+            None,
+        )
+        .map_err(Error::from_node_err)?;
 
         let proof = self
             .node
             .request_proof(&utx)
             .map_err(Error::from_node_err)?;
-        Ok(Transaction::new(skel, proof))
+        Ok(utx.prove(proof))
     }
 
     /// Creates a stake transaction.
