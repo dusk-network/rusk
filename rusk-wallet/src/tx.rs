@@ -39,7 +39,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    /// Creates a transaction from the skeleten and the proof.
+    /// Creates a transaction from the skeleton and the proof.
     fn new(tx_skel: TransactionSkeleton, proof: Proof) -> Self {
         Self {
             proof,
@@ -139,6 +139,41 @@ impl Transaction {
             call,
             proof,
         })
+    }
+
+    /// The nullifiers in the transaction.
+    pub fn inputs(&self) -> &[BlsScalar] {
+        &self.inputs
+    }
+
+    /// The output notes of the transaction.
+    pub fn outputs(&self) -> &[Note] {
+        &self.outputs
+    }
+
+    /// The anchor of the transaction.
+    pub fn anchor(&self) -> BlsScalar {
+        self.anchor
+    }
+
+    /// The proof of thes transaction.
+    pub fn proof(&self) -> &Proof {
+        &self.proof
+    }
+
+    /// The fee of the transaction.
+    pub fn fee(&self) -> &Fee {
+        &self.fee
+    }
+
+    /// The crossover of the transaction.
+    pub fn crossover(&self) -> &Crossover {
+        &self.crossover
+    }
+
+    /// The call data of the transaction.
+    pub fn call(&self) -> Option<&(ContractId, Vec<u8>)> {
+        self.call.as_ref()
     }
 }
 
@@ -255,7 +290,7 @@ pub struct UnprovenTransactionInput {
 }
 
 impl UnprovenTransactionInput {
-    pub fn new<Rng: RngCore + CryptoRng>(
+    pub(crate) fn new<Rng: RngCore + CryptoRng>(
         rng: &mut Rng,
         ssk: &SecretSpendKey,
         note: Note,

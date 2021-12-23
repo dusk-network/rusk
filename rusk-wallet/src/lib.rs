@@ -18,8 +18,6 @@ mod ffi;
 mod imp;
 mod tx;
 
-use crate::tx::UnprovenTransaction;
-
 use alloc::vec::Vec;
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
@@ -31,7 +29,7 @@ use rand_core::SeedableRng;
 use sha2::{Digest, Sha256};
 
 pub use imp::*;
-pub use tx::Transaction;
+pub use tx::{Transaction, UnprovenTransaction, UnprovenTransactionInput};
 
 pub(crate) const POSEIDON_DEPTH: usize = 17;
 
@@ -58,7 +56,7 @@ pub trait Store {
 /// Generates a secret key from its seed and index.
 ///
 /// First the `seed` and then the little-endian representation of the key's
-/// `number` are passed through SHA-256. The resulting hash is then used to seed
+/// `index` are passed through SHA-256. The resulting hash is then used to seed
 /// a `ChaCha12` CSPRNG, which is subsequently used to generate the key.
 pub fn generate_ssk(seed: &[u8; 64], index: u64) -> SecretSpendKey {
     let mut hash = Sha256::new();
