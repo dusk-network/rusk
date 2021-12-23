@@ -9,15 +9,12 @@ use crate::{NodeClient, Store, Transaction};
 
 use alloc::vec::Vec;
 
-use bip39::Mnemonic;
 use canonical::CanonError;
 use dusk_bytes::Error as BytesError;
 use dusk_jubjub::{BlsScalar, JubJubScalar};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_pki::PublicSpendKey;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
-use rand_chacha::ChaCha12Rng;
-use rand_core::{CryptoRng, Error as RngError, RngCore, SeedableRng};
-use sha2::{Digest, Sha256};
+use rand_core::{CryptoRng, Error as RngError, RngCore};
 
 const MAX_INPUT_NOTES: usize = 0x4;
 
@@ -35,15 +32,11 @@ pub enum Error<S: Store, C: NodeClient> {
     Bytes(BytesError),
     /// Originating from the transaction model.
     Phoenix(PhoenixError),
-    /// The key with the given ID does not exist.
-    NoSuchKey(S::Id),
     /// Not enough balance to perform transaction.
     NotEnoughBalance,
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a transaction.
     NoteCombinationProblem,
-    /// Error generating or manipulating the mnemonic.
-    Bip39(bip39::Error),
 }
 
 impl<S: Store, C: NodeClient> Error<S, C> {
@@ -81,52 +74,6 @@ impl<S: Store, C: NodeClient> From<CanonError> for Error<S, C> {
     }
 }
 
-impl<S: Store, C: NodeClient> From<bip39::Error> for Error<S, C> {
-    fn from(be: bip39::Error) -> Self {
-        Self::Bip39(be)
-    }
-}
-
-/// The language of a mnemonic.
-#[repr(C)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Language {
-    /// English language mnemonic.
-    English,
-    /// Simplified chinese mnemonic.
-    SimplifiedChinese,
-    /// Traditional chinese mnemonic.
-    TraditionalChinese,
-    /// Czech mnemonic.
-    Czech,
-    /// French mnemonic.
-    French,
-    /// Italian mnemonic.
-    Italian,
-    /// Japanese mnemonic.
-    Japanese,
-    /// Korean mnemonic.
-    Korean,
-    /// Spanish mnemonic.
-    Spanish,
-}
-
-impl From<Language> for bip39::Language {
-    fn from(lang: Language) -> bip39::Language {
-        match lang {
-            Language::English => bip39::Language::English,
-            Language::SimplifiedChinese => bip39::Language::SimplifiedChinese,
-            Language::TraditionalChinese => bip39::Language::TraditionalChinese,
-            Language::Czech => bip39::Language::Czech,
-            Language::French => bip39::Language::French,
-            Language::Italian => bip39::Language::Italian,
-            Language::Japanese => bip39::Language::Japanese,
-            Language::Korean => bip39::Language::Korean,
-            Language::Spanish => bip39::Language::Spanish,
-        }
-    }
-}
-
 /// A wallet implementation.
 ///
 /// This is responsible for holding the keys, and performing operations like
@@ -147,54 +94,15 @@ impl<S, C> Wallet<S, C> {
 impl<S, C> Wallet<S, C>
 where
     S: Store,
-    S::Id: Clone,
     C: NodeClient,
 {
-    /// Generates a random mnemonic. These mnemonics **are** the user's wallet.
-    /// They should be treated with care.
-    pub fn generate_mnemonic<Rng: RngCore + CryptoRng>(
-        rng: &mut Rng,
-        lang: Language,
-    ) -> Result<Mnemonic, Error<S, C>> {
-        let mut entropy = [0; 32];
-        rng.try_fill_bytes(&mut entropy[..])?;
-        Ok(Mnemonic::from_entropy_in(lang.into(), &entropy[..])?)
-    }
-
-    /// Create a secret spend key given a seed and a store ID.
-    ///
-    /// This creates a key based on the number of keys that are already in the
-    /// store. Calling this function with different seeds for the same store is
-    /// heavily discouraged.
-    pub fn create_secret_spend_key<B: AsRef<[u8]>>(
-        &self,
-        id: &S::Id,
-        seed: B,
-    ) -> Result<(), Error<S, C>> {
-        let key_num = self.store.key_num().map_err(Error::from_store_err)?;
-
-        let mut sha_256 = Sha256::new();
-        sha_256.update(seed);
-        sha_256.update(&(key_num as u32).to_le_bytes());
-        let hash = sha_256.finalize();
-
-        let mut rng = ChaCha12Rng::from_seed(hash.into());
-
-        let ssk = SecretSpendKey::random(&mut rng);
-
-        self.store
-            .store_key(id, &ssk)
-            .map_err(Error::from_store_err)?;
-        Ok(())
-    }
-
-    /// Get the public spend key with the given ID.
+    /// Retrieve the public spend key with the given index.
     pub fn get_public_spend_key(
         &self,
-        id: &S::Id,
+        index: u64,
     ) -> Result<PublicSpendKey, Error<S, C>> {
         self.store
-            .key(id)
+            .retrieve_key(index)
             .map(|ssk| ssk.public_spend_key())
             .map_err(Error::from_store_err)
     }
@@ -203,7 +111,7 @@ where
     pub fn create_transfer_tx<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
-        sender: &S::Id,
+        sender_index: u64,
         refund: &PublicSpendKey,
         receiver: &PublicSpendKey,
         value: u64,
@@ -211,7 +119,10 @@ where
         gas_price: u64,
         ref_id: BlsScalar,
     ) -> Result<Transaction, Error<S, C>> {
-        let sender = self.store.key(sender).map_err(Error::from_store_err)?;
+        let sender = self
+            .store
+            .retrieve_key(sender_index)
+            .map_err(Error::from_store_err)?;
 
         // Here we fetch the notes and perform a "minimum number of notes
         // required" algorithm to select which ones to use for this TX. This is
@@ -292,7 +203,7 @@ where
     }
 
     /// Creates a stake transaction.
-    pub fn create_stake_tx(&self, id: &S::Id) -> Result<(), Error<S, C>> {
+    pub fn create_stake_tx(&self) -> Result<(), Error<S, C>> {
         todo!()
     }
 
@@ -317,8 +228,11 @@ where
     }
 
     /// Gets the balance of a key.
-    pub fn get_balance(&self, id: &S::Id) -> Result<u64, Error<S, C>> {
-        let sender = self.store.key(id).map_err(Error::from_store_err)?;
+    pub fn get_balance(&self, key_index: u64) -> Result<u64, Error<S, C>> {
+        let sender = self
+            .store
+            .retrieve_key(key_index)
+            .map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
         let notes = self

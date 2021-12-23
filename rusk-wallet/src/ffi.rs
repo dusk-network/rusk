@@ -6,18 +6,14 @@
 
 //! The foreign function interface for the wallet.
 
-use crate::imp;
-
-use alloc::string::String;
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
 use core::ptr;
-use core::slice;
 
 use canonical::{Canon, Source};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::BlsScalar;
-use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
@@ -30,25 +26,8 @@ use crate::tx::UnprovenTransaction;
 use crate::{Error, NodeClient, Store, Wallet};
 
 extern "C" {
-    /// Stores a secret spend in a key-value store.
-    fn store_key(
-        id: *const u8,
-        id_len: u32,
-        ssk: *const [u8; SecretSpendKey::SIZE],
-    ) -> u8;
-
-    /// Retrieves a secret spend from a key-value store.
-    fn get_key(
-        id: *const u8,
-        id_len: u32,
-        ssk: *mut [u8; SecretSpendKey::SIZE],
-    ) -> u8;
-
-    /// Returns the number of secret spend keys stored in a key-value store.
-    fn key_num(num: *mut u32) -> u8;
-
-    /// Gets the seed for the CSPRNG used to generate secret spend keys.
-    fn get_mnemonic(seed: *mut u8, seed_len: *mut u32) -> u8;
+    /// Retrieves the seed from the store.
+    fn get_seed(seed: *mut [u8; 64]) -> u8;
 
     /// Fills a buffer with random numbers.
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
@@ -81,14 +60,6 @@ extern "C" {
         utx_len: u32,
         proof: *mut [u8; Proof::SIZE],
     ) -> u8;
-}
-
-macro_rules! return_if_not_zero {
-    ($e: expr) => {
-        if $e != 0 {
-            return $e;
-        }
-    };
 }
 
 macro_rules! error_if_not_zero {
@@ -124,72 +95,21 @@ macro_rules! unwrap_or_bail {
 type FfiWallet = Wallet<FfiStore, FfiNodeClient>;
 const WALLET: FfiWallet = Wallet::new(FfiStore, FfiNodeClient);
 
-unsafe fn id_ptr_to_string(id: *const u8, id_len: u32) -> String {
-    let id = slice::from_raw_parts(id, id_len as usize);
-    String::from_utf8_unchecked(id.to_vec())
-}
-
-/// Generates a random mnemonic. These mnemonics **are** the user's wallet. They
-/// should be treated with care. The words are returned comma separated.
+/// Get the public spend key with the given index.
 #[no_mangle]
-pub unsafe extern "C" fn generate_mnemonic(
-    lang: imp::Language,
-    words: *mut u8,
-    words_len: *mut u32,
-) -> u8 {
-    let mnemonic =
-        unwrap_or_bail!(FfiWallet::generate_mnemonic(&mut FfiRng, lang));
-
-    let mnemonic_words: Vec<&'static str> = mnemonic.word_iter().collect();
-    let mnemonic_sentence = mnemonic_words.join(",");
-
-    let bytes = mnemonic_sentence.as_bytes();
-    let len = bytes.len();
-
-    ptr::copy_nonoverlapping(&bytes[0], words, len);
-    *words_len = len as u32;
-
-    0
-}
-
-/// Create and store secret spend key.
-#[no_mangle]
-pub unsafe extern "C" fn create_secret_spend_key(
-    id: *const u8,
-    id_len: u32,
-) -> u8 {
-    let id = id_ptr_to_string(id, id_len);
-
-    let mut seed_buf = [0; 0x400];
-    let mut seed_len = 0;
-    return_if_not_zero!(get_mnemonic(&mut seed_buf[0], &mut seed_len));
-    let seed = ptr::slice_from_raw_parts(&seed_buf[0], seed_len as usize);
-
-    unwrap_or_bail!(WALLET.create_secret_spend_key(&id, &*seed));
-
-    0
-}
-
-/// Get the public spend key.
-#[no_mangle]
-pub unsafe extern "C" fn get_public_spend_key(
-    id: *const u8,
-    id_len: u32,
+pub unsafe extern "C" fn public_spend_key(
+    index: u64,
     psk: *mut [u8; PublicSpendKey::SIZE],
 ) -> u8 {
-    let id = id_ptr_to_string(id, id_len);
-
-    let key = unwrap_or_bail!(WALLET.get_public_spend_key(&id)).to_bytes();
+    let key = unwrap_or_bail!(WALLET.get_public_spend_key(index)).to_bytes();
     ptr::copy_nonoverlapping(&key[0], &mut (*psk)[0], key.len());
-
     0
 }
 
 /// Creates a transfer transaction.
 #[no_mangle]
 pub unsafe extern "C" fn create_transfer_tx(
-    sender_id: *const u8,
-    id_len: u32,
+    sender_index: u64,
     refund: *const [u8; PublicSpendKey::SIZE],
     receiver: *const [u8; PublicSpendKey::SIZE],
     value: u64,
@@ -199,7 +119,6 @@ pub unsafe extern "C" fn create_transfer_tx(
     tx_buf: *mut u8,
     tx_len: *mut u32,
 ) -> u8 {
-    let id = id_ptr_to_string(sender_id, id_len);
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
     let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
 
@@ -209,7 +128,7 @@ pub unsafe extern "C" fn create_transfer_tx(
 
     let tx = unwrap_or_bail!(WALLET.create_transfer_tx(
         &mut FfiRng,
-        &id,
+        sender_index,
         &refund,
         &receiver,
         value,
@@ -257,62 +176,28 @@ pub unsafe extern "C" fn sync() {
 
 /// Gets the balance of a key.
 #[no_mangle]
-pub unsafe extern "C" fn get_balance(
-    id: *const u8,
-    id_len: u32,
-    balance: *mut u64,
-) -> u8 {
-    let id = id_ptr_to_string(id, id_len);
-    *balance = unwrap_or_bail!(WALLET.get_balance(&id));
+pub unsafe extern "C" fn get_balance(key_index: u64, balance: *mut u64) -> u8 {
+    *balance = unwrap_or_bail!(WALLET.get_balance(key_index));
     0
 }
 
 struct FfiStore;
 
 impl Store for FfiStore {
-    type Id = String;
     type Error = u8;
 
-    fn store_key(
-        &self,
-        id: &Self::Id,
-        key: &SecretSpendKey,
-    ) -> Result<(), Self::Error> {
-        let buf = key.to_bytes();
+    fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
+        let mut seed = [0; 64];
         unsafe {
-            error_if_not_zero!(store_key(
-                &id.as_bytes()[0],
-                id.len() as u32,
-                &buf
-            ));
+            error_if_not_zero!(get_seed(&mut seed));
         }
-        Ok(())
-    }
-
-    fn key(&self, id: &Self::Id) -> Result<SecretSpendKey, Self::Error> {
-        let mut buf = [0u8; SecretSpendKey::SIZE];
-        unsafe {
-            error_if_not_zero!(get_key(
-                &id.as_bytes()[0],
-                id.len() as u32,
-                &mut buf
-            ));
-        }
-        Ok(unwrap_or_err!(SecretSpendKey::from_bytes(&buf)))
-    }
-
-    fn key_num(&self) -> Result<usize, Self::Error> {
-        let mut num = 0;
-        unsafe {
-            error_if_not_zero!(key_num(&mut num));
-        }
-        Ok(num as usize)
+        Ok(seed)
     }
 }
 
 // 1 MB for a buffer.
 const NOTES_BUF_SIZE: usize = 0x100000;
-// 512 kb for a buffer.
+// 512 KB for a buffer.
 const OPENING_BUF_SIZE: usize = 0x10000;
 
 struct FfiNodeClient;
@@ -443,16 +328,14 @@ impl RngCore for FfiRng {
 impl<S: Store, C: NodeClient> From<Error<S, C>> for u8 {
     fn from(e: Error<S, C>) -> Self {
         match e {
-            Error::Store(_) => 1,
-            Error::Rng(_) => 2,
-            Error::Bytes(_) => 3,
-            Error::NoSuchKey(_) => 4,
-            Error::Node(_) => 5,
-            Error::NotEnoughBalance => 6,
-            Error::NoteCombinationProblem => 7,
-            Error::Canon(_) => 8,
-            Error::Bip39(_) => 9,
-            Error::Phoenix(_) => 10,
+            Error::Store(_) => 255,
+            Error::Rng(_) => 254,
+            Error::Bytes(_) => 253,
+            Error::Node(_) => 252,
+            Error::NotEnoughBalance => 251,
+            Error::NoteCombinationProblem => 250,
+            Error::Canon(_) => 249,
+            Error::Phoenix(_) => 248,
         }
     }
 }
