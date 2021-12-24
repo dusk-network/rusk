@@ -16,6 +16,7 @@ pub use super::rusk_proto::{
     BroadcastMessage, Message, MessageMetadata, Null, SendMessage,
 };
 use futures::Stream;
+use std::time::Duration;
 use std::{net::SocketAddr, pin::Pin};
 
 pub struct RuskNetwork {
@@ -44,6 +45,10 @@ impl RuskNetwork {
         RuskNetwork {
             peer: Peer::builder(public_addr, bootstrap, listener)
                 .with_listen_address(listen_addr)
+                .with_node_ttl(Duration::from_secs(120))
+                .with_bucket_ttl(Duration::from_secs(1000))
+                .with_recursive_discovery(false)
+                .with_channel_size(100)
                 .build(),
             sender: grpc_sender,
         }
