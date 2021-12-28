@@ -42,14 +42,38 @@ impl RuskNetwork {
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
         };
+        let mut peer_builder = Peer::builder(public_addr, bootstrap, listener)
+            .with_listen_address(listen_addr)
+            .with_node_ttl(Duration::from_millis(30_000))
+            .with_bucket_ttl(Duration::from_secs(60 * 60))
+            .with_recursive_discovery(false) //Default is true
+            .with_channel_size(100)
+            .with_node_evict_after(Duration::from_millis(5_000))
+            .with_auto_propagate(true);
+        //this is unusefull, just to get the default conf
+        peer_builder
+            .transport_conf()
+            .extend(kadcast::transport::default_configuration());
+
+        //RaptorQ Decoder conf
+        peer_builder
+            .transport_conf()
+            .insert("cache_ttl_secs".to_string(), "60".to_string());
+        peer_builder
+            .transport_conf()
+            .insert("cache_prune_every_secs".to_string(), "300".to_string());
+
+        //RaptorQ Encoder conf
+        peer_builder.transport_conf().insert(
+            "min_repair_packets_per_block".to_string(),
+            "5".to_string(),
+        );
+        peer_builder
+            .transport_conf()
+            .insert("mtu".to_string(), "1400".to_string());
+
         RuskNetwork {
-            peer: Peer::builder(public_addr, bootstrap, listener)
-                .with_listen_address(listen_addr)
-                .with_node_ttl(Duration::from_secs(120))
-                .with_bucket_ttl(Duration::from_secs(1000))
-                .with_recursive_discovery(false)
-                .with_channel_size(100)
-                .build(),
+            peer: peer_builder.build(),
             sender: grpc_sender,
         }
     }
