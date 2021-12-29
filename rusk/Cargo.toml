@@ -45,8 +45,7 @@ canonical = "0.6"
 canonical_derive = "0.6"
 wasmi = "0.6"
 dusk-bytes = "0.1"
-# kadcast = "0.2"
-kadcast = { git = "https://github.com/dusk-network/kadcast", branch = "release-0.3" }
+kadcast = "0.3.0-rc.0"
 
 [dev-dependencies]
 tower = "0.4"

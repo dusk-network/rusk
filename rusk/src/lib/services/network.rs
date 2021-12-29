@@ -9,7 +9,7 @@
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
-use tracing::{error, trace, warn};
+use tracing::{debug, error, trace, warn};
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
@@ -49,7 +49,7 @@ impl RuskNetwork {
             .with_recursive_discovery(false) //Default is true
             .with_channel_size(100)
             .with_node_evict_after(Duration::from_millis(5_000))
-            .with_auto_propagate(true);
+            .with_auto_propagate(false);
         //this is unusefull, just to get the default conf
         peer_builder
             .transport_conf()
@@ -105,7 +105,7 @@ impl Network for RuskNetwork {
         &self,
         request: Request<SendMessage>,
     ) -> Result<Response<Null>, Status> {
-        trace!("Recieved SendMessage request");
+        debug!("Received SendMessage request");
         self.peer
             .send(
                 &request.get_ref().message,
@@ -121,7 +121,7 @@ impl Network for RuskNetwork {
         &self,
         request: Request<BroadcastMessage>,
     ) -> Result<Response<Null>, Status> {
-        trace!("Recieved BroadcastMessage request");
+        debug!("Received BroadcastMessage request");
         self.peer
             .broadcast(
                 &request.get_ref().message,
@@ -138,7 +138,7 @@ impl Network for RuskNetwork {
         &self,
         _: Request<Null>,
     ) -> Result<Response<Self::ListenStream>, Status> {
-        trace!("Recieved Listen request");
+        debug!("Received Listen request");
         let mut rx = self.sender.subscribe();
         let output = async_stream::try_stream! {
             loop {
