@@ -46,10 +46,14 @@ impl RuskNetwork {
             .with_listen_address(listen_addr)
             .with_node_ttl(Duration::from_millis(30_000))
             .with_bucket_ttl(Duration::from_secs(60 * 60))
-            .with_recursive_discovery(false) //Default is true
             .with_channel_size(100)
             .with_node_evict_after(Duration::from_millis(5_000))
             .with_auto_propagate(false);
+
+        // Disable recursive discovery in a local env
+        // This should be set to `true` in a real env
+        peer_builder = peer_builder.with_recursive_discovery(false);
+
         //this is unusefull, just to get the default conf
         peer_builder
             .transport_conf()
@@ -71,6 +75,12 @@ impl RuskNetwork {
         peer_builder
             .transport_conf()
             .insert("mtu".to_string(), "1400".to_string());
+        peer_builder
+            .transport_conf()
+            .insert("fec_redundancy".to_string(), "0.15".to_string());
+        peer_builder
+            .transport_conf()
+            .insert("udp_backoff_timeout_micros".to_string(), "0".to_string());
 
         RuskNetwork {
             peer: peer_builder.build(),
