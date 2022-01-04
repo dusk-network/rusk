@@ -31,7 +31,8 @@ use sha2::{Digest, Sha256};
 pub use imp::*;
 pub use tx::{Transaction, UnprovenTransaction, UnprovenTransactionInput};
 
-pub(crate) const POSEIDON_DEPTH: usize = 17;
+/// The depth of an branch.
+pub const POSEIDON_DEPTH: usize = 17;
 
 /// Stores the cryptographic material necessary to derive cryptographic keys.
 pub trait Store {

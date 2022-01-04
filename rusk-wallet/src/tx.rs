@@ -29,7 +29,7 @@ const CONTRACT_ID_SIZE: usize = mem::size_of::<ContractId>();
 /// The structure sent over the network representing a transaction.
 #[derive(Debug, Clone)]
 pub struct Transaction {
-    inputs: Vec<BlsScalar>,
+    nullifiers: Vec<BlsScalar>,
     outputs: Vec<Note>,
     anchor: BlsScalar,
     proof: Proof,
@@ -43,7 +43,7 @@ impl Transaction {
     fn new(tx_skel: TransactionSkeleton, proof: Proof) -> Self {
         Self {
             proof,
-            inputs: tx_skel.inputs,
+            nullifiers: tx_skel.nullifiers,
             outputs: tx_skel.outputs,
             anchor: tx_skel.anchor,
             fee: tx_skel.fee,
@@ -68,7 +68,7 @@ impl Transaction {
     pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
         // compute the serialized size to preallocate space
         let size = u64::SIZE
-            + self.inputs.len() * BlsScalar::SIZE
+            + self.nullifiers.len() * BlsScalar::SIZE
             + u64::SIZE
             + self.outputs.len() * Note::SIZE
             + BlsScalar::SIZE
@@ -85,8 +85,8 @@ impl Transaction {
         let mut bytes = vec![0u8; size];
         let mut writer = &mut bytes[..];
 
-        writer.write(&(self.inputs.len() as u64).to_bytes())?;
-        for input in &self.inputs {
+        writer.write(&(self.nullifiers.len() as u64).to_bytes())?;
+        for input in &self.nullifiers {
             writer.write(&input.to_bytes())?;
         }
 
@@ -110,10 +110,10 @@ impl Transaction {
         let mut buffer = buf.as_ref();
 
         let ninputs = u64::from_reader(&mut buffer)? as usize;
-        let mut inputs = Vec::with_capacity(ninputs);
+        let mut nullifiers = Vec::with_capacity(ninputs);
 
         for _ in 0..ninputs {
-            inputs.push(BlsScalar::from_reader(&mut buffer)?);
+            nullifiers.push(BlsScalar::from_reader(&mut buffer)?);
         }
 
         let noutputs = u64::from_reader(&mut buffer)? as usize;
@@ -131,7 +131,7 @@ impl Transaction {
         let call = read_optional_call(&mut buffer)?;
 
         Ok(Self {
-            inputs,
+            nullifiers,
             outputs,
             anchor,
             fee,
@@ -143,7 +143,7 @@ impl Transaction {
 
     /// The nullifiers in the transaction.
     pub fn inputs(&self) -> &[BlsScalar] {
-        &self.inputs
+        &self.nullifiers
     }
 
     /// The output notes of the transaction.
@@ -179,7 +179,7 @@ impl Transaction {
 
 /// Transaction skeleton.
 struct TransactionSkeleton {
-    inputs: Vec<BlsScalar>,
+    nullifiers: Vec<BlsScalar>,
     outputs: Vec<Note>,
     anchor: BlsScalar,
     fee: Fee,
@@ -189,7 +189,7 @@ struct TransactionSkeleton {
 
 impl TransactionSkeleton {
     fn new(
-        inputs: Vec<BlsScalar>,
+        nullifiers: Vec<BlsScalar>,
         outputs: Vec<Note>,
         anchor: BlsScalar,
         fee: Fee,
@@ -197,7 +197,7 @@ impl TransactionSkeleton {
         call: Option<(ContractId, Vec<u8>)>,
     ) -> Self {
         Self {
-            inputs,
+            nullifiers,
             outputs,
             anchor,
             fee,
@@ -210,7 +210,7 @@ impl TransactionSkeleton {
 impl From<Transaction> for TransactionSkeleton {
     fn from(tx: Transaction) -> Self {
         Self {
-            inputs: tx.inputs,
+            nullifiers: tx.nullifiers,
             outputs: tx.outputs,
             anchor: tx.anchor,
             fee: tx.fee,
@@ -223,7 +223,7 @@ impl From<Transaction> for TransactionSkeleton {
 impl From<UnprovenTransaction> for TransactionSkeleton {
     fn from(utx: UnprovenTransaction) -> Self {
         Self {
-            inputs: utx
+            nullifiers: utx
                 .inputs
                 .iter()
                 .map(UnprovenTransactionInput::nullifier)
@@ -243,7 +243,7 @@ impl TransactionSkeleton {
     }
 
     pub(crate) fn hash_inputs(&self) -> Vec<BlsScalar> {
-        let size = self.inputs.len()
+        let size = self.nullifiers.len()
             + 12 * self.outputs.len()
             + 1
             + 4
@@ -260,7 +260,7 @@ impl TransactionSkeleton {
 
         let mut hash_inputs = Vec::with_capacity(size);
 
-        hash_inputs.append(&mut self.inputs.clone());
+        hash_inputs.append(&mut self.nullifiers.clone());
         self.outputs.iter().for_each(|note| {
             hash_inputs.append(&mut note.hash_inputs().to_vec());
         });

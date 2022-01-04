@@ -19,6 +19,7 @@ use rand_core::{CryptoRng, Error as RngError, RngCore};
 const MAX_INPUT_NOTES: usize = 0x4;
 
 /// The error type returned by this crate.
+#[derive(Debug)]
 pub enum Error<S: Store, C: NodeClient> {
     /// Underlying store error.
     Store(S::Error),
