@@ -15,7 +15,7 @@ keys: ## Create the keys for the circuits
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -j -C ./contracts wasm
 
-wallet: ## Build and test the wallet
+wallet: contracts ## Build and test the wallet
 	$(MAKE) -j -C ./rusk-wallet test
 
 circuits: keys ## Build and test circuit crates
@@ -27,11 +27,11 @@ contracts: ## Execute the test for all contracts
 utils: ## Execute the test for utils 
 	$(MAKE) -C ./test-utils test
 
-test: abi circuits macros contracts ## Run the tests
+test: abi wallet circuits macros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils test
 
 run: wasm ## Run the server
 	cargo run --release
 
-.PHONY: abi keys wasm circuits contracts test run help
+.PHONY: abi macros keys wasm wallet circuits contracts utils test run help
