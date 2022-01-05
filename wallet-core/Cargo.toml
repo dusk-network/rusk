@@ -1,0 +1,24 @@
+[package]
+name = "wallet-core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand_core = "^0.6"
+rand_chacha = { version = "^0.3", default-features = false }
+sha2 = { version = "^0.10", default-features = false }
+phoenix-core = "0.14.0-rc"
+dusk-pki = "^0.8"
+dusk-bytes = "^0.1"
+dusk-schnorr = "0.8.0-rc"
+dusk-jubjub = { version = "^0.10", default-features = false }
+dusk-poseidon = { version = "^0.22", features = [ "canon" ], default-features = false }
+dusk-plonk = { version = "^0.8", default-features = false }
+dusk-abi = "^0.9"
+canonical = "^0.6"
+
+[dev-dependencies]
+rand = "^0.8"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

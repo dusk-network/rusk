@@ -1,0 +1,134 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+name: Dusk CI
+
+jobs:
+  analyze:
+    name: Dusk Analyzer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: --git https://github.com/dusk-network/cargo-dusk-analyzer
+      - uses: actions-rs/cargo@v1
+        with:
+          command: dusk-analyzer
+
+  fmt:
+    name: Check code formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  build_wasm:
+    name: Build no_std
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - nightly
+        target: [ wasm32-unknown-unknown ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-targets
+
+      - name: Build project with alloc
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+  build_and_test:
+    name: Test with all features
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - nightly
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-targets
+
+      - name: Test project
+        if: ${{ matrix.os != 'ubuntu-latest' || matrix.toolchain != 'nightly' }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release --all-features
+
+      - name: Install kcov
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}
+        run: sudo apt install -y kcov
+
+      - name: Build test executable
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTFLAGS: '-Cdebuginfo=2 -Cinline-threshold=0 -Clink-dead-code'
+          RUSTDOCFLAGS: '-Cdebuginfo=2 -Cinline-threshold=0 -Clink-dead-code'
+        with:
+          command: test
+          args: --release --all-features --no-run
+
+      - name: Test with kcov
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}
+        # Find every executable resulting from building the tests and run each
+        # one of them with kcov. This ensures all the code we cover is measured.
+        run: >
+          find target/release/deps -type f -executable ! -name "*.*" -exec
+          kcov --exclude-pattern=/.cargo,/usr/lib --verify target/cov {} \;
+
+      - name: Upload coverage
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
