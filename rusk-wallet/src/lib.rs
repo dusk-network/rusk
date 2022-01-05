@@ -13,8 +13,9 @@
 #[macro_use]
 extern crate alloc;
 
-// #[cfg(target_family = "wasm")]
+#[cfg(target_family = "wasm")]
 mod ffi;
+
 mod imp;
 mod tx;
 
