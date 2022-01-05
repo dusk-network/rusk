@@ -10,9 +10,11 @@ use dusk_jubjub::BlsScalar;
 use dusk_pki::ViewKey;
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_wallet_core::{
+    NodeClient, Store, UnprovenTransaction, POSEIDON_DEPTH,
+};
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
-use dusk_wallet_core::{NodeClient, Store, UnprovenTransaction, POSEIDON_DEPTH};
 
 #[derive(Debug)]
 pub struct TestStore {

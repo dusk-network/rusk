@@ -14,11 +14,11 @@ use mock::{TestNodeClient, TestStore};
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::{BlsScalar, Proof};
 use dusk_poseidon::tree::PoseidonBranch;
-use phoenix_core::{Note, NoteType};
-use rand_core::{CryptoRng, RngCore};
 use dusk_wallet_core::{
     NodeClient, Store, Transaction, UnprovenTransaction, Wallet, POSEIDON_DEPTH,
 };
+use phoenix_core::{Note, NoteType};
+use rand_core::{CryptoRng, RngCore};
 
 #[derive(Debug)]
 struct SerdeNodeClient {
