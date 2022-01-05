@@ -16,7 +16,7 @@ use dusk_plonk::prelude::{BlsScalar, Proof};
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Note, NoteType};
 use rand_core::{CryptoRng, RngCore};
-use wallet_core::{
+use dusk_wallet_core::{
     NodeClient, Store, Transaction, UnprovenTransaction, Wallet, POSEIDON_DEPTH,
 };
 

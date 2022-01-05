@@ -12,7 +12,7 @@ use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
-use wallet_core::{NodeClient, Store, UnprovenTransaction, POSEIDON_DEPTH};
+use dusk_wallet_core::{NodeClient, Store, UnprovenTransaction, POSEIDON_DEPTH};
 
 #[derive(Debug)]
 pub struct TestStore {
