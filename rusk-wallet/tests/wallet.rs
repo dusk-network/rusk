@@ -18,6 +18,7 @@ use rusk_wallet::{
     NodeClient, Store, Transaction, UnprovenTransaction, Wallet, POSEIDON_DEPTH,
 };
 
+#[derive(Debug)]
 struct SerdeNodeClient {
     node: TestNodeClient,
 }
@@ -97,10 +98,11 @@ fn serde() {
     let recv_psk = recv_ssk.public_spend_key();
 
     let node = TestNodeClient::new(&mut rng, 0, &send_psk.clone(), 1_000_000);
-    let wallet_a = Wallet::new(send_store, node.clone());
+    let send_wallet =
+        Wallet::new(send_store, SerdeNodeClient { node: node.clone() });
 
     let ref_id = BlsScalar::random(&mut rng);
-    let tx = wallet_a
+    let tx = send_wallet
         .create_transfer_tx(
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
@@ -152,4 +154,20 @@ fn create_transfer_tx() {
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
         .expect("Transaction creation to be successful");
+}
+
+#[test]
+fn get_balance() {
+    let mut rng = rand::thread_rng();
+
+    let store = TestStore::new(&mut rng);
+    let ssk = store.retrieve_key(0).expect("Valid key when retrieved");
+    let psk = ssk.public_spend_key();
+
+    let node = TestNodeClient::new(&mut rng, 0, &psk, 1_000_000);
+    let wallet = Wallet::new(store, node.clone());
+
+    let balance = wallet.get_balance(0).expect("Valid balance call");
+
+    assert_eq!(balance, 1_000_000);
 }

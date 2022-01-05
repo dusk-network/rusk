@@ -7,7 +7,6 @@
 //! Mocks of the traits used in the wallet.
 
 use std::fmt;
-use std::fmt::Formatter;
 use std::sync::Arc;
 
 use dusk_jubjub::BlsScalar;

@@ -527,6 +527,8 @@ impl UnprovenTransaction {
             + total_input_len
             + u64::SIZE
             + total_output_len
+            + BlsScalar::SIZE
+            + Fee::SIZE
             + Crossover::SIZE
             + u64::SIZE
             + JubJubScalar::SIZE
@@ -574,7 +576,7 @@ impl UnprovenTransaction {
             inputs.push(UnprovenTransactionInput::from_bytes(
                 &buffer[..size as usize],
             )?);
-            buffer = &buffer[..size as usize];
+            buffer = &buffer[size as usize..];
         }
 
         let noutputs = u64::from_reader(&mut buffer)?;

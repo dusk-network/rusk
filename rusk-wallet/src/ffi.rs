@@ -22,7 +22,7 @@ use rand_core::{
     CryptoRng, RngCore,
 };
 
-use crate::tx::UnprovenTransaction;
+use crate::{tx::UnprovenTransaction, POSEIDON_DEPTH};
 use crate::{Error, NodeClient, Store, Wallet};
 
 extern "C" {
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn public_spend_key(
     index: u64,
     psk: *mut [u8; PublicSpendKey::SIZE],
 ) -> u8 {
-    let key = unwrap_or_bail!(WALLET.get_public_spend_key(index)).to_bytes();
+    let key = unwrap_or_bail!(WALLET.public_spend_key(index)).to_bytes();
     ptr::copy_nonoverlapping(&key[0], &mut (*psk)[0], key.len());
     0
 }
@@ -147,31 +147,31 @@ pub unsafe extern "C" fn create_transfer_tx(
 /// Creates a stake transaction.
 #[no_mangle]
 pub unsafe extern "C" fn create_stake_tx() {
-    todo!()
+    unimplemented!()
 }
 
 /// Stops staking for a key.
 #[no_mangle]
 pub unsafe extern "C" fn stop_stake() {
-    todo!()
+    unimplemented!()
 }
 
 /// Extends staking for a particular key.
 #[no_mangle]
 pub unsafe extern "C" fn extend_stake() {
-    todo!()
+    unimplemented!()
 }
 
 /// Withdraw a key's stake.
 #[no_mangle]
 pub unsafe extern "C" fn withdraw_stake() {
-    todo!()
+    unimplemented!()
 }
 
 /// Syncs the wallet with the blocks.
 #[no_mangle]
 pub unsafe extern "C" fn sync() {
-    todo!()
+    unimplemented!()
 }
 
 /// Gets the balance of a key.
@@ -246,7 +246,7 @@ impl NodeClient for FfiNodeClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonBranch<17>, Self::Error> {
+    ) -> Result<PoseidonBranch<POSEIDON_DEPTH>, Self::Error> {
         let mut opening_buf = [0u8; OPENING_BUF_SIZE];
 
         let mut opening_len = 0;

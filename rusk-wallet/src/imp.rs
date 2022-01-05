@@ -98,7 +98,7 @@ where
     C: NodeClient,
 {
     /// Retrieve the public spend key with the given index.
-    pub fn get_public_spend_key(
+    pub fn public_spend_key(
         &self,
         index: u64,
     ) -> Result<PublicSpendKey, Error<S, C>> {
@@ -205,27 +205,27 @@ where
 
     /// Creates a stake transaction.
     pub fn create_stake_tx(&self) -> Result<(), Error<S, C>> {
-        todo!()
+        unimplemented!()
     }
 
     /// Stops staking for a key.
     pub fn stop_stake(&self) -> Result<(), Error<S, C>> {
-        todo!()
+        unimplemented!()
     }
 
     /// Extends staking for a particular key.
     pub fn extend_stake(&self) -> Result<(), Error<S, C>> {
-        todo!()
+        unimplemented!()
     }
 
     /// Withdraw a key's stake.
     pub fn withdraw_stake(&self) -> Result<(), Error<S, C>> {
-        todo!()
+        unimplemented!()
     }
 
     /// Syncs the wallet with the blocks.
     pub fn sync(&self) -> Result<(), Error<S, C>> {
-        todo!()
+        unimplemented!()
     }
 
     /// Gets the balance of a key.
