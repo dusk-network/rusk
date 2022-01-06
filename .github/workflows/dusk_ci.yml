@@ -44,7 +44,12 @@ jobs:
           key: ${{env.cache-name}}-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
       - run: RUSK_PROFILE_PATH="/var/opt/build-cache" make -j test
-
+      - name: "Upload Rusk Artifact"
+        uses: actions/upload-artifact@v2
+        with:
+          name: rusk-artifact
+          path: ./target/release/rusk
+          retention-days: 5
   fmt:
     name: Rustfmt
     runs-on: core
