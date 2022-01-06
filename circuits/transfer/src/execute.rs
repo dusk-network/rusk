@@ -4,21 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
+use super::{POSEIDON_TREE_DEPTH, TRANSCRIPT_LABEL};
+use crate::error::Error;
 
-use crossover::CircuitCrossover;
-use input::CircuitInput;
-use output::CircuitOutput;
-
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubScalar;
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
+use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
+use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
 use dusk_poseidon::tree::{
     PoseidonBranch, PoseidonLeaf, PoseidonTree, PoseidonTreeAnnotation,
 };
 use dusk_poseidon::Error as PoseidonError;
-use dusk_schnorr::Proof as SchnorrProof;
-use input::POSEIDON_BRANCH_DEPTH;
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{CryptoRng, RngCore};
 
@@ -28,6 +22,10 @@ mod crossover;
 mod input;
 mod output;
 mod variants;
+
+pub use crossover::{CircuitCrossover, WitnessCrossover};
+pub use input::{CircuitInput, CircuitInputSignature, WitnessInput};
+pub use output::{CircuitOutput, WitnessOutput};
 
 pub use variants::*;
 
@@ -58,174 +56,205 @@ impl Default for ExecuteCircuit {
 }
 
 impl ExecuteCircuit {
-    pub fn sign<R: RngCore + CryptoRng>(
+    pub fn input_signature<R: RngCore + CryptoRng>(
         rng: &mut R,
         ssk: &SecretSpendKey,
         note: &Note,
         tx_hash: BlsScalar,
-    ) -> SchnorrProof {
-        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
-        let secret = SecretKey::from(&sk_r);
-
-        SchnorrProof::new(&secret, rng, tx_hash)
+    ) -> CircuitInputSignature {
+        CircuitInputSignature::sign(rng, ssk, note, tx_hash)
     }
 
-    pub fn add_input(
-        &mut self,
-        ssk: SecretSpendKey,
+    pub fn input_commitment(
+        vk: &ViewKey,
+        note: &Note,
+    ) -> Result<(u64, JubJubScalar), Error> {
+        let value = note.value(Some(vk))?;
+        let blinding_factor = note.blinding_factor(Some(vk))?;
+
+        Ok((value, blinding_factor))
+    }
+
+    pub fn input_branch<L, A>(
+        tree: &PoseidonTree<L, A, { POSEIDON_TREE_DEPTH }>,
+        pos: u64,
+    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Error>
+    where
+        L: PoseidonLeaf + Into<Note>,
+        A: PoseidonTreeAnnotation<L>,
+    {
+        Ok(tree.branch(pos)?.ok_or(PoseidonError::TreeBranchFailed)?)
+    }
+
+    pub fn input<R, L, A>(
+        rng: &mut R,
+        ssk: &SecretSpendKey,
+        tx_hash: BlsScalar,
+        tree: &PoseidonTree<L, A, { POSEIDON_TREE_DEPTH }>,
         note: Note,
-        branch: PoseidonBranch<{ input::POSEIDON_BRANCH_DEPTH }>,
-        signature: Option<SchnorrProof>,
-    ) -> Result<(), Error> {
+    ) -> Result<CircuitInput, Error>
+    where
+        R: RngCore + CryptoRng,
+        L: PoseidonLeaf + Into<Note>,
+        A: PoseidonTreeAnnotation<L>,
+    {
+        let signature = Self::input_signature(rng, ssk, &note, tx_hash);
+        let nullifier = note.gen_nullifier(ssk);
+
+        let stealth_address = note.stealth_address();
+        let sk_r = ssk.sk_r(stealth_address);
+        let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+        let pk_r_p = pk_r_p.into();
+
+        let vk = ssk.view_key();
+        let (value, blinding_factor) = Self::input_commitment(&vk, &note)?;
+
+        let pos = *note.pos();
+        let branch = Self::input_branch(tree, pos)?;
+
+        let input = CircuitInput::new(
+            branch,
+            note,
+            pk_r_p,
+            value,
+            blinding_factor,
+            nullifier,
+            signature,
+        );
+
+        Ok(input)
+    }
+
+    pub fn add_input(&mut self, input: CircuitInput) -> Result<(), Error> {
         match self {
             Self::ExecuteCircuitOneZero(c) => {
-                let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoZero::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitTwoZero(c);
                 } else {
                     let mut c = ExecuteCircuitOneZero::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitOneZero(c);
                 }
-                result
             }
             Self::ExecuteCircuitOneOne(c) => {
-                let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoOne::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitTwoOne(c);
                 } else {
                     let mut c = ExecuteCircuitOneOne::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitOneOne(c);
                 }
-                result
             }
             Self::ExecuteCircuitOneTwo(c) => {
-                let result;
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 if !c.inputs().is_empty() {
                     let mut c = ExecuteCircuitTwoTwo::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitTwoTwo(c);
                 } else {
                     let mut c = ExecuteCircuitOneTwo::new(
                         inputs, crossover, outputs, tx_hash,
                     );
-                    result = c.add_input(ssk, note, branch, signature);
+
+                    c.add_input(input);
                     *self = Self::ExecuteCircuitOneTwo(c);
                 }
-                result
             }
             Self::ExecuteCircuitTwoZero(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitThreeZero::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitThreeZero(c);
-                result
             }
             Self::ExecuteCircuitTwoOne(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitThreeOne::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitThreeOne(c);
-                result
             }
             Self::ExecuteCircuitTwoTwo(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitThreeTwo::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitThreeTwo(c);
-                result
             }
             Self::ExecuteCircuitThreeZero(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitFourZero::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitFourZero(c);
-                result
             }
             Self::ExecuteCircuitThreeOne(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitFourOne::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitFourOne(c);
-                result
             }
             Self::ExecuteCircuitThreeTwo(c) => {
                 let (inputs, crossover, outputs, tx_hash) = c.into_inner();
                 let mut c = ExecuteCircuitFourTwo::new(
                     inputs, crossover, outputs, tx_hash,
                 );
-                let result = c.add_input(ssk, note, branch, signature);
+
+                c.add_input(input);
                 *self = Self::ExecuteCircuitFourTwo(c);
-                result
             }
-            _ => Err(Error::CircuitMaximumInputs),
+            _ => return Err(Error::CircuitMaximumInputs),
         }
+
+        Ok(())
     }
 
-    pub fn add_input_from_tree<L, A>(
-        &mut self,
-        ssk: SecretSpendKey,
-        tree: &PoseidonTree<L, A, { input::POSEIDON_BRANCH_DEPTH }>,
-        pos: u64,
-        signature: Option<SchnorrProof>,
-    ) -> Result<(), Error>
-    where
-        L: PoseidonLeaf + Into<Note>,
-        A: PoseidonTreeAnnotation<L>,
-    {
-        let note = tree
-            .get(pos)?
-            .map(|n| n.into())
-            .ok_or(PoseidonError::TreeGetFailed)?;
-
-        let branch =
-            tree.branch(pos)?.ok_or(PoseidonError::TreeBranchFailed)?;
-
-        self.add_input(ssk, note, branch, signature)
-    }
-
-    pub fn compute_signatures<R: RngCore + CryptoRng>(&mut self, rng: &mut R) {
+    pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
         match self {
-            Self::ExecuteCircuitOneZero(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitOneOne(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitOneTwo(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitTwoZero(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitTwoOne(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitTwoTwo(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitThreeZero(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitThreeOne(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitThreeTwo(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitFourZero(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitFourOne(c) => c.compute_signatures(rng),
-            Self::ExecuteCircuitFourTwo(c) => c.compute_signatures(rng),
+            Self::ExecuteCircuitOneZero(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitOneOne(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitOneTwo(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitTwoZero(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitTwoOne(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitTwoTwo(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitThreeZero(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitThreeOne(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitThreeTwo(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitFourZero(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitFourOne(c) => c.set_tx_hash(tx_hash),
+            Self::ExecuteCircuitFourTwo(c) => c.set_tx_hash(tx_hash),
         }
     }
 
@@ -250,44 +279,45 @@ impl ExecuteCircuit {
         &mut self,
         fee: &Fee,
         crossover: &Crossover,
-        vk: &ViewKey,
-    ) -> Result<(), Error> {
+        value: u64,
+        blinder: JubJubScalar,
+    ) {
         match self {
             Self::ExecuteCircuitOneZero(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitOneOne(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitOneTwo(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitTwoZero(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitTwoOne(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitTwoTwo(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitThreeZero(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitThreeOne(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitThreeTwo(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitFourZero(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitFourOne(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
             Self::ExecuteCircuitFourTwo(c) => {
-                c.set_fee_crossover(fee, crossover, vk)
+                c.set_fee_crossover(fee, crossover, value, blinder)
             }
         }
     }
@@ -478,51 +508,85 @@ impl ExecuteCircuit {
         }
     }
 
-    /// Wrapper method required while circuit implementation is not object safe
-    /// https://github.com/dusk-network/plonk/issues/531
-    pub fn gen_proof(
+    pub fn compile(
+        &mut self,
+        pp: &PublicParameters,
+    ) -> Result<(ProverKey, VerifierData), Error> {
+        match self {
+            Self::ExecuteCircuitOneZero(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitOneOne(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitOneTwo(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitTwoZero(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitTwoOne(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitTwoTwo(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitThreeZero(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitThreeOne(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitThreeTwo(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitFourZero(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitFourOne(c) => Ok(c.compile(pp)?),
+            Self::ExecuteCircuitFourTwo(c) => Ok(c.compile(pp)?),
+        }
+    }
+
+    pub fn prove(
         &mut self,
         pp: &PublicParameters,
         pk: &ProverKey,
-        label: &'static [u8],
     ) -> Result<Proof, Error> {
         match self {
             Self::ExecuteCircuitOneZero(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitOneOne(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitOneTwo(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitTwoZero(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitTwoOne(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitTwoTwo(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitThreeZero(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitThreeOne(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitThreeTwo(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitFourZero(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitFourOne(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
             Self::ExecuteCircuitFourTwo(c) => {
-                c.gen_proof(pp, pk, label).map_err(|e| e.into())
+                Ok(c.prove(pp, pk, TRANSCRIPT_LABEL)?)
             }
         }
+    }
+
+    pub fn verify(
+        pp: &PublicParameters,
+        vd: &VerifierData,
+        proof: &Proof,
+        public_inputs: &[PublicInputValue],
+    ) -> Result<(), Error> {
+        // Since we take the verifier data as parameter, we can use any of the
+        // variants
+        Ok(ExecuteCircuitTwoTwo::verify(
+            pp,
+            vd,
+            proof,
+            public_inputs,
+            TRANSCRIPT_LABEL,
+        )?)
     }
 }

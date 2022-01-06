@@ -4,27 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{
-    CircuitCrossover, CircuitInput, CircuitOutput, ExecuteCircuit,
-    POSEIDON_BRANCH_DEPTH,
-};
-use crate::{gadgets, Error};
+use super::{CircuitCrossover, CircuitInput, CircuitOutput, ExecuteCircuit};
+use crate::error::Error;
+use crate::gadgets;
 
-use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Serializable;
-use dusk_jubjub::{
-    JubJubAffine, JubJubScalar, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED,
-};
-use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
+use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
 use dusk_plonk::error::Error as PlonkError;
-use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
-use dusk_poseidon::tree::{self, PoseidonBranch};
-use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::{Crossover, Fee, Note};
-use rand_core::{CryptoRng, RngCore};
-
-use std::convert::TryFrom;
 
 use dusk_plonk::prelude::*;
 
@@ -40,7 +27,7 @@ macro_rules! execute_circuit_variant {
         }
 
         impl $i {
-            pub fn new(
+            pub const fn new(
                 inputs: Vec<CircuitInput>,
                 crossover: CircuitCrossover,
                 outputs: Vec<CircuitOutput>,
@@ -70,72 +57,16 @@ macro_rules! execute_circuit_variant {
                 (inputs, crossover, outputs, tx_hash)
             }
 
-            pub fn compute_tx_hash(&mut self) -> &BlsScalar {
-                let hash = [self.anchor()]
-                    .iter()
-                    .chain(self.inputs.iter().map(|input| input.nullifier()))
-                    .chain(
-                        self.crossover
-                            .value_commitment()
-                            .to_hash_inputs()
-                            .iter(),
-                    )
-                    .chain([self.crossover.fee().into()].iter())
-                    .copied()
-                    .chain(self.outputs.iter().flat_map(|output| {
-                        output.value_commitment().to_hash_inputs()
-                    }))
-                    .collect::<Vec<BlsScalar>>();
+            pub fn add_input(&mut self, input: CircuitInput) {
+                self.inputs.push(input);
+            }
 
-                self.tx_hash = sponge::hash(hash.as_slice());
-
+            pub const fn tx_hash(&self) -> &BlsScalar {
                 &self.tx_hash
             }
 
-            pub fn compute_signatures<R: RngCore + CryptoRng>(
-                &mut self,
-                rng: &mut R,
-            ) {
-                let tx_hash = *self.compute_tx_hash();
-
-                self.inputs.iter_mut().for_each(|input| {
-                    let signature = ExecuteCircuit::sign(
-                        rng,
-                        input.ssk(),
-                        input.note(),
-                        tx_hash,
-                    );
-
-                    input.set_signature(signature);
-                });
-            }
-
-            pub fn add_input(
-                &mut self,
-                ssk: SecretSpendKey,
-                note: Note,
-                branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
-                signature: Option<SchnorrProof>,
-            ) -> Result<(), Error> {
-                let vk = ssk.view_key();
-
-                let value = note.value(Some(&vk))?;
-                let blinding_factor = note.blinding_factor(Some(&vk))?;
-                let nullifier = note.gen_nullifier(&ssk);
-
-                let input = CircuitInput::new(
-                    signature,
-                    branch,
-                    ssk,
-                    note,
-                    value,
-                    blinding_factor,
-                    nullifier,
-                );
-
-                self.inputs.push(input);
-
-                Ok(())
+            pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
+                self.tx_hash = tx_hash;
             }
 
             pub fn set_fee(&mut self, fee: &Fee) -> Result<(), Error> {
@@ -160,32 +91,18 @@ macro_rules! execute_circuit_variant {
                 &mut self,
                 fee: &Fee,
                 crossover: &Crossover,
-                vk: &ViewKey,
-            ) -> Result<(), Error> {
-                let shared_secret = fee.stealth_address().R() * vk.a();
-                let shared_secret = shared_secret.into();
-                let nonce = BlsScalar::from(*crossover.nonce());
-
-                let data: [BlsScalar; PoseidonCipher::capacity()] = crossover
-                    .encrypted_data()
-                    .decrypt(&shared_secret, &nonce)?;
-
-                let value = data[0].reduce();
-                let value = value.0[0];
-
-                let blinding_factor =
-                    JubJubScalar::from_bytes(&data[1].to_bytes())?;
+                value: u64,
+                blinder: JubJubScalar,
+            ) {
                 let value_commitment = *crossover.value_commitment();
-
                 let fee = fee.gas_limit;
+
                 self.crossover = CircuitCrossover::new(
                     value_commitment,
                     value,
-                    blinding_factor,
+                    blinder,
                     fee,
                 );
-
-                Ok(())
             }
 
             pub fn add_output_with_data(
@@ -211,39 +128,6 @@ macro_rules! execute_circuit_variant {
                     .map(|i| i.branch().root())
                     .copied()
                     .unwrap_or_default()
-            }
-
-            pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-                // 1.c opening(A,io,ih)
-                let mut pi = vec![self.anchor().into()];
-
-                // 1.f N == H(k',ip)
-                let nullifiers = self
-                    .inputs
-                    .iter()
-                    .map(CircuitInput::nullifier)
-                    .cloned()
-                    .map(|i| i.into());
-
-                pi.extend(nullifiers);
-
-                // 2. commitment(C,cv,cb)
-                let crossover =
-                    JubJubAffine::from(self.crossover.value_commitment());
-                pi.push(crossover.into());
-
-                pi.push(BlsScalar::from(self.crossover.fee()).into());
-
-                // 4.a commitment(V,ov,ob)
-                let outputs = self.outputs.iter().map(|output| {
-                    JubJubAffine::from(output.note().value_commitment()).into()
-                });
-                pi.extend(outputs);
-
-                // Transaction hash
-                pi.push(self.tx_hash.into());
-
-                pi
             }
 
             pub fn inputs(&self) -> &[CircuitInput] {
@@ -273,168 +157,177 @@ macro_rules! execute_circuit_variant {
         impl Circuit for $i {
             fn gadget(
                 &mut self,
-                composer: &mut StandardComposer,
+                composer: &mut TurboComposer,
             ) -> Result<(), PlonkError> {
                 let _ = $i::CIRCUIT_ID;
 
-                // Set the common root/anchor for all inputs
-                let tx_hash = composer.add_input(self.tx_hash);
-                let anchor_s = self.anchor();
-                let anchor = composer.add_input(anchor_s);
-                composer.constrain_to_constant(
-                    anchor,
-                    BlsScalar::zero(),
-                    Some(-anchor_s),
-                );
+                let zero = TurboComposer::constant_zero();
 
+                // Set the common root/anchor for all inputs
+                let tx_hash = *self.tx_hash();
+                let tx_hash = composer.append_public_witness(tx_hash);
+
+                let anchor = self.anchor();
+                let anchor = composer.append_public_witness(anchor);
+
+                // 1. ∀(i, n) ∈ I × N | I → N
                 let inputs = self
                     .inputs
                     .iter()
-                    .try_fold::<_, _, Result<Variable, Error>>(
-                        composer.zero_var(),
+                    .try_fold::<_, _, Result<Witness, Error>>(
+                        zero,
                         |sum, input| {
                             let witness = input.to_witness(composer)?;
 
-                            // 1.a k := is · G
-                            // 1.b k':= is · G∗
-                            let k = witness.pk_r;
-                            let k_p = witness.pk_r_prime;
+                            // 1.a opening(io,A,ih)
+                            gadgets::merkle_opening(
+                                composer,
+                                input.branch(),
+                                anchor,
+                                witness.note_hash,
+                            );
 
-                            // 1.c opening(A,io,ih)
-                            let anchor_p =
-                                tree::merkle_opening(composer, input.branch());
-                            composer.assert_equal(anchor, anchor_p);
-
-                            // 1.d ih == H(it,ic,in,k,ir,ip,iψ)
+                            // 1.b ih == H(it,ic,in,ik,ir,ip,iψ)
                             let hash = witness.to_hash_inputs();
                             let hash = sponge::gadget(composer, &hash);
                             composer.assert_equal(witness.note_hash, hash);
 
-                            // 1.e doubleSchnorr(iσ,k,k',T)
-                            dusk_schnorr::gadgets::double_key_verify(
+                            // 1.c doubleSchnorrVerify(iσ,ik,T)
+                            gadgets::schnorr_double_key_verify(
                                 composer,
-                                witness.schnorr_r,
-                                witness.schnorr_r_prime,
                                 witness.schnorr_u,
-                                k,
-                                k_p,
+                                witness.schnorr_r,
+                                witness.schnorr_r_p,
+                                witness.pk_r,
+                                witness.pk_r_p,
                                 tx_hash,
                             );
 
-                            // 1.f N == H(k',ip)
-                            let nullifier = sponge::gadget(
-                                composer,
-                                &[*k_p.x(), *k_p.y(), witness.pos],
-                            );
-                            composer.constrain_to_constant(
-                                nullifier,
+                            // 1.d n == H(ik',ip)
+                            let n = [
+                                *witness.pk_r_p.x(),
+                                *witness.pk_r_p.y(),
+                                witness.pos,
+                            ];
+                            let n = sponge::gadget(composer, &n);
+                            composer.assert_equal_constant(
+                                n,
                                 BlsScalar::zero(),
-                                Some(-input.nullifier()),
+                                Some(-witness.nullifier),
                             );
 
-                            // 1.g commitment(ic,iv,ib)
-                            let commitment = gadgets::commitment(
+                            // 1.e commitment(ic,iv,ib,64)
+                            gadgets::commitment(
                                 composer,
+                                witness.value_commitment,
                                 witness.value,
                                 witness.blinding_factor,
+                                64,
                             );
 
-                            // 1.h range(iv,64)
-                            composer.range_gate(witness.value, 64);
+                            let constraint = Constraint::new()
+                                .left(1)
+                                .a(sum)
+                                .right(1)
+                                .b(witness.value);
 
-                            Ok(composer.add(
-                                (BlsScalar::one(), sum),
-                                (BlsScalar::one(), witness.value),
-                                BlsScalar::zero(),
-                                None,
-                            ))
+                            Ok(composer.gate_add(constraint))
                         },
                     )
                     .or(Err(PlonkError::CircuitInputsNotFound))?;
 
-                // 2. commitment(C,cv,cb)
+                // 2. commitment(Cc,cv,cb,64)
                 let crossover = self.crossover.to_witness(composer);
-
-                let commitment = gadgets::commitment(
+                let commitment =
+                    composer.append_public_point(crossover.value_commitment);
+                gadgets::commitment(
                     composer,
+                    commitment,
                     crossover.value,
                     crossover.blinding_factor,
+                    64,
                 );
 
-                composer.assert_equal_public_point(
-                    commitment,
-                    self.crossover.value_commitment().into(),
-                );
-
-                composer.constrain_to_constant(
+                composer.assert_equal_constant(
                     crossover.fee_value_witness,
                     BlsScalar::zero(),
                     Some(-crossover.fee_value),
                 );
 
-                // 3. range(cv,64)
-                composer.range_gate(crossover.value, 64);
-
+                // 3. ∀(o,v) ∈ O × V | O → V
                 let outputs = self.outputs.iter().fold(
-                    composer.zero_var(),
+                    TurboComposer::constant_zero(),
                     |sum, output| {
                         let witness = output.to_witness(composer);
+                        let commitment = composer
+                            .append_public_point(witness.value_commitment);
 
-                        // 4.a commitment(V,ov,ob)
-                        let commitment = gadgets::commitment(
+                        // 1.a commitment(oc,ov,ob,64)
+                        gadgets::commitment(
                             composer,
+                            commitment,
                             witness.value,
                             witness.blinding_factor,
+                            64,
                         );
 
-                        // 4.b range(ov,64)
-                        composer.range_gate(witness.value, 64);
+                        let constraint = Constraint::new()
+                            .left(1)
+                            .a(sum)
+                            .right(1)
+                            .b(witness.value);
 
-                        composer.assert_equal_public_point(
-                            commitment,
-                            witness.value_commitment.into(),
-                        );
-
-                        composer.add(
-                            (BlsScalar::one(), sum),
-                            (BlsScalar::one(), witness.value),
-                            BlsScalar::zero(),
-                            None,
-                        )
+                        composer.gate_add(constraint)
                     },
                 );
 
-                // 5. ∑(iv ∈ I) − ∑(ov ∈ O) − cv − F = 0
-                let fee_crossover = composer.add(
-                    (BlsScalar::one(), crossover.value),
-                    (BlsScalar::one(), crossover.fee_value_witness),
-                    BlsScalar::zero(),
-                    None,
-                );
+                // 4. ∑(iv ∈ I) − ∑(ov ∈ O) − cv − F = 0
+                let constraint = Constraint::new()
+                    .left(1)
+                    .a(outputs)
+                    .right(1)
+                    .b(crossover.value)
+                    .fourth(1)
+                    .d(crossover.fee_value_witness);
+                let o = composer.gate_add(constraint);
 
-                composer.poly_gate(
-                    inputs,
-                    outputs,
-                    fee_crossover,
-                    BlsScalar::zero(),
-                    BlsScalar::one(),
-                    -BlsScalar::one(),
-                    -BlsScalar::one(),
-                    BlsScalar::zero(),
-                    None,
-                );
-
-                // 12. Verify the transaction hash
-                composer.constrain_to_constant(
-                    tx_hash,
-                    BlsScalar::zero(),
-                    Some(-self.tx_hash),
-                );
+                composer.assert_equal(inputs, o);
 
                 Ok(())
             }
 
-            fn padded_circuit_size(&self) -> usize {
+            fn public_inputs(&self) -> Vec<PublicInputValue> {
+                // 1.a opening(io,A,ih)
+                let mut pi = vec![self.tx_hash.into(), self.anchor().into()];
+
+                // 1.f n == H(ik',ip)
+                let nullifiers = self
+                    .inputs
+                    .iter()
+                    .map(CircuitInput::nullifier)
+                    .cloned()
+                    .map(|i| i.into());
+
+                pi.extend(nullifiers);
+
+                // 2. commitment(Cc,cv,cb,64)
+                let crossover =
+                    JubJubAffine::from(self.crossover.value_commitment());
+                pi.push(crossover.into());
+
+                pi.push(BlsScalar::from(self.crossover.fee()).into());
+
+                // 3. ∀(o,v) ∈ O × V | O → V
+                let outputs = self.outputs.iter().map(|output| {
+                    JubJubAffine::from(output.note().value_commitment()).into()
+                });
+
+                pi.extend(outputs);
+
+                pi
+            }
+
+            fn padded_gates(&self) -> usize {
                 1 << $c
             }
         }

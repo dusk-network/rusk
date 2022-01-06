@@ -4,137 +4,112 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::convert::TryInto;
-use transfer_circuits::{SendToContractObfuscatedCircuit, TRANSCRIPT_LABEL};
+use transfer_circuits::{
+    DeriveKey, SendToContractObfuscatedCircuit, StcoCrossover, StcoMessage,
+    TRANSCRIPT_LABEL,
+};
 
 use dusk_pki::SecretSpendKey;
-use dusk_plonk::circuit;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 
 use dusk_plonk::prelude::*;
 
 mod keys;
 
-#[test]
-fn send_to_contract_obfuscated_public_key() {
-    let mut rng = StdRng::seed_from_u64(2322u64);
+fn create_random_circuit<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    public_derive_key: bool,
+) -> SendToContractObfuscatedCircuit {
+    let c_ssk = SecretSpendKey::random(rng);
+    let c_psk = c_ssk.public_spend_key();
 
-    let ssk = SecretSpendKey::random(&mut rng);
-    let vk = ssk.view_key();
-    let psk = ssk.public_spend_key();
+    let value = rng.gen();
 
-    let c_address = BlsScalar::random(&mut rng);
+    let c_blinder = JubJubScalar::random(rng);
+    let c_note = Note::obfuscated(rng, &c_psk, value, c_blinder);
 
-    let c_value = 100;
-    let c_blinding_factor = JubJubScalar::random(&mut rng);
-    let c_note = Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
     let (mut fee, crossover) = c_note
         .try_into()
         .expect("Failed to convert note into fee/crossover pair!");
+
     fee.gas_limit = 5;
     fee.gas_price = 1;
 
-    let message_r = JubJubScalar::random(&mut rng);
-    let message_value = 100;
-    let message = Message::new(&mut rng, &message_r, &psk, message_value);
+    let m_ssk = SecretSpendKey::random(rng);
+    let m_psk = m_ssk.public_spend_key();
 
-    let c_signature = SendToContractObfuscatedCircuit::sign(
-        &mut rng, &ssk, &fee, &crossover, &message, &c_address,
+    let m_r = JubJubScalar::random(rng);
+    let message = Message::new(rng, &m_r, &m_psk, value);
+    let m_pk_r = *m_psk.gen_stealth_address(&m_r).pk_r().as_ref();
+
+    let (_, m_blinder) = message
+        .decrypt(&m_r, &m_psk)
+        .expect("Failed to decrypt message");
+
+    let m_derive_key = DeriveKey::new(public_derive_key, &m_psk);
+
+    let address = BlsScalar::random(rng);
+    let signature = SendToContractObfuscatedCircuit::sign(
+        rng, &c_ssk, &fee, &crossover, &message, &address,
     );
 
-    let mut circuit = SendToContractObfuscatedCircuit::new(
-        fee,
-        crossover,
-        &vk,
-        c_signature,
-        true,
-        message,
-        &psk,
-        message_r,
-        c_address,
+    let message =
+        StcoMessage::new(message, m_r, m_derive_key, m_pk_r, m_blinder);
+    let crossover = StcoCrossover::new(crossover, c_blinder);
+
+    SendToContractObfuscatedCircuit::new(
+        value, message, crossover, &fee, address, signature,
     )
-    .expect("Failed to generate circuit!");
-
-    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
-        .expect("Failed to generate circuit!");
-
-    let proof = circuit
-        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to generate proof!");
-    let pi = circuit.public_inputs();
-
-    assert!(circuit.is_message_derive_key_public());
-
-    circuit::verify_proof(
-        &pp,
-        vd.key(),
-        &proof,
-        pi.as_slice(),
-        vd.pi_pos(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify the proof!");
 }
 
 #[test]
-fn send_to_contract_obfuscated_private_key() {
-    let mut rng = StdRng::seed_from_u64(2322u64);
-
-    let ssk = SecretSpendKey::random(&mut rng);
-    let vk = ssk.view_key();
-    let psk = ssk.public_spend_key();
-
-    let c_address = BlsScalar::random(&mut rng);
-
-    let c_value = 100;
-    let c_blinding_factor = JubJubScalar::random(&mut rng);
-    let c_note = Note::obfuscated(&mut rng, &psk, c_value, c_blinding_factor);
-    let (mut fee, crossover) = c_note
-        .try_into()
-        .expect("Failed to convert note into fee/crossover pair!");
-    fee.gas_limit = 5;
-    fee.gas_price = 1;
-
-    let message_r = JubJubScalar::random(&mut rng);
-    let message_value = 100;
-    let message = Message::new(&mut rng, &message_r, &psk, message_value);
-
-    let c_signature = SendToContractObfuscatedCircuit::sign(
-        &mut rng, &ssk, &fee, &crossover, &message, &c_address,
-    );
-
-    let mut circuit = SendToContractObfuscatedCircuit::new(
-        fee,
-        crossover,
-        &vk,
-        c_signature,
-        false,
-        message,
-        &psk,
-        message_r,
-        c_address,
-    )
-    .expect("Failed to generate circuit!");
+fn send_to_contract_obfuscated_public_key() {
+    let rng = &mut StdRng::seed_from_u64(2322u64);
 
     let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
-        .expect("Failed to generate circuit!");
+        .expect("Failed to load keys!");
+
+    let mut circuit = create_random_circuit(rng, true);
 
     let proof = circuit
-        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to generate proof!");
+        .prove(&pp, &pk, TRANSCRIPT_LABEL)
+        .expect("Failed to prove circuit");
+
     let pi = circuit.public_inputs();
 
-    assert!(!circuit.is_message_derive_key_public());
-
-    circuit::verify_proof(
+    SendToContractObfuscatedCircuit::verify(
         &pp,
-        vd.key(),
+        &vd,
         &proof,
         pi.as_slice(),
-        vd.pi_pos(),
         TRANSCRIPT_LABEL,
     )
-    .expect("Failed to verify the proof!");
+    .expect("Failed to verify");
+}
+
+#[test]
+fn send_to_contract_obfuscated_secret_key() {
+    let rng = &mut StdRng::seed_from_u64(2322u64);
+
+    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
+        .expect("Failed to load keys!");
+
+    let mut circuit = create_random_circuit(rng, false);
+
+    let proof = circuit
+        .prove(&pp, &pk, TRANSCRIPT_LABEL)
+        .expect("Failed to prove circuit");
+
+    let pi = circuit.public_inputs();
+
+    SendToContractObfuscatedCircuit::verify(
+        &pp,
+        &vd,
+        &proof,
+        pi.as_slice(),
+        TRANSCRIPT_LABEL,
+    )
+    .expect("Failed to verify");
 }

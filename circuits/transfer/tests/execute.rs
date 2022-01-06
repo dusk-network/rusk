@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::{ExecuteCircuit, TRANSCRIPT_LABEL};
+use transfer_circuits::ExecuteCircuit;
 
-use dusk_plonk::circuit;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+
+use dusk_plonk::prelude::*;
 
 macro_rules! execute {
     ($test_name:ident, $inputs:expr, $outputs:expr) => {
@@ -16,8 +17,7 @@ macro_rules! execute {
         fn $test_name() {
             let mut rng = StdRng::seed_from_u64(2324u64);
 
-            // for inputs in 1..5 {
-            //     for outputs in 0..3 {
+            let tx_hash = BlsScalar::random(&mut rng);
             for use_crossover in [true, false].iter() {
                 let (_, pp, _, vd, proof, pi) =
                     ExecuteCircuit::create_dummy_proof(
@@ -25,18 +25,12 @@ macro_rules! execute {
                         $inputs,
                         $outputs,
                         *use_crossover,
+                        tx_hash,
                     )
                     .expect("Failed to create the circuit!");
 
-                circuit::verify_proof(
-                    &pp,
-                    vd.key(),
-                    &proof,
-                    pi.as_slice(),
-                    vd.pi_pos(),
-                    TRANSCRIPT_LABEL,
-                )
-                .expect("Failed to verify the proof!");
+                ExecuteCircuit::verify(&pp, &vd, &proof, pi.as_slice())
+                    .expect("Failed to verify the proof!");
             }
         }
     };

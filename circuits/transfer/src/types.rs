@@ -4,111 +4,73 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_jubjub::JubJubExtended;
-use dusk_pki::{PublicSpendKey, ViewKey};
+use dusk_pki::PublicSpendKey;
+
 use dusk_plonk::prelude::*;
-use phoenix_core::{Error as PhoenixError, Message, Note};
 
-#[derive(Default, Debug, Clone, Copy)]
-pub struct CircuitValueOpening {
-    value: u64,
-    blinder: JubJubScalar,
-    commitment: JubJubExtended,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DeriveKey {
+    is_public: bool,
+    secret_a: JubJubExtended,
+    secret_b: JubJubExtended,
+    public_a: JubJubExtended,
+    public_b: JubJubExtended,
 }
 
-impl CircuitValueOpening {
-    pub fn from_message(
-        message: &Message,
-        psk: &PublicSpendKey,
-        entropy: &JubJubScalar,
-    ) -> Result<Self, PhoenixError> {
-        let (value, blinder) = message.decrypt(entropy, psk)?;
-        let commitment = *message.value_commitment();
+impl DeriveKey {
+    pub fn new(is_public: bool, psk: &PublicSpendKey) -> Self {
+        let i = JubJubExtended::identity();
 
-        Ok(Self {
-            value,
-            blinder,
-            commitment,
-        })
-    }
+        let a = *psk.A();
+        let b = *psk.B();
 
-    pub fn from_note(
-        note: &Note,
-        vk: Option<&ViewKey>,
-    ) -> Result<Self, PhoenixError> {
-        let value = note.value(vk)?;
-        let blinder = note.blinding_factor(vk)?;
-        let commitment = *note.value_commitment();
-
-        Ok(Self {
-            value,
-            blinder,
-            commitment,
-        })
-    }
-
-    pub const fn value(&self) -> u64 {
-        self.value
-    }
-
-    pub const fn blinder(&self) -> &JubJubScalar {
-        &self.blinder
-    }
-
-    pub const fn commitment(&self) -> &JubJubExtended {
-        &self.commitment
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct CircuitDeriveKey {
-    is_public: BlsScalar,
-    secret: PublicSpendKey,
-    public: PublicSpendKey,
-}
-
-impl CircuitDeriveKey {
-    pub fn new(psk: PublicSpendKey, public: bool) -> Self {
-        let is_public = BlsScalar::from(public as u64);
-
-        let identity = JubJubAffine::identity().into();
-        let identity = PublicSpendKey::new(identity, identity);
-
-        let secret = public.then(|| identity).unwrap_or(psk);
-        let public = public.then(|| psk).unwrap_or(identity);
+        let (secret_a, secret_b) = if is_public { (i, i) } else { (a, b) };
+        let (public_a, public_b) = if is_public { (a, b) } else { (i, i) };
 
         Self {
             is_public,
-            secret,
-            public,
+            secret_a,
+            secret_b,
+            public_a,
+            public_b,
         }
     }
 
-    pub const fn is_public(&self) -> &BlsScalar {
-        &self.is_public
+    pub const fn is_public(&self) -> bool {
+        self.is_public
     }
 
-    pub const fn secret(&self) -> &PublicSpendKey {
-        &self.secret
+    pub const fn secret_a(&self) -> &JubJubExtended {
+        &self.secret_a
     }
 
-    pub fn secret_a(&self) -> &JubJubExtended {
-        self.secret.A()
+    pub const fn secret_b(&self) -> &JubJubExtended {
+        &self.secret_b
     }
 
-    pub fn secret_b(&self) -> &JubJubExtended {
-        self.secret.B()
+    pub const fn public_a(&self) -> &JubJubExtended {
+        &self.public_a
     }
 
-    pub const fn public(&self) -> &PublicSpendKey {
-        &self.secret
+    pub const fn public_b(&self) -> &JubJubExtended {
+        &self.public_b
     }
 
-    pub fn public_a(&self) -> &JubJubExtended {
-        self.public.A()
-    }
-
-    pub fn public_b(&self) -> &JubJubExtended {
-        self.public.B()
+    pub const fn into_inner(
+        self,
+    ) -> (
+        bool,
+        JubJubExtended,
+        JubJubExtended,
+        JubJubExtended,
+        JubJubExtended,
+    ) {
+        (
+            self.is_public,
+            self.secret_a,
+            self.secret_b,
+            self.public_a,
+            self.public_b,
+        )
     }
 }
