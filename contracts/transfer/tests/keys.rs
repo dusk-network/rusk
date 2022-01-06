@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_plonk::prelude::*;
 use transfer_circuits::*;
 use transfer_contract::TransferContract;
+
+use dusk_plonk::prelude::*;
 
 fn verifier_data_bytes(id: &[u8; 32]) -> Vec<u8> {
     rusk_profile::keys_for(id)
