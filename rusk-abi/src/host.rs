@@ -13,7 +13,7 @@ use dusk_abi::{ContractId, HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicKey;
-use dusk_plonk::circuit::{self, VerifierData};
+use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 
@@ -71,12 +71,11 @@ impl HostModule for RuskModule {
                 let pi: Vec<PublicInputValue> =
                     pi.into_iter().map(|pi| pi.into()).collect();
 
-                let ret = circuit::verify_proof(
+                let ret = circuit::verify(
                     self.pp,
-                    verifier_data.key(),
+                    &verifier_data,
                     &proof,
                     pi.as_slice(),
-                    verifier_data.pi_pos().as_slice(),
                     b"dusk-network",
                 )
                 .is_ok();

@@ -144,29 +144,24 @@ impl TestCircuit {
 impl Circuit for TestCircuit {
     const CIRCUIT_ID: [u8; 32] = [0xff; 32];
 
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
-        let zero =
-            composer.add_witness_to_circuit_description(BlsScalar::zero());
-        let a = composer.add_input(self.a);
-        let b = composer.add_input(self.b);
+    fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
+        let a = composer.append_witness(self.a);
+        let b = composer.append_witness(self.b);
 
-        // Make first constraint a + b = c
-        composer.poly_gate(
-            a,
-            b,
-            zero,
-            BlsScalar::zero(),
-            BlsScalar::one(),
-            BlsScalar::one(),
-            BlsScalar::zero(),
-            BlsScalar::zero(),
-            Some(-self.c),
-        );
+        let constraint =
+            Constraint::new().left(1).a(a).right(1).b(b).public(-self.c);
+
+        composer.append_gate(constraint);
+        composer.append_dummy_gates();
 
         Ok(())
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        vec![self.c.into()]
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 3
     }
 }
@@ -181,20 +176,13 @@ fn verify_proof() {
         .expect("Failed to compile the circuit!");
 
     let proof = circuit
-        .gen_proof(&PUB_PARAMS, &pk, label)
+        .prove(&PUB_PARAMS, &pk, label)
         .expect("Failed to generate the proof!");
     let pi = vec![circuit.c.into()];
 
     // Integrity check
-    circuit::verify_proof(
-        &PUB_PARAMS,
-        verifier_data.key(),
-        &proof,
-        pi.as_slice(),
-        verifier_data.pi_pos().as_slice(),
-        label,
-    )
-    .expect("Failed to verify the proof!");
+    circuit::verify(&PUB_PARAMS, &verifier_data, &proof, pi.as_slice(), label)
+        .expect("Failed to verify the proof!");
 
     let host = HostFnTest::new();
 
@@ -234,7 +222,7 @@ fn verify_proof_should_fail() {
         .expect("Failed to compile the circuit!");
 
     let proof = circuit
-        .gen_proof(&PUB_PARAMS, &pk, label)
+        .prove(&PUB_PARAMS, &pk, label)
         .expect("Failed to generate the proof!");
 
     let host = HostFnTest::new();
