@@ -9,6 +9,7 @@ use crate::{NodeClient, POSEIDON_DEPTH};
 use alloc::vec::Vec;
 use core::mem;
 
+use blake2b_simd::Params;
 use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractId;
 use dusk_bytes::{
@@ -65,7 +66,7 @@ impl Transaction {
     }
 
     /// Serializes the transaction into a variable length byte buffer.
-    pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, BytesError> {
         // compute the serialized size to preallocate space
         let size = u64::SIZE
             + self.nullifiers.len() * BlsScalar::SIZE
@@ -106,20 +107,20 @@ impl Transaction {
     }
 
     /// Deserializes the transaction from a bytes buffer.
-    pub fn from_bytes<B: AsRef<[u8]>>(buf: B) -> Result<Self, BytesError> {
-        let mut buffer = buf.as_ref();
+    pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
+        let mut buffer = buf;
 
-        let ninputs = u64::from_reader(&mut buffer)? as usize;
-        let mut nullifiers = Vec::with_capacity(ninputs);
+        let num_inputs = u64::from_reader(&mut buffer)? as usize;
+        let mut nullifiers = Vec::with_capacity(num_inputs);
 
-        for _ in 0..ninputs {
+        for _ in 0..num_inputs {
             nullifiers.push(BlsScalar::from_reader(&mut buffer)?);
         }
 
-        let noutputs = u64::from_reader(&mut buffer)? as usize;
-        let mut outputs = Vec::with_capacity(noutputs);
+        let num_outputs = u64::from_reader(&mut buffer)? as usize;
+        let mut outputs = Vec::with_capacity(num_outputs);
 
-        for _ in 0..noutputs {
+        for _ in 0..num_outputs {
             outputs.push(Note::from_reader(&mut buffer)?);
         }
 
@@ -237,26 +238,29 @@ impl From<UnprovenTransaction> for TransactionSkeleton {
     }
 }
 
+const NOTE_NUM_HASH_INPUTS: usize = 12;
+const FEE_NUM_HASH_INPUTS: usize = 4;
+const CROSSOVER_NUM_HASH_INPUTS: usize = 3 + PoseidonCipher::cipher_size();
+const ANCHOR_NUM_HASH_INPUTS: usize = 1;
+const CALL_NUM_HASH_INPUTS: usize = 1;
+
 impl TransactionSkeleton {
     pub(crate) fn hash(&self) -> BlsScalar {
         hash(&self.hash_inputs())
     }
 
     pub(crate) fn hash_inputs(&self) -> Vec<BlsScalar> {
+        // the number of hash inputs
         let size = self.nullifiers.len()
-            + 12 * self.outputs.len()
-            + 1
-            + 4
-            + (3 + PoseidonCipher::cipher_size())
-            // When this lands the weird logic checking if there needs to be
-            // padding is gone. https://github.com/rust-lang/rust/issues/88581
+            + NOTE_NUM_HASH_INPUTS * self.outputs.len()
+            + ANCHOR_NUM_HASH_INPUTS
+            + FEE_NUM_HASH_INPUTS
+            + CROSSOVER_NUM_HASH_INPUTS
             + self
-            .call.as_ref()
-            .map(|(_, cdata)| {
-                8 + cdata.len() / (2*BlsScalar::SIZE)
-                    + if cdata.len() % (2*BlsScalar::SIZE) == 0 { 0 } else { 1 }
-            })
-            .unwrap_or(0);
+                .call
+                .as_ref()
+                .map(|_| CALL_NUM_HASH_INPUTS)
+                .unwrap_or(0);
 
         let mut hash_inputs = Vec::with_capacity(size);
 
@@ -269,8 +273,15 @@ impl TransactionSkeleton {
         hash_inputs.append(&mut self.crossover.to_hash_inputs().to_vec());
 
         if let Some((cid, cdata)) = &self.call {
-            hash_inputs.append(&mut hash_inputs_from_bytes(cid.as_bytes()));
-            hash_inputs.append(&mut hash_inputs_from_bytes(cdata));
+            let mut state = Params::new().hash_length(64).to_state();
+
+            state.update(cid.as_bytes());
+            state.update(cdata);
+
+            let mut buf = [0u8; 64];
+            buf.copy_from_slice(state.finalize().as_ref());
+
+            hash_inputs.push(BlsScalar::from_bytes_wide(&buf));
         }
 
         hash_inputs
@@ -317,7 +328,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Serialize the input to a variable size byte buffer.
-    pub fn to_var_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let affine_pkr = JubJubAffine::from(&self.pk_r_prime);
 
         // TODO Magic number for the buffer size here.
@@ -349,7 +360,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Deserializes the the input from bytes.
-    pub fn from_bytes(buf: &[u8]) -> Result<Self, BytesError> {
+    pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut bytes = buf;
 
         let nullifier = BlsScalar::from_reader(&mut bytes)?;
@@ -427,8 +438,8 @@ pub struct UnprovenTransaction {
     call: Option<(ContractId, Vec<u8>)>,
 }
 
-#[allow(clippy::too_many_arguments)]
 impl UnprovenTransaction {
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new<Rng: RngCore + CryptoRng, C: NodeClient>(
         rng: &mut Rng,
         node: &C,
@@ -488,13 +499,13 @@ impl UnprovenTransaction {
     }
 
     /// Serialize the transaction to a variable length byte buffer.
-    pub fn to_var_bytes(&self) -> Result<Vec<u8>, BytesError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, BytesError> {
         let serialized_inputs: Vec<Vec<u8>> = self
             .inputs
             .iter()
-            .map(UnprovenTransactionInput::to_var_bytes)
+            .map(UnprovenTransactionInput::to_bytes)
             .collect();
-        let ninputs = self.inputs.len();
+        let num_inputs = self.inputs.len();
         let total_input_len = serialized_inputs
             .iter()
             .fold(0, |len, input| len + input.len());
@@ -517,13 +528,13 @@ impl UnprovenTransaction {
                 buf
             })
             .collect();
-        let noutputs = self.outputs.len();
+        let num_outputs = self.outputs.len();
         let total_output_len = serialized_outputs
             .iter()
             .fold(0, |len, output| len + output.len());
 
         let size = u64::SIZE
-            + ninputs * u64::SIZE
+            + num_inputs * u64::SIZE
             + total_input_len
             + u64::SIZE
             + total_output_len
@@ -542,13 +553,13 @@ impl UnprovenTransaction {
         let mut buf = vec![0; size];
         let mut writer = &mut buf[..];
 
-        writer.write(&(ninputs as u64).to_bytes())?;
+        writer.write(&(num_inputs as u64).to_bytes())?;
         for sinput in serialized_inputs {
             writer.write(&(sinput.len() as u64).to_bytes())?;
             writer.write(&sinput)?;
         }
 
-        writer.write(&(noutputs as u64).to_bytes())?;
+        writer.write(&(num_outputs as u64).to_bytes())?;
         for soutput in serialized_outputs {
             writer.write(&soutput)?;
         }
@@ -566,22 +577,20 @@ impl UnprovenTransaction {
     }
 
     /// Deserialize the transaction from a bytes buffer.
-    pub fn from_bytes(buf: &[u8]) -> Result<Self, BytesError> {
+    pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
         let mut buffer = buf;
 
-        let ninputs = u64::from_reader(&mut buffer)?;
-        let mut inputs = Vec::with_capacity(ninputs as usize);
-        for _ in 0..ninputs {
-            let size = u64::from_reader(&mut buffer)?;
-            inputs.push(UnprovenTransactionInput::from_bytes(
-                &buffer[..size as usize],
-            )?);
-            buffer = &buffer[size as usize..];
+        let num_inputs = u64::from_reader(&mut buffer)?;
+        let mut inputs = Vec::with_capacity(num_inputs as usize);
+        for _ in 0..num_inputs {
+            let size = u64::from_reader(&mut buffer)? as usize;
+            inputs.push(UnprovenTransactionInput::from_slice(&buffer[..size])?);
+            buffer = &buffer[size..];
         }
 
-        let noutputs = u64::from_reader(&mut buffer)?;
-        let mut outputs = Vec::with_capacity(noutputs as usize);
-        for _ in 0..noutputs {
+        let num_outputs = u64::from_reader(&mut buffer)?;
+        let mut outputs = Vec::with_capacity(num_outputs as usize);
+        for _ in 0..num_outputs {
             let note = Note::from_reader(&mut buffer)?;
             let value = u64::from_reader(&mut buffer)?;
             let blinder = JubJubScalar::from_reader(&mut buffer)?;
@@ -700,19 +709,6 @@ fn read_optional_call(
     }
 
     Ok(call)
-}
-
-/// Returns hash inputs from a slice of bytes, padding to zero.
-fn hash_inputs_from_bytes<B: AsRef<[u8]>>(bytes: B) -> Vec<BlsScalar> {
-    bytes
-        .as_ref()
-        .chunks(2 * BlsScalar::SIZE)
-        .map(|c| {
-            let mut wide = [0u8; 64];
-            (&mut wide[..c.len()]).copy_from_slice(c);
-            BlsScalar::from_bytes_wide(&wide)
-        })
-        .collect()
 }
 
 // Will become redundant when this lands

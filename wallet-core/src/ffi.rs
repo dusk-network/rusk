@@ -62,25 +62,6 @@ extern "C" {
     ) -> u8;
 }
 
-macro_rules! error_if_not_zero {
-    ($e: expr) => {
-        if $e != 0 {
-            return Err($e);
-        }
-    };
-}
-
-macro_rules! unwrap_or_err {
-    ($e: expr) => {
-        match $e {
-            Ok(v) => v,
-            Err(e) => {
-                return Err(Error::<FfiStore, FfiNodeClient>::from(e).into());
-            }
-        }
-    };
-}
-
 macro_rules! unwrap_or_bail {
     ($e: expr) => {
         match $e {
@@ -137,7 +118,7 @@ pub unsafe extern "C" fn create_transfer_tx(
         ref_id
     ));
 
-    let tx_bytes = unwrap_or_bail!(tx.to_var_bytes());
+    let tx_bytes = unwrap_or_bail!(tx.to_bytes());
     ptr::copy_nonoverlapping(&tx_bytes[0], tx_buf, tx_bytes.len());
     *tx_len = tx_bytes.len() as u32;
 
@@ -170,7 +151,7 @@ pub unsafe extern "C" fn withdraw_stake() {
 
 /// Syncs the wallet with the blocks.
 #[no_mangle]
-pub unsafe extern "C" fn sync() {
+pub unsafe extern "C" fn sync_blocks() {
     unimplemented!()
 }
 
@@ -189,7 +170,10 @@ impl Store for FfiStore {
     fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
         let mut seed = [0; 64];
         unsafe {
-            error_if_not_zero!(get_seed(&mut seed));
+            let r = get_seed(&mut seed);
+            if r != 0 {
+                return Err(r);
+            }
         }
         Ok(seed)
     }
@@ -212,22 +196,28 @@ impl NodeClient for FfiNodeClient {
     ) -> Result<Vec<Note>, Self::Error> {
         let mut notes_buf = [0u8; NOTES_BUF_SIZE];
 
-        let mut nnotes = 0;
+        let mut num_notes = 0;
 
         unsafe {
-            error_if_not_zero!(fetch_notes(
+            let r = fetch_notes(
                 height,
                 &vk.to_bytes(),
                 &mut notes_buf[0],
-                &mut nnotes
-            ))
+                &mut num_notes,
+            );
+            if r != 0 {
+                return Err(r);
+            }
         };
 
-        let mut buf = &notes_buf[..Note::SIZE * nnotes as usize];
+        let mut notes = Vec::with_capacity(num_notes as usize);
 
-        let mut notes = Vec::with_capacity(nnotes as usize);
-        for _ in 0..nnotes {
-            notes.push(unwrap_or_err!(Note::from_reader(&mut buf)));
+        let mut buf = &notes_buf[..];
+        for _ in 0..num_notes {
+            notes.push(
+                Note::from_reader(&mut buf)
+                    .map_err(Error::<FfiStore, FfiNodeClient>::from)?,
+            );
         }
 
         Ok(notes)
@@ -236,9 +226,13 @@ impl NodeClient for FfiNodeClient {
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
         let mut scalar_buf = [0; BlsScalar::SIZE];
         unsafe {
-            error_if_not_zero!(fetch_anchor(&mut scalar_buf));
+            let r = fetch_anchor(&mut scalar_buf);
+            if r != 0 {
+                return Err(r);
+            }
         }
-        let scalar = unwrap_or_err!(BlsScalar::from_bytes(&scalar_buf));
+        let scalar = BlsScalar::from_bytes(&scalar_buf)
+            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
 
         Ok(scalar)
     }
@@ -253,15 +247,15 @@ impl NodeClient for FfiNodeClient {
 
         let note = note.to_bytes();
         unsafe {
-            error_if_not_zero!(fetch_opening(
-                &note,
-                &mut opening_buf[0],
-                &mut opening_len
-            ));
+            let r = fetch_opening(&note, &mut opening_buf[0], &mut opening_len);
+            if r != 0 {
+                return Err(r);
+            }
         }
 
         let mut source = Source::new(&opening_buf[..opening_len as usize]);
-        let branch = unwrap_or_err!(PoseidonBranch::decode(&mut source));
+        let branch = PoseidonBranch::decode(&mut source)
+            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
 
         Ok(branch)
     }
@@ -270,18 +264,24 @@ impl NodeClient for FfiNodeClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<Proof, Self::Error> {
-        let utx_bytes = unwrap_or_err!(utx.to_var_bytes());
+        let utx_bytes = utx
+            .to_bytes()
+            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
         let mut proof_buf = [0; Proof::SIZE];
 
         unsafe {
-            error_if_not_zero!(request_proof(
+            let r = request_proof(
                 &utx_bytes[0],
                 utx_bytes.len() as u32,
-                &mut proof_buf
-            ));
+                &mut proof_buf,
+            );
+            if r != 0 {
+                return Err(r);
+            }
         }
 
-        let utx = unwrap_or_err!(Proof::from_bytes(&proof_buf));
+        let utx = Proof::from_bytes(&proof_buf)
+            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
         Ok(utx)
     }
 }

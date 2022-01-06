@@ -69,8 +69,8 @@ jobs:
       - name: Build project
         uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --release --target ${{ matrix.target }}
+          command: rustc
+          args: --release --target ${{ matrix.target }} -- -C link-args=-s
 
   build_and_test:
     name: Test with all features

@@ -16,6 +16,7 @@ dusk-poseidon = { version = "^0.22", features = [ "canon" ], default-features = 
 dusk-plonk = { version = "^0.8", default-features = false }
 dusk-abi = "^0.9"
 canonical = "^0.6"
+blake2b_simd = { version = "^1.0", default-features = false }
 
 [dev-dependencies]
 rand = "^0.8"

@@ -51,8 +51,8 @@ impl NodeClient for SerdeNodeClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<Proof, Self::Error> {
-        let utx_bytes = utx.to_var_bytes().expect("Successful serialization");
-        let utx_clone = UnprovenTransaction::from_bytes(&utx_bytes)
+        let utx_bytes = utx.to_bytes().expect("Successful serialization");
+        let utx_clone = UnprovenTransaction::from_slice(&utx_bytes)
             .expect("Successful deserialization");
 
         for (input, cinput) in
@@ -137,9 +137,9 @@ fn serde() {
         )
         .expect("Transaction creation to be successful");
 
-    let tx_bytes = tx.to_var_bytes().expect("Successful serialization");
+    let tx_bytes = tx.to_bytes().expect("Successful serialization");
     let tx_clone =
-        Transaction::from_bytes(&tx_bytes).expect("Successful deserialization");
+        Transaction::from_slice(&tx_bytes).expect("Successful deserialization");
 
     for (null, cnull) in tx.inputs().iter().zip(tx_clone.inputs().iter()) {
         assert_eq!(null, cnull);

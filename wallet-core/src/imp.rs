@@ -16,7 +16,7 @@ use dusk_pki::PublicSpendKey;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 
-const MAX_INPUT_NOTES: usize = 0x4;
+const MAX_INPUT_NOTES: usize = 4;
 
 /// The error type returned by this crate.
 #[derive(Debug)]
@@ -91,7 +91,6 @@ impl<S, C> Wallet<S, C> {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 impl<S, C> Wallet<S, C>
 where
     S: Store,
@@ -109,6 +108,7 @@ where
     }
 
     /// Creates a transfer transaction.
+    #[allow(clippy::too_many_arguments)]
     pub fn create_transfer_tx<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
@@ -224,7 +224,7 @@ where
     }
 
     /// Syncs the wallet with the blocks.
-    pub fn sync(&self) -> Result<(), Error<S, C>> {
+    pub fn sync_blocks(&self) -> Result<(), Error<S, C>> {
         unimplemented!()
     }
 
