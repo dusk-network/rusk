@@ -9,14 +9,13 @@
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, warn};
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
     BroadcastMessage, Message, MessageMetadata, Null, SendMessage,
 };
 use futures::Stream;
-use std::time::Duration;
 use std::{net::SocketAddr, pin::Pin};
 
 pub struct RuskNetwork {
@@ -29,6 +28,7 @@ impl RuskNetwork {
         public_addr: String,
         listen_addr: Option<String>,
         bootstrap: Vec<String>,
+        auto_broadcast: bool,
     ) -> RuskNetwork {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
@@ -42,56 +42,40 @@ impl RuskNetwork {
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
         };
-        let mut peer_builder = Peer::builder(public_addr, bootstrap, listener)
-            .with_listen_address(listen_addr)
-            .with_node_ttl(Duration::from_millis(30_000))
-            .with_bucket_ttl(Duration::from_secs(60 * 60))
-            .with_channel_size(100)
-            .with_node_evict_after(Duration::from_millis(5_000))
-            .with_auto_propagate(false);
-
-        // Disable recursive discovery in a local env
-        // This should be set to `true` in a real env
-        peer_builder = peer_builder.with_recursive_discovery(false);
-
-        //this is unusefull, just to get the default conf
-        peer_builder
-            .transport_conf()
-            .extend(kadcast::transport::default_configuration());
-
-        //RaptorQ Decoder conf
-        peer_builder
-            .transport_conf()
-            .insert("cache_ttl_secs".to_string(), "60".to_string());
-        peer_builder
-            .transport_conf()
-            .insert("cache_prune_every_secs".to_string(), "300".to_string());
-
-        //RaptorQ Encoder conf
-        peer_builder.transport_conf().insert(
-            "min_repair_packets_per_block".to_string(),
-            "5".to_string(),
+        let peer = RuskNetwork::configure_peer(
+            public_addr,
+            listen_addr,
+            bootstrap,
+            listener,
+            auto_broadcast,
         );
-        peer_builder
-            .transport_conf()
-            .insert("mtu".to_string(), "1400".to_string());
-        peer_builder
-            .transport_conf()
-            .insert("fec_redundancy".to_string(), "0.15".to_string());
-        peer_builder
-            .transport_conf()
-            .insert("udp_backoff_timeout_micros".to_string(), "0".to_string());
 
         RuskNetwork {
-            peer: peer_builder.build(),
+            peer,
             sender: grpc_sender,
         }
+    }
+
+    fn configure_peer(
+        public_addr: String,
+        listen_addr: Option<String>,
+        bootstrap: Vec<String>,
+        listener: KadcastListener,
+        auto_broadcast: bool,
+    ) -> Peer {
+        let peer_builder = Peer::builder(public_addr, bootstrap, listener)
+            .with_listen_address(listen_addr)
+            .with_auto_propagate(auto_broadcast)
+            // Disable recursive discovery in a local env
+            // This should be set to `true` in a real env
+            .with_recursive_discovery(true);
+        peer_builder.build()
     }
 }
 
 impl Default for RuskNetwork {
     fn default() -> RuskNetwork {
-        RuskNetwork::new("127.0.0.1:9999".to_string(), None, vec![])
+        RuskNetwork::new("127.0.0.1:9999".to_string(), None, vec![], false)
     }
 }
 struct KadcastListener {

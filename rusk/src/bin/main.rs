@@ -16,7 +16,7 @@ use rusk::services::pki::KeysServer;
 use rusk::services::state::StateServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
-use std::path::Path;
+use std::{path::Path, str::FromStr};
 use tokio::net::UnixListener;
 use tonic::transport::Server;
 use version::show_version;
@@ -29,6 +29,7 @@ pub(crate) const PORT: &str = "8585";
 /// Default host_address that Rusk GRPC-server will listen to.
 pub(crate) const HOST_ADDRESS: &str = "127.0.0.1";
 
+// #[tokio::main(flavor = "multi_thread", worker_threads = 10)]
 #[tokio::main]
 async fn main() {
     let crate_info = get_version_info!();
@@ -246,6 +247,15 @@ If this is not specified, the public address will be used for binding incoming c
             .takes_value(true)
             .required(true),
     )
+    .arg(
+        Arg::with_name("kadcast_autobroadcast")
+            .long("kadcast_autobroadcast")
+            .env("KADCAST_AUTOBROADCAST")
+            .help("If true then the received messages are automatically re-broadcasted")
+            .takes_value(true)
+            .default_value("false")
+            .required(false),
+    )
 }
 
 fn create_network(args: &ArgMatches) -> RuskNetwork {
@@ -257,5 +267,9 @@ fn create_network(args: &ArgMatches) -> RuskNetwork {
             .unwrap_or_default()
             .map(|s| s.to_string())
             .collect(),
+        args.value_of("kadcast_autobroadcast")
+            .map(|s| FromStr::from_str(s).ok())
+            .flatten()
+            .unwrap_or(false),
     )
 }
