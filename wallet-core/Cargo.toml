@@ -7,13 +7,13 @@ edition = "2021"
 rand_core = "^0.6"
 rand_chacha = { version = "^0.3", default-features = false }
 sha2 = { version = "^0.10", default-features = false }
-phoenix-core = "0.14.0-rc"
-dusk-pki = "^0.8"
+phoenix-core = "0.15.0-rc"
+dusk-pki = "0.9.0-rc"
 dusk-bytes = "^0.1"
-dusk-schnorr = "0.8.0-rc"
+dusk-schnorr = "0.9.0-rc"
 dusk-jubjub = { version = "^0.10", default-features = false }
-dusk-poseidon = { version = "^0.22", features = [ "canon" ], default-features = false }
-dusk-plonk = { version = "^0.8", default-features = false }
+dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
+dusk-plonk = { version = "^0.9", default-features = false }
 dusk-abi = "^0.9"
 canonical = "^0.6"
 blake2b_simd = { version = "^1.0", default-features = false }
