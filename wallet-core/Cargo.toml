@@ -10,7 +10,7 @@ sha2 = { version = "^0.10", default-features = false }
 phoenix-core = "0.15.0-rc"
 dusk-pki = "0.9.0-rc"
 dusk-bytes = "^0.1"
-dusk-schnorr = "0.9.0-rc"
+dusk-schnorr = { version = "0.9.0-rc", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
 dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
 dusk-plonk = { version = "^0.9", default-features = false }
