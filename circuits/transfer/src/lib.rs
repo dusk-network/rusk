@@ -4,6 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+/// Constant depth of the merkle tree that provides the opening proofs.
+pub const POSEIDON_TREE_DEPTH: usize = 17;
+
+/// Label used for the ZK transcript initialization. Must be the same for prover
+/// and verifier.
+pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
+
 mod error;
 mod execute;
 mod gadgets;
@@ -13,17 +20,15 @@ mod types;
 mod withdraw_from_obfuscated;
 mod withdraw_from_transparent;
 
-/// Label used for the ZK transcript initialization. Must be the same for prover
-/// and verifier.
-pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
-
 pub use error::Error;
 pub use execute::*;
-pub use send_to_contract_obfuscated::SendToContractObfuscatedCircuit;
+pub use send_to_contract_obfuscated::{
+    SendToContractObfuscatedCircuit, StcoCrossover, StcoMessage,
+};
 pub use send_to_contract_transparent::SendToContractTransparentCircuit;
-pub use types::{CircuitDeriveKey, CircuitValueOpening};
+pub use types::DeriveKey;
 pub use withdraw_from_obfuscated::{
-    WithdrawFromObfuscatedChange, WithdrawFromObfuscatedCircuit,
+    WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
 };
 pub use withdraw_from_transparent::WithdrawFromTransparentCircuit;
 

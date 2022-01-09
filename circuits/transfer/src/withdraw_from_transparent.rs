@@ -6,42 +6,30 @@
 
 use crate::gadgets;
 
-use dusk_jubjub::{JubJubAffine, JubJubExtended};
-use dusk_pki::ViewKey;
 use dusk_plonk::error::Error as PlonkError;
+
 use dusk_plonk::prelude::*;
-use phoenix_core::{Error as PhoenixError, Note};
 
 #[derive(Debug, Clone)]
 pub struct WithdrawFromTransparentCircuit {
-    blinding_factor: JubJubScalar,
+    blinder: JubJubScalar,
 
     // Public data
-    value_commitment: JubJubExtended,
-    value: BlsScalar,
+    commitment: JubJubExtended,
+    value: u64,
 }
 
 impl WithdrawFromTransparentCircuit {
-    pub fn new(
-        note: &Note,
-        vk: Option<&ViewKey>,
-    ) -> Result<Self, PhoenixError> {
-        let value_commitment = *note.value_commitment();
-        let value = note.value(vk)?.into();
-        let blinding_factor = note.blinding_factor(vk)?;
-
-        Ok(Self {
-            blinding_factor,
-            value_commitment,
+    pub const fn new(
+        commitment: JubJubExtended,
+        value: u64,
+        blinder: JubJubScalar,
+    ) -> Self {
+        Self {
+            commitment,
             value,
-        })
-    }
-
-    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-        let value = self.value;
-        let value_commitment = JubJubAffine::from(self.value_commitment);
-
-        vec![value.into(), value_commitment.into()]
+            blinder,
+        }
     }
 }
 
@@ -49,33 +37,33 @@ impl WithdrawFromTransparentCircuit {
 impl Circuit for WithdrawFromTransparentCircuit {
     fn gadget(
         &mut self,
-        composer: &mut StandardComposer,
+        composer: &mut TurboComposer,
     ) -> Result<(), PlonkError> {
-        // 1. Prove the knowledge of the commitment
-        let value = composer.add_input(self.value.into());
-        composer.constrain_to_constant(
-            value,
-            BlsScalar::zero(),
-            Some(-self.value),
-        );
+        // Witnesses
 
-        let blinding_factor = self.blinding_factor.into();
-        let blinding_factor = composer.add_input(blinding_factor);
+        let blinder = composer.append_witness(self.blinder);
 
-        let value_commitment_p =
-            gadgets::commitment(composer, value, blinding_factor);
+        // Public inputs
 
-        let value_commitment = JubJubAffine::from(self.value_commitment);
-        composer
-            .assert_equal_public_point(value_commitment_p, value_commitment);
+        let value = composer.append_public_witness(self.value);
+        let commitment = composer.append_public_point(self.commitment);
 
-        // 2. Prove that the value is within range
-        composer.range_gate(value, 64);
+        // Circuit
+
+        // 1. commitment(Nc,Nv,Nb,64)
+        gadgets::commitment(composer, commitment, value, blinder, 64);
 
         Ok(())
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let value = BlsScalar::from(self.value).into();
+        let commitment = self.commitment.into();
+
+        vec![value, commitment]
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 10
     }
 }

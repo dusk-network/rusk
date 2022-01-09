@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_jubjub::JubJubExtended;
 use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
@@ -33,9 +32,9 @@ impl CircuitOutput {
         self.note.value_commitment()
     }
 
-    pub fn to_witness(&self, composer: &mut StandardComposer) -> WitnessOutput {
-        let value = composer.add_input(self.value.into());
-        let blinding_factor = composer.add_input(self.blinding_factor.into());
+    pub fn to_witness(&self, composer: &mut TurboComposer) -> WitnessOutput {
+        let value = composer.append_witness(self.value);
+        let blinding_factor = composer.append_witness(self.blinding_factor);
         let value_commitment = *self.note.value_commitment();
 
         WitnessOutput {
@@ -48,8 +47,8 @@ impl CircuitOutput {
 
 #[derive(Debug, Clone, Copy)]
 pub struct WitnessOutput {
-    pub value: Variable,
-    pub blinding_factor: Variable,
+    pub value: Witness,
+    pub blinding_factor: Witness,
 
     // Public data
     pub value_commitment: JubJubExtended,

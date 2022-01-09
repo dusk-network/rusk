@@ -5,78 +5,110 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use transfer_circuits::{
-    CircuitValueOpening, WithdrawFromObfuscatedChange,
-    WithdrawFromObfuscatedCircuit, TRANSCRIPT_LABEL,
+    DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
+    TRANSCRIPT_LABEL,
 };
 
 use dusk_pki::SecretSpendKey;
-use dusk_plonk::circuit;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
 
 use dusk_plonk::prelude::*;
 
 mod keys;
 
-#[test]
-fn withdraw_from_obfuscated_public() {
-    let rng = &mut StdRng::seed_from_u64(2324u64);
+fn create_random_circuit<R: RngCore + CryptoRng>(
+    rng: &mut R,
+    public_derive_key: bool,
+) -> WithdrawFromObfuscatedCircuit {
+    let i_ssk = SecretSpendKey::random(rng);
+    let i_psk = i_ssk.public_spend_key();
 
-    let m_r = JubJubScalar::random(rng);
-    let m_ssk = SecretSpendKey::random(rng);
-    let m_psk = m_ssk.public_spend_key();
-    let m_value = 100;
-    let m = Message::new(rng, &m_r, &m_psk, m_value);
+    let i_value = 100;
+    let i_r = JubJubScalar::random(rng);
+    let input = Message::new(rng, &i_r, &i_psk, i_value);
 
-    let c_r = JubJubScalar::random(rng);
+    let (_, i_blinder) = input
+        .decrypt(&i_r, &i_psk)
+        .expect("Failed to decrypt message");
+
     let c_ssk = SecretSpendKey::random(rng);
     let c_psk = c_ssk.public_spend_key();
-    let c_value = 13;
-    let c = Message::new(rng, &c_r, &c_psk, c_value);
+
+    let c_value = 25;
+    let c_r = JubJubScalar::random(rng);
+    let change = Message::new(rng, &c_r, &c_psk, c_value);
+    let c_pk_r = *c_psk.gen_stealth_address(&c_r).pk_r().as_ref();
+
+    let (_, c_blinder) = change
+        .decrypt(&c_r, &c_psk)
+        .expect("Failed to decrypt message");
+
+    let c_derive_key = DeriveKey::new(public_derive_key, &c_psk);
 
     let o_ssk = SecretSpendKey::random(rng);
-    let o_vk = o_ssk.view_key();
     let o_psk = o_ssk.public_spend_key();
-    let o_value = 87;
-    let o_blinding_factor = JubJubScalar::random(rng);
-    let o = Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
 
-    let input = CircuitValueOpening::from_message(&m, &m_psk, &m_r)
-        .expect("Failed to generate WFO input");
+    let o_value = 75;
 
-    let output = CircuitValueOpening::from_note(&o, Some(&o_vk))
-        .expect("Failed to generate WFO output");
+    let o_blinder = JubJubScalar::random(rng);
+    let output = Note::obfuscated(rng, &o_psk, o_value, o_blinder);
 
-    for public_derive_key in [true, false].iter() {
-        let change = WithdrawFromObfuscatedChange::new(
-            c,
-            c_r,
-            c_psk,
-            *public_derive_key,
-        )
-        .expect("Failed to generate WFO change");
+    let input =
+        WfoCommitment::new(i_value, i_blinder, *input.value_commitment());
+    let change =
+        WfoChange::new(change, c_value, c_blinder, c_r, c_pk_r, c_derive_key);
+    let output =
+        WfoCommitment::new(o_value, o_blinder, *output.value_commitment());
 
-        let mut circuit =
-            WithdrawFromObfuscatedCircuit::new(input, change, output);
+    WithdrawFromObfuscatedCircuit::new(input, change, output)
+}
 
-        let (pp, pk, vd) =
-            keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
-                .expect("Failed to generate circuit!");
+#[test]
+fn withdraw_from_obfuscated_public() {
+    let rng = &mut StdRng::seed_from_u64(8586);
 
-        let proof = circuit
-            .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
-            .expect("Failed to generate proof!");
-        let pi = circuit.public_inputs();
+    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
+        .expect("Failed to generate circuit!");
 
-        circuit::verify_proof(
-            &pp,
-            vd.key(),
-            &proof,
-            pi.as_slice(),
-            vd.pi_pos(),
-            TRANSCRIPT_LABEL,
-        )
-        .expect("Failed to verify the proof!");
-    }
+    let mut circuit = create_random_circuit(rng, true);
+
+    let proof = circuit
+        .prove(&pp, &pk, TRANSCRIPT_LABEL)
+        .expect("Failed to prove circuit");
+    let pi = circuit.public_inputs();
+
+    WithdrawFromObfuscatedCircuit::verify(
+        &pp,
+        &vd,
+        &proof,
+        pi.as_slice(),
+        TRANSCRIPT_LABEL,
+    )
+    .expect("Failed to verify");
+}
+
+#[test]
+fn withdraw_from_obfuscated_private() {
+    let rng = &mut StdRng::seed_from_u64(8586);
+
+    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
+        .expect("Failed to generate circuit!");
+
+    let mut circuit = create_random_circuit(rng, false);
+
+    let proof = circuit
+        .prove(&pp, &pk, TRANSCRIPT_LABEL)
+        .expect("Failed to prove circuit");
+    let pi = circuit.public_inputs();
+
+    WithdrawFromObfuscatedCircuit::verify(
+        &pp,
+        &vd,
+        &proof,
+        pi.as_slice(),
+        TRANSCRIPT_LABEL,
+    )
+    .expect("Failed to verify");
 }

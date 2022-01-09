@@ -8,8 +8,8 @@
 
 use super::rusk_proto;
 use super::ServiceRequestHandler;
+use dusk_jubjub::JubJubScalar;
 use dusk_pki::PublicSpendKey;
-use dusk_plonk::jubjub::JubJubScalar;
 use std::convert::TryInto;
 use tonic::{Request, Response, Status};
 

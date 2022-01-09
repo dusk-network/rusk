@@ -4,122 +4,66 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
+use crate::POSEIDON_TREE_DEPTH;
 
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, SecretSpendKey};
+use dusk_pki::Ownable;
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_schnorr::Proof as SchnorrProof;
 use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
 
-/// Coupled code
-///
-/// Currently, Plonk is not a dependency of phoenix-core. This means the circuit
-/// construction of the note must be done here.
-///
-/// Ideally, there would be a `fn hash_inputs_witness(&self, composer)`
-/// implemented for `Note`.
-///
-/// Since the circuit will perform a pre-image check over the result of this
-/// function, the structure is safe
-///
-/// However, if `Note::hash_inputs` ever change, this circuit will be broken
-#[derive(Debug, Clone, Copy)]
-pub struct WitnessInput {
-    pub sk_r: Variable,
-    pub pk_r: Point,
-    pub note_hash: Variable,
+mod signature;
+mod witness;
 
-    pub note_type: Variable,
-    pub value_commitment: Point,
-    pub nonce: Variable,
-    pub r: Point,
-    pub pos: Variable,
-    pub cipher: [Variable; PoseidonCipher::cipher_size()],
-
-    pub value: Variable,
-    pub blinding_factor: Variable,
-
-    pub pk_r_prime: Point,
-    pub schnorr_u: Variable,
-    pub schnorr_r: Point,
-    pub schnorr_r_prime: Point,
-
-    // Public data
-    pub nullifier: BlsScalar,
-}
-
-impl WitnessInput {
-    #[allow(clippy::wrong_self_convention)]
-    pub fn to_hash_inputs(&self) -> [Variable; 12] {
-        [
-            self.note_type,
-            *self.value_commitment.x(),
-            *self.value_commitment.y(),
-            self.nonce,
-            *self.pk_r.x(),
-            *self.pk_r.y(),
-            *self.r.x(),
-            *self.r.y(),
-            self.pos,
-            self.cipher[0],
-            self.cipher[1],
-            self.cipher[2],
-        ]
-    }
-}
-
-pub const POSEIDON_BRANCH_DEPTH: usize = 17;
+pub use signature::CircuitInputSignature;
+pub use witness::WitnessInput;
 
 #[derive(Debug, Clone)]
 pub struct CircuitInput {
-    ssk: SecretSpendKey,
-    sk_r: JubJubScalar,
-    branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
+    branch: PoseidonBranch<POSEIDON_TREE_DEPTH>,
     note: Note,
+    pk_r: JubJubAffine,
+    pk_r_p: JubJubAffine,
     value: u64,
     blinding_factor: JubJubScalar,
-    signature: Option<SchnorrProof>,
     nullifier: BlsScalar,
+    signature: CircuitInputSignature,
 }
 
 impl CircuitInput {
     pub fn new(
-        signature: Option<SchnorrProof>,
-        branch: PoseidonBranch<POSEIDON_BRANCH_DEPTH>,
-        ssk: SecretSpendKey,
+        branch: PoseidonBranch<POSEIDON_TREE_DEPTH>,
         note: Note,
+        pk_r_p: JubJubAffine,
         value: u64,
         blinding_factor: JubJubScalar,
         nullifier: BlsScalar,
+        signature: CircuitInputSignature,
     ) -> Self {
-        let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
+        let pk_r = note.stealth_address().pk_r().as_ref().into();
 
         Self {
-            ssk,
-            sk_r,
             branch,
             note,
+            pk_r,
+            pk_r_p,
             value,
             blinding_factor,
-            signature,
             nullifier,
+            signature,
         }
     }
 
-    pub const fn ssk(&self) -> &SecretSpendKey {
-        &self.ssk
+    pub const fn signature(&self) -> &CircuitInputSignature {
+        &self.signature
     }
 
     pub const fn note(&self) -> &Note {
         &self.note
     }
 
-    pub const fn branch(&self) -> &PoseidonBranch<POSEIDON_BRANCH_DEPTH> {
+    pub const fn branch(&self) -> &PoseidonBranch<POSEIDON_TREE_DEPTH> {
         &self.branch
     }
 
@@ -127,69 +71,58 @@ impl CircuitInput {
         &self.nullifier
     }
 
-    pub fn set_signature(&mut self, signature: SchnorrProof) {
-        self.signature.replace(signature);
-    }
-
     pub fn to_witness(
         &self,
-        composer: &mut StandardComposer,
+        composer: &mut TurboComposer,
     ) -> Result<WitnessInput, Error> {
         let nullifier = self.nullifier;
 
         let note = self.note;
 
-        let sk_r = self.sk_r;
-        let sk_r = composer.add_input(sk_r.into());
-
-        let pk_r = composer.fixed_base_scalar_mul(sk_r, GENERATOR_EXTENDED);
+        let pk_r = composer.append_point(self.pk_r);
+        let pk_r_p = composer.append_point(self.pk_r_p);
 
         let note_hash = note.hash();
-        let note_hash = composer.add_input(note_hash);
+        let note_hash = composer.append_witness(note_hash);
 
         let hash_inputs = note.hash_inputs();
 
         let note_type = hash_inputs[0];
-        let note_type = composer.add_input(note_type);
+        let note_type = composer.append_witness(note_type);
 
         // Plonk API will not allow points to be constructed from variables
-        let value_commitment = note.value_commitment().into();
-        let value_commitment = composer.add_affine(value_commitment);
+        let value_commitment = note.value_commitment();
+        let value_commitment = composer.append_point(value_commitment);
 
         let nonce = hash_inputs[3];
-        let nonce = composer.add_input(nonce);
+        let nonce = composer.append_witness(nonce);
 
-        let r = note.stealth_address().R().into();
-        let r = composer.add_affine(r);
+        let r = note.stealth_address().R();
+        let r = composer.append_point(r);
 
         let pos = hash_inputs[8];
-        let pos = composer.add_input(pos);
+        let pos = composer.append_witness(pos);
 
-        let mut cipher = [pos; 3];
+        let mut cipher = [pos; PoseidonCipher::cipher_size()];
         cipher
             .iter_mut()
             .zip(hash_inputs[9..].iter())
             .for_each(|(c, i)| {
-                *c = composer.add_input(*i);
+                *c = composer.append_witness(*i);
             });
 
-        let value = composer.add_input(self.value.into());
-        let blinding_factor = composer.add_input(self.blinding_factor.into());
+        let value = composer.append_witness(self.value);
+        let blinding_factor = composer.append_witness(self.blinding_factor);
 
-        let pk_r_prime =
-            composer.fixed_base_scalar_mul(sk_r, GENERATOR_NUMS_EXTENDED);
-
-        let signature = self.signature.ok_or(Error::SignatureNotComputed)?;
-        let schnorr_u = *signature.u();
-        let schnorr_u = composer.add_input(schnorr_u.into());
-        let schnorr_r = signature.keys().R().as_ref().into();
-        let schnorr_r = composer.add_affine(schnorr_r);
-        let schnorr_r_prime = signature.keys().R_prime().as_ref().into();
-        let schnorr_r_prime = composer.add_affine(schnorr_r_prime);
+        let signature = &self.signature;
+        let schnorr_u = BlsScalar::from(*signature.u());
+        let schnorr_u = composer.append_witness(schnorr_u);
+        let schnorr_r = composer.append_point(*signature.r());
+        let schnorr_r_p = composer.append_point(*signature.r_p());
 
         Ok(WitnessInput {
-            sk_r,
             pk_r,
+            pk_r_p,
             note_hash,
 
             note_type,
@@ -202,10 +135,9 @@ impl CircuitInput {
             value,
             blinding_factor,
 
-            pk_r_prime,
             schnorr_u,
             schnorr_r,
-            schnorr_r_prime,
+            schnorr_r_p,
 
             nullifier,
         })

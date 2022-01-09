@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_jubjub::JubJubExtended;
 use dusk_plonk::prelude::*;
 
 #[derive(Debug, Default, Clone)]
@@ -38,20 +37,17 @@ impl CircuitCrossover {
         &self.value_commitment
     }
 
-    pub fn to_witness(
-        &self,
-        composer: &mut StandardComposer,
-    ) -> WitnessCrossover {
+    pub fn to_witness(&self, composer: &mut TurboComposer) -> WitnessCrossover {
         let value_commitment = self.value_commitment;
 
         let fee_value = BlsScalar::from(self.fee);
-        let fee_value_witness = composer.add_input(fee_value);
+        let fee_value_witness = composer.append_witness(fee_value);
 
         let value = BlsScalar::from(self.value);
-        let value = composer.add_input(value);
+        let value = composer.append_witness(value);
 
         let blinding_factor = BlsScalar::from(self.blinding_factor);
-        let blinding_factor = composer.add_input(blinding_factor);
+        let blinding_factor = composer.append_witness(blinding_factor);
 
         WitnessCrossover {
             value,
@@ -65,9 +61,9 @@ impl CircuitCrossover {
 
 #[derive(Debug, Clone, Copy)]
 pub struct WitnessCrossover {
-    pub value: Variable,
-    pub fee_value_witness: Variable,
-    pub blinding_factor: Variable,
+    pub value: Witness,
+    pub fee_value_witness: Witness,
+    pub blinding_factor: Witness,
 
     // Public data
     pub fee_value: BlsScalar,

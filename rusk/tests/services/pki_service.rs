@@ -7,7 +7,7 @@
 use super::TestContext;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
+use dusk_plonk::prelude::*;
 use rusk::services::rusk_proto::keys_client::KeysClient;
 use rusk::services::rusk_proto::GenerateKeysRequest;
 use test_context::test_context;

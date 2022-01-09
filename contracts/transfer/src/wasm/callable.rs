@@ -30,9 +30,9 @@ impl TransferContract {
         let mut pi = Vec::with_capacity(6);
 
         pi.push(crossover.value_commitment().into());
+        pi.push(value.into());
         pi.push(pk.as_ref().into());
         pi.push(message.into());
-        pi.push(value.into());
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
@@ -116,6 +116,8 @@ impl TransferContract {
         let mut pi = Vec::with_capacity(12 + message.cipher().len());
 
         pi.push(crossover.value_commitment().into());
+        pi.push(crossover.nonce().into());
+        pi.extend(crossover.encrypted_data().cipher().iter().map(|c| c.into()));
         pi.push(message.value_commitment().into());
         pi.push(message_psk_a.into());
         pi.push(message_psk_b.into());
@@ -123,8 +125,6 @@ impl TransferContract {
         pi.push(message.nonce().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
         pi.push(Self::contract_to_scalar(&address).into());
-        pi.push(crossover.nonce().into());
-        pi.extend(crossover.encrypted_data().cipher().iter().map(|c| c.into()));
         pi.push(sign_message.into());
         pi.push(crossover_pk.as_ref().into());
 
@@ -172,12 +172,12 @@ impl TransferContract {
 
         pi.push(message.value_commitment().into());
         pi.push(change.value_commitment().into());
-        pi.push(output.value_commitment().into());
         pi.push(change_psk_a.into());
         pi.push(change_psk_b.into());
         pi.push(change_address.pk_r().as_ref().into());
         pi.push(change.nonce().into());
         pi.extend(change.cipher().iter().map(|c| c.into()));
+        pi.push(output.value_commitment().into());
 
         //  1. a ∈ M↦
         //  2. pk ∈ M_a↦
@@ -244,16 +244,23 @@ impl TransferContract {
         let inputs = nullifiers.len();
         let outputs = notes.len();
 
+        let tx_hash = Self::tx_hash(
+            &anchor,
+            nullifiers.as_slice(),
+            crossover.as_ref(),
+            &fee,
+            notes.as_slice(),
+            call.as_ref(),
+        );
+
         let mut pi = Vec::with_capacity(5 + inputs + 2 * outputs);
 
+        pi.push(tx_hash.into());
         pi.push(anchor.into());
         pi.extend(nullifiers.iter().map(|n| n.into()));
         pi.push(crossover_commitment.into());
         pi.push(fee.gas_limit.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
-
-        let tx_hash = Self::tx_hash(pi.as_slice());
-        pi.push(tx_hash.into());
 
         //  1. α ∈ R
         if !self

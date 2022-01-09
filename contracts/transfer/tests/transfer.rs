@@ -7,8 +7,8 @@
 use dusk_jubjub::JubJubScalar;
 use phoenix_core::{Message, Note};
 use transfer_circuits::{
-    CircuitValueOpening, WithdrawFromObfuscatedChange,
-    WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
+    DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
+    WithdrawFromTransparentCircuit,
 };
 
 mod wrapper;
@@ -216,9 +216,18 @@ fn withdraw_from_transparent() {
     let (withdraw_ssk, withdraw_note) =
         wrapper.generate_note(true, withdraw_value);
     let withdraw_vk = withdraw_ssk.view_key();
-    let withdraw_circuit =
-        WithdrawFromTransparentCircuit::new(&withdraw_note, Some(&withdraw_vk))
-            .expect("Failed to create withdraw circuit");
+    let withdraw_commitment = *withdraw_note.value_commitment();
+    let withdraw_value = withdraw_note
+        .value(Some(&withdraw_vk))
+        .expect("Failed to decrypt value");
+    let withdraw_blinder = withdraw_note
+        .blinding_factor(Some(&withdraw_vk))
+        .expect("Failed to decrypt blinder");
+    let withdraw_circuit = WithdrawFromTransparentCircuit::new(
+        withdraw_commitment,
+        withdraw_value,
+        withdraw_blinder,
+    );
     let withdraw_proof = wrapper.generate_proof(withdraw_circuit);
     let withdraw_tx = TransferWrapper::tx_withdraw(
         withdraw_value,
@@ -330,6 +339,10 @@ fn withdraw_from_obfuscated() {
         .message(&account, message_address.pk_r())
         .expect("Failed to find appended message");
 
+    let (message_value, message_blinder) = message
+        .decrypt(&message_r, &message_psk)
+        .expect("Failed to decrypt message");
+
     let refund: Note = wrapper
         .notes_owned_by(1, &refund_vk)
         .first()
@@ -353,6 +366,10 @@ fn withdraw_from_obfuscated() {
     let change_address = change_psk.gen_stealth_address(&change_r);
     let change =
         Message::new(wrapper.rng(), &change_r, &change_psk, change_value);
+    let (_, change_blinder) = change
+        .decrypt(&change_r, &change_psk)
+        .expect("Failed to decrypt change");
+    let change_pk_r = *change_address.pk_r().as_ref();
 
     let withdraw_value = account_value - change_value;
     let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
@@ -364,19 +381,31 @@ fn withdraw_from_obfuscated() {
         withdraw_blinder,
     );
 
-    let input =
-        CircuitValueOpening::from_message(&message, &message_psk, &message_r)
-            .expect("Failed to generate WFO input");
+    let change_derive_key = DeriveKey::new(false, &change_psk);
 
-    let circuit_change =
-        WithdrawFromObfuscatedChange::new(change, change_r, change_psk, false)
-            .expect("Failed to generate WFO change");
+    let wfo_input = WfoCommitment::new(
+        message_value,
+        message_blinder,
+        *message.value_commitment(),
+    );
 
-    let output = CircuitValueOpening::from_note(&withdraw, Some(&withdraw_vk))
-        .expect("Failed to generate WFO output");
+    let wfo_change = WfoChange::new(
+        change,
+        change_value,
+        change_blinder,
+        change_r,
+        change_pk_r,
+        change_derive_key,
+    );
+
+    let wfo_output = WfoCommitment::new(
+        withdraw_value,
+        withdraw_blinder,
+        *withdraw.value_commitment(),
+    );
 
     let wfo_circuit =
-        WithdrawFromObfuscatedCircuit::new(input, circuit_change, output);
+        WithdrawFromObfuscatedCircuit::new(wfo_input, wfo_change, wfo_output);
 
     let wfo_proof = wrapper.generate_proof(wfo_circuit);
     let wfo_tx = TransferWrapper::tx_withdraw_obfuscated(
