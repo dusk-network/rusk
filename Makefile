@@ -6,7 +6,7 @@ help: ## Display this help screen
 abi: ## Build the ABI and test it
 	$(MAKE) -C ./rusk-abi test
 
-macros: ## Build the workspace macro libs and test them
+allmacros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros test
 
 keys: ## Create the keys for the circuits
@@ -24,7 +24,7 @@ contracts: ## Execute the test for all contracts
 utils: ## Execute the test for utils 
 	$(MAKE) -C ./test-utils test
 
-test: abi circuits macros contracts ## Run the tests
+test: abi circuits allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils test
 
