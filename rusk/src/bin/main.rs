@@ -106,7 +106,7 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    let network = self::create_network(&matches);
+    let network = create_network(&matches);
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
@@ -246,6 +246,14 @@ If this is not specified, the public address will be used for binding incoming c
             .takes_value(true)
             .required(true),
     )
+    .arg(
+        Arg::with_name("kadcast_autobroadcast")
+            .long("kadcast_autobroadcast")
+            .env("KADCAST_AUTOBROADCAST")
+            .help("If true then the received messages are automatically re-broadcasted")
+            .takes_value(false)
+            .required(false),
+    )
 }
 
 fn create_network(args: &ArgMatches) -> RuskNetwork {
@@ -257,5 +265,6 @@ fn create_network(args: &ArgMatches) -> RuskNetwork {
             .unwrap_or_default()
             .map(|s| s.to_string())
             .collect(),
+        args.value_of("kadcast_autobroadcast").is_some(),
     )
 }
