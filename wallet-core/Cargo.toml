@@ -23,3 +23,6 @@ rand = "^0.8"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[features]
+test-utils = []

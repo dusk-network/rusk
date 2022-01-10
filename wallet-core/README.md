@@ -12,7 +12,7 @@ To build and test the crate:
 
 ```shell
 cargo b
-cargo t
+cargo t --all-features
 ```
 
 To build the WASM module:

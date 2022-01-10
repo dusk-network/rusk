@@ -6,19 +6,15 @@
 
 //! Wallet library tests.
 
-mod mock;
-
-use dusk_jubjub::JubJubScalar;
-use mock::{TestNodeClient, TestStore};
-
-use dusk_pki::{PublicSpendKey, ViewKey};
+use dusk_pki::ViewKey;
 use dusk_plonk::prelude::{BlsScalar, Proof};
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_wallet_core::test_utils::mock_wallet;
 use dusk_wallet_core::{
-    NodeClient, Store, Transaction, UnprovenTransaction, Wallet, POSEIDON_DEPTH,
+    test_utils::TestNodeClient, NodeClient, Transaction, UnprovenTransaction,
+    POSEIDON_DEPTH,
 };
-use phoenix_core::{Note, NoteType};
-use rand_core::{CryptoRng, RngCore};
+use phoenix_core::Note;
 
 #[derive(Debug)]
 struct SerdeNodeClient {
@@ -82,56 +78,17 @@ impl NodeClient for SerdeNodeClient {
     }
 }
 
-/// Returns obfuscated notes with the given value.
-fn new_notes<Rng: RngCore + CryptoRng>(
-    rng: &mut Rng,
-    psk: &PublicSpendKey,
-    note_values: &[u64],
-) -> Vec<Note> {
-    note_values
-        .iter()
-        .map(|val| {
-            let blinder = JubJubScalar::random(rng);
-            Note::new(rng, NoteType::Obfuscated, psk, *val, blinder)
-        })
-        .collect()
-}
-
-fn new_opening() -> PoseidonBranch<POSEIDON_DEPTH> {
-    PoseidonBranch::default()
-}
-
-fn new_anchor<Rng: RngCore + CryptoRng>(rng: &mut Rng) -> BlsScalar {
-    BlsScalar::random(rng)
-}
-
 #[test]
 fn serde() {
     let mut rng = rand::thread_rng();
 
-    let send_store = TestStore::new(&mut rng);
-    let recv_store = TestStore::new(&mut rng);
+    let wallet = mock_wallet(&mut rng, &[2500, 2500, 5000]);
 
-    let send_ssk = send_store
-        .retrieve_key(0)
-        .expect("Valid key when retrieved");
-    let recv_ssk = recv_store
-        .retrieve_key(0)
-        .expect("Valid key when retrieved");
-
-    let send_psk = send_ssk.public_spend_key();
-    let recv_psk = recv_ssk.public_spend_key();
-
-    let notes = new_notes(&mut rng, &send_psk, &[2500, 2500, 5000]);
-    let anchor = new_anchor(&mut rng);
-    let opening = new_opening();
-
-    let node = TestNodeClient::new(notes, anchor, opening);
-    let send_wallet =
-        Wallet::new(send_store, SerdeNodeClient { node: node.clone() });
+    let send_psk = wallet.public_spend_key(0).unwrap();
+    let recv_psk = wallet.public_spend_key(1).unwrap();
 
     let ref_id = BlsScalar::random(&mut rng);
-    let tx = send_wallet
+    let tx = wallet
         .create_transfer_tx(
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
@@ -161,28 +118,13 @@ fn serde() {
 fn create_transfer_tx() {
     let mut rng = rand::thread_rng();
 
-    let send_store = TestStore::new(&mut rng);
-    let recv_store = TestStore::new(&mut rng);
+    let wallet = mock_wallet(&mut rng, &[2500, 2500, 5000]);
 
-    let send_ssk = send_store
-        .retrieve_key(0)
-        .expect("Valid key when retrieved");
-    let recv_ssk = recv_store
-        .retrieve_key(0)
-        .expect("Valid key when retrieved");
-
-    let send_psk = send_ssk.public_spend_key();
-    let recv_psk = recv_ssk.public_spend_key();
-
-    let notes = new_notes(&mut rng, &send_psk, &[2500, 2500, 5000]);
-    let anchor = new_anchor(&mut rng);
-    let opening = new_opening();
-
-    let node = TestNodeClient::new(notes, anchor, opening);
-    let send_wallet = Wallet::new(send_store, node.clone());
+    let send_psk = wallet.public_spend_key(0).unwrap();
+    let recv_psk = wallet.public_spend_key(1).unwrap();
 
     let ref_id = BlsScalar::random(&mut rng);
-    let tx = send_wallet
+    let tx = wallet
         .create_transfer_tx(
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
@@ -195,17 +137,7 @@ fn create_transfer_tx() {
 fn get_balance() {
     let mut rng = rand::thread_rng();
 
-    let store = TestStore::new(&mut rng);
-    let ssk = store.retrieve_key(0).expect("Valid key when retrieved");
-    let psk = ssk.public_spend_key();
-
-    let notes = new_notes(&mut rng, &psk, &[2500, 2500, 5000]);
-    let anchor = new_anchor(&mut rng);
-    let opening = new_opening();
-
-    let node = TestNodeClient::new(notes, anchor, opening);
-    let wallet = Wallet::new(store, node.clone());
-
+    let wallet = mock_wallet(&mut rng, &[2500, 2500, 5000]);
     let balance = wallet.get_balance(0).expect("Valid balance call");
 
     assert_eq!(balance, 10000);

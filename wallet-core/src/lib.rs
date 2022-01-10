@@ -13,6 +13,9 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "test-utils")]
+pub mod test_utils;
+
 #[cfg(target_family = "wasm")]
 mod ffi;
 
