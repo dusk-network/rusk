@@ -42,34 +42,18 @@ impl RuskNetwork {
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
         };
-        let peer = RuskNetwork::configure_peer(
-            public_addr,
-            listen_addr,
-            bootstrap,
-            listener,
-            auto_broadcast,
-        );
+        let peer = Peer::builder(public_addr, bootstrap, listener)
+            .with_listen_address(listen_addr)
+            .with_auto_propagate(auto_broadcast)
+            // Disable recursive discovery in a local env
+            // This should be set to `true` in a real env
+            .with_recursive_discovery(true)
+            .build();
 
         RuskNetwork {
             peer,
             sender: grpc_sender,
         }
-    }
-
-    fn configure_peer(
-        public_addr: String,
-        listen_addr: Option<String>,
-        bootstrap: Vec<String>,
-        listener: KadcastListener,
-        auto_broadcast: bool,
-    ) -> Peer {
-        let peer_builder = Peer::builder(public_addr, bootstrap, listener)
-            .with_listen_address(listen_addr)
-            .with_auto_propagate(auto_broadcast)
-            // Disable recursive discovery in a local env
-            // This should be set to `true` in a real env
-            .with_recursive_discovery(true);
-        peer_builder.build()
     }
 }
 
