@@ -523,7 +523,9 @@ mod profile_tooling {
     pub fn run_circuit_keys_checks(
         loader_list: Vec<&dyn CircuitLoader>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        clear_outdated_keys(&loader_list)?;
+        if option_env!("RUSK_KEEP_KEYS").is_none() {
+            clear_outdated_keys(&loader_list)?;
+        }
         check_keys_cache(&loader_list).map(|_| ())
     }
 }
