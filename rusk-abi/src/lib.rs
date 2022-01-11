@@ -16,52 +16,14 @@
 #![no_std]
 #![deny(clippy::all)]
 
-use canonical::Canon;
-use canonical_derive::Canon;
-use dusk_abi::{ContractId, Module};
-use dusk_pki::PublicSpendKey;
+pub use dusk_abi::ContractId;
 
-mod public_input;
-pub use public_input::PublicInput;
+/// Constant depth of the merkle tree that provides the opening proofs.
+pub const POSEIDON_TREE_DEPTH: usize = 17;
 
-/// Module that exports the ABI for Rusk's Contracts
-///
-/// Any proof to be verified with this module should use `b"dusk-network` as
-/// transcript initialization
-#[allow(dead_code)]
-pub struct RuskModule {
-    #[cfg(not(target_arch = "wasm32"))]
-    pp: &'static dusk_plonk::prelude::PublicParameters,
-}
-
-impl RuskModule {
-    #[doc(hidden)]
-    pub const POSEIDON_HASH: u8 = 0;
-    #[doc(hidden)]
-    pub const VERIFY_PROOF: u8 = 1;
-    #[doc(hidden)]
-    pub const VERIFY_SCHNORR_SIGN: u8 = 2;
-}
-
-impl Module for RuskModule {
-    fn id() -> ContractId {
-        ContractId::reserved(77)
-    }
-}
-
-/// Enum that represents all possible payment info configs
-#[derive(Canon, Clone)]
-pub enum PaymentInfo {
-    /// Only Transparent Notes are accepted
-    Transparent(Option<PublicSpendKey>),
-    /// Only Obfuscated Notes are accepted
-    Obfuscated(Option<PublicSpendKey>),
-    /// Notes of any type are accepted
-    Any(Option<PublicSpendKey>),
-}
-
-/// Common QueryId used for Payment info retrival.
-pub const PAYMENT_INFO: u8 = 100;
+/// Label used for the ZK transcript initialization. Must be the same for prover
+/// and verifier.
+pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
 /// Contract ID of the genesis transfer contract
 pub const fn transfer_contract() -> ContractId {
@@ -73,14 +35,13 @@ pub const fn stake_contract() -> ContractId {
     ContractId::reserved(0x2)
 }
 
+#[doc(hidden)]
+pub mod hash;
+
 cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
+    if #[cfg(feature = "module")] {
         #[doc(hidden)]
-        pub mod hosted;
-        pub use hosted::*;
-    } else {
-        #[doc(hidden)]
-        pub mod host;
-        pub use host::*;
+        pub mod module;
+        pub use module::*;
     }
 }

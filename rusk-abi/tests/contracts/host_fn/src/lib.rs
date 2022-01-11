@@ -17,6 +17,7 @@ pub const HASH: u8 = 0;
 pub const VERIFY: u8 = 1;
 pub const SCHNORR_SIGNATURE: u8 = 2;
 pub const GET_PAYMENT_INFO: u8 = 3;
+pub const SPONGE_HASH: u8 = 4;
 
 // transaction ids
 pub const SOMETHING: u8 = 0;
@@ -40,15 +41,25 @@ mod hosted {
     use dusk_abi::ReturnValue;
 
     use dusk_bls12_381::BlsScalar;
+    use dusk_bytes::Serializable;
     use dusk_pki::{PublicKey, PublicSpendKey};
     use dusk_schnorr::Signature;
-    use rusk_abi::{PaymentInfo, PublicInput};
+    use rusk_abi::{hash, PaymentInfo, PublicInput};
 
     const PAGE_SIZE: usize = 1024 * 4;
 
     impl HostFnTest {
-        pub fn hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
+        pub fn sponge_hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
             rusk_abi::poseidon_hash(scalars)
+        }
+
+        pub fn hash(&self, scalars: &[BlsScalar]) -> BlsScalar {
+            let mut hasher = hash::Hasher::new();
+            for scalar in scalars {
+                hasher.update(&scalar.to_bytes());
+            }
+            hasher.update(b"dusk network rocks");
+            hasher.finalize()
         }
 
         pub fn verify(
@@ -83,10 +94,27 @@ mod hosted {
         // decode query id
         let qid = u8::decode(&mut source)?;
         match qid {
+            SPONGE_HASH => {
+                let arg = Vec::<BlsScalar>::decode(&mut source)?;
+
+                let ret = slf.sponge_hash(arg);
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret);
+
+                    let mut sink = Sink::new(&mut bytes[..]);
+
+                    wrapped_return.encode(&mut sink)
+                };
+
+                Ok(r)
+            }
+
             HASH => {
                 let arg = Vec::<BlsScalar>::decode(&mut source)?;
 
-                let ret = slf.hash(arg);
+                let ret = slf.hash(&arg);
 
                 let r = {
                     // return value
