@@ -16,6 +16,11 @@ use dusk_schnorr::Signature;
 
 use crate::{PaymentInfo, PublicInput, PAYMENT_INFO};
 
+pub fn hash(bytes: Vec<u8>) -> BlsScalar {
+    dusk_abi::query(&RuskModule::id(), &(RuskModule::HASH, bytes))
+        .expect("query RuskModule for Hash should not fail")
+}
+
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
     dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars))
         .expect("query RuskModule for Poseidon Hash should not fail")

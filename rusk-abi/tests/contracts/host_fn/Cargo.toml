@@ -6,7 +6,7 @@ authors = [
   "Kristoffer Ström <kristoffer@dusk.network>",
   "zer0 <matteo@dusk.network>"
 ]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,4 +19,5 @@ dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"]
 dusk-schnorr = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-abi = "0.9"
-rusk-abi = {path = "../../../"}
+rusk-abi = { path = "../../../", features = ["module"] }
+dusk-bytes = "0.1"
