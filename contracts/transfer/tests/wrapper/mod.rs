@@ -504,33 +504,36 @@ impl TransferWrapper {
             );
 
         let crossover = crossover.unwrap();
-        let signature = SendToContractTransparentCircuit::sign(
-            &mut self.rng,
-            refund_ssk,
-            &fee,
-            &crossover,
-            value,
-            &address,
-        );
 
-        let crossover_note = Note::from((fee, crossover));
+        let mut stct_proof = {
+            let signature = SendToContractTransparentCircuit::sign(
+                &mut self.rng,
+                refund_ssk,
+                &fee,
+                &crossover,
+                value,
+                &address,
+            );
 
-        let crossover_value = crossover_note
-            .value(Some(&refund_vk))
-            .expect("Failed to decrypt value");
+            let crossover_note = Note::from((fee, crossover));
 
-        let crossover_blinder = crossover_note
-            .blinding_factor(Some(&refund_vk))
-            .expect("Failed to decrypt blinder");
+            let crossover_value = crossover_note
+                .value(Some(&refund_vk))
+                .expect("Failed to decrypt value");
 
-        let mut stct_proof = SendToContractTransparentCircuit::new(
-            &fee,
-            &crossover,
-            crossover_value,
-            crossover_blinder,
-            address,
-            signature,
-        );
+            let crossover_blinder = crossover_note
+                .blinding_factor(Some(&refund_vk))
+                .expect("Failed to decrypt blinder");
+
+            SendToContractTransparentCircuit::new(
+                &fee,
+                &crossover,
+                crossover_value,
+                crossover_blinder,
+                address,
+                signature,
+            )
+        };
 
         let (pk, _) =
             Self::circuit_keys(&SendToContractTransparentCircuit::CIRCUIT_ID);
@@ -600,38 +603,42 @@ impl TransferWrapper {
             &address,
         );
 
-        let crossover_note = Note::from((fee, crossover));
+        let stco_message = {
+            let message_address = message_psk.gen_stealth_address(&message_r);
+            let pk_r = *message_address.pk_r().as_ref();
+            let (_, blinder) = message
+                .decrypt(&message_r, &message_psk)
+                .expect("Failed to decrypt message");
 
-        let crossover_blinder = crossover_note
-            .blinding_factor(Some(&refund_vk))
-            .expect("Failed to decrypt blinder");
+            let derive_key = DeriveKey::new(false, &message_psk);
 
-        let message_address = message_psk.gen_stealth_address(&message_r);
-        let message_pk_r = *message_address.pk_r().as_ref();
-        let (_, message_blinder) = message
-            .decrypt(&message_r, &message_psk)
-            .expect("Failed to decrypt message");
+            StcoMessage {
+                blinder,
+                derive_key,
+                message,
+                pk_r,
+                r: message_r,
+            }
+        };
 
-        let message_derive_key = DeriveKey::new(false, &message_psk);
+        let mut stco_proof = {
+            let crossover_note = Note::from((fee, crossover));
 
-        let stco_message = StcoMessage::new(
-            message,
-            message_r,
-            message_derive_key,
-            message_pk_r,
-            message_blinder,
-        );
+            let crossover_blinder = crossover_note
+                .blinding_factor(Some(&refund_vk))
+                .expect("Failed to decrypt blinder");
 
-        let stco_crossover = StcoCrossover::new(crossover, crossover_blinder);
-
-        let mut stco_proof = SendToContractObfuscatedCircuit::new(
-            value,
-            stco_message,
-            stco_crossover,
-            &fee,
-            address,
-            signature,
-        );
+            let stco_crossover =
+                StcoCrossover::new(crossover, crossover_blinder);
+            SendToContractObfuscatedCircuit::new(
+                value,
+                stco_message,
+                stco_crossover,
+                &fee,
+                address,
+                signature,
+            )
+        };
 
         let (pk, _) =
             Self::circuit_keys(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
