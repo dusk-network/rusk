@@ -43,7 +43,10 @@ jobs:
             ~/.cargo/git/db
           key: ${{env.cache-name}}-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
 
-      - run: RUSK_PROFILE_PATH="/var/opt/build-cache" make -j test
+      - run: >
+          RUSK_PROFILE_PATH="/var/opt/build-cache"
+          RUSK_KEEP_KEYS="1"
+          make -j test
       - name: "Upload Rusk Artifact"
         uses: actions/upload-artifact@v2
         with:
