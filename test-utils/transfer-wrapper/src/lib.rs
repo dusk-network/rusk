@@ -118,7 +118,7 @@ fn prepare_execute<'a, R, I>(
     inputs: I,
     output: &PublicSpendKey,
     transparent_output: bool,
-    gas_refund: &ViewKey,
+    gas_refund: u64,
     fee: &Fee,
     crossover: Option<&Crossover>,
     crossover_value: u64,
@@ -143,13 +143,17 @@ where
 
             input += value;
 
-            let opening = transfer_state(network)?
-                .notes()
-                .opening(*note.pos())?
-                .ok_or(TransferError::NoteNotFound)?;
+            let input = ExecuteCircuit::input(
+                rng,
+                &ssk,
+                note.hash(),
+                transfer_state(network)?.notes().inner(),
+                *note,
+            )
+            .or(Err(TransferError::ProofVerificationError))?;
 
             execute_proof
-                .add_input(*ssk, *note, opening, None)
+                .add_input(input)
                 .or(Err(TransferError::ProofVerificationError))?;
 
             Ok(note.gen_nullifier(ssk))
@@ -182,19 +186,27 @@ where
 
     match crossover {
         Some(crossover) => {
-            execute_proof.set_fee_crossover(fee, crossover, gas_refund)
+            let blinding_factor = JubJubScalar::random(rng);
+            execute_proof.set_fee_crossover(
+                fee,
+                crossover,
+                gas_refund,
+                blinding_factor,
+            );
+            Ok(())
         }
         None => execute_proof.set_fee(fee),
     }
     .or(Err(TransferError::ProofVerificationError))?;
 
-    execute_proof.compute_signatures(rng);
+    // Commenting this out, I'm not sure about the removal
+    // execute_proof.compute_signatures(rng);
 
     let id = execute_proof.circuit_id();
     let pk = circuit_key(id)?;
 
     let proof = execute_proof
-        .gen_proof(&*PP, &pk, b"dusk-network")
+        .prove(&*PP, &pk)
         .or(Err(TransferError::ProofVerificationError))?
         .to_bytes()
         .to_vec();
@@ -233,7 +245,7 @@ pub fn execute<'a, R, I>(
     inputs: I,
     output: &PublicSpendKey,
     transparent_output: bool,
-    gas_refund: &ViewKey,
+    gas_refund: u64,
     fee: Fee,
     crossover: Option<(&ViewKey, Crossover)>,
     call: Option<(ContractId, Transaction)>,
