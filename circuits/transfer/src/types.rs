@@ -10,11 +10,11 @@ use dusk_plonk::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DeriveKey {
-    is_public: bool,
-    secret_a: JubJubExtended,
-    secret_b: JubJubExtended,
-    public_a: JubJubExtended,
-    public_b: JubJubExtended,
+    pub(crate) is_public: bool,
+    pub(crate) secret_a: JubJubExtended,
+    pub(crate) secret_b: JubJubExtended,
+    pub(crate) public_a: JubJubExtended,
+    pub(crate) public_b: JubJubExtended,
 }
 
 impl DeriveKey {

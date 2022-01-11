@@ -25,46 +25,12 @@ const MESSAGE_SIZE: usize = 7 + 2 * PoseidonCipher::cipher_size();
 pub struct StcoMessage {
     pub r: JubJubScalar,
     pub blinder: JubJubScalar,
-    pub derive_key_is_public: BlsScalar,
-    pub derive_key_secret_a: JubJubExtended,
-    pub derive_key_secret_b: JubJubExtended,
-    pub derive_key_public_a: JubJubExtended,
-    pub derive_key_public_b: JubJubExtended,
+    pub derive_key: DeriveKey,
     pub pk_r: JubJubExtended,
-    message: Message,
+    pub message: Message,
 }
 
 impl StcoMessage {
-    pub fn new(
-        message: Message,
-        r: JubJubScalar,
-        derive_key: DeriveKey,
-        pk_r: JubJubExtended,
-        blinder: JubJubScalar,
-    ) -> Self {
-        let (
-            is_public,
-            derive_key_secret_a,
-            derive_key_secret_b,
-            derive_key_public_a,
-            derive_key_public_b,
-        ) = derive_key.into_inner();
-
-        let derive_key_is_public = BlsScalar::from(is_public as u64);
-
-        Self {
-            r,
-            blinder,
-            derive_key_is_public,
-            derive_key_secret_a,
-            derive_key_secret_b,
-            derive_key_public_a,
-            derive_key_public_b,
-            pk_r,
-            message,
-        }
-    }
-
     pub fn message(&self) -> &Message {
         &self.message
     }
@@ -223,11 +189,11 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_r = composer.append_witness(self.message.r);
         let message_blinder = composer.append_witness(self.message.blinder);
         let message_derive_key_is_public =
-            composer.append_witness(self.message.derive_key_is_public);
+            composer.append_witness(self.message.derive_key.is_public as u64);
         let message_derive_key_secret_a =
-            composer.append_point(self.message.derive_key_secret_a);
+            composer.append_point(self.message.derive_key.secret_a);
         let message_derive_key_secret_b =
-            composer.append_point(self.message.derive_key_secret_b);
+            composer.append_point(self.message.derive_key.secret_b);
 
         let (schnorr_u, schnorr_r) = self.signature.to_witness(composer);
 
@@ -248,9 +214,9 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_commitment =
             composer.append_public_point(*self.message.commitment());
         let message_derive_key_public_a =
-            composer.append_public_point(self.message.derive_key_public_a);
+            composer.append_public_point(self.message.derive_key.public_a);
         let message_derive_key_public_b =
-            composer.append_public_point(self.message.derive_key_public_b);
+            composer.append_public_point(self.message.derive_key.public_b);
         let message_pk_r = composer.append_public_point(self.message.pk_r);
         let message_nonce =
             composer.append_public_witness(*self.message.nonce());
@@ -383,8 +349,8 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let nonce = *self.message.nonce();
 
         pi.push(commitment.into());
-        pi.push(self.message.derive_key_public_a.into());
-        pi.push(self.message.derive_key_public_b.into());
+        pi.push(self.message.derive_key.public_a.into());
+        pi.push(self.message.derive_key.public_b.into());
         pi.push(self.message.pk_r.into());
         pi.push(nonce.into());
 
