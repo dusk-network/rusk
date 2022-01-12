@@ -40,23 +40,29 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
     let m_ssk = SecretSpendKey::random(rng);
     let m_psk = m_ssk.public_spend_key();
 
-    let m_r = JubJubScalar::random(rng);
-    let message = Message::new(rng, &m_r, &m_psk, value);
-    let m_pk_r = *m_psk.gen_stealth_address(&m_r).pk_r().as_ref();
-
-    let (_, m_blinder) = message
-        .decrypt(&m_r, &m_psk)
-        .expect("Failed to decrypt message");
-
-    let m_derive_key = DeriveKey::new(public_derive_key, &m_psk);
+    let r = JubJubScalar::random(rng);
+    let message = Message::new(rng, &r, &m_psk, value);
 
     let address = BlsScalar::random(rng);
     let signature = SendToContractObfuscatedCircuit::sign(
         rng, &c_ssk, &fee, &crossover, &message, &address,
     );
 
-    let message =
-        StcoMessage::new(message, m_r, m_derive_key, m_pk_r, m_blinder);
+    let message = {
+        let (_, blinder) = message
+            .decrypt(&r, &m_psk)
+            .expect("Failed to decrypt message");
+        let derive_key = DeriveKey::new(public_derive_key, &m_psk);
+        let pk_r = *m_psk.gen_stealth_address(&r).pk_r().as_ref();
+        StcoMessage {
+            blinder,
+            derive_key,
+            message,
+            pk_r,
+            r,
+        }
+    };
+
     let crossover = StcoCrossover::new(crossover, c_blinder);
 
     SendToContractObfuscatedCircuit::new(

@@ -215,8 +215,14 @@ mod transfer {
                 rng, &c_ssk, &fee, &crossover, &message, &address,
             );
 
-            let message =
-                StcoMessage::new(message, m_r, m_derive_key, m_pk_r, m_blinder);
+            let message = StcoMessage {
+                blinder: m_blinder,
+                derive_key: m_derive_key,
+                message,
+                pk_r: m_pk_r,
+                r: m_r,
+            };
+
             let crossover = StcoCrossover::new(crossover, c_blinder);
 
             let mut circuit = SendToContractObfuscatedCircuit::new(
@@ -277,60 +283,71 @@ mod transfer {
             let pub_params = &PUB_PARAMS;
             let rng = &mut StdRng::seed_from_u64(0xbeef);
 
-            let i_ssk = SecretSpendKey::random(rng);
-            let i_psk = i_ssk.public_spend_key();
+            let input = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
 
-            let i_value = 100;
-            let i_r = JubJubScalar::random(rng);
-            let input = Message::new(rng, &i_r, &i_psk, i_value);
+                let value = 100;
+                let r = JubJubScalar::random(rng);
+                let message = Message::new(rng, &r, &psk, value);
+                let commitment = *message.value_commitment();
 
-            let (_, i_blinder) = input
-                .decrypt(&i_r, &i_psk)
-                .expect("Failed to decrypt message");
+                let (_, blinder) = message
+                    .decrypt(&r, &psk)
+                    .expect("Failed to decrypt message");
 
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_psk = c_ssk.public_spend_key();
+                WfoCommitment {
+                    blinder,
+                    commitment,
+                    value,
+                }
+            };
+            let change = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
 
-            let c_value = 25;
-            let c_r = JubJubScalar::random(rng);
-            let change = Message::new(rng, &c_r, &c_psk, c_value);
-            let c_pk_r = *c_psk.gen_stealth_address(&c_r).pk_r().as_ref();
+                let value = 25;
+                let r = JubJubScalar::random(rng);
+                let message = Message::new(rng, &r, &psk, value);
+                let pk_r = *psk.gen_stealth_address(&r).pk_r().as_ref();
 
-            let (_, c_blinder) = change
-                .decrypt(&c_r, &c_psk)
-                .expect("Failed to decrypt message");
+                let (_, blinder) = message
+                    .decrypt(&r, &psk)
+                    .expect("Failed to decrypt message");
 
-            let c_derive_key = DeriveKey::new(false, &c_psk);
+                let derive_key = DeriveKey::new(false, &psk);
 
-            let o_ssk = SecretSpendKey::random(rng);
-            let o_psk = o_ssk.public_spend_key();
+                WfoChange {
+                    blinder,
+                    derive_key,
+                    message,
+                    pk_r,
+                    r,
+                    value,
+                }
+            };
 
-            let o_value = 75;
+            let output = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
 
-            let o_blinder = JubJubScalar::random(rng);
-            let output = Note::obfuscated(rng, &o_psk, o_value, o_blinder);
+                let value = 75;
 
-            let input = WfoCommitment::new(
-                i_value,
-                i_blinder,
-                *input.value_commitment(),
-            );
-            let change = WfoChange::new(
+                let blinder = JubJubScalar::random(rng);
+                let output = Note::obfuscated(rng, &psk, value, blinder);
+                let commitment = *output.value_commitment();
+                WfoCommitment {
+                    blinder,
+                    commitment,
+                    value,
+                }
+            };
+
+            let mut circuit = WithdrawFromObfuscatedCircuit {
+                input,
                 change,
-                c_value,
-                c_blinder,
-                c_r,
-                c_pk_r,
-                c_derive_key,
-            );
-            let output = WfoCommitment::new(
-                o_value,
-                o_blinder,
-                *output.value_commitment(),
-            );
-
-            let mut circuit =
-                WithdrawFromObfuscatedCircuit::new(input, change, output);
+                output,
+            };
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))

@@ -381,31 +381,35 @@ fn withdraw_from_obfuscated() {
         withdraw_blinder,
     );
 
-    let change_derive_key = DeriveKey::new(false, &change_psk);
+    let wfo_input = WfoCommitment {
+        value: message_value,
+        blinder: message_blinder,
+        commitment: *message.value_commitment(),
+    };
 
-    let wfo_input = WfoCommitment::new(
-        message_value,
-        message_blinder,
-        *message.value_commitment(),
-    );
+    let wfo_change = {
+        let derive_key = DeriveKey::new(false, &change_psk);
+        WfoChange {
+            blinder: change_blinder,
+            derive_key,
+            message: change,
+            pk_r: change_pk_r,
+            r: change_r,
+            value: change_value,
+        }
+    };
 
-    let wfo_change = WfoChange::new(
-        change,
-        change_value,
-        change_blinder,
-        change_r,
-        change_pk_r,
-        change_derive_key,
-    );
+    let wfo_output = WfoCommitment {
+        blinder: withdraw_blinder,
+        commitment: *withdraw.value_commitment(),
+        value: withdraw_value,
+    };
 
-    let wfo_output = WfoCommitment::new(
-        withdraw_value,
-        withdraw_blinder,
-        *withdraw.value_commitment(),
-    );
-
-    let wfo_circuit =
-        WithdrawFromObfuscatedCircuit::new(wfo_input, wfo_change, wfo_output);
+    let wfo_circuit = WithdrawFromObfuscatedCircuit {
+        input: wfo_input,
+        change: wfo_change,
+        output: wfo_output,
+    };
 
     let wfo_proof = wrapper.generate_proof(wfo_circuit);
     let wfo_tx = TransferWrapper::tx_withdraw_obfuscated(

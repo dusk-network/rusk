@@ -14,72 +14,22 @@ use dusk_plonk::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct WfoCommitment {
-    value: u64,
-    blinder: JubJubScalar,
-    commitment: JubJubExtended,
-}
-
-impl WfoCommitment {
-    pub const fn new(
-        value: u64,
-        blinder: JubJubScalar,
-        commitment: JubJubExtended,
-    ) -> Self {
-        Self {
-            value,
-            blinder,
-            commitment,
-        }
-    }
+    pub value: u64,
+    pub blinder: JubJubScalar,
+    pub commitment: JubJubExtended,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct WfoChange {
-    value: u64,
-    message: Message,
-    blinder: JubJubScalar,
-    r: JubJubScalar,
-    derive_key_is_public: BlsScalar,
-    derive_key_secret_a: JubJubExtended,
-    derive_key_secret_b: JubJubExtended,
-    derive_key_public_a: JubJubExtended,
-    derive_key_public_b: JubJubExtended,
-    pk_r: JubJubExtended,
+    pub value: u64,
+    pub message: Message,
+    pub blinder: JubJubScalar,
+    pub r: JubJubScalar,
+    pub derive_key: DeriveKey,
+    pub pk_r: JubJubExtended,
 }
 
 impl WfoChange {
-    pub fn new(
-        message: Message,
-        value: u64,
-        blinder: JubJubScalar,
-        r: JubJubScalar,
-        pk_r: JubJubExtended,
-        derive_key: DeriveKey,
-    ) -> Self {
-        let (
-            is_public,
-            derive_key_secret_a,
-            derive_key_secret_b,
-            derive_key_public_a,
-            derive_key_public_b,
-        ) = derive_key.into_inner();
-
-        let derive_key_is_public = BlsScalar::from(is_public as u64);
-
-        Self {
-            value,
-            message,
-            blinder,
-            r,
-            derive_key_is_public,
-            derive_key_secret_a,
-            derive_key_secret_b,
-            derive_key_public_a,
-            derive_key_public_b,
-            pk_r,
-        }
-    }
-
     pub fn message(&self) -> &Message {
         &self.message
     }
@@ -99,23 +49,9 @@ impl WfoChange {
 
 #[derive(Debug, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {
-    input: WfoCommitment,
-    change: WfoChange,
-    output: WfoCommitment,
-}
-
-impl WithdrawFromObfuscatedCircuit {
-    pub fn new(
-        input: WfoCommitment,
-        change: WfoChange,
-        output: WfoCommitment,
-    ) -> Self {
-        Self {
-            input,
-            change,
-            output,
-        }
-    }
+    pub input: WfoCommitment,
+    pub change: WfoChange,
+    pub output: WfoCommitment,
 }
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
@@ -135,11 +71,11 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_blinder = composer.append_witness(self.change.blinder);
         let change_r = composer.append_witness(self.change.r);
         let change_derive_key_is_public =
-            composer.append_witness(self.change.derive_key_is_public);
+            composer.append_witness(self.change.derive_key.is_public as u64);
         let change_derive_key_secret_a =
-            composer.append_point(self.change.derive_key_secret_a);
+            composer.append_point(self.change.derive_key.secret_a);
         let change_derive_key_secret_b =
-            composer.append_point(self.change.derive_key_secret_b);
+            composer.append_point(self.change.derive_key.secret_b);
 
         let output_value = composer.append_witness(self.output.value);
         let output_blinder = composer.append_witness(self.output.blinder);
@@ -152,9 +88,9 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_commitment =
             composer.append_public_point(*self.change.commitment());
         let change_derive_key_public_a =
-            composer.append_public_point(self.change.derive_key_public_a);
+            composer.append_public_point(self.change.derive_key.public_a);
         let change_derive_key_public_b =
-            composer.append_public_point(self.change.derive_key_public_b);
+            composer.append_public_point(self.change.derive_key.public_b);
         let change_pk_r = composer.append_public_point(self.change.pk_r);
         let change_nonce = composer.append_public_witness(*self.change.nonce());
 
@@ -261,8 +197,8 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let nonce = *self.change.nonce();
 
         pi.push(commitment.into());
-        pi.push(self.change.derive_key_public_a.into());
-        pi.push(self.change.derive_key_public_b.into());
+        pi.push(self.change.derive_key.public_a.into());
+        pi.push(self.change.derive_key.public_b.into());
         pi.push(self.change.pk_r.into());
         pi.push(nonce.into());
 
