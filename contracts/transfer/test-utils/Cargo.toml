@@ -1,0 +1,26 @@
+[package]
+name = "test-utils"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+canonical = "0.6"
+canonical_derive = "0.6"
+dusk-abi = "0.9"
+rusk-abi = { path = "../../../rusk-abi" }
+dusk-bytes = "0.1"
+dusk-poseidon = { version = "0.22.0-rc", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.8.0-rc", default-features = false }
+phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["canon"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+lazy_static = "1.4"
+rand = "0.8"
+transfer-circuits = { path = "../../../circuits/transfer", features = ["builder"] }
+transfer-contract = { path = "..", features = ["no-bridge"] }
+rusk-profile = { path = "../../../rusk-profile" }
+dusk-plonk = "0.8"
+rusk-vm = "0.6"
+
+[lib]
+path = "lib.rs"

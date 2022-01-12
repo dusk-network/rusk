@@ -11,9 +11,7 @@ use transfer_circuits::{
     WithdrawFromTransparentCircuit,
 };
 
-mod wrapper;
-
-use wrapper::TransferWrapper;
+use test_utils::TransferWrapper;
 
 #[test]
 fn send_to_contract_transparent() {
@@ -35,7 +33,7 @@ fn send_to_contract_transparent() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
-    wrapper
+    let gas_spent = wrapper
         .send_to_contract_transparent(
             &[unspent_note],
             &[genesis_ssk],
@@ -48,6 +46,7 @@ fn send_to_contract_transparent() {
             account_value,
         )
         .expect("Failed to load balance into contract");
+    println!("send_to_contract_transparent gas spent: {}", gas_spent);
 
     let balance = wrapper.balance(&account);
     assert_eq!(account_value, balance);
@@ -98,7 +97,7 @@ fn send_to_contract_obfuscated() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
-    let message_r = wrapper
+    let (gas_spent, message_r) = wrapper
         .send_to_contract_obfuscated(
             &[unspent_note],
             &[genesis_ssk],
@@ -112,6 +111,7 @@ fn send_to_contract_obfuscated() {
             account_value,
         )
         .expect("Failed to load balance into contract");
+    println!("send_to_contract_obfuscated gas_spent: {}", gas_spent);
 
     let message_address = message_psk.gen_stealth_address(&message_r);
     wrapper
@@ -172,7 +172,7 @@ fn withdraw_from_transparent() {
     let alice_value = 100;
     let gas_limit = 500_000_000;
     let gas_price = 2;
-    wrapper
+    let gas_spent = wrapper
         .send_to_contract_transparent(
             &[unspent_note],
             &[genesis_ssk],
@@ -185,6 +185,7 @@ fn withdraw_from_transparent() {
             alice_value,
         )
         .expect("Failed to load balance into contract");
+    println!("withdraw_from_transparent gas_spent: {}", gas_spent);
 
     let balance = wrapper.balance(&alice);
     assert_eq!(alice_value, balance);
@@ -319,7 +320,7 @@ fn withdraw_from_obfuscated() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
-    let message_r = wrapper
+    let (gas_spent, message_r) = wrapper
         .send_to_contract_obfuscated(
             &[unspent_note],
             &[genesis_ssk],
@@ -333,6 +334,7 @@ fn withdraw_from_obfuscated() {
             account_value,
         )
         .expect("Failed to load balance into contract");
+    println!("withdraw_from_obfuscated gas spent: {}", gas_spent);
 
     let message_address = message_psk.gen_stealth_address(&message_r);
     let message = wrapper
