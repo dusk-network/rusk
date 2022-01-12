@@ -14,8 +14,8 @@ canonical_derive = "0.6"
 phoenix-core = { version = "0.14.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.8.0-rc", default-features = false }
 dusk-abi = "0.9"
-rusk-abi = {path = "../../../../rusk-abi"}
-transfer-contract = { path = "../..", features = ["no-bridge"] }
+rusk-abi = { path = "../../../../../rusk-abi" }
+transfer-contract = { path = "../../../", features = ["no-bridge"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 
