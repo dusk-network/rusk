@@ -11,11 +11,15 @@ pub struct TestCircuit1 {}
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for TestCircuit1 {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
+    fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        unimplemented!()
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 11
     }
 }
@@ -25,11 +29,15 @@ pub struct TestCircuit2 {}
 
 #[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
 impl Circuit for TestCircuit2 {
-    fn gadget(&mut self, composer: &mut StandardComposer) -> Result<(), Error> {
+    fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        unimplemented!()
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 11
     }
 }
@@ -58,9 +66,9 @@ mod tests {
         assert_eq!(
             &TestCircuit1::CIRCUIT_ID,
             &[
-                240, 204, 97, 117, 239, 219, 8, 79, 239, 104, 22, 18, 189, 106,
-                47, 250, 179, 145, 190, 100, 207, 203, 9, 22, 32, 36, 209, 110,
-                221, 92, 219, 150
+                190, 82, 133, 140, 138, 47, 221, 177, 187, 245, 87, 56, 131,
+                70, 23, 67, 51, 238, 85, 73, 252, 10, 143, 126, 193, 0, 163, 6,
+                213, 177, 232, 202
             ]
         );
     }

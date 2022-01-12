@@ -6,25 +6,32 @@
 
 use crate::gadgets;
 
-use dusk_bytes::Serializable;
-use dusk_jubjub::JubJubAffine;
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey, ViewKey};
+use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::prelude::*;
+use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
 use dusk_schnorr::Signature;
-use phoenix_core::{Crossover, Error as PhoenixError, Fee};
+use phoenix_core::{Crossover, Fee};
 use rand_core::{CryptoRng, RngCore};
+
+use dusk_plonk::prelude::*;
+
+/// Message to be signed for the schnorr protocol.
+///
+/// Composed of 5 scalars and 1 cipher.
+const MESSAGE_SIZE: usize = 5 + PoseidonCipher::cipher_size();
 
 #[derive(Debug, Clone)]
 pub struct SendToContractTransparentCircuit {
-    crossover: Crossover,
-    crossover_blinder: JubJubScalar,
-    fee: Fee,
+    value: BlsScalar,
+    blinder: JubJubScalar,
+    commitment: JubJubExtended,
+    nonce: BlsScalar,
+    cipher: [BlsScalar; PoseidonCipher::cipher_size()],
+    pk_r: JubJubExtended,
+    address: BlsScalar,
     message: BlsScalar,
     signature: Signature,
-    value: BlsScalar,
-    address: BlsScalar,
 }
 
 impl SendToContractTransparentCircuit {
@@ -33,12 +40,29 @@ impl SendToContractTransparentCircuit {
         value: u64,
         address: &BlsScalar,
     ) -> BlsScalar {
-        let mut message = crossover.to_hash_inputs().to_vec();
+        let mut message = [BlsScalar::zero(); MESSAGE_SIZE];
+        let mut m = message.iter_mut();
 
-        message.push(value.into());
-        message.push(*address);
+        crossover
+            .value_commitment()
+            .to_hash_inputs()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
 
-        sponge::hash(message.as_slice())
+        m.next().map(|m| *m = *crossover.nonce());
+
+        crossover
+            .encrypted_data()
+            .cipher()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        m.next().map(|m| *m = value.into());
+        m.next().map(|m| *m = *address);
+
+        sponge::hash(&message)
     }
 
     pub fn sign<R: RngCore + CryptoRng>(
@@ -58,55 +82,35 @@ impl SendToContractTransparentCircuit {
     }
 
     pub fn new(
-        fee: Fee,
-        crossover: Crossover,
-        vk: &ViewKey,
+        fee: &Fee,
+        crossover: &Crossover,
+        crossover_value: u64,
+        crossover_blinder: JubJubScalar,
         address: BlsScalar,
         signature: Signature,
-    ) -> Result<Self, PhoenixError> {
-        let nonce = crossover.nonce();
-        let secret = fee.stealth_address().R() * vk.a();
-        let (value, crossover_blinder) = crossover
-            .encrypted_data()
-            .decrypt(&secret.into(), nonce)
-            .map(|d| {
-                let value = d[0].reduce().0[0];
-                let crossover_blinder =
-                    JubJubScalar::from_bytes(&d[1].to_bytes())
-                        .unwrap_or_default();
+    ) -> Self {
+        let value = crossover_value;
+        let blinder = crossover_blinder;
+        let commitment = *crossover.value_commitment();
+        let nonce = *crossover.nonce();
+        let cipher = *crossover.encrypted_data().cipher();
 
-                (value, crossover_blinder)
-            })?;
+        let message = Self::sign_message(crossover, value, &address);
+        let value = value.into();
 
-        let message = Self::sign_message(&crossover, value, &address);
-        let value = BlsScalar::from(value);
+        let pk_r = *fee.stealth_address().pk_r().as_ref();
 
-        Ok(Self {
-            crossover,
-            crossover_blinder,
-            fee,
+        Self {
+            value,
+            blinder,
+            commitment,
+            nonce,
+            cipher,
+            pk_r,
+            address,
             message,
             signature,
-            value,
-            address,
-        })
-    }
-
-    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-        // step 1
-        let value_commitment = self.crossover.value_commitment();
-        let value_commitment = JubJubAffine::from(value_commitment);
-
-        // step 3
-        let pk = self.fee.stealth_address().pk_r().as_ref();
-        let pk = JubJubAffine::from(pk);
-
-        let message = self.message.into();
-
-        // step 4
-        let value = self.value.into();
-
-        vec![value_commitment.into(), pk.into(), message, value]
+        }
     }
 }
 
@@ -114,75 +118,70 @@ impl SendToContractTransparentCircuit {
 impl Circuit for SendToContractTransparentCircuit {
     fn gadget(
         &mut self,
-        composer: &mut StandardComposer,
+        composer: &mut TurboComposer,
     ) -> Result<(), PlonkError> {
-        // 1. Prove the knowledge of the commitment opening of the
-        // commitment
-        let value = composer.add_input(self.value);
+        let zero = TurboComposer::constant_zero();
 
-        let crossover_blinder = self.crossover_blinder.into();
-        let crossover_blinder = composer.add_input(crossover_blinder);
+        // Witnesses
 
-        let value_commitment_p =
-            gadgets::commitment(composer, value, crossover_blinder);
+        let blinder = composer.append_witness(self.blinder);
+        let nonce = composer.append_witness(self.nonce);
 
-        let value_commitment = self.crossover.value_commitment();
-        let value_commitment = JubJubAffine::from(value_commitment);
-        composer
-            .assert_equal_public_point(value_commitment_p, value_commitment);
-
-        let value_commitment = value_commitment_p;
-
-        // 2. Prove that the value of the opening of the commitment
-        // of the Crossover is within range
-        composer.range_gate(value, 64);
-
-        // 3. Verify the Schnorr proof corresponding to the commitment
-        // public key
-        let pk = self.fee.stealth_address().pk_r().as_ref().into();
-        let pk = composer.add_public_affine(pk);
-
-        let r = composer.add_affine(self.signature.R().into());
-        let u = *self.signature.u();
-        let u = composer.add_input(u.into());
-
-        let nonce = composer.add_input(self.crossover.nonce().clone().into());
-        let address = composer.add_input(self.address);
-
-        let mut inputs =
-            vec![*value_commitment.x(), *value_commitment.y(), nonce];
-
-        let encrypted_data = self
-            .crossover
-            .encrypted_data()
-            .cipher()
+        let mut cipher = [zero; PoseidonCipher::cipher_size()];
+        self.cipher
             .iter()
-            .map(|d| composer.add_input(*d));
-        inputs.extend(encrypted_data);
+            .zip(cipher.iter_mut())
+            .for_each(|(c, w)| *w = composer.append_witness(*c));
 
-        inputs.push(value);
-        inputs.push(address);
+        let (schnorr_u, schnorr_r) = self.signature.to_witness(composer);
+        let address = composer.append_witness(self.address);
 
-        let message = sponge::gadget(composer, inputs.as_slice());
-        composer.constrain_to_constant(
-            message,
-            BlsScalar::zero(),
-            Some(-self.message),
-        );
+        // Public inputs
 
-        dusk_schnorr::gadgets::single_key_verify(composer, r, u, pk, message);
+        let commitment = composer.append_public_point(self.commitment);
+        let value = composer.append_public_witness(self.value);
+        let pk_r = composer.append_public_point(self.pk_r);
+        let message = composer.append_public_witness(self.message);
 
-        // 4. Prove that v_c - v = 0
-        composer.constrain_to_constant(
-            value,
-            BlsScalar::zero(),
-            Some(-self.value),
+        // 1. commitment(Cc,Cv,Cb,64)
+        gadgets::commitment(composer, commitment, value, blinder, 64);
+
+        // 2. S == H(Cc,Cn,Cψ,Cv,A)
+        let mut s = [zero; MESSAGE_SIZE];
+        let mut i_s = s.iter_mut();
+
+        i_s.next().map(|s| *s = *commitment.x());
+        i_s.next().map(|s| *s = *commitment.y());
+        i_s.next().map(|s| *s = nonce);
+
+        cipher.iter().zip(i_s.by_ref()).for_each(|(c, w)| *w = *c);
+
+        i_s.next().map(|s| *s = value);
+        i_s.next().map(|s| *s = address);
+
+        let s = sponge::gadget(composer, &s);
+
+        // 3. schnorr(σ,Fa,S)
+        gadgets::schnorr_single_key_verify(
+            composer, schnorr_u, schnorr_r, pk_r, s,
         );
 
         Ok(())
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        // 1. commitment(Cc,Cv,Cb,64)
+        let commitment = self.commitment.into();
+        let value = self.value.into();
+
+        // 3. 3. schnorr(σ,Fa,S)
+        let pk_r = self.pk_r.into();
+        let message = self.message.into();
+
+        vec![commitment, value, pk_r, message]
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 13
     }
 }

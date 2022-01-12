@@ -4,18 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bid_circuits::BidCorrectnessCircuit;
-use blindbid_circuits::BlindBidCircuit;
-use dusk_blindbid::{Bid, Score, V_RAW_MAX, V_RAW_MIN};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_pki::SecretSpendKey;
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use lazy_static::lazy_static;
-use phoenix_core::Message;
 use profile_tooling::CircuitLoader;
-use rand::Rng;
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use tracing::{info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
@@ -30,9 +25,6 @@ lazy_static! {
 
             _ => {
                 info!("New CRS needs to be generated and cached");
-
-                use rand::rngs::StdRng;
-                use rand::SeedableRng;
 
                 let mut rng = StdRng::seed_from_u64(0xbeef);
 
@@ -88,9 +80,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
-    if option_env!("RUSK_PROFILE_PATH").is_none() {
-        panic!("RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
-    };
+    assert!(option_env!("RUSK_PROFILE_PATH").is_some(),
+        "RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
 
     // This will enforce the usage and therefore the cache / generation
     // of the CRS even if it's not used to compiles circuits inside the
@@ -98,25 +89,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     lazy_static::initialize(&PUB_PARAMS);
 
     // Compile protos for tonic
-    tonic_build::compile_protos("../schema/rusk.proto")?;
+    tonic_build::compile_protos("../schema/state.proto")?;
 
     // Run the rusk-profile Circuit-keys checks
-    use bid::BidCircuitLoader;
-    use blindbid::BlindBidCircuitLoader;
     use transfer::*;
 
-    // Wipe the `.rusk/keys` folder entirely if DELETE_RUSK_KEYS env variable is
-    // set.
-    if option_env!("RUSK_BUILD_BID_KEYS").unwrap_or("0") != "0" {
-        info!("DELETE_RUSK_KEYS env set!");
-        info!("Starting `keys/` folder wipe process..");
-        rusk_profile::clear_all_keys()?;
-        info!("Keys folder contents were removed successfully!");
-    };
-
     profile_tooling::run_circuit_keys_checks(vec![
-        &BidCircuitLoader {},
-        &BlindBidCircuitLoader {},
         &StctCircuitLoader {},
         &StcoCircuitLoader {},
         &WftCircuitLoader {},
@@ -136,133 +114,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ])?;
 
     Ok(())
-}
-
-mod bid {
-    use super::*;
-
-    pub struct BidCircuitLoader;
-
-    impl CircuitLoader for BidCircuitLoader {
-        fn circuit_id(&self) -> &[u8; 32] {
-            &BidCorrectnessCircuit::CIRCUIT_ID
-        }
-
-        fn circuit_name(&self) -> &'static str {
-            "BidCorrectness"
-        }
-
-        fn compile_circuit(
-            &self,
-        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-            let pub_params = &PUB_PARAMS;
-            let value = JubJubScalar::from(100000_u64);
-            let blinder = JubJubScalar::from(50000_u64);
-
-            let c = JubJubAffine::from(
-                (GENERATOR_EXTENDED * value)
-                    + (GENERATOR_NUMS_EXTENDED * blinder),
-            );
-
-            let mut circuit = BidCorrectnessCircuit {
-                commitment: c,
-                value,
-                blinder,
-            };
-
-            let (pk, vd) = circuit.compile(pub_params)?;
-            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
-        }
-    }
-}
-
-mod blindbid {
-    use super::*;
-    pub struct BlindBidCircuitLoader;
-    impl CircuitLoader for BlindBidCircuitLoader {
-        fn circuit_id(&self) -> &[u8; 32] {
-            &BlindBidCircuit::CIRCUIT_ID
-        }
-
-        fn circuit_name(&self) -> &'static str {
-            "BlindBid"
-        }
-
-        fn compile_circuit(
-            &self,
-        ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-            let pub_params = &PUB_PARAMS;
-
-            // Generate a correct Bid
-            let secret = JubJubScalar::random(&mut rand::thread_rng());
-            let secret_k = BlsScalar::random(&mut rand::thread_rng());
-            let (bid, psk) = random_bid(&secret, secret_k);
-
-            // Generate fields for the Bid & required by the compute_score
-            let consensus_round_seed = 50u64;
-            let latest_consensus_round = 50u64;
-            let latest_consensus_step = 50u64;
-
-            // Extract the branch
-            let branch = PoseidonBranch::<17>::default();
-
-            // Generate a `Score` for our Bid with the consensus parameters
-            let score = Score::compute(
-                &bid,
-                &secret,
-                &psk,
-                secret_k,
-                *branch.root(),
-                BlsScalar::from(consensus_round_seed),
-                latest_consensus_round,
-                latest_consensus_step,
-            )
-            .expect("Score gen error");
-
-            let mut circuit = BlindBidCircuit {
-                bid,
-                score,
-                secret_k,
-                seed: BlsScalar::from(consensus_round_seed),
-                latest_consensus_round: BlsScalar::from(latest_consensus_round),
-                latest_consensus_step: BlsScalar::from(latest_consensus_step),
-                branch: &branch,
-                secret,
-                psk,
-            };
-
-            let (pk, vd) = circuit.compile(pub_params)?;
-            Ok((pk.to_var_bytes(), vd.to_var_bytes()))
-        }
-    }
-
-    fn random_bid(
-        secret: &JubJubScalar,
-        secret_k: BlsScalar,
-    ) -> (Bid, PublicSpendKey) {
-        let mut rng = rand::thread_rng();
-        let psk = PublicSpendKey::from(SecretSpendKey::new(
-            JubJubScalar::one(),
-            -JubJubScalar::one(),
-        ));
-        let value: u64 =
-            (&mut rand::thread_rng()).gen_range(V_RAW_MIN..V_RAW_MAX);
-        // Set the timestamps as the max values so the proofs do not fail
-        // for them (never expired or non-elegible).
-        let elegibility_ts = u64::MAX;
-        let expiration_ts = u64::MAX;
-
-        (
-            Bid::new(
-                Message::new(&mut rng, secret, &psk, value),
-                secret_k,
-                psk.gen_stealth_address(secret),
-                elegibility_ts,
-                expiration_ts,
-            ),
-            psk,
-        )
-    }
 }
 
 mod transfer {
@@ -285,38 +136,30 @@ mod transfer {
             &self,
         ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
             let pub_params = &PUB_PARAMS;
-            let rng = &mut rand::thread_rng();
+            let rng = &mut StdRng::seed_from_u64(0xbeef);
 
-            let c_ssk = SecretSpendKey::random(rng);
-            let c_vk = c_ssk.view_key();
-            let c_psk = c_ssk.public_spend_key();
+            let ssk = SecretSpendKey::random(rng);
+            let psk = ssk.public_spend_key();
 
-            let c_address = BlsScalar::random(rng);
+            let address = BlsScalar::random(rng);
 
-            let c_value = 100;
-            let c_blinding_factor = JubJubScalar::random(rng);
+            let value = 100;
+            let blinder = JubJubScalar::random(rng);
 
-            let c_note =
-                Note::obfuscated(rng, &c_psk, c_value, c_blinding_factor);
-            let (mut fee, crossover) = c_note
+            let note = Note::obfuscated(rng, &psk, value, blinder);
+            let (mut fee, crossover) = note
                 .try_into()
                 .expect("Failed to convert note into fee/crossover pair!");
-
             fee.gas_limit = 5;
             fee.gas_price = 1;
 
-            let c_signature = SendToContractTransparentCircuit::sign(
-                rng, &c_ssk, &fee, &crossover, c_value, &c_address,
+            let signature = SendToContractTransparentCircuit::sign(
+                rng, &ssk, &fee, &crossover, value, &address,
             );
 
             let mut circuit = SendToContractTransparentCircuit::new(
-                fee,
-                crossover,
-                &c_vk,
-                c_address,
-                c_signature,
-            )
-            .expect("Failed to create STCT circuit!");
+                &fee, &crossover, value, blinder, address, signature,
+            );
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
@@ -337,18 +180,16 @@ mod transfer {
             &self,
         ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
             let pub_params = &PUB_PARAMS;
-            let rng = &mut rand::thread_rng();
+            let rng = &mut StdRng::seed_from_u64(0xbeef);
 
-            let ssk = SecretSpendKey::random(rng);
-            let vk = ssk.view_key();
-            let psk = ssk.public_spend_key();
+            let c_ssk = SecretSpendKey::random(rng);
+            let c_psk = c_ssk.public_spend_key();
 
-            let c_address = BlsScalar::random(rng);
+            let value = rng.gen();
 
-            let c_value = 100;
-            let c_blinding_factor = JubJubScalar::random(rng);
-            let c_note =
-                Note::obfuscated(rng, &psk, c_value, c_blinding_factor);
+            let c_blinder = JubJubScalar::random(rng);
+            let c_note = Note::obfuscated(rng, &c_psk, value, c_blinder);
+
             let (mut fee, crossover) = c_note
                 .try_into()
                 .expect("Failed to convert note into fee/crossover pair!");
@@ -356,26 +197,37 @@ mod transfer {
             fee.gas_limit = 5;
             fee.gas_price = 1;
 
-            let message_r = JubJubScalar::random(rng);
-            let message_value = 100;
-            let message = Message::new(rng, &message_r, &psk, message_value);
+            let m_ssk = SecretSpendKey::random(rng);
+            let m_psk = m_ssk.public_spend_key();
 
-            let c_signature = SendToContractObfuscatedCircuit::sign(
-                rng, &ssk, &fee, &crossover, &message, &c_address,
+            let m_r = JubJubScalar::random(rng);
+            let message = Message::new(rng, &m_r, &m_psk, value);
+            let m_pk_r = *m_psk.gen_stealth_address(&m_r).pk_r().as_ref();
+
+            let (_, m_blinder) = message
+                .decrypt(&m_r, &m_psk)
+                .expect("Failed to decrypt message");
+
+            let m_derive_key = DeriveKey::new(false, &m_psk);
+
+            let address = BlsScalar::random(rng);
+            let signature = SendToContractObfuscatedCircuit::sign(
+                rng, &c_ssk, &fee, &crossover, &message, &address,
             );
 
-            let mut circuit = SendToContractObfuscatedCircuit::new(
-                fee,
-                crossover,
-                &vk,
-                c_signature,
-                true,
+            let message = StcoMessage {
+                blinder: m_blinder,
+                derive_key: m_derive_key,
                 message,
-                &psk,
-                message_r,
-                c_address,
-            )
-            .expect("Failed to generate circuit!");
+                pk_r: m_pk_r,
+                r: m_r,
+            };
+
+            let crossover = StcoCrossover::new(crossover, c_blinder);
+
+            let mut circuit = SendToContractObfuscatedCircuit::new(
+                value, message, crossover, &fee, address, signature,
+            );
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
@@ -396,20 +248,19 @@ mod transfer {
             &self,
         ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
             let pub_params = &PUB_PARAMS;
-            let rng = &mut rand::thread_rng();
+            let rng = &mut StdRng::seed_from_u64(0xbeef);
 
             let ssk = SecretSpendKey::random(rng);
-            let vk = ssk.view_key();
             let psk = ssk.public_spend_key();
 
-            let value = 100;
-            let blinding_factor = JubJubScalar::random(rng);
+            let value = rng.gen();
+            let blinder = JubJubScalar::random(rng);
 
-            let note = Note::obfuscated(rng, &psk, value, blinding_factor);
+            let note = Note::obfuscated(rng, &psk, value, blinder);
+            let commitment = *note.value_commitment();
 
             let mut circuit =
-                WithdrawFromTransparentCircuit::new(&note, Some(&vk))
-                    .expect("Failed to create WFT circuit!");
+                WithdrawFromTransparentCircuit::new(commitment, value, blinder);
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
@@ -430,29 +281,73 @@ mod transfer {
             &self,
         ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
             let pub_params = &PUB_PARAMS;
-            let rng = &mut rand::thread_rng();
+            let rng = &mut StdRng::seed_from_u64(0xbeef);
 
-            let m_r = JubJubScalar::random(rng);
-            let m_ssk = SecretSpendKey::random(rng);
-            let m_psk = m_ssk.public_spend_key();
-            let m_value = 100;
-            let m = Message::new(rng, &m_r, &m_psk, m_value);
+            let input = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
 
-            let o_ssk = SecretSpendKey::random(rng);
-            let o_vk = o_ssk.view_key();
-            let o_psk = o_ssk.public_spend_key();
-            let o_value = 100;
-            let o_blinding_factor = JubJubScalar::random(rng);
-            let o = Note::obfuscated(rng, &o_psk, o_value, o_blinding_factor);
+                let value = 100;
+                let r = JubJubScalar::random(rng);
+                let message = Message::new(rng, &r, &psk, value);
+                let commitment = *message.value_commitment();
 
-            let mut circuit = WithdrawFromObfuscatedCircuit::new(
-                m_r,
-                &m_ssk,
-                &m,
-                &o,
-                Some(&o_vk),
-            )
-            .expect("Failed to generate circuit!");
+                let (_, blinder) = message
+                    .decrypt(&r, &psk)
+                    .expect("Failed to decrypt message");
+
+                WfoCommitment {
+                    blinder,
+                    commitment,
+                    value,
+                }
+            };
+            let change = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
+
+                let value = 25;
+                let r = JubJubScalar::random(rng);
+                let message = Message::new(rng, &r, &psk, value);
+                let pk_r = *psk.gen_stealth_address(&r).pk_r().as_ref();
+
+                let (_, blinder) = message
+                    .decrypt(&r, &psk)
+                    .expect("Failed to decrypt message");
+
+                let derive_key = DeriveKey::new(false, &psk);
+
+                WfoChange {
+                    blinder,
+                    derive_key,
+                    message,
+                    pk_r,
+                    r,
+                    value,
+                }
+            };
+
+            let output = {
+                let ssk = SecretSpendKey::random(rng);
+                let psk = ssk.public_spend_key();
+
+                let value = 75;
+
+                let blinder = JubJubScalar::random(rng);
+                let output = Note::obfuscated(rng, &psk, value, blinder);
+                let commitment = *output.value_commitment();
+                WfoCommitment {
+                    blinder,
+                    commitment,
+                    value,
+                }
+            };
+
+            let mut circuit = WithdrawFromObfuscatedCircuit {
+                input,
+                change,
+                output,
+            };
 
             let (pk, vd) = circuit.compile(pub_params)?;
             Ok((pk.to_var_bytes(), vd.to_var_bytes()))
@@ -476,10 +371,12 @@ mod transfer {
                 ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>
                 {
                     let pub_params = &PUB_PARAMS;
-                    let rng = &mut rand::thread_rng();
+                    let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+                    let tx_hash = BlsScalar::random(rng);
 
                     let circuit = ExecuteCircuit::create_dummy_circuit(
-                        rng, $i, $o, true,
+                        rng, $i, $o, true, tx_hash,
                     )?;
                     let mut circuit = $b::try_from(circuit)?;
 
@@ -643,7 +540,9 @@ mod profile_tooling {
     pub fn run_circuit_keys_checks(
         loader_list: Vec<&dyn CircuitLoader>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        clear_outdated_keys(&loader_list)?;
+        if option_env!("RUSK_KEEP_KEYS").is_none() {
+            clear_outdated_keys(&loader_list)?;
+        }
         check_keys_cache(&loader_list).map(|_| ())
     }
 }

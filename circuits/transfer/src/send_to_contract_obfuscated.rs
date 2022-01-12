@@ -4,40 +4,83 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::gadgets;
+use crate::{gadgets, DeriveKey};
 
-use dusk_bytes::Serializable;
-use dusk_jubjub::{JubJubAffine, JubJubExtended};
-use dusk_pki::{Ownable, PublicSpendKey, SecretKey, SecretSpendKey, ViewKey};
+use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::prelude::*;
-use dusk_poseidon::{cipher, sponge};
+use dusk_poseidon::cipher::PoseidonCipher;
+use dusk_poseidon::sponge;
 use dusk_schnorr::Signature;
-use phoenix_core::{Crossover, Error as PhoenixError, Fee, Message};
+use phoenix_core::{Crossover, Fee, Message};
 use rand_core::{CryptoRng, RngCore};
+
+use dusk_plonk::prelude::*;
+
+/// Message to be signed for the schnorr protocol.
+///
+/// Composed of 7 scalars and 2 ciphers.
+const MESSAGE_SIZE: usize = 7 + 2 * PoseidonCipher::cipher_size();
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StcoMessage {
+    pub r: JubJubScalar,
+    pub blinder: JubJubScalar,
+    pub derive_key: DeriveKey,
+    pub pk_r: JubJubExtended,
+    pub message: Message,
+}
+
+impl StcoMessage {
+    pub fn message(&self) -> &Message {
+        &self.message
+    }
+
+    pub fn commitment(&self) -> &JubJubExtended {
+        self.message.value_commitment()
+    }
+
+    pub fn nonce(&self) -> &BlsScalar {
+        self.message.nonce()
+    }
+
+    pub fn cipher(&self) -> &[BlsScalar; PoseidonCipher::cipher_size()] {
+        self.message.cipher()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StcoCrossover {
+    pub blinder: JubJubScalar,
+    crossover: Crossover,
+}
+
+impl StcoCrossover {
+    pub const fn new(crossover: Crossover, blinder: JubJubScalar) -> Self {
+        Self { crossover, blinder }
+    }
+
+    pub fn commitment(&self) -> &JubJubExtended {
+        self.crossover.value_commitment()
+    }
+
+    pub fn nonce(&self) -> &BlsScalar {
+        self.crossover.nonce()
+    }
+
+    pub fn cipher(&self) -> &[BlsScalar; PoseidonCipher::cipher_size()] {
+        self.crossover.encrypted_data().cipher()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct SendToContractObfuscatedCircuit {
-    // Private
-    crossover_value: u64,
-    crossover_blinding_factor: JubJubScalar,
-    message_value: u64,
-    message_blinding_factor: JubJubScalar,
-    message_derive_key_is_public: BlsScalar,
-    message_derive_key_private_a: JubJubExtended,
-    message_derive_key_private_b: JubJubExtended,
-    message_r: JubJubScalar,
+    value: u64,
+    message: StcoMessage,
+    crossover: StcoCrossover,
     signature: Signature,
-
-    // Public
-    crossover: Crossover,
-    message: Message,
-    message_derive_key_public_a: JubJubExtended,
-    message_derive_key_public_b: JubJubExtended,
-    message_pk_r: JubJubExtended,
     address: BlsScalar,
-    hash: BlsScalar,
-    fee: Fee,
+    signature_message: BlsScalar,
+    fee_pk_r: JubJubExtended,
 }
 
 impl SendToContractObfuscatedCircuit {
@@ -46,23 +89,54 @@ impl SendToContractObfuscatedCircuit {
         message: &Message,
         address: &BlsScalar,
     ) -> BlsScalar {
-        let mut inputs = crossover.to_hash_inputs().to_vec();
+        let mut signature_message = [BlsScalar::zero(); MESSAGE_SIZE];
+        let mut m = signature_message.iter_mut();
 
-        inputs.extend(&message.to_hash_inputs());
-        inputs.push(*address);
+        crossover
+            .value_commitment()
+            .to_hash_inputs()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
 
-        sponge::hash(inputs.as_slice())
+        m.next().map(|m| *m = *crossover.nonce());
+
+        crossover
+            .encrypted_data()
+            .cipher()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        message
+            .value_commitment()
+            .to_hash_inputs()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        m.next().map(|m| *m = *message.nonce());
+
+        message
+            .cipher()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        m.next().map(|m| *m = *address);
+
+        sponge::hash(&signature_message)
     }
 
     pub fn sign<R: RngCore + CryptoRng>(
         rng: &mut R,
-        ssk: &SecretSpendKey,
+        crossover_ssk: &SecretSpendKey,
         fee: &Fee,
         crossover: &Crossover,
         message: &Message,
         address: &BlsScalar,
     ) -> Signature {
-        let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
+        let sk_r = *crossover_ssk.sk_r(fee.stealth_address()).as_ref();
         let secret = SecretKey::from(sk_r);
 
         let message = Self::sign_message(crossover, message, address);
@@ -70,135 +144,31 @@ impl SendToContractObfuscatedCircuit {
         Signature::new(&secret, rng, message)
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
-        fee: Fee,
-        crossover: Crossover,
-        vk: &ViewKey,
-        signature: Signature,
-        message_derive_key_is_public: bool,
-        message: Message,
-        message_psk: &PublicSpendKey,
-        message_r: JubJubScalar,
+        value: u64,
+        message: StcoMessage,
+        crossover: StcoCrossover,
+        fee: &Fee,
         address: BlsScalar,
-    ) -> Result<Self, PhoenixError> {
-        let nonce = *crossover.nonce();
-        let secret = fee.stealth_address().R() * vk.a();
-        let (crossover_value, crossover_blinding_factor) = crossover
-            .encrypted_data()
-            .decrypt(&secret.into(), &nonce)
-            .map(|d| {
-                let value = d[0].reduce().0[0];
-                let blinding_factor =
-                    JubJubScalar::from_bytes(&d[1].to_bytes())
-                        .unwrap_or_default();
-
-                (value, blinding_factor)
-            })?;
-
-        let hash = Self::sign_message(&crossover, &message, &address);
-
-        let message_pk_r =
-            *message_psk.gen_stealth_address(&message_r).pk_r().as_ref();
-
-        let (message_value, message_blinding_factor) =
-            message.decrypt(&message_r, message_psk)?;
-
-        let identity = JubJubAffine::identity().into();
-        let message_derive_key_a = *message_psk.A();
-        let message_derive_key_b = *message_psk.B();
-
-        let (message_derive_key_public_a, message_derive_key_private_a) =
-            if message_derive_key_is_public {
-                (message_derive_key_a, identity)
-            } else {
-                (identity, message_derive_key_a)
-            };
-
-        let (message_derive_key_public_b, message_derive_key_private_b) =
-            if message_derive_key_is_public {
-                (message_derive_key_b, identity)
-            } else {
-                (identity, message_derive_key_b)
-            };
-
-        let message_derive_key_is_public =
-            BlsScalar::from(message_derive_key_is_public as u64);
-
-        Ok(Self {
-            fee,
-            crossover,
-            message,
-            signature,
-            hash,
-            message_value,
-            message_blinding_factor,
-            message_r,
-            message_pk_r,
-            message_derive_key_is_public,
-            message_derive_key_public_a,
-            message_derive_key_private_a,
-            message_derive_key_public_b,
-            message_derive_key_private_b,
-            crossover_value,
-            crossover_blinding_factor,
-            address,
-        })
-    }
-
-    pub fn public_inputs(&self) -> Vec<PublicInputValue> {
-        //  1. commitment(Cc,vc,bc)
-        let value_commitment = self.crossover.value_commitment();
-        let value_commitment = JubJubAffine::from(value_commitment);
-        let mut pi = vec![value_commitment.into()];
-
-        //  3. commitment(Cm,vm,bm)
-        let message_value_commitment = self.message.value_commitment();
-        let message_value_commitment =
-            JubJubAffine::from(message_value_commitment);
-        pi.push(message_value_commitment.into());
-
-        //  5. Da:=select(fm,I,Dap,Das)
-        let message_derive_key_public_a =
-            JubJubAffine::from(self.message_derive_key_public_a);
-        pi.push(message_derive_key_public_a.into());
-
-        //  6. Db:=select(fm,I,Dbp,Dbs)
-        let message_derive_key_public_b =
-            JubJubAffine::from(self.message_derive_key_public_b);
-        pi.push(message_derive_key_public_b.into());
-
-        //  7. Km:=stealthAddress(mr,Da,Db)
-        let message_pk_r = JubJubAffine::from(self.message_pk_r);
-        pi.push(message_pk_r.into());
-
-        //  9. Em==encrypt(es,Nm,[vm,bm])
-        pi.push((*self.message.nonce()).into());
-        pi.extend(self.message.cipher().iter().map(|c| (*c).into()));
-
-        // 10. Hs==H([Cc,Nc,Ec,Cm,Nm,Em,Ac])
-        pi.push(self.address.into());
-        pi.push((*self.crossover.nonce()).into());
-        pi.extend(
-            self.crossover
-                .encrypted_data()
-                .cipher()
-                .iter()
-                .map(|c| (*c).into()),
+        signature: Signature,
+    ) -> Self {
+        let signature_message = Self::sign_message(
+            &crossover.crossover,
+            message.message(),
+            &address,
         );
-        pi.push(self.hash.into());
 
-        // 11. schnorrVerify(σ,Kf,H)
-        let fee_pk_r = self.fee.stealth_address().pk_r().as_ref();
-        let fee_pk_r = JubJubAffine::from(fee_pk_r);
-        pi.push(fee_pk_r.into());
+        let fee_pk_r = *fee.stealth_address().pk_r().as_ref();
 
-        pi
-    }
-
-    /// Check if the message derive key is stored as public for this circuit
-    pub fn is_message_derive_key_public(&self) -> bool {
-        self.message_derive_key_private_a == JubJubAffine::identity().into()
+        Self {
+            value,
+            message,
+            crossover,
+            signature,
+            address,
+            signature_message,
+            fee_pk_r,
+        }
     }
 }
 
@@ -206,89 +176,104 @@ impl SendToContractObfuscatedCircuit {
 impl Circuit for SendToContractObfuscatedCircuit {
     fn gadget(
         &mut self,
-        composer: &mut StandardComposer,
+        composer: &mut TurboComposer,
     ) -> Result<(), PlonkError> {
-        //  1. commitment(Cc,vc,bc)
-        let crossover_value = composer.add_input(self.crossover_value.into());
+        let zero = TurboComposer::constant_zero();
 
-        let crossover_blinding_factor = self.crossover_blinding_factor.into();
-        let crossover_blinding_factor =
-            composer.add_input(crossover_blinding_factor);
+        // Witnesses
 
-        let crossover_value_commitment_p = gadgets::commitment(
-            composer,
-            crossover_value,
-            crossover_blinding_factor,
-        );
+        let value = composer.append_witness(self.value);
 
-        let crossover_value_commitment =
-            self.crossover.value_commitment().into();
-        composer.assert_equal_public_point(
-            crossover_value_commitment_p,
-            crossover_value_commitment,
-        );
+        let crossover_blinder = composer.append_witness(self.crossover.blinder);
 
-        let crossover_value_commitment = crossover_value_commitment_p;
-
-        //  2. range(vc,64)
-        composer.range_gate(crossover_value, 64);
-
-        //  3. commitment(Cm,vm,bm)
-        let message_value = composer.add_input(self.message_value.into());
-        let message_blinding_factor =
-            composer.add_input(self.message_blinding_factor.into());
-
-        let message_value_commitment_p = gadgets::commitment(
-            composer,
-            message_value,
-            message_blinding_factor,
-        );
-
-        let message_value_commitment = self.message.value_commitment().into();
-        composer.assert_equal_public_point(
-            message_value_commitment_p,
-            message_value_commitment,
-        );
-
-        let message_value_commitment = message_value_commitment_p;
-
-        //  4. range(vm,64)
-        composer.range_gate(message_value, 64);
-
-        //  5. Da:=select(fm,I,Dap,Das)
-        let identity = Point::identity(composer);
+        let message_r = composer.append_witness(self.message.r);
+        let message_blinder = composer.append_witness(self.message.blinder);
         let message_derive_key_is_public =
-            composer.add_input(self.message_derive_key_is_public);
+            composer.append_witness(self.message.derive_key.is_public as u64);
+        let message_derive_key_secret_a =
+            composer.append_point(self.message.derive_key.secret_a);
+        let message_derive_key_secret_b =
+            composer.append_point(self.message.derive_key.secret_b);
 
+        let (schnorr_u, schnorr_r) = self.signature.to_witness(composer);
+
+        // Public inputs
+
+        let crossover_commitment =
+            composer.append_public_point(*self.crossover.commitment());
+        let crossover_nonce =
+            composer.append_public_witness(*self.crossover.nonce());
+
+        let mut crossover_cipher = [zero; PoseidonCipher::cipher_size()];
+        self.crossover
+            .cipher()
+            .iter()
+            .zip(crossover_cipher.iter_mut())
+            .for_each(|(c, w)| *w = composer.append_public_witness(*c));
+
+        let message_commitment =
+            composer.append_public_point(*self.message.commitment());
         let message_derive_key_public_a =
-            composer.add_public_affine(self.message_derive_key_public_a.into());
-        let message_derive_key_private_a =
-            composer.add_affine(self.message_derive_key_private_a.into());
+            composer.append_public_point(self.message.derive_key.public_a);
+        let message_derive_key_public_b =
+            composer.append_public_point(self.message.derive_key.public_b);
+        let message_pk_r = composer.append_public_point(self.message.pk_r);
+        let message_nonce =
+            composer.append_public_witness(*self.message.nonce());
+
+        let mut message_cipher = [zero; PoseidonCipher::cipher_size()];
+        self.message
+            .cipher()
+            .iter()
+            .zip(message_cipher.iter_mut())
+            .for_each(|(c, w)| *w = composer.append_public_witness(*c));
+
+        let address = composer.append_public_witness(self.address);
+        let signature_message =
+            composer.append_public_witness(self.signature_message);
+
+        let fee_pk_r = composer.append_public_point(self.fee_pk_r);
+
+        // Circuit
+
+        // 1. commitment(Cc,Cv,Cb,64)
+        gadgets::commitment(
+            composer,
+            crossover_commitment,
+            value,
+            crossover_blinder,
+            64,
+        );
+
+        // 2. commitment(Mc,Mv,Mb,64)
+        gadgets::commitment(
+            composer,
+            message_commitment,
+            value,
+            message_blinder,
+            64,
+        );
+
+        // 3. (pa,pb) := selectPair(Mx,I,Mp,Ms)
+        let identity = composer.append_constant_identity();
 
         let message_derive_key_a = gadgets::identity_select_point(
             composer,
             message_derive_key_is_public,
             identity,
             message_derive_key_public_a,
-            message_derive_key_private_a,
+            message_derive_key_secret_a,
         );
-
-        //  6. Db:=select(fm,I,Dbp,Dbs)
-        let message_derive_key_public_b =
-            composer.add_public_affine(self.message_derive_key_public_b.into());
-        let message_derive_key_private_b =
-            composer.add_affine(self.message_derive_key_private_b.into());
 
         let message_derive_key_b = gadgets::identity_select_point(
             composer,
             message_derive_key_is_public,
             identity,
             message_derive_key_public_b,
-            message_derive_key_private_b,
+            message_derive_key_secret_b,
         );
 
-        //  7. Km:=stealthAddress(mr,Da,Db)
-        let message_r = composer.add_input(self.message_r.into());
+        // 4. Ma == stealthAddress(Mr,(pa,pb))
         let message_stealth_address = gadgets::stealth_address(
             composer,
             message_r,
@@ -296,112 +281,90 @@ impl Circuit for SendToContractObfuscatedCircuit {
             message_derive_key_b,
         );
 
-        composer.assert_equal_public_point(
-            message_stealth_address,
-            self.message_pk_r.into(),
-        );
+        composer.assert_equal_point(message_pk_r, message_stealth_address);
 
-        //  8. es:=mr·Da
+        // 5. Mψ == encrypt(Mr·pa,Mn,[Mv,Mb])
         let cipher_secret =
-            composer.variable_base_scalar_mul(message_r, message_derive_key_a);
+            composer.component_mul_point(message_r, message_derive_key_a);
 
-        //  9. Em==encrypt(es,Nm,[vm,bm])
-        let message_nonce = self.message.nonce().clone().into();
-        let message_nonce_p = composer.add_input(message_nonce);
-        composer.constrain_to_constant(
-            message_nonce_p,
-            BlsScalar::zero(),
-            Some(-message_nonce),
-        );
-        let message_nonce = message_nonce_p;
-
-        let message_cipher = cipher::encrypt(
+        gadgets::encrypt(
             composer,
-            &cipher_secret,
+            cipher_secret,
             message_nonce,
-            &[message_value, message_blinding_factor],
+            &[value, message_blinder],
+            &message_cipher,
         );
 
-        self.message
-            .cipher()
+        // 6. S == H(Cc,Cn,Cψ,Mc,Mn,Mψ,A)
+        let mut s = [zero; MESSAGE_SIZE];
+        let mut i_s = s.iter_mut();
+
+        i_s.next().map(|s| *s = *crossover_commitment.x());
+        i_s.next().map(|s| *s = *crossover_commitment.y());
+        i_s.next().map(|s| *s = crossover_nonce);
+
+        crossover_cipher
             .iter()
-            .zip(message_cipher.iter())
-            .for_each(|(c, w)| {
-                let c = *c;
+            .zip(i_s.by_ref())
+            .for_each(|(c, w)| *w = *c);
 
-                composer.constrain_to_constant(*w, BlsScalar::zero(), Some(-c));
-            });
+        i_s.next().map(|s| *s = *message_commitment.x());
+        i_s.next().map(|s| *s = *message_commitment.y());
+        i_s.next().map(|s| *s = message_nonce);
 
-        // 10. Hs==H([Cc,Nc,Ec,Cm,Nm,Em,Ac])
-        let address = composer.add_input(self.address);
-        composer.constrain_to_constant(
-            address,
-            BlsScalar::zero(),
-            Some(-self.address),
+        message_cipher
+            .iter()
+            .zip(i_s.by_ref())
+            .for_each(|(c, w)| *w = *c);
+
+        i_s.next().map(|s| *s = address);
+
+        let s = sponge::gadget(composer, &s);
+
+        composer.assert_equal(signature_message, s);
+
+        // 7. schnorr(σ,Fa,S)
+        gadgets::schnorr_single_key_verify(
+            composer, schnorr_u, schnorr_r, fee_pk_r, s,
         );
 
-        let crossover_nonce = self.crossover.nonce().clone().into();
-        let crossover_nonce_p = composer.add_input(crossover_nonce);
-        composer.constrain_to_constant(
-            crossover_nonce_p,
-            BlsScalar::zero(),
-            Some(-crossover_nonce),
-        );
-        let crossover_nonce = crossover_nonce_p;
-
-        let mut inputs = vec![
-            *crossover_value_commitment.x(),
-            *crossover_value_commitment.y(),
-            crossover_nonce,
-        ];
-
-        let crossover_cipher =
-            self.crossover.encrypted_data().cipher().iter().map(|c| {
-                let c = *c;
-
-                let c_p = composer.add_input(c);
-                composer.constrain_to_constant(
-                    c_p,
-                    BlsScalar::zero(),
-                    Some(-c),
-                );
-
-                c_p
-            });
-        inputs.extend(crossover_cipher);
-
-        inputs.push(*message_value_commitment.x());
-        inputs.push(*message_value_commitment.y());
-        inputs.push(message_nonce);
-        inputs.extend(message_cipher.iter());
-        inputs.push(address);
-
-        let hash = sponge::gadget(composer, inputs.as_slice());
-        composer.constrain_to_constant(
-            hash,
-            BlsScalar::zero(),
-            Some(-self.hash),
-        );
-
-        // 11. schnorrVerify(σ,Kf,H)
-        let fee_pk_r = self.fee.stealth_address().pk_r().as_ref().into();
-        let fee_pk_r = composer.add_public_affine(fee_pk_r);
-
-        let r = composer.add_affine(self.signature.R().into());
-        let u = *self.signature.u();
-        let u = composer.add_input(u.into());
-
-        dusk_schnorr::gadgets::single_key_verify(
-            composer, r, u, fee_pk_r, hash,
-        );
-
-        // 12. vc−vm=0
-        composer.assert_equal(crossover_value, message_value);
+        // 8. Cv − Mv == 0
 
         Ok(())
     }
 
-    fn padded_circuit_size(&self) -> usize {
+    fn public_inputs(&self) -> Vec<PublicInputValue> {
+        let mut pi = Vec::with_capacity(20 + 2 * PoseidonCipher::cipher_size());
+
+        let commitment = *self.crossover.commitment();
+        let nonce = *self.crossover.nonce();
+
+        pi.push(commitment.into());
+        pi.push(nonce.into());
+
+        let cipher = self.crossover.cipher().iter().map(|c| (*c).into());
+        pi.extend(cipher);
+
+        let commitment = *self.message.commitment();
+        let nonce = *self.message.nonce();
+
+        pi.push(commitment.into());
+        pi.push(self.message.derive_key.public_a.into());
+        pi.push(self.message.derive_key.public_b.into());
+        pi.push(self.message.pk_r.into());
+        pi.push(nonce.into());
+
+        let cipher = self.message.cipher().iter().map(|c| (*c).into());
+        pi.extend(cipher);
+
+        pi.push(self.address.into());
+        pi.push(self.signature_message.into());
+        pi.push(self.fee_pk_r.into());
+
+        pi
+    }
+
+    fn padded_gates(&self) -> usize {
         1 << 14
     }
 }

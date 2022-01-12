@@ -1,0 +1,36 @@
+syntax = "proto3";
+package rusk;
+
+message MessageMetadata {
+    uint32 kadcast_height=1;
+    string src_address=2;
+}
+
+message BroadcastMessage {
+    bytes message = 1;
+    uint32 kadcast_height = 2;
+}
+
+message Message {
+    bytes message = 1;
+    MessageMetadata metadata=2;
+}
+
+message SendMessage {
+    bytes message = 1;
+    string target_address = 2;
+}
+
+message Null {};
+
+service Network {
+
+    // Receive messages coming from the network
+    rpc Listen(Null) returns (stream Message) {}
+
+    // Broadcast a message to the network
+    rpc Broadcast(BroadcastMessage) returns (Null) {}
+
+    // Send a message to a specific target in the network
+    rpc Send(SendMessage) returns (Null) {}
+}

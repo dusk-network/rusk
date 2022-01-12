@@ -7,33 +7,29 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use blake2b_simd::Params;
 use canonical::{Canon, CanonError, Source};
 use dusk_abi::{ContractId, HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
-use dusk_plonk::circuit::{self, VerifierData};
+use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 
+use crate::hash::Hasher;
 use crate::{PublicInput, RuskModule};
+
+/// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
+pub fn poseidon_hash(scalars: &[BlsScalar]) -> BlsScalar {
+    dusk_poseidon::sponge::hash(scalars)
+}
 
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
 pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
-    let mut state = Params::new().hash_length(64).to_state();
-    state.update(bytes);
-
-    let mut buf = [0u8; 64];
-    buf.copy_from_slice(state.finalize().as_ref());
-
-    ContractId::from_raw(BlsScalar::from_bytes_wide(&buf).to_bytes())
-}
-
-/// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
-pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
-    dusk_poseidon::sponge::hash(&scalars)
+    let mut hasher = Hasher::new();
+    hasher.update(bytes);
+    ContractId::from_raw(hasher.output())
 }
 
 impl RuskModule {
@@ -51,7 +47,7 @@ impl HostModule for RuskModule {
         match qid {
             Self::POSEIDON_HASH => {
                 let scalars = Vec::<BlsScalar>::decode(&mut source)?;
-                let ret = dusk_poseidon::sponge::hash(&scalars);
+                let ret = poseidon_hash(&scalars);
 
                 Ok(ReturnValue::from_canon(&ret))
             }
@@ -71,12 +67,11 @@ impl HostModule for RuskModule {
                 let pi: Vec<PublicInputValue> =
                     pi.into_iter().map(|pi| pi.into()).collect();
 
-                let ret = circuit::verify_proof(
+                let ret = circuit::verify(
                     self.pp,
-                    verifier_data.key(),
+                    &verifier_data,
                     &proof,
                     pi.as_slice(),
-                    verifier_data.pi_pos().as_slice(),
                     b"dusk-network",
                 )
                 .is_ok();
@@ -92,6 +87,7 @@ impl HostModule for RuskModule {
 
                 Ok(ReturnValue::from_canon(&ret))
             }
+
             _ => todo!(),
         }
     }

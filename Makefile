@@ -6,27 +6,28 @@ help: ## Display this help screen
 abi: ## Build the ABI and test it
 	$(MAKE) -C ./rusk-abi test
 
-macros: ## Build the workspace macro libs and test them
+allmacros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros test
 
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk keys
 
 wasm: ## Generate the WASM for all the contracts
-	$(MAKE) -C ./contracts wasm
+	$(MAKE) -j -C ./contracts wasm
 
 circuits: keys ## Build and test circuit crates
-	$(MAKE) -C ./circuits test
+	$(MAKE) -j -C ./circuits test
 
 contracts: ## Execute the test for all contracts
-	$(MAKE) -C ./contracts test
+	$(MAKE) -j1 -C ./contracts test
 
 utils: ## Execute the test for utils 
 	$(MAKE) -C ./test-utils test
 
-test: abi circuits macros contracts utils ## Run the tests
+test: abi circuits allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
-	
+	$(MAKE) -C ./test-utils test
+
 run: wasm ## Run the server
 	cargo run --release
 

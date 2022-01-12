@@ -4,19 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, ExecuteCircuit, TRANSCRIPT_LABEL};
-use std::convert::TryInto;
+use super::ExecuteCircuit;
+use crate::error::Error;
+use crate::POSEIDON_TREE_DEPTH;
 
 use canonical_derive::Canon;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_plonk::circuit::VerifierData;
 use dusk_poseidon::tree::{PoseidonAnnotation, PoseidonLeaf, PoseidonTree};
+use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
-
-const POSEIDON_BRANCH_DEPTH: usize = 17;
 
 #[derive(Debug, Clone, Canon)]
 pub struct NoteLeaf(Note);
@@ -74,14 +73,17 @@ impl ExecuteCircuit {
         inputs: usize,
         outputs: usize,
         use_crossover: bool,
+        tx_hash: BlsScalar,
     ) -> Result<Self, Error> {
         let mut tree = PoseidonTree::<
             NoteLeaf,
             PoseidonAnnotation,
-            POSEIDON_BRANCH_DEPTH,
+            POSEIDON_TREE_DEPTH,
         >::new();
 
         let mut circuit = ExecuteCircuit::default();
+
+        circuit.set_tx_hash(tx_hash);
 
         let mut transparent = false;
 
@@ -106,7 +108,10 @@ impl ExecuteCircuit {
         }
 
         for (ssk, pos) in input_data.into_iter() {
-            circuit.add_input_from_tree(ssk, &tree, pos, None)?;
+            let note = tree.get(pos)?.ok_or(PoseidonError::TreeGetFailed)?;
+            let input = Self::input(rng, &ssk, tx_hash, &tree, note.into())?;
+
+            circuit.add_input(input)?;
         }
 
         let i = inputs as f64;
@@ -131,7 +136,6 @@ impl ExecuteCircuit {
         }
 
         let ssk = SecretSpendKey::random(rng);
-        let vk = ssk.view_key();
         let psk = ssk.public_spend_key();
         let value = inputs_sum - outputs_sum - 5;
         let blinding_factor = JubJubScalar::random(rng);
@@ -141,13 +145,11 @@ impl ExecuteCircuit {
         fee.gas_price = 1;
         if use_crossover {
             fee.gas_limit = 5;
-            circuit.set_fee_crossover(&fee, &crossover, &vk)?;
+            circuit.set_fee_crossover(&fee, &crossover, value, blinding_factor);
         } else {
             fee.gas_limit = 5 + value;
             circuit.set_fee(&fee)?;
         }
-
-        circuit.compute_signatures(rng);
 
         Ok(circuit)
     }
@@ -158,6 +160,7 @@ impl ExecuteCircuit {
         inputs: usize,
         outputs: usize,
         use_crossover: bool,
+        tx_hash: BlsScalar,
     ) -> Result<
         (
             Self,
@@ -174,6 +177,7 @@ impl ExecuteCircuit {
             inputs,
             outputs,
             use_crossover,
+            tx_hash,
         )?;
 
         let pi = execute.public_inputs();
@@ -190,7 +194,7 @@ impl ExecuteCircuit {
         let pk = ProverKey::from_slice(pk.as_slice())?;
         let vd = VerifierData::from_slice(vd.as_slice())?;
 
-        let proof = execute.gen_proof(&pp, &pk, TRANSCRIPT_LABEL)?;
+        let proof = execute.prove(&pp, &pk)?;
 
         Ok((execute, pp, pk, vd, proof, pi))
     }

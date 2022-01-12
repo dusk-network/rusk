@@ -4,67 +4,64 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::convert::TryInto;
 use transfer_circuits::{SendToContractTransparentCircuit, TRANSCRIPT_LABEL};
 
 use dusk_pki::SecretSpendKey;
-use dusk_plonk::circuit;
 use phoenix_core::Note;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
 
 use dusk_plonk::prelude::*;
 
 mod keys;
 
-#[test]
-fn send_to_contract_transparent() {
-    let mut rng = StdRng::seed_from_u64(2322u64);
+fn create_random_circuit<R: RngCore + CryptoRng>(
+    rng: &mut R,
+) -> SendToContractTransparentCircuit {
+    let ssk = SecretSpendKey::random(rng);
+    let psk = ssk.public_spend_key();
 
-    let c_ssk = SecretSpendKey::random(&mut rng);
-    let c_vk = c_ssk.view_key();
-    let c_psk = c_ssk.public_spend_key();
+    let address = BlsScalar::random(rng);
 
-    let c_address = BlsScalar::random(&mut rng);
+    let value = 100;
+    let blinder = JubJubScalar::random(rng);
 
-    let c_value = 100;
-    let c_blinding_factor = JubJubScalar::random(&mut rng);
-
-    let c_note = Note::obfuscated(&mut rng, &c_psk, c_value, c_blinding_factor);
-    let (mut fee, crossover) = c_note
+    let note = Note::obfuscated(rng, &psk, value, blinder);
+    let (mut fee, crossover) = note
         .try_into()
         .expect("Failed to convert note into fee/crossover pair!");
     fee.gas_limit = 5;
     fee.gas_price = 1;
 
-    let c_signature = SendToContractTransparentCircuit::sign(
-        &mut rng, &c_ssk, &fee, &crossover, c_value, &c_address,
+    let signature = SendToContractTransparentCircuit::sign(
+        rng, &ssk, &fee, &crossover, value, &address,
     );
 
-    let mut circuit = SendToContractTransparentCircuit::new(
-        fee,
-        crossover,
-        &c_vk,
-        c_address,
-        c_signature,
+    SendToContractTransparentCircuit::new(
+        &fee, &crossover, value, blinder, address, signature,
     )
-    .expect("Failed to create STCT circuit!");
+}
+
+#[test]
+fn send_to_contract_transparent() {
+    let rng = &mut StdRng::seed_from_u64(8586);
 
     let (pp, pk, vd) = keys::circuit_keys::<SendToContractTransparentCircuit>()
         .expect("Failed to generate circuit!");
 
+    let mut circuit = create_random_circuit(rng);
+
     let proof = circuit
-        .gen_proof(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to generate proof!");
+        .prove(&pp, &pk, TRANSCRIPT_LABEL)
+        .expect("Failed to prove circuit");
     let pi = circuit.public_inputs();
 
-    circuit::verify_proof(
+    SendToContractTransparentCircuit::verify(
         &pp,
-        vd.key(),
+        &vd,
         &proof,
         pi.as_slice(),
-        vd.pi_pos(),
         TRANSCRIPT_LABEL,
     )
-    .expect("Failed to verify the proof!");
+    .expect("Failed to verify");
 }

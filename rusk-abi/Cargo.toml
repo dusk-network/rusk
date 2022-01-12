@@ -1,10 +1,7 @@
 [package]
 name = "rusk-abi"
-version = "0.4.1"
-authors = [
-  "zer0 <matteo@dusk.network>", "Victor Lopez <victor@dusk.network>", "CPerezz <carlos@dusk.network>",
-]
-edition = "2018"
+version = "0.5.0"
+edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
 description = "The ABI to develop dusk-network contracts for Rusk VM in Zero-Knowledge"
@@ -15,18 +12,17 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 cfg-if = "0.1"
 canonical = "0.6"
 canonical_derive = "0.6"
-dusk-poseidon = { version = "0.22.0-rc", default-features = false }
+dusk-poseidon = { version = "0.23.0-rc", default-features = false }
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 dusk-abi = "0.9.0-rc"
-dusk-schnorr = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.8.0-rc", default-features = false, features = ["canon"] }
+dusk-schnorr = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
 dusk-bytes = "0.1"
+blake2b_simd = { version = "0.3", default-features = false }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dusk-plonk = { version = "0.8", default-features = false, features = ["canon"] }
-rusk-profile = { path = "../rusk-profile" }
-blake2b_simd = { version = "0.3", default-features = false }
+dusk-plonk = { version = "0.9", default-features = false, features = ["canon"] }
 
 [dev-dependencies]
 rusk-vm = "0.6.0-rc"
@@ -34,3 +30,6 @@ dusk-bytes = "0.1"
 host_fn = { path = "tests/contracts/host_fn" }
 rand_core = { version = "0.6", features = ["std"] }
 lazy_static = "1.4"
+
+[features]
+module = []

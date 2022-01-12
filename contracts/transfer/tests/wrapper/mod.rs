@@ -6,14 +6,15 @@
 
 use std::convert::{TryFrom, TryInto};
 use transfer_circuits::{
-    ExecuteCircuit, SendToContractObfuscatedCircuit,
-    SendToContractTransparentCircuit,
+    CircuitInput, DeriveKey, ExecuteCircuit, SendToContractObfuscatedCircuit,
+    SendToContractTransparentCircuit, StcoCrossover, StcoMessage,
 };
 use transfer_contract::{Call, Error as TransferError, TransferContract};
 
 use canonical_derive::Canon;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bytes::Serializable;
+use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
 use dusk_pki::{
     Ownable, PublicKey, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
@@ -154,6 +155,8 @@ impl TransferWrapper {
     pub fn tx_withdraw_obfuscated(
         message: Message,
         message_address: StealthAddress,
+        change: Message,
+        change_address: StealthAddress,
         note: Note,
         proof: Vec<u8>,
     ) -> Transaction {
@@ -161,6 +164,8 @@ impl TransferWrapper {
             TX_WITHDRAW_OBFUSCATED,
             message,
             message_address,
+            change,
+            change_address,
             note,
             proof,
         ))
@@ -212,7 +217,7 @@ impl TransferWrapper {
         let (pk, _) = Self::circuit_keys(&C::CIRCUIT_ID);
 
         circuit
-            .gen_proof(&*PP, &pk, b"dusk-network")
+            .prove(&*PP, &pk, b"dusk-network")
             .expect("Failed to generate proof")
             .to_bytes()
             .to_vec()
@@ -309,17 +314,50 @@ impl TransferWrapper {
         let mut execute_proof = ExecuteCircuit::default();
         let mut input = 0;
 
+        let tx_hash = BlsScalar::one();
+
+        execute_proof.set_tx_hash(tx_hash);
+
         let nullifiers: Vec<BlsScalar> = inputs
             .iter()
             .zip(inputs_keys.iter())
             .map(|(note, ssk)| {
-                let value = note.value(Some(&ssk.view_key())).unwrap();
+                let vk = ssk.view_key();
+
+                let value = note.value(Some(&vk)).unwrap();
+                let blinder = note.blinding_factor(Some(&vk)).unwrap();
+
                 input += value;
 
                 let opening = self.opening(*note.pos());
-                execute_proof.add_input(*ssk, *note, opening, None).unwrap();
 
-                note.gen_nullifier(ssk)
+                let sk_r = ssk.sk_r(note.stealth_address());
+                let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+
+                let nullifier = note.gen_nullifier(ssk);
+
+                let input_signature = ExecuteCircuit::input_signature(
+                    &mut self.rng,
+                    ssk,
+                    note,
+                    tx_hash,
+                );
+
+                let circuit_input = CircuitInput::new(
+                    opening,
+                    *note,
+                    pk_r_p.into(),
+                    value,
+                    blinder,
+                    nullifier,
+                    input_signature,
+                );
+
+                execute_proof
+                    .add_input(circuit_input)
+                    .expect("Failed to append input");
+
+                nullifier
             })
             .collect();
 
@@ -362,9 +400,11 @@ impl TransferWrapper {
                         crossover_value,
                     );
 
+                    let crossover_note = Note::from((fee, crossover));
+                    let blinder = crossover_note.blinding_factor(Some(&vk)).expect("Failed to decrypt blinder");
+
                     execute_proof
-                        .set_fee_crossover(&fee, &crossover, vk)
-                        .unwrap();
+                        .set_fee_crossover(&fee, &crossover, crossover_value, blinder);
 
                     (fee, Some(crossover))
                 }
@@ -382,25 +422,14 @@ impl TransferWrapper {
                 }
             };
 
-        execute_proof.compute_signatures(&mut self.rng);
-
         let id = execute_proof.circuit_id();
         let (pk, vd) = Self::circuit_keys(id);
 
-        let proof =
-            execute_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
+        let proof = execute_proof.prove(&*PP, &pk).unwrap();
         let pi = execute_proof.public_inputs();
 
         // Sanity check
-        circuit::verify_proof(
-            &*PP,
-            vd.key(),
-            &proof,
-            pi.as_slice(),
-            vd.pi_pos(),
-            b"dusk-network",
-        )
-        .unwrap();
+        ExecuteCircuit::verify(&*PP, &vd, &proof, pi.as_slice()).unwrap();
 
         let proof = proof.to_bytes().to_vec();
 
@@ -475,22 +504,41 @@ impl TransferWrapper {
             );
 
         let crossover = crossover.unwrap();
-        let signature = SendToContractTransparentCircuit::sign(
-            &mut self.rng,
-            refund_ssk,
-            &fee,
-            &crossover,
-            value,
-            &address,
-        );
-        let mut stct_proof = SendToContractTransparentCircuit::new(
-            fee, crossover, &refund_vk, address, signature,
-        )
-        .unwrap();
+
+        let mut stct_proof = {
+            let signature = SendToContractTransparentCircuit::sign(
+                &mut self.rng,
+                refund_ssk,
+                &fee,
+                &crossover,
+                value,
+                &address,
+            );
+
+            let crossover_note = Note::from((fee, crossover));
+
+            let crossover_value = crossover_note
+                .value(Some(&refund_vk))
+                .expect("Failed to decrypt value");
+
+            let crossover_blinder = crossover_note
+                .blinding_factor(Some(&refund_vk))
+                .expect("Failed to decrypt blinder");
+
+            SendToContractTransparentCircuit::new(
+                &fee,
+                &crossover,
+                crossover_value,
+                crossover_blinder,
+                address,
+                signature,
+            )
+        };
+
         let (pk, _) =
             Self::circuit_keys(&SendToContractTransparentCircuit::CIRCUIT_ID);
         let spend_proof_stct =
-            stct_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
+            stct_proof.prove(&*PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
         let call = Call::send_to_contract_transparent(
@@ -555,23 +603,47 @@ impl TransferWrapper {
             &address,
         );
 
-        let mut stco_proof = SendToContractObfuscatedCircuit::new(
-            fee,
-            crossover,
-            &refund_vk,
-            signature,
-            false,
-            message,
-            message_psk,
-            message_r,
-            address,
-        )
-        .unwrap();
+        let stco_message = {
+            let message_address = message_psk.gen_stealth_address(&message_r);
+            let pk_r = *message_address.pk_r().as_ref();
+            let (_, blinder) = message
+                .decrypt(&message_r, &message_psk)
+                .expect("Failed to decrypt message");
+
+            let derive_key = DeriveKey::new(false, &message_psk);
+
+            StcoMessage {
+                blinder,
+                derive_key,
+                message,
+                pk_r,
+                r: message_r,
+            }
+        };
+
+        let mut stco_proof = {
+            let crossover_note = Note::from((fee, crossover));
+
+            let crossover_blinder = crossover_note
+                .blinding_factor(Some(&refund_vk))
+                .expect("Failed to decrypt blinder");
+
+            let stco_crossover =
+                StcoCrossover::new(crossover, crossover_blinder);
+            SendToContractObfuscatedCircuit::new(
+                value,
+                stco_message,
+                stco_crossover,
+                &fee,
+                address,
+                signature,
+            )
+        };
 
         let (pk, _) =
             Self::circuit_keys(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
         let spend_proof_stco =
-            stco_proof.gen_proof(&*PP, &pk, b"dusk-network").unwrap();
+            stco_proof.prove(&*PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
         let message_address = message_psk.gen_stealth_address(&message_r);

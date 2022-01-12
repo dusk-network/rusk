@@ -49,6 +49,8 @@ pub enum Call {
     WithdrawFromObfuscated {
         message: Message,
         message_address: StealthAddress,
+        change: Message,
+        change_address: StealthAddress,
         output: Note,
         spend_proof: Vec<u8>,
     },
@@ -150,12 +152,16 @@ impl Call {
     pub fn withdraw_from_obfuscated(
         message: Message,
         message_address: StealthAddress,
+        change: Message,
+        change_address: StealthAddress,
         output: Note,
         spend_proof: Vec<u8>,
     ) -> Self {
         Self::WithdrawFromObfuscated {
             message,
             message_address,
+            change,
+            change_address,
             output,
             spend_proof,
         }
@@ -228,11 +234,15 @@ mod wasm {
                 Call::WithdrawFromObfuscated {
                     message,
                     message_address,
+                    change,
+                    change_address,
                     output,
                     spend_proof,
                 } => contract.withdraw_from_obfuscated(
                     message,
                     message_address,
+                    change,
+                    change_address,
                     output,
                     spend_proof,
                 ),

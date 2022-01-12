@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-//pub mod blindbid_service;
-pub mod echo_service;
 pub mod pki_service;
 
 pub use super::TestContext;

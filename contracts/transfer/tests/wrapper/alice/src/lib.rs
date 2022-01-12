@@ -65,12 +65,16 @@ mod hosted {
             &mut self,
             message: Message,
             message_address: StealthAddress,
+            change: Message,
+            change_address: StealthAddress,
             output: Note,
             proof: Vec<u8>,
         ) {
             let call = Call::withdraw_from_obfuscated(
                 message,
                 message_address,
+                change,
+                change_address,
                 output,
                 proof,
             );
@@ -139,7 +143,16 @@ mod hosted {
             }
 
             TX_WITHDRAW_OBFUSCATED => {
-                let (message, message_address, note, proof): (
+                let (
+                    message,
+                    message_address,
+                    change,
+                    change_address,
+                    note,
+                    proof,
+                ): (
+                    Message,
+                    StealthAddress,
                     Message,
                     StealthAddress,
                     Note,
@@ -149,6 +162,8 @@ mod hosted {
                 contract.withdraw_obfuscated(
                     message,
                     message_address,
+                    change,
+                    change_address,
                     note,
                     proof,
                 );
