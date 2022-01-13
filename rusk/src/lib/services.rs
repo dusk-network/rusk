@@ -10,6 +10,7 @@ pub mod network;
 pub mod pki;
 pub mod prover;
 pub mod state;
+pub mod transaction;
 
 pub mod rusk_proto {
     tonic::include_proto!("rusk");
