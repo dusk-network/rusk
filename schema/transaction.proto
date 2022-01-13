@@ -41,8 +41,17 @@ message TransactionRequest {
     Fee fee = 4;
 }
 
+message CoinbaseTransactionRequest {
+    fixed64 block_height = 1;
+}
+
 service TransactionService {
     // A generic method to create a transaction which requires
     // no special fields (no crossover, outputs, or specific proofs).
     rpc NewTransaction(TransactionRequest) returns (Transaction) {}
+
+
+    // A method to create a coinbase transaction. It requires a `CoinbaseTransactionRequest` 
+    // which include the current block_height to check token release schedule.
+    rpc CoinbaseTransaction(CoinbaseTransactionRequest) returns (Transaction) {}
 }
