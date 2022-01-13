@@ -8,6 +8,7 @@ use tonic::{Request, Response, Status};
 
 pub mod network;
 pub mod pki;
+pub mod prover;
 pub mod state;
 
 pub mod rusk_proto {

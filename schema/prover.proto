@@ -1,0 +1,19 @@
+syntax = "proto3";
+package rusk;
+
+// A transaction that is yet to be proven. The byte contents are in the
+// `dusk-wallet-core` crate.
+message ProverRequest {
+    bytes utx = 1;
+}
+
+// A Plonk proof.
+message ProverResponse {
+    bytes proof = 1;
+}
+
+service Prover {
+    // Proves the unproven transaction by generating a Plonk proof of the
+    // appropriate circuit.
+    rpc Prove(ProverRequest) returns (ProverResponse) {}
+}

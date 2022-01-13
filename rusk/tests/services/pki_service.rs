@@ -11,6 +11,7 @@ use dusk_plonk::prelude::*;
 use rusk::services::rusk_proto::keys_client::KeysClient;
 use rusk::services::rusk_proto::GenerateKeysRequest;
 use test_context::test_context;
+
 #[test_context(TestContext)]
 #[tokio::test]
 pub async fn pki_walkthrough_uds(

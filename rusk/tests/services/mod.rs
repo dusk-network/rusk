@@ -5,5 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod pki_service;
+pub mod prover_service;
 
 pub use super::TestContext;

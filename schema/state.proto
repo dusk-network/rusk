@@ -3,6 +3,7 @@ package rusk;
 
 import "echo.proto";
 import "network.proto";
+import "prover.proto";
 import "provisioner.proto";
 import "transaction.proto";
 
