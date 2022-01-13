@@ -7,15 +7,24 @@
 pub mod common;
 pub mod services;
 
+use std::env::temp_dir;
+use std::path::PathBuf;
+
 pub use common::TestContext;
 use lazy_static::lazy_static;
-use std::{env::temp_dir, fs, path::PathBuf};
+use rand::RngCore;
+
+/// Returns a new random socket path withing `SOCKET_DIR`.
+pub fn new_socket_path() -> PathBuf {
+    let mut rng = rand::thread_rng();
+    SOCKET_DIR
+        .join(rng.next_u32().to_string())
+        .with_extension("rusk")
+}
 
 lazy_static! {
-    /// Default UDS path that Rusk GRPC-server will connect to.
-    pub static ref SOCKET_PATH: PathBuf = {
-        let tmp_dir = temp_dir().join(".rusk").join(".tmp_test");
-        fs::create_dir_all(tmp_dir.clone()).expect("Error creating tmp testing dir");
-        tmp_dir.join("rusk_listener")
+    /// Default UDS directory that will contains UDSs for Rusk's GRPC-server to bind on.
+    pub static ref SOCKET_DIR: PathBuf = {
+        temp_dir().join(".rusk_test_sockets")
     };
 }

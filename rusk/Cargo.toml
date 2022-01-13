@@ -46,6 +46,8 @@ canonical_derive = "0.6"
 wasmi = "0.6"
 dusk-bytes = "0.1"
 kadcast = "0.3"
+dusk-wallet-core = "0.1"
+transfer-circuits = { path = "../circuits/transfer" }
 
 [dev-dependencies]
 tower = "0.4"

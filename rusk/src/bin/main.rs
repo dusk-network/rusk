@@ -13,6 +13,7 @@ use futures::TryFutureExt;
 use rusk::services::network::NetworkServer;
 use rusk::services::network::RuskNetwork;
 use rusk::services::pki::KeysServer;
+use rusk::services::prover::ProverServer;
 use rusk::services::state::StateServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
@@ -203,11 +204,12 @@ async fn startup_with_tcp_ip(
     let keys = KeysServer::new(rusk);
     let network = NetworkServer::new(kadcast);
     let state = StateServer::new(rusk);
+    let prover = ProverServer::new(rusk);
 
-    // Build the Server with the `Echo` service attached to it.
     Ok(Server::builder()
         .add_service(keys)
         .add_service(network)
+        .add_service(prover)
         .add_service(state)
         .serve(addr)
         .await?)

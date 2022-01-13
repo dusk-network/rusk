@@ -8,32 +8,41 @@ pub mod encoding;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
-use super::SOCKET_PATH;
+use super::{new_socket_path, SOCKET_DIR};
+
+use futures::future::BoxFuture;
+use std::convert::TryFrom;
+use std::path::PathBuf;
+use std::task::{Context, Poll};
+use std::{fs, io};
+
 use futures::TryFutureExt;
 use rusk::services::network::NetworkServer;
 use rusk::services::network::RuskNetwork;
 use rusk::services::pki::KeysServer;
+use rusk::services::prover::ProverServer;
 use rusk::Rusk;
-use std::convert::TryFrom;
 use test_context::AsyncTestContext;
-use tokio::net::UnixListener;
-use tokio::net::UnixStream;
+use tokio::net::{UnixListener, UnixStream};
 use tonic::transport::{Channel, Endpoint, Server, Uri};
-use tower::service_fn;
+use tower::Service;
 use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
 
 pub struct TestContext {
     pub channel: Channel,
+    socket_path: PathBuf,
 }
 
 #[async_trait::async_trait]
 impl AsyncTestContext for TestContext {
     async fn setup() -> TestContext {
-        // First of all let's remove old stucked socket path
-        // This is required because the tear_down functions is not called if any
-        // test panics
-        let _ = std::fs::remove_file(&*SOCKET_PATH);
+        // Remove all unused files and tries to remove the directory - if
+        // possible - and recreate it afterwards. This is required due
+        // to the tear_down functions not being called when a test
+        // panics.
+        let _ = fs::remove_dir_all(&*SOCKET_DIR);
+        fs::create_dir_all(&*SOCKET_DIR).expect("directory to be created");
 
         // Initialize the subscriber
         // Generate a subscriber with the desired log level.
@@ -50,8 +59,11 @@ impl AsyncTestContext for TestContext {
         // the first call to this fn will succeed.
         let _ = subscriber::set_global_default(subscriber);
 
-        let uds = UnixListener::bind(&*SOCKET_PATH)
-            .expect("Error binding the socket");
+        let socket_path = new_socket_path();
+
+        let uds =
+            UnixListener::bind(&socket_path).expect("Error binding the socket");
+
         let rusk = Rusk::default();
         let network = RuskNetwork::default();
 
@@ -68,27 +80,55 @@ impl AsyncTestContext for TestContext {
             Server::builder()
                 .add_service(KeysServer::new(rusk))
                 .add_service(NetworkServer::new(network))
+                .add_service(ProverServer::new(rusk))
                 .serve_with_incoming(incoming)
                 .await
-                .unwrap();
         });
 
-        // Create the client binded to the default testing UDS path.
+        // Create the client bound to the default testing UDS path.
         let channel = Endpoint::try_from("http://[::]:50051")
             .expect("Serde error on addr reading")
-            .connect_with_connector(service_fn(move |_: Uri| {
-                // Connect to a Uds socket
-                UnixStream::connect(&*SOCKET_PATH)
-            }))
+            .connect_with_connector(UdsConnector::from(socket_path.clone()))
             .await
             .expect("Error generating a Channel");
 
-        TestContext { channel }
+        TestContext {
+            channel,
+            socket_path,
+        }
     }
 
     // Collection of actions that have to be done before any panics are
     // unwinded.
     async fn teardown(self) {
-        std::fs::remove_file(&*SOCKET_PATH).expect("Socket removal error");
+        std::fs::remove_file(self.socket_path).expect("Socket removal error");
+    }
+}
+
+/// A connector to a UDS with a particular path.
+struct UdsConnector {
+    path: PathBuf,
+}
+
+impl From<PathBuf> for UdsConnector {
+    fn from(p: PathBuf) -> Self {
+        Self { path: p.into() }
+    }
+}
+
+impl Service<Uri> for UdsConnector {
+    type Response = UnixStream;
+    type Error = io::Error;
+    type Future = BoxFuture<'static, io::Result<UnixStream>>;
+
+    fn poll_ready(
+        &mut self,
+        _: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        Ok(()).into()
+    }
+
+    fn call(&mut self, _: Uri) -> Self::Future {
+        Box::pin(UnixStream::connect(self.path.clone()))
     }
 }

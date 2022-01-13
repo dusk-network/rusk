@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Prover service implementation [#410]
+
 ### Changed
 
 - Update `dusk-poseidon` to `0.22.0-rc` [#327]
@@ -64,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
 [#327]: https://github.com/dusk-network/rusk/issues/327
 [#307]: https://github.com/dusk-network/rusk/issues/307
