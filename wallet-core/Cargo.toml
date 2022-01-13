@@ -2,6 +2,8 @@
 name = "dusk-wallet-core"
 version = "0.1.0"
 edition = "2021"
+description = "The core functionality of the Dusk wallet"
+license = "MPL-2.0"
 
 [dependencies]
 rand_core = "^0.6"
