@@ -265,6 +265,6 @@ fn create_network(args: &ArgMatches) -> RuskNetwork {
             .unwrap_or_default()
             .map(|s| s.to_string())
             .collect(),
-        args.value_of("kadcast_autobroadcast").is_some(),
+        args.is_present("kadcast_autobroadcast"),
     )
 }
