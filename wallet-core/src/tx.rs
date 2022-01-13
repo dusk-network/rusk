@@ -4,26 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{NodeClient, POSEIDON_DEPTH};
+use crate::NodeClient;
 
 use alloc::vec::Vec;
 use core::mem;
 
-use blake2b_simd::Params;
 use canonical::{Canon, Sink, Source};
-use dusk_abi::ContractId;
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, SecretSpendKey};
 use dusk_plonk::prelude::{JubJubScalar, Proof};
-use dusk_poseidon::cipher::PoseidonCipher;
-use dusk_poseidon::sponge::hash;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Proof as SchnorrSig;
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{CryptoRng, RngCore};
+use rusk_abi::hash::Hasher;
+use rusk_abi::{ContractId, POSEIDON_TREE_DEPTH};
 
 const CONTRACT_ID_SIZE: usize = mem::size_of::<ContractId>();
 
@@ -57,12 +55,6 @@ impl Transaction {
     pub fn hash(&self) -> BlsScalar {
         let skel = TransactionSkeleton::from(self.clone());
         skel.hash()
-    }
-
-    /// Returns the inputs to the hash function.
-    pub fn hash_inputs(&self) -> Vec<BlsScalar> {
-        let skel = TransactionSkeleton::from(self.clone());
-        skel.hash_inputs()
     }
 
     /// Serializes the transaction into a variable length byte buffer.
@@ -206,6 +198,29 @@ impl TransactionSkeleton {
             call,
         }
     }
+
+    fn hash(&self) -> BlsScalar {
+        let mut hasher = Hasher::new();
+
+        for nullifier in &self.nullifiers {
+            hasher.update(nullifier.to_bytes());
+        }
+        for note in &self.outputs {
+            hasher.update(note.to_bytes());
+        }
+
+        hasher = hasher
+            .chain_update(self.anchor.to_bytes())
+            .chain_update(self.fee.to_bytes())
+            .chain_update(self.crossover.to_bytes());
+
+        if let Some((cid, cdata)) = &self.call {
+            hasher.update(cid.as_bytes());
+            hasher.update(cdata);
+        }
+
+        hasher.finalize()
+    }
 }
 
 impl From<Transaction> for TransactionSkeleton {
@@ -238,61 +253,11 @@ impl From<UnprovenTransaction> for TransactionSkeleton {
     }
 }
 
-const NOTE_NUM_HASH_INPUTS: usize = 12;
-const FEE_NUM_HASH_INPUTS: usize = 4;
-const CROSSOVER_NUM_HASH_INPUTS: usize = 3 + PoseidonCipher::cipher_size();
-const ANCHOR_NUM_HASH_INPUTS: usize = 1;
-const CALL_NUM_HASH_INPUTS: usize = 1;
-
-impl TransactionSkeleton {
-    pub(crate) fn hash(&self) -> BlsScalar {
-        hash(&self.hash_inputs())
-    }
-
-    pub(crate) fn hash_inputs(&self) -> Vec<BlsScalar> {
-        // the number of hash inputs
-        let size = self.nullifiers.len()
-            + NOTE_NUM_HASH_INPUTS * self.outputs.len()
-            + ANCHOR_NUM_HASH_INPUTS
-            + FEE_NUM_HASH_INPUTS
-            + CROSSOVER_NUM_HASH_INPUTS
-            + self
-                .call
-                .as_ref()
-                .map(|_| CALL_NUM_HASH_INPUTS)
-                .unwrap_or(0);
-
-        let mut hash_inputs = Vec::with_capacity(size);
-
-        hash_inputs.append(&mut self.nullifiers.clone());
-        self.outputs.iter().for_each(|note| {
-            hash_inputs.append(&mut note.hash_inputs().to_vec());
-        });
-        hash_inputs.push(self.anchor);
-        hash_inputs.append(&mut fee_hash_inputs(&self.fee).to_vec());
-        hash_inputs.append(&mut self.crossover.to_hash_inputs().to_vec());
-
-        if let Some((cid, cdata)) = &self.call {
-            let mut state = Params::new().hash_length(64).to_state();
-
-            state.update(cid.as_bytes());
-            state.update(cdata);
-
-            let mut buf = [0u8; 64];
-            buf.copy_from_slice(state.finalize().as_ref());
-
-            hash_inputs.push(BlsScalar::from_bytes_wide(&buf));
-        }
-
-        hash_inputs
-    }
-}
-
 /// An input to a transaction that is yet to be proven.
 #[derive(Debug, Clone)]
 pub struct UnprovenTransactionInput {
     nullifier: BlsScalar,
-    opening: PoseidonBranch<POSEIDON_DEPTH>,
+    opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
     note: Note,
     value: u64,
     blinder: JubJubScalar,
@@ -301,13 +266,13 @@ pub struct UnprovenTransactionInput {
 }
 
 impl UnprovenTransactionInput {
-    pub(crate) fn new<Rng: RngCore + CryptoRng>(
+    fn new<Rng: RngCore + CryptoRng>(
         rng: &mut Rng,
         ssk: &SecretSpendKey,
         note: Note,
         value: u64,
         blinder: JubJubScalar,
-        opening: PoseidonBranch<POSEIDON_DEPTH>,
+        opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
         tx_hash: BlsScalar,
     ) -> Self {
         let nullifier = note.gen_nullifier(ssk);
@@ -334,7 +299,7 @@ impl UnprovenTransactionInput {
         // TODO Magic number for the buffer size here.
         // Should be corrected once dusk-poseidon implements `Serializable` for
         // `PoseidonBranch`.
-        let mut opening_bytes = [0; opening_buf_size(POSEIDON_DEPTH)];
+        let mut opening_bytes = [0; opening_buf_size(POSEIDON_TREE_DEPTH)];
         let mut sink = Sink::new(&mut opening_bytes[..]);
         self.opening.encode(&mut sink);
 
@@ -392,7 +357,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Returns the opening of the input.
-    pub fn opening(&self) -> &PoseidonBranch<POSEIDON_DEPTH> {
+    pub fn opening(&self) -> &PoseidonBranch<POSEIDON_TREE_DEPTH> {
         &self.opening
     }
 
@@ -624,11 +589,6 @@ impl UnprovenTransaction {
         TransactionSkeleton::from(self.clone()).hash()
     }
 
-    /// Returns the inputs to a hash function.
-    pub fn hash_inputs(&self) -> Vec<BlsScalar> {
-        TransactionSkeleton::from(self.clone()).hash_inputs()
-    }
-
     /// Returns the inputs to the transaction.
     pub fn inputs(&self) -> &[UnprovenTransactionInput] {
         &self.inputs
@@ -709,17 +669,4 @@ fn read_optional_call(
     }
 
     Ok(call)
-}
-
-// Will become redundant when this lands
-// https://github.com/dusk-network/phoenix-core/issues/100
-fn fee_hash_inputs(fee: &Fee) -> [BlsScalar; 4] {
-    let pk_r = fee.stealth_address().pk_r().as_ref().to_hash_inputs();
-
-    [
-        BlsScalar::from(fee.gas_limit),
-        BlsScalar::from(fee.gas_price),
-        pk_r[0],
-        pk_r[1],
-    ]
 }

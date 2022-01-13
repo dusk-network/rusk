@@ -64,7 +64,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-targets --features=test-utils
+          args: --all-targets
 
       - name: Build project
         uses: actions-rs/cargo@v1
@@ -96,14 +96,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --all-targets --features=test-utils
+          args: --all-targets
 
       - name: Test project
         if: ${{ matrix.os != 'ubuntu-latest' || matrix.toolchain != 'nightly' }}
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features=test-utils
 
       - name: Install kcov
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}
@@ -117,7 +116,7 @@ jobs:
           RUSTDOCFLAGS: '-Cdebuginfo=2 -Cinline-threshold=0 -Clink-dead-code'
         with:
           command: test
-          args: --no-run --features=test-utils
+          args: --no-run
 
       - name: Test with kcov
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.toolchain == 'nightly' }}

@@ -14,15 +14,11 @@ dusk-schnorr = { version = "0.9.0-rc", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
 dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
 dusk-plonk = { version = "^0.9", default-features = false }
-dusk-abi = "^0.9"
+rusk-abi = "0.5"
 canonical = "^0.6"
-blake2b_simd = { version = "^1.0", default-features = false }
 
 [dev-dependencies]
 rand = "^0.8"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
-
-[features]
-test-utils = []
