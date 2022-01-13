@@ -6,6 +6,8 @@
 
 //! The foreign function interface for the wallet.
 
+use crate::POSEIDON_TREE_DEPTH;
+
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
 use core::ptr;
@@ -22,7 +24,7 @@ use rand_core::{
     CryptoRng, RngCore,
 };
 
-use crate::{tx::UnprovenTransaction, POSEIDON_DEPTH};
+use crate::tx::UnprovenTransaction;
 use crate::{Error, NodeClient, Store, Wallet};
 
 extern "C" {
@@ -240,7 +242,7 @@ impl NodeClient for FfiNodeClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_DEPTH>, Self::Error> {
+    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
         let mut opening_buf = [0u8; OPENING_BUF_SIZE];
 
         let mut opening_len = 0;
