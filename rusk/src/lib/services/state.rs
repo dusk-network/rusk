@@ -13,11 +13,12 @@ pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
     AcceptRequest, AcceptResponse, EchoRequest, EchoResponse,
     ExecuteStateTransitionRequest, ExecuteStateTransitionResponse,
-    FinalizeRequest, FinalizeResponse, GetEphemeralStateRootRequest,
-    GetEphemeralStateRootResponse, GetFinalizedStateRootRequest,
-    GetFinalizedStateRootResponse, GetProvisionersRequest,
-    GetProvisionersResponse, VerifyStateTransitionRequest,
-    VerifyStateTransitionResponse,
+    FinalizeRequest, FinalizeResponse, GetAnchorRequest, GetAnchorResponse,
+    GetEphemeralStateRootRequest, GetEphemeralStateRootResponse,
+    GetFinalizedStateRootRequest, GetFinalizedStateRootResponse,
+    GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
+    GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
+    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
 
 #[tonic::async_trait]
@@ -90,6 +91,33 @@ impl State for Rusk {
         _request: Request<GetFinalizedStateRootRequest>,
     ) -> Result<Response<GetFinalizedStateRootResponse>, Status> {
         info!("Received GetFinalizedStateRoot request");
+
+        Err(Status::unimplemented("Request not implemented"))
+    }
+
+    async fn get_notes_owned_by(
+        &self,
+        _request: Request<GetNotesOwnedByRequest>,
+    ) -> Result<Response<GetNotesOwnedByResponse>, Status> {
+        info!("Received GetNotesOwnedBy request");
+
+        Err(Status::unimplemented("Request not implemented"))
+    }
+
+    async fn get_anchor(
+        &self,
+        _request: Request<GetAnchorRequest>,
+    ) -> Result<Response<GetAnchorResponse>, Status> {
+        info!("Received GetAnchor request");
+
+        Err(Status::unimplemented("Request not implemented"))
+    }
+
+    async fn get_opening(
+        &self,
+        _request: Request<GetOpeningRequest>,
+    ) -> Result<Response<GetOpeningResponse>, Status> {
+        info!("Received GetOpening request");
 
         Err(Status::unimplemented("Request not implemented"))
     }
