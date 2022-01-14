@@ -29,6 +29,7 @@ impl RuskNetwork {
         listen_addr: Option<String>,
         bootstrap: Vec<String>,
         auto_broadcast: bool,
+        truncate_message: bool,
     ) -> RuskNetwork {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
@@ -41,6 +42,7 @@ impl RuskNetwork {
         let grpc_sender = broadcast::channel(100).0;
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
+            truncate_message,
         };
         let peer = Peer::builder(public_addr, bootstrap, listener)
             .with_listen_address(listen_addr)
@@ -59,17 +61,28 @@ impl RuskNetwork {
 
 impl Default for RuskNetwork {
     fn default() -> RuskNetwork {
-        RuskNetwork::new("127.0.0.1:9999".to_string(), None, vec![], false)
+        RuskNetwork::new(
+            "127.0.0.1:9999".to_string(),
+            None,
+            vec![],
+            false,
+            false,
+        )
     }
 }
 struct KadcastListener {
     grpc_sender: broadcast::Sender<(Vec<u8>, SocketAddr, u8)>,
+    truncate_message: bool,
 }
 
 impl NetworkListen for KadcastListener {
     fn on_message(&self, message: Vec<u8>, metadata: MessageInfo) {
+        let mut tosend = message;
+        if self.truncate_message {
+            tosend = tosend[0..1000].to_vec();
+        }
         self.grpc_sender
-            .send((message, metadata.src(), metadata.height()))
+            .send((tosend, metadata.src(), metadata.height()))
             .unwrap_or_else(|e| {
                 println!("Error {}", e);
                 0
