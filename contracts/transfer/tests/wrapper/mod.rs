@@ -66,9 +66,9 @@ pub struct TransferWrapper {
 }
 
 impl TransferWrapper {
-    pub fn new(seed: u64, block_height: u64, initial_balance: u64) -> Self {
+    pub fn new(seed: u64, initial_balance: u64) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
-        let mut network = NetworkState::with_block_height(block_height);
+        let mut network = NetworkState::new();
 
         let rusk_mod = RuskModule::new(&*PP);
         network.register_host_module(rusk_mod);
@@ -473,7 +473,7 @@ impl TransferWrapper {
         );
 
         self.network
-            .transact::<_, ()>(self.transfer, execute, &mut self.gas)
+            .transact::<_, ()>(self.transfer, 0, execute, &mut self.gas)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -558,7 +558,7 @@ impl TransferWrapper {
         .unwrap();
 
         self.network
-            .transact::<_, ()>(self.transfer, call, &mut self.gas)
+            .transact::<_, ()>(self.transfer, 0, call, &mut self.gas)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -664,8 +664,12 @@ impl TransferWrapper {
         )
         .unwrap();
 
-        self.network
-            .transact::<_, ()>(self.transfer, call, &mut self.gas)?;
+        self.network.transact::<_, ()>(
+            self.transfer,
+            0,
+            call,
+            &mut self.gas,
+        )?;
 
         Ok(message_r)
     }

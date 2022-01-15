@@ -90,6 +90,7 @@ mod module_tests {
             network
                 .query::<_, BlsScalar>(
                     contract_id,
+                    0,
                     (host_fn::SPONGE_HASH, test_inputs),
                     &mut gas
                 )
@@ -134,6 +135,7 @@ mod module_tests {
             network
                 .query::<_, BlsScalar>(
                     contract_id,
+                        0,
                     (host_fn::HASH, test_inputs),
                     &mut gas
                 )
@@ -172,6 +174,7 @@ mod module_tests {
             network
                 .query::<_, bool>(
                     contract_id,
+                    0,
                     (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
                     &mut gas
                 )
@@ -186,6 +189,7 @@ mod module_tests {
             !network
                 .query::<_, bool>(
                     contract_id,
+                    0,
                     (host_fn::SCHNORR_SIGNATURE, sign, pk, message),
                     &mut gas
                 )
@@ -286,7 +290,7 @@ mod module_tests {
         let proof = (host_fn::VERIFY, proof, verifier_data, pi);
 
         let ret = network
-            .query::<_, bool>(contract_id, proof, &mut gas)
+            .query::<_, bool>(contract_id, 0, proof, &mut gas)
             .expect("Failed to verify the proof with rusk-abi!");
         assert!(ret);
     }
@@ -327,7 +331,7 @@ mod module_tests {
         let proof = (host_fn::VERIFY, proof, verifier_data, pi);
 
         let ret = network
-            .query::<_, bool>(contract_id, proof, &mut gas)
+            .query::<_, bool>(contract_id, 0, proof, &mut gas)
             .expect("Failed to verify the proof with rusk-abi!");
         assert!(!ret);
     }
@@ -353,6 +357,7 @@ mod module_tests {
         let ret = network
             .query::<_, PaymentInfo>(
                 contract_id,
+                0,
                 host_fn::GET_PAYMENT_INFO,
                 &mut gas,
             )

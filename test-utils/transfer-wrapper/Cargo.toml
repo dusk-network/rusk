@@ -1,13 +1,12 @@
 [package]
 name = "transfer-wrapper"
 version = "0.1.0"
-authors = ["Victor Lopez <victor@dusk.network>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 canonical = "0.6"
 canonical_derive = "0.6"
-dusk-abi = "0.9"
+dusk-abi = "0.10"
 rusk-abi = { path = "../../rusk-abi", features = ["module"] }
 dusk-bytes = "0.1"
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }

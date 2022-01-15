@@ -1,14 +1,7 @@
 [package]
 name = "rusk"
 version = "0.2.0"
-authors = [
-  "CPerezz <carlos@dusk.network>", 
-  "zer0 <matteo@dusk.network>", 
-  "Victor Lopez <victor@dusk.network>",
-  "Jules de Smit <jules@dusk.network>",
-  "Luke Pearson <luke@dusk.network>"
-]
-edition = "2018"
+edition = "2021"
 autobins = false
 
 [lib]
@@ -21,33 +14,34 @@ path = "src/bin/main.rs"
 
 [dependencies]
 tonic = "0.6"
-tokio = { version = "1.12", features = ["rt-multi-thread", "time", "fs", "macros"] }
+tokio = { version = "1.15", features = ["rt-multi-thread", "time", "fs", "macros"] }
 async-stream = "0.3"
-dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
-dusk-plonk = { version = "0.9", features = ["canon"] }
-dusk-bls12_381 = { version = "0.8", features = ["canon"] }
-dusk-jubjub = { version = "0.10", features = ["canon"] }
-dusk-pki = "0.9.0-rc"
-phoenix-core = "0.15.0-rc"
-dusk-schnorr = "0.9.0-rc"
 tracing = "0.1"
-tracing-subscriber = "0.2"
-clap = "2.33.3"
+tracing-subscriber = "0.3"
+clap = { version = "3.0", features = ["env"] }
 prost = "0.9"
 futures = "0.3"
 anyhow = "1.0"
 rustc_tools_util = "0.2"
 rand = "0.8"
 lazy_static = "1.4"
-rusk-profile = { path = "../rusk-profile" }
-rusk-vm = "0.6"
+
+dusk-schnorr = "0.9.0-rc"
+dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
+dusk-plonk = { version = "0.9", features = ["canon"] }
+dusk-bls12_381 = { version = "0.8", features = ["canon"] }
+dusk-jubjub = { version = "0.10", features = ["canon"] }
+dusk-pki = "0.9.0-rc"
+dusk-bytes = "0.1"
+dusk-wallet-core = "0.1"
+rusk-vm = "0.7.0-rc"
+phoenix-core = "0.15.0-rc"
+kadcast = "0.3"
 canonical = "0.6"
 canonical_derive = "0.6"
-wasmi = "0.6"
-dusk-bytes = "0.1"
-kadcast = "0.3"
-dusk-wallet-core = "0.1"
+
 transfer-circuits = { path = "../circuits/transfer" }
+rusk-profile = { path = "../rusk-profile" }
 
 [dev-dependencies]
 tower = "0.4"
@@ -56,22 +50,24 @@ async-trait = "0.1"
 
 [build-dependencies]
 hex = "0.4"
-sha2 = "0.9"
+sha2 = "0.10"
 tonic-build = "0.6"
 rustc_tools_util = "0.2"
-dusk-bytes = "0.1"
-dusk-plonk = { version = "0.9", features = ["canon", "std"] }
-dusk-poseidon = { version = "0.23.0-rc", features=["canon"] }
-dusk-pki = "0.9.0-rc"
-phoenix-core = "0.15.0-rc"
 anyhow = "1.0"
 rand = "0.8"
-transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
-rusk-profile = { path = "../rusk-profile" }
 lazy_static = "1.4"
+tracing = "0.1"
+
+tracing-subscriber = { version = "0.3", features = ["fmt"] }
+dusk-bytes = "0.1"
+dusk-plonk = { version = "0.9", features = ["canon", "std"] }
+dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
+dusk-pki = "0.9.0-rc"
+dusk-jubjub = "0.10"
+dusk-bls12_381 = "0.8"
+phoenix-core = "0.15.0-rc"
 canonical = "0.6"
 canonical_derive = "0.6"
-dusk-bls12_381 = "0.8"
-dusk-jubjub = "0.10"
-tracing = "0.1"
-tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
+
+transfer-circuits = { path = "../circuits/transfer", features = ["builder"] }
+rusk-profile = { path = "../rusk-profile" }

@@ -1,12 +1,11 @@
 [package]
 name = "rusk-profile"
 version = "0.4.0-rc.2"
-authors = ["zer0 <matteo@dusk.network>", "CPerezz <carlos@dusk.network>"]
-edition = "2018"
+edition = "2021"
 autobins = false
 
 [dependencies]
-dirs = "3.0"
+dirs = "4.0"
 tracing = "0.1"
 hex = "0.4"
-sha2 = "0.9"
+sha2 = "0.10"

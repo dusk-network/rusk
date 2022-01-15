@@ -311,7 +311,7 @@ impl TransferContract {
         self.var_crossover_pk
             .replace((*fee.stealth_address().pk_r().as_ref()).into());
         if let Some((contract, tx)) = call {
-            let ret = dusk_abi::transact_raw(self, &contract, &tx)
+            let ret = dusk_abi::transact_raw(self, &contract, &tx, 0)
                 .expect("Failed to execute the provided call transaction!");
 
             let _: bool =

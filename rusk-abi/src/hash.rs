@@ -47,7 +47,7 @@ impl Hasher {
 
     /// Get the output of the hasher.
     pub fn output(self) -> [u8; BlsScalar::SIZE] {
-        let mut hasher = self;
+        let hasher = self;
         let mut buf = [0u8; BlsScalar::SIZE];
         buf.copy_from_slice(hasher.state.finalize().as_ref());
 
