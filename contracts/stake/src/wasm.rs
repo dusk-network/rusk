@@ -162,7 +162,7 @@ impl StakeContract {
         let call = Transaction::from_canon(&call);
         let transfer = rusk_abi::transfer_contract();
 
-        dusk_abi::transact_raw(self, &transfer, &call)
+        dusk_abi::transact_raw(self, &transfer, &call, 0)
             .expect("Failed to send note to contract");
     }
 
@@ -213,7 +213,7 @@ impl StakeContract {
         let call = Transaction::from_canon(&call);
         let transfer = rusk_abi::transfer_contract();
 
-        dusk_abi::transact_raw(self, &transfer, &call)
+        dusk_abi::transact_raw(self, &transfer, &call, 0)
             .expect("Failed to withdraw note from contract");
     }
 
@@ -261,7 +261,7 @@ impl StakeContract {
         let call = Transaction::from_canon(&call);
         let transfer = rusk_abi::transfer_contract();
 
-        dusk_abi::transact_raw(self, &transfer, &call)
+        dusk_abi::transact_raw(self, &transfer, &call, 0)
             .expect("Failed to withdraw from transparent");
 
         let burner = ContractId::default();
@@ -284,7 +284,7 @@ impl StakeContract {
         let call = Transaction::from_canon(&call);
         let transfer = rusk_abi::transfer_contract();
 
-        dusk_abi::transact_raw(self, &transfer, &call)
+        dusk_abi::transact_raw(self, &transfer, &call, 0)
             .expect("Failed to withdraw the confiscated value!");
 
         self.staked

@@ -57,7 +57,7 @@ mod hosted {
             let call = Transaction::from_canon(&call);
             let transfer = self.transfer;
 
-            dusk_abi::transact_raw(self, &transfer, &call)
+            dusk_abi::transact_raw(self, &transfer, &call, 0)
                 .expect("Failed to withdraw");
         }
 
@@ -81,7 +81,7 @@ mod hosted {
             let call = Transaction::from_canon(&call);
             let transfer = self.transfer;
 
-            dusk_abi::transact_raw(self, &transfer, &call)
+            dusk_abi::transact_raw(self, &transfer, &call, 0)
                 .expect("Failed to withdraw obfuscated!");
         }
 
@@ -90,7 +90,7 @@ mod hosted {
             let call = Transaction::from_canon(&call);
             let transfer = self.transfer;
 
-            dusk_abi::transact_raw(self, &transfer, &call)
+            dusk_abi::transact_raw(self, &transfer, &call, 0)
                 .expect("Failed to withdraw");
         }
     }

@@ -19,7 +19,7 @@ use wrapper::TransferWrapper;
 fn send_to_contract_transparent() {
     let genesis_value = 10_000_000_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
@@ -79,8 +79,7 @@ fn send_to_contract_transparent() {
 #[test]
 fn send_to_contract_obfuscated() {
     let genesis_value = 10_000_000_000;
-    let block_height = 1;
-    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
@@ -122,8 +121,7 @@ fn send_to_contract_obfuscated() {
 #[test]
 fn alice_ping() {
     let genesis_value = 10_000_000_000;
-    let block_height = 1;
-    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
@@ -156,7 +154,7 @@ fn alice_ping() {
 fn withdraw_from_transparent() {
     let genesis_value = 50_000_000_000;
     let block_height = 1;
-    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);
@@ -299,8 +297,7 @@ fn withdraw_from_transparent() {
 #[test]
 fn withdraw_from_obfuscated() {
     let genesis_value = 10_000_000_000;
-    let block_height = 1;
-    let mut wrapper = TransferWrapper::new(2324, block_height, genesis_value);
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
     let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
     let notes = wrapper.notes_owned_by(0, &genesis_vk);

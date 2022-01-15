@@ -17,12 +17,12 @@ use dusk_schnorr::Signature;
 use crate::{PaymentInfo, PublicInput, PAYMENT_INFO};
 
 pub fn hash(bytes: Vec<u8>) -> BlsScalar {
-    dusk_abi::query(&RuskModule::id(), &(RuskModule::HASH, bytes))
+    dusk_abi::query(&RuskModule::id(), &(RuskModule::HASH, bytes), 0)
         .expect("query RuskModule for Hash should not fail")
 }
 
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
-    dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars))
+    dusk_abi::query(&RuskModule::id(), &(RuskModule::POSEIDON_HASH, scalars), 0)
         .expect("query RuskModule for Poseidon Hash should not fail")
 }
 
@@ -34,6 +34,7 @@ pub fn verify_proof(
     dusk_abi::query(
         &RuskModule::id(),
         &(RuskModule::VERIFY_PROOF, proof, verifier_data, pi),
+        0,
     )
     .expect("query RuskModule for verify a proof should not fail")
 }
@@ -46,6 +47,7 @@ pub fn verify_schnorr_sign(
     dusk_abi::query(
         &RuskModule::id(),
         &(RuskModule::VERIFY_SCHNORR_SIGN, sign, pk, message),
+        0,
     )
     .expect("query RuskModule for verifying schnorr signature should not fail")
 }
@@ -53,6 +55,6 @@ pub fn verify_schnorr_sign(
 /// FIXME: Until this is not moved to be part of Cake! we will reserve the 0
 /// Query idx for this payable info.
 pub fn payment_info(addr: ContractId) -> PaymentInfo {
-    dusk_abi::query(&addr, &PAYMENT_INFO)
+    dusk_abi::query(&addr, &PAYMENT_INFO, 0)
         .expect("Failed to retrieve payment info from the specified address")
 }

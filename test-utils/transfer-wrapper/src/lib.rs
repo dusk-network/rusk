@@ -36,13 +36,12 @@ lazy_static! {
 /// unspent transparent note with the value specified in `balance`
 pub fn genesis<R>(
     rng: &mut R,
-    block_height: u64,
     balance: u64,
 ) -> Result<(NetworkState, SecretSpendKey), TransferError>
 where
     R: RngCore + CryptoRng,
 {
-    let mut network = NetworkState::with_block_height(block_height);
+    let mut network = NetworkState::new();
 
     let ssk = SecretSpendKey::random(rng);
     let psk = PublicSpendKey::from(&ssk);
@@ -145,7 +144,7 @@ where
 
             let input = ExecuteCircuit::input(
                 rng,
-                &ssk,
+                ssk,
                 note.hash(),
                 transfer_state(network)?.notes().inner(),
                 *note,
@@ -288,5 +287,10 @@ where
         call,
     );
 
-    network.transact::<_, ()>(rusk_abi::transfer_contract(), call, &mut meter)
+    network.transact::<_, ()>(
+        rusk_abi::transfer_contract(),
+        0,
+        call,
+        &mut meter,
+    )
 }

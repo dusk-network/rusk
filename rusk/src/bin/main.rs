@@ -40,8 +40,8 @@ async fn main() {
         .author("Dusk Network B.V. All Rights Reserved.")
         .about("Rusk Server node.")
         .arg(
-            Arg::with_name("socket")
-                .short("s")
+            Arg::new("socket")
+                .short('s')
                 .long("socket")
                 .value_name("socket")
                 .help("Path for setting up the UDS ")
@@ -49,7 +49,7 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("ipc_method")
+            Arg::new("ipc_method")
                 .long("ipc_method")
                 .value_name("ipc_method")
                 .possible_values(&["uds", "tcp_ip"])
@@ -57,22 +57,22 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("port")
-                .short("p")
+            Arg::new("port")
+                .short('p')
                 .long("port")
                 .value_name("port")
                 .help("Port you want to use ")
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("host")
-                .short("h")
+            Arg::new("host")
+                .short('h')
                 .long("host")
                 .value_name("host")
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("log-level")
+            Arg::new("log-level")
                 .long("log-level")
                 .value_name("LOG")
                 .possible_values(&["error", "warn", "info", "debug", "trace"])
@@ -216,9 +216,9 @@ async fn startup_with_tcp_ip(
 }
 
 /// Setup clap to handle kadcast network configuration
-fn network_config<'a>(app: App<'a, 'a>) -> App<'a, 'a> {
+fn network_config(app: App<'_>) -> App<'_> {
     app.arg(
-        Arg::with_name("kadcast_public_address")
+        Arg::new("kadcast_public_address")
             .long("kadcast_public_address")
             .long_help("This is the address where other peer can contact you. 
 This address MUST be accessible from any peer of the network")
@@ -228,7 +228,7 @@ This address MUST be accessible from any peer of the network")
             .required(true),
     )
     .arg(
-        Arg::with_name("kadcast_listen_address")
+        Arg::new("kadcast_listen_address")
             .long("kadcast_listen_address")
             .long_help("This address is the one bound for the incoming connections. 
 Use this argument if your host is not publicly reachable from other peer in the network 
@@ -240,16 +240,16 @@ If this is not specified, the public address will be used for binding incoming c
             .required(false),
     )
     .arg(
-        Arg::with_name("kadcast_bootstrap")
+        Arg::new("kadcast_bootstrap")
             .long("kadcast_bootstrap")
             .env("KADCAST_BOOTSTRAP")
-            .multiple(true)
+            .multiple_occurrences(true)
             .help("Kadcast list of bootstrapping server addresses")
             .takes_value(true)
             .required(true),
     )
     .arg(
-        Arg::with_name("kadcast_autobroadcast")
+        Arg::new("kadcast_autobroadcast")
             .long("kadcast_autobroadcast")
             .env("KADCAST_AUTOBROADCAST")
             .help("If true then the received messages are automatically re-broadcasted")

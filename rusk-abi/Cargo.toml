@@ -9,23 +9,24 @@ license = "MPL-2.0"
 exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
+blake2b_simd = { version = "0.5", default-features = false }
 cfg-if = "0.1"
-canonical = "0.6"
-canonical_derive = "0.6"
+
 dusk-poseidon = { version = "0.23.0-rc", default-features = false }
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
-dusk-abi = "0.9.0-rc"
+dusk-abi = "0.10"
 dusk-schnorr = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
 dusk-bytes = "0.1"
-blake2b_simd = { version = "0.3", default-features = false }
+canonical = "0.6"
+canonical_derive = "0.6"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dusk-plonk = { version = "0.9", default-features = false, features = ["canon"] }
 
 [dev-dependencies]
-rusk-vm = "0.6.0-rc"
+rusk-vm = "0.7.0-rc"
 dusk-bytes = "0.1"
 host_fn = { path = "tests/contracts/host_fn" }
 rand_core = { version = "0.6", features = ["std"] }

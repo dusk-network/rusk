@@ -1,33 +1,35 @@
 [package]
 name = "transfer-contract"
 version = "0.5.0"
-authors = ["Victor Lopez <victor@dusk.network>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-canonical = "0.6"
-canonical_derive = "0.6"
-dusk-abi = "0.9"
-rusk-abi = { path = "../../rusk-abi", features = ["module"] }
+dusk-abi = "0.10"
 dusk-bytes = "0.1"
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
 dusk-poseidon = { version = "0.23.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.9.0-rc", default-features = false }
+dusk-hamt = { version = "0.5", default-features = false }
 phoenix-core = { version = "0.15.0-rc", default-features = false, features = ["canon"] }
-dusk-hamt = { version = "0.5.0-rc", default-features = false }
-microkelvin = { version = "0.10.0-rc", default-features = false }
+microkelvin = { version = "0.10", default-features = false }
+canonical = "0.6"
+canonical_derive = "0.6"
+
+rusk-abi = { path = "../../rusk-abi", features = ["module"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 lazy_static = "1.4"
 rand = "0.8"
+
+dusk-plonk = "0.9"
+rusk-vm = "0.7.0-rc"
+
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 rusk-profile = { path = "../../rusk-profile" }
-dusk-plonk = "0.9"
-rusk-vm = "0.6"
 
 [features]
 no-bridge = []
