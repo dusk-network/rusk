@@ -16,6 +16,7 @@ use phoenix_core::{Crossover, Message, Note};
 use core::convert::TryFrom;
 
 mod call;
+#[cfg(feature = "circuits")]
 mod circuits;
 mod tree;
 

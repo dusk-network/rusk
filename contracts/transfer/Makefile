@@ -7,12 +7,10 @@ wasm: ## Build the WASM files
 	@cargo rustc \
 		--release \
 		--target wasm32-unknown-unknown \
-		--no-default-features \
 		-- -C link-args=-s
 
 check: wasm ## Run the Rust check on the project features
-	@cargo check --target wasm32-unknown-unknown \
-		--no-default-features
+	@cargo check --target wasm32-unknown-unknown
 	@cargo check
 
 dummy-test-contracts: ## Create a set of dummy contracts to be used in the tests
