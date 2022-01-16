@@ -6,6 +6,7 @@
 
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
+use std::env;
 use std::fs::{self, read, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
@@ -57,7 +58,7 @@ fn file_stem(p: &Path) -> Option<&str> {
 }
 
 pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
-    option_env!("RUSK_PROFILE_PATH")
+    env::var("RUSK_PROFILE_PATH")
         .map_or(home_dir(), |e| Some(PathBuf::from(e)))
         .and_then(|mut p| {
             p.push(".rusk");
