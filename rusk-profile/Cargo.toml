@@ -1,6 +1,6 @@
 [package]
 name = "rusk-profile"
-version = "0.4.0-rc.2"
+version = "0.5.0-rc.0"
 edition = "2021"
 autobins = false
 
