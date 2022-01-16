@@ -17,5 +17,8 @@ dusk-schnorr = { version = "0.9.0-rc", default-features = false, features = ["ca
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 phoenix-core = { version = "0.15.0-rc", default-features = false, features = ["canon"] }
 
-transfer-contract = { path = "../transfer", features = ["no-bridge"] }
+transfer-contract = { path = "../transfer", default-features = false, features = ["no-bridge"] }
 rusk-abi = { path = "../../rusk-abi", features = ["module"] }
+
+[features]
+default = ["transfer-contract/circuits"]
