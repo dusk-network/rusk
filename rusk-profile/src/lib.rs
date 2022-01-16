@@ -80,6 +80,18 @@ fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
     Ok(profile)
 }
 
+pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
+    Ok(get_rusk_profile_dir()?.join("state.id"))
+}
+
+pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
+    Ok(get_rusk_profile_dir()?.join("state"))
+}
+
+pub fn get_rusk_state_id() -> Result<Vec<u8>, io::Error> {
+    read(get_rusk_state_id_path()?)
+}
+
 pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
     let mut profile = get_rusk_profile_dir()?;
     profile.push("dev.crs");
