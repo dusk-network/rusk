@@ -256,6 +256,14 @@ If this is not specified, the public address will be used for binding incoming c
             .takes_value(false)
             .required(false),
     )
+    .arg(
+        Arg::with_name("kadcast_test")
+            .long("kadcast_test")
+            .env("KADCAST_TEST")
+            .help("If true then the received messages is a blake2b 256hash")
+            .takes_value(false)
+            .required(false),
+    )
 }
 
 fn create_network(args: &ArgMatches) -> RuskNetwork {
@@ -268,5 +276,6 @@ fn create_network(args: &ArgMatches) -> RuskNetwork {
             .map(|s| s.to_string())
             .collect(),
         args.is_present("kadcast_autobroadcast"),
+        args.is_present("kadcast_test"),
     )
 }
