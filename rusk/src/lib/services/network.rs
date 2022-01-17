@@ -6,6 +6,7 @@
 
 //! Public Key infrastructure service implementation for the Rusk server.
 
+use blake2::{digest::consts::U32, Blake2b, Digest};
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
@@ -29,6 +30,7 @@ impl RuskNetwork {
         listen_addr: Option<String>,
         bootstrap: Vec<String>,
         auto_broadcast: bool,
+        hash_message: bool,
     ) -> RuskNetwork {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
@@ -41,6 +43,7 @@ impl RuskNetwork {
         let grpc_sender = broadcast::channel(100).0;
         let listener = KadcastListener {
             grpc_sender: grpc_sender.clone(),
+            hash_message,
         };
         let peer = Peer::builder(public_addr, bootstrap, listener)
             .with_listen_address(listen_addr)
@@ -59,17 +62,30 @@ impl RuskNetwork {
 
 impl Default for RuskNetwork {
     fn default() -> RuskNetwork {
-        RuskNetwork::new("127.0.0.1:9999".to_string(), None, vec![], false)
+        RuskNetwork::new(
+            "127.0.0.1:9999".to_string(),
+            None,
+            vec![],
+            false,
+            false,
+        )
     }
 }
 struct KadcastListener {
     grpc_sender: broadcast::Sender<(Vec<u8>, SocketAddr, u8)>,
+    hash_message: bool,
 }
 
 impl NetworkListen for KadcastListener {
     fn on_message(&self, message: Vec<u8>, metadata: MessageInfo) {
+        let mut tosend = message;
+        if self.hash_message {
+            let mut hasher = Blake2b::<U32>::new();
+            hasher.update(tosend);
+            tosend = hasher.finalize().to_vec();
+        }
         self.grpc_sender
-            .send((message, metadata.src(), metadata.height()))
+            .send((tosend, metadata.src(), metadata.height()))
             .unwrap_or_else(|e| {
                 println!("Error {}", e);
                 0
