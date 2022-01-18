@@ -9,7 +9,7 @@ abi: ## Build the ABI and test it
 allmacros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros test
 
-keys: wasm ## Create the keys for the circuits
+keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
 state: wasm ## Create the network state
@@ -27,11 +27,11 @@ contracts: ## Execute the test for all contracts
 utils: ## Execute the test for utils 
 	$(MAKE) -C ./test-utils test
 
-test: abi state circuits allmacros contracts ## Run the tests
+test: abi circuits state allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils test
 
 run: wasm ## Run the server
 	cargo run --release
 
-.PHONY: abi keys wasm circuits contracts test run help
+.PHONY: abi keys state wasm circuits contracts test run help
