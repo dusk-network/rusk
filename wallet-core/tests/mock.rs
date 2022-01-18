@@ -8,7 +8,6 @@
 
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{PublicSpendKey, ViewKey};
-use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_wallet_core::{
     NodeClient, Store, UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
@@ -119,10 +118,10 @@ impl NodeClient for TestNodeClient {
         Ok(self.opening.clone())
     }
 
-    fn request_proof(
+    fn compute_proof_and_propagate(
         &self,
         _: &UnprovenTransaction,
-    ) -> Result<Proof, Self::Error> {
-        Ok(Proof::default())
+    ) -> Result<(), Self::Error> {
+        Ok(())
     }
 }

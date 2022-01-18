@@ -16,7 +16,6 @@ use canonical::{Canon, Source};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{PublicSpendKey, ViewKey};
-use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 use rand_core::{
@@ -57,11 +56,7 @@ extern "C" {
     fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
 
     /// Request the node to prove the given unproven transaction.
-    fn request_proof(
-        utx: *const u8,
-        utx_len: u32,
-        proof: *mut [u8; Proof::SIZE],
-    ) -> u8;
+    fn compute_proof_and_propagate(utx: *const u8, utx_len: u32) -> u8;
 }
 
 macro_rules! unwrap_or_bail {
@@ -99,8 +94,6 @@ pub unsafe extern "C" fn create_transfer_tx(
     gas_limit: u64,
     gas_price: u64,
     ref_id: Option<&u64>,
-    tx_buf: *mut u8,
-    tx_len: *mut u32,
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
     let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
@@ -109,7 +102,7 @@ pub unsafe extern "C" fn create_transfer_tx(
         ref_id.copied().unwrap_or_else(|| (&mut FfiRng).next_u64()),
     );
 
-    let tx = unwrap_or_bail!(WALLET.create_transfer_tx(
+    unwrap_or_bail!(WALLET.create_transfer_tx(
         &mut FfiRng,
         sender_index,
         &refund,
@@ -119,10 +112,6 @@ pub unsafe extern "C" fn create_transfer_tx(
         gas_limit,
         ref_id
     ));
-
-    let tx_bytes = unwrap_or_bail!(tx.to_bytes());
-    ptr::copy_nonoverlapping(&tx_bytes[0], tx_buf, tx_bytes.len());
-    *tx_len = tx_bytes.len() as u32;
 
     0
 }
@@ -262,29 +251,25 @@ impl NodeClient for FfiNodeClient {
         Ok(branch)
     }
 
-    fn request_proof(
+    fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<Proof, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let utx_bytes = utx
             .to_bytes()
             .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
-        let mut proof_buf = [0; Proof::SIZE];
 
         unsafe {
-            let r = request_proof(
+            let r = compute_proof_and_propagate(
                 &utx_bytes[0],
                 utx_bytes.len() as u32,
-                &mut proof_buf,
             );
             if r != 0 {
                 return Err(r);
             }
         }
 
-        let utx = Proof::from_bytes(&proof_buf)
-            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
-        Ok(utx)
+        Ok(())
     }
 }
 

@@ -458,7 +458,7 @@ impl UnprovenTransaction {
     }
 
     /// Consumes self and a proof to generate a transaction.
-    pub(crate) fn prove(self, proof: Proof) -> Transaction {
+    pub fn prove(self, proof: Proof) -> Transaction {
         let skel = TransactionSkeleton::from(self);
         Transaction::new(skel, proof)
     }
