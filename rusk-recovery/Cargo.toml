@@ -10,8 +10,14 @@ name = "rusk_recovery_tools"
 path = "src/lib.rs"
 
 [[bin]]
-name = "rusk-recovery"
-path = "src/bin/main.rs"
+name = "rusk-recovery-keys"
+path = "src/bin/keys.rs"
+required-features = ["keys"]
+
+[[bin]]
+name = "rusk-recovery-state"
+path = "src/bin/state.rs"
+required-features = ["state"]
 
 [build-dependencies]
 rustc_tools_util = "0.2"
@@ -34,8 +40,12 @@ lazy_static = "1.4"
 canonical = "0.6"
 canonical_derive = "0.6"
 dusk-bls12_381 = "0.8"
-clap = { version = "3.0", features = ["cargo", "env"] }
+clap = { version = "3.0", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
 console = "0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
+
+[features]
+state = []
+keys = []

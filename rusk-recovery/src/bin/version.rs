@@ -21,3 +21,10 @@ pub fn version(info: &VersionInfo) -> String {
         version
     }
 }
+
+lazy_static::lazy_static! {
+    pub static ref VERSION_BUILD: String = {
+        let info = rustc_tools_util::get_version_info!();
+        version(&info)
+    };
+}
