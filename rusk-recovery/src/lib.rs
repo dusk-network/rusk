@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "keys")]
 pub mod keys;
+#[cfg(feature = "state")]
 pub mod state;
+
 pub mod theme;
