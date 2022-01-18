@@ -10,10 +10,10 @@ use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
 
-const VD_STCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/5fdb4f60d0c7dc5be4aa605aac887e160c15d560f64f29fc094e5fd8ef80cef0.vd"));
-const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/cebc1c86576ae9c177dbed3cda29aea480525ba2655d5d599bb780a9ee349951.vd"));
-const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/c9efc0095962b81aa46d2a57329dc83cb2490097dc08b056bdf8b9a76d28b729.vd"));
-const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/3a55c8691347b8abef3a391974d2f982ca761c0e239d49456e17e6f17b80cbc9.vd"));
+const VD_STCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/8ac166a2a72b674cabbcd733d930c6338e06b94e140b73590a1bbf0e7b545084.vd"));
+const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/6f87c4432dd230e97f7271e9c8b963fef1d366cc17d86af02ee63fd6449f5cad.vd"));
+const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/5a9af9f6134a25fde542ffc013815cefa1837a886edf49ae31f4f3e6d7a64347.vd"));
+const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/9dc9477f10b5e02634063b2cfaf8eae313fec301bd9d2d5bc885eee87e96cfe2.vd"));
 
 const VD_EXEC_1_0: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/4a00c40792f14a79c2c8e46f01b6902f72e46a8a496b5adf56015af32747a17d.vd"));
 const VD_EXEC_1_1: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/89421c761c054e16ab6d5147defd4bd13a11bc59ca9446d998a69482243b6222.vd"));
