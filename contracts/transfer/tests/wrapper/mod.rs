@@ -401,7 +401,7 @@ impl TransferWrapper {
                     );
 
                     let crossover_note = Note::from((fee, crossover));
-                    let blinder = crossover_note.blinding_factor(Some(&vk)).expect("Failed to decrypt blinder");
+                    let blinder = crossover_note.blinding_factor(Some(vk)).expect("Failed to decrypt blinder");
 
                     execute_proof
                         .set_fee_crossover(&fee, &crossover, crossover_value, blinder);
@@ -607,10 +607,10 @@ impl TransferWrapper {
             let message_address = message_psk.gen_stealth_address(&message_r);
             let pk_r = *message_address.pk_r().as_ref();
             let (_, blinder) = message
-                .decrypt(&message_r, &message_psk)
+                .decrypt(&message_r, message_psk)
                 .expect("Failed to decrypt message");
 
-            let derive_key = DeriveKey::new(false, &message_psk);
+            let derive_key = DeriveKey::new(false, message_psk);
 
             StcoMessage {
                 blinder,

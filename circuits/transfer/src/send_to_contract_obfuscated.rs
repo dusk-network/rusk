@@ -99,7 +99,9 @@ impl SendToContractObfuscatedCircuit {
             .zip(m.by_ref())
             .for_each(|(c, m)| *m = *c);
 
-        m.next().map(|m| *m = *crossover.nonce());
+        if let Some(m) = m.next() {
+            *m = *crossover.nonce();
+        }
 
         crossover
             .encrypted_data()
@@ -115,7 +117,9 @@ impl SendToContractObfuscatedCircuit {
             .zip(m.by_ref())
             .for_each(|(c, m)| *m = *c);
 
-        m.next().map(|m| *m = *message.nonce());
+        if let Some(m) = m.next() {
+            *m = *message.nonce();
+        }
 
         message
             .cipher()
@@ -123,7 +127,9 @@ impl SendToContractObfuscatedCircuit {
             .zip(m.by_ref())
             .for_each(|(c, m)| *m = *c);
 
-        m.next().map(|m| *m = *address);
+        if let Some(m) = m.next() {
+            *m = *address;
+        }
 
         sponge::hash(&signature_message)
     }

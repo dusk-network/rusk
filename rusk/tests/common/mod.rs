@@ -111,8 +111,8 @@ struct UdsConnector {
 }
 
 impl From<PathBuf> for UdsConnector {
-    fn from(p: PathBuf) -> Self {
-        Self { path: p.into() }
+    fn from(path: PathBuf) -> Self {
+        Self { path }
     }
 }
 

@@ -257,7 +257,7 @@ If this is not specified, the public address will be used for binding incoming c
             .required(false),
     )
     .arg(
-        Arg::with_name("kadcast_test")
+        Arg::new("kadcast_test")
             .long("kadcast_test")
             .env("KADCAST_TEST")
             .help("If true then the received messages is a blake2b 256hash")
