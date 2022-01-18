@@ -32,4 +32,6 @@ transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 rusk-profile = { path = "../../rusk-profile" }
 
 [features]
+default = ["circuits"]
 no-bridge = []
+circuits = []

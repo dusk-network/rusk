@@ -6,6 +6,7 @@
 
 use dirs::home_dir;
 use sha2::{Digest, Sha256};
+use std::env;
 use std::fs::{self, read, remove_file, write, File};
 use std::io;
 use std::io::prelude::*;
@@ -57,7 +58,7 @@ fn file_stem(p: &Path) -> Option<&str> {
 }
 
 pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
-    option_env!("RUSK_PROFILE_PATH")
+    env::var("RUSK_PROFILE_PATH")
         .map_or(home_dir(), |e| Some(PathBuf::from(e)))
         .and_then(|mut p| {
             p.push(".rusk");
@@ -77,6 +78,18 @@ fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
     profile.push("keys");
     fs::create_dir_all(profile.clone())?;
     Ok(profile)
+}
+
+pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
+    Ok(get_rusk_profile_dir()?.join("state.id"))
+}
+
+pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
+    Ok(get_rusk_profile_dir()?.join("state"))
+}
+
+pub fn get_rusk_state_id() -> Result<Vec<u8>, io::Error> {
+    read(get_rusk_state_id_path()?)
 }
 
 pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
