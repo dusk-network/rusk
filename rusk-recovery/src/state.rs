@@ -5,14 +5,35 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::theme::Theme;
-use canonical::{Canon, Sink};
-use microkelvin::DiskBackend;
+use microkelvin::{BackendCtor, DiskBackend};
 use rusk_abi;
 use rusk_vm::{Contract, NetworkState};
 use stake_contract::StakeContract;
 use std::{fs, io};
 use tracing::info;
 use transfer_contract::TransferContract;
+
+fn diskbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(|| {
+        let dir = rusk_profile::get_rusk_state_dir()
+            .expect("Failed to get Rusk profile directory");
+
+        fs::remove_dir_all(&dir)
+            .or_else(|e| {
+                if e.kind() == io::ErrorKind::NotFound {
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            })
+            .expect("Failed to clean up Network State directory");
+
+        fs::create_dir_all(&dir)
+            .expect("Failed to create Network State directory");
+
+        DiskBackend::new(dir)
+    })
+}
 
 pub fn exec(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
     let theme = Theme::default();
@@ -68,44 +89,18 @@ pub fn exec(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
         .expect("Genesis Transfer Contract should be deployed");
 
     info!("{} network state", theme.action("Storing"));
-    // microkelvin accept only function pointer instead of closure, therefore
-    // we cannot use anything from the outer scope, that's why we have to
-    // recreate everything inside.
-    //
-    // See: <https://github.com/dusk-network/microkelvin/issues/94>
-    let persisted_id = network
-        .persist(|| {
-            let dir = rusk_profile::get_rusk_state_dir()
-                .expect("Failed to get Rusk profile directory");
 
-            fs::remove_dir_all(&dir)
-                .or_else(|e| {
-                    if e.kind() == io::ErrorKind::NotFound {
-                        Ok(())
-                    } else {
-                        Err(e)
-                    }
-                })
-                .expect("Failed to clean up Network State directory");
-
-            fs::create_dir_all(&dir)
-                .expect("Failed to create Network State directory");
-
-            DiskBackend::new(dir)
-        })
+    let state_id = network
+        .persist(&diskbackend())
         .expect("Error in persistence");
+
     info!(
         "{} network state at {}",
         theme.info("Stored"),
         state_path.display()
     );
     info!("{} persisted id", theme.action("Storing"));
-
-    let mut buf = [0u8; 36];
-    let mut sink = Sink::new(&mut buf);
-    persisted_id.encode(&mut sink);
-
-    fs::write(&id_path, &buf)?;
+    state_id.write(&id_path)?;
 
     info!(
         "{} persisted id at {}",
