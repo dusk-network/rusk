@@ -89,28 +89,6 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
             contract.withdraw(pk, signature, note, withdraw_proof);
         }
 
-        TX_SLASH => {
-            let (pk, round, step, votes, signatures, note, withdraw_proof): (
-                PublicKey,
-                u64,
-                u64,
-                (BlsScalar, BlsScalar),
-                (Signature, Signature),
-                Note,
-                Vec<u8>,
-            ) = Canon::decode(&mut source).expect("Failed to parse arguments");
-
-            contract.slash(
-                pk,
-                round,
-                step,
-                votes,
-                signatures,
-                note,
-                withdraw_proof,
-            );
-        }
-
         _ => panic!("Tx id not implemented"),
     }
 
@@ -139,7 +117,7 @@ impl StakeContract {
     }
 
     pub fn stake(&mut self, pk: PublicKey, value: u64, spend_proof: Vec<u8>) {
-        if value < MINIMUM_STAKE || MAXIMUM_STAKE < value {
+        if value < MINIMUM_STAKE {
             panic!("The staked value is not within range!");
         }
 
@@ -149,6 +127,10 @@ impl StakeContract {
         let expiration = block_height + MATURITY + VALIDITY + epoch;
 
         let address = dusk_abi::callee();
+        if address != rusk_abi::transfer_contract() {
+            panic!("Can only be called from the transfer contract");
+        }
+
         let stake = Stake::new(value, eligibility, expiration);
 
         if self.push_stake(pk, stake) {
@@ -215,80 +197,5 @@ impl StakeContract {
 
         dusk_abi::transact_raw(self, &transfer, &call, 0)
             .expect("Failed to withdraw note from contract");
-    }
-
-    pub fn slash(
-        &mut self,
-        pk: PublicKey,
-        round: u64,
-        step: u64,
-        votes: (BlsScalar, BlsScalar),
-        signatures: (Signature, Signature),
-        note: Note,
-        withdraw_proof: Vec<u8>,
-    ) {
-        if votes.0 == votes.1 {
-            panic!("The slash votes cannot be the same");
-        }
-
-        let a = rusk_abi::poseidon_hash(Vec::from([
-            BlsScalar::from(round),
-            BlsScalar::from(step),
-            votes.0,
-        ]));
-
-        let b = rusk_abi::poseidon_hash(Vec::from([
-            BlsScalar::from(round),
-            BlsScalar::from(step),
-            votes.1,
-        ]));
-
-        let messages = (a, b);
-
-        if !rusk_abi::verify_schnorr_sign(signatures.0, pk, messages.0) {
-            panic!("Failed to verify the signature for the first vote!");
-        }
-
-        if !rusk_abi::verify_schnorr_sign(signatures.1, pk, messages.1) {
-            panic!("Failed to verify the signature for the second vote!");
-        }
-
-        let stake = self.get_stake(&pk);
-        let confiscated_value = stake.value() - SLASH_REWARD;
-
-        let call =
-            Call::withdraw_from_transparent(SLASH_REWARD, note, withdraw_proof);
-        let call = Transaction::from_canon(&call);
-        let transfer = rusk_abi::transfer_contract();
-
-        dusk_abi::transact_raw(self, &transfer, &call, 0)
-            .expect("Failed to withdraw from transparent");
-
-        let burner = ContractId::default();
-
-        // TODO set arbitration addr after it is defined
-        let arbitration = burner;
-
-        let confiscated_id =
-            if dusk_abi::block_height() < ARBITRATION_MAX_HEIGHT {
-                arbitration
-            } else {
-                burner
-            };
-
-        let call = Call::withdraw_from_transparent_to_contract(
-            confiscated_id,
-            confiscated_value,
-        );
-
-        let call = Transaction::from_canon(&call);
-        let transfer = rusk_abi::transfer_contract();
-
-        dusk_abi::transact_raw(self, &transfer, &call, 0)
-            .expect("Failed to withdraw the confiscated value!");
-
-        self.staked
-            .remove(&pk.to_bytes())
-            .expect("Failed to remove stake");
     }
 }
