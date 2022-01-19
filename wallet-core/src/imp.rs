@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::tx::UnprovenTransaction;
-use crate::{NodeClient, Store, Transaction};
+use crate::{NodeClient, Store};
 
 use alloc::vec::Vec;
 
@@ -119,7 +119,7 @@ where
         gas_limit: u64,
         gas_price: u64,
         ref_id: BlsScalar,
-    ) -> Result<Transaction, Error<S, C>> {
+    ) -> Result<(), Error<S, C>> {
         let sender = self
             .store
             .retrieve_key(sender_index)
@@ -196,11 +196,10 @@ where
         )
         .map_err(Error::from_node_err)?;
 
-        let proof = self
-            .node
-            .request_proof(&utx)
+        self.node
+            .compute_proof_and_propagate(&utx)
             .map_err(Error::from_node_err)?;
-        Ok(utx.prove(proof))
+        Ok(())
     }
 
     /// Creates a stake transaction.

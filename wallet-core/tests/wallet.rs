@@ -11,11 +11,9 @@ mod mock;
 use mock::{mock_wallet, TestNodeClient};
 
 use dusk_pki::ViewKey;
-use dusk_plonk::prelude::{BlsScalar, Proof};
+use dusk_plonk::prelude::BlsScalar;
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_wallet_core::{
-    NodeClient, Transaction, UnprovenTransaction, POSEIDON_TREE_DEPTH,
-};
+use dusk_wallet_core::{NodeClient, UnprovenTransaction, POSEIDON_TREE_DEPTH};
 use phoenix_core::Note;
 
 #[derive(Debug)]
@@ -45,10 +43,10 @@ impl NodeClient for SerdeNodeClient {
         self.node.fetch_opening(note)
     }
 
-    fn request_proof(
+    fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<Proof, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let utx_bytes = utx.to_bytes().expect("Successful serialization");
         let utx_clone = UnprovenTransaction::from_slice(&utx_bytes)
             .expect("Successful deserialization");
@@ -76,7 +74,7 @@ impl NodeClient for SerdeNodeClient {
         assert_eq!(utx.crossover(), utx_clone.crossover());
         assert_eq!(utx.call(), utx_clone.call());
 
-        self.node.request_proof(utx)
+        self.node.compute_proof_and_propagate(utx)
     }
 }
 
@@ -90,30 +88,11 @@ fn serde() {
     let recv_psk = wallet.public_spend_key(1).unwrap();
 
     let ref_id = BlsScalar::random(&mut rng);
-    let tx = wallet
+    wallet
         .create_transfer_tx(
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
         .expect("Transaction creation to be successful");
-
-    let tx_bytes = tx.to_bytes().expect("Successful serialization");
-    let tx_clone =
-        Transaction::from_slice(&tx_bytes).expect("Successful deserialization");
-
-    for (null, cnull) in tx.inputs().iter().zip(tx_clone.inputs().iter()) {
-        assert_eq!(null, cnull);
-    }
-
-    for (output, coutput) in tx.outputs().iter().zip(tx_clone.outputs().iter())
-    {
-        assert_eq!(output, coutput);
-    }
-
-    assert_eq!(tx.anchor(), tx_clone.anchor());
-    assert_eq!(tx.proof(), tx_clone.proof());
-    assert_eq!(tx.fee(), tx_clone.fee());
-    assert_eq!(tx.crossover(), tx_clone.crossover());
-    assert_eq!(tx.call(), tx_clone.call());
 }
 
 #[test]
@@ -126,13 +105,11 @@ fn create_transfer_tx() {
     let recv_psk = wallet.public_spend_key(1).unwrap();
 
     let ref_id = BlsScalar::random(&mut rng);
-    let tx = wallet
+    wallet
         .create_transfer_tx(
             &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
         )
         .expect("Transaction creation to be successful");
-
-    assert_eq!(tx.inputs().len(), 1);
 }
 
 #[test]

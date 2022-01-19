@@ -22,7 +22,6 @@ mod tx;
 use alloc::vec::Vec;
 use dusk_jubjub::BlsScalar;
 use dusk_pki::{SecretSpendKey, ViewKey};
-use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 use rand_chacha::ChaCha12Rng;
@@ -92,9 +91,9 @@ pub trait NodeClient {
         note: &Note,
     ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error>;
 
-    /// Requests that a node prove the given transaction.
-    fn request_proof(
+    /// Requests that a node prove the given transaction and later propagates it
+    fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<Proof, Self::Error>;
+    ) -> Result<(), Self::Error>;
 }
