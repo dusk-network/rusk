@@ -25,10 +25,8 @@ pub const MATURITY: u32 = 2 * EPOCH;
 /// Validity of the stake
 pub const VALIDITY: u32 = 56 * EPOCH;
 
-pub const MINIMUM_STAKE: u64 = 100_000_000_000_000;
-pub const MAXIMUM_STAKE: u64 = 10_000_000_000_000_000;
-pub const SLASH_REWARD: u64 = 50_000_000_000_000;
-pub const ARBITRATION_MAX_HEIGHT: u64 = 6_311_520;
+/// The minimum amount of Dusk one can stake.
+pub const MINIMUM_STAKE: u64 = 5_000;
 
 pub type Key = [u8; PublicKey::SIZE];
 
