@@ -8,16 +8,17 @@ use super::TestContext;
 
 use std::sync::Mutex;
 
-use dusk_bytes::DeserializableSlice;
-use dusk_pki::{PublicSpendKey, ViewKey};
+use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    NodeClient, Store, UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
+    ProverClient, StateClient, Store, UnprovenTransaction, Wallet,
+    POSEIDON_TREE_DEPTH,
 };
-use phoenix_core::{Note, NoteType};
+use phoenix_core::{Crossover, Fee, Note, NoteType};
 use rand::{CryptoRng, RngCore};
-use rusk::services::rusk_proto::prover_client::ProverClient;
+use rusk::services::rusk_proto::prover_client::ProverClient as ProverGrpcClient;
 use rusk::services::rusk_proto::ProverRequest;
 use test_context::test_context;
 use tokio::runtime::Handle;
@@ -30,19 +31,20 @@ use tonic::transport::Channel;
 /// The number of notes available is determined by `note_values`.
 fn mock_wallet<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    client: ProverClient<Channel>,
+    client: ProverGrpcClient<Channel>,
     note_values: &[u64],
-) -> Wallet<TestStore, TestNodeClient> {
+) -> Wallet<TestStore, TestStateClient, TestProverClient> {
     let store = TestStore::new(rng);
-    let psk = store.retrieve_key(0).unwrap().public_spend_key();
+    let psk = store.retrieve_ssk(0).unwrap().public_spend_key();
 
     let notes = new_notes(rng, &psk, note_values);
     let anchor = BlsScalar::random(rng);
     let opening = Default::default();
 
-    let node = TestNodeClient::new(client, notes, anchor, opening);
+    let state = TestStateClient::new(notes, anchor, opening);
+    let prover = TestProverClient::new(client);
 
-    Wallet::new(store, node)
+    Wallet::new(store, state, prover)
 }
 
 /// Returns obfuscated notes with the given value.
@@ -84,23 +86,32 @@ impl Store for TestStore {
 }
 
 #[derive(Debug)]
-struct TestNodeClient {
-    client: Mutex<ProverClient<Channel>>,
-
+struct TestStateClient {
     notes: Vec<Note>,
     anchor: BlsScalar,
     opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
 }
 
-impl TestNodeClient {
+#[derive(Debug)]
+struct TestProverClient {
+    client: Mutex<ProverGrpcClient<Channel>>,
+}
+
+impl TestProverClient {
+    fn new(client: ProverGrpcClient<Channel>) -> Self {
+        Self {
+            client: Mutex::new(client),
+        }
+    }
+}
+
+impl TestStateClient {
     fn new(
-        client: ProverClient<Channel>,
         notes: Vec<Note>,
         anchor: BlsScalar,
         opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
     ) -> Self {
         Self {
-            client: Mutex::new(client),
             notes,
             anchor,
             opening,
@@ -108,7 +119,7 @@ impl TestNodeClient {
     }
 }
 
-impl NodeClient for TestNodeClient {
+impl StateClient for TestStateClient {
     type Error = ();
 
     fn fetch_notes(
@@ -130,6 +141,14 @@ impl NodeClient for TestNodeClient {
         Ok(self.opening.clone())
     }
 
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+        Ok((100, 200))
+    }
+}
+
+impl ProverClient for TestProverClient {
+    type Error = ();
+
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
@@ -147,13 +166,33 @@ impl NodeClient for TestNodeClient {
 
         Ok(())
     }
+    fn request_stct_proof(
+        &self,
+        _fee: &Fee,
+        _crossover: &Crossover,
+        _value: u64,
+        _blinder: JubJubScalar,
+        _address: BlsScalar,
+        _signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        Ok(Proof::default())
+    }
+
+    fn request_wfct_proof(
+        &self,
+        _commitment: JubJubAffine,
+        _value: u64,
+        _blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        Ok(Proof::default())
+    }
 }
 
 #[test_context(TestContext)]
 #[tokio::test(flavor = "multi_thread")]
 pub async fn prover_walkthrough_uds(ctx: &mut TestContext) {
     let mut rng = rand::thread_rng();
-    let client = ProverClient::new(ctx.channel.clone());
+    let client = ProverGrpcClient::new(ctx.channel.clone());
 
     let wallet = mock_wallet(&mut rng, client, &[5000, 2500, 2500]);
 
@@ -162,8 +201,6 @@ pub async fn prover_walkthrough_uds(ctx: &mut TestContext) {
 
     let ref_id = BlsScalar::random(&mut rng);
     let _ = wallet
-        .create_transfer_tx(
-            &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
-        )
+        .transfer(&mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id)
         .expect("Transaction creation to be successful");
 }
