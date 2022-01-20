@@ -26,6 +26,8 @@ rustc_tools_util = "0.2"
 rand = "0.8"
 lazy_static = "1.4"
 blake2 = "0.10"
+toml = "0.5"
+serde = "1.0"
 
 dusk-schnorr = "0.9.0-rc"
 dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
@@ -35,9 +37,9 @@ dusk-jubjub = { version = "0.10", features = ["canon"] }
 dusk-pki = "0.9.0-rc"
 dusk-bytes = "0.1"
 dusk-wallet-core = "0.1"
-rusk-vm = "0.7.0-rc"
+rusk-vm = "0.8.0-rc"
 phoenix-core = "0.15.0-rc"
-kadcast = "0.3"
+kadcast = "0.4.0-rc"
 canonical = "0.6"
 canonical_derive = "0.6"
 
