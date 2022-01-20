@@ -24,7 +24,7 @@ pub use rusk_proto::{
 
 #[tonic::async_trait]
 impl Prover for Rusk {
-    async fn prove(
+    async fn prove_and_propagate(
         &self,
         request: Request<ProverRequest>,
     ) -> Result<Response<ProverResponse>, Status> {

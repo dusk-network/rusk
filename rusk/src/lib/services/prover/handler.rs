@@ -101,9 +101,12 @@ where
                 e
             ))
         })?;
-        let proof = proof.to_bytes().to_vec();
 
-        Ok(Response::new(ProverResponse { proof }))
+        let tx = utx.prove(proof).to_bytes();
+
+        // PROPAGATION MUST BE DONE HERE
+
+        Ok(Response::new(ProverResponse {}))
     }
 }
 

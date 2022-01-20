@@ -9,11 +9,10 @@ message ProverRequest {
 
 // A Plonk proof.
 message ProverResponse {
-    bytes proof = 1;
 }
 
 service Prover {
     // Proves the unproven transaction by generating a Plonk proof of the
     // appropriate circuit.
-    rpc Prove(ProverRequest) returns (ProverResponse) {}
+    rpc ProveAndPropagate(ProverRequest) returns (ProverResponse) {}
 }

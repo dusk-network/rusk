@@ -130,24 +130,22 @@ impl NodeClient for TestNodeClient {
         Ok(self.opening.clone())
     }
 
-    fn request_proof(
+    fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<Proof, Self::Error> {
+    ) -> Result<(), Self::Error> {
         let utx = utx.to_bytes().expect("transaction to serialize correctly");
         let request = tonic::Request::new(ProverRequest { utx });
 
         let mut prover = self.client.lock().expect("unlock to be successful");
-        let proof = block_in_place(move || {
-            Handle::current()
-                .block_on(async move { prover.prove(request).await })
+        block_in_place(move || {
+            Handle::current().block_on(async move {
+                prover.prove_and_propagate(request).await
+            })
         })
-        .expect("successful call")
-        .into_inner()
-        .proof;
+        .expect("successful call");
 
-        let proof = Proof::from_slice(&proof).expect("valid proof");
-        Ok(proof)
+        Ok(())
     }
 }
 
