@@ -33,7 +33,7 @@ transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
 transfer-contract = { path = "../contracts/transfer", default-features = false }
 stake-contract = { path = "../contracts/stake", default-features = false }
 microkelvin = { version = "0.10", features = ["persistence"] }
-rusk-vm = { version = "0.7.0-rc", features = ["persistence"] }
+rusk-vm = { version = "0.8.0-rc", features = ["persistence"] }
 rusk-profile = { path = "../rusk-profile" }
 rusk-abi = { path = "../rusk-abi" }
 lazy_static = "1.4"
