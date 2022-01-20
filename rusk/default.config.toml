@@ -1,0 +1,34 @@
+socket = '/tmp/rusk_listener'
+host = '127.0.0.1'
+port = '8585'
+log_level = 'info'
+kadcast_test = false
+#ipc_method = 'uds'
+
+[kadcast]
+public_address = '127.0.0.1:9000'
+#listen_address = '127.0.0.1:9000'
+bootstrapping_nodes = []
+auto_propagate = true
+channel_size = 1000
+recursive_discovery = true
+
+[kadcast.bucket]
+node_ttl = '30s'
+node_evict_after = '5s'
+bucket_ttl = '1h'
+
+[kadcast.network]
+udp_recv_buffer_size = 5000000
+#udp_send_backoff_timeout = '50us'
+udp_send_retry_interval = '5ms'
+udp_send_retry_count = 3
+
+[kadcast.fec.encoder]
+min_repair_packets_per_block = 5
+mtu = 1300
+fec_redundancy = 0.15
+
+[kadcast.fec.decoder]
+cache_ttl = '1m'
+cache_prune_every = '5m'
