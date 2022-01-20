@@ -6,25 +6,28 @@
 
 //! The foreign function interface for the wallet.
 
-use crate::POSEIDON_TREE_DEPTH;
-
 use alloc::vec::Vec;
 use core::num::NonZeroU32;
 use core::ptr;
 
 use canonical::{Canon, Source};
+use dusk_bytes::Write;
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_jubjub::BlsScalar;
-use dusk_pki::{PublicSpendKey, ViewKey};
+use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
+use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
+use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
-use phoenix_core::Note;
+use dusk_schnorr::Signature;
+use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{
     impls::{next_u32_via_fill, next_u64_via_fill},
     CryptoRng, RngCore,
 };
 
 use crate::tx::UnprovenTransaction;
-use crate::{Error, NodeClient, Store, Wallet};
+use crate::{
+    Error, ProverClient, StateClient, Store, Wallet, POSEIDON_TREE_DEPTH,
+};
 
 extern "C" {
     /// Retrieves the seed from the store.
@@ -55,8 +58,27 @@ extern "C" {
     /// Fetches the current anchor.
     fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
 
+    /// Fetches the current staked amount for a key.
+    fn fetch_stake(
+        pk: *const [u8; PublicKey::SIZE],
+        stake: *mut u64,
+        expiration: *mut u32,
+    ) -> u8;
+
     /// Request the node to prove the given unproven transaction.
     fn compute_proof_and_propagate(utx: *const u8, utx_len: u32) -> u8;
+
+    /// Requests the node to prove STCT.
+    fn request_stct_proof(
+        inputs: *const [u8; STCT_INPUT_SIZE],
+        proof: *mut [u8; Proof::SIZE],
+    ) -> u8;
+
+    /// Request the node to prove WFCT.
+    fn request_wfct_proof(
+        inputs: *const [u8; WFCT_INPUT_SIZE],
+        proof: *mut [u8; Proof::SIZE],
+    ) -> u8;
 }
 
 macro_rules! unwrap_or_bail {
@@ -64,14 +86,15 @@ macro_rules! unwrap_or_bail {
         match $e {
             Ok(v) => v,
             Err(e) => {
-                return Error::<FfiStore, FfiNodeClient>::from(e).into();
+                return Error::<FfiStore, FfiStateClient, FfiProverClient>::from(e).into();
             }
         }
     };
 }
 
-type FfiWallet = Wallet<FfiStore, FfiNodeClient>;
-const WALLET: FfiWallet = Wallet::new(FfiStore, FfiNodeClient);
+type FfiWallet = Wallet<FfiStore, FfiStateClient, FfiProverClient>;
+const WALLET: FfiWallet =
+    Wallet::new(FfiStore, FfiStateClient, FfiProverClient);
 
 /// Get the public spend key with the given index.
 #[no_mangle]
@@ -86,7 +109,7 @@ pub unsafe extern "C" fn public_spend_key(
 
 /// Creates a transfer transaction.
 #[no_mangle]
-pub unsafe extern "C" fn create_transfer_tx(
+pub unsafe extern "C" fn transfer(
     sender_index: u64,
     refund: *const [u8; PublicSpendKey::SIZE],
     receiver: *const [u8; PublicSpendKey::SIZE],
@@ -102,7 +125,7 @@ pub unsafe extern "C" fn create_transfer_tx(
         ref_id.copied().unwrap_or_else(|| (&mut FfiRng).next_u64()),
     );
 
-    unwrap_or_bail!(WALLET.create_transfer_tx(
+    unwrap_or_bail!(WALLET.transfer(
         &mut FfiRng,
         sender_index,
         &refund,
@@ -118,38 +141,90 @@ pub unsafe extern "C" fn create_transfer_tx(
 
 /// Creates a stake transaction.
 #[no_mangle]
-pub unsafe extern "C" fn create_stake_tx() {
-    unimplemented!()
-}
+pub unsafe extern "C" fn stake(
+    sender_index: u64,
+    staker_index: u64,
+    refund: *const [u8; PublicSpendKey::SIZE],
+    value: u64,
+    gas_limit: u64,
+    gas_price: u64,
+) -> u8 {
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
 
-/// Stops staking for a key.
-#[no_mangle]
-pub unsafe extern "C" fn stop_stake() {
-    unimplemented!()
+    unwrap_or_bail!(WALLET.stake(
+        &mut FfiRng,
+        sender_index,
+        staker_index,
+        &refund,
+        value,
+        gas_price,
+        gas_limit
+    ));
+
+    0
 }
 
 /// Extends staking for a particular key.
 #[no_mangle]
-pub unsafe extern "C" fn extend_stake() {
-    unimplemented!()
+pub unsafe extern "C" fn extend_stake(
+    sender_index: u64,
+    staker_index: u64,
+    refund: *const [u8; PublicSpendKey::SIZE],
+    gas_limit: u64,
+    gas_price: u64,
+) -> u8 {
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
+
+    unwrap_or_bail!(WALLET.extend_stake(
+        &mut FfiRng,
+        sender_index,
+        staker_index,
+        &refund,
+        gas_price,
+        gas_limit
+    ));
+
+    0
 }
 
 /// Withdraw a key's stake.
 #[no_mangle]
-pub unsafe extern "C" fn withdraw_stake() {
-    unimplemented!()
+pub unsafe extern "C" fn withdraw_stake(
+    sender_index: u64,
+    staker_index: u64,
+    refund: *const [u8; PublicSpendKey::SIZE],
+    gas_limit: u64,
+    gas_price: u64,
+) -> u8 {
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
+
+    unwrap_or_bail!(WALLET.withdraw_stake(
+        &mut FfiRng,
+        sender_index,
+        staker_index,
+        &refund,
+        gas_price,
+        gas_limit
+    ));
+
+    0
 }
 
-/// Syncs the wallet with the blocks.
+/// Gets the balance of a secret spend key.
 #[no_mangle]
-pub unsafe extern "C" fn sync_blocks() {
-    unimplemented!()
+pub unsafe extern "C" fn get_balance(ssk_index: u64, balance: *mut u64) -> u8 {
+    *balance = unwrap_or_bail!(WALLET.get_balance(ssk_index));
+    0
 }
 
-/// Gets the balance of a key.
+/// Gets the stake of a staking key and its expiration.
 #[no_mangle]
-pub unsafe extern "C" fn get_balance(key_index: u64, balance: *mut u64) -> u8 {
-    *balance = unwrap_or_bail!(WALLET.get_balance(key_index));
+pub unsafe extern "C" fn get_stake(
+    sk_index: u64,
+    stake: *mut u64,
+    expiration: *mut u32,
+) -> u8 {
+    (*stake, *expiration) = unwrap_or_bail!(WALLET.get_stake(sk_index));
     0
 }
 
@@ -175,9 +250,19 @@ const NOTES_BUF_SIZE: usize = 0x100000;
 // 512 KB for a buffer.
 const OPENING_BUF_SIZE: usize = 0x10000;
 
-struct FfiNodeClient;
+const STCT_INPUT_SIZE: usize = Fee::SIZE
+    + Crossover::SIZE
+    + u64::SIZE
+    + JubJubScalar::SIZE
+    + BlsScalar::SIZE
+    + Signature::SIZE;
 
-impl NodeClient for FfiNodeClient {
+const WFCT_INPUT_SIZE: usize =
+    JubJubAffine::SIZE + u64::SIZE + JubJubScalar::SIZE;
+
+struct FfiStateClient;
+
+impl StateClient for FfiStateClient {
     type Error = u8;
 
     fn fetch_notes(
@@ -205,10 +290,9 @@ impl NodeClient for FfiNodeClient {
 
         let mut buf = &notes_buf[..];
         for _ in 0..num_notes {
-            notes.push(
-                Note::from_reader(&mut buf)
-                    .map_err(Error::<FfiStore, FfiNodeClient>::from)?,
-            );
+            notes.push(Note::from_reader(&mut buf).map_err(
+                Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+            )?);
         }
 
         Ok(notes)
@@ -222,8 +306,9 @@ impl NodeClient for FfiNodeClient {
                 return Err(r);
             }
         }
-        let scalar = BlsScalar::from_bytes(&scalar_buf)
-            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
+        let scalar = BlsScalar::from_bytes(&scalar_buf).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
 
         Ok(scalar)
     }
@@ -245,19 +330,41 @@ impl NodeClient for FfiNodeClient {
         }
 
         let mut source = Source::new(&opening_buf[..opening_len as usize]);
-        let branch = PoseidonBranch::decode(&mut source)
-            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
+        let branch = PoseidonBranch::decode(&mut source).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
 
         Ok(branch)
     }
+
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+        let pk = pk.to_bytes();
+        let mut stake = 0;
+        let mut expiration = 0;
+
+        unsafe {
+            let r = fetch_stake(&pk, &mut stake, &mut expiration);
+            if r != 0 {
+                return Err(r);
+            }
+        }
+
+        Ok((stake, expiration))
+    }
+}
+
+struct FfiProverClient;
+
+impl ProverClient for FfiProverClient {
+    type Error = u8;
 
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        let utx_bytes = utx
-            .to_bytes()
-            .map_err(Error::<FfiStore, FfiNodeClient>::from)?;
+        let utx_bytes = utx.to_bytes().map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
 
         unsafe {
             let r = compute_proof_and_propagate(
@@ -270,6 +377,86 @@ impl NodeClient for FfiNodeClient {
         }
 
         Ok(())
+    }
+
+    fn request_stct_proof(
+        &self,
+        fee: &Fee,
+        crossover: &Crossover,
+        value: u64,
+        blinder: JubJubScalar,
+        address: BlsScalar,
+        signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        let mut buf = [0; STCT_INPUT_SIZE];
+
+        let mut writer = &mut buf[..];
+        writer.write(&fee.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&crossover.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&value.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&blinder.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&address.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&signature.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+
+        let mut proof_buf = [0; Proof::SIZE];
+
+        unsafe {
+            let r = request_stct_proof(&buf, &mut proof_buf);
+            if r != 0 {
+                return Err(r);
+            }
+        }
+
+        let proof = Proof::from_bytes(&proof_buf).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        Ok(proof)
+    }
+
+    fn request_wfct_proof(
+        &self,
+        commitment: JubJubAffine,
+        value: u64,
+        blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        let mut buf = [0; WFCT_INPUT_SIZE];
+
+        let mut writer = &mut buf[..];
+        writer.write(&commitment.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&value.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        writer.write(&blinder.to_bytes()).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+
+        let mut proof_buf = [0; Proof::SIZE];
+
+        unsafe {
+            let r = request_wfct_proof(&buf, &mut proof_buf);
+            if r != 0 {
+                return Err(r);
+            }
+        }
+
+        let proof = Proof::from_bytes(&proof_buf).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+        Ok(proof)
     }
 }
 
@@ -312,17 +499,20 @@ impl RngCore for FfiRng {
     }
 }
 
-impl<S: Store, C: NodeClient> From<Error<S, C>> for u8 {
-    fn from(e: Error<S, C>) -> Self {
+impl<S: Store, SC: StateClient, PC: ProverClient> From<Error<S, SC, PC>>
+    for u8
+{
+    fn from(e: Error<S, SC, PC>) -> Self {
         match e {
             Error::Store(_) => 255,
             Error::Rng(_) => 254,
             Error::Bytes(_) => 253,
-            Error::Node(_) => 252,
-            Error::NotEnoughBalance => 251,
-            Error::NoteCombinationProblem => 250,
-            Error::Canon(_) => 249,
-            Error::Phoenix(_) => 248,
+            Error::State(_) => 252,
+            Error::Prover(_) => 251,
+            Error::NotEnoughBalance => 250,
+            Error::NoteCombinationProblem => 249,
+            Error::Canon(_) => 248,
+            Error::Phoenix(_) => 247,
         }
     }
 }

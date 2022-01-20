@@ -8,40 +8,21 @@
 
 mod mock;
 
-use mock::{mock_wallet, TestNodeClient};
+use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use mock::{mock_wallet, TestProverClient};
 
-use dusk_pki::ViewKey;
-use dusk_plonk::prelude::BlsScalar;
-use dusk_poseidon::tree::PoseidonBranch;
-use dusk_wallet_core::{NodeClient, UnprovenTransaction, POSEIDON_TREE_DEPTH};
-use phoenix_core::Note;
+use dusk_plonk::prelude::{BlsScalar, Proof};
+use dusk_schnorr::Signature;
+use dusk_wallet_core::{ProverClient, UnprovenTransaction};
+use phoenix_core::{Crossover, Fee};
 
 #[derive(Debug)]
-struct SerdeNodeClient {
-    node: TestNodeClient,
+struct SerdeProverClient {
+    prover: TestProverClient,
 }
 
-impl NodeClient for SerdeNodeClient {
+impl ProverClient for SerdeProverClient {
     type Error = ();
-
-    fn fetch_notes(
-        &self,
-        height: u64,
-        vk: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
-        self.node.fetch_notes(height, vk)
-    }
-
-    fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
-        self.node.fetch_anchor()
-    }
-
-    fn fetch_opening(
-        &self,
-        note: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
-        self.node.fetch_opening(note)
-    }
 
     fn compute_proof_and_propagate(
         &self,
@@ -74,7 +55,30 @@ impl NodeClient for SerdeNodeClient {
         assert_eq!(utx.crossover(), utx_clone.crossover());
         assert_eq!(utx.call(), utx_clone.call());
 
-        self.node.compute_proof_and_propagate(utx)
+        self.prover.compute_proof_and_propagate(utx)
+    }
+
+    fn request_stct_proof(
+        &self,
+        fee: &Fee,
+        crossover: &Crossover,
+        value: u64,
+        blinder: JubJubScalar,
+        address: BlsScalar,
+        signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_stct_proof(
+            fee, crossover, value, blinder, address, signature,
+        )
+    }
+
+    fn request_wfct_proof(
+        &self,
+        commitment: JubJubAffine,
+        value: u64,
+        blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_wfct_proof(commitment, value, blinder)
     }
 }
 
@@ -89,14 +93,12 @@ fn serde() {
 
     let ref_id = BlsScalar::random(&mut rng);
     wallet
-        .create_transfer_tx(
-            &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
-        )
+        .transfer(&mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id)
         .expect("Transaction creation to be successful");
 }
 
 #[test]
-fn create_transfer_tx() {
+fn transfer() {
     let mut rng = rand::thread_rng();
 
     let wallet = mock_wallet(&mut rng, &[2500, 2500, 5000]);
@@ -106,9 +108,7 @@ fn create_transfer_tx() {
 
     let ref_id = BlsScalar::random(&mut rng);
     wallet
-        .create_transfer_tx(
-            &mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id,
-        )
+        .transfer(&mut rng, 0, &send_psk, &recv_psk, 100, 100, 1, ref_id)
         .expect("Transaction creation to be successful");
 }
 
