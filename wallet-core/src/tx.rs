@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::NodeClient;
+use crate::StateClient;
 
 use alloc::vec::Vec;
 use core::mem;
@@ -404,18 +404,18 @@ pub struct UnprovenTransaction {
 }
 
 impl UnprovenTransaction {
+    /// Creates a transaction that conforms to the transfer contract.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new<Rng: RngCore + CryptoRng, C: NodeClient>(
+    pub(crate) fn new<Rng: RngCore + CryptoRng, SC: StateClient>(
         rng: &mut Rng,
-        node: &C,
+        state: &SC,
         sender: &SecretSpendKey,
         inputs: Vec<(Note, u64, JubJubScalar)>,
         outputs: Vec<(Note, u64, JubJubScalar)>,
-        anchor: BlsScalar,
         fee: Fee,
         crossover: (Crossover, u64, JubJubScalar),
         call: Option<(ContractId, Vec<u8>)>,
-    ) -> Result<Self, C::Error> {
+    ) -> Result<Self, SC::Error> {
         let nullifiers: Vec<BlsScalar> = inputs
             .iter()
             .map(|(note, _, _)| note.gen_nullifier(sender))
@@ -423,9 +423,11 @@ impl UnprovenTransaction {
 
         let mut openings = Vec::with_capacity(inputs.len());
         for (note, _, _) in &inputs {
-            let opening = node.fetch_opening(note)?;
+            let opening = state.fetch_opening(note)?;
             openings.push(opening);
         }
+
+        let anchor = state.fetch_anchor()?;
 
         let skel = TransactionSkeleton::new(
             nullifiers,

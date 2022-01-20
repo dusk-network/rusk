@@ -6,13 +6,16 @@
 
 //! Mocks of the traits supplied by the user of the crate..
 
-use dusk_jubjub::{BlsScalar, JubJubScalar};
-use dusk_pki::{PublicSpendKey, ViewKey};
+use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
+use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
+use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    NodeClient, Store, UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
+    ProverClient, StateClient, Store, UnprovenTransaction, Wallet,
+    POSEIDON_TREE_DEPTH,
 };
-use phoenix_core::{Note, NoteType};
+use phoenix_core::{Crossover, Fee, Note, NoteType};
 use rand_core::{CryptoRng, RngCore};
 
 /// Create a new wallet meant for tests. It includes a client that will always
@@ -22,17 +25,18 @@ use rand_core::{CryptoRng, RngCore};
 pub fn mock_wallet<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     note_values: &[u64],
-) -> Wallet<TestStore, TestNodeClient> {
+) -> Wallet<TestStore, TestStateClient, TestProverClient> {
     let store = TestStore::new(rng);
-    let psk = store.retrieve_key(0).unwrap().public_spend_key();
+    let psk = store.retrieve_ssk(0).unwrap().public_spend_key();
 
     let notes = new_notes(rng, &psk, note_values);
     let anchor = BlsScalar::random(rng);
     let opening = Default::default();
 
-    let node = TestNodeClient::new(notes, anchor, opening);
+    let state = TestStateClient::new(notes, anchor, opening);
+    let prover = TestProverClient;
 
-    Wallet::new(store, node)
+    Wallet::new(store, state, prover)
 }
 
 /// Returns obfuscated notes with the given value.
@@ -73,15 +77,15 @@ impl Store for TestStore {
     }
 }
 
-/// A node client that always returns the same notes, anchor, and opening.
+/// A state client that always returns the same notes, anchor, and opening.
 #[derive(Debug, Clone)]
-pub struct TestNodeClient {
+pub struct TestStateClient {
     notes: Vec<Note>,
     anchor: BlsScalar,
     opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
 }
 
-impl TestNodeClient {
+impl TestStateClient {
     /// Create a new node given the notes, anchor, and opening we will return.
     fn new(
         notes: Vec<Note>,
@@ -96,7 +100,7 @@ impl TestNodeClient {
     }
 }
 
-impl NodeClient for TestNodeClient {
+impl StateClient for TestStateClient {
     type Error = ();
 
     fn fetch_notes(
@@ -118,10 +122,41 @@ impl NodeClient for TestNodeClient {
         Ok(self.opening.clone())
     }
 
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+        Ok((100, 200))
+    }
+}
+
+#[derive(Debug)]
+pub struct TestProverClient;
+
+impl ProverClient for TestProverClient {
+    type Error = ();
     fn compute_proof_and_propagate(
         &self,
         _: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
         Ok(())
+    }
+
+    fn request_stct_proof(
+        &self,
+        _fee: &Fee,
+        _crossover: &Crossover,
+        _value: u64,
+        _blinder: JubJubScalar,
+        _address: BlsScalar,
+        _signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        Ok(Proof::default())
+    }
+
+    fn request_wfct_proof(
+        &self,
+        _commitment: JubJubAffine,
+        _value: u64,
+        _blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        Ok(Proof::default())
     }
 }

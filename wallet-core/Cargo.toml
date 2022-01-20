@@ -9,8 +9,8 @@ license = "MPL-2.0"
 rand_core = "^0.6"
 rand_chacha = { version = "^0.3", default-features = false }
 sha2 = { version = "^0.10", default-features = false }
-phoenix-core = "0.15.0-rc"
-dusk-pki = "0.9.0-rc"
+phoenix-core = { version =  "0.15.0-rc", features = [ "canon" ] }
+dusk-pki = { version = "0.9.0-rc", features = [ "canon" ] }
 dusk-bytes = "^0.1"
 dusk-schnorr = { version = "0.9.0-rc", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
