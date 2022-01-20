@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod config;
 #[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
@@ -22,13 +23,7 @@ use tokio::net::UnixListener;
 use tonic::transport::Server;
 use version::show_version;
 
-/// Default UDS path that Rusk GRPC-server will connect to.
-pub const SOCKET_PATH: &str = "/tmp/rusk_listener";
-
-/// Default port that Rusk GRPC-server will listen to.
-pub(crate) const PORT: &str = "8585";
-/// Default host_address that Rusk GRPC-server will listen to.
-pub(crate) const HOST_ADDRESS: &str = "127.0.0.1";
+use crate::config::Config;
 
 #[tokio::main]
 async fn main() {
@@ -40,12 +35,20 @@ async fn main() {
         .author("Dusk Network B.V. All Rights Reserved.")
         .about("Rusk Server node.")
         .arg(
+            Arg::new("config")
+                .long("config")
+                .short('c')
+                .env("RUSK_CONFIG_TOML")
+                .help("Configuration file path")
+                .takes_value(true)
+                .required(false),
+        )
+        .arg(
             Arg::new("socket")
                 .short('s')
                 .long("socket")
                 .value_name("socket")
                 .help("Path for setting up the UDS ")
-                .default_value(SOCKET_PATH)
                 .takes_value(true),
         )
         .arg(
@@ -76,18 +79,14 @@ async fn main() {
                 .long("log-level")
                 .value_name("LOG")
                 .possible_values(&["error", "warn", "info", "debug", "trace"])
-                .default_value("info")
                 .help("Output log level")
                 .takes_value(true),
         );
     let app = network_config(app);
-    let matches = app.get_matches();
+    let rusk_config = merge_config(app.get_matches());
 
     // Match tracing desired level.
-    let log = match matches
-        .value_of("log-level")
-        .expect("Failed parsing log-level arg")
-    {
+    let log = match &rusk_config.log_level[..] {
         "error" => tracing::Level::ERROR,
         "warn" => tracing::Level::WARN,
         "info" => tracing::Level::INFO,
@@ -107,16 +106,16 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    let network = create_network(&matches);
-
+    let network =
+        RuskNetwork::new(rusk_config.kadcast.clone(), rusk_config.kadcast_test);
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
-    let res = match matches.value_of("ipc_method") {
+    let res = match rusk_config.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
                 startup_with_tcp_ip(
-                    matches.value_of("host").unwrap_or(HOST_ADDRESS),
-                    matches.value_of("port").unwrap_or(PORT),
+                    &rusk_config.host,
+                    &rusk_config.port,
                     network,
                 )
                 .await
@@ -125,28 +124,20 @@ async fn main() {
                 panic!("Windows does not support Unix Domain Sockets");
             }
             (false, "uds") => {
-                startup_with_uds(
-                    matches.value_of("socket").unwrap_or(SOCKET_PATH),
-                    network,
-                )
-                .await
+                startup_with_uds(&rusk_config.socket, network).await
             }
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
                 startup_with_tcp_ip(
-                    matches.value_of("host").unwrap_or(HOST_ADDRESS),
-                    matches.value_of("port").unwrap_or(PORT),
+                    &rusk_config.host,
+                    &rusk_config.port,
                     network,
                 )
                 .await
             } else {
-                startup_with_uds(
-                    matches.value_of("socket").unwrap_or(SOCKET_PATH),
-                    network,
-                )
-                .await
+                startup_with_uds(&rusk_config.socket, network).await
             }
         }
     };
@@ -215,6 +206,48 @@ async fn startup_with_tcp_ip(
         .await?)
 }
 
+fn merge_config(matches: ArgMatches) -> Config {
+    let mut rusk_config =
+        matches
+            .value_of("config")
+            .map_or(Config::default(), |conf_path| {
+                let toml =
+                    std::fs::read_to_string(conf_path.to_string()).unwrap();
+                toml::from_str(&toml).unwrap()
+            });
+
+    if let Some(log) = matches.value_of("log-level") {
+        rusk_config.log_level = log.into();
+    }
+    if let Some(host) = matches.value_of("host") {
+        rusk_config.host = host.into();
+    }
+    if let Some(port) = matches.value_of("port") {
+        rusk_config.port = port.into();
+    }
+    if let Some(ipc_method) = matches.value_of("ipc_method") {
+        rusk_config.ipc_method = Some(ipc_method.into());
+    }
+    if let Some(socket) = matches.value_of("socket") {
+        rusk_config.socket = socket.into();
+    }
+
+    if let Some(public_address) = matches.value_of("kadcast_public_address") {
+        rusk_config.kadcast.public_address = public_address.into();
+    };
+    if let Some(listen_address) = matches.value_of("kadcast_listen_address") {
+        rusk_config.kadcast.listen_address = Some(listen_address.into());
+    };
+    if let Some(bootstrapping_nodes) = matches.values_of("kadcast_bootstrap") {
+        rusk_config.kadcast.bootstrapping_nodes =
+            bootstrapping_nodes.map(|s| s.into()).collect();
+    };
+    rusk_config.kadcast.auto_propagate =
+        matches.is_present("kadcast_autobroadcast");
+    rusk_config.kadcast_test = matches.is_present("kadcast_test");
+    rusk_config
+}
+
 /// Setup clap to handle kadcast network configuration
 fn network_config(app: App<'_>) -> App<'_> {
     app.arg(
@@ -225,7 +258,7 @@ This address MUST be accessible from any peer of the network")
             .help("Public address you want to be identified with. Eg: 193.xxx.xxx.198:9999")
             .env("KADCAST_PUBLIC_ADDRESS")
             .takes_value(true)
-            .required(true),
+            .required(false),
     )
     .arg(
         Arg::new("kadcast_listen_address")
@@ -246,13 +279,13 @@ If this is not specified, the public address will be used for binding incoming c
             .multiple_occurrences(true)
             .help("Kadcast list of bootstrapping server addresses")
             .takes_value(true)
-            .required(true),
+            .required(false),
     )
     .arg(
         Arg::new("kadcast_autobroadcast")
             .long("kadcast_autobroadcast")
             .env("KADCAST_AUTOBROADCAST")
-            .help("If true then the received messages are automatically re-broadcasted")
+            .help("If used then the received messages are automatically re-broadcasted")
             .takes_value(false)
             .required(false),
     )
@@ -260,22 +293,8 @@ If this is not specified, the public address will be used for binding incoming c
         Arg::new("kadcast_test")
             .long("kadcast_test")
             .env("KADCAST_TEST")
-            .help("If true then the received messages is a blake2b 256hash")
+            .help("If used then the received messages is a blake2b 256hash")
             .takes_value(false)
             .required(false),
-    )
-}
-
-fn create_network(args: &ArgMatches) -> RuskNetwork {
-    RuskNetwork::new(
-        args.value_of("kadcast_public_address").unwrap().to_string(),
-        args.value_of("kadcast_listen_address")
-            .map(|s| s.to_string()),
-        args.values_of("kadcast_bootstrap")
-            .unwrap_or_default()
-            .map(|s| s.to_string())
-            .collect(),
-        args.is_present("kadcast_autobroadcast"),
-        args.is_present("kadcast_test"),
     )
 }

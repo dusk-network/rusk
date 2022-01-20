@@ -7,6 +7,7 @@
 //! Public Key infrastructure service implementation for the Rusk server.
 
 use blake2::{digest::consts::U32, Blake2b, Digest};
+use kadcast::config::Config as KadcastConfig;
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
@@ -25,13 +26,7 @@ pub struct RuskNetwork {
 }
 
 impl RuskNetwork {
-    pub fn new(
-        public_addr: String,
-        listen_addr: Option<String>,
-        bootstrap: Vec<String>,
-        auto_broadcast: bool,
-        hash_message: bool,
-    ) -> RuskNetwork {
+    pub fn new(config: KadcastConfig, hash_message: bool) -> RuskNetwork {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
         // The sender is used by the KadcastListener to forward the received
@@ -45,16 +40,9 @@ impl RuskNetwork {
             grpc_sender: grpc_sender.clone(),
             hash_message,
         };
-        let peer = Peer::builder(public_addr, bootstrap, listener)
-            .with_listen_address(listen_addr)
-            .with_auto_propagate(auto_broadcast)
-            // Disable recursive discovery in a local env
-            // This should be set to `true` in a real env
-            .with_recursive_discovery(true)
-            .build();
 
         RuskNetwork {
-            peer,
+            peer: Peer::new(config, listener),
             sender: grpc_sender,
         }
     }
@@ -62,13 +50,7 @@ impl RuskNetwork {
 
 impl Default for RuskNetwork {
     fn default() -> RuskNetwork {
-        RuskNetwork::new(
-            "127.0.0.1:9999".to_string(),
-            None,
-            vec![],
-            false,
-            false,
-        )
+        RuskNetwork::new(KadcastConfig::default(), false)
     }
 }
 struct KadcastListener {
