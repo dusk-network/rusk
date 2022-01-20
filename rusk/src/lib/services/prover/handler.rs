@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{rusk_proto, ServiceRequestHandler};
-use dusk_bytes::Serializable;
 
 use dusk_plonk::prelude::*;
 use dusk_wallet_core::UnprovenTransaction;
