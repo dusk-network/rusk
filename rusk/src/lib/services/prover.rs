@@ -6,53 +6,135 @@
 
 //! Prover service implementation for the Rusk server.
 
+mod stco;
+mod stct;
+mod wfco;
+mod wfct;
+
 use crate::services::rusk_proto;
 use crate::Rusk;
 
+use dusk_bytes::DeserializableSlice;
+use dusk_bytes::Serializable;
+use dusk_pki::PublicSpendKey;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
+use dusk_plonk::prelude::*;
+use dusk_schnorr::Signature;
+use dusk_wallet_core::UnprovenTransaction;
+use lazy_static::lazy_static;
+use phoenix_core::{Crossover, Fee, Message};
+use rusk_profile::keys_for;
+pub use rusk_proto::prover_client::ProverClient;
+pub use rusk_proto::prover_server::{Prover, ProverServer};
 pub use rusk_proto::{
-    prover_client::ProverClient,
-    prover_server::{Prover, ProverServer},
-    ProverRequest, ProverResponse,
+    ExecuteProverRequest, ExecuteProverResponse, StcoProverRequest,
+    StcoProverResponse, StctProverRequest, StctProverResponse,
+    WfcoProverRequest, WfcoProverResponse, WfctProverRequest,
+    WfctProverResponse,
+};
+use std::collections::HashMap;
+
+use transfer_circuits::{
+    CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
+    SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
+    StcoCrossover, StcoMessage, WfoChange, WfoCommitment,
+    WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
 
-use dusk_plonk::prelude::*;
-use dusk_wallet_core::UnprovenTransaction;
-use rusk_profile::keys_for;
-use transfer_circuits::{CircuitInput, CircuitInputSignature, ExecuteCircuit};
+macro_rules! handle {
+    ($self: ident, $req: ident, $handler: ident, $name: expr) => {{
+        info!("Received {} request", $name);
+        match $self.$handler(&$req.get_ref()) {
+            Ok(response) => {
+                info!(
+                    "{} was successfully processed. Sending response...",
+                    $name
+                );
+                Ok(response)
+            }
+            Err(e) => {
+                error!("An error occurred processing {}: {:?}", $name, e);
+                Err(e)
+            }
+        }
+    }};
+}
+
+lazy_static! {
+    static ref EXECUTE_PROVER_KEYS: HashMap<(usize, usize), ProverKey> = {
+        let mut map = HashMap::new();
+
+        for ninputs in [1, 2, 3, 4] {
+            for noutputs in [0, 1, 2] {
+                let circ = circuit_from_numbers(ninputs, noutputs)
+                    .expect("circuit to exist");
+
+                let keys =
+                    keys_for(circ.circuit_id()).expect("keys to be available");
+                let pk = keys.get_prover().expect("prover to be available");
+                let pk =
+                    ProverKey::from_slice(&pk).expect("prover key to be valid");
+
+                map.insert((ninputs, noutputs), pk);
+            }
+        }
+
+        map
+    };
+}
 
 #[tonic::async_trait]
 impl Prover for Rusk {
     async fn prove_and_propagate(
         &self,
-        request: Request<ProverRequest>,
-    ) -> Result<Response<ProverResponse>, Status> {
-        info!("Received Prove request");
-        match self.prove_and_propagate(&request) {
-            Ok(response) => {
-                info!("Prove request was successfully processed. Sending response...");
-                Ok(response)
-            }
-            Err(e) => {
-                error!(
-                    "An error ocurred processing the Prove request: {:?}",
-                    e
-                );
-                Err(e)
-            }
-        }
+        request: Request<ExecuteProverRequest>,
+    ) -> Result<Response<ExecuteProverResponse>, Status> {
+        return handle!(
+            self,
+            request,
+            prove_and_propagate,
+            "prove_and_propagate"
+        );
+    }
+
+    async fn prove_stct(
+        &self,
+        request: Request<StctProverRequest>,
+    ) -> Result<Response<StctProverResponse>, Status> {
+        return handle!(self, request, prove_stct, "prove_stct");
+    }
+
+    async fn prove_stco(
+        &self,
+        request: Request<StcoProverRequest>,
+    ) -> Result<Response<StcoProverResponse>, Status> {
+        return handle!(self, request, prove_stco, "prove_stco");
+    }
+
+    async fn prove_wfct(
+        &self,
+        request: Request<WfctProverRequest>,
+    ) -> Result<Response<WfctProverResponse>, Status> {
+        return handle!(self, request, prove_wfct, "prove_wfct");
+    }
+
+    async fn prove_wfco(
+        &self,
+        request: Request<WfcoProverRequest>,
+    ) -> Result<Response<WfcoProverResponse>, Status> {
+        return handle!(self, request, prove_wfco, "prove_wfco");
     }
 }
 
 impl Rusk {
     fn prove_and_propagate(
         &self,
-        request: &Request<ProverRequest>,
-    ) -> Result<Response<ProverResponse>, Status> {
-        let utx = UnprovenTransaction::from_slice(&request.get_ref().utx)
-            .map_err(|_| {
+        request: &ExecuteProverRequest,
+    ) -> Result<Response<ExecuteProverResponse>, Status> {
+        let utx =
+            UnprovenTransaction::from_slice(&request.utx).map_err(|_| {
                 Status::invalid_argument("Failed parsing unproven TX")
             })?;
 
@@ -122,7 +204,7 @@ impl Rusk {
 
         // PROPAGATION MUST BE DONE HERE
 
-        Ok(Response::new(ProverResponse {}))
+        Ok(Response::new(ExecuteProverResponse {}))
     }
 }
 
