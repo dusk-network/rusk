@@ -17,17 +17,25 @@ use std::task::{Context, Poll};
 use std::{fs, io};
 
 use futures::TryFutureExt;
+use microkelvin::{BackendCtor, DiskBackend};
 use rusk::services::network::NetworkServer;
 use rusk::services::network::RuskNetwork;
 use rusk::services::pki::KeysServer;
 use rusk::services::prover::ProverServer;
-use rusk::Rusk;
+use rusk::{Result, Rusk};
 use test_context::AsyncTestContext;
 use tokio::net::{UnixListener, UnixStream};
 use tonic::transport::{Channel, Endpoint, Server, Uri};
 use tower::Service;
 use tracing::{subscriber, Level};
 use tracing_subscriber::fmt::Subscriber;
+
+/// This function creates a temporary backend for testing purposes.
+/// Calling `Rusk::with_backend()` with this function, will deploy a fresh
+/// state with the genesis contracts in a temporary location.
+pub fn testbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(|| DiskBackend::ephemeral())
+}
 
 pub struct TestContext {
     pub channel: Channel,
@@ -64,7 +72,8 @@ impl AsyncTestContext for TestContext {
         let uds =
             UnixListener::bind(&socket_path).expect("Error binding the socket");
 
-        let rusk = Rusk::default();
+        let rusk = Rusk::with_backend(&testbackend())
+            .expect("Error creating Rusk Instance");
         let network = RuskNetwork::default();
 
         let incoming = async_stream::stream! {

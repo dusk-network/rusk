@@ -156,7 +156,7 @@ async fn startup_with_uds(
 
     let uds = UnixListener::bind(path)?;
 
-    let rusk = Rusk::default();
+    let rusk = Rusk::new()?;
 
     let keys = KeysServer::new(rusk);
     let network = NetworkServer::new(kadcast);
@@ -190,7 +190,7 @@ async fn startup_with_tcp_ip(
     full_address.push_str(&port.to_string());
     let addr: std::net::SocketAddr = full_address.parse()?;
 
-    let rusk = Rusk::default();
+    let rusk = Rusk::new()?;
 
     let keys = KeysServer::new(rusk);
     let network = NetworkServer::new(kadcast);

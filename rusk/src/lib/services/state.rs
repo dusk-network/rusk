@@ -4,21 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::error::Error;
 use crate::Rusk;
+
+use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_pki::ViewKey;
+use phoenix_core::Note;
 
 use tonic::{Request, Response, Status};
 use tracing::info;
 
 pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
-    AcceptRequest, AcceptResponse, EchoRequest, EchoResponse,
-    ExecuteStateTransitionRequest, ExecuteStateTransitionResponse,
-    FinalizeRequest, FinalizeResponse, GetAnchorRequest, GetAnchorResponse,
-    GetEphemeralStateRootRequest, GetEphemeralStateRootResponse,
-    GetFinalizedStateRootRequest, GetFinalizedStateRootResponse,
+    EchoRequest, EchoResponse, ExecuteStateTransitionRequest,
+    ExecuteStateTransitionResponse, GetAnchorRequest, GetAnchorResponse,
     GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
     GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
-    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
+    GetStateRootRequest, GetStateRootResponse, VerifyStateTransitionRequest,
+    VerifyStateTransitionResponse,
 };
 
 #[tonic::async_trait]
@@ -52,8 +55,8 @@ impl State for Rusk {
 
     async fn accept(
         &self,
-        _request: Request<AcceptRequest>,
-    ) -> Result<Response<AcceptResponse>, Status> {
+        _request: Request<ExecuteStateTransitionRequest>,
+    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
         info!("Received Accept request");
 
         Err(Status::unimplemented("Request not implemented"))
@@ -61,8 +64,8 @@ impl State for Rusk {
 
     async fn finalize(
         &self,
-        _request: Request<FinalizeRequest>,
-    ) -> Result<Response<FinalizeResponse>, Status> {
+        _request: Request<ExecuteStateTransitionRequest>,
+    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
         info!("Received Finalize request");
 
         Err(Status::unimplemented("Request not implemented"))
@@ -77,31 +80,32 @@ impl State for Rusk {
         Err(Status::unimplemented("Request not implemented"))
     }
 
-    async fn get_ephemeral_state_root(
+    async fn get_state_root(
         &self,
-        _request: Request<GetEphemeralStateRootRequest>,
-    ) -> Result<Response<GetEphemeralStateRootResponse>, Status> {
+        _request: Request<GetStateRootRequest>,
+    ) -> Result<Response<GetStateRootResponse>, Status> {
         info!("Received GetEphemeralStateRoot request");
 
-        Err(Status::unimplemented("Request not implemented"))
-    }
-
-    async fn get_finalized_state_root(
-        &self,
-        _request: Request<GetFinalizedStateRootRequest>,
-    ) -> Result<Response<GetFinalizedStateRootResponse>, Status> {
-        info!("Received GetFinalizedStateRoot request");
-
-        Err(Status::unimplemented("Request not implemented"))
+        let state_root = self.state()?.root().to_vec();
+        Ok(Response::new(GetStateRootResponse { state_root }))
     }
 
     async fn get_notes_owned_by(
         &self,
-        _request: Request<GetNotesOwnedByRequest>,
+        request: Request<GetNotesOwnedByRequest>,
     ) -> Result<Response<GetNotesOwnedByResponse>, Status> {
         info!("Received GetNotesOwnedBy request");
 
-        Err(Status::unimplemented("Request not implemented"))
+        let vk = ViewKey::from_slice(&request.get_ref().vk)
+            .map_err(Error::Serialization)?;
+
+        let notes = self
+            .state()?
+            .fetch_notes(request.get_ref().height, &vk)?
+            .iter()
+            .map(|n| n.to_bytes().to_vec())
+            .collect();
+        Ok(Response::new(GetNotesOwnedByResponse { notes }))
     }
 
     async fn get_anchor(
@@ -110,15 +114,20 @@ impl State for Rusk {
     ) -> Result<Response<GetAnchorResponse>, Status> {
         info!("Received GetAnchor request");
 
-        Err(Status::unimplemented("Request not implemented"))
+        let anchor = self.state()?.fetch_anchor()?.to_bytes().to_vec();
+        Ok(Response::new(GetAnchorResponse { anchor }))
     }
 
     async fn get_opening(
         &self,
-        _request: Request<GetOpeningRequest>,
+        request: Request<GetOpeningRequest>,
     ) -> Result<Response<GetOpeningResponse>, Status> {
         info!("Received GetOpening request");
 
-        Err(Status::unimplemented("Request not implemented"))
+        let note = Note::from_slice(&request.get_ref().note)
+            .map_err(Error::Serialization)?;
+
+        let branch = self.state()?.fetch_opening(&note)?.to_bytes().to_vec();
+        Ok(Response::new(GetOpeningResponse { branch }))
     }
 }

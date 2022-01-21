@@ -37,14 +37,18 @@ dusk-jubjub = { version = "0.10", features = ["canon"] }
 dusk-pki = "0.9.0-rc"
 dusk-bytes = "0.1"
 dusk-wallet-core = "0.1"
-rusk-vm = "0.8.0-rc"
+rusk-vm = { version = "0.8.0-rc", features = ["persistence"] }
 phoenix-core = "0.15.0-rc"
 kadcast = "0.4.0-rc"
 canonical = "0.6"
 canonical_derive = "0.6"
 
+rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { path = "../circuits/transfer" }
+transfer-contract = { path = "../contracts/transfer" }
 rusk-profile = { path = "../rusk-profile" }
+microkelvin = { version = "0.10", features = ["persistence"] }
+rusk-abi = { path = "../rusk-abi" }
 
 [dev-dependencies]
 tower = "0.4"
