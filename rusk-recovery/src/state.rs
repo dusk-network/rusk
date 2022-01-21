@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::theme::Theme;
-use microkelvin::{BackendCtor, DiskBackend};
+use microkelvin::{Backend, BackendCtor, DiskBackend, PersistError};
 use rusk_abi;
-use rusk_vm::{Contract, NetworkState};
+use rusk_vm::{Contract, NetworkState, NetworkStateId};
 use stake_contract::StakeContract;
 use std::{fs, io};
 use tracing::info;
@@ -35,26 +35,11 @@ fn diskbackend() -> BackendCtor<DiskBackend> {
     })
 }
 
-pub fn exec(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn deploy<B>(ctor: &BackendCtor<B>) -> Result<NetworkStateId, PersistError>
+where
+    B: 'static + Backend,
+{
     let theme = Theme::default();
-
-    info!("{} Network state", theme.action("Checking"));
-    let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
-
-    let has_state = state_path.exists() && id_path.exists();
-
-    if has_state {
-        if overwrite {
-            info!("{} previous network state", theme.info("Found"));
-        } else {
-            info!("{} previous network state", theme.info("Keep"));
-            return Ok(());
-        }
-    } else {
-        info!("{} previous network state", theme.info("Missing"));
-    }
-
     info!("{} new network state", theme.action("Generating"));
 
     let transfer = Contract::new(
@@ -90,9 +75,33 @@ pub fn exec(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
 
     info!("{} network state", theme.action("Storing"));
 
-    let state_id = network
-        .persist(&diskbackend())
-        .expect("Error in persistence");
+    let state_id = network.persist(ctor).expect("Error in persistence");
+
+    Ok(state_id)
+}
+
+pub fn exec(overwrite: bool) -> Result<(), Box<dyn std::error::Error>> {
+    let theme = Theme::default();
+
+    info!("{} Network state", theme.action("Checking"));
+    let state_path = rusk_profile::get_rusk_state_dir()?;
+    let id_path = rusk_profile::get_rusk_state_id_path()?;
+
+    let has_state = state_path.exists() && id_path.exists();
+
+    if has_state {
+        if overwrite {
+            info!("{} previous network state", theme.info("Found"));
+        } else {
+            info!("{} previous network state", theme.info("Keep"));
+            return Ok(());
+        }
+    } else {
+        info!("{} previous network state", theme.info("Missing"));
+    }
+
+    let state_id =
+        deploy(&diskbackend()).expect("Failed to deploy network state");
 
     info!(
         "{} network state at {}",
