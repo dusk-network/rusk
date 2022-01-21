@@ -9,8 +9,8 @@ use std::{fmt, fs, io};
 use std::path::PathBuf;
 use bytes::{BytesMut, BufMut, Bytes, Buf};
 
-use dusk_pki::SecretSpendKey;
-use dusk_wallet_core::{Store, generate_ssk};
+use dusk_pki::{SecretSpendKey, SecretKey};
+use dusk_wallet_core::{Store, derive_sk, derive_ssk};
 
 /// Default directory name to store settings and keystore
 const DATA_DIR: &str = ".dusk";
@@ -36,7 +36,8 @@ pub struct LocalStore {
     name: String,
     path: PathBuf,
     seed: [u8; 64],
-    keys: Vec<u64>
+    ssk_keys: Vec<u64>,
+    sk_keys: Vec<u64>
 }
 
 impl Store for LocalStore {
@@ -48,10 +49,18 @@ impl Store for LocalStore {
         Ok(self.seed)
     }
 
-    /// Retrieves a stored key for this wallet.
-    fn retrieve_key(&self, index: u64) -> Result<SecretSpendKey, Self::Error> {
-        match self.has_key(index) {
-            true => Ok(generate_ssk(&self.seed, index)),
+    /// Retrieves a derived secret spend key from the store.
+    fn retrieve_ssk(&self, index: u64) -> Result<SecretSpendKey, Self::Error> {
+        match self.has_ssk(index) {
+            true => Ok(derive_ssk(&self.seed, index)),
+            false => Err(StoreError::KeyNotFound),
+        }
+    }
+
+    /// Retrieves a derived secret key from the store.
+    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Self::Error> {
+        match self.has_sk(index) {
+            true => Ok(derive_sk(&self.seed, index)),
             false => Err(StoreError::KeyNotFound),
         }
     }
@@ -80,7 +89,8 @@ impl LocalStore {
             name: name,
             path: path,
             seed: seed_bytes,
-            keys: vec![],
+            ssk_keys: vec![],
+            sk_keys: vec![],
         };
 
         // save to disk and return
@@ -106,23 +116,34 @@ impl LocalStore {
         let mut wallet_seed= [0u8; 64];
         reader.read(&mut wallet_seed)?;
     
-        // key_count
+        // ssk key count
         let mut key_count = [0u8; 8];
         reader.read(&mut key_count)?;
         let key_count = usize::from_le_bytes(key_count);
     
-        // keys
-        let mut keys = vec![];
+        // ssk keys
+        let mut ssk_keys = vec![];
         for _ in 0..key_count {
-
-            // index
             let mut index = [0u8; 8];
             reader.read(&mut index)?;
             let index = u64::from_le_bytes(index);
-
-            keys.push(index)
+            ssk_keys.push(index)
         }
     
+        // sk key count
+        let mut key_count = [0u8; 8];
+        reader.read(&mut key_count)?;
+        let key_count = usize::from_le_bytes(key_count);
+    
+        // sk keys
+        let mut sk_keys = vec![];
+        for _ in 0..key_count {
+            let mut index = [0u8; 8];
+            reader.read(&mut index)?;
+            let index = u64::from_le_bytes(index);
+            sk_keys.push(index)
+        }
+
         // extract the name
         let name = path.file_name().ok_or(StoreError::CorruptedFile)?.to_str().ok_or(StoreError::CorruptedFile)?;
 
@@ -131,7 +152,8 @@ impl LocalStore {
             name: String::from(name),
             path: path,
             seed: wallet_seed,
-            keys: keys,
+            sk_keys: sk_keys,
+            ssk_keys: ssk_keys,
         })
 
     }
@@ -144,12 +166,21 @@ impl LocalStore {
         // wallet seed
         buf.put_slice(&self.seed);
 
-        // key count
-        let len = self.keys.len();
+        // ssk key count
+        let len = self.ssk_keys.len();
         buf.put_slice(&len.to_le_bytes());
 
-        // keys
-        for key in self.keys.iter() {
+        // ssk keys
+        for key in self.ssk_keys.iter() {
+            buf.put_slice(&key.to_le_bytes());
+        }
+
+        // sk key count
+        let len = self.sk_keys.len();
+        buf.put_slice(&len.to_le_bytes());
+
+        // sk keys
+        for key in self.sk_keys.iter() {
             buf.put_slice(&key.to_le_bytes());
         }
     
@@ -159,28 +190,52 @@ impl LocalStore {
 
     }
 
-    /// Add a new secret key to the wallet
+    /// Add a new secret spend key to the wallet
     /// Note: This method does not persist the changes to disk.
-    pub fn add_key(&mut self, index: u64) -> Result<SecretSpendKey, StoreError> {
-        match self.has_key(index) {
+    pub fn add_ssk(&mut self, index: u64) -> Result<SecretSpendKey, StoreError> {
+        match self.has_ssk(index) {
             true => Err(StoreError::KeyAlreadyExists),
             false => {
-                let ssk = generate_ssk(&self.seed, index);
-                self.keys.push(index);
+                let ssk = derive_ssk(&self.seed, index);
+                self.ssk_keys.push(index);
                 Ok(ssk)
+            },
+        }
+    }
+
+    /// Remove an existing secret spend key from the wallet.
+    /// Note: This method does not persist the changes to disk.
+    pub fn remove_ssk(&mut self, index: u64) {
+        self.ssk_keys.retain(|key| *key != index)
+    }
+
+    /// Check if a secret spend key exists in this store.
+    pub fn has_ssk(&self, index: u64) -> bool {
+        self.ssk_keys.contains(&index)
+    }
+
+    /// Add a new secret key to the wallet
+    /// Note: This method does not persist the changes to disk.
+    pub fn add_sk(&mut self, index: u64) -> Result<SecretKey, StoreError> {
+        match self.has_sk(index) {
+            true => Err(StoreError::KeyAlreadyExists),
+            false => {
+                let sk = derive_sk(&self.seed, index);
+                self.sk_keys.push(index);
+                Ok(sk)
             },
         }
     }
 
     /// Remove an existing secret key from the wallet.
     /// Note: This method does not persist the changes to disk.
-    pub fn remove_key(&mut self, index: u64) {
-        self.keys.retain(|key| *key != index)
+    pub fn remove_sk(&mut self, index: u64) {
+        self.sk_keys.retain(|key| *key != index)
     }
 
-    /// Check if a key exists in this store.
-    pub fn has_key(&self, index: u64) -> bool {
-        self.keys.contains(&index)
+    /// Check if a secret key exists in this store.
+    pub fn has_sk(&self, index: u64) -> bool {
+        self.sk_keys.contains(&index)
     }
 
     /// The name of the wallet
@@ -196,8 +251,10 @@ impl fmt::Debug for LocalStore {
             LocalStore: {}\n\
             Name: {}\n\
             Seed: {:?}\n\
-            Keys: {}\n",
+            SSK Keys: {}\n\
+            SK Keys: {}\n",
             self.path.as_os_str().to_str().unwrap(), 
-            self.name, self.seed, self.keys.len())
+            self.name, self.seed, self.ssk_keys.len(),
+            self.sk_keys.len())
     }
 }
