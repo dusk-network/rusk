@@ -18,7 +18,7 @@ use dusk_wallet_core::{
 use phoenix_core::{Note, NoteType};
 use rand::{CryptoRng, RngCore};
 use rusk::services::rusk_proto::prover_client::ProverClient;
-use rusk::services::rusk_proto::ProverRequest;
+use rusk::services::rusk_proto::ExecuteProverRequest;
 use test_context::test_context;
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
@@ -135,12 +135,12 @@ impl NodeClient for TestNodeClient {
         utx: &UnprovenTransaction,
     ) -> Result<Proof, Self::Error> {
         let utx = utx.to_bytes().expect("transaction to serialize correctly");
-        let request = tonic::Request::new(ProverRequest { utx });
+        let request = tonic::Request::new(ExecuteProverRequest { utx });
 
         let mut prover = self.client.lock().expect("unlock to be successful");
         let proof = block_in_place(move || {
             Handle::current()
-                .block_on(async move { prover.prove(request).await })
+                .block_on(async move { prover.prove_execute(request).await })
         })
         .expect("successful call")
         .into_inner()
