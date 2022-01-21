@@ -8,7 +8,10 @@
 
 mod handler;
 
-use handler::ProverHandler;
+use handler::{
+    ExecuteProverHandler, StcoProverHandler, StctProverHandler,
+    WfcoProverHandler, WfctProverHandler,
+};
 
 use crate::services::{rusk_proto, ServiceRequestHandler};
 use crate::Rusk;
@@ -19,29 +22,66 @@ use tracing::{error, info};
 pub use rusk_proto::{
     prover_client::ProverClient,
     prover_server::{Prover, ProverServer},
-    ProverRequest, ProverResponse,
+    ExecuteProverRequest, ExecuteProverResponse, StcoProverRequest,
+    StcoProverResponse, StctProverRequest, StctProverResponse,
+    WfcoProverRequest, WfcoProverResponse, WfctProverRequest,
+    WfctProverResponse,
 };
 
-#[tonic::async_trait]
-impl Prover for Rusk {
-    async fn prove(
-        &self,
-        request: Request<ProverRequest>,
-    ) -> Result<Response<ProverResponse>, Status> {
-        info!("Received Prove request");
-        let handler = ProverHandler::load_request(&request);
+macro_rules! handle {
+    ($req: ident, $handler: ty, $name: expr) => {{
+        info!("Received {} request", $name);
+        let handler = <$handler>::load_request(&$req);
         match handler.handle_request() {
             Ok(response) => {
-                info!("Prove request was successfully processed. Sending response...");
+                info!(
+                    "{} was successfully processed. Sending response...",
+                    $name
+                );
                 Ok(response)
             }
             Err(e) => {
-                error!(
-                    "An error ocurred processing the Prove request: {:?}",
-                    e
-                );
+                error!("An error occurred processing {}: {:?}", $name, e);
                 Err(e)
             }
         }
+    }};
+}
+
+#[tonic::async_trait]
+impl Prover for Rusk {
+    async fn prove_execute(
+        &self,
+        request: Request<ExecuteProverRequest>,
+    ) -> Result<Response<ExecuteProverResponse>, Status> {
+        handle!(request, ExecuteProverHandler, "ProveExecute")
+    }
+
+    async fn prove_stct(
+        &self,
+        request: Request<StctProverRequest>,
+    ) -> Result<Response<StctProverResponse>, Status> {
+        handle!(request, StctProverHandler, "ProveStct")
+    }
+
+    async fn prove_stco(
+        &self,
+        request: Request<StcoProverRequest>,
+    ) -> Result<Response<StcoProverResponse>, Status> {
+        handle!(request, StcoProverHandler, "ProveStco")
+    }
+
+    async fn prove_wfct(
+        &self,
+        request: Request<WfctProverRequest>,
+    ) -> Result<Response<WfctProverResponse>, Status> {
+        handle!(request, WfctProverHandler, "ProveWfct")
+    }
+
+    async fn prove_wfco(
+        &self,
+        request: Request<WfcoProverRequest>,
+    ) -> Result<Response<WfcoProverResponse>, Status> {
+        handle!(request, WfcoProverHandler, "ProveWfco")
     }
 }
