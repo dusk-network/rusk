@@ -7,6 +7,8 @@
 //! The foreign function interface for the wallet.
 
 use alloc::vec::Vec;
+
+use core::mem;
 use core::num::NonZeroU32;
 use core::ptr;
 
@@ -95,6 +97,21 @@ macro_rules! unwrap_or_bail {
 type FfiWallet = Wallet<FfiStore, FfiStateClient, FfiProverClient>;
 const WALLET: FfiWallet =
     Wallet::new(FfiStore, FfiStateClient, FfiProverClient);
+
+/// Allocates memory with a given size.
+#[no_mangle]
+pub unsafe extern "C" fn malloc(cap: u32) -> *mut u8 {
+    let mut buf = Vec::with_capacity(cap as usize);
+    let ptr = buf.as_mut_ptr();
+    mem::forget(buf);
+    ptr
+}
+
+/// Free memory pointed to by the given `ptr`, and the given `cap`acity.
+#[no_mangle]
+pub unsafe extern "C" fn free(ptr: *mut u8, cap: u32) {
+    Vec::from_raw_parts(ptr, 0, cap as usize);
+}
 
 /// Get the public spend key with the given index.
 #[no_mangle]
