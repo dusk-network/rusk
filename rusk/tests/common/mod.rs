@@ -18,7 +18,7 @@ use std::{fs, io};
 
 use futures::TryFutureExt;
 use rusk::services::network::NetworkServer;
-use rusk::services::network::RuskNetwork;
+use rusk::services::network::KadcastDispatcher;
 use rusk::services::pki::KeysServer;
 use rusk::services::prover::ProverServer;
 use rusk::Rusk;
@@ -65,7 +65,7 @@ impl AsyncTestContext for TestContext {
             UnixListener::bind(&socket_path).expect("Error binding the socket");
 
         let rusk = Rusk::default();
-        let network = RuskNetwork::default();
+        let network = KadcastDispatcher::default();
 
         let incoming = async_stream::stream! {
             loop {

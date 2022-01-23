@@ -12,7 +12,7 @@ mod version;
 use clap::{App, Arg, ArgMatches};
 use futures::TryFutureExt;
 use rusk::services::network::NetworkServer;
-use rusk::services::network::RuskNetwork;
+use rusk::services::network::KadcastDispatcher;
 use rusk::services::pki::KeysServer;
 use rusk::services::prover::ProverServer;
 use rusk::services::state::StateServer;
@@ -106,38 +106,22 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    let network =
-        RuskNetwork::new(rusk_config.kadcast.clone(), rusk_config.kadcast_test);
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
     let res = match rusk_config.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
-            (_, "tcp_ip") => {
-                startup_with_tcp_ip(
-                    &rusk_config.host,
-                    &rusk_config.port,
-                    network,
-                )
-                .await
-            }
+            (_, "tcp_ip") => startup_with_tcp_ip(rusk_config).await,
             (true, "uds") => {
                 panic!("Windows does not support Unix Domain Sockets");
             }
-            (false, "uds") => {
-                startup_with_uds(&rusk_config.socket, network).await
-            }
+            (false, "uds") => startup_with_uds(rusk_config).await,
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
-                startup_with_tcp_ip(
-                    &rusk_config.host,
-                    &rusk_config.port,
-                    network,
-                )
-                .await
+                startup_with_tcp_ip(rusk_config).await
             } else {
-                startup_with_uds(&rusk_config.socket, network).await
+                startup_with_uds(rusk_config).await
             }
         }
     };
@@ -149,16 +133,19 @@ async fn main() {
 
 #[cfg(not(target_os = "windows"))]
 async fn startup_with_uds(
-    path: &str,
-    kadcast: RuskNetwork,
+    rusk_config: Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    tokio::fs::create_dir_all(Path::new(path).parent().unwrap()).await?;
+    tokio::fs::create_dir_all(Path::new(&rusk_config.socket).parent().unwrap())
+        .await?;
 
-    let uds = UnixListener::bind(path)?;
+    let uds = UnixListener::bind(&rusk_config.socket)?;
 
     let rusk = Rusk::default();
 
     let keys = KeysServer::new(rusk);
+
+    let kadcast =
+        KadcastDispatcher::new(rusk_config.kadcast.clone(), rusk_config.kadcast_test);
     let network = NetworkServer::new(kadcast);
     let state = StateServer::new(rusk);
 
@@ -181,18 +168,18 @@ async fn startup_with_uds(
 }
 
 async fn startup_with_tcp_ip(
-    host: &str,
-    port: &str,
-    kadcast: RuskNetwork,
+    rusk_config: Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut full_address = host.to_string();
+    let mut full_address = rusk_config.host.to_string();
     full_address.push(':');
-    full_address.push_str(&port.to_string());
+    full_address.push_str(&rusk_config.port.to_string());
     let addr: std::net::SocketAddr = full_address.parse()?;
 
     let rusk = Rusk::default();
 
     let keys = KeysServer::new(rusk);
+    let kadcast =
+        KadcastDispatcher::new(rusk_config.kadcast.clone(), rusk_config.kadcast_test);
     let network = NetworkServer::new(kadcast);
     let state = StateServer::new(rusk);
     let prover = ProverServer::new(rusk);
