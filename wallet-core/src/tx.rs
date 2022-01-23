@@ -9,7 +9,7 @@ use crate::StateClient;
 use alloc::vec::Vec;
 use core::mem;
 
-use canonical::{Canon, Sink, Source};
+use canonical::{Canon, CanonError, Sink, Source};
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
@@ -35,6 +35,46 @@ pub struct Transaction {
     fee: Fee,
     crossover: Crossover,
     call: Option<(ContractId, Vec<u8>)>,
+}
+
+// This implements `Canon` to allow a transaction to pass directly though the
+// transfer contract.
+impl Canon for Transaction {
+    fn encode(&self, sink: &mut Sink) {
+        0u8.encode(sink); // tag included to call `execute` in the contract.
+        self.anchor.encode(sink);
+        self.nullifiers.encode(sink);
+        self.fee.encode(sink);
+        self.crossover.encode(sink);
+        self.outputs.encode(sink);
+        self.proof.encode(sink);
+        self.call.encode(sink);
+    }
+
+    fn decode(source: &mut Source) -> Result<Self, CanonError> {
+        u8::decode(source)?;
+
+        Ok(Transaction {
+            anchor: Canon::decode(source)?,
+            nullifiers: Canon::decode(source)?,
+            fee: Canon::decode(source)?,
+            crossover: Canon::decode(source)?,
+            outputs: Canon::decode(source)?,
+            proof: Canon::decode(source)?,
+            call: Canon::decode(source)?,
+        })
+    }
+
+    fn encoded_len(&self) -> usize {
+        0u8.encoded_len()
+            + self.anchor.encoded_len()
+            + self.anchor.encoded_len()
+            + self.nullifiers.encoded_len()
+            + self.fee.encoded_len()
+            + self.crossover.encoded_len()
+            + self.outputs.encoded_len()
+            + self.proof.encoded_len()
+    }
 }
 
 impl Transaction {
