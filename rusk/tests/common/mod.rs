@@ -17,8 +17,8 @@ use std::task::{Context, Poll};
 use std::{fs, io};
 
 use futures::TryFutureExt;
-use rusk::services::network::NetworkServer;
 use rusk::services::network::KadcastDispatcher;
+use rusk::services::network::NetworkServer;
 use rusk::services::pki::KeysServer;
 use rusk::services::prover::ProverServer;
 use rusk::Rusk;
