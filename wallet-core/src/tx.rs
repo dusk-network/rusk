@@ -9,7 +9,7 @@ use crate::StateClient;
 use alloc::vec::Vec;
 use core::mem;
 
-use canonical::{Canon, Sink, Source};
+use canonical::{Canon, CanonError, Sink, Source};
 use dusk_bytes::{
     DeserializableSlice, Error as BytesError, Serializable, Write,
 };
@@ -31,17 +31,57 @@ pub struct Transaction {
     nullifiers: Vec<BlsScalar>,
     outputs: Vec<Note>,
     anchor: BlsScalar,
-    proof: Proof,
+    proof: Vec<u8>,
     fee: Fee,
     crossover: Crossover,
     call: Option<(ContractId, Vec<u8>)>,
+}
+
+// This implements `Canon` to allow a transaction to pass directly though the
+// transfer contract.
+impl Canon for Transaction {
+    fn encode(&self, sink: &mut Sink) {
+        0u8.encode(sink); // tag included to call `execute` in the contract.
+        self.anchor.encode(sink);
+        self.nullifiers.encode(sink);
+        self.fee.encode(sink);
+        self.crossover.encode(sink);
+        self.outputs.encode(sink);
+        self.proof.encode(sink);
+        self.call.encode(sink);
+    }
+
+    fn decode(source: &mut Source) -> Result<Self, CanonError> {
+        u8::decode(source)?;
+
+        Ok(Transaction {
+            anchor: Canon::decode(source)?,
+            nullifiers: Canon::decode(source)?,
+            fee: Canon::decode(source)?,
+            crossover: Canon::decode(source)?,
+            outputs: Canon::decode(source)?,
+            proof: Canon::decode(source)?,
+            call: Canon::decode(source)?,
+        })
+    }
+
+    fn encoded_len(&self) -> usize {
+        0u8.encoded_len()
+            + self.anchor.encoded_len()
+            + self.anchor.encoded_len()
+            + self.nullifiers.encoded_len()
+            + self.fee.encoded_len()
+            + self.crossover.encoded_len()
+            + self.outputs.encoded_len()
+            + self.proof.encoded_len()
+    }
 }
 
 impl Transaction {
     /// Creates a transaction from the skeleton and the proof.
     fn new(tx_skel: TransactionSkeleton, proof: Proof) -> Self {
         Self {
-            proof,
+            proof: proof.to_bytes().to_vec(),
             nullifiers: tx_skel.nullifiers,
             outputs: tx_skel.outputs,
             anchor: tx_skel.anchor,
@@ -58,7 +98,8 @@ impl Transaction {
     }
 
     /// Serializes the transaction into a variable length byte buffer.
-    pub fn to_bytes(&self) -> Result<Vec<u8>, BytesError> {
+    #[allow(unused_must_use)]
+    pub fn to_bytes(&self) -> Vec<u8> {
         // compute the serialized size to preallocate space
         let size = u64::SIZE
             + self.nullifiers.len() * BlsScalar::SIZE
@@ -78,24 +119,24 @@ impl Transaction {
         let mut bytes = vec![0u8; size];
         let mut writer = &mut bytes[..];
 
-        writer.write(&(self.nullifiers.len() as u64).to_bytes())?;
+        writer.write(&(self.nullifiers.len() as u64).to_bytes());
         for input in &self.nullifiers {
-            writer.write(&input.to_bytes())?;
+            writer.write(&input.to_bytes());
         }
 
-        writer.write(&(self.outputs.len() as u64).to_bytes())?;
+        writer.write(&(self.outputs.len() as u64).to_bytes());
         for output in &self.outputs {
-            writer.write(&output.to_bytes())?;
+            writer.write(&output.to_bytes());
         }
 
-        writer.write(&self.anchor.to_bytes())?;
-        writer.write(&self.fee.to_bytes())?;
-        writer.write(&self.proof.to_bytes())?;
-        writer.write(&self.crossover.to_bytes())?;
+        writer.write(&self.anchor.to_bytes());
+        writer.write(&self.fee.to_bytes());
+        writer.write(&self.proof);
+        writer.write(&self.crossover.to_bytes());
 
-        write_optional_call(&mut writer, self.call.as_ref())?;
+        write_optional_call(&mut writer, self.call.as_ref());
 
-        Ok(bytes)
+        bytes
     }
 
     /// Deserializes the transaction from a bytes buffer.
@@ -118,7 +159,7 @@ impl Transaction {
 
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
-        let proof = Proof::from_reader(&mut buffer)?;
+        let proof = Proof::from_reader(&mut buffer)?.to_bytes().to_vec();
         let crossover = Crossover::from_reader(&mut buffer)?;
 
         let call = read_optional_call(&mut buffer)?;
@@ -149,8 +190,8 @@ impl Transaction {
         self.anchor
     }
 
-    /// The proof of thes transaction.
-    pub fn proof(&self) -> &Proof {
+    /// The proof of the transaction.
+    pub fn proof(&self) -> &[u8] {
         &self.proof
     }
 
@@ -293,7 +334,7 @@ impl UnprovenTransactionInput {
     }
 
     /// Serialize the input to a variable size byte buffer.
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_var_bytes(&self) -> Vec<u8> {
         let affine_pkr = JubJubAffine::from(&self.pk_r_prime);
 
         // TODO Magic number for the buffer size here.
@@ -466,11 +507,12 @@ impl UnprovenTransaction {
     }
 
     /// Serialize the transaction to a variable length byte buffer.
-    pub fn to_bytes(&self) -> Result<Vec<u8>, BytesError> {
+    #[allow(unused_must_use)]
+    pub fn to_var_bytes(&self) -> Vec<u8> {
         let serialized_inputs: Vec<Vec<u8>> = self
             .inputs
             .iter()
-            .map(UnprovenTransactionInput::to_bytes)
+            .map(UnprovenTransactionInput::to_var_bytes)
             .collect();
         let num_inputs = self.inputs.len();
         let total_input_len = serialized_inputs
@@ -520,27 +562,27 @@ impl UnprovenTransaction {
         let mut buf = vec![0; size];
         let mut writer = &mut buf[..];
 
-        writer.write(&(num_inputs as u64).to_bytes())?;
+        writer.write(&(num_inputs as u64).to_bytes());
         for sinput in serialized_inputs {
-            writer.write(&(sinput.len() as u64).to_bytes())?;
-            writer.write(&sinput)?;
+            writer.write(&(sinput.len() as u64).to_bytes());
+            writer.write(&sinput);
         }
 
-        writer.write(&(num_outputs as u64).to_bytes())?;
+        writer.write(&(num_outputs as u64).to_bytes());
         for soutput in serialized_outputs {
-            writer.write(&soutput)?;
+            writer.write(&soutput);
         }
 
-        writer.write(&self.anchor.to_bytes())?;
-        writer.write(&self.fee.to_bytes())?;
+        writer.write(&self.anchor.to_bytes());
+        writer.write(&self.fee.to_bytes());
 
-        writer.write(&self.crossover.0.to_bytes())?;
-        writer.write(&self.crossover.1.to_bytes())?;
-        writer.write(&self.crossover.2.to_bytes())?;
+        writer.write(&self.crossover.0.to_bytes());
+        writer.write(&self.crossover.1.to_bytes());
+        writer.write(&self.crossover.2.to_bytes());
 
-        write_optional_call(&mut writer, self.call.as_ref())?;
+        write_optional_call(&mut writer, self.call.as_ref());
 
-        Ok(buf)
+        buf
     }
 
     /// Deserialize the transaction from a bytes buffer.

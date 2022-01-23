@@ -28,7 +28,7 @@ impl ProverClient for SerdeProverClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        let utx_bytes = utx.to_bytes().expect("Successful serialization");
+        let utx_bytes = utx.to_var_bytes();
         let utx_clone = UnprovenTransaction::from_slice(&utx_bytes)
             .expect("Successful deserialization");
 
