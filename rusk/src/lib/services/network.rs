@@ -15,12 +15,14 @@ use tracing::{debug, error, warn};
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
-    BroadcastMessage, Message, MessageMetadata, Null, SendMessage,
+    BroadcastMessage, Message, MessageMetadata, Null, PropagateMessage,
+    SendMessage,
 };
 use futures::Stream;
 use std::{net::SocketAddr, pin::Pin};
 
 pub struct KadcastDispatcher {
+    dummy_addr: SocketAddr,
     peer: Peer,
     inbound_dispatcher: Sender<(Vec<u8>, SocketAddr, u8)>,
 }
@@ -44,6 +46,7 @@ impl KadcastDispatcher {
         KadcastDispatcher {
             peer: Peer::new(config, listener),
             inbound_dispatcher,
+            dummy_addr: "127.0.0.1:1".parse().expect("Unable to parse address"),
         }
     }
 }
@@ -91,6 +94,22 @@ impl Network for KadcastDispatcher {
                 })?,
             )
             .await;
+        Ok(Response::new(Null {}))
+    }
+
+    async fn propagate(
+        &self,
+        request: Request<PropagateMessage>,
+    ) -> Result<Response<Null>, Status> {
+        debug!("Received PropagateMessage request");
+        let req = request.get_ref();
+        self.inbound_dispatcher
+            .send((req.message.clone(), self.dummy_addr, 0))
+            .unwrap_or_else(|e| {
+                println!("Error {}", e);
+                0
+            });
+        self.peer.broadcast(&req.message, None).await;
         Ok(Response::new(Null {}))
     }
 

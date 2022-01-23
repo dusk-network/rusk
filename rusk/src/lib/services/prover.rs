@@ -87,16 +87,11 @@ lazy_static! {
 
 #[tonic::async_trait]
 impl Prover for Rusk {
-    async fn prove_and_propagate(
+    async fn prove_execute(
         &self,
         request: Request<ExecuteProverRequest>,
     ) -> Result<Response<ExecuteProverResponse>, Status> {
-        return handle!(
-            self,
-            request,
-            prove_and_propagate,
-            "prove_and_propagate"
-        );
+        return handle!(self, request, prove_execute, "prove_execute");
     }
 
     async fn prove_stct(
@@ -129,7 +124,7 @@ impl Prover for Rusk {
 }
 
 impl Rusk {
-    fn prove_and_propagate(
+    fn prove_execute(
         &self,
         request: &ExecuteProverRequest,
     ) -> Result<Response<ExecuteProverResponse>, Status> {
@@ -198,13 +193,13 @@ impl Rusk {
             ))
         })?;
 
-        let _tx = utx.prove(proof).to_bytes().map_err(|e| {
+        let tx = utx.prove(proof).to_bytes().map_err(|e| {
             Status::internal(format!("Failed converting tx to bytes: {:?}", e))
         })?;
 
         // PROPAGATION MUST BE DONE HERE
 
-        Ok(Response::new(ExecuteProverResponse {}))
+        Ok(Response::new(ExecuteProverResponse { tx }))
     }
 }
 

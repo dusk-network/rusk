@@ -158,9 +158,8 @@ impl ProverClient for TestProverClient {
 
         let mut prover = self.client.lock().expect("unlock to be successful");
         block_in_place(move || {
-            Handle::current().block_on(async move {
-                prover.prove_and_propagate(request).await
-            })
+            Handle::current()
+                .block_on(async move { prover.prove_execute(request).await })
         })
         .expect("successful call");
 

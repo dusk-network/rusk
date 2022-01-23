@@ -22,7 +22,7 @@ use tonic::transport::Server;
 use version::show_version;
 
 use services::startup_with_tcp_ip;
-use services::startup_with_uds_test;
+use services::startup_with_uds;
 
 use crate::config::Config;
 
@@ -110,9 +110,10 @@ async fn main() {
     let service = {
         let kadcast =
             KadcastDispatcher::new(cfg.kadcast.clone(), cfg.kadcast_test);
+
+        let network = NetworkServer::new(kadcast);
         let rusk = Rusk::default();
         let keys = KeysServer::new(rusk);
-        let network = NetworkServer::new(kadcast);
         let state = StateServer::new(rusk);
         let prover = ProverServer::new(rusk);
 
@@ -133,14 +134,14 @@ async fn main() {
             (true, "uds") => {
                 panic!("Windows does not support Unix Domain Sockets");
             }
-            (false, "uds") => startup_with_uds_test(&cfg.socket, service).await,
+            (false, "uds") => startup_with_uds(&cfg.socket, service).await,
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
                 startup_with_tcp_ip(&cfg.host, &cfg.port, service).await
             } else {
-                startup_with_uds_test(&cfg.socket, service).await
+                startup_with_uds(&cfg.socket, service).await
             }
         }
     };

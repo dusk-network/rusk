@@ -20,7 +20,7 @@ type TonicError = Box<dyn std::error::Error + Send + Sync>;
 
 #[cfg(not(target_os = "windows"))]
 
-pub(crate) async fn startup_with_uds_test<S, A>(
+pub(crate) async fn startup_with_uds<S, A>(
     socket: &str,
     service: Router<S, A>,
 ) -> Result<(), Box<dyn std::error::Error>>
