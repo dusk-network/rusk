@@ -11,6 +11,10 @@ message BroadcastMessage {
     uint32 kadcast_height = 2;
 }
 
+message PropagateMessage {
+    bytes message = 1;
+}
+
 message Message {
     bytes message = 1;
     MessageMetadata metadata=2;
@@ -30,6 +34,9 @@ service Network {
 
     // Broadcast a message to the network
     rpc Broadcast(BroadcastMessage) returns (Null) {}
+
+    // Propagate a message to the network and notify current receivers
+    rpc Propagate(PropagateMessage) returns (Null) {}
 
     // Send a message to a specific target in the network
     rpc Send(SendMessage) returns (Null) {}
