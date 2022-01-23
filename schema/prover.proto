@@ -6,7 +6,10 @@ message ExecuteProverRequest {
     bytes utx = 1;
 }
 
+
+// A serialized `Transaction` from the `dusk-wallet-core` crate.
 message ExecuteProverResponse {
+    bytes tx = 1;
 }
 
 // Request a proof for the STCT circuit.
@@ -90,7 +93,7 @@ message WfcoProverResponse {
 service Prover {
     // Proves the unproven transaction by generating a Plonk proof of the
     // appropriate circuit.
-    rpc ProveAndPropagate(ExecuteProverRequest) returns (ExecuteProverResponse) {}
+    rpc ProveExecute(ExecuteProverRequest) returns (ExecuteProverResponse) {}
     // Send to contract transparent proof request.
     rpc ProveStct(StctProverRequest) returns (StctProverResponse) {}
     // Send to contract obfuscated proof request.
