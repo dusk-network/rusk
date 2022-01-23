@@ -379,9 +379,7 @@ impl ProverClient for FfiProverClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        let utx_bytes = utx.to_bytes().map_err(
-            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
-        )?;
+        let utx_bytes = utx.to_var_bytes();
 
         unsafe {
             let r = compute_proof_and_propagate(
