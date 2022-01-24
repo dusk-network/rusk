@@ -19,15 +19,15 @@ const WFCO_INPUT_LEN: usize = u64::SIZE
     + u64::SIZE
     + JubJubScalar::SIZE
     + JubJubAffine::SIZE;
-lazy_static! {
-    static ref WFCO_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-}
-impl Rusk {
+
+pub static WFCO_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
+
+impl RuskProver {
     pub(crate) fn prove_wfco(
         &self,
         request: &WfcoProverRequest,

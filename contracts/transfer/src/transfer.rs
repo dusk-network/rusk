@@ -43,7 +43,11 @@ impl TransferContract {
         self.notes.get(pos).map(|l| l.map(|l| l.into()))
     }
 
-    pub(crate) fn push_note(
+    /// Push a note to the contract's state with the given block height
+    ///
+    /// Note: the method `update_root` needs to be called after the last note is
+    /// pushed.
+    pub fn push_note(
         &mut self,
         block_height: u64,
         note: Note,
@@ -84,7 +88,7 @@ impl TransferContract {
         &self.balances
     }
 
-    pub(crate) fn update_root(&mut self) -> Result<(), Error> {
+    pub fn update_root(&mut self) -> Result<(), Error> {
         let root = self.notes.root()?;
 
         self.roots.insert(root, ())?;

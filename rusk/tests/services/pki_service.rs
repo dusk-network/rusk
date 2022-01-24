@@ -4,20 +4,27 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::TestContext;
+use crate::common::setup;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
+use rusk::services::pki::{KeysServer, RuskKeys};
 use rusk::services::rusk_proto::keys_client::KeysClient;
 use rusk::services::rusk_proto::GenerateKeysRequest;
-use test_context::test_context;
+use tonic::transport::Server;
 
-#[test_context(TestContext)]
-#[tokio::test]
-pub async fn pki_walkthrough_uds(
-    ctx: &mut TestContext,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = KeysClient::new(ctx.channel.clone());
+#[tokio::test(flavor = "multi_thread")]
+pub async fn pki_walkthrough_uds() -> Result<(), Box<dyn std::error::Error>> {
+    let (channel, incoming) = setup().await;
+
+    tokio::spawn(async move {
+        Server::builder()
+            .add_service(KeysServer::new(RuskKeys::default()))
+            .serve_with_incoming(incoming)
+            .await
+    });
+
+    let mut client = KeysClient::new(channel.clone());
     // Key generation
     let request = tonic::Request::new(GenerateKeysRequest {});
 

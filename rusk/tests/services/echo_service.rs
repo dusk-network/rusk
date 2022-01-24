@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::TestContext;
 use rusk::services::echoer::{EchoRequest, EchoerClient};
 use test_context::test_context;
 

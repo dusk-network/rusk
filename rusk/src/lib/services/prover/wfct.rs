@@ -9,15 +9,14 @@ use super::*;
 const WFCT_INPUT_LEN: usize =
     JubJubAffine::SIZE + u64::SIZE + JubJubScalar::SIZE;
 
-lazy_static! {
-    static ref WFCT_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&WithdrawFromTransparentCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-}
-impl Rusk {
+pub static WFCT_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&WithdrawFromTransparentCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
+
+impl RuskProver {
     pub(crate) fn prove_wfct(
         &self,
         request: &WfctProverRequest,

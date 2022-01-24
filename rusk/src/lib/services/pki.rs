@@ -11,7 +11,6 @@ mod stealth_gen;
 
 use super::rusk_proto;
 use crate::services::ServiceRequestHandler;
-use crate::Rusk;
 use keygen::KeyGenHandler;
 use stealth_gen::StealthAddrGenHandler;
 use tonic::{Request, Response, Status};
@@ -24,8 +23,11 @@ pub use super::rusk_proto::{
     StealthAddress,
 };
 
+#[derive(Debug, Default)]
+pub struct RuskKeys {}
+
 #[tonic::async_trait]
-impl Keys for Rusk {
+impl Keys for RuskKeys {
     async fn generate_keys(
         &self,
         request: Request<GenerateKeysRequest>,

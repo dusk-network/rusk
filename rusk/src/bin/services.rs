@@ -19,10 +19,9 @@ use tonic::transport::{Body, NamedService};
 type TonicError = Box<dyn std::error::Error + Send + Sync>;
 
 #[cfg(not(target_os = "windows"))]
-
 pub(crate) async fn startup_with_uds<S, A>(
+    router: Router<S, A>,
     socket: &str,
-    service: Router<S, A>,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     A: Service<Request<Body>, Response = Response<BoxBody>>
@@ -48,14 +47,14 @@ where
             }
         }
     };
-    service.serve_with_incoming(incoming).await?;
+    router.serve_with_incoming(incoming).await?;
     Ok(())
 }
 
 pub(crate) async fn startup_with_tcp_ip<S, A>(
+    router: Router<S, A>,
     host: &str,
     port: &str,
-    service: Router<S, A>,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     A: Service<Request<Body>, Response = Response<BoxBody>>
@@ -77,5 +76,5 @@ where
     full_address.push_str(port);
     let addr: std::net::SocketAddr = full_address.parse()?;
 
-    Ok(service.serve(addr).await?)
+    Ok(router.serve(addr).await?)
 }

@@ -8,101 +8,105 @@ pub mod encoding;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
-use super::{new_socket_path, SOCKET_DIR};
-
 use futures::future::BoxFuture;
 use std::convert::TryFrom;
+use std::io;
 use std::path::PathBuf;
 use std::task::{Context, Poll};
-use std::{fs, io};
+use tempfile::tempdir;
 
+use canonical::{Canon, Sink, Source};
+use dusk_abi::ContractState;
 use futures::TryFutureExt;
-use rusk::services::network::KadcastDispatcher;
-use rusk::services::network::NetworkServer;
-use rusk::services::pki::KeysServer;
-use rusk::services::prover::ProverServer;
-use rusk::Rusk;
-use test_context::AsyncTestContext;
+use microkelvin::{Backend, BackendCtor, DiskBackend};
+use rusk::{Result, Rusk};
 use tokio::net::{UnixListener, UnixStream};
-use tonic::transport::{Channel, Endpoint, Server, Uri};
+use tonic::transport::{Channel, Endpoint, Uri};
 use tower::Service;
-use tracing::{subscriber, Level};
-use tracing_subscriber::fmt::Subscriber;
+use tracing::info;
+use tracing_subscriber::EnvFilter;
+use transfer_contract::TransferContract;
 
-pub struct TestContext {
-    pub channel: Channel,
-    socket_path: PathBuf,
+/// This function creates a temporary backend for testing purposes.
+/// Each function creates its own backend, so to avoid side effects tests that
+/// are modifying the state should define their own backend.
+/// This can be used for tests that does not modify the state, or needs to
+/// read the default state.
+pub fn testbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(DiskBackend::ephemeral)
 }
 
-#[async_trait::async_trait]
-impl AsyncTestContext for TestContext {
-    async fn setup() -> TestContext {
-        // Remove all unused files and tries to remove the directory - if
-        // possible - and recreate it afterwards. This is required due
-        // to the tear_down functions not being called when a test
-        // panics.
-        let _ = fs::remove_dir_all(&*SOCKET_DIR);
-        fs::create_dir_all(&*SOCKET_DIR).expect("directory to be created");
+pub fn update_transfer_contract<B>(
+    rusk: &mut Rusk,
+    transfer: TransferContract,
+    ctor: &BackendCtor<B>,
+) -> Result<()>
+where
+    B: 'static + Backend,
+{
+    let mut rusk_state = rusk.state()?;
 
-        // Initialize the subscriber
-        // Generate a subscriber with the desired log level.
-        let subscriber =
-            Subscriber::builder().with_max_level(Level::INFO).finish();
+    const PAGE_SIZE: usize = 1024 * 64;
+    let mut bytes = [0u8; PAGE_SIZE];
+    let mut sink = Sink::new(&mut bytes[..]);
+    ContractState::from_canon(&transfer).encode(&mut sink);
+    let mut source = Source::new(&bytes[..]);
+    let contract_state = ContractState::decode(&mut source)?;
+    *rusk_state
+        .inner_mut()
+        .get_contract_mut(&rusk_abi::transfer_contract())?
+        .state_mut() = contract_state;
+    let state_id = rusk_state.persist(ctor)?;
 
-        // Set the subscriber as global.
-        // So this subscriber will be used as the default in all tests for the
-        // remainder of the duration of the program, similar to how
-        // `loggers` work in the `log` crate.
-        //
-        // NOTE that since we're using a `setup` fn that gets executed after
-        // each test execution, we simply ignore the error since only
-        // the first call to this fn will succeed.
-        let _ = subscriber::set_global_default(subscriber);
+    *rusk.state_id.lock() = state_id;
 
-        let socket_path = new_socket_path();
+    Ok(())
+}
 
-        let uds =
-            UnixListener::bind(&socket_path).expect("Error binding the socket");
+pub fn logger() {
+    // Can't use `with_default_env` since we want to have a default
+    // directive, and *then* apply the environment variable on top of it,
+    // not the other way around.
+    let directive = std::env::var("RUST_LOG")
+        .unwrap_or_else(|_| "rusk=info,tests=info".to_string());
+    let filter = EnvFilter::new(directive);
 
-        let rusk = Rusk::default();
-        let network = KadcastDispatcher::default();
+    let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
+}
 
-        let incoming = async_stream::stream! {
-            loop {
-                yield uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await
-            }
-        };
+// pub async fn setup<B>(ctor: &BackendCtor<B>) -> (Channel, Rusk)
+// where
+//     B: 'static + Backend,
+pub async fn setup() -> (
+    Channel,
+    async_stream::AsyncStream<
+        Result<unix::UnixStream, std::io::Error>,
+        impl futures::Future<Output = ()>,
+    >,
+) where {
+    logger();
+    // Creates a temporary file for the socket
+    let tempdir = tempdir().expect("failed to create tmp");
+    let socket_path = tempdir.path().join("socket");
 
-        // We can't avoid the unwrap here until the async closure (#62290)
-        // lands. And therefore we can force the closure to return a
-        // Result. See: https://github.com/rust-lang/rust/issues/62290
-        tokio::spawn(async move {
-            Server::builder()
-                .add_service(KeysServer::new(rusk))
-                .add_service(NetworkServer::new(network))
-                .add_service(ProverServer::new(rusk))
-                .serve_with_incoming(incoming)
-                .await
-        });
+    info!("creating socket at {:?}", socket_path);
 
-        // Create the client bound to the default testing UDS path.
-        let channel = Endpoint::try_from("http://[::]:50051")
-            .expect("Serde error on addr reading")
-            .connect_with_connector(UdsConnector::from(socket_path.clone()))
-            .await
-            .expect("Error generating a Channel");
+    let uds =
+        UnixListener::bind(&socket_path).expect("Error binding the socket");
 
-        TestContext {
-            channel,
-            socket_path,
+    let incoming = async_stream::stream! {
+        loop {
+            yield uds.accept().map_ok(|(st, _)| unix::UnixStream(st)).await
         }
-    }
+    };
+    // Create the client bound to the default testing UDS path.
+    let channel = Endpoint::try_from("http://[::]:50051")
+        .expect("Serde error on addr reading")
+        .connect_with_connector(UdsConnector::from(socket_path.clone()))
+        .await
+        .expect("Error generating a Channel");
 
-    // Collection of actions that have to be done before any panics are
-    // unwinded.
-    async fn teardown(self) {
-        std::fs::remove_file(self.socket_path).expect("Socket removal error");
-    }
+    (channel, incoming)
 }
 
 /// A connector to a UDS with a particular path.

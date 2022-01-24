@@ -13,8 +13,8 @@ mod version;
 use clap::{App, Arg};
 use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
-use rusk::services::pki::KeysServer;
-use rusk::services::prover::ProverServer;
+use rusk::services::pki::{KeysServer, RuskKeys};
+use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
@@ -107,15 +107,15 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    let service = {
+    let router = {
+        let rusk = Rusk::new().map_err(|e| eprintln!("{}", e)).unwrap();
         let kadcast =
             KadcastDispatcher::new(cfg.kadcast.clone(), cfg.kadcast_test);
 
+        let keys = KeysServer::new(RuskKeys::default());
         let network = NetworkServer::new(kadcast);
-        let rusk = Rusk::default();
-        let keys = KeysServer::new(rusk);
         let state = StateServer::new(rusk);
-        let prover = ProverServer::new(rusk);
+        let prover = ProverServer::new(RuskProver::default());
 
         Server::builder()
             .add_service(keys)
@@ -129,19 +129,19 @@ async fn main() {
     let res = match cfg.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
-                startup_with_tcp_ip(&cfg.host, &cfg.port, service).await
+                startup_with_tcp_ip(router, &cfg.host, &cfg.port).await
             }
             (true, "uds") => {
                 panic!("Windows does not support Unix Domain Sockets");
             }
-            (false, "uds") => startup_with_uds(&cfg.socket, service).await,
+            (false, "uds") => startup_with_uds(router, &cfg.socket).await,
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
-                startup_with_tcp_ip(&cfg.host, &cfg.port, service).await
+                startup_with_tcp_ip(router, &cfg.host, &cfg.port).await
             } else {
-                startup_with_uds(&cfg.socket, service).await
+                startup_with_uds(router, &cfg.socket).await
             }
         }
     };
