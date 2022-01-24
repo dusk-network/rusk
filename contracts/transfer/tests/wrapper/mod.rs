@@ -193,6 +193,25 @@ impl TransferWrapper {
         (fee, crossover)
     }
 
+    pub fn fee(
+        &mut self,
+        gas_limit: u64,
+        gas_price: u64,
+        refund_psk: &PublicSpendKey,
+    ) -> Fee {
+        let value = 0;
+        let blinding_factor = JubJubScalar::random(&mut self.rng);
+        let note =
+            Note::obfuscated(&mut self.rng, refund_psk, value, blinding_factor);
+
+        let (mut fee, _) = note.try_into().unwrap();
+
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
+
+        fee
+    }
+
     pub fn generate_note(
         &mut self,
         transparent: bool,
@@ -297,26 +316,30 @@ impl TransferWrapper {
         refund_vk: Option<&ViewKey>,
         output: &PublicSpendKey,
         output_transparent: bool,
-        gas_limit: u64,
-        gas_price: u64,
-        crossover_value: u64,
-    ) -> (
-        BlsScalar,
-        Vec<BlsScalar>,
-        Fee,
-        Option<Crossover>,
-        Vec<Note>,
-        Vec<u8>,
-    ) {
-        self.gas = GasMeter::with_limit(gas_limit);
+        fee: Fee,
+        crossover: Option<Crossover>,
+        call: Option<&(ContractId, Transaction)>,
+    ) -> (BlsScalar, Vec<BlsScalar>, Vec<Note>, Vec<u8>) {
+        self.gas = GasMeter::with_limit(fee.gas_limit);
         let anchor = self.anchor();
+
+        let (crossover_value, crossover_blinder) = match (refund_vk, crossover)
+        {
+            (Some(vk), Some(crossover)) => {
+                let crossover_note = Note::from((fee, crossover));
+
+                let crossover_value = crossover_note.value(Some(vk)).unwrap();
+                let crossover_blinder =
+                    crossover_note.blinding_factor(Some(vk)).unwrap();
+
+                (crossover_value, crossover_blinder)
+            }
+
+            _ => (0, JubJubScalar::zero()),
+        };
 
         let mut execute_proof = ExecuteCircuit::default();
         let mut input = 0;
-
-        let tx_hash = BlsScalar::one();
-
-        execute_proof.set_tx_hash(tx_hash);
 
         let nullifiers: Vec<BlsScalar> = inputs
             .iter()
@@ -325,44 +348,15 @@ impl TransferWrapper {
                 let vk = ssk.view_key();
 
                 let value = note.value(Some(&vk)).unwrap();
-                let blinder = note.blinding_factor(Some(&vk)).unwrap();
 
                 input += value;
 
-                let opening = self.opening(*note.pos());
-
-                let sk_r = ssk.sk_r(note.stealth_address());
-                let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
-
-                let nullifier = note.gen_nullifier(ssk);
-
-                let input_signature = ExecuteCircuit::input_signature(
-                    &mut self.rng,
-                    ssk,
-                    note,
-                    tx_hash,
-                );
-
-                let circuit_input = CircuitInput::new(
-                    opening,
-                    *note,
-                    pk_r_p.into(),
-                    value,
-                    blinder,
-                    nullifier,
-                    input_signature,
-                );
-
-                execute_proof
-                    .add_input(circuit_input)
-                    .expect("Failed to append input");
-
-                nullifier
+                note.gen_nullifier(ssk)
             })
             .collect();
 
         let mut outputs = vec![];
-        let output_value = input - gas_limit - crossover_value;
+        let output_value = input - fee.gas_limit - crossover_value;
 
         if output_value == 0 {
         } else if output_transparent {
@@ -390,37 +384,68 @@ impl TransferWrapper {
             outputs.push(note);
         }
 
-        let (fee, crossover) = match refund_vk {
-                Some(vk) => {
-                    let psk = vk.public_spend_key();
-                    let (fee, crossover) = self.fee_crossover(
-                        gas_limit,
-                        gas_price,
-                        &psk,
-                        crossover_value,
-                    );
+        match crossover {
+            Some(crossover) => {
+                execute_proof.set_fee_crossover(
+                    &fee,
+                    &crossover,
+                    crossover_value,
+                    crossover_blinder,
+                );
+            }
 
-                    let crossover_note = Note::from((fee, crossover));
-                    let blinder = crossover_note.blinding_factor(Some(vk)).expect("Failed to decrypt blinder");
+            None => {
+                execute_proof.set_fee(&fee).unwrap();
+            }
+        }
 
-                    execute_proof
-                        .set_fee_crossover(&fee, &crossover, crossover_value, blinder);
+        let tx_hash = TransferContract::tx_hash(
+            nullifiers.as_slice(),
+            outputs.as_slice(),
+            &anchor,
+            &fee,
+            crossover.as_ref(),
+            call,
+        );
 
-                    (fee, Some(crossover))
-                }
+        execute_proof.set_tx_hash(tx_hash);
 
-                None if crossover_value > 0 => panic!("The refund SSK is mandatory for transactions with a crossover value!"),
+        inputs
+            .iter()
+            .zip(inputs_keys.iter())
+            .zip(nullifiers.iter())
+            .for_each(|((note, ssk), nullifier)| {
+                let vk = ssk.view_key();
 
-                None => {
-                    let psk =
-                        SecretSpendKey::random(&mut self.rng).public_spend_key();
-                    let (fee, _) =
-                        self.fee_crossover(gas_limit, gas_price, &psk, 0);
-                    execute_proof.set_fee(&fee).unwrap();
+                let value = note.value(Some(&vk)).unwrap();
+                let blinder = note.blinding_factor(Some(&vk)).unwrap();
 
-                    (fee, None)
-                }
-            };
+                let opening = self.opening(*note.pos());
+
+                let sk_r = ssk.sk_r(note.stealth_address());
+                let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+
+                let input_signature = ExecuteCircuit::input_signature(
+                    &mut self.rng,
+                    ssk,
+                    note,
+                    tx_hash,
+                );
+
+                let circuit_input = CircuitInput::new(
+                    opening,
+                    *note,
+                    pk_r_p.into(),
+                    value,
+                    blinder,
+                    *nullifier,
+                    input_signature,
+                );
+
+                execute_proof
+                    .add_input(circuit_input)
+                    .expect("Failed to append input");
+            });
 
         let id = execute_proof.circuit_id();
         let (pk, vd) = Self::circuit_keys(id);
@@ -433,7 +458,7 @@ impl TransferWrapper {
 
         let proof = proof.to_bytes().to_vec();
 
-        (anchor, nullifiers, fee, crossover, outputs, proof)
+        (anchor, nullifiers, outputs, proof)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -450,16 +475,34 @@ impl TransferWrapper {
         call: Option<(ContractId, Transaction)>,
     ) -> Result<(), VMError> {
         let refund_vk = refund_ssk.view_key();
-        let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
-            self.prepare_execute(
+        let refund_psk = refund_ssk.public_spend_key();
+
+        let (fee, crossover) = if crossover_value > 0 {
+            let (fee, crossover) = self.fee_crossover(
+                gas_limit,
+                gas_price,
+                &refund_psk,
+                crossover_value,
+            );
+
+            (fee, Some(crossover))
+        } else {
+            let crossover = None;
+            let fee = self.fee(gas_limit, gas_price, &refund_psk);
+
+            (fee, crossover)
+        };
+
+        let (anchor, nullifiers, outputs, spend_proof_execute) = self
+            .prepare_execute(
                 inputs,
                 inputs_keys,
                 Some(&refund_vk),
                 output,
                 output_transparent,
-                gas_limit,
-                gas_price,
-                crossover_value,
+                fee,
+                crossover,
+                call.as_ref(),
             );
 
         let execute = Call::execute(
@@ -491,19 +534,10 @@ impl TransferWrapper {
     ) -> Result<(), VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
-        let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
-            self.prepare_execute(
-                inputs,
-                inputs_keys,
-                Some(&refund_vk),
-                output,
-                output_transparent,
-                gas_limit,
-                gas_price,
-                value,
-            );
+        let refund_psk = refund_ssk.public_spend_key();
 
-        let crossover = crossover.unwrap();
+        let (fee, crossover) =
+            self.fee_crossover(gas_limit, gas_price, &refund_psk, value);
 
         let mut stct_proof = {
             let signature = SendToContractTransparentCircuit::sign(
@@ -541,21 +575,38 @@ impl TransferWrapper {
             stct_proof.prove(&*PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
-        let call = Call::send_to_contract_transparent(
+        let call_stct = Call::send_to_contract_transparent(
             contract,
             value,
             spend_proof_stct,
-        )
-        .to_execute(
-            self.transfer,
-            anchor,
-            nullifiers,
-            fee,
-            Some(crossover),
-            outputs,
-            spend_proof_execute,
-        )
-        .unwrap();
+        );
+
+        let transaction = call_stct.to_transaction();
+        let call = (self.transfer, transaction);
+
+        let (anchor, nullifiers, outputs, spend_proof_execute) = self
+            .prepare_execute(
+                inputs,
+                inputs_keys,
+                Some(&refund_vk),
+                output,
+                output_transparent,
+                fee,
+                Some(crossover),
+                Some(&call),
+            );
+
+        let call = call_stct
+            .to_execute(
+                self.transfer,
+                anchor,
+                nullifiers,
+                fee,
+                Some(crossover),
+                outputs,
+                spend_proof_execute,
+            )
+            .unwrap();
 
         self.network
             .transact::<_, ()>(self.transfer, 0, call, &mut self.gas)
@@ -577,19 +628,11 @@ impl TransferWrapper {
     ) -> Result<JubJubScalar, VMError> {
         let address = TransferContract::contract_to_scalar(&contract);
         let refund_vk = refund_ssk.view_key();
-        let (anchor, nullifiers, fee, crossover, outputs, spend_proof_execute) =
-            self.prepare_execute(
-                inputs,
-                inputs_keys,
-                Some(&refund_vk),
-                output,
-                output_transparent,
-                gas_limit,
-                gas_price,
-                value,
-            );
+        let refund_psk = refund_ssk.public_spend_key();
 
-        let crossover = crossover.unwrap();
+        let (fee, crossover) =
+            self.fee_crossover(gas_limit, gas_price, &refund_psk, value);
+
         let message_r = JubJubScalar::random(&mut self.rng);
         let message =
             Message::new(&mut self.rng, &message_r, message_psk, value);
@@ -647,22 +690,39 @@ impl TransferWrapper {
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
         let message_address = message_psk.gen_stealth_address(&message_r);
-        let call = Call::send_to_contract_obfuscated(
+        let call_stco = Call::send_to_contract_obfuscated(
             contract,
             message,
             message_address,
             spend_proof_stco,
-        )
-        .to_execute(
-            self.transfer,
-            anchor,
-            nullifiers,
-            fee,
-            Some(crossover),
-            outputs,
-            spend_proof_execute,
-        )
-        .unwrap();
+        );
+
+        let transaction = call_stco.to_transaction();
+        let call = (self.transfer, transaction);
+
+        let (anchor, nullifiers, outputs, spend_proof_execute) = self
+            .prepare_execute(
+                inputs,
+                inputs_keys,
+                Some(&refund_vk),
+                output,
+                output_transparent,
+                fee,
+                Some(crossover),
+                Some(&call),
+            );
+
+        let call = call_stco
+            .to_execute(
+                self.transfer,
+                anchor,
+                nullifiers,
+                fee,
+                Some(crossover),
+                outputs,
+                spend_proof_execute,
+            )
+            .unwrap();
 
         self.network.transact::<_, ()>(
             self.transfer,

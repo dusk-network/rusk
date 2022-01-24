@@ -245,11 +245,11 @@ impl TransferContract {
         let outputs = notes.len();
 
         let tx_hash = Self::tx_hash(
-            &anchor,
             nullifiers.as_slice(),
-            crossover.as_ref(),
-            &fee,
             notes.as_slice(),
+            &anchor,
+            &fee,
+            crossover.as_ref(),
             call.as_ref(),
         );
 

@@ -7,7 +7,7 @@
 use crate::{Error, Map, PublicKeyBytes, TransferContract};
 
 use alloc::vec::Vec;
-use dusk_abi::{ContractId, Transaction};
+use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
@@ -185,18 +185,6 @@ impl TransferContract {
             .ok_or(Error::CrossoverNotFound)?;
 
         Ok((crossover, pk))
-    }
-
-    pub(crate) fn tx_hash(
-        _anchor: &BlsScalar,
-        _nullifiers: &[BlsScalar],
-        _crossover: Option<&Crossover>,
-        _fee: &Fee,
-        _outputs: &[Note],
-        _call: Option<&(ContractId, Transaction)>,
-    ) -> BlsScalar {
-        // FIXME fetch the proper tx hash
-        BlsScalar::one()
     }
 
     pub(crate) fn assert_proof(
