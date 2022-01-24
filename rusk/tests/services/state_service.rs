@@ -6,12 +6,13 @@
 
 use crate::common::setup;
 use canonical::{Canon, Sink};
-use dusk_pki::SecretSpendKey;
+use dusk_pki::{PublicKey, SecretKey, SecretSpendKey};
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk::services::rusk_proto::state_client::StateClient;
 use rusk::services::state::{
     GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
+    GetStakeRequest,
 };
 
 use dusk_bytes::Serializable;
@@ -28,6 +29,7 @@ use tracing::{info, trace};
 use tonic::transport::Server;
 
 use rusk::services::state::StateServer;
+use stake_contract::Stake;
 
 pub fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
@@ -47,6 +49,13 @@ pub static SSK: Lazy<SecretSpendKey> = Lazy::new(|| {
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     SecretSpendKey::random(&mut rng)
+});
+
+pub static SK: Lazy<SecretKey> = Lazy::new(|| {
+    info!("Generating SecretKey");
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    SecretKey::random(&mut rng)
 });
 
 fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
@@ -83,6 +92,24 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
     crate::common::update_transfer_contract(rusk, transfer, &testbackend())?;
 
     fetch_note(rusk)
+}
+
+fn generate_stake(rusk: &mut Rusk) -> Result<(PublicKey, Stake)> {
+    info!("Generating a stake");
+
+    let pk = PublicKey::from(&*SK);
+
+    let rusk_state = rusk.state()?;
+    let mut stake_contract = rusk_state.stake_contract()?;
+
+    let stake = Stake::new(0xdead, 0xdead, 0xbeef);
+
+    stake_contract.staked.insert(pk.to_bytes(), stake)?;
+
+    info!("Updating the new stake contract state");
+    crate::common::update_stake_contract(rusk, stake_contract, &testbackend())?;
+
+    Ok((pk, stake))
 }
 
 fn get_note(rusk: &mut Rusk) -> Result<Option<Note>> {
@@ -202,6 +229,36 @@ pub async fn test_fetch_opening() -> Result<()> {
     let opening = (&bytes[..len]).to_vec();
 
     assert_eq!(branch, opening, "Expected same branch");
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_fetch_stake() -> Result<()> {
+    let mut rusk = STATE_LOCK.lock();
+
+    let (channel, incoming) = setup().await;
+
+    let rusk_server = rusk.clone();
+    tokio::spawn(async move {
+        Server::builder()
+            .add_service(StateServer::new(rusk_server))
+            .serve_with_incoming(incoming)
+            .await
+    });
+
+    let (pk, stake) = generate_stake(&mut rusk)?;
+
+    let mut client = StateClient::new(channel);
+
+    let request = tonic::Request::new(GetStakeRequest {
+        pk: pk.to_bytes().to_vec(),
+    });
+
+    let response = client.get_stake(request).await?.into_inner();
+
+    assert_eq!(stake.value(), response.stake);
+    assert_eq!(stake.expiration(), response.expiration);
 
     Ok(())
 }

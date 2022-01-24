@@ -47,6 +47,7 @@ canonical_derive = "0.6"
 rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { path = "../circuits/transfer" }
 transfer-contract = { path = "../contracts/transfer" }
+stake-contract = { path = "../contracts/stake" }
 rusk-profile = { path = "../rusk-profile" }
 microkelvin = { version = "0.10", features = ["persistence"] }
 rusk-abi = { path = "../rusk-abi" }

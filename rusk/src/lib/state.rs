@@ -6,13 +6,18 @@
 
 use crate::error::Error;
 use crate::Result;
+
+use std::ops::Deref;
+
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::{Ownable, ViewKey};
+use dusk_bytes::Serializable;
+use dusk_pki::{Ownable, PublicKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
 use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
 use rusk_abi::{self, POSEIDON_TREE_DEPTH};
 use rusk_vm::{NetworkState, NetworkStateId};
+use stake_contract::{Stake, StakeContract};
 use transfer_contract::TransferContract;
 
 pub struct RuskState(pub(crate) NetworkState);
@@ -56,6 +61,13 @@ impl RuskState {
             .get_contract_cast_state(&rusk_abi::transfer_contract())?)
     }
 
+    /// Returns the current state of the [`StakeContract`].
+    pub fn stake_contract(&self) -> Result<StakeContract> {
+        Ok(self
+            .0
+            .get_contract_cast_state(&rusk_abi::stake_contract())?)
+    }
+
     /// Returns all the notes from a given block height
     fn notes(&self, height: u64) -> Result<Vec<Note>> {
         Ok(self
@@ -95,5 +107,14 @@ impl RuskState {
             .opening(*note.pos())
             .map_err(|_| Error::OpeningPositionNotFound(*note.pos()))?
             .ok_or_else(|| Error::OpeningNoteUndefined(*note.pos()))
+    }
+
+    /// Returns the stake of a key.
+    pub fn fetch_stake(&self, pk: &PublicKey) -> Result<Stake> {
+        self.stake_contract()?
+            .staked
+            .get(&pk.to_bytes())?
+            .map(|s| *s.deref())
+            .ok_or_else(|| Error::StakeNotFound(*pk))
     }
 }

@@ -20,6 +20,7 @@ use dusk_abi::ContractState;
 use futures::TryFutureExt;
 use microkelvin::{Backend, BackendCtor, DiskBackend};
 use rusk::{Result, Rusk};
+use stake_contract::StakeContract;
 use tokio::net::{UnixListener, UnixStream};
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::Service;
@@ -55,6 +56,33 @@ where
     *rusk_state
         .inner_mut()
         .get_contract_mut(&rusk_abi::transfer_contract())?
+        .state_mut() = contract_state;
+    let state_id = rusk_state.persist(ctor)?;
+
+    *rusk.state_id.lock() = state_id;
+
+    Ok(())
+}
+
+pub fn update_stake_contract<B>(
+    rusk: &mut Rusk,
+    stake: StakeContract,
+    ctor: &BackendCtor<B>,
+) -> Result<()>
+where
+    B: 'static + Backend,
+{
+    let mut rusk_state = rusk.state()?;
+
+    const PAGE_SIZE: usize = 1024 * 64;
+    let mut bytes = [0u8; PAGE_SIZE];
+    let mut sink = Sink::new(&mut bytes[..]);
+    ContractState::from_canon(&stake).encode(&mut sink);
+    let mut source = Source::new(&bytes[..]);
+    let contract_state = ContractState::decode(&mut source)?;
+    *rusk_state
+        .inner_mut()
+        .get_contract_mut(&rusk_abi::stake_contract())?
         .state_mut() = contract_state;
     let state_id = rusk_state.persist(ctor)?;
 

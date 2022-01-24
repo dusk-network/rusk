@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bytes::Serializable;
+use dusk_pki::PublicKey;
 use std::{fmt, io};
 use tonic::Status;
 
@@ -31,6 +33,8 @@ pub enum Error {
     Status(tonic::Status),
     /// Canonical Errors
     Canonical(canonical::CanonError),
+    /// Stake not found for key.
+    StakeNotFound(PublicKey),
 }
 
 impl std::error::Error for Error {}
@@ -99,6 +103,9 @@ impl fmt::Display for Error {
             }
             Error::Status(err) => write!(f, "Status Error: {}", err),
             Error::Canonical(err) => write!(f, "Canonical Error: {:?}", err),
+            Error::StakeNotFound(pk) => {
+                write!(f, "Couldn't find stake for {:?}", pk.to_bytes())
+            }
         }
     }
 }
