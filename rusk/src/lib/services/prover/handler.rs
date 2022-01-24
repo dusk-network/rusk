@@ -13,7 +13,7 @@ use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::UnprovenTransaction;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 use rusk_proto::{
@@ -30,13 +30,10 @@ use transfer_circuits::{
     WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
 
-lazy_static! {
-    static ref PP: PublicParameters = unsafe {
-        let pp = rusk_profile::get_common_reference_string().unwrap();
+use crate::PUB_PARAMS;
 
-        PublicParameters::from_slice_unchecked(pp.as_slice())
-    };
-    static ref EXECUTE_PROVER_KEYS: HashMap<(usize, usize), ProverKey> = {
+pub static EXECUTE_PROVER_KEYS: Lazy<HashMap<(usize, usize), ProverKey>> =
+    Lazy::new(|| {
         let mut map = HashMap::new();
 
         for ninputs in [1, 2, 3, 4] {
@@ -55,32 +52,35 @@ lazy_static! {
         }
 
         map
-    };
-    static ref WFCT_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&WithdrawFromTransparentCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-    static ref WFCO_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-    static ref STCT_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&SendToContractTransparentCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-    static ref STCO_PROVER_KEY: ProverKey = {
-        let keys = keys_for(&SendToContractObfuscatedCircuit::CIRCUIT_ID)
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        ProverKey::from_slice(&pk).expect("prover key to be valid")
-    };
-}
+    });
+
+pub static WFCT_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&WithdrawFromTransparentCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
+
+pub static WFCO_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
+
+pub static STCT_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&SendToContractTransparentCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
+
+pub static STCO_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
+    let keys = keys_for(&SendToContractObfuscatedCircuit::CIRCUIT_ID)
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    ProverKey::from_slice(&pk).expect("prover key to be valid")
+});
 
 pub struct ExecuteProverHandler<'a> {
     _request: &'a Request<ExecuteProverRequest>,
@@ -153,7 +153,7 @@ where
 
         let proof = circ
             .prove(
-                &PP,
+                &PUB_PARAMS,
                 EXECUTE_PROVER_KEYS.get(&(num_inputs, num_outputs)).unwrap(),
             )
             .map_err(|e| {
@@ -233,7 +233,7 @@ where
         );
 
         let proof = circ
-            .prove(&*PP, &STCT_PROVER_KEY, b"dusk-network")
+            .prove(&PUB_PARAMS, &STCT_PROVER_KEY, b"dusk-network")
             .map_err(|e| {
                 Status::internal(format!("Failed proving the circuit: {}", e))
             })?;
@@ -345,7 +345,7 @@ where
         );
 
         let proof = circ
-            .prove(&*PP, &STCO_PROVER_KEY, b"dusk-network")
+            .prove(&PUB_PARAMS, &STCO_PROVER_KEY, b"dusk-network")
             .map_err(|e| {
                 Status::internal(format!("Failed proving the circuit: {}", e))
             })?;
@@ -401,7 +401,7 @@ where
             WithdrawFromTransparentCircuit::new(commitment, value, blinder);
 
         let proof = circ
-            .prove(&*PP, &WFCT_PROVER_KEY, b"dusk-network")
+            .prove(&PUB_PARAMS, &WFCT_PROVER_KEY, b"dusk-network")
             .map_err(|e| {
                 Status::internal(format!("Failed proving the circuit: {}", e))
             })?;
@@ -532,7 +532,7 @@ where
         };
 
         let proof = circ
-            .prove(&*PP, &WFCO_PROVER_KEY, b"dusk-network")
+            .prove(&PUB_PARAMS, &WFCO_PROVER_KEY, b"dusk-network")
             .map_err(|e| {
                 Status::internal(format!("Failed proving the circuit: {}", e))
             })?;
