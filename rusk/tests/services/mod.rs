@@ -6,5 +6,4 @@
 
 pub mod pki_service;
 pub mod prover_service;
-
-pub use super::TestContext;
+pub mod state_service;
