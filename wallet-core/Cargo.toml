@@ -1,6 +1,6 @@
 [package]
 name = "dusk-wallet-core"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 description = "The core functionality of the Dusk wallet"
 license = "MPL-2.0"
@@ -16,7 +16,7 @@ dusk-schnorr = { version = "0.9.0-rc", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
 dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
 dusk-plonk = { version = "^0.9", default-features = false }
-rusk-abi = "0.5"
+rusk-abi = "0.6"
 canonical = "^0.6"
 
 [dev-dependencies]
