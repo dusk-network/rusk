@@ -25,6 +25,12 @@ pub enum Error {
     Io(io::Error),
     /// Persistence Errors
     Persistence(microkelvin::PersistError),
+    /// Transfer Contract Errors
+    TransferContract(transfer_contract::Error),
+    /// Tonic Status Errors
+    Status(tonic::Status),
+    /// Canonical Errors
+    Canonical(canonical::CanonError),
 }
 
 impl std::error::Error for Error {}
@@ -44,6 +50,24 @@ impl From<io::Error> for Error {
 impl From<microkelvin::PersistError> for Error {
     fn from(err: microkelvin::PersistError) -> Self {
         Error::Persistence(err)
+    }
+}
+
+impl From<transfer_contract::Error> for Error {
+    fn from(err: transfer_contract::Error) -> Self {
+        Error::TransferContract(err)
+    }
+}
+
+impl From<tonic::Status> for Error {
+    fn from(err: tonic::Status) -> Self {
+        Error::Status(err)
+    }
+}
+
+impl From<canonical::CanonError> for Error {
+    fn from(err: canonical::CanonError) -> Self {
+        Error::Canonical(err)
     }
 }
 
@@ -70,6 +94,11 @@ impl fmt::Display for Error {
             Error::Persistence(err) => {
                 write!(f, "Persistence Error: {:?}", err)
             }
+            Error::TransferContract(err) => {
+                write!(f, "Transfer Contract Error: {}", err)
+            }
+            Error::Status(err) => write!(f, "Status Error: {}", err),
+            Error::Canonical(err) => write!(f, "Canonical Error: {:?}", err),
         }
     }
 }

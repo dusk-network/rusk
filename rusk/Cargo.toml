@@ -36,7 +36,8 @@ dusk-bls12_381 = { version = "0.8", features = ["canon"] }
 dusk-jubjub = { version = "0.10", features = ["canon"] }
 dusk-pki = "0.9.0-rc"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.1"
+dusk-wallet-core = "0.4"
+dusk-abi = "0.10"
 rusk-vm = { version = "0.8.0-rc", features = ["persistence"] }
 phoenix-core = "0.15.0-rc"
 kadcast = "0.4.0-rc"

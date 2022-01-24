@@ -9,9 +9,10 @@ use crate::Result;
 use dusk_bls12_381::BlsScalar;
 use dusk_pki::{Ownable, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
+use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
 use rusk_abi::{self, POSEIDON_TREE_DEPTH};
-use rusk_vm::NetworkState;
+use rusk_vm::{NetworkState, NetworkStateId};
 use transfer_contract::TransferContract;
 
 pub struct RuskState(pub(crate) NetworkState);
@@ -34,6 +35,20 @@ impl RuskState {
         self.0.root()
     }
 
+    pub fn persist<B>(
+        &mut self,
+        ctor: &BackendCtor<B>,
+    ) -> Result<NetworkStateId>
+    where
+        B: 'static + Backend,
+    {
+        Ok(self.0.persist(ctor)?)
+    }
+
+    pub fn commit(&mut self) {
+        self.0.commit()
+    }
+
     /// Returns the current state of the [`TransferContract`]
     pub fn transfer_contract(&self) -> Result<TransferContract> {
         Ok(self
@@ -45,8 +60,7 @@ impl RuskState {
     fn notes(&self, height: u64) -> Result<Vec<Note>> {
         Ok(self
             .transfer_contract()?
-            .notes_from_height(height)
-            .expect("Failed to fetch notes iterator from state")
+            .notes_from_height(height)?
             .map(|note| *note.expect("Failed to fetch note from canonical"))
             .collect())
     }

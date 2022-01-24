@@ -48,8 +48,11 @@ macro_rules! handle {
     }};
 }
 
+#[derive(Debug, Default)]
+pub struct RuskProver {}
+
 #[tonic::async_trait]
-impl Prover for Rusk {
+impl Prover for RuskProver {
     async fn prove_execute(
         &self,
         request: Request<ExecuteProverRequest>,

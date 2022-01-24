@@ -11,7 +11,10 @@ pub mod state;
 pub mod transaction;
 
 use crate::error::Error;
-use crate::state::RuskState;
+pub use crate::state::RuskState;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 use microkelvin::{
     Backend, BackendCtor, DiskBackend, PersistError, Persistence,
@@ -24,22 +27,20 @@ use dusk_plonk::prelude::PublicParameters;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-lazy_static::lazy_static! {
-    pub(crate) static ref PUB_PARAMS: PublicParameters = unsafe {
-        let pp = rusk_profile::get_common_reference_string()
-            .expect("Failed to get common reference string");
+pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
+    let pp = rusk_profile::get_common_reference_string()
+        .expect("Failed to get common reference string");
 
-        PublicParameters::from_slice_unchecked(pp.as_slice())
-    };
-}
+    PublicParameters::from_slice_unchecked(pp.as_slice())
+});
 
 fn disk_backend() -> Result<DiskBackend, PersistError> {
     DiskBackend::new(rusk_profile::get_rusk_state_dir()?)
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Rusk {
-    state_id: NetworkStateId,
+    pub state_id: Arc<Mutex<NetworkStateId>>,
 }
 
 impl Rusk {
@@ -51,6 +52,7 @@ impl Rusk {
 
         let state_id =
             NetworkStateId::read(rusk_profile::get_rusk_state_id_path()?)?;
+        let state_id = Arc::new(Mutex::new(state_id));
 
         Ok(Rusk { state_id })
     }
@@ -62,18 +64,44 @@ impl Rusk {
         B: 'static + Backend,
     {
         let state_id = rusk_recovery_tools::state::deploy(ctor)?;
+        let state_id = Arc::new(Mutex::new(state_id));
+
         Ok(Rusk { state_id })
     }
 
     /// Returns the current state of the network
     pub fn state(&self) -> Result<RuskState> {
+        let state_id = *self.state_id.lock();
+
         let mut network = NetworkState::new()
-            .restore(self.state_id)
+            .restore(state_id)
             .or(Err(Error::RestoreFailed))?;
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         network.register_host_module(rusk_mod);
 
         Ok(RuskState(network))
+    }
+
+    /// Persist the current state of the network
+    pub fn persist(&self) -> Result<NetworkStateId> {
+        let state_id =
+            self.persist_with_backend(&BackendCtor::new(disk_backend))?;
+        state_id.write(rusk_profile::get_rusk_state_id_path()?)?;
+        Ok(state_id)
+    }
+
+    /// Persist the current state of the network
+    pub fn persist_with_backend<B>(
+        &self,
+        ctor: &BackendCtor<B>,
+    ) -> Result<NetworkStateId>
+    where
+        B: 'static + Backend,
+    {
+        let state_id = self.state()?.persist(ctor)?;
+        *self.state_id.lock() = state_id;
+
+        Ok(state_id)
     }
 }

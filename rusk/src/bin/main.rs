@@ -13,8 +13,8 @@ use clap::{App, Arg, ArgMatches};
 use futures::TryFutureExt;
 use rusk::services::network::NetworkServer;
 use rusk::services::network::RuskNetwork;
-use rusk::services::pki::KeysServer;
-use rusk::services::prover::ProverServer;
+use rusk::services::pki::{KeysServer, RuskKeys};
+use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
 use rusk::Rusk;
 use rustc_tools_util::{get_version_info, VersionInfo};
@@ -158,7 +158,7 @@ async fn startup_with_uds(
 
     let rusk = Rusk::new()?;
 
-    let keys = KeysServer::new(rusk);
+    let keys = KeysServer::new(RuskKeys::default());
     let network = NetworkServer::new(kadcast);
     let state = StateServer::new(rusk);
 
@@ -192,10 +192,10 @@ async fn startup_with_tcp_ip(
 
     let rusk = Rusk::new()?;
 
-    let keys = KeysServer::new(rusk);
+    let keys = KeysServer::new(RuskKeys::default());
     let network = NetworkServer::new(kadcast);
-    let state = StateServer::new(rusk);
-    let prover = ProverServer::new(rusk);
+    let state = StateServer::new(rusk.clone());
+    let prover = ProverServer::new(RuskProver::default());
 
     Ok(Server::builder()
         .add_service(keys)
