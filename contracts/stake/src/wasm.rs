@@ -8,7 +8,7 @@ use crate::*;
 
 use alloc::vec::Vec;
 use canonical::{Canon, Sink, Source};
-use dusk_abi::{ContractId, ContractState, ReturnValue, Transaction};
+use dusk_abi::{ContractState, ReturnValue, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicKey;
@@ -22,7 +22,6 @@ pub const QR_GET_STAKE: u8 = 0x00;
 pub const TX_STAKE: u8 = 0x00;
 pub const TX_EXTEND: u8 = 0x01;
 pub const TX_WITHDRAW: u8 = 0x02;
-pub const TX_SLASH: u8 = 0x03;
 
 const PAGE_SIZE: usize = 1024 * 32;
 
