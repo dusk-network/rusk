@@ -15,81 +15,101 @@ use tracing::{debug, error, warn};
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
-    BroadcastMessage, Message, MessageMetadata, Null, SendMessage,
+    BroadcastMessage, Message, MessageMetadata, Null, PropagateMessage,
+    SendMessage,
 };
 use futures::Stream;
 use std::{net::SocketAddr, pin::Pin};
 
-pub struct RuskNetwork {
+pub struct KadcastDispatcher {
+    dummy_addr: SocketAddr,
     peer: Peer,
-    sender: Sender<(Vec<u8>, SocketAddr, u8)>,
+    inbound_dispatcher: Sender<(Vec<u8>, SocketAddr, u8)>,
 }
 
-impl RuskNetwork {
-    pub fn new(config: KadcastConfig, hash_message: bool) -> RuskNetwork {
+impl KadcastDispatcher {
+    pub fn new(config: KadcastConfig, hash_message: bool) -> KadcastDispatcher {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
-        // The sender is used by the KadcastListener to forward the received
-        // messages.
+        // The inbound_dispatcher is used by the KadcastListener to forward
+        // the received messages.
         // The receiver is discarded because at the moment 0 there is no one
         // listening.
         // When a `listen` call is received, a new receiver is created using
-        // `sender.subscribe`
-        let grpc_sender = broadcast::channel(100).0;
+        // `inbound_dispatcher.subscribe`
+        let inbound_dispatcher = broadcast::channel(100).0;
         let listener = KadcastListener {
-            grpc_sender: grpc_sender.clone(),
+            inbound_dispatcher: inbound_dispatcher.clone(),
             hash_message,
         };
 
-        RuskNetwork {
+        KadcastDispatcher {
             peer: Peer::new(config, listener),
-            sender: grpc_sender,
+            inbound_dispatcher,
+            dummy_addr: "127.0.0.1:1".parse().expect("Unable to parse address"),
         }
     }
 }
 
-impl Default for RuskNetwork {
-    fn default() -> RuskNetwork {
-        RuskNetwork::new(KadcastConfig::default(), false)
+impl Default for KadcastDispatcher {
+    fn default() -> KadcastDispatcher {
+        KadcastDispatcher::new(KadcastConfig::default(), false)
     }
 }
 struct KadcastListener {
-    grpc_sender: broadcast::Sender<(Vec<u8>, SocketAddr, u8)>,
+    inbound_dispatcher: broadcast::Sender<(Vec<u8>, SocketAddr, u8)>,
     hash_message: bool,
 }
 
 impl NetworkListen for KadcastListener {
     fn on_message(&self, message: Vec<u8>, metadata: MessageInfo) {
-        let mut tosend = message;
+        let mut message = message;
         if self.hash_message {
             let mut hasher = Blake2b::<U32>::new();
-            hasher.update(tosend);
-            tosend = hasher.finalize().to_vec();
+            hasher.update(message);
+            message = hasher.finalize().to_vec();
         }
-        self.grpc_sender
-            .send((tosend, metadata.src(), metadata.height()))
+        self.inbound_dispatcher
+            .send((message, metadata.src(), metadata.height()))
             .unwrap_or_else(|e| {
-                println!("Error {}", e);
+                warn!("Error in dispatcher notification {}", e);
                 0
             });
     }
 }
 
 #[tonic::async_trait]
-impl Network for RuskNetwork {
+impl Network for KadcastDispatcher {
     async fn send(
         &self,
         request: Request<SendMessage>,
     ) -> Result<Response<Null>, Status> {
         debug!("Received SendMessage request");
+        let req = request.get_ref();
         self.peer
             .send(
-                &request.get_ref().message,
-                request.get_ref().target_address.parse().map_err(|_| {
+                &req.message,
+                req.target_address.parse().map_err(|_| {
                     Status::invalid_argument("Unable to parse address")
                 })?,
             )
             .await;
+        Ok(Response::new(Null {}))
+    }
+
+    async fn propagate(
+        &self,
+        request: Request<PropagateMessage>,
+    ) -> Result<Response<Null>, Status> {
+        debug!("Received PropagateMessage request");
+        let req = request.get_ref();
+        self.inbound_dispatcher
+            .send((req.message.clone(), self.dummy_addr, 0))
+            .unwrap_or_else(|e| {
+                warn!("Error in dispatcher notification {}", e);
+                0
+            });
+        self.peer.broadcast(&req.message, None).await;
         Ok(Response::new(Null {}))
     }
 
@@ -98,11 +118,9 @@ impl Network for RuskNetwork {
         request: Request<BroadcastMessage>,
     ) -> Result<Response<Null>, Status> {
         debug!("Received BroadcastMessage request");
+        let req = request.get_ref();
         self.peer
-            .broadcast(
-                &request.get_ref().message,
-                Some(request.get_ref().kadcast_height as usize),
-            )
+            .broadcast(&req.message, Some(req.kadcast_height as usize))
             .await;
         Ok(Response::new(Null {}))
     }
@@ -115,7 +133,7 @@ impl Network for RuskNetwork {
         _: Request<Null>,
     ) -> Result<Response<Self::ListenStream>, Status> {
         debug!("Received Listen request");
-        let mut rx = self.sender.subscribe();
+        let mut rx = self.inbound_dispatcher.subscribe();
         let output = async_stream::try_stream! {
             loop {
                 match rx.recv().await {

@@ -31,7 +31,7 @@ serde = "1.0"
 
 dusk-schnorr = "0.9.0-rc"
 dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
-dusk-plonk = { version = "0.9", features = ["canon"] }
+dusk-plonk = { version = "0.9", features = ["canon" ]}
 dusk-bls12_381 = { version = "0.8", features = ["canon"] }
 dusk-jubjub = { version = "0.10", features = ["canon"] }
 dusk-pki = "0.9.0-rc"

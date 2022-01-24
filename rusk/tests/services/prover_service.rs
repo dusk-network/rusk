@@ -18,6 +18,9 @@ use phoenix_core::{Note, NoteType};
 use rand::{CryptoRng, RngCore};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::rusk_proto::prover_client::ProverClient;
+use rusk::services::rusk_proto::ExecuteProverRequest;
+use tokio::runtime::Handle;
+use tokio::task::block_in_place;
 use tonic::transport::Channel;
 use tonic::transport::Server;
 
@@ -84,13 +87,13 @@ impl Store for TestStore {
 
 #[derive(Debug)]
 struct TestWalletProverClient {
-    _client: Mutex<ProverClient<Channel>>,
+    client: Mutex<ProverClient<Channel>>,
 }
 
 impl TestWalletProverClient {
     fn new(client: ProverClient<Channel>) -> Self {
         Self {
-            _client: Mutex::new(client),
+            client: Mutex::new(client),
         }
     }
 }
@@ -101,9 +104,21 @@ impl WalletProverClient for TestWalletProverClient {
     /// Requests that a node prove the given transaction and later propagates it
     fn compute_proof_and_propagate(
         &self,
-        _utx: &UnprovenTransaction,
+        utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        unimplemented!();
+        let utx = utx.to_var_bytes();
+        let request = tonic::Request::new(ExecuteProverRequest { utx });
+
+        let mut prover = self.client.lock();
+        block_in_place(move || {
+            Handle::current()
+                .block_on(async move { prover.prove_execute(request).await })
+            // FIX_ME: Include network propagation test as soon as
+            // NetworkService is included in tests
+        })
+        .expect("successful call");
+
+        Ok(())
     }
 
     /// Requests an STCT proof.
