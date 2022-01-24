@@ -8,7 +8,9 @@
 
 extern crate alloc;
 
+use canonical::CanonError;
 use canonical_derive::Canon;
+use core::ops::Deref;
 use dusk_bytes::Serializable;
 use dusk_hamt::Map;
 use dusk_pki::PublicKey;
@@ -65,5 +67,5 @@ impl Stake {
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
-    staked: Map<Key, Stake>,
+    pub staked: Map<Key, Stake>,
 }
