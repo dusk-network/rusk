@@ -7,11 +7,12 @@
 use crate::{Error, Map};
 
 use canonical_derive::Canon;
-use dusk_abi::ContractId;
+use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
-use phoenix_core::{Crossover, Message, Note};
+use phoenix_core::{Crossover, Fee, Message, Note};
+use rusk_abi::hash::Hasher;
 
 use core::convert::TryFrom;
 
@@ -94,6 +95,34 @@ impl TransferContract {
         self.roots.insert(root, ())?;
 
         Ok(())
+    }
+
+    pub fn tx_hash(
+        nullifiers: &[BlsScalar],
+        outputs: &[Note],
+        anchor: &BlsScalar,
+        fee: &Fee,
+        crossover: Option<&Crossover>,
+        call: Option<&(ContractId, Transaction)>,
+    ) -> BlsScalar {
+        let mut hasher = Hasher::new();
+
+        nullifiers.iter().for_each(|n| hasher.update(n.to_bytes()));
+        outputs.iter().for_each(|o| hasher.update(o.to_bytes()));
+
+        hasher.update(anchor.to_bytes());
+        hasher.update(fee.to_bytes());
+
+        if let Some(c) = crossover {
+            hasher.update(c.to_bytes());
+        };
+
+        if let Some((cid, txdata)) = call {
+            hasher.update(cid.as_bytes());
+            hasher.update(txdata.as_bytes());
+        };
+
+        hasher.finalize()
     }
 
     pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {

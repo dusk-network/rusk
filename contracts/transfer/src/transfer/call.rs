@@ -82,6 +82,10 @@ impl Call {
         }
     }
 
+    pub fn to_transaction(&self) -> Transaction {
+        Transaction::from_canon(self)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn to_execute(
         &self,
