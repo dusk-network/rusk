@@ -14,7 +14,6 @@ use handler::{
 };
 
 use crate::services::{rusk_proto, ServiceRequestHandler};
-use crate::Rusk;
 
 use tonic::{Request, Response, Status};
 use tracing::{error, info};

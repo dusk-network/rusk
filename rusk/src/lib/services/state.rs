@@ -117,7 +117,7 @@ impl State for Rusk {
                         .transact::<_, ()>(
                             rusk_abi::transfer_contract(),
                             block_height,
-                            tx.clone(),
+                            tx,
                             &mut gas_meter,
                         )
                         .is_ok()
