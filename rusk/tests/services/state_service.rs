@@ -20,14 +20,12 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
-use rusk_vm::NetworkStateId;
 
 use microkelvin::{BackendCtor, DiskBackend};
 
-use std::sync::Arc;
 use tracing::{info, trace};
 
-use tonic::transport::{Channel, Endpoint, Server, Uri};
+use tonic::transport::Server;
 
 use rusk::services::state::StateServer;
 
@@ -35,7 +33,7 @@ pub fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
 }
 
-static TEST_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
+static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
     let rusk = Rusk::with_backend(&testbackend())
         .expect("Error creating Rusk Instance");
 
@@ -94,7 +92,7 @@ fn get_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_notes() -> Result<()> {
-    let mut rusk = TEST_LOCK.lock();
+    let rusk = STATE_LOCK.lock();
 
     let (channel, incoming) = setup().await;
 
@@ -125,14 +123,12 @@ pub async fn test_fetch_notes() -> Result<()> {
 
     assert_eq!(len, 1, "Expected 1 note");
 
-    // *state_id = *rusk.state_id.lock();
-
     Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_anchor() -> Result<()> {
-    let mut rusk = TEST_LOCK.lock();
+    let mut rusk = STATE_LOCK.lock();
 
     let (channel, incoming) = setup().await;
 
@@ -164,14 +160,12 @@ pub async fn test_fetch_anchor() -> Result<()> {
         "Expected same anchor"
     );
 
-    // *state_id = *rusk.state_id.lock();
-
     Ok(())
 }
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_opening() -> Result<()> {
-    let mut rusk = TEST_LOCK.lock();
+    let mut rusk = STATE_LOCK.lock();
 
     let (channel, incoming) = setup().await;
 
@@ -208,8 +202,6 @@ pub async fn test_fetch_opening() -> Result<()> {
     let opening = (&bytes[..len]).to_vec();
 
     assert_eq!(branch, opening, "Expected same branch");
-
-    // *state_id = *rusk.state_id.lock();
 
     Ok(())
 }

@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::common::setup;
-use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
@@ -19,10 +18,6 @@ use phoenix_core::{Note, NoteType};
 use rand::{CryptoRng, RngCore};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::rusk_proto::prover_client::ProverClient;
-use rusk::services::rusk_proto::ExecuteProverRequest;
-use test_context::test_context;
-use tokio::runtime::Handle;
-use tokio::task::block_in_place;
 use tonic::transport::Channel;
 use tonic::transport::Server;
 
@@ -89,13 +84,13 @@ impl Store for TestStore {
 
 #[derive(Debug)]
 struct TestWalletProverClient {
-    client: Mutex<ProverClient<Channel>>,
+    _client: Mutex<ProverClient<Channel>>,
 }
 
 impl TestWalletProverClient {
     fn new(client: ProverClient<Channel>) -> Self {
         Self {
-            client: Mutex::new(client),
+            _client: Mutex::new(client),
         }
     }
 }
@@ -106,34 +101,20 @@ impl WalletProverClient for TestWalletProverClient {
     /// Requests that a node prove the given transaction and later propagates it
     fn compute_proof_and_propagate(
         &self,
-        utx: &UnprovenTransaction,
+        _utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        let utx = utx.to_var_bytes();
-
-        let request = tonic::Request::new(ProverRequest { utx });
-
-        let mut prover = self.client.lock();
-        let proof = block_in_place(move || {
-            Handle::current()
-                .block_on(async move { prover.prove(request).await })
-        })
-        .expect("successful call")
-        .into_inner()
-        .proof;
-
-        let _proof = Proof::from_slice(&proof).expect("valid proof");
-        Ok(())
+        unimplemented!();
     }
 
     /// Requests an STCT proof.
     fn request_stct_proof(
         &self,
-        fee: &Fee,
-        crossover: &Crossover,
-        value: u64,
-        blinder: JubJubScalar,
-        address: BlsScalar,
-        signature: Signature,
+        _fee: &Fee,
+        _crossover: &Crossover,
+        _value: u64,
+        _blinder: JubJubScalar,
+        _address: BlsScalar,
+        _signature: Signature,
     ) -> Result<Proof, Self::Error> {
         unimplemented!();
     }
@@ -141,9 +122,9 @@ impl WalletProverClient for TestWalletProverClient {
     /// Request a WFCT proof.
     fn request_wfct_proof(
         &self,
-        commitment: JubJubAffine,
-        value: u64,
-        blinder: JubJubScalar,
+        _commitment: JubJubAffine,
+        _value: u64,
+        _blinder: JubJubScalar,
     ) -> Result<Proof, Self::Error> {
         unimplemented!();
     }
@@ -193,11 +174,12 @@ impl StateClient for TestStateClient {
         Ok(self.opening.clone())
     }
 
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
         unimplemented!();
     }
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 pub async fn prover_walkthrough_uds() {
     let (channel, incoming) = setup().await;

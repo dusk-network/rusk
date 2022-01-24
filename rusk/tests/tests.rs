@@ -4,6 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(async_closure)]
 pub mod common;
 pub mod services;
