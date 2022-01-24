@@ -72,7 +72,7 @@ impl NetworkListen for KadcastListener {
         self.inbound_dispatcher
             .send((message, metadata.src(), metadata.height()))
             .unwrap_or_else(|e| {
-                println!("Error {}", e);
+                warn!("Error in dispatcher notification {}", e);
                 0
             });
     }
@@ -106,7 +106,7 @@ impl Network for KadcastDispatcher {
         self.inbound_dispatcher
             .send((req.message.clone(), self.dummy_addr, 0))
             .unwrap_or_else(|e| {
-                println!("Error {}", e);
+                warn!("Error in dispatcher notification {}", e);
                 0
             });
         self.peer.broadcast(&req.message, None).await;

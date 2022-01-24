@@ -84,10 +84,10 @@ async fn main() {
                 .takes_value(true),
         );
     let app = network_config(app);
-    let cfg = Config::from(app.get_matches());
+    let config = Config::from(app.get_matches());
 
     // Match tracing desired level.
-    let log = match &cfg.log_level[..] {
+    let log = match &config.log_level[..] {
         "error" => tracing::Level::ERROR,
         "warn" => tracing::Level::WARN,
         "info" => tracing::Level::INFO,
@@ -108,9 +108,9 @@ async fn main() {
         .expect("Failed on subscribe tracing");
 
     let router = {
-        let rusk = Rusk::new().map_err(|e| eprintln!("{}", e)).unwrap();
+        let rusk = Rusk::new().unwrap();
         let kadcast =
-            KadcastDispatcher::new(cfg.kadcast.clone(), cfg.kadcast_test);
+            KadcastDispatcher::new(config.kadcast.clone(), config.kadcast_test);
 
         let keys = KeysServer::new(RuskKeys::default());
         let network = NetworkServer::new(kadcast);
@@ -126,22 +126,22 @@ async fn main() {
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
-    let res = match cfg.ipc_method.as_deref() {
+    let res = match config.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
-                startup_with_tcp_ip(router, &cfg.host, &cfg.port).await
+                startup_with_tcp_ip(router, &config.host, &config.port).await
             }
             (true, "uds") => {
                 panic!("Windows does not support Unix Domain Sockets");
             }
-            (false, "uds") => startup_with_uds(router, &cfg.socket).await,
+            (false, "uds") => startup_with_uds(router, &config.socket).await,
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
-                startup_with_tcp_ip(router, &cfg.host, &cfg.port).await
+                startup_with_tcp_ip(router, &config.host, &config.port).await
             } else {
-                startup_with_uds(router, &cfg.socket).await
+                startup_with_uds(router, &config.socket).await
             }
         }
     };

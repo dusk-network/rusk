@@ -124,7 +124,7 @@ impl RuskProver {
         };
 
         let proof = circ
-            .prove(&*crate::PUB_PARAMS, &WFCO_PROVER_KEY, b"dusk-network")
+            .prove(&crate::PUB_PARAMS, &WFCO_PROVER_KEY, b"dusk-network")
             .map_err(|e| {
                 Status::internal(format!("Failed proving the circuit: {}", e))
             })?;

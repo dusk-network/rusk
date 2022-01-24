@@ -14,8 +14,7 @@ mod wfct;
 
 use crate::services::rusk_proto;
 
-use dusk_bytes::DeserializableSlice;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
 use once_cell::sync::Lazy;
 use tonic::{Request, Response, Status};
