@@ -4,19 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+
 pub(crate) mod rusk_proto {
     tonic::include_proto!("rusk");
 }
 
 mod lib;
 mod prompt;
+use dusk_bytes::Serializable;
 pub use lib::errors as errors;
 
 use std::path::{Path, PathBuf};
 use clap::{AppSettings, Parser, Subcommand};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use whoami;
 
 use dusk_wallet_core::Wallet;
+use dusk_jubjub::BlsScalar;
 
 use lib::errors::CliError;
 use lib::store::LocalStore;
@@ -24,7 +29,6 @@ use lib::clients::{Prover, State};
 
 use rusk_proto::network_client::NetworkClient;
 use rusk_proto::state_client::StateClient;
-use rusk_proto::stake_client::StakeClient;
 use rusk_proto::prover_client::ProverClient;
 
 /// Default Rusk IP address
@@ -82,21 +86,21 @@ enum CliCommand {
     Balance {
         /// Key index
         #[clap(short, long)]
-        index: u64,
+        key: u64,
     },
 
     /// Retrieve public spend key
     Address {
         /// Key index
         #[clap(short, long)]
-        index: u64,
+        key: u64,
     },
 
     /// Send Dusk through the network
     Transfer {
         /// Key index from which to send Dusk
         #[clap(short, long)]
-        index: u64,
+        key: u64,
 
         /// Receiver address
         #[clap(short, long)]
@@ -117,22 +121,63 @@ enum CliCommand {
 
     /// Start staking Dusk
     Stake {
+        /// Key index from which to stake Dusk
+        #[clap(short, long)]
+        key: u64,
 
-    },
+        /// Staking key to sign this stake
+        #[clap(short, long)]
+        stake_key: u64,
 
-    /// Stop staking Dusk
-    StopStake {
-        
+        /// Amount of Dusk to stake
+        #[clap(short, long)]
+        amt: u64,
+
+        /// Max amt of gas for this transaction
+        #[clap(short = 'l', long)]
+        gas_limit: u64,
+
+        /// Max price you're willing to pay for gas used
+        #[clap(short = 'p', long)]
+        gas_price: Option<u64>,
     },
 
     /// Extend stake for a particular key
     ExtendStake {
-        
+        /// Key index from which your Dusk was staked
+        #[clap(short, long)]
+        key: u64,
+
+        /// Staking key index used for this stake
+        #[clap(short, long)]
+        stake_key: u64,
+
+        /// Max amt of gas for this transaction
+        #[clap(short = 'l', long)]
+        gas_limit: u64,
+
+        /// Max price you're willing to pay for gas used
+        #[clap(short = 'p', long)]
+        gas_price: Option<u64>,
     },
 
-    /// Withdraw your stake
+    /// Withdraw a key's stake
     WithdrawStake {
-        
+        /// Key index from which your Dusk was staked
+        #[clap(short, long)]
+        key: u64,
+
+        /// Staking key index used for this stake
+        #[clap(short, long)]
+        stake_key: u64,
+
+        /// Max amt of gas for this transaction
+        #[clap(short = 'l', long)]
+        gas_limit: u64,
+
+        /// Max price you're willing to pay for gas used
+        #[clap(short = 'p', long)]
+        gas_price: Option<u64>,
     },
 
     None
@@ -218,17 +263,12 @@ async fn main() -> Result<(), CliError> {
     // connect to rusk services
     let rusk_addr = format!("http://{}:{}", cfg.rusk_addr, cfg.rusk_port);
 
-    let network_client = NetworkClient::connect(rusk_addr.clone()).await
-        .map_err(|e| CliError::Network(e))?;
-    let state_client = StateClient::connect(rusk_addr.clone()).await
-        .map_err(|e| CliError::Network(e))?;
-    let prover_client = ProverClient::connect(rusk_addr.clone()).await
-        .map_err(|e| CliError::Network(e))?;
-    let stake_client = StakeClient::connect(rusk_addr).await
-        .map_err(|e| CliError::Network(e))?;
+    let network_client = NetworkClient::connect(rusk_addr.clone()).await?;
+    let state_client = StateClient::connect(rusk_addr.clone()).await?;
+    let prover_client = ProverClient::connect(rusk_addr.clone()).await?;
 
     let prover = Prover::new(prover_client, network_client);
-    let state = State::new(state_client, stake_client);
+    let state = State::new(state_client);
 
     // create our wallet
     let wallet = Wallet::new(store, state, prover);
@@ -236,39 +276,57 @@ async fn main() -> Result<(), CliError> {
     // perform whatever action user requested
     use CliCommand::*;
     match cmd {
+
         // Check your current balance
-        Balance { index } => {
-            println!("check balance for index: {:?}", index);
-            let balance = wallet.get_balance(index);
-            match balance {
-                Ok(b) => println!("Your balance is: {} Dusk", b),
-                Err(e) => println!("An error occured: {:?}", e)
-             }
+        Balance { key } => {
+            let balance = wallet.get_balance(key)?;
+            println!("Your balance is: {} Dusk", balance);
         },
+
         // Retrieve public spend key
-        Address { index } => {
-            println!("public spend key for index: {:?}", index)
+        Address { key } => {
+            let pk = wallet.public_spend_key(key)?;
+            let addr = pk.to_bytes();
+            let addr = bs58::encode(addr).into_string();
+            println!("The public address for key {} is: {:?}", key, addr);
         },
+
         // Send Dusk through the network
-        Transfer { index, rcvr, amt, gas_limit, gas_price } => {
-            println!("create tx: {} {} {} {} {}", index, rcvr, amt, gas_limit, gas_price.unwrap_or(0));
+        Transfer { key, rcvr, amt, gas_limit, gas_price } => {
+            let mut addr_bytes = [0u8; 64];
+            addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
+            let dest_addr = dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
+            let my_addr = wallet.public_spend_key(key)?;
+            let mut rng = StdRng::from_entropy();
+            wallet.transfer(&mut rng, key, &my_addr, &dest_addr, amt, gas_limit, gas_price.unwrap_or(0), BlsScalar::zero())?;
+            println!("Transfer sent!");
         },
+
         // Start staking Dusk
-        Stake {} => {
-            println!("create stake");
+        Stake { key, stake_key, amt, gas_limit, gas_price } => {
+            let my_addr = wallet.public_spend_key(key)?;
+            let mut rng = StdRng::from_entropy();
+            wallet.stake(&mut rng, key, stake_key, &my_addr, amt, gas_limit, gas_price.unwrap_or(0))?;
+            println!("Staked succesfully!");
         },
-        // Stop staking Dusk
-        StopStake {} => {
-            println!("stop stake");
-        },
+
+
         // Extend stake for a particular key
-        ExtendStake {} => {
-            println!("extend stake");
+        ExtendStake { key, stake_key, gas_limit, gas_price } => {
+            let my_addr = wallet.public_spend_key(key)?;
+            let mut rng = StdRng::from_entropy();
+            wallet.extend_stake(&mut rng, key, stake_key, &my_addr, gas_limit, gas_price.unwrap_or(0))?;
+            println!("Stake extended succesfully!");
         },
-        // Withdraw your stake
-        WithdrawStake {} => {
-            println!("withdraw stake");
+
+        // Withdraw a key's stake
+        WithdrawStake { key, stake_key, gas_limit, gas_price } => {
+            let my_addr = wallet.public_spend_key(key)?;
+            let mut rng = StdRng::from_entropy();
+            wallet.withdraw_stake(&mut rng, key, stake_key, &my_addr, gas_limit, gas_price.unwrap_or(0))?;
+            println!("Stake withdrawn succesfully!");
         },
+
         _ => {}
     }
 
