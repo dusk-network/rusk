@@ -25,8 +25,8 @@ pub const MATURITY: u32 = 2 * EPOCH;
 /// Validity of the stake
 pub const VALIDITY: u32 = 56 * EPOCH;
 
-/// The minimum amount of Dusk one can stake.
-pub const MINIMUM_STAKE: u64 = 5_000;
+/// The minimum amount of (micro)Dusk one can stake.
+pub const MINIMUM_STAKE: u64 = 5_000_000_000;
 
 pub type Key = [u8; PublicKey::SIZE];
 
@@ -65,5 +65,5 @@ impl Stake {
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
-    staked: Map<Key, Stake>,
+    pub staked: Map<Key, Stake>,
 }

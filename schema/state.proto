@@ -64,6 +64,15 @@ message GetOpeningResponse {
     bytes branch = 1; // PoseidonBranch<POSEIDON_TREE_DEPTH>
 }
 
+message GetStakeRequest {
+    bytes pk = 1; // PublicKey
+}
+
+message GetStakeResponse {
+    fixed64 stake = 1;
+    fixed32 expiration = 2;
+}
+
 service State {
     rpc Echo(EchoRequest) returns (EchoResponse) {}
     rpc ExecuteStateTransition(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
@@ -75,4 +84,5 @@ service State {
     rpc GetNotesOwnedBy(GetNotesOwnedByRequest) returns (GetNotesOwnedByResponse) {}
     rpc GetAnchor(GetAnchorRequest) returns (GetAnchorResponse) {}
     rpc GetOpening(GetOpeningRequest) returns (GetOpeningResponse) {}
+    rpc GetStake(GetStakeRequest) returns (GetStakeResponse) {}
 }

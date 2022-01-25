@@ -16,9 +16,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::sync::Arc;
 
-use microkelvin::{
-    Backend, BackendCtor, DiskBackend, PersistError, Persistence,
-};
+use microkelvin::{Backend, BackendCtor, DiskBackend, PersistError};
 
 use rusk_abi::{self, RuskModule};
 use rusk_vm::{NetworkState, NetworkStateId};
@@ -47,7 +45,7 @@ impl Rusk {
     /// Creates a new instance of [`Rusk`]
     pub fn new() -> Result<Rusk> {
         // Register the backend
-        Persistence::with_backend(&BackendCtor::new(disk_backend), |_| Ok(()))
+        Self::with_backend(&BackendCtor::new(disk_backend))
             .or(Err(Error::BackendRegistrationFailed))?;
 
         let state_id =

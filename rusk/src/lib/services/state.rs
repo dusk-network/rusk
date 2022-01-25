@@ -9,7 +9,7 @@ use crate::Rusk;
 
 use canonical::{Canon, Sink};
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::ViewKey;
+use dusk_pki::{PublicKey, ViewKey};
 use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
 use tonic::{Request, Response, Status};
@@ -23,7 +23,8 @@ pub use super::rusk_proto::{
     ExecuteStateTransitionResponse, GetAnchorRequest, GetAnchorResponse,
     GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
     GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
-    GetStateRootRequest, GetStateRootResponse, Transaction as TransactionProto,
+    GetStakeRequest, GetStakeResponse, GetStateRootRequest,
+    GetStateRootResponse, Transaction as TransactionProto,
     VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
 
@@ -220,5 +221,20 @@ impl State for Rusk {
         let branch = (&bytes[..len]).to_vec();
 
         Ok(Response::new(GetOpeningResponse { branch }))
+    }
+
+    async fn get_stake(
+        &self,
+        request: Request<GetStakeRequest>,
+    ) -> Result<Response<GetStakeResponse>, Status> {
+        info!("Received GetStake request");
+
+        let pk = PublicKey::from_slice(&request.get_ref().pk)
+            .map_err(Error::Serialization)?;
+
+        let stake = self.state()?.fetch_stake(&pk)?;
+
+        let (stake, expiration) = (stake.value(), stake.expiration());
+        Ok(Response::new(GetStakeResponse { stake, expiration }))
     }
 }
