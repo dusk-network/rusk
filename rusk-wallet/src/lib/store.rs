@@ -5,31 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::io::Read;
-use std::{fmt, fs, io};
+use std::{fmt, fs};
 use std::path::PathBuf;
 use bytes::{BytesMut, BufMut, Bytes, Buf};
 
 use dusk_pki::{SecretSpendKey, SecretKey};
 use dusk_wallet_core::{Store, derive_sk, derive_ssk};
 
+use crate::lib::errors::CliError;
+
 /// Default directory name to store settings and keystore
 const DATA_DIR: &str = ".dusk";
-
-/// Error types returned by this crate
-#[derive(Debug)]
-pub enum StoreError {
-    IO(io::Error),
-    CorruptedFile,
-    KeyNotFound,
-    KeyAlreadyExists,
-    InvalidPhrase,
-}
-
-impl From<io::Error> for StoreError {
-    fn from(err: io::Error) -> Self {
-        Self::IO(err)
-    }
-}
 
 /// Stores all the user's settings and keystore in the file system
 pub struct LocalStore {
@@ -42,7 +28,7 @@ pub struct LocalStore {
 
 impl Store for LocalStore {
 
-    type Error = StoreError;
+    type Error = CliError;
 
     /// Retrieves the seed used to derive keys.
     fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
@@ -53,7 +39,7 @@ impl Store for LocalStore {
     fn retrieve_ssk(&self, index: u64) -> Result<SecretSpendKey, Self::Error> {
         match self.has_ssk(index) {
             true => Ok(derive_ssk(&self.seed, index)),
-            false => Err(StoreError::KeyNotFound),
+            false => Err(CliError::KeyNotFound),
         }
     }
 
@@ -61,7 +47,7 @@ impl Store for LocalStore {
     fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Self::Error> {
         match self.has_sk(index) {
             true => Ok(derive_sk(&self.seed, index)),
-            false => Err(StoreError::KeyNotFound),
+            false => Err(CliError::KeyNotFound),
         }
     }
 
@@ -70,7 +56,7 @@ impl Store for LocalStore {
 impl LocalStore {
 
     /// Creates a new store
-    pub fn new(name: String, seed: [u8;64]) -> Result<LocalStore, StoreError> {
+    pub fn new(name: String, seed: [u8;64]) -> Result<LocalStore, CliError> {
 
         // construct path to file
         let home = dirs::home_dir().unwrap();
@@ -101,11 +87,11 @@ impl LocalStore {
 
 
     /// Loads wallet file from file
-    pub fn from_file(path: PathBuf, _pwd: String) -> Result<LocalStore, StoreError> {
+    pub fn from_file(path: PathBuf, _pwd: String) -> Result<LocalStore, CliError> {
 
         // basic sanity check
         if !path.is_file() {
-            return Err(StoreError::CorruptedFile);
+            return Err(CliError::CorruptedFile);
         }
 
         // attempt to load and decode wallet
@@ -145,7 +131,9 @@ impl LocalStore {
         }
 
         // extract the name
-        let name = path.file_name().ok_or(StoreError::CorruptedFile)?.to_str().ok_or(StoreError::CorruptedFile)?;
+        let name = path.file_name()
+            .ok_or(CliError::CorruptedFile)?.to_str()
+            .ok_or(CliError::CorruptedFile)?;
 
         // create and return
         Ok(LocalStore{
@@ -159,7 +147,7 @@ impl LocalStore {
     }
 
     /// Saves wallet to a file
-    pub fn save(&self) -> Result<(), StoreError> {
+    pub fn save(&self) -> Result<(), CliError> {
 
         let mut buf = BytesMut::new();
     
@@ -192,9 +180,9 @@ impl LocalStore {
 
     /// Add a new secret spend key to the wallet
     /// Note: This method does not persist the changes to disk.
-    pub fn add_ssk(&mut self, index: u64) -> Result<SecretSpendKey, StoreError> {
+    pub fn add_ssk(&mut self, index: u64) -> Result<SecretSpendKey, CliError> {
         match self.has_ssk(index) {
-            true => Err(StoreError::KeyAlreadyExists),
+            true => Err(CliError::KeyAlreadyExists),
             false => {
                 let ssk = derive_ssk(&self.seed, index);
                 self.ssk_keys.push(index);
@@ -216,9 +204,9 @@ impl LocalStore {
 
     /// Add a new secret key to the wallet
     /// Note: This method does not persist the changes to disk.
-    pub fn add_sk(&mut self, index: u64) -> Result<SecretKey, StoreError> {
+    pub fn add_sk(&mut self, index: u64) -> Result<SecretKey, CliError> {
         match self.has_sk(index) {
-            true => Err(StoreError::KeyAlreadyExists),
+            true => Err(CliError::KeyAlreadyExists),
             false => {
                 let sk = derive_sk(&self.seed, index);
                 self.sk_keys.push(index);
