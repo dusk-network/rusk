@@ -16,7 +16,7 @@ use rusk::services::network::NetworkServer;
 use rusk::services::pki::{KeysServer, RuskKeys};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
-use rusk::Rusk;
+use rusk::{Result, Rusk};
 use rustc_tools_util::{get_version_info, VersionInfo};
 use tonic::transport::Server;
 use version::show_version;
@@ -26,8 +26,14 @@ use services::startup_with_uds;
 
 use crate::config::Config;
 
+use microkelvin::{BackendCtor, DiskBackend};
+
+pub fn disk_backend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(|| DiskBackend::new(rusk_profile::get_rusk_state_dir()?))
+}
+
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
     let crate_name = &crate_info.crate_name.to_string();
     let version = show_version(crate_info);
@@ -65,11 +71,13 @@ async fn main() {
     // so this subscriber will be used as the default in all threads for the
     // remainder of the duration of the program, similar to how `loggers`
     // work in the `log` crate.
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed on subscribe tracing");
+    tracing::subscriber::set_global_default(subscriber)?;
 
     let router = {
-        let rusk = Rusk::new().unwrap();
+        let rusk = Rusk::builder(disk_backend)
+            .path(rusk_profile::get_rusk_state_id_path()?)
+            .build()?;
+
         let kadcast = KadcastDispatcher::new(
             config.kadcast.clone().into(),
             config.kadcast_test,
@@ -89,7 +97,7 @@ async fn main() {
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
-    let res = match config.grpc.ipc_method.as_deref() {
+    match config.grpc.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
                 startup_with_tcp_ip(
@@ -119,9 +127,5 @@ async fn main() {
                 startup_with_uds(router, &config.grpc.socket).await
             }
         }
-    };
-    match res {
-        Ok(()) => (),
-        Err(e) => eprintln!("{}", e),
-    };
+    }
 }

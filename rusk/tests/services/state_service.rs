@@ -36,7 +36,12 @@ pub fn testbackend() -> BackendCtor<DiskBackend> {
 }
 
 static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let rusk = Rusk::with_backend(&testbackend())
+    let state_id = rusk_recovery_tools::state::deploy(&testbackend())
+        .expect("Failed to deploy state");
+
+    let rusk = Rusk::builder(testbackend)
+        .id(state_id)
+        .build()
         .expect("Error creating Rusk Instance");
 
     Mutex::new(rusk)
@@ -82,14 +87,18 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 
     let note = Note::transparent(&mut rng, &psk, initial_balance);
 
-    let rusk_state = rusk.state()?;
+    let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
     transfer.push_note(BLOCK_HEIGHT, note)?;
     transfer.update_root()?;
 
     info!("Updating the new transfer contract state");
-    crate::common::update_transfer_contract(rusk, transfer, &testbackend())?;
+    unsafe {
+        rusk_state
+            .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
+    }
+    rusk.persist(&mut rusk_state)?;
 
     fetch_note(rusk)
 }
@@ -99,7 +108,7 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(PublicKey, Stake)> {
 
     let pk = PublicKey::from(&*SK);
 
-    let rusk_state = rusk.state()?;
+    let mut rusk_state = rusk.state()?;
     let mut stake_contract = rusk_state.stake_contract()?;
 
     let stake = Stake::new(0xdead, 0xdead, 0xbeef);
@@ -107,8 +116,11 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(PublicKey, Stake)> {
     stake_contract.staked.insert(pk.to_bytes(), stake)?;
 
     info!("Updating the new stake contract state");
-    crate::common::update_stake_contract(rusk, stake_contract, &testbackend())?;
-
+    unsafe {
+        rusk_state
+            .set_contract_state(&rusk_abi::stake_contract(), &stake_contract)?;
+    }
+    rusk.persist(&mut rusk_state)?;
     Ok((pk, stake))
 }
 
@@ -124,6 +136,7 @@ pub async fn test_fetch_notes() -> Result<()> {
     let (channel, incoming) = setup().await;
 
     let rusk_server = rusk.clone();
+
     tokio::spawn(async move {
         Server::builder()
             .add_service(StateServer::new(rusk_server))
