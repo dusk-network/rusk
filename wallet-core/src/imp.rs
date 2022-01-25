@@ -11,11 +11,11 @@ use alloc::vec::Vec;
 
 use canonical::CanonError;
 use canonical::EncodeToVec;
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubScalar};
-use dusk_pki::{PublicKey, PublicSpendKey, SecretSpendKey};
+use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use dusk_poseidon::sponge;
-use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rusk_abi::ContractId;
@@ -302,7 +302,7 @@ where
         m.push(value.into());
         m.push(address);
 
-        let signature = Signature::new(&sk, rng, sponge::hash(&m));
+        let signature = sk.sign(&pk, &sponge::hash(&m).to_bytes());
 
         let spend_proof = self
             .prover
@@ -367,8 +367,9 @@ where
 
         let (_, expiration) =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
-        let expiration = BlsScalar::from(expiration as u64);
-        let signature = Signature::new(&sk, rng, expiration);
+        let expiration = expiration.to_le_bytes();
+
+        let signature = sk.sign(&pk, &expiration);
 
         let contract_id = rusk_abi::stake_contract();
         let call_data = (TX_EXTEND, pk, signature).encode_to_vec();
@@ -446,8 +447,8 @@ where
             )
             .map_err(Error::from_prover_err)?;
 
-        let message = BlsScalar::from(expiration as u64);
-        let signature = Signature::new(&sk, rng, message);
+        let message = expiration.to_le_bytes();
+        let signature = sk.sign(&pk, &message);
 
         let contract_id = rusk_abi::stake_contract();
         let call_data =

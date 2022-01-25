@@ -18,6 +18,7 @@ dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-feature
 dusk-plonk = { version = "^0.9", default-features = false }
 rusk-abi = "0.6"
 canonical = "^0.6"
+dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features = [ "canon" ] }
 
 [dev-dependencies]
 rand = "^0.8"
