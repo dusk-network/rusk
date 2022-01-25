@@ -19,6 +19,8 @@ use core::convert::TryFrom;
 mod call;
 #[cfg(feature = "circuits")]
 mod circuits;
+#[cfg(not(target_arch = "wasm32"))]
+mod host;
 mod tree;
 
 use tree::Tree;
