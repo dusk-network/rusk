@@ -46,6 +46,8 @@ impl RuskModule {
     pub const VERIFY_SCHNORR_SIGN: u8 = 2;
     #[doc(hidden)]
     pub const HASH: u8 = 3;
+    #[doc(hidden)]
+    pub const VERIFY_BLS_SIGN: u8 = 4;
 }
 
 impl Module for RuskModule {

@@ -39,6 +39,9 @@ mod module_tests {
     use super::*;
     use rusk_vm::{Contract, GasMeter, NetworkState};
 
+    use dusk_bls12_381_sign::{
+        SecretKey as BlsSecretKey, APK as AggregatedBlsPublicKey,
+    };
     use dusk_pki::{PublicKey, PublicSpendKey, SecretKey};
     use dusk_plonk::circuit;
     use dusk_plonk::prelude::*;
@@ -196,6 +199,61 @@ mod module_tests {
                 .unwrap(),
             "Signature verification expected to fail"
         );
+    }
+
+    #[test]
+    fn bls_signature() {
+        let host = HostFnTest::new();
+
+        let code = include_bytes!(
+            "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
+        );
+
+        let contract = Contract::new(host, code.to_vec());
+
+        let rusk_mod = RuskModule::new(&PUB_PARAMS);
+        let mut network = NetworkState::default();
+        network.register_host_module(rusk_mod);
+
+        let contract_id = network.deploy(contract).unwrap();
+
+        let mut gas = GasMeter::with_limit(1_000_000_000);
+
+        let message = b"some-message".to_vec();
+
+        let sk = BlsSecretKey::random(&mut rand_core::OsRng);
+        let pk = (&sk).into();
+        let apk = AggregatedBlsPublicKey::from(&sk);
+
+        let sign = sk.sign(&pk, message.as_slice());
+
+        apk.verify(&sign, message.as_slice())
+            .expect("BLS signature should be valid");
+
+        let res = network
+            .query::<_, bool>(
+                contract_id,
+                0,
+                (host_fn::BLS_SIGNATURE, sign, apk, message.clone()),
+                &mut gas,
+            )
+            .expect("State query failed");
+
+        assert!(res, "BLS Signature verification expected to succeed");
+
+        let wrong_sk = BlsSecretKey::random(&mut rand_core::OsRng);
+        let apk = AggregatedBlsPublicKey::from(&wrong_sk);
+
+        let res = network
+            .query::<_, bool>(
+                contract_id,
+                0,
+                (host_fn::BLS_SIGNATURE, sign, apk, message),
+                &mut gas,
+            )
+            .expect("State query failed");
+
+        assert!(!res, "BLS Signature verification expected to fail");
     }
 
     #[derive(Debug)]

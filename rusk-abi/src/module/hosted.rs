@@ -11,6 +11,9 @@ use alloc::vec::Vec;
 use dusk_abi::ContractId;
 use dusk_abi::Module;
 use dusk_bls12_381::BlsScalar;
+use dusk_bls12_381_sign::{
+    Signature as BlsSignature, APK as AggregatedBlsPublicKey,
+};
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
@@ -50,6 +53,19 @@ pub fn verify_schnorr_sign(
         0,
     )
     .expect("query RuskModule for verifying schnorr signature should not fail")
+}
+
+pub fn verify_bls_sign(
+    sign: BlsSignature,
+    pk: AggregatedBlsPublicKey,
+    message: Vec<u8>,
+) -> bool {
+    dusk_abi::query(
+        &RuskModule::id(),
+        &(RuskModule::VERIFY_BLS_SIGN, sign, pk, message),
+        0,
+    )
+    .expect("query RuskModule for verifying bls signature should not fail")
 }
 
 /// FIXME: Until this is not moved to be part of Cake! we will reserve the 0

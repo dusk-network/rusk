@@ -16,8 +16,9 @@ use canonical_derive::Canon;
 pub const HASH: u8 = 0;
 pub const VERIFY: u8 = 1;
 pub const SCHNORR_SIGNATURE: u8 = 2;
-pub const GET_PAYMENT_INFO: u8 = 3;
-pub const SPONGE_HASH: u8 = 4;
+pub const BLS_SIGNATURE: u8 = 3;
+pub const GET_PAYMENT_INFO: u8 = 4;
+pub const SPONGE_HASH: u8 = 5;
 
 // transaction ids
 pub const SOMETHING: u8 = 0;
@@ -41,6 +42,9 @@ mod hosted {
     use dusk_abi::ReturnValue;
 
     use dusk_bls12_381::BlsScalar;
+    use dusk_bls12_381_sign::{
+        Signature as BlsSignature, APK as AggregatedBlsPublicKey,
+    };
     use dusk_bytes::Serializable;
     use dusk_pki::{PublicKey, PublicSpendKey};
     use dusk_schnorr::Signature;
@@ -78,6 +82,15 @@ mod hosted {
             message: BlsScalar,
         ) -> bool {
             rusk_abi::verify_schnorr_sign(sig, pk, message)
+        }
+
+        pub fn bls_signature(
+            &self,
+            sig: BlsSignature,
+            pk: AggregatedBlsPublicKey,
+            message: Vec<u8>,
+        ) -> bool {
+            rusk_abi::verify_bls_sign(sig, pk, message)
         }
 
         pub fn get_payment_info(&self) -> rusk_abi::PaymentInfo {
@@ -154,6 +167,25 @@ mod hosted {
                 let message = BlsScalar::decode(&mut source)?;
 
                 let ret = slf.schnorr_signature(sig, pk, message);
+
+                let r = {
+                    // return value
+                    let wrapped_return = ReturnValue::from_canon(&ret);
+
+                    let mut sink = Sink::new(&mut bytes[..]);
+
+                    wrapped_return.encode(&mut sink)
+                };
+
+                Ok(r)
+            }
+
+            BLS_SIGNATURE => {
+                let sig = BlsSignature::decode(&mut source)?;
+                let pk = AggregatedBlsPublicKey::decode(&mut source)?;
+                let message = Vec::<u8>::decode(&mut source)?;
+
+                let ret = slf.bls_signature(sig, pk, message);
 
                 let r = {
                     // return value
