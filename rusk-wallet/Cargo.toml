@@ -6,23 +6,26 @@ edition = "2021"
 [dependencies]
 clap = { version = "3.0.0", features = ["derive"] }
 tokio = { version = "1.15", features = ["full"] }
+tiny-bip39 = "0.8.2"
+requestty = "0.3.0"
+crypto = "0.3.0"
+whoami = "1.2.1"
+bytes = "1.1"
 tonic = "0.6"
 prost = "0.9"
 dirs = "4.0"
-tiny-bip39 = "0.8.2"
-requestty = "0.3.0"
-whoami = "1.2.1"
-bytes = "1.1"
+bs58 = "0.4"
+rand = "0.8.4"
 
+dusk-wallet-core = "0.5"
 canonical = "0.6"
 dusk-bytes = "0.1"
 dusk-pki = "0.9.0-rc"
+phoenix-core = "0.15.0-rc"
 dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
 dusk-plonk = { version = "^0.9", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
-dusk-schnorr = { version = "0.9.0-rc", default-features = false }
-phoenix-core = "0.15.0-rc"
-dusk-wallet-core = "0.4"
+dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features = [ "canon" ] }
 
 [build-dependencies]
 tonic-build = "0.6"

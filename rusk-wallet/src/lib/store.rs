@@ -9,8 +9,9 @@ use std::{fmt, fs};
 use std::path::PathBuf;
 use bytes::{BytesMut, BufMut, Bytes, Buf};
 
-use dusk_pki::{SecretSpendKey, SecretKey};
+use dusk_pki::{SecretSpendKey};
 use dusk_wallet_core::{Store, derive_sk, derive_ssk};
+use dusk_bls12_381_sign::SecretKey;
 
 use crate::lib::errors::CliError;
 
@@ -39,7 +40,7 @@ impl Store for LocalStore {
     }
 
     /// Retrieves a derived secret key from the store.
-    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Self::Error> {
+    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, CliError> {
         Ok(derive_sk(&self.seed, index))
     }
 
@@ -59,7 +60,7 @@ impl LocalStore {
         path = path.with_extension("dat");
 
         // get the seed
-        let mut seed_bytes= [0u8; 64];
+        let mut seed_bytes = [0u8; 64];
         seed_bytes.copy_from_slice(&seed);
 
         // create the local store
