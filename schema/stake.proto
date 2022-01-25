@@ -3,10 +3,11 @@ package rusk;
 
 import "transaction.proto";
 
-message Stake {
+message StakeDetails {
     fixed64 amount = 1;
-    fixed64 start_height = 2;
-    fixed64 end_height = 3;
+    fixed32 expiration = 2;
+    fixed64 start_height = 3;
+    fixed64 end_height = 4;
 }
 
 message StakeTransactionRequest {
@@ -21,10 +22,10 @@ message FindStakeRequest {
 }
 
 message FindStakeResponse {
-    repeated Stake stakes = 1;
+    StakeDetails stake = 1;
 }
 
-service StakeService {
+service Stake {
     // Generate a new Stake transaction.
     rpc NewStake(StakeTransactionRequest) returns (Transaction) {}
 

@@ -6,5 +6,5 @@ import "stake.proto";
 message Provisioner {
     bytes public_key_bls = 1;
     bytes raw_public_key_bls = 2;
-    repeated Stake stakes = 3;
+    repeated StakeDetails stakes = 3;
 }
