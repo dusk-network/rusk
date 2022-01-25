@@ -4,23 +4,28 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod rusk_proto {
+pub(crate) mod rusk_proto {
     tonic::include_proto!("rusk");
 }
 
 mod lib;
 mod prompt;
+pub use lib::errors as errors;
 
 use std::path::{Path, PathBuf};
 use clap::{AppSettings, Parser, Subcommand};
-use tonic::transport::Channel;
 use whoami;
 
-use rusk_proto::{GetNotesOwnedByRequest, ViewKey, state_client::StateClient, prover_client::ProverClient};
+use dusk_wallet_core::Wallet;
 
-use crate::lib::store::{LocalStore, StoreError};
-use crate::lib::crypto::{MnemSeed, CryptoError};
-use crate::lib::clients::{Prover, State, ProverError, StateError};
+use lib::errors::CliError;
+use lib::store::LocalStore;
+use lib::clients::{Prover, State};
+
+use rusk_proto::network_client::NetworkClient;
+use rusk_proto::state_client::StateClient;
+use rusk_proto::stake_client::StakeClient;
+use rusk_proto::prover_client::ProverClient;
 
 /// Default Rusk IP address
 pub(crate) const RUSK_ADDR: &str = "127.0.0.1";
@@ -29,39 +34,6 @@ pub(crate) const RUSK_PORT: &str = "8585";
 /// Default data directory name
 pub(crate) const DATA_DIR: &str = ".dusk";
 
-/// Errors returned by this crate
-#[derive(Debug)]
-pub(crate) enum WalletError {
-    Store(StoreError),
-    Crypto(CryptoError),
-    Prover(ProverError),
-    State(StateError),
-}
-
-impl From<StoreError> for WalletError {
-    fn from(e: StoreError) -> Self {
-        Self::Store(e)
-    }
-}
-
-impl From<ProverError> for WalletError {
-    fn from(e: ProverError) -> Self {
-        Self::Prover(e)
-    }
-}
-
-impl From<StateError> for WalletError {
-    fn from(e: StateError) -> Self {
-        Self::State(e)
-    }
-}
-
-impl From<CryptoError> for WalletError {
-    fn from(e: CryptoError) -> Self {
-        Self::Crypto(e)
-    }
-}
-
 /// The CLI Wallet
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
@@ -69,7 +41,7 @@ impl From<CryptoError> for WalletError {
 #[clap(version = "1.0")]
 #[clap(about = "Easily manage your Dusk", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
-#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
+//#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
 pub struct WalletCfg {
 
     /// Directory to store user data
@@ -161,13 +133,15 @@ enum CliCommand {
     /// Withdraw your stake
     WithdrawStake {
         
-    }
+    },
+
+    None
 }
 
 impl CliCommand {
     fn uses_wallet(&self) -> bool {
         match *self {
-            Self::Create | Self::Restore => false,
+            Self::Create | Self::Restore | Self::None => false,
             _ => true,
         }
     }
@@ -192,22 +166,24 @@ impl WalletCfg {
     }
 
     /// Checks consistency of loaded configuration
-    fn sanity_check(&self) -> Result<(), WalletError> {
+    fn sanity_check(&self) -> Result<(), CliError> {
         // TODO!
         Ok(())
     }
 
 }
 
-fn main() -> Result<(), WalletError> {
+#[tokio::main]
+async fn main() -> Result<(), CliError> {
 
     // parse cli arguments
     let cfg: WalletCfg = WalletCfg::parse();
+
     cfg.sanity_check()?;
 
     // some commands don't use an existing wallet
     // get those out of the way first
-    let cmd = cfg.command.unwrap();
+    let cmd = cfg.command.unwrap_or_else(|| CliCommand::None);
     if !cmd.uses_wallet() {
         use CliCommand::*;
         return match cmd {
@@ -240,15 +216,68 @@ fn main() -> Result<(), WalletError> {
     let store = LocalStore::from_file(wallet_path, pwd)?;
 
     // connect to rusk services
+    let rusk_addr = format!("http://{}:{}", cfg.rusk_addr, cfg.rusk_port);
 
-    
-    // todo
+    let network_client = NetworkClient::connect(rusk_addr.clone()).await
+        .map_err(|e| CliError::Network(e))?;
+    let state_client = StateClient::connect(rusk_addr.clone()).await
+        .map_err(|e| CliError::Network(e))?;
+    let prover_client = ProverClient::connect(rusk_addr.clone()).await
+        .map_err(|e| CliError::Network(e))?;
+    let stake_client = StakeClient::connect(rusk_addr).await
+        .map_err(|e| CliError::Network(e))?;
+
+    let prover = Prover::new(prover_client, network_client);
+    let state = State::new(state_client, stake_client);
+
+    // create our wallet
+    let wallet = Wallet::new(store, state, prover);
+
+    // perform whatever action user requested
+    use CliCommand::*;
+    match cmd {
+        // Check your current balance
+        Balance { index } => {
+            println!("check balance for index: {:?}", index);
+            let balance = wallet.get_balance(index);
+            match balance {
+                Ok(b) => println!("Your balance is: {} Dusk", b),
+                Err(e) => println!("An error occured: {:?}", e)
+             }
+        },
+        // Retrieve public spend key
+        Address { index } => {
+            println!("public spend key for index: {:?}", index)
+        },
+        // Send Dusk through the network
+        Transfer { index, rcvr, amt, gas_limit, gas_price } => {
+            println!("create tx: {} {} {} {} {}", index, rcvr, amt, gas_limit, gas_price.unwrap_or(0));
+        },
+        // Start staking Dusk
+        Stake {} => {
+            println!("create stake");
+        },
+        // Stop staking Dusk
+        StopStake {} => {
+            println!("stop stake");
+        },
+        // Extend stake for a particular key
+        ExtendStake {} => {
+            println!("extend stake");
+        },
+        // Withdraw your stake
+        WithdrawStake {} => {
+            println!("withdraw stake");
+        },
+        _ => {}
+    }
 
     Ok(())
 }
 
-fn create() -> Result<(), WalletError> {
+fn create() -> Result<(), CliError> {
 
+    println!("Create a wallet!");
     if let Some(data) = prompt::create() {
         LocalStore::new(data.0, data.1.seed)?;
     }
@@ -256,29 +285,6 @@ fn create() -> Result<(), WalletError> {
 
 }
 
-fn recover() -> Result<(), WalletError> {
+fn recover() -> Result<(), CliError> {
     Ok(())
 }
-
-
-
-
-
-
-/*
-    println!("{:?}", args);
-
-    // connect to rusk
-    let mut state_client = StateClient::connect("https://127.0.0.1:8585").await.expect("Failed to connect to Rusk service.");
-
-    // load the wallet
-    let store = LocalStore::from_file(String::from("/Users/abel/.dusk/abel.dat"), String::from("m"))?;
-    let node = CliNodeClient::new(&state_client);
-    let wallet = dusk_wallet_core::Wallet::new(store, node);
-
-    let node_client = CliNodeClient::new(state_client);
-    let vk = ViewKey{}
-    let res = node_client.fetch_notes(0, );
-
-    println!("MAIN RESPONSE = {:?}", res);
-*/
