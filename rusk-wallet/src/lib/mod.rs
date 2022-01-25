@@ -7,3 +7,4 @@
 pub mod store;
 pub mod crypto;
 pub mod clients;
+pub mod errors;
