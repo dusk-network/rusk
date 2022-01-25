@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
+dusk-bls12_381-sign = { version = "0.1.0-rc", features = ["canon"] }
 dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
 dusk-schnorr = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.9.0-rc", default-features = false, features = ["canon"] }
