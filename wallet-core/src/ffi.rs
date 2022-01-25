@@ -13,13 +13,13 @@ use core::num::NonZeroU32;
 use core::ptr;
 
 use canonical::{Canon, Source};
+use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_bytes::Write;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
-use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
+use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Fee, Note};
 use rand_core::{
     impls::{next_u32_via_fill, next_u64_via_fill},

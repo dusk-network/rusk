@@ -11,8 +11,8 @@ mod mock;
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use mock::{mock_wallet, TestProverClient};
 
+use dusk_bls12_381_sign::Signature;
 use dusk_plonk::prelude::{BlsScalar, Proof};
-use dusk_schnorr::Signature;
 use dusk_wallet_core::{ProverClient, UnprovenTransaction};
 use phoenix_core::{Crossover, Fee};
 

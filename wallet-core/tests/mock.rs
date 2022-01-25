@@ -6,11 +6,11 @@
 
 //! Mocks of the traits supplied by the user of the crate..
 
+use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
-use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
+use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     ProverClient, StateClient, Store, UnprovenTransaction, Wallet,
     POSEIDON_TREE_DEPTH,
