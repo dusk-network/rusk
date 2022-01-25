@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::Rusk;
+use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
 use dusk_bytes::{DeserializableSlice, Serializable};
@@ -28,23 +28,12 @@ pub use super::rusk_proto::{
     VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
 
-#[tonic::async_trait]
-impl State for Rusk {
-    async fn echo(
-        &self,
-        _request: Request<EchoRequest>,
-    ) -> Result<Response<EchoResponse>, Status> {
-        info!("Received Echo request");
-
-        Err(Status::unimplemented("Request not implemented"))
-    }
-
-    async fn execute_state_transition(
+impl Rusk {
+    fn execute_ephemeral_state_transition(
         &self,
         request: Request<ExecuteStateTransitionRequest>,
-    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
-        info!("Received ExecuteStateTransition request");
-
+    ) -> Result<(Response<ExecuteStateTransitionResponse>, RuskState), Status>
+    {
         let mut state = self.state()?;
         let network = state.inner_mut();
         let mut block_gas_meter =
@@ -85,11 +74,37 @@ impl State for Rusk {
         let success = true;
         let state_root = network.root().to_vec();
 
-        Ok(Response::new(ExecuteStateTransitionResponse {
-            success,
-            txs,
-            state_root,
-        }))
+        Ok((
+            Response::new(ExecuteStateTransitionResponse {
+                success,
+                txs,
+                state_root,
+            }),
+            state,
+        ))
+    }
+}
+
+#[tonic::async_trait]
+impl State for Rusk {
+    async fn echo(
+        &self,
+        _request: Request<EchoRequest>,
+    ) -> Result<Response<EchoResponse>, Status> {
+        info!("Received Echo request");
+
+        Err(Status::unimplemented("Request not implemented"))
+    }
+
+    async fn execute_state_transition(
+        &self,
+        request: Request<ExecuteStateTransitionRequest>,
+    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
+        info!("Received ExecuteStateTransition request");
+
+        let (response, _) = self.execute_ephemeral_state_transition(request)?;
+
+        Ok(response)
     }
 
     async fn verify_state_transition(
@@ -136,23 +151,27 @@ impl State for Rusk {
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
         info!("Received Accept request");
 
-        let response = self.execute_state_transition(request).await;
+        let (response, mut state) =
+            self.execute_ephemeral_state_transition(request)?;
 
-        self.persist()?;
+        self.persist(&mut state)?;
 
-        response
+        Ok(response)
     }
 
     async fn finalize(
         &self,
         request: Request<ExecuteStateTransitionRequest>,
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
-        let response = self.execute_state_transition(request).await;
+        info!("Received Finalize request");
 
-        self.state()?.commit();
-        self.persist()?;
+        let (response, mut state) =
+            self.execute_ephemeral_state_transition(request)?;
 
-        response
+        state.commit();
+        self.persist(&mut state)?;
+
+        Ok(response)
     }
 
     async fn get_provisioners(

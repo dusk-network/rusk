@@ -9,6 +9,8 @@ use crate::Result;
 
 use std::ops::Deref;
 
+use canonical::{Canon, Sink, Source};
+use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicKey, ViewKey};
@@ -16,10 +18,9 @@ use dusk_poseidon::tree::PoseidonBranch;
 use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
 use rusk_abi::{self, POSEIDON_TREE_DEPTH};
-use rusk_vm::{NetworkState, NetworkStateId};
+use rusk_vm::{ContractId, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract};
 use transfer_contract::TransferContract;
-
 pub struct RuskState(pub(crate) NetworkState);
 
 impl RuskState {
@@ -40,7 +41,7 @@ impl RuskState {
         self.0.root()
     }
 
-    pub fn persist<B>(
+    pub(crate) fn persist<B>(
         &mut self,
         ctor: &BackendCtor<B>,
     ) -> Result<NetworkStateId>
@@ -52,6 +53,41 @@ impl RuskState {
 
     pub fn commit(&mut self) {
         self.0.commit()
+    }
+
+    /// Returns a generic contract state. Needs to be casted to the specific
+    /// contract type.
+    pub fn contract_state(
+        &self,
+        contract_id: &ContractId,
+    ) -> Result<ContractState> {
+        Ok(self.0.get_contract_cast_state(contract_id)?)
+    }
+
+    /// Set the contract state for the given Contract Id.
+    ///
+    /// # Safety
+    ///
+    /// This function will corrupt the state if the contract state given is
+    /// not the same type as the one stored in the state at the address
+    /// provided; and the subsequent contract's call will fail.
+    pub unsafe fn set_contract_state<C>(
+        &mut self,
+        contract_id: &ContractId,
+        state: &C,
+    ) -> Result<()>
+    where
+        C: Canon,
+    {
+        const PAGE_SIZE: usize = 1024 * 64;
+        let mut bytes = [0u8; PAGE_SIZE];
+        let mut sink = Sink::new(&mut bytes[..]);
+        ContractState::from_canon(state).encode(&mut sink);
+        let mut source = Source::new(&bytes[..]);
+        let contract_state = ContractState::decode(&mut source)?;
+        *self.0.get_contract_mut(contract_id)?.state_mut() = contract_state;
+
+        Ok(())
     }
 
     /// Returns the current state of the [`TransferContract`]

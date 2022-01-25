@@ -15,6 +15,8 @@ pub enum Error {
     BackendRegistrationFailed,
     /// Failed to restore a network state from disk
     RestoreFailed,
+    /// Failed to build a Rusk instance
+    BuilderInvalidState,
     /// Failed to fetch opening
     OpeningPositionNotFound(u64),
     /// Failed to fetch opening due to undefined Note
@@ -83,6 +85,9 @@ impl fmt::Display for Error {
             }
             Error::RestoreFailed => {
                 write!(f, "Failed to restore a network state")
+            }
+            Error::BuilderInvalidState => {
+                write!(f, "Failed to build a Rusk instance")
             }
             Error::OpeningPositionNotFound(pos) => {
                 write!(f, "Failed to fetch opening of position {}", pos)

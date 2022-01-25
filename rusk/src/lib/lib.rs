@@ -12,11 +12,11 @@ pub mod transaction;
 
 use crate::error::Error;
 pub use crate::state::RuskState;
+use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use std::path::PathBuf;
 use std::sync::Arc;
-
-use microkelvin::{Backend, BackendCtor, DiskBackend, PersistError};
 
 use rusk_abi::{self, RuskModule};
 use rusk_vm::{NetworkState, NetworkStateId};
@@ -32,39 +32,67 @@ pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
     PublicParameters::from_slice_unchecked(pp.as_slice())
 });
 
-fn disk_backend() -> Result<DiskBackend, PersistError> {
-    DiskBackend::new(rusk_profile::get_rusk_state_dir()?)
+pub struct RuskBuilder {
+    id: Option<NetworkStateId>,
+    path: Option<PathBuf>,
+    backend: fn() -> BackendCtor<DiskBackend>,
 }
 
-#[derive(Debug, Clone)]
+impl RuskBuilder {
+    pub fn new(backend: fn() -> BackendCtor<DiskBackend>) -> Self {
+        Self {
+            id: None,
+            path: None,
+            backend,
+        }
+    }
+
+    pub fn id(mut self, id: NetworkStateId) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    pub fn build(self) -> Result<Rusk> {
+        let backend = self.backend;
+        Persistence::with_backend(&backend(), |_| Ok(()))
+            .or(Err(Error::BackendRegistrationFailed))?;
+
+        let path = self.path;
+        let id = match (self.id, &path) {
+            (Some(id), _) => id,
+            (None, Some(path)) => NetworkStateId::read(path)?,
+            (None, None) => return Err(Error::BuilderInvalidState),
+        };
+
+        let rusk = Rusk {
+            state_id: Arc::new(Mutex::new(id)),
+            backend,
+            path,
+        };
+
+        Ok(rusk)
+    }
+
+    pub fn path<P>(mut self, path: P) -> Self
+    where
+        P: Into<PathBuf>,
+    {
+        self.path = Some(path.into());
+        self
+    }
+}
+
+#[derive(Clone)]
 pub struct Rusk {
     pub state_id: Arc<Mutex<NetworkStateId>>,
+    backend: fn() -> BackendCtor<DiskBackend>,
+    path: Option<PathBuf>,
 }
 
 impl Rusk {
-    /// Creates a new instance of [`Rusk`]
-    pub fn new() -> Result<Rusk> {
-        // Register the backend
-        Self::with_backend(&BackendCtor::new(disk_backend))
-            .or(Err(Error::BackendRegistrationFailed))?;
-
-        let state_id =
-            NetworkStateId::read(rusk_profile::get_rusk_state_id_path()?)?;
-        let state_id = Arc::new(Mutex::new(state_id));
-
-        Ok(Rusk { state_id })
-    }
-
-    /// Creates a new instance of [`Rusk`], deploying a new state based on
-    /// the backend given.
-    pub fn with_backend<B>(ctor: &BackendCtor<B>) -> Result<Self>
-    where
-        B: 'static + Backend,
-    {
-        let state_id = rusk_recovery_tools::state::deploy(ctor)?;
-        let state_id = Arc::new(Mutex::new(state_id));
-
-        Ok(Rusk { state_id })
+    /// Returns a [`RuskBuilder`]
+    pub fn builder(backend: fn() -> BackendCtor<DiskBackend>) -> RuskBuilder {
+        RuskBuilder::new(backend)
     }
 
     /// Returns the current state of the network
@@ -81,24 +109,15 @@ impl Rusk {
         Ok(RuskState(network))
     }
 
-    /// Persist the current state of the network
-    pub fn persist(&self) -> Result<NetworkStateId> {
-        let state_id =
-            self.persist_with_backend(&BackendCtor::new(disk_backend))?;
-        state_id.write(rusk_profile::get_rusk_state_id_path()?)?;
-        Ok(state_id)
-    }
-
-    /// Persist the current state of the network
-    pub fn persist_with_backend<B>(
-        &self,
-        ctor: &BackendCtor<B>,
-    ) -> Result<NetworkStateId>
-    where
-        B: 'static + Backend,
-    {
-        let state_id = self.state()?.persist(ctor)?;
+    /// Persist a state of the network as new state
+    pub fn persist(&self, state: &mut RuskState) -> Result<NetworkStateId> {
+        let backend = self.backend;
+        let state_id = state.persist(&backend())?;
         *self.state_id.lock() = state_id;
+
+        if let Some(path) = &self.path {
+            state_id.write(path)?;
+        }
 
         Ok(state_id)
     }

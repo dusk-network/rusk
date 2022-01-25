@@ -15,81 +15,13 @@ use std::path::PathBuf;
 use std::task::{Context, Poll};
 use tempfile::tempdir;
 
-use canonical::{Canon, Sink, Source};
-use dusk_abi::ContractState;
 use futures::TryFutureExt;
-use microkelvin::{Backend, BackendCtor, DiskBackend};
-use rusk::{Result, Rusk};
-use stake_contract::StakeContract;
+use rusk::Result;
 use tokio::net::{UnixListener, UnixStream};
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::Service;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use transfer_contract::TransferContract;
-
-/// This function creates a temporary backend for testing purposes.
-/// Each function creates its own backend, so to avoid side effects tests that
-/// are modifying the state should define their own backend.
-/// This can be used for tests that does not modify the state, or needs to
-/// read the default state.
-pub fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
-}
-
-pub fn update_transfer_contract<B>(
-    rusk: &mut Rusk,
-    transfer: TransferContract,
-    ctor: &BackendCtor<B>,
-) -> Result<()>
-where
-    B: 'static + Backend,
-{
-    let mut rusk_state = rusk.state()?;
-
-    const PAGE_SIZE: usize = 1024 * 64;
-    let mut bytes = [0u8; PAGE_SIZE];
-    let mut sink = Sink::new(&mut bytes[..]);
-    ContractState::from_canon(&transfer).encode(&mut sink);
-    let mut source = Source::new(&bytes[..]);
-    let contract_state = ContractState::decode(&mut source)?;
-    *rusk_state
-        .inner_mut()
-        .get_contract_mut(&rusk_abi::transfer_contract())?
-        .state_mut() = contract_state;
-    let state_id = rusk_state.persist(ctor)?;
-
-    *rusk.state_id.lock() = state_id;
-
-    Ok(())
-}
-
-pub fn update_stake_contract<B>(
-    rusk: &mut Rusk,
-    stake: StakeContract,
-    ctor: &BackendCtor<B>,
-) -> Result<()>
-where
-    B: 'static + Backend,
-{
-    let mut rusk_state = rusk.state()?;
-
-    const PAGE_SIZE: usize = 1024 * 64;
-    let mut bytes = [0u8; PAGE_SIZE];
-    let mut sink = Sink::new(&mut bytes[..]);
-    ContractState::from_canon(&stake).encode(&mut sink);
-    let mut source = Source::new(&bytes[..]);
-    let contract_state = ContractState::decode(&mut source)?;
-    *rusk_state
-        .inner_mut()
-        .get_contract_mut(&rusk_abi::stake_contract())?
-        .state_mut() = contract_state;
-    let state_id = rusk_state.persist(ctor)?;
-
-    *rusk.state_id.lock() = state_id;
-
-    Ok(())
-}
 
 pub fn logger() {
     // Can't use `with_default_env` since we want to have a default
