@@ -4,41 +4,35 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::ArgMatches;
-use kadcast::config::Config as KadcastConfig;
+pub mod grpc;
+pub mod kadcast;
+pub mod wallet;
+
+use clap::{App, Arg, ArgMatches};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+use self::{grpc::GrpcConfig, kadcast::KadcastConfig, wallet::WalletConfig};
+
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct Config {
-    pub(crate) ipc_method: Option<String>,
-    pub(crate) socket: String,
-    pub(crate) host: String,
-    pub(crate) port: String,
     pub(crate) log_level: String,
     pub(crate) kadcast_test: bool,
+    pub(crate) grpc: GrpcConfig,
+    pub(crate) wallet: WalletConfig,
     pub(crate) kadcast: KadcastConfig,
 }
 
-/// Default UDS path that Rusk GRPC-server will connect to.
-pub const SOCKET_PATH: &str = "/tmp/rusk_listener";
-
-/// Default port that Rusk GRPC-server will listen to.
-pub(crate) const PORT: &str = "8585";
-/// Default host_address that Rusk GRPC-server will listen to.
-pub(crate) const HOST_ADDRESS: &str = "127.0.0.1";
 /// Default log_level.
 pub(crate) const LOG_LEVEL: &str = "info";
 
 impl Default for Config {
     fn default() -> Self {
         Config {
-            socket: SOCKET_PATH.to_string(),
-            host: HOST_ADDRESS.to_string(),
-            port: PORT.to_string(),
             log_level: LOG_LEVEL.to_string(),
-            ipc_method: None,
-            kadcast: KadcastConfig::default(),
             kadcast_test: false,
+            grpc: GrpcConfig::default(),
+            kadcast: KadcastConfig::default(),
+            wallet: WalletConfig::default(),
         }
     }
 }
@@ -54,39 +48,38 @@ impl From<ArgMatches> for Config {
                     toml::from_str(&toml).unwrap()
                 });
 
+        rusk_config.kadcast_test = matches.is_present("kadcast_test");
         if let Some(log) = matches.value_of("log-level") {
             rusk_config.log_level = log.into();
         }
-        if let Some(host) = matches.value_of("host") {
-            rusk_config.host = host.into();
-        }
-        if let Some(port) = matches.value_of("port") {
-            rusk_config.port = port.into();
-        }
-        if let Some(ipc_method) = matches.value_of("ipc_method") {
-            rusk_config.ipc_method = Some(ipc_method.into());
-        }
-        if let Some(socket) = matches.value_of("socket") {
-            rusk_config.socket = socket.into();
-        }
 
-        if let Some(public_address) = matches.value_of("kadcast_public_address")
-        {
-            rusk_config.kadcast.public_address = public_address.into();
-        };
-        if let Some(listen_address) = matches.value_of("kadcast_listen_address")
-        {
-            rusk_config.kadcast.listen_address = Some(listen_address.into());
-        };
-        if let Some(bootstrapping_nodes) =
-            matches.values_of("kadcast_bootstrap")
-        {
-            rusk_config.kadcast.bootstrapping_nodes =
-                bootstrapping_nodes.map(|s| s.into()).collect();
-        };
-        rusk_config.kadcast.auto_propagate =
-            matches.is_present("kadcast_autobroadcast");
-        rusk_config.kadcast_test = matches.is_present("kadcast_test");
+        rusk_config.grpc.merge(&matches);
+        rusk_config.kadcast.merge(&matches);
+        rusk_config.wallet.merge(&matches);
         rusk_config
+    }
+}
+
+impl Config {
+    pub fn inject_args(app: App<'_>) -> App<'_> {
+        let app = KadcastConfig::inject_args(app);
+        let app = GrpcConfig::inject_args(app);
+        let app = WalletConfig::inject_args(app);
+        app.arg(
+            Arg::new("log-level")
+                .long("log-level")
+                .value_name("LOG")
+                .possible_values(&["error", "warn", "info", "debug", "trace"])
+                .help("Output log level")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::new("kadcast_test")
+                .long("kadcast_test")
+                .env("KADCAST_TEST")
+                .help("If used then the received messages is a blake2b 256hash")
+                .takes_value(false)
+                .required(false),
+        )
     }
 }

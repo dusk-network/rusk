@@ -43,47 +43,8 @@ async fn main() {
                 .help("Configuration file path")
                 .takes_value(true)
                 .required(false),
-        )
-        .arg(
-            Arg::new("socket")
-                .short('s')
-                .long("socket")
-                .value_name("socket")
-                .help("Path for setting up the UDS ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("ipc_method")
-                .long("ipc_method")
-                .value_name("ipc_method")
-                .possible_values(&["uds", "tcp_ip"])
-                .help("Inter-Process communication protocol you want to use ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("port")
-                .short('p')
-                .long("port")
-                .value_name("port")
-                .help("Port you want to use ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("host")
-                .short('h')
-                .long("host")
-                .value_name("host")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("log-level")
-                .long("log-level")
-                .value_name("LOG")
-                .possible_values(&["error", "warn", "info", "debug", "trace"])
-                .help("Output log level")
-                .takes_value(true),
         );
-    let app = network_config(app);
+    let app = Config::inject_args(app);
     let config = Config::from(app.get_matches());
 
     // Match tracing desired level.
@@ -109,8 +70,10 @@ async fn main() {
 
     let router = {
         let rusk = Rusk::new().unwrap();
-        let kadcast =
-            KadcastDispatcher::new(config.kadcast.clone(), config.kadcast_test);
+        let kadcast = KadcastDispatcher::new(
+            config.kadcast.clone().into(),
+            config.kadcast_test,
+        );
 
         let keys = KeysServer::new(RuskKeys::default());
         let network = NetworkServer::new(kadcast);
@@ -126,22 +89,34 @@ async fn main() {
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
-    let res = match config.ipc_method.as_deref() {
+    let res = match config.grpc.ipc_method.as_deref() {
         Some(method) => match (cfg!(windows), method) {
             (_, "tcp_ip") => {
-                startup_with_tcp_ip(router, &config.host, &config.port).await
+                startup_with_tcp_ip(
+                    router,
+                    &config.grpc.host,
+                    &config.grpc.port,
+                )
+                .await
             }
             (true, "uds") => {
                 panic!("Windows does not support Unix Domain Sockets");
             }
-            (false, "uds") => startup_with_uds(router, &config.socket).await,
+            (false, "uds") => {
+                startup_with_uds(router, &config.grpc.socket).await
+            }
             (_, _) => unreachable!(),
         },
         None => {
             if cfg!(windows) {
-                startup_with_tcp_ip(router, &config.host, &config.port).await
+                startup_with_tcp_ip(
+                    router,
+                    &config.grpc.host,
+                    &config.grpc.port,
+                )
+                .await
             } else {
-                startup_with_uds(router, &config.socket).await
+                startup_with_uds(router, &config.grpc.socket).await
             }
         }
     };
@@ -149,55 +124,4 @@ async fn main() {
         Ok(()) => (),
         Err(e) => eprintln!("{}", e),
     };
-}
-
-/// Setup clap to handle kadcast network configuration
-fn network_config(app: App<'_>) -> App<'_> {
-    app.arg(
-        Arg::new("kadcast_public_address")
-            .long("kadcast_public_address")
-            .long_help("This is the address where other peer can contact you. 
-This address MUST be accessible from any peer of the network")
-            .help("Public address you want to be identified with. Eg: 193.xxx.xxx.198:9999")
-            .env("KADCAST_PUBLIC_ADDRESS")
-            .takes_value(true)
-            .required(false),
-    )
-    .arg(
-        Arg::new("kadcast_listen_address")
-            .long("kadcast_listen_address")
-            .long_help("This address is the one bound for the incoming connections. 
-Use this argument if your host is not publicly reachable from other peer in the network 
-(Eg: if you are behind a NAT)
-If this is not specified, the public address will be used for binding incoming connection")
-            .help("Optional internal address to listen incoming connections. Eg: 127.0.0.1:9999")
-            .env("KADCAST_LISTEN_ADDRESS")
-            .takes_value(true)
-            .required(false),
-    )
-    .arg(
-        Arg::new("kadcast_bootstrap")
-            .long("kadcast_bootstrap")
-            .env("KADCAST_BOOTSTRAP")
-            .multiple_occurrences(true)
-            .help("Kadcast list of bootstrapping server addresses")
-            .takes_value(true)
-            .required(false),
-    )
-    .arg(
-        Arg::new("kadcast_autobroadcast")
-            .long("kadcast_autobroadcast")
-            .env("KADCAST_AUTOBROADCAST")
-            .help("If used then the received messages are automatically re-broadcasted")
-            .takes_value(false)
-            .required(false),
-    )
-    .arg(
-        Arg::new("kadcast_test")
-            .long("kadcast_test")
-            .env("KADCAST_TEST")
-            .help("If used then the received messages is a blake2b 256hash")
-            .takes_value(false)
-            .required(false),
-    )
 }
