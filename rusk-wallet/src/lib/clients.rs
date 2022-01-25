@@ -7,8 +7,8 @@
 use bytes::{BytesMut, BufMut};
 use dusk_wallet_core::{UnprovenTransaction, POSEIDON_TREE_DEPTH};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
-use dusk_pki::{ViewKey, PublicKey};
-use dusk_schnorr::Signature;
+use dusk_pki::ViewKey;
+use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Note, Crossover, Fee};
@@ -23,18 +23,16 @@ use tonic::transport::Channel;
 use crate::errors::CliError;
 
 use crate::rusk_proto::state_client::{StateClient};
-use crate::rusk_proto::stake_client::{StakeClient};
 use crate::rusk_proto::prover_client::{ProverClient};
 use crate::rusk_proto::network_client::{NetworkClient};
 
 use crate::rusk_proto::{ExecuteProverRequest, StctProverRequest, WfctProverRequest};
-use crate::rusk_proto::{GetNotesOwnedByRequest, GetAnchorRequest, GetOpeningRequest};
-use crate::rusk_proto::{FindStakeRequest};
+use crate::rusk_proto::{GetNotesOwnedByRequest, GetAnchorRequest, GetOpeningRequest, GetStakeRequest};
 use crate::rusk_proto::{PropagateMessage};
 
 /// Implementation of the ProverClient trait from wallet-core
 #[derive(Debug)]
-pub(crate) struct Prover {
+pub struct Prover {
     client: Mutex<ProverClient<Channel>>,
     network: Mutex<NetworkClient<Channel>>,
 }
@@ -152,20 +150,16 @@ impl dusk_wallet_core::ProverClient for Prover {
 
 /// Implementation of the StateClient trait from wallet-core
 #[derive(Debug)]
-pub(crate) struct State {
+pub struct State {
     client: Mutex<StateClient<Channel>>,
-    stake: Mutex<StakeClient<Channel>>
 }
 
 impl State {
-
-    pub fn new(client: StateClient<Channel>, stake: StakeClient<Channel>) -> Self {
+    pub fn new(client: StateClient<Channel>) -> Self {
         State{
             client: Mutex::new(client),
-            stake: Mutex::new(stake),
         }
     }
-
 }
 
 /// Types that are clients of the state API.
@@ -245,18 +239,19 @@ impl dusk_wallet_core::StateClient for State {
     /// Queries the node the amount staked by a key and its expiration.
     fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
 
-        let msg = FindStakeRequest{
+        let msg = GetStakeRequest{
             pk: pk.to_bytes().to_vec(),
         };
         let req = tonic::Request::new(msg);
 
-        let mut stake = self.stake.lock().unwrap();
+        let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current().block_on(async move {
-                stake.find_stake(req).await
+                state.get_stake(req).await
             })
-        })?.into_inner().stakes;
-        todo!()
+        })?.into_inner();
+
+        Ok((res.stake, res.expiration))
 
     }
 }
