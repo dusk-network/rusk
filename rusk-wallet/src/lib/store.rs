@@ -11,7 +11,7 @@ use dusk_bls12_381_sign::SecretKey;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{derive_sk, derive_ssk, Store};
 
-use crate::lib::crypto::{decrypt, encrypt};
+use crate::lib::crypto::{decrypt_seed, encrypt_seed};
 use crate::lib::errors::CliError;
 
 /// Stores all the user's settings and keystore in the file system
@@ -59,7 +59,7 @@ impl LocalStore {
         }
 
         // attempt to load and decode wallet
-        let seed_bytes = decrypt(fs::read(&path)?, pwd)?;
+        let seed_bytes = decrypt_seed(fs::read(&path)?, fs::read(&path)?, pwd)?;
 
         // wallet_seed
         let mut seed = [0u8; 64];
@@ -72,10 +72,11 @@ impl LocalStore {
     /// Saves wallet to a file
     pub fn save(&self, pwd: String) -> Result<(), CliError> {
         // encrypt seed
-        let data = encrypt(&self.seed, pwd)?;
+        let (data, iv) = encrypt_seed(&self.seed, pwd)?;
 
         // write file
         fs::write(&self.path, &data)?;
+        fs::write(&self.path, &iv)?;
         Ok(())
     }
 }
