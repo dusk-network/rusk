@@ -71,7 +71,7 @@ pub(crate) fn encrypt_seed(
     // this has to be a fresh random value for each execution
     let iv = rand::thread_rng().gen::<[u8; 16]>();
 
-    let cipher = Aes256Cbc::new_from_slices(&_pwd.as_bytes(), &iv).unwrap();
+    let cipher = Aes256Cbc::new_from_slices(_pwd.as_bytes(), &iv).unwrap();
     let enc = cipher.encrypt_vec(seed);
 
     Ok((enc.to_vec(), iv.to_vec()))
@@ -85,7 +85,7 @@ pub(crate) fn decrypt_seed(
     iv: Vec<u8>,
     _pwd: String,
 ) -> Result<Vec<u8>, CliError> {
-    let cipher = Aes256Cbc::new_from_slices(&_pwd.as_bytes(), &iv).unwrap();
+    let cipher = Aes256Cbc::new_from_slices(_pwd.as_bytes(), &iv).unwrap();
     let dec = cipher.decrypt_vec(&bytes).unwrap();
 
     Ok(dec.to_vec())
