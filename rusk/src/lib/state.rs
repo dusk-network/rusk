@@ -13,7 +13,7 @@ use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_pki::{Ownable, PublicKey, ViewKey};
+use dusk_pki::{Ownable, PublicKey, PublicSpendKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
 use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
@@ -102,6 +102,47 @@ impl RuskState {
         Ok(self
             .0
             .get_contract_cast_state(&rusk_abi::stake_contract())?)
+    }
+
+    /// Mints two notes into the transfer contract state, to pay gas fees.
+    pub fn mint(
+        &mut self,
+        block_height: u64,
+        value: u64,
+        generator: Option<&PublicSpendKey>,
+    ) -> Result<(Note, Note)> {
+        let mut transfer = self.transfer_contract()?;
+        let notes = transfer.mint(block_height, value, generator)?;
+
+        // SAFETY: this is safe because we know the transfer contract exists at
+        // the given contract ID.
+        unsafe {
+            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
+        };
+
+        Ok(notes)
+    }
+
+    /// Pushes two notes onto the state and updates it.
+    pub fn push_coinbase(
+        &mut self,
+        block_height: u64,
+        coinbase: (Note, Note),
+    ) -> Result<()> {
+        let mut transfer = self.transfer_contract()?;
+
+        transfer.push_note(block_height, coinbase.0)?;
+        transfer.push_note(block_height, coinbase.1)?;
+
+        transfer.update_root()?;
+
+        // SAFETY: this is safe because we know the transfer contract exists at
+        // the given contract ID.
+        unsafe {
+            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
+        };
+
+        Ok(())
     }
 
     /// Returns all the notes from a given block height

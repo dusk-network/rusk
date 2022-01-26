@@ -15,7 +15,7 @@ use phoenix_core::Note;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
-use rusk_vm::GasMeter;
+use rusk_vm::{GasMeter, NetworkState};
 
 pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
@@ -24,29 +24,80 @@ pub use super::rusk_proto::{
     GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
     GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
     GetStakeRequest, GetStakeResponse, GetStateRootRequest,
-    GetStateRootResponse, Transaction as TransactionProto,
-    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
+    GetStateRootResponse, StateTransitionRequest, StateTransitionResponse,
+    Transaction as TransactionProto, VerifyStateTransitionRequest,
+    VerifyStateTransitionResponse,
 };
 
+const TX_VERSION: u32 = 1;
+const TX_TYPE_COINBASE: u32 = 0;
+const TX_TYPE_TRANSFER: u32 = 1;
+
+/// Partition transactions into transfer and coinbase transactions, in this
+/// order.
+fn extract_coinbase(
+    tx: Vec<TransactionProto>,
+) -> Result<(Vec<TransactionProto>, (Note, Note)), Status> {
+    let (transfer_txs, coinbase_txs): (Vec<_>, Vec<_>) =
+        tx.into_iter().partition(|tx| tx.r#type == TX_TYPE_TRANSFER);
+
+    // There must always be two Coinbase transactions
+    let coinbases = coinbase_txs.len();
+    if coinbases == 2 {
+        return Err(Status::invalid_argument(format!(
+            "Expected 2 coinbase transactions, got {}",
+            coinbases
+        )));
+    }
+
+    let dusk_note = Note::from_slice(&coinbase_txs[0].payload)
+        .map_err(Error::Serialization)?;
+    let generator_note = Note::from_slice(&coinbase_txs[1].payload)
+        .map_err(Error::Serialization)?;
+
+    Ok((transfer_txs, (dusk_note, generator_note)))
+}
+
 impl Rusk {
-    fn execute_ephemeral_state_transition(
+    fn accept_transactions(
         &self,
-        request: Request<ExecuteStateTransitionRequest>,
-    ) -> Result<(Response<ExecuteStateTransitionResponse>, RuskState), Status>
-    {
+        request: Request<StateTransitionRequest>,
+    ) -> Result<(Response<StateTransitionResponse>, RuskState), Status> {
+        let request = request.into_inner();
+
         let mut state = self.state()?;
         let network = state.inner_mut();
-        let mut block_gas_meter =
-            GasMeter::with_limit(request.get_ref().block_gas_limit);
+        let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
-        let txs: Vec<_> = request
-            .get_ref()
-            .txs
-            .iter()
+        let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
+
+        let txs = self.execute_transactions(
+            network,
+            &mut block_gas_meter,
+            request.block_height,
+            &transfer_txs,
+        );
+
+        state.push_coinbase(request.block_height, coinbase)?;
+        let state_root = state.root().to_vec();
+
+        Ok((
+            Response::new(StateTransitionResponse { txs, state_root }),
+            state,
+        ))
+    }
+
+    fn execute_transactions(
+        &self,
+        network: &mut NetworkState,
+        block_gas_meter: &mut GasMeter,
+        block_height: u64,
+        txs: &[TransactionProto],
+    ) -> Vec<TransactionProto> {
+        txs.iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .filter_map(|tx| tx.ok())
             .map(|tx| {
-                let block_height = request.get_ref().block_height;
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
                 let _ = network.transact::<_, ()>(
@@ -64,24 +115,12 @@ impl Rusk {
                 let payload = tx.to_bytes();
 
                 TransactionProto {
-                    version: 1,
-                    r#type: 1,
+                    version: TX_VERSION,
+                    r#type: TX_TYPE_TRANSFER,
                     payload,
                 }
             })
-            .collect();
-
-        let success = true;
-        let state_root = network.root().to_vec();
-
-        Ok((
-            Response::new(ExecuteStateTransitionResponse {
-                success,
-                txs,
-                state_root,
-            }),
-            state,
-        ))
+            .collect()
     }
 }
 
@@ -102,9 +141,41 @@ impl State for Rusk {
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
         info!("Received ExecuteStateTransition request");
 
-        let (response, _) = self.execute_ephemeral_state_transition(request)?;
+        let request = request.into_inner();
 
-        Ok(response)
+        let mut state = self.state()?;
+        let network = state.inner_mut();
+        let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
+
+        let mut txs = self.execute_transactions(
+            network,
+            &mut block_gas_meter,
+            request.block_height,
+            &request.txs,
+        );
+
+        let (dusk_note, generator_note) = state.mint(
+            request.block_height,
+            block_gas_meter.spent(),
+            self.generator.as_ref(),
+        )?;
+
+        for note in [dusk_note, generator_note] {
+            txs.push(TransactionProto {
+                version: TX_VERSION,
+                r#type: TX_TYPE_COINBASE,
+                payload: note.to_bytes().to_vec(),
+            })
+        }
+
+        let success = true;
+        let state_root = state.root().to_vec();
+
+        Ok(Response::new(ExecuteStateTransitionResponse {
+            success,
+            txs,
+            state_root,
+        }))
     }
 
     async fn verify_state_transition(
@@ -113,19 +184,20 @@ impl State for Rusk {
     ) -> Result<Response<VerifyStateTransitionResponse>, Status> {
         info!("Received VerifyStateTransition request");
 
+        let request = request.into_inner();
+
         let mut state = self.state()?;
         let network = state.inner_mut();
-        let mut block_gas_meter =
-            GasMeter::with_limit(request.get_ref().block_gas_limit);
+        let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
-        let success = request
-            .get_ref()
-            .txs
+        let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
+
+        let success = transfer_txs
             .iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .all(|tx| match tx {
                 Ok(tx) => {
-                    let block_height = request.get_ref().block_height;
+                    let block_height = request.block_height;
                     let mut gas_meter =
                         GasMeter::with_limit(tx.fee().gas_limit);
 
@@ -142,17 +214,24 @@ impl State for Rusk {
                 Err(_) => false,
             });
 
+        if !success {
+            return Ok(Response::new(VerifyStateTransitionResponse {
+                success: false,
+            }));
+        }
+
+        state.push_coinbase(request.block_height, coinbase)?;
+
         Ok(Response::new(VerifyStateTransitionResponse { success }))
     }
 
     async fn accept(
         &self,
-        request: Request<ExecuteStateTransitionRequest>,
-    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
+        request: Request<StateTransitionRequest>,
+    ) -> Result<Response<StateTransitionResponse>, Status> {
         info!("Received Accept request");
 
-        let (response, mut state) =
-            self.execute_ephemeral_state_transition(request)?;
+        let (response, mut state) = self.accept_transactions(request)?;
 
         self.persist(&mut state)?;
 
@@ -161,12 +240,11 @@ impl State for Rusk {
 
     async fn finalize(
         &self,
-        request: Request<ExecuteStateTransitionRequest>,
-    ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
+        request: Request<StateTransitionRequest>,
+    ) -> Result<Response<StateTransitionResponse>, Status> {
         info!("Received Finalize request");
 
-        let (response, mut state) =
-            self.execute_ephemeral_state_transition(request)?;
+        let (response, mut state) = self.accept_transactions(request)?;
 
         state.commit();
         self.persist(&mut state)?;
