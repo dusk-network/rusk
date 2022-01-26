@@ -6,6 +6,7 @@ members = [
     "macros/code-hasher",
     "rusk-recovery",
     "rusk-profile",
+    "rusk-wallet",
     "rusk-abi",
     "rusk",
     "test-utils/transfer-wrapper",

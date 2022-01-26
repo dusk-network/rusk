@@ -4,21 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use canonical::CanonError;
 use std::io;
 use tonic::Status;
-use canonical::CanonError;
 
 use super::clients;
 
-pub type CoreError = dusk_wallet_core::Error<crate::LocalStore, clients::State, clients::Prover>;
+pub type CoreError =
+    dusk_wallet_core::Error<crate::LocalStore, clients::State, clients::Prover>;
 
 /// Errors returned by this crate
 #[derive(Debug)]
 pub enum CliError {
-    CorruptedFile,
-    KeyNotFound,
-    KeyAlreadyExists,
     InvalidPhrase,
+    FileNotExists,
+    FileExists,
 
     Network(tonic::transport::Error),
     Connection(tonic::Status),
@@ -28,7 +28,7 @@ pub enum CliError {
     Canon(CanonError),
     IO(io::Error),
 
-    WalletCore(Box<CoreError>)
+    WalletCore(Box<CoreError>),
 }
 
 impl From<dusk_bytes::Error> for CliError {
@@ -37,7 +37,7 @@ impl From<dusk_bytes::Error> for CliError {
     }
 }
 
-impl From<CanonError> for CliError{
+impl From<CanonError> for CliError {
     fn from(e: CanonError) -> Self {
         Self::Canon(e)
     }
