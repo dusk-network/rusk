@@ -287,7 +287,7 @@ impl StateClient for FfiStateClient {
         height: u64,
         vk: &ViewKey,
     ) -> Result<Vec<Note>, Self::Error> {
-        let mut notes_buf = [0u8; NOTES_BUF_SIZE];
+        let mut notes_buf = vec![0u8; NOTES_BUF_SIZE];
 
         let mut num_notes = 0;
 
