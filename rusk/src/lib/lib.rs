@@ -12,6 +12,7 @@ pub mod transaction;
 
 use crate::error::Error;
 pub use crate::state::RuskState;
+use dusk_pki::PublicSpendKey;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -36,6 +37,7 @@ pub struct RuskBuilder {
     id: Option<NetworkStateId>,
     path: Option<PathBuf>,
     backend: fn() -> BackendCtor<DiskBackend>,
+    generator: Option<PublicSpendKey>,
 }
 
 impl RuskBuilder {
@@ -44,11 +46,20 @@ impl RuskBuilder {
             id: None,
             path: None,
             backend,
+            generator: None,
         }
     }
 
     pub fn id(mut self, id: NetworkStateId) -> Self {
         self.id = Some(id);
+        self
+    }
+
+    pub fn generator<T>(mut self, generator: T) -> Self
+    where
+        T: Into<Option<PublicSpendKey>>,
+    {
+        self.generator = generator.into();
         self
     }
 
@@ -64,10 +75,13 @@ impl RuskBuilder {
             (None, None) => return Err(Error::BuilderInvalidState),
         };
 
+        let generator = self.generator;
+
         let rusk = Rusk {
             state_id: Arc::new(Mutex::new(id)),
             backend,
             path,
+            generator,
         };
 
         Ok(rusk)
@@ -87,6 +101,7 @@ pub struct Rusk {
     pub state_id: Arc<Mutex<NetworkStateId>>,
     backend: fn() -> BackendCtor<DiskBackend>,
     path: Option<PathBuf>,
+    generator: Option<PublicSpendKey>,
 }
 
 impl Rusk {

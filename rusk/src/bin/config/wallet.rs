@@ -5,72 +5,46 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use clap::{App, Arg, ArgMatches};
-use rusk::Result;
+use dusk_bytes::DeserializableSlice;
+use dusk_pki::PublicSpendKey;
 use serde::{Deserialize, Serialize};
-use std::fs;
+use tracing::warn;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub(crate) struct WalletConfig {
-    pub(crate) path: String,
-    password: Option<String>,
-    password_path: Option<String>,
+    generator: Option<String>,
 }
 
-/// Default wallet path.
-pub const WALLET_PATH: &str = "wallet.dat";
-
-impl Default for WalletConfig {
-    fn default() -> Self {
-        WalletConfig {
-            path: WALLET_PATH.to_string(),
-            password: None,
-            password_path: None,
-        }
-    }
+fn parse_generator(key: &str) -> Option<PublicSpendKey> {
+    bs58::decode(key)
+        .into_vec()
+        .ok()
+        .and_then(|key| PublicSpendKey::from_slice(&key).ok())
 }
 
 impl WalletConfig {
-    pub fn _password(&self) -> Result<String> {
-        if let Some(password) = &self.password {
-            return Ok(password.to_string());
-        };
-        if let Some(password_path) = &self.password_path {
-            return Ok(fs::read_to_string(password_path)?);
-        };
-        panic!("No <password> nor <password_path> are provided>");
+    pub(crate) fn generator(&self) -> Option<PublicSpendKey> {
+        parse_generator(self.generator.as_deref()?)
     }
 
     pub(crate) fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(path) = matches.value_of("wallet_path") {
-            self.path = path.into();
-        }
-        if let Some(password) = matches.value_of("wallet_password") {
-            self.password = Some(password.into());
-        }
-        if let Some(password_path) = matches.value_of("wallet_password_path") {
-            self.password_path = Some(password_path.into());
+        if let Some(key) = matches.value_of("generator") {
+            self.generator =
+                parse_generator(key).and(Some(key.to_string())).or_else(|| {
+                    warn!(
+                        "Failed parsing <generator>. Defaulting to Dusk's key"
+                    );
+                    None
+                });
         }
     }
+
     pub fn inject_args(app: App<'_>) -> App<'_> {
         app.arg(
-            Arg::new("wallet_path")
-                .long("wallet_path")
-                .value_name("wallet_path")
-                .help("Path of the wallet")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("wallet_password")
-                .long("wallet_password")
-                .value_name("wallet_password")
-                .help("Password of the wallet")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("wallet_password_path")
-                .long("wallet_password_path")
-                .value_name("wallet_password_path")
-                .help("Path of file which contains the password wallet (useful for Docker Images secrets")
+            Arg::new("generator")
+                .long("generator")
+                .value_name("Generator Key")
+                .help("The public spend key in base58 that the block generator is going to be paid to")
                 .takes_value(true),
         )
     }

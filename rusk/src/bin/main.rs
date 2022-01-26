@@ -76,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router = {
         let rusk = Rusk::builder(disk_backend)
             .path(rusk_profile::get_rusk_state_id_path()?)
+            .generator(config.wallet.generator())
             .build()?;
 
         let kadcast = KadcastDispatcher::new(
