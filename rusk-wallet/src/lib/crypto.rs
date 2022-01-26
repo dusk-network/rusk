@@ -7,6 +7,13 @@
 use crate::CliError;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 
+use aes::Aes256;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Cbc};
+use rand::Rng;
+
+type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+
 /// Creates and recovers wallet seed from a 12-word BIP39 mnemonic phrase
 pub(crate) struct MnemSeed {
     pub phrase: String,
@@ -54,18 +61,54 @@ impl MnemSeed {
     }
 }
 
-/// Encrypt the wallet seed
-pub(crate) fn encrypt(
+/// Encrypt the wallet seed using AES-256-CBC
+/// Requires the seed and the encryption key
+/// Will return the ciphertext and the initialization vector (IV)
+pub(crate) fn encrypt_seed(
     seed: &[u8; 64],
     _pwd: String,
-) -> Result<Vec<u8>, CliError> {
-    Ok(seed.to_vec())
+) -> Result<(Vec<u8>, Vec<u8>), CliError> {
+    // this has to be a fresh random value for each execution
+    let iv = rand::thread_rng().gen::<[u8; 16]>();
+
+    let cipher = Aes256Cbc::new_from_slices(&_pwd.as_bytes(), &iv).unwrap();
+    let enc = cipher.encrypt_vec(seed);
+
+    Ok((enc.to_vec(), iv.to_vec()))
 }
 
-/// Decrypt wallet seed
-pub(crate) fn decrypt(
+/// Decrypt the wallet seed using AES-256-CBC
+/// Requires the ciphertext, the IV and the encryption key
+/// Will return the seed in plaintext
+pub(crate) fn decrypt_seed(
     bytes: Vec<u8>,
+    iv: Vec<u8>,
     _pwd: String,
 ) -> Result<Vec<u8>, CliError> {
-    Ok(bytes)
+    let cipher = Aes256Cbc::new_from_slices(&_pwd.as_bytes(), &iv).unwrap();
+    let dec = cipher.decrypt_vec(&bytes).unwrap();
+
+    Ok(dec.to_vec())
+}
+
+#[test]
+fn encrypt_and_decrypt() {
+    // plaintext must be 64 bytes
+    let seed =
+        "0001020304050607000102030405060700010203040506070001020304050607"
+            .as_bytes();
+    let mut buffer = [0u8; 64];
+    buffer.copy_from_slice(&seed);
+
+    // password must be 32 bytes
+    let pwd = "12345678123456781234567812345678";
+
+    // check that random IV is correctly applied
+    let (enc, iv) = encrypt_seed(&buffer, pwd.to_string()).unwrap();
+    let (enc_diff, _iv_diff) = encrypt_seed(&buffer, pwd.to_string()).unwrap();
+    assert_eq!((enc != enc_diff), true);
+
+    // check that decryption matches original plaintext
+    let dec = decrypt_seed(enc, iv, pwd.to_string()).unwrap();
+    assert_eq!(dec, seed);
 }
