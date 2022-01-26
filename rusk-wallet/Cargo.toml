@@ -4,18 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "3.0.0", features = ["derive"] }
+clap = { version = "3.0", features = ["derive"] }
 tokio = { version = "1.15", features = ["full"] }
-tiny-bip39 = "0.8.2"
-requestty = "0.3.0"
-crypto = "0.3.0"
-whoami = "1.2.1"
-bytes = "1.1"
+tiny-bip39 = "0.8"
+requestty = "0.3"
+crypto = "0.3"
+whoami = "1.2"
 tonic = "0.6"
 prost = "0.9"
 dirs = "4.0"
 bs58 = "0.4"
-rand = "0.8.4"
+rand = "0.8"
 
 dusk-wallet-core = "0.5"
 canonical = "0.6"

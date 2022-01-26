@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [0.1.0] - 2022-01-25
+
 ### Added
+- `rusk-wallet` crate to workspace
+- Argument and command parsing, with help output
+- Interactive prompts for authentication
+- BIP39 mnemonic support for recovery phrase
+- Implementation of `Store` trait from `wallet-core`
+- Implementation of `State` and `Prover` traits from `wallet-core`
+- gRPC clients linked to Rusk services
+- `CliError` type for all crate errors
+- Support for wallet file encryption
 
 ### Changed
 
