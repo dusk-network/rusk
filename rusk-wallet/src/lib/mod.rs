@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod store;
-pub mod crypto;
 pub mod clients;
+pub mod crypto;
 pub mod errors;
+pub mod prompt;
+pub mod store;
