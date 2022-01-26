@@ -7,6 +7,18 @@ import "prover.proto";
 import "provisioner.proto";
 import "transaction.proto";
 
+message StateTransitionRequest {
+    repeated Transaction txs = 1;
+    fixed64 block_gas_limit = 2;
+    fixed64 block_height = 3;
+    bytes state_root = 4;
+}
+
+message StateTransitionResponse {
+    repeated Transaction txs = 1;
+    bytes state_root = 2; // NOTE: this might require a failure mode
+}
+
 message ExecuteStateTransitionRequest {
     repeated Transaction txs = 1;
     fixed64 block_gas_limit = 2;
@@ -77,8 +89,8 @@ service State {
     rpc Echo(EchoRequest) returns (EchoResponse) {}
     rpc ExecuteStateTransition(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
     rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
-    rpc Accept(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
-    rpc Finalize(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
+    rpc Accept(StateTransitionRequest) returns (StateTransitionResponse) {}
+    rpc Finalize(StateTransitionRequest) returns (StateTransitionResponse) {}
     rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
     rpc GetStateRoot(GetStateRootRequest) returns (GetStateRootResponse) {}
     rpc GetNotesOwnedBy(GetNotesOwnedByRequest) returns (GetNotesOwnedByResponse) {}
