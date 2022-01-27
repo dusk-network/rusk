@@ -9,6 +9,8 @@ members = [
     "rusk-abi",
     "rusk",
     "test-utils/transfer-wrapper",
+    "test-utils/contracts/alice",
+    "test-utils/contracts/bob",
 ]
 resolver = "2"
 
