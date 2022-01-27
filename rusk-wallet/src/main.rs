@@ -9,7 +9,7 @@ pub(crate) mod rusk_proto {
 }
 
 mod lib;
-pub use lib::errors;
+pub use lib::error::Error;
 
 use clap::{AppSettings, Parser, Subcommand};
 use rand::rngs::StdRng;
@@ -23,7 +23,6 @@ use dusk_wallet_core::Wallet;
 
 use lib::clients::{Prover, State};
 use lib::crypto::MnemSeed;
-use lib::errors::CliError;
 use lib::prompt;
 use lib::store::LocalStore;
 
@@ -42,7 +41,7 @@ pub(crate) const DATA_DIR: &str = ".dusk";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.1.0")]
+#[clap(version = "0.1.1")]
 #[clap(about = "Easily manage your Dusk", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -207,14 +206,14 @@ impl WalletCfg {
     }
 
     /// Checks consistency of loaded configuration
-    fn sanity_check(&self) -> Result<(), CliError> {
+    fn sanity_check(&self) -> Result<(), Error> {
         // TODO!
         Ok(())
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<(), CliError> {
+async fn main() -> Result<(), Error> {
     // parse cli arguments
     let cfg: WalletCfg = WalletCfg::parse();
     cfg.sanity_check()?;
@@ -377,10 +376,10 @@ async fn main() -> Result<(), CliError> {
     Ok(())
 }
 
-fn create(path: PathBuf) -> Result<LocalStore, CliError> {
+fn create(path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
     if path.is_file() {
-        return Err(CliError::FileExists);
+        return Err(Error::WalletFileExists);
     }
 
     // generate mnemonic and seed
@@ -402,10 +401,10 @@ fn create(path: PathBuf) -> Result<LocalStore, CliError> {
     Ok(store)
 }
 
-fn recover(path: PathBuf) -> Result<LocalStore, CliError> {
+fn recover(path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
     if path.is_file() {
-        return Err(CliError::FileExists);
+        return Err(Error::WalletFileExists);
     }
 
     // ask user for 12-word recovery phrase

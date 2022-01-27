@@ -21,12 +21,9 @@ use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tonic::transport::Channel;
 
-use crate::errors::CliError;
-
 use crate::rusk_proto::network_client::NetworkClient;
 use crate::rusk_proto::prover_client::ProverClient as GrpcProverClient;
 use crate::rusk_proto::state_client::StateClient as GrpcStateClient;
-
 use crate::rusk_proto::PropagateMessage;
 use crate::rusk_proto::{
     ExecuteProverRequest, StctProverRequest, WfctProverRequest,
@@ -35,6 +32,8 @@ use crate::rusk_proto::{
     GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
     GetStakeRequest,
 };
+
+use crate::Error;
 
 const STCT_INPUT_SIZE: usize = Fee::SIZE
     + Crossover::SIZE
@@ -67,7 +66,7 @@ impl Prover {
 
 impl ProverClient for Prover {
     /// Error returned by the prover client.
-    type Error = CliError;
+    type Error = Error;
 
     /// Requests that a node prove the given transaction and later propagates it
     fn compute_proof_and_propagate(
@@ -86,7 +85,6 @@ impl ProverClient for Prover {
         .into_inner()
         .tx;
 
-        // todo: encode message
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
 
@@ -189,7 +187,7 @@ impl State {
 /// Types that are clients of the state API.
 impl StateClient for State {
     /// Error returned by the node client.
-    type Error = CliError;
+    type Error = Error;
 
     /// Find notes for a view key, starting from the given block height.
     fn fetch_notes(

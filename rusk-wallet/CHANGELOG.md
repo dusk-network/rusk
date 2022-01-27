@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.1.1] - 2022-01-27
+
+### Added
+- Wallet file encryption using AES [#482]
+
+### Changed
+- Common `Error` struct for this crate [#479]
+- Password hashing using blake3
+
+### Removed
+- Recovery password
 
 ## [0.1.0] - 2022-01-25
 
@@ -17,10 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - BIP39 mnemonic support for recovery phrase
 - Implementation of `Store` trait from `wallet-core`
 - Implementation of `State` and `Prover` traits from `wallet-core`
-- gRPC clients linked to Rusk services
-- `CliError` type for all crate errors
-- Support for wallet file encryption
 
-### Changed
 
-### Removed
+[#482]: https://github.com/dusk-network/rusk/issues/482
+[#479]: https://github.com/dusk-network/rusk/issues/479
