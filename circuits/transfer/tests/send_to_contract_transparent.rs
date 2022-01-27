@@ -18,20 +18,20 @@ mod keys;
 fn create_random_circuit<R: RngCore + CryptoRng>(
     rng: &mut R,
 ) -> SendToContractTransparentCircuit {
+    let address = BlsScalar::random(rng);
+    let value = rng.next_u64();
+
     let ssk = SecretSpendKey::random(rng);
     let psk = ssk.public_spend_key();
-
-    let address = BlsScalar::random(rng);
-
-    let value = 100;
     let blinder = JubJubScalar::random(rng);
 
     let note = Note::obfuscated(rng, &psk, value, blinder);
     let (mut fee, crossover) = note
         .try_into()
         .expect("Failed to convert note into fee/crossover pair!");
-    fee.gas_limit = 5;
-    fee.gas_price = 1;
+
+    fee.gas_limit = rng.next_u64();
+    fee.gas_price = rng.next_u64();
 
     let signature = SendToContractTransparentCircuit::sign(
         rng, &ssk, &fee, &crossover, value, &address,
