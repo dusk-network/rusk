@@ -13,7 +13,7 @@ use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{derive_sk, derive_ssk, Store};
 
 use crate::lib::crypto::EncryptedSeed;
-use crate::lib::errors::CliError;
+use crate::Error;
 
 /// Stores all the user's settings and keystore in the file system
 pub struct LocalStore {
@@ -22,7 +22,7 @@ pub struct LocalStore {
 }
 
 impl Store for LocalStore {
-    type Error = CliError;
+    type Error = Error;
 
     /// Retrieves the seed used to derive keys.
     fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
@@ -35,14 +35,14 @@ impl Store for LocalStore {
     }
 
     /// Retrieves a derived secret key from the store.
-    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, CliError> {
+    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Error> {
         Ok(derive_sk(&self.seed, index))
     }
 }
 
 impl LocalStore {
     /// Creates a new store
-    pub fn new(path: PathBuf, seed: [u8; 64]) -> Result<LocalStore, CliError> {
+    pub fn new(path: PathBuf, seed: [u8; 64]) -> Result<LocalStore, Error> {
         // create the local store
         let store = LocalStore { path, seed };
 
@@ -50,16 +50,16 @@ impl LocalStore {
     }
 
     /// Loads wallet file from file
-    pub fn from_file(path: PathBuf, pwd: Hash) -> Result<LocalStore, CliError> {
+    pub fn from_file(path: PathBuf, pwd: Hash) -> Result<LocalStore, Error> {
         // basic sanity check
         if !path.is_file() {
-            return Err(CliError::FileNotExists);
+            return Err(Error::WalletFileNotExists);
         }
 
         // attempt to load and decode wallet
         let bytes = fs::read(&path)?;
         if bytes.len() != EncryptedSeed::SIZE {
-            return Err(CliError::FileCorrupted);
+            return Err(Error::WalletFileCorrupted);
         }
         let mut seed_bytes = [0u8; EncryptedSeed::SIZE];
         seed_bytes.copy_from_slice(&bytes);
@@ -72,7 +72,7 @@ impl LocalStore {
     }
 
     /// Saves wallet to a file
-    pub fn save(&self, pwd: Hash) -> Result<(), CliError> {
+    pub fn save(&self, pwd: Hash) -> Result<(), Error> {
         // encrypt seed
         let mut seed = EncryptedSeed::from_seed(self.seed);
         seed.encrypt(pwd)?;

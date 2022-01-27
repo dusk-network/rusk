@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::CliError;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 
 use aes::Aes256;
@@ -13,6 +12,8 @@ use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
 use rand::rngs::OsRng;
 use rand::Rng;
+
+use crate::Error;
 
 type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
@@ -42,7 +43,7 @@ impl MnemSeed {
     }
 
     /// Generate a seed given a mnemonic phrase and a password
-    pub fn from_phrase(phrase: &str, pwd: &str) -> Result<Self, CliError> {
+    pub fn from_phrase(phrase: &str, pwd: &str) -> Result<Self, Error> {
         // generate mnemmonic from user's phrase
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English);
         match mnemonic {
@@ -58,7 +59,7 @@ impl MnemSeed {
                     seed,
                 })
             }
-            Err(_) => Err(CliError::InvalidPhrase),
+            Err(_) => Err(Error::InvalidMnemonicPhrase),
         }
     }
 }
@@ -106,7 +107,7 @@ impl EncryptedSeed {
     /// Decrypt the wallet seed using AES-256-CBC
     /// Requires the ciphertext, the IV and the encryption key
     /// Will return the seed in plaintext
-    pub fn decrypt(&self, pwd: Hash) -> Result<[u8; 64], CliError> {
+    pub fn decrypt(&self, pwd: Hash) -> Result<[u8; 64], Error> {
         let cipher = Aes256Cbc::new_from_slices(pwd.as_bytes(), &self.iv)?;
         let dec = cipher.decrypt_vec(&self.enc)?;
         let mut seed = [0u8; 64];
@@ -117,7 +118,7 @@ impl EncryptedSeed {
     /// Encrypt the wallet seed using AES-256-CBC
     /// Requires the seed and the encryption key
     /// Will return the ciphertext and the initialization vector (IV)
-    pub fn encrypt(&mut self, pwd: Hash) -> Result<(), CliError> {
+    pub fn encrypt(&mut self, pwd: Hash) -> Result<(), Error> {
         let mut iv = [0u8; 16];
         let mut rng = OsRng::default();
         rng.fill(&mut iv);

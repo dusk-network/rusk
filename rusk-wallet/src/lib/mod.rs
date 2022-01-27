@@ -6,6 +6,6 @@
 
 pub mod clients;
 pub mod crypto;
-pub mod errors;
+pub mod error;
 pub mod prompt;
 pub mod store;
