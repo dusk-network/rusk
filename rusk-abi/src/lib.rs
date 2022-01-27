@@ -17,6 +17,8 @@
 #![deny(clippy::all)]
 
 pub use dusk_abi::ContractId;
+use dusk_bls12_381::BlsScalar;
+use dusk_bytes::DeserializableSlice;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
@@ -33,6 +35,16 @@ pub const fn transfer_contract() -> ContractId {
 /// Contract ID of the genesis stake contract
 pub const fn stake_contract() -> ContractId {
     ContractId::reserved(0x2)
+}
+
+/// Converts a `ContractId` to a `BlsScalar`
+///
+/// This cannot fail since the contract id should be generated always using
+/// `rusk_abi::gen_contract_id` that ensures the bytes are inside the BLS field.
+pub fn contract_to_scalar(contract_id: &ContractId) -> BlsScalar {
+    BlsScalar::from_slice(contract_id.as_bytes()).expect(
+        "Something went REALLY wrong if a contract id cannot be a scalar",
+    )
 }
 
 #[doc(hidden)]

@@ -48,6 +48,31 @@ pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
     ContractId::from_raw(hasher.output())
 }
 
+pub fn verify_proof(
+    pp: &PublicParameters,
+    vd: &[u8],
+    proof: &[u8],
+    pi: Vec<PublicInput>,
+) -> Result<bool, CanonError> {
+    let proof =
+        Proof::from_slice(proof).map_err(|_| CanonError::InvalidEncoding)?;
+
+    let verifier_data = VerifierData::from_slice(vd)
+        .map_err(|_| CanonError::InvalidEncoding)?;
+
+    let pi: Vec<PublicInputValue> =
+        pi.into_iter().map(|pi| pi.into()).collect();
+
+    Ok(circuit::verify(
+        pp,
+        &verifier_data,
+        &proof,
+        pi.as_slice(),
+        b"dusk-network",
+    )
+    .is_ok())
+}
+
 impl RuskModule {
     pub fn new(pp: &'static PublicParameters) -> Self {
         RuskModule { pp }
@@ -70,27 +95,10 @@ impl HostModule for RuskModule {
 
             Self::VERIFY_PROOF => {
                 let proof = Vec::<u8>::decode(&mut source)?;
-                let verifier_data = Vec::<u8>::decode(&mut source)?;
+                let vd = Vec::<u8>::decode(&mut source)?;
                 let pi = Vec::<PublicInput>::decode(&mut source)?;
 
-                let proof = Proof::from_slice(&proof)
-                    .map_err(|_| CanonError::InvalidEncoding)?;
-
-                let verifier_data =
-                    VerifierData::from_slice(verifier_data.as_slice())
-                        .map_err(|_| CanonError::InvalidEncoding)?;
-
-                let pi: Vec<PublicInputValue> =
-                    pi.into_iter().map(|pi| pi.into()).collect();
-
-                let ret = circuit::verify(
-                    self.pp,
-                    &verifier_data,
-                    &proof,
-                    pi.as_slice(),
-                    b"dusk-network",
-                )
-                .is_ok();
+                let ret = verify_proof(self.pp, &proof, &vd, pi);
 
                 Ok(ReturnValue::from_canon(&ret))
             }
