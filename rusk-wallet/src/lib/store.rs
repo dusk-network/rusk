@@ -7,11 +7,12 @@
 use std::path::PathBuf;
 use std::{fmt, fs};
 
+use blake3::Hash;
 use dusk_bls12_381_sign::SecretKey;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{derive_sk, derive_ssk, Store};
 
-use crate::lib::crypto::{decrypt_seed, encrypt_seed};
+use crate::lib::crypto::EncryptedSeed;
 use crate::lib::errors::CliError;
 
 /// Stores all the user's settings and keystore in the file system
@@ -49,34 +50,35 @@ impl LocalStore {
     }
 
     /// Loads wallet file from file
-    pub fn from_file(
-        path: PathBuf,
-        pwd: String,
-    ) -> Result<LocalStore, CliError> {
+    pub fn from_file(path: PathBuf, pwd: Hash) -> Result<LocalStore, CliError> {
         // basic sanity check
         if !path.is_file() {
             return Err(CliError::FileNotExists);
         }
 
         // attempt to load and decode wallet
-        let seed_bytes = decrypt_seed(fs::read(&path)?, fs::read(&path)?, pwd)?;
+        let bytes = fs::read(&path)?;
+        if bytes.len() != EncryptedSeed::SIZE {
+            return Err(CliError::FileCorrupted);
+        }
+        let mut seed_bytes = [0u8; EncryptedSeed::SIZE];
+        seed_bytes.copy_from_slice(&bytes);
 
-        // wallet_seed
-        let mut seed = [0u8; 64];
-        seed.copy_from_slice(&seed_bytes);
+        let seed = EncryptedSeed::from_bytes(&seed_bytes);
+        let seed = seed.decrypt(pwd)?;
 
         // create and return
         Ok(LocalStore { path, seed })
     }
 
     /// Saves wallet to a file
-    pub fn save(&self, pwd: String) -> Result<(), CliError> {
+    pub fn save(&self, pwd: Hash) -> Result<(), CliError> {
         // encrypt seed
-        let (data, iv) = encrypt_seed(&self.seed, pwd)?;
+        let mut seed = EncryptedSeed::from_seed(self.seed);
+        seed.encrypt(pwd)?;
 
         // write file
-        fs::write(&self.path, &data)?;
-        fs::write(&self.path, &iv)?;
+        fs::write(&self.path, &seed.to_bytes())?;
         Ok(())
     }
 }

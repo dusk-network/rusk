@@ -6,18 +6,18 @@ edition = "2021"
 [dependencies]
 clap = { version = "3.0", features = ["derive"] }
 tokio = { version = "1.15", features = ["full"] }
+block-modes = "0.8"
 tiny-bip39 = "0.8"
 requestty = "0.3"
 crypto = "0.3"
 whoami = "1.2"
+blake3 = "1.3"
 tonic = "0.6"
 prost = "0.9"
 dirs = "4.0"
 bs58 = "0.4"
 rand = "0.8"
-
 aes = "0.7"
-block-modes = "0.8"
 
 dusk-wallet-core = "0.5"
 canonical = "0.6"
