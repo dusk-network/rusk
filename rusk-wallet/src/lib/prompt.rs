@@ -4,20 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use blake3::Hash;
 use requestty::Question;
 
 /// Request the user to authenticate with a password
-pub(crate) fn request_auth() -> String {
+pub(crate) fn request_auth() -> Hash {
     let q = Question::password("password")
         .message("Please enter your wallet's password:")
         .mask('*')
         .build();
     let a = requestty::prompt_one(q).unwrap();
     let pwd = a.as_string().unwrap_or("").to_string();
+    let pwd = blake3::hash(pwd.as_bytes());
     pwd
 }
 
-pub(crate) fn create_password() -> String {
+pub(crate) fn create_password() -> Hash {
     let mut pwd = String::from("");
 
     let mut pwds_match = false;
@@ -47,6 +49,7 @@ pub(crate) fn create_password() -> String {
         }
     }
 
+    let pwd = blake3::hash(pwd.as_bytes());
     pwd
 }
 

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use block_modes::{BlockModeError, InvalidKeyIvLength};
 use canonical::CanonError;
 use std::io;
 use tonic::Status;
@@ -17,11 +18,15 @@ pub type CoreError =
 #[derive(Debug)]
 pub enum CliError {
     InvalidPhrase,
+    FileCorrupted,
     FileNotExists,
     FileExists,
 
     Network(tonic::transport::Error),
     Connection(tonic::Status),
+
+    CryptoKey(InvalidKeyIvLength),
+    CryptoBlock(BlockModeError),
 
     Bytes(dusk_bytes::Error),
     Base58(bs58::decode::Error),
@@ -72,3 +77,17 @@ impl From<CoreError> for CliError {
         Self::WalletCore(Box::new(e))
     }
 }
+
+impl From<InvalidKeyIvLength> for CliError {
+    fn from(e: InvalidKeyIvLength) -> Self {
+        Self::CryptoKey(e)
+    }
+}
+
+impl From<BlockModeError> for CliError {
+    fn from(e: BlockModeError) -> Self {
+        Self::CryptoBlock(e)
+    }
+}
+
+// Todo: Rename CliError -> Error
