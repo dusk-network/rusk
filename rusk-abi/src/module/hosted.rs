@@ -12,8 +12,9 @@ use dusk_abi::ContractId;
 use dusk_abi::Module;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
-    Signature as BlsSignature, APK as AggregatedBlsPublicKey,
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use dusk_bytes::Serializable;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
@@ -22,6 +23,18 @@ use crate::{PaymentInfo, PublicInput, PAYMENT_INFO};
 pub fn hash(bytes: Vec<u8>) -> BlsScalar {
     dusk_abi::query(&RuskModule::id(), &(RuskModule::HASH, bytes), 0)
         .expect("query RuskModule for Hash should not fail")
+}
+
+pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
+    // TODO provisory fn until native ContractId -> BlsScalar conversion is
+    // implemented
+    // https://github.com/dusk-network/cargo-bake/issues/1
+    let mut bls_address = [0u8; 32];
+
+    bls_address.copy_from_slice(address.as_bytes());
+
+    // Infallible conversion
+    BlsScalar::from_bytes(&bls_address).unwrap_or_default()
 }
 
 pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
@@ -57,7 +70,7 @@ pub fn verify_schnorr_sign(
 
 pub fn verify_bls_sign(
     sign: BlsSignature,
-    pk: AggregatedBlsPublicKey,
+    pk: BlsPublicKey,
     message: Vec<u8>,
 ) -> bool {
     dusk_abi::query(

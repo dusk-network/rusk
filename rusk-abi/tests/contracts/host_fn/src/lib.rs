@@ -43,7 +43,7 @@ mod hosted {
 
     use dusk_bls12_381::BlsScalar;
     use dusk_bls12_381_sign::{
-        Signature as BlsSignature, APK as AggregatedBlsPublicKey,
+        PublicKey as BlsPublicKey, Signature as BlsSignature,
     };
     use dusk_bytes::Serializable;
     use dusk_pki::{PublicKey, PublicSpendKey};
@@ -87,7 +87,7 @@ mod hosted {
         pub fn bls_signature(
             &self,
             sig: BlsSignature,
-            pk: AggregatedBlsPublicKey,
+            pk: BlsPublicKey,
             message: Vec<u8>,
         ) -> bool {
             rusk_abi::verify_bls_sign(sig, pk, message)
@@ -182,7 +182,7 @@ mod hosted {
 
             BLS_SIGNATURE => {
                 let sig = BlsSignature::decode(&mut source)?;
-                let pk = AggregatedBlsPublicKey::decode(&mut source)?;
+                let pk = BlsPublicKey::decode(&mut source)?;
                 let message = Vec::<u8>::decode(&mut source)?;
 
                 let ret = slf.bls_signature(sig, pk, message);

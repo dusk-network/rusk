@@ -40,7 +40,8 @@ mod module_tests {
     use rusk_vm::{Contract, GasMeter, NetworkState};
 
     use dusk_bls12_381_sign::{
-        SecretKey as BlsSecretKey, APK as AggregatedBlsPublicKey,
+        PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+        APK as AggregatedBlsPublicKey,
     };
     use dusk_pki::{PublicKey, PublicSpendKey, SecretKey};
     use dusk_plonk::circuit;
@@ -222,8 +223,8 @@ mod module_tests {
         let message = b"some-message".to_vec();
 
         let sk = BlsSecretKey::random(&mut rand_core::OsRng);
-        let pk = (&sk).into();
-        let apk = AggregatedBlsPublicKey::from(&sk);
+        let pk = BlsPublicKey::from(&sk);
+        let apk = AggregatedBlsPublicKey::from(&pk);
 
         let sign = sk.sign(&pk, message.as_slice());
 
@@ -234,7 +235,7 @@ mod module_tests {
             .query::<_, bool>(
                 contract_id,
                 0,
-                (host_fn::BLS_SIGNATURE, sign, apk, message.clone()),
+                (host_fn::BLS_SIGNATURE, sign, pk, message.clone()),
                 &mut gas,
             )
             .expect("State query failed");
