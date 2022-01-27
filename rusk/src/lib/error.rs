@@ -23,6 +23,8 @@ pub enum Error {
     OpeningNoteUndefined(u64),
     /// Bytes Serialization Errors
     Serialization(dusk_bytes::Error),
+    /// Originating from Phoenix.
+    Phoenix(phoenix_core::Error),
     /// Rusk VM internal Errors
     Vm(rusk_vm::VMError),
     /// IO Errors
@@ -37,6 +39,8 @@ pub enum Error {
     Canonical(canonical::CanonError),
     /// Stake not found for key.
     StakeNotFound(PublicKey),
+    /// Bad coinbase value (got, expected).
+    CoinbaseValue(u64, u64),
 }
 
 impl std::error::Error for Error {}
@@ -44,6 +48,12 @@ impl std::error::Error for Error {}
 impl From<rusk_vm::VMError> for Error {
     fn from(err: rusk_vm::VMError) -> Self {
         Error::Vm(err)
+    }
+}
+
+impl From<phoenix_core::Error> for Error {
+    fn from(pe: phoenix_core::Error) -> Self {
+        Self::Phoenix(pe)
     }
 }
 
@@ -111,6 +121,12 @@ impl fmt::Display for Error {
             Error::StakeNotFound(pk) => {
                 write!(f, "Couldn't find stake for {:?}", pk.to_bytes())
             }
+            Error::CoinbaseValue(got, expected) => write!(
+                f,
+                "Received coinbase with value {}, expected {}",
+                got, expected
+            ),
+            Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
         }
     }
 }
