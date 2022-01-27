@@ -21,6 +21,7 @@ use rusk_abi::{self, POSEIDON_TREE_DEPTH};
 use rusk_vm::{ContractId, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract};
 use transfer_contract::TransferContract;
+
 pub struct RuskState(pub(crate) NetworkState);
 
 impl RuskState {
@@ -108,11 +109,19 @@ impl RuskState {
     pub fn mint(
         &mut self,
         block_height: u64,
-        value: u64,
+        gas_spent: u64,
         generator: Option<&PublicSpendKey>,
     ) -> Result<(Note, Note)> {
+        let (dusk_value, generator_value) =
+            coinbase_value(block_height, gas_spent);
+
         let mut transfer = self.transfer_contract()?;
-        let notes = transfer.mint(block_height, value, generator)?;
+        let notes = transfer.mint(
+            block_height,
+            dusk_value,
+            generator_value,
+            generator,
+        )?;
 
         // SAFETY: this is safe because we know the transfer contract exists at
         // the given contract ID.
@@ -123,13 +132,31 @@ impl RuskState {
         Ok(notes)
     }
 
-    /// Pushes two notes onto the state and updates it.
+    /// Pushes two notes onto the state, checking their amounts to be correct
+    /// and updates it.
     pub fn push_coinbase(
         &mut self,
         block_height: u64,
+        gas_spent: u64,
         coinbase: (Note, Note),
     ) -> Result<()> {
         let mut transfer = self.transfer_contract()?;
+
+        let dusk_value = coinbase.0.value(None)?;
+        let generator_value = coinbase.1.value(None)?;
+
+        let (expected_dusk, expected_generator) =
+            coinbase_value(block_height, gas_spent);
+
+        if dusk_value != expected_dusk {
+            return Err(Error::CoinbaseValue(dusk_value, expected_dusk));
+        }
+        if generator_value != expected_generator {
+            return Err(Error::CoinbaseValue(
+                generator_value,
+                expected_generator,
+            ));
+        }
 
         transfer.push_note(block_height, coinbase.0)?;
         transfer.push_note(block_height, coinbase.1)?;
@@ -193,5 +220,33 @@ impl RuskState {
             .get(&pk.to_bytes())?
             .map(|s| *s.deref())
             .ok_or_else(|| Error::StakeNotFound(*pk))
+    }
+}
+
+/// Calculates the value that the coinbase notes should contain.
+///
+/// 90% of the total value goes to the generator (rounded up).
+/// 10% of the total value goes to the Dusk address (rounded down).
+fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
+    let value = emission_amount(block_height) + gas_spent;
+
+    let dusk_value = value / 10;
+    let generator_value = value - dusk_value;
+
+    (dusk_value, generator_value)
+}
+
+/// This implements the emission schedule described in the economic paper.
+fn emission_amount(block_height: u64) -> u64 {
+    match block_height {
+        1..=12_500_000 => 16_000_000,
+        12_500_001..=18_750_000 => 12_800_000,
+        18_750_001..=25_000_000 => 9_600_000,
+        25_000_001..=31_250_000 => 8_000_000,
+        31_250_001..=37_500_000 => 6_400_000,
+        37_500_001..=43_750_000 => 4_800_000,
+        43_750_001..=50_000_000 => 3_200_000,
+        50_000_001..=62_500_000 => 1_600_000,
+        _ => 0,
     }
 }
