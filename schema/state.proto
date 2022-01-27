@@ -7,6 +7,16 @@ import "prover.proto";
 import "provisioner.proto";
 import "transaction.proto";
 
+message PreverifyRequest {
+    Transaction tx = 1;
+}
+
+message PreverifyResponse {
+    Transaction tx = 1;
+    bytes tx_hash = 2;
+    Fee fee = 3;
+}
+
 message StateTransitionRequest {
     repeated Transaction txs = 1;
     fixed64 block_gas_limit = 2;
@@ -87,6 +97,7 @@ message GetStakeResponse {
 
 service State {
     rpc Echo(EchoRequest) returns (EchoResponse) {}
+    rpc Preverify(PreverifyRequest) returns (PreverifyResponse) {}
     rpc ExecuteStateTransition(ExecuteStateTransitionRequest) returns (ExecuteStateTransitionResponse) {}
     rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
     rpc Accept(StateTransitionRequest) returns (StateTransitionResponse) {}
