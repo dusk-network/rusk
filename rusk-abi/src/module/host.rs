@@ -11,9 +11,10 @@ use canonical::{Canon, CanonError, Source};
 use dusk_abi::{ContractId, HostModule, Query, ReturnValue};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
-    Signature as BlsSignature, APK as AggregatedBlsPublicKey,
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
+    APK as AggregatedBlsPublicKey,
 };
-use dusk_bytes::DeserializableSlice;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicKey;
 use dusk_plonk::circuit;
 use dusk_plonk::prelude::*;
@@ -25,6 +26,18 @@ use crate::{PublicInput, RuskModule};
 /// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
 pub fn poseidon_hash(scalars: &[BlsScalar]) -> BlsScalar {
     dusk_poseidon::sponge::hash(scalars)
+}
+
+pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
+    // TODO provisory fn until native ContractId -> BlsScalar conversion is
+    // implemented
+    // https://github.com/dusk-network/cargo-bake/issues/1
+    let mut bls_address = [0u8; 32];
+
+    bls_address.copy_from_slice(address.as_bytes());
+
+    // Infallible conversion
+    BlsScalar::from_bytes(&bls_address).unwrap_or_default()
 }
 
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
@@ -93,7 +106,8 @@ impl HostModule for RuskModule {
 
             Self::VERIFY_BLS_SIGN => {
                 let sign = BlsSignature::decode(&mut source)?;
-                let pk = AggregatedBlsPublicKey::decode(&mut source)?;
+                let pk = BlsPublicKey::decode(&mut source)?;
+                let pk = AggregatedBlsPublicKey::from(&pk);
                 let message = Vec::<u8>::decode(&mut source)?;
                 let ret = pk.verify(&sign, message.as_slice()).is_ok();
 
