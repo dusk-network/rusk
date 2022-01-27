@@ -126,22 +126,6 @@ impl TransferContract {
 
         hasher.finalize()
     }
-
-    pub fn contract_to_scalar(address: &ContractId) -> BlsScalar {
-        // TODO provisory fn until native ContractId -> BlsScalar conversion is
-        // implemented
-        // https://github.com/dusk-network/cargo-bake/issues/1
-
-        // ContractId don't have an API to extract internal bytes - so we
-        // provisorily trust it is 32 bytes
-        let mut scalar = [0u8; 32];
-        scalar.copy_from_slice(address.as_bytes());
-
-        // Truncate the contract id to fit bls
-        scalar[31] &= 0x3f;
-
-        BlsScalar::from_bytes(&scalar).unwrap_or_default()
-    }
 }
 
 impl TryFrom<Note> for TransferContract {

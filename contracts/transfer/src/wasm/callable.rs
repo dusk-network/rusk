@@ -124,7 +124,7 @@ impl TransferContract {
         pi.push(message_address.pk_r().as_ref().into());
         pi.push(message.nonce().into());
         pi.extend(message.cipher().iter().map(|c| c.into()));
-        pi.push(Self::contract_to_scalar(&address).into());
+        pi.push(rusk_abi::contract_to_scalar(&address).into());
         pi.push(sign_message.into());
         pi.push(crossover_pk.as_ref().into());
 
