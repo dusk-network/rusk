@@ -12,9 +12,8 @@ message PreverifyRequest {
 }
 
 message PreverifyResponse {
-    Transaction tx = 1;
-    bytes tx_hash = 2;
-    Fee fee = 3;
+    bytes tx_hash = 1;
+    Fee fee = 2;
 }
 
 message StateTransitionRequest {
