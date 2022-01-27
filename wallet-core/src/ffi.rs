@@ -64,7 +64,7 @@ extern "C" {
     fn fetch_stake(
         pk: *const [u8; PublicKey::SIZE],
         stake: *mut u64,
-        expiration: *mut u32,
+        expiration: *mut u64,
     ) -> u8;
 
     /// Request the node to prove the given unproven transaction.
@@ -239,7 +239,7 @@ pub unsafe extern "C" fn get_balance(ssk_index: u64, balance: *mut u64) -> u8 {
 pub unsafe extern "C" fn get_stake(
     sk_index: u64,
     stake: *mut u64,
-    expiration: *mut u32,
+    expiration: *mut u64,
 ) -> u8 {
     (*stake, *expiration) = unwrap_or_bail!(WALLET.get_stake(sk_index));
     0
@@ -354,7 +354,7 @@ impl StateClient for FfiStateClient {
         Ok(branch)
     }
 
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         let pk = pk.to_bytes();
         let mut stake = 0;
         let mut expiration = 0;

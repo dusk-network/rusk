@@ -500,14 +500,16 @@ where
     pub fn get_stake(
         &self,
         sk_index: u64,
-    ) -> Result<(u64, u32), Error<S, SC, PC>> {
+    ) -> Result<(u64, u64), Error<S, SC, PC>> {
         let sk = self
             .store
             .retrieve_sk(sk_index)
             .map_err(Error::from_store_err)?;
+
         let pk = PublicKey::from(&sk);
 
         let s = self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
+
         Ok(s)
     }
 }

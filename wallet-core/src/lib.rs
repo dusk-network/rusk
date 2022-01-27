@@ -157,5 +157,5 @@ pub trait StateClient {
     ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error>;
 
     /// Queries the node the amount staked by a key and its expiration.
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error>;
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error>;
 }

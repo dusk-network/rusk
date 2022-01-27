@@ -122,7 +122,7 @@ impl StateClient for TestStateClient {
         Ok(self.opening.clone())
     }
 
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         Ok((100, 200))
     }
 }
