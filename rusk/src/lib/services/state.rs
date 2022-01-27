@@ -158,7 +158,6 @@ impl State for Rusk {
         let tx_hash = tx.hash().to_bytes().to_vec();
 
         Ok(Response::new(PreverifyResponse {
-            tx: Some(tx_proto),
             tx_hash,
             fee: Some((tx.fee()).into()),
         }))
