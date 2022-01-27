@@ -41,15 +41,6 @@ impl TransferContract {
         1
     }
 
-    pub(crate) fn any_nullifier_exists(
-        &self,
-        nullifiers: &[BlsScalar],
-    ) -> Result<bool, Error> {
-        nullifiers.iter().try_fold(false, |t, n| {
-            Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
-        })
-    }
-
     pub(crate) fn root_exists(&self, root: &BlsScalar) -> Result<bool, Error> {
         let root = self.roots.get(root)?;
 
