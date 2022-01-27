@@ -4,6 +4,8 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
+alice = { path = "../contracts/alice" }
+bob = { path = "../contracts/bob" }
 canonical = "0.6"
 canonical_derive = "0.6"
 dusk-abi = "0.10"
@@ -18,6 +20,7 @@ dusk-hamt = { version = "0.5.0-rc", default-features = false }
 microkelvin = "0.10"
 lazy_static = "1.4"
 rand = "0.8"
+stake-contract = { path = "../../contracts/stake" }
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 transfer-contract = { path = "../../contracts/transfer" }
 rusk-profile = { path = "../../rusk-profile" }
