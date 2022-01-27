@@ -74,7 +74,7 @@ impl TransferContract {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.push(value.into());
-        m.push(Self::contract_to_scalar(address));
+        m.push(rusk_abi::contract_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());
@@ -93,7 +93,7 @@ impl TransferContract {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.extend(&message.to_hash_inputs());
-        m.push(Self::contract_to_scalar(address));
+        m.push(rusk_abi::contract_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());

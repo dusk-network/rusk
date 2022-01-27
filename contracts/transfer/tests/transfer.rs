@@ -10,10 +10,7 @@ use transfer_circuits::{
     DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
     WithdrawFromTransparentCircuit,
 };
-
-mod wrapper;
-
-use wrapper::TransferWrapper;
+use transfer_wrapper::TransferWrapper;
 
 #[test]
 fn send_to_contract_transparent() {
@@ -21,10 +18,7 @@ fn send_to_contract_transparent() {
     let block_height = 1;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
-    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
-    let notes = wrapper.notes_owned_by(0, &genesis_vk);
-    assert_eq!(1, notes.len());
-    let unspent_note = notes[0];
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
 
     let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
@@ -35,8 +29,10 @@ fn send_to_contract_transparent() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
+    let block_height = block_height + 1;
     wrapper
         .send_to_contract_transparent(
+            block_height,
             &[unspent_note],
             &[genesis_ssk],
             &refund_ssk,
@@ -81,10 +77,7 @@ fn send_to_contract_obfuscated() {
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
-    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
-    let notes = wrapper.notes_owned_by(0, &genesis_vk);
-    assert_eq!(1, notes.len());
-    let unspent_note = notes[0];
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
 
     let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
@@ -97,8 +90,10 @@ fn send_to_contract_obfuscated() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
+    let block_height = 1;
     let message_r = wrapper
         .send_to_contract_obfuscated(
+            block_height,
             &[unspent_note],
             &[genesis_ssk],
             &refund_ssk,
@@ -123,28 +118,27 @@ fn alice_ping() {
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
-    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
-    let notes = wrapper.notes_owned_by(0, &genesis_vk);
-    assert_eq!(1, notes.len());
-    let unspent_note = notes[0];
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
 
     let alice = *wrapper.alice();
     let ping = TransferWrapper::tx_ping();
 
-    let (refund_ssk, _, _) = wrapper.identifier();
+    let (_, refund_vk, refund_psk) = wrapper.identifier();
     let (_, _, remainder_psk) = wrapper.identifier();
     let gas_limit = 175_000_000;
     let gas_price = 2;
+    let block_height = 1;
+    let fee = wrapper.fee(gas_limit, gas_price, &refund_psk);
     wrapper
         .execute(
+            block_height,
             &[unspent_note],
             &[genesis_ssk],
-            &refund_ssk,
+            &refund_vk,
             &remainder_psk,
             true,
-            gas_limit,
-            gas_price,
-            0,
+            fee,
+            None,
             Some((alice, ping)),
         )
         .expect("Failed to ping alice");
@@ -156,22 +150,21 @@ fn withdraw_from_transparent() {
     let block_height = 1;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
-    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
-    let notes = wrapper.notes_owned_by(0, &genesis_vk);
-    assert_eq!(1, notes.len());
-    let unspent_note = notes[0];
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
 
     let alice = *wrapper.alice();
     let balance = wrapper.balance(&alice);
     assert_eq!(0, balance);
 
-    let (refund_ssk, refund_vk, _) = wrapper.identifier();
+    let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
     let (remainder_ssk, remainder_vk, remainder_psk) = wrapper.identifier();
     let alice_value = 100;
     let gas_limit = 500_000_000;
     let gas_price = 2;
+    let block_height = block_height + 1;
     wrapper
         .send_to_contract_transparent(
+            block_height,
             &[unspent_note],
             &[genesis_ssk],
             &refund_ssk,
@@ -233,19 +226,26 @@ fn withdraw_from_transparent() {
         withdraw_proof,
     );
 
-    let (new_refund_ssk, new_refund_vk, _) = wrapper.identifier();
+    let (_, new_refund_vk, new_refund_psk) = wrapper.identifier();
 
     let gas_price = 1;
+    let block_height = block_height + 1;
+    let (fee, crossover) = wrapper.fee_crossover(
+        gas_limit,
+        gas_price,
+        &new_refund_psk,
+        withdraw_value,
+    );
     wrapper
         .execute(
+            block_height,
             &[refund],
             &[refund_ssk],
-            &new_refund_ssk,
+            &new_refund_vk,
             &remainder_psk,
             true,
-            gas_limit,
-            gas_price,
-            withdraw_value,
+            fee,
+            Some(crossover),
             Some((alice, withdraw_tx)),
         )
         .expect("Failed to withdraw from alice");
@@ -273,16 +273,18 @@ fn withdraw_from_transparent() {
     let bob = *wrapper.bob();
     let transfer_tx =
         TransferWrapper::tx_withdraw_to_contract(bob, transfer_value);
+    let block_height = block_height + 1;
+    let fee = wrapper.fee(gas_limit, gas_price, &refund_psk);
     wrapper
         .execute(
+            block_height,
             &[remainder],
             &[remainder_ssk],
-            &refund_ssk,
+            &refund_vk,
             &remainder_psk,
             true,
-            gas_limit,
-            gas_price,
-            0,
+            fee,
+            None,
             Some((alice, transfer_tx)),
         )
         .expect("Failed to withdraw from alice");
@@ -299,10 +301,7 @@ fn withdraw_from_obfuscated() {
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
-    let (genesis_ssk, genesis_vk, _) = wrapper.genesis_identifier();
-    let notes = wrapper.notes_owned_by(0, &genesis_vk);
-    assert_eq!(1, notes.len());
-    let unspent_note = notes[0];
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
 
     let account = *wrapper.alice();
     let balance = wrapper.balance(&account);
@@ -316,8 +315,10 @@ fn withdraw_from_obfuscated() {
     let account_value = 100;
     let gas_limit = 175_000_000;
     let gas_price = 2;
+    let block_height = 1;
     let message_r = wrapper
         .send_to_contract_obfuscated(
+            block_height,
             &[unspent_note],
             &[genesis_ssk],
             &refund_ssk,
@@ -418,20 +419,22 @@ fn withdraw_from_obfuscated() {
         wfo_proof,
     );
 
-    let (new_refund_ssk, _, _) = wrapper.identifier();
+    let (_, new_refund_vk, new_refund_psk) = wrapper.identifier();
 
     let gas_limit = 300_000_000;
     let gas_price = 1;
+    let block_height = block_height + 1;
+    let fee = wrapper.fee(gas_limit, gas_price, &new_refund_psk);
     wrapper
         .execute(
+            block_height,
             &[refund],
             &[refund_ssk],
-            &new_refund_ssk,
+            &new_refund_vk,
             &remainder_psk,
             true,
-            gas_limit,
-            gas_price,
-            0,
+            fee,
+            None,
             Some((account, wfo_tx)),
         )
         .expect("Failed to withdraw from alice");

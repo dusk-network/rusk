@@ -7,29 +7,29 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = "0.10"
-dusk-bytes = "0.1"
-dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
-dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
-dusk-poseidon = { version = "0.23.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.9.0-rc", default-features = false }
-dusk-hamt = { version = "0.5", default-features = false }
-phoenix-core = { version = "0.15.0-rc", default-features = false, features = ["canon"] }
-microkelvin = { version = "0.10", default-features = false }
 canonical = "0.6"
 canonical_derive = "0.6"
-
+dusk-abi = "0.10"
+dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
+dusk-bytes = "0.1"
+dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
+dusk-hamt = { version = "0.5", default-features = false }
+dusk-pki = { version = "0.9.0-rc", default-features = false }
+dusk-poseidon = { version = "0.23.0-rc", default-features = false, features = ["canon"] }
+microkelvin = { version = "0.10", default-features = false }
+phoenix-core = { version = "0.15.0-rc", default-features = false, features = ["canon"] }
 rusk-abi = { path = "../../rusk-abi", features = ["module"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+dusk-plonk = "0.9"
 lazy_static = "1.4"
 rand = "0.8"
-
-dusk-plonk = "0.9"
-rusk-vm = "0.8.0-rc"
-
-transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 rusk-profile = { path = "../../rusk-profile" }
+rusk-vm = "0.8.0-rc"
+transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
+
+[dev-dependencies]
+transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }
 
 [features]
 default = ["circuits"]

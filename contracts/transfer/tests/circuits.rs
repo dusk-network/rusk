@@ -36,7 +36,7 @@ fn sign_message_stct() {
     let m = SendToContractTransparentCircuit::sign_message(
         &crossover,
         value,
-        &TransferContract::contract_to_scalar(&address),
+        &rusk_abi::contract_to_scalar(&address),
     );
 
     let m_p = TransferContract::sign_message_stct(&crossover, value, &address);
@@ -64,7 +64,7 @@ fn sign_message_stco() {
     let m = SendToContractObfuscatedCircuit::sign_message(
         &crossover,
         &message,
-        &TransferContract::contract_to_scalar(&address),
+        &rusk_abi::contract_to_scalar(&address),
     );
 
     let m_p =
