@@ -10,7 +10,10 @@ use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::TryFrom;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
-use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey};
+use dusk_pki::{
+    Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
+};
+use phoenix_core::Fee;
 use std::convert::TryInto;
 use tonic::{Code, Status};
 
@@ -61,6 +64,16 @@ impl From<StealthAddress> for rusk_proto::StealthAddress {
 impl From<&StealthAddress> for rusk_proto::StealthAddress {
     fn from(value: &StealthAddress) -> Self {
         (*value).into()
+    }
+}
+
+impl From<&Fee> for rusk_proto::Fee {
+    fn from(fee: &Fee) -> Self {
+        Self {
+            gas_limit: fee.gas_limit,
+            gas_price: fee.gas_price,
+            stealth_address: Some(fee.stealth_address().into()),
+        }
     }
 }
 
