@@ -243,7 +243,7 @@ async fn main() -> Result<(), CliError> {
     let pwd = if cmd.uses_wallet() {
         prompt::request_auth()
     } else {
-        String::from("")
+        blake3::hash("".as_bytes())
     };
 
     // start our local store
@@ -383,12 +383,12 @@ fn create(path: PathBuf) -> Result<LocalStore, CliError> {
         return Err(CliError::FileExists);
     }
 
+    // generate mnemonic and seed
+    let ms = MnemSeed::new("");
+    prompt::confirm_recovery_phrase(ms.phrase);
+
     // ask user for a password to secure the wallet
     let pwd = prompt::create_password();
-
-    // generate mnemonic and seed
-    let ms = MnemSeed::new(pwd.as_str());
-    prompt::confirm_recovery_phrase(ms.phrase);
 
     // create the store and attempt to write it to disk
     let store = LocalStore::new(path.clone(), ms.seed)?;
@@ -411,11 +411,14 @@ fn recover(path: PathBuf) -> Result<LocalStore, CliError> {
     // ask user for 12-word recovery phrase
     let phrase = prompt::request_recovery_phrase();
 
-    // ask user for wallet password
-    let pwd = prompt::request_auth();
+    // ask user for recovery password
+    // let pwd = prompt::request_auth();
 
     // generate wallet seed
-    let ms = MnemSeed::from_phrase(phrase.as_str(), pwd.as_str())?;
+    let ms = MnemSeed::from_phrase(&phrase, "")?;
+
+    // ask user for a password to secure the wallet
+    let pwd = prompt::create_password();
 
     // create the store and attempt to write it to disk
     let store = LocalStore::new(path.clone(), ms.seed)?;
