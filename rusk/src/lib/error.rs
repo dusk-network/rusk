@@ -31,6 +31,8 @@ pub enum Error {
     Io(io::Error),
     /// Persistence Errors
     Persistence(microkelvin::PersistError),
+    /// Stake Contract Errors
+    StakeContract(stake_contract::Error),
     /// Transfer Contract Errors
     TransferContract(transfer_contract::Error),
     /// Tonic Status Errors
@@ -66,6 +68,12 @@ impl From<io::Error> for Error {
 impl From<microkelvin::PersistError> for Error {
     fn from(err: microkelvin::PersistError) -> Self {
         Error::Persistence(err)
+    }
+}
+
+impl From<stake_contract::Error> for Error {
+    fn from(err: stake_contract::Error) -> Self {
+        Error::StakeContract(err)
     }
 }
 
@@ -112,6 +120,9 @@ impl fmt::Display for Error {
             Error::Io(err) => write!(f, "IO Error: {}", err),
             Error::Persistence(err) => {
                 write!(f, "Persistence Error: {:?}", err)
+            }
+            Error::StakeContract(err) => {
+                write!(f, "Stake Contract Error: {}", err)
             }
             Error::TransferContract(err) => {
                 write!(f, "Transfer Contract Error: {}", err)
