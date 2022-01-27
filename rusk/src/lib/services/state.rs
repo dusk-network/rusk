@@ -12,10 +12,9 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::{PublicKey, ViewKey};
 use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
+use rusk_vm::{GasMeter, NetworkState};
 use tonic::{Request, Response, Status};
 use tracing::info;
-
-use rusk_vm::{GasMeter, NetworkState};
 
 pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
@@ -24,7 +23,8 @@ pub use super::rusk_proto::{
     GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
     GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
     GetStakeRequest, GetStakeResponse, GetStateRootRequest,
-    GetStateRootResponse, StateTransitionRequest, StateTransitionResponse,
+    GetStateRootResponse, PreverifyRequest, PreverifyResponse,
+    StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
     VerifyStateTransitionResponse,
 };
@@ -137,6 +137,30 @@ impl State for Rusk {
         info!("Received Echo request");
 
         Err(Status::unimplemented("Request not implemented"))
+    }
+
+    /// TODO: Currently it's just a pass through, does not verify the tx
+    async fn preverify(
+        &self,
+        request: Request<PreverifyRequest>,
+    ) -> Result<Response<PreverifyResponse>, Status> {
+        info!("Received Preverify request");
+
+        let request = request.into_inner();
+
+        let tx_proto = request.tx.ok_or_else(|| {
+            Status::invalid_argument("Transaction is required")
+        })?;
+
+        let tx = Transaction::from_slice(&tx_proto.payload)
+            .map_err(Error::Serialization)?;
+
+        let tx_hash = tx.hash().to_bytes().to_vec();
+
+        Ok(Response::new(PreverifyResponse {
+            tx_hash,
+            fee: Some((tx.fee()).into()),
+        }))
     }
 
     async fn execute_state_transition(
