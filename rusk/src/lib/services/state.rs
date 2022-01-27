@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
+use crate::services::prover::RuskProver;
 use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
-use dusk_bls12_381_sign::PublicKey;
+use dusk_bls12_381_sign::{BlsScalar, PublicKey};
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
 use dusk_wallet_core::Transaction;
@@ -57,6 +58,13 @@ fn extract_coinbase(
 }
 
 impl Rusk {
+    fn any_nullifier_exists(&self, inputs: &[BlsScalar]) -> Result<bool> {
+        Ok(self
+            .state()?
+            .transfer_contract()?
+            .any_nullifier_exists(inputs)?)
+    }
+
     fn accept_transactions(
         &self,
         request: Request<StateTransitionRequest>,
@@ -153,10 +161,22 @@ impl State for Rusk {
         let tx = Transaction::from_slice(&tx_proto.payload)
             .map_err(Error::Serialization)?;
 
-        let tx_hash = tx.hash().to_bytes().to_vec();
+        let tx_hash = tx.hash();
+
+        if self.any_nullifier_exists(tx.inputs())? {
+            return Err(Status::failed_precondition(
+                "Nullifier(s) already exists in the state",
+            ));
+        }
+
+        if !RuskProver::preverify(&tx)? {
+            return Err(Status::failed_precondition(
+                "Proof verification failed",
+            ));
+        }
 
         Ok(Response::new(PreverifyResponse {
-            tx_hash,
+            tx_hash: tx_hash.to_bytes().to_vec(),
             fee: Some((tx.fee()).into()),
         }))
     }
