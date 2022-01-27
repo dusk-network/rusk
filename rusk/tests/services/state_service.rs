@@ -6,7 +6,10 @@
 
 use crate::common::setup;
 use canonical::{Canon, Sink};
-use dusk_pki::{PublicKey, SecretKey, SecretSpendKey};
+use dusk_bls12_381_sign::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+};
+use dusk_pki::{SecretKey, SecretSpendKey};
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk::services::rusk_proto::state_client::StateClient;
@@ -63,6 +66,13 @@ pub static SK: Lazy<SecretKey> = Lazy::new(|| {
     SecretKey::random(&mut rng)
 });
 
+pub static BLS_SK: Lazy<BlsSecretKey> = Lazy::new(|| {
+    info!("Generating BlsSecretKey");
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    BlsSecretKey::random(&mut rng)
+});
+
 fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
     info!("Fetching the first note from the state");
     let vk = SSK.view_key();
@@ -103,24 +113,27 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
     fetch_note(rusk)
 }
 
-fn generate_stake(rusk: &mut Rusk) -> Result<(PublicKey, Stake)> {
+fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
     info!("Generating a stake");
 
-    let pk = PublicKey::from(&*SK);
+    let pk = BlsPublicKey::from(&*BLS_SK);
 
     let mut rusk_state = rusk.state()?;
     let mut stake_contract = rusk_state.stake_contract()?;
 
     let stake = Stake::new(0xdead, 0xdead, 0xbeef);
 
-    stake_contract.staked.insert(pk.to_bytes(), stake)?;
+    stake_contract.push_stake(pk, stake)?;
 
     info!("Updating the new stake contract state");
+
     unsafe {
         rusk_state
             .set_contract_state(&rusk_abi::stake_contract(), &stake_contract)?;
     }
+
     rusk.persist(&mut rusk_state)?;
+
     Ok((pk, stake))
 }
 

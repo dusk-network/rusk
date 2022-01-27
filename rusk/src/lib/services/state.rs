@@ -8,8 +8,9 @@ use crate::error::Error;
 use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::{PublicKey, ViewKey};
+use dusk_pki::ViewKey;
 use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
 use rusk_vm::{GasMeter, NetworkState};
@@ -358,8 +359,18 @@ impl State for Rusk {
     ) -> Result<Response<GetStakeResponse>, Status> {
         info!("Received GetStake request");
 
-        let pk = PublicKey::from_slice(&request.get_ref().pk)
-            .map_err(Error::Serialization)?;
+        const ERR: Error = Error::Serialization(dusk_bytes::Error::InvalidData);
+
+        let mut bytes = [0u8; PublicKey::SIZE];
+
+        let pk = request.get_ref().pk.as_slice();
+        if pk.len() < PublicKey::SIZE {
+            return Err(ERR.into());
+        }
+
+        (&mut bytes[..PublicKey::SIZE]).copy_from_slice(&pk[..PublicKey::SIZE]);
+
+        let pk = PublicKey::from_bytes(&bytes).map_err(|_| ERR)?;
 
         let stake = self.state()?.fetch_stake(&pk)?;
 

@@ -5,10 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::common::setup;
-use dusk_pki::{PublicKey, PublicSpendKey, ViewKey};
+use dusk_bls12_381_sign::{PublicKey, Signature};
+use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     ProverClient as WalletProverClient, StateClient, Store,
     UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
@@ -189,7 +189,7 @@ impl StateClient for TestStateClient {
         Ok(self.opening.clone())
     }
 
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         unimplemented!();
     }
 }

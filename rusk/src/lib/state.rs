@@ -7,13 +7,11 @@
 use crate::error::Error;
 use crate::Result;
 
-use std::ops::Deref;
-
 use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Serializable;
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, ViewKey};
+use dusk_bls12_381_sign::PublicKey;
+use dusk_pki::{Ownable, PublicSpendKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
 use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
@@ -215,11 +213,7 @@ impl RuskState {
 
     /// Returns the stake of a key.
     pub fn fetch_stake(&self, pk: &PublicKey) -> Result<Stake> {
-        self.stake_contract()?
-            .staked
-            .get(&pk.to_bytes())?
-            .map(|s| *s.deref())
-            .ok_or_else(|| Error::StakeNotFound(*pk))
+        Ok(self.stake_contract()?.get_stake(pk)?)
     }
 }
 
