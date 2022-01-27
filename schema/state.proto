@@ -91,7 +91,7 @@ message GetStakeRequest {
 
 message GetStakeResponse {
     fixed64 stake = 1;
-    fixed32 expiration = 2;
+    fixed64 expiration = 2;
 }
 
 service State {
