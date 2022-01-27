@@ -78,7 +78,11 @@ impl Rusk {
             &transfer_txs,
         );
 
-        state.push_coinbase(request.block_height, coinbase)?;
+        state.push_coinbase(
+            request.block_height,
+            block_gas_meter.spent(),
+            coinbase,
+        )?;
         let state_root = state.root().to_vec();
 
         Ok((
@@ -245,7 +249,11 @@ impl State for Rusk {
             }));
         }
 
-        state.push_coinbase(request.block_height, coinbase)?;
+        state.push_coinbase(
+            request.block_height,
+            block_gas_meter.spent(),
+            coinbase,
+        )?;
 
         Ok(Response::new(VerifyStateTransitionResponse { success }))
     }

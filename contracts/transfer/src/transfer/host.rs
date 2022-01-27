@@ -12,8 +12,7 @@ use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use lazy_static::lazy_static;
 use phoenix_core::Note;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::rngs::OsRng;
 
 lazy_static! {
     /// The key Dusk is paid to.
@@ -27,19 +26,14 @@ impl TransferContract {
     /// Adds two notes to the state - one as a reward for the block generator
     /// and another for Dusk foundation. The first note returned is the Dusk
     /// note, and the second the generator note.
-    ///
-    /// 90% of the value goes to the generator (rounded up).
-    /// 10% of the value goes to the Dusk address (rounded down).
     pub fn mint(
         &mut self,
         block_height: u64,
-        value: u64,
+        dusk_value: u64,
+        generator_value: u64,
         generator: Option<&PublicSpendKey>,
     ) -> Result<(Note, Note), Error> {
-        let mut rng = StdRng::seed_from_u64(block_height);
-
-        let dusk_value = value / 10;
-        let generator_value = value - dusk_value;
+        let mut rng = OsRng::default();
 
         let generator = generator.unwrap_or(&DUSK_KEY);
 
