@@ -5,12 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use canonical::{Canon, Source};
-use dusk_bls12_381_sign::{PublicKey, Signature};
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{Serializable, Write};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::ViewKey;
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     ProverClient, StateClient, UnprovenTransaction, POSEIDON_TREE_DEPTH,
 };
@@ -264,7 +265,7 @@ impl StateClient for State {
     }
 
     /// Queries the node the amount staked by a key and its expiration.
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u32), Self::Error> {
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         let msg = GetStakeRequest {
             pk: pk.to_bytes().to_vec(),
         };
