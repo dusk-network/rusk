@@ -107,7 +107,7 @@ impl Transaction {
 
     /// Serializes the transaction into a variable length byte buffer.
     #[allow(unused_must_use)]
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_var_bytes(&self) -> Vec<u8> {
         // compute the serialized size to preallocate space
         let size = u64::SIZE
             + self.nullifiers.len() * BlsScalar::SIZE
