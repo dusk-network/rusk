@@ -26,8 +26,9 @@ fn sign_message_stct() {
     let psk = ssk.public_spend_key();
 
     let value = 100;
-    let mut address = ContractId::default();
-    rng.fill_bytes(address.as_bytes_mut());
+    let mut bytes = [0u8; 32];
+    rng.fill_bytes(&mut bytes);
+    let address = rusk_abi::gen_contract_id(&bytes[..]);
 
     let blinding_factor = JubJubScalar::random(&mut rng);
     let note = Note::obfuscated(&mut rng, &psk, value, blinding_factor);
@@ -52,8 +53,9 @@ fn sign_message_stco() {
     let psk = ssk.public_spend_key();
 
     let value = 100;
-    let mut address = ContractId::default();
-    rng.fill_bytes(address.as_bytes_mut());
+    let mut bytes = [0u8; 32];
+    rng.fill_bytes(&mut bytes);
+    let address = rusk_abi::gen_contract_id(&bytes[..]);
 
     let r = JubJubScalar::random(&mut rng);
     let message = Message::new(&mut rng, &r, &psk, value);
