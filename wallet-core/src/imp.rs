@@ -281,14 +281,14 @@ where
         // There's no outputs in a stake transaction.
         let outputs = vec![];
 
-        let fee = Fee::new(rng, gas_limit, gas_price, refund);
-
         let blinder = JubJubScalar::random(rng);
-        let note =
-            Note::obfuscated(rng, &sender.public_spend_key(), value, blinder);
-        let (_, crossover) = note
+        let note = Note::obfuscated(rng, refund, value, blinder);
+        let (mut fee, crossover) = note
             .try_into()
             .expect("Obfuscated notes should always yield crossovers");
+
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
 
         let ssk = self
             .store
@@ -434,14 +434,14 @@ where
             .blinding_factor(None)
             .expect("Note is transparent so blinding factor is unencrypted");
 
-        let fee = Fee::new(rng, gas_limit, gas_price, refund);
-
         let blinder = JubJubScalar::random(rng);
-        let note =
-            Note::obfuscated(rng, &sender.public_spend_key(), stake, blinder);
-        let (_, crossover) = note
+        let note = Note::obfuscated(rng, refund, stake, blinder);
+        let (mut fee, crossover) = note
             .try_into()
             .expect("Obfuscated notes should always yield crossovers");
+
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
 
         let outputs = vec![(output_note, stake, note_blinder)];
 
