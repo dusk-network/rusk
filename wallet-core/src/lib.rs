@@ -20,11 +20,12 @@ mod imp;
 mod tx;
 
 use alloc::vec::Vec;
-use dusk_bls12_381_sign::{PublicKey, SecretKey, Signature};
+use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::proof_system::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Fee, Note};
 use rand_chacha::ChaCha12Rng;
 use rand_core::SeedableRng;

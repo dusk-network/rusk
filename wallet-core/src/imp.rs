@@ -11,11 +11,12 @@ use alloc::vec::Vec;
 
 use canonical::CanonError;
 use canonical::EncodeToVec;
-use dusk_bls12_381_sign::PublicKey;
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubScalar};
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_poseidon::sponge;
+use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rusk_abi::ContractId;
@@ -139,7 +140,7 @@ where
     pub fn public_key(
         &self,
         index: u64,
-    ) -> Result<PublicKey, Error<S, SC, PC>> {
+    ) -> Result<BlsPublicKey, Error<S, SC, PC>> {
         self.store
             .retrieve_sk(index)
             .map(|sk| From::from(&sk))
@@ -289,20 +290,26 @@ where
             .try_into()
             .expect("Obfuscated notes should always yield crossovers");
 
-        let sk = self
+        let ssk = self
             .store
-            .retrieve_sk(staker_index)
+            .retrieve_ssk(staker_index)
             .map_err(Error::from_store_err)?;
+
+        let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
+
+        let sk = SecretKey::from(sk_r);
         let pk = PublicKey::from(&sk);
 
         let contract_id = rusk_abi::stake_contract();
         let address = contract_to_scalar(&contract_id);
 
         let mut m = crossover.to_hash_inputs().to_vec();
+
         m.push(value.into());
         m.push(address);
 
-        let signature = sk.sign(&pk, &sponge::hash(&m).to_bytes());
+        let message = sponge::hash(&m);
+        let signature = Signature::new(&sk, rng, message);
 
         let spend_proof = self
             .prover
@@ -363,7 +370,8 @@ where
             .store
             .retrieve_sk(staker_index)
             .map_err(Error::from_store_err)?;
-        let pk = PublicKey::from(&sk);
+
+        let pk = BlsPublicKey::from(&sk);
 
         let (_, expiration) =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
@@ -416,7 +424,8 @@ where
             .store
             .retrieve_sk(staker_index)
             .map_err(Error::from_store_err)?;
-        let pk = PublicKey::from(&sk);
+
+        let pk = BlsPublicKey::from(&sk);
 
         let (stake, expiration) =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
@@ -506,7 +515,7 @@ where
             .retrieve_sk(sk_index)
             .map_err(Error::from_store_err)?;
 
-        let pk = PublicKey::from(&sk);
+        let pk = BlsPublicKey::from(&sk);
 
         let s = self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
 
