@@ -126,6 +126,15 @@ impl TransferContract {
 
         hasher.finalize()
     }
+
+    pub fn any_nullifier_exists(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<bool, Error> {
+        nullifiers.iter().try_fold(false, |t, n| {
+            Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
+        })
+    }
 }
 
 impl TryFrom<Note> for TransferContract {
