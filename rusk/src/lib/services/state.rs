@@ -30,10 +30,7 @@ pub use super::rusk_proto::{
     VerifyStateTransitionResponse,
 };
 
-const TX_VERSION: u32 = 1;
-const TX_TYPE_COINBASE: u32 = 0;
-const TX_TYPE_TRANSFER: u32 = 1;
-
+use super::{TX_TYPE_COINBASE, TX_TYPE_TRANSFER, TX_VERSION};
 /// Partition transactions into transfer and coinbase transactions, in this
 /// order.
 fn extract_coinbase(

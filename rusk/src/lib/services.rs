@@ -15,6 +15,10 @@ pub mod rusk_proto {
     tonic::include_proto!("rusk");
 }
 
+pub(crate) const TX_VERSION: u32 = 1;
+pub(crate) const TX_TYPE_COINBASE: u32 = 0;
+pub(crate) const TX_TYPE_TRANSFER: u32 = 1;
+
 /// A trait that defines the general workflow that the handlers for every
 /// GRPC request should follow.
 /// The trait is designed to just hold a reference to the request all of the
