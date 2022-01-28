@@ -34,6 +34,11 @@ message Transaction {
     bytes payload = 3;
 }
 
+message ExecutedTransaction {
+    Transaction tx = 1;
+    bytes tx_hash = 3;
+}
+
 message TransactionRequest {
     bytes contract_address = 1;
     uint32 op_code = 2;

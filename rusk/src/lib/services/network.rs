@@ -236,7 +236,7 @@ mod serialization {
         tx_wire.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
 
         let payload = tx.to_bytes();
-        tx_wire.write_all(&payload.len().to_le_bytes()[..])?;
+        tx_wire.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
         tx_wire.write_all(&payload[..])?;
         tx_wire.write_all(&DUMMY_HASH[..])?;
         tx_wire.write_all(&0u64.to_le_bytes()[..])?; //GasLimit
