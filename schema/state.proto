@@ -36,7 +36,7 @@ message ExecuteStateTransitionRequest {
 
 message ExecuteStateTransitionResponse {
     bool success = 1;
-    repeated Transaction txs = 2;
+    repeated ExecutedTransaction txs = 2;
     bytes state_root = 3;
 }
 
