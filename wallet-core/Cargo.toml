@@ -22,6 +22,7 @@ dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features
 
 [dev-dependencies]
 rand = "^0.8"
+canonical_derive = "0.6"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

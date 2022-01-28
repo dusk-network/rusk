@@ -45,6 +45,7 @@ impl Canon for Transaction {
         self.anchor.encode(sink);
         self.nullifiers.encode(sink);
         self.fee.encode(sink);
+        1u8.encode(sink); // required due `Call` having an `Option<Crossover`.
         self.crossover.encode(sink);
         self.outputs.encode(sink);
         self.proof.encode(sink);
@@ -54,14 +55,25 @@ impl Canon for Transaction {
     fn decode(source: &mut Source) -> Result<Self, CanonError> {
         u8::decode(source)?;
 
+        let anchor = Canon::decode(source)?;
+        let nullifiers = Canon::decode(source)?;
+        let fee = Canon::decode(source)?;
+
+        u8::decode(source)?;
+
+        let crossover = Canon::decode(source)?;
+        let outputs = Canon::decode(source)?;
+        let proof = Canon::decode(source)?;
+        let call = Canon::decode(source)?;
+
         Ok(Transaction {
-            anchor: Canon::decode(source)?,
-            nullifiers: Canon::decode(source)?,
-            fee: Canon::decode(source)?,
-            crossover: Canon::decode(source)?,
-            outputs: Canon::decode(source)?,
-            proof: Canon::decode(source)?,
-            call: Canon::decode(source)?,
+            anchor,
+            nullifiers,
+            fee,
+            crossover,
+            outputs,
+            proof,
+            call,
         })
     }
 
@@ -71,6 +83,7 @@ impl Canon for Transaction {
             + self.anchor.encoded_len()
             + self.nullifiers.encoded_len()
             + self.fee.encoded_len()
+            + 1u8.encoded_len()
             + self.crossover.encoded_len()
             + self.outputs.encoded_len()
             + self.proof.encoded_len()
