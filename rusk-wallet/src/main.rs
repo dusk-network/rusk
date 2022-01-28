@@ -12,19 +12,14 @@ mod lib;
 pub use lib::error::Error;
 
 use clap::{AppSettings, Parser, Subcommand};
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
-
-use dusk_bytes::Serializable;
-use dusk_jubjub::BlsScalar;
-use dusk_wallet_core::Wallet;
 
 use lib::clients::{Prover, State};
 use lib::crypto::MnemSeed;
 use lib::prompt;
 use lib::store::LocalStore;
+use lib::wallet::CliWallet;
 
 use rusk_proto::network_client::NetworkClient;
 use rusk_proto::prover_client::ProverClient;
@@ -178,13 +173,13 @@ enum CliCommand {
         gas_price: Option<u64>,
     },
 
-    /// Show this help message
-    Help,
+    /// Run in interactive mode (default)
+    Interactive,
 }
 
 impl CliCommand {
     fn uses_wallet(&self) -> bool {
-        !matches!(*self, Self::Create | Self::Restore | Self::Help)
+        !matches!(*self, Self::Create | Self::Restore | Self::Interactive)
     }
 }
 
@@ -214,18 +209,17 @@ impl WalletCfg {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    use CliCommand::*;
+
     // parse cli arguments
     let cfg: WalletCfg = WalletCfg::parse();
     cfg.sanity_check()?;
 
-    // make sure we got something to do
-    let cmd = cfg.command.unwrap_or(CliCommand::Help);
-    if let CliCommand::Help = cmd {
-        let args: Vec<String> = env::args().collect();
-        println!("No command specified.");
-        println!("Run `{} help` for usage instructions.", args[0]);
-        return Ok(());
-    }
+    // make sure directory exists
+    fs::create_dir_all(&cfg.data_dir)?;
+
+    // get command or default to interactive mode
+    let cmd = cfg.command.unwrap_or(CliCommand::Interactive);
 
     // prepare wallet path
     let wallet_path = if let Some(p) = cfg.wallet_file {
@@ -249,6 +243,7 @@ async fn main() -> Result<(), Error> {
     let store = match cmd {
         Create => create(wallet_path)?,
         Restore => recover(wallet_path)?,
+        Interactive => interactive(wallet_path)?,
         _ => LocalStore::from_file(wallet_path, pwd)?,
     };
 
@@ -263,119 +258,16 @@ async fn main() -> Result<(), Error> {
     let state = State::new(state_client);
 
     // create our wallet
-    let wallet = Wallet::new(store, state, prover);
+    let wallet = CliWallet::new(store, state, prover);
 
-    // perform whatever action user requested
-    use CliCommand::*;
+    // run command(s)
     match cmd {
-        // Check your current balance
-        Balance { key } => {
-            let balance = wallet.get_balance(key)?;
-            println!("Your balance is: {} Dusk", balance);
-        }
-
-        // Retrieve public spend key
-        Address { key } => {
-            let pk = wallet.public_spend_key(key)?;
-            let addr = pk.to_bytes();
-            let addr = bs58::encode(addr).into_string();
-            println!("The public address for key {} is: {:?}", key, addr);
-        }
-
-        // Send Dusk through the network
-        Transfer {
-            key,
-            rcvr,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let mut addr_bytes = [0u8; 64];
-            addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
-            let dest_addr = dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
-            let my_addr = wallet.public_spend_key(key)?;
-            let mut rng = StdRng::from_entropy();
-            wallet.transfer(
-                &mut rng,
-                key,
-                &my_addr,
-                &dest_addr,
-                amt,
-                gas_limit,
-                gas_price.unwrap_or(0),
-                BlsScalar::zero(),
-            )?;
-            println!("Transfer sent!");
-        }
-
-        // Start staking Dusk
-        Stake {
-            key,
-            stake_key,
-            amt,
-            gas_limit,
-            gas_price,
-        } => {
-            let my_addr = wallet.public_spend_key(key)?;
-            let mut rng = StdRng::from_entropy();
-            wallet.stake(
-                &mut rng,
-                key,
-                stake_key,
-                &my_addr,
-                amt,
-                gas_limit,
-                gas_price.unwrap_or(0),
-            )?;
-            println!("Staked succesfully!");
-        }
-
-        // Extend stake for a particular key
-        ExtendStake {
-            key,
-            stake_key,
-            gas_limit,
-            gas_price,
-        } => {
-            let my_addr = wallet.public_spend_key(key)?;
-            let mut rng = StdRng::from_entropy();
-            wallet.extend_stake(
-                &mut rng,
-                key,
-                stake_key,
-                &my_addr,
-                gas_limit,
-                gas_price.unwrap_or(0),
-            )?;
-            println!("Stake extended succesfully!");
-        }
-
-        // Withdraw a key's stake
-        WithdrawStake {
-            key,
-            stake_key,
-            gas_limit,
-            gas_price,
-        } => {
-            let my_addr = wallet.public_spend_key(key)?;
-            let mut rng = StdRng::from_entropy();
-            wallet.withdraw_stake(
-                &mut rng,
-                key,
-                stake_key,
-                &my_addr,
-                gas_limit,
-                gas_price.unwrap_or(0),
-            )?;
-            println!("Stake withdrawn succesfully!");
-        }
-
-        _ => {}
+        Interactive => wallet.interactive(),
+        _ => wallet.run(cmd),
     }
-
-    Ok(())
 }
 
+/// Create a new wallet
 fn create(path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
     if path.is_file() {
@@ -401,6 +293,7 @@ fn create(path: PathBuf) -> Result<LocalStore, Error> {
     Ok(store)
 }
 
+/// Recover access to a lost wallet file
 fn recover(path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
     if path.is_file() {
@@ -409,9 +302,6 @@ fn recover(path: PathBuf) -> Result<LocalStore, Error> {
 
     // ask user for 12-word recovery phrase
     let phrase = prompt::request_recovery_phrase();
-
-    // ask user for recovery password
-    // let pwd = prompt::request_auth();
 
     // generate wallet seed
     let ms = MnemSeed::from_phrase(&phrase, "")?;
@@ -429,4 +319,48 @@ fn recover(path: PathBuf) -> Result<LocalStore, Error> {
         path.as_os_str().to_str().unwrap()
     );
     Ok(store)
+}
+
+/// Run interactive mode
+fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
+    // find existing wallets
+    let dir = WalletCfg::default_data_dir();
+    let wallets = find_wallets(&dir)?;
+
+    // let the user choose one
+    if !wallets.is_empty() {
+        let path = prompt::select_wallet(&dir, wallets);
+        let pwd = prompt::request_auth();
+        let store = LocalStore::from_file(path, pwd)?;
+        Ok(store)
+    }
+    // nothing found
+    else {
+        println!("No wallet files found at {}", &dir);
+        let action = prompt::welcome();
+        match action {
+            1 => Ok(create(path)?),
+            2 => Ok(recover(path)?),
+            _ => Err(Error::UserExit),
+        }
+    }
+}
+
+/// Scan data directory and return a list of filenames
+fn find_wallets(dir: &str) -> Result<Vec<String>, Error> {
+    // scan for wallets
+    let dir = fs::read_dir(dir)?;
+    let names = dir
+        .map(|entry| {
+            entry
+                .ok()
+                .and_then(|e| {
+                    e.path()
+                        .file_name()
+                        .and_then(|name| name.to_str().map(String::from))
+                })
+                .unwrap()
+        })
+        .collect::<Vec<String>>();
+    Ok(names)
 }
