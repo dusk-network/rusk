@@ -6,17 +6,20 @@
 
 //! Mocks of the traits supplied by the user of the crate..
 
+use canonical::{Canon, Sink, Source};
+use canonical_derive::Canon;
 use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_wallet_core::{
-    ProverClient, StateClient, Store, UnprovenTransaction, Wallet,
+    ProverClient, StateClient, Store, Transaction, UnprovenTransaction, Wallet,
     POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note, NoteType};
 use rand_core::{CryptoRng, RngCore};
+use rusk_abi::ContractId;
 
 /// Create a new wallet meant for tests. It includes a client that will always
 /// return a random anchor (same every time), and the default opening.
@@ -35,6 +38,48 @@ pub fn mock_wallet<Rng: RngCore + CryptoRng>(
 
     let state = TestStateClient::new(notes, anchor, opening);
     let prover = TestProverClient;
+
+    Wallet::new(store, state, prover)
+}
+
+/// Create a new wallet equivalent in all ways to `mock_wallet`, but serializing
+/// and deserializing a `Transaction` using `Canon`.
+pub fn mock_canon_wallet<Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+    note_values: &[u64],
+) -> Wallet<TestStore, TestStateClient, CanonProverClient> {
+    let store = TestStore::new(rng);
+    let psk = store.retrieve_ssk(0).unwrap().public_spend_key();
+
+    let notes = new_notes(rng, &psk, note_values);
+    let anchor = BlsScalar::random(rng);
+    let opening = Default::default();
+
+    let state = TestStateClient::new(notes, anchor, opening);
+    let prover = CanonProverClient {
+        prover: TestProverClient,
+    };
+
+    Wallet::new(store, state, prover)
+}
+
+/// Create a new wallet equivalent in all ways to `mock_wallet`, but serializing
+/// and deserializing an `UnprovenTransaction` using `dusk::bytes`.
+pub fn mock_serde_wallet<Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+    note_values: &[u64],
+) -> Wallet<TestStore, TestStateClient, SerdeProverClient> {
+    let store = TestStore::new(rng);
+    let psk = store.retrieve_ssk(0).unwrap().public_spend_key();
+
+    let notes = new_notes(rng, &psk, note_values);
+    let anchor = BlsScalar::random(rng);
+    let opening = Default::default();
+
+    let state = TestStateClient::new(notes, anchor, opening);
+    let prover = SerdeProverClient {
+        prover: TestProverClient,
+    };
 
     Wallet::new(store, state, prover)
 }
@@ -158,5 +203,139 @@ impl ProverClient for TestProverClient {
         _blinder: JubJubScalar,
     ) -> Result<Proof, Self::Error> {
         Ok(Proof::default())
+    }
+}
+
+#[derive(Debug)]
+pub struct CanonProverClient {
+    prover: TestProverClient,
+}
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Clone, Canon)]
+pub enum Call {
+    Execute {
+        anchor: BlsScalar,
+        nullifiers: Vec<BlsScalar>,
+        fee: Fee,
+        crossover: Option<Crossover>,
+        notes: Vec<Note>,
+        spend_proof: Vec<u8>,
+        call: Option<(ContractId, Transaction)>,
+    },
+    SomeOtherVariant {
+        anchor: BlsScalar,
+    },
+}
+
+impl ProverClient for CanonProverClient {
+    type Error = ();
+
+    fn compute_proof_and_propagate(
+        &self,
+        utx: &UnprovenTransaction,
+    ) -> Result<(), Self::Error> {
+        let utx_clone = utx.clone();
+
+        let tx = utx_clone.prove(Proof::default());
+
+        let mut buf = [0u8; 4096];
+        let mut sink = Sink::new(&mut buf);
+        tx.encode(&mut sink);
+        drop(sink);
+
+        let mut source = Source::new(&buf);
+        let _ = Call::decode(&mut source).expect("decoding to Call to go fine");
+
+        self.prover.compute_proof_and_propagate(utx)
+    }
+
+    fn request_stct_proof(
+        &self,
+        fee: &Fee,
+        crossover: &Crossover,
+        value: u64,
+        blinder: JubJubScalar,
+        address: BlsScalar,
+        signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_stct_proof(
+            fee, crossover, value, blinder, address, signature,
+        )
+    }
+
+    fn request_wfct_proof(
+        &self,
+        commitment: JubJubAffine,
+        value: u64,
+        blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_wfct_proof(commitment, value, blinder)
+    }
+}
+
+#[derive(Debug)]
+pub struct SerdeProverClient {
+    prover: TestProverClient,
+}
+
+impl ProverClient for SerdeProverClient {
+    type Error = ();
+
+    fn compute_proof_and_propagate(
+        &self,
+        utx: &UnprovenTransaction,
+    ) -> Result<(), Self::Error> {
+        let utx_bytes = utx.to_var_bytes();
+        let utx_clone = UnprovenTransaction::from_slice(&utx_bytes)
+            .expect("Successful deserialization");
+
+        for (input, cinput) in
+            utx.inputs().iter().zip(utx_clone.inputs().iter())
+        {
+            assert_eq!(input.nullifier(), cinput.nullifier());
+            // assert_eq!(input.opening(), cinput.opening());
+            assert_eq!(input.note(), cinput.note());
+            assert_eq!(input.value(), cinput.value());
+            assert_eq!(input.blinding_factor(), cinput.blinding_factor());
+            assert_eq!(input.pk_r_prime(), cinput.pk_r_prime());
+            // assert_eq!(input.signature(), cinput.signature());
+        }
+
+        for (output, coutput) in
+            utx.outputs().iter().zip(utx_clone.outputs().iter())
+        {
+            assert_eq!(output, coutput);
+        }
+
+        assert_eq!(utx.anchor(), utx_clone.anchor());
+        assert_eq!(utx.fee(), utx_clone.fee());
+        assert_eq!(utx.crossover(), utx_clone.crossover());
+        assert_eq!(utx.call(), utx_clone.call());
+
+        self.prover.compute_proof_and_propagate(utx)
+    }
+
+    fn request_stct_proof(
+        &self,
+        fee: &Fee,
+        crossover: &Crossover,
+        value: u64,
+        blinder: JubJubScalar,
+        address: BlsScalar,
+        signature: Signature,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_stct_proof(
+            fee, crossover, value, blinder, address, signature,
+        )
+    }
+
+    fn request_wfct_proof(
+        &self,
+        commitment: JubJubAffine,
+        value: u64,
+        blinder: JubJubScalar,
+    ) -> Result<Proof, Self::Error> {
+        self.prover.request_wfct_proof(commitment, value, blinder)
     }
 }
