@@ -9,3 +9,4 @@ pub mod crypto;
 pub mod error;
 pub mod prompt;
 pub mod store;
+pub mod wallet;

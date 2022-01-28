@@ -36,6 +36,8 @@ pub enum Error {
     IO(io::Error),
     /// Wallet Core lib errors
     WalletCore(Box<CoreError>),
+    /// User graceful exit
+    UserExit,
 }
 
 impl From<dusk_bytes::Error> for Error {
@@ -137,6 +139,9 @@ impl fmt::Display for Error {
             Error::WalletCore(err) => {
                 write!(f, "Wallet Core lib errors: {:?}", err)
             }
+            Error::UserExit => {
+                write!(f, "Done")
+            }
         }
     }
 }
@@ -183,6 +188,9 @@ impl fmt::Debug for Error {
             }
             Error::WalletCore(err) => {
                 write!(f, "Wallet Core lib errors: {:?}", err)
+            }
+            Error::UserExit => {
+                write!(f, "Done")
             }
         }
     }
