@@ -50,8 +50,8 @@ pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
 
 pub fn verify_proof(
     pp: &PublicParameters,
-    vd: &[u8],
     proof: &[u8],
+    vd: &[u8],
     pi: Vec<PublicInput>,
 ) -> Result<bool, CanonError> {
     let proof =
@@ -98,7 +98,7 @@ impl HostModule for RuskModule {
                 let vd = Vec::<u8>::decode(&mut source)?;
                 let pi = Vec::<PublicInput>::decode(&mut source)?;
 
-                let ret = verify_proof(self.pp, &proof, &vd, pi);
+                let ret = verify_proof(self.pp, &proof, &vd, pi)?;
 
                 Ok(ReturnValue::from_canon(&ret))
             }

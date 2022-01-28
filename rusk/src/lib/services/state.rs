@@ -9,7 +9,8 @@ use crate::services::prover::RuskProver;
 use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
-use dusk_bls12_381_sign::{BlsScalar, PublicKey};
+use dusk_bls12_381::BlsScalar;
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
 use dusk_wallet_core::Transaction;
