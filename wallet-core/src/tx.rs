@@ -33,7 +33,7 @@ pub struct Transaction {
     anchor: BlsScalar,
     proof: Vec<u8>,
     fee: Fee,
-    crossover: Crossover,
+    crossover: Option<Crossover>,
     call: Option<(ContractId, Vec<u8>)>,
 }
 
@@ -45,7 +45,6 @@ impl Canon for Transaction {
         self.anchor.encode(sink);
         self.nullifiers.encode(sink);
         self.fee.encode(sink);
-        1u8.encode(sink); // required due `Call` having an `Option<Crossover`.
         self.crossover.encode(sink);
         self.outputs.encode(sink);
         self.proof.encode(sink);
@@ -58,9 +57,6 @@ impl Canon for Transaction {
         let anchor = Canon::decode(source)?;
         let nullifiers = Canon::decode(source)?;
         let fee = Canon::decode(source)?;
-
-        u8::decode(source)?;
-
         let crossover = Canon::decode(source)?;
         let outputs = Canon::decode(source)?;
         let proof = Canon::decode(source)?;
@@ -83,7 +79,6 @@ impl Canon for Transaction {
             + self.anchor.encoded_len()
             + self.nullifiers.encoded_len()
             + self.fee.encoded_len()
-            + 1u8.encoded_len()
             + self.crossover.encoded_len()
             + self.outputs.encoded_len()
             + self.proof.encoded_len()
@@ -121,7 +116,8 @@ impl Transaction {
             + BlsScalar::SIZE
             + Fee::SIZE
             + Proof::SIZE
-            + Crossover::SIZE
+            + u64::SIZE
+            + self.crossover.map_or(0, |_| Crossover::SIZE)
             + u64::SIZE
             + self
                 .call
@@ -145,7 +141,8 @@ impl Transaction {
         writer.write(&self.anchor.to_bytes());
         writer.write(&self.fee.to_bytes());
         writer.write(&self.proof);
-        writer.write(&self.crossover.to_bytes());
+
+        write_crossover(&mut writer, self.crossover);
 
         write_optional_call(&mut writer, self.call.as_ref());
 
@@ -173,7 +170,8 @@ impl Transaction {
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
         let proof = Proof::from_reader(&mut buffer)?.to_bytes().to_vec();
-        let crossover = Crossover::from_reader(&mut buffer)?;
+
+        let crossover = read_crossover(&mut buffer)?;
 
         let call = read_optional_call(&mut buffer)?;
 
@@ -214,8 +212,8 @@ impl Transaction {
     }
 
     /// The crossover of the transaction.
-    pub fn crossover(&self) -> &Crossover {
-        &self.crossover
+    pub fn crossover(&self) -> Option<&Crossover> {
+        self.crossover.as_ref()
     }
 
     /// The call data of the transaction.
@@ -230,7 +228,7 @@ struct TransactionSkeleton {
     outputs: Vec<Note>,
     anchor: BlsScalar,
     fee: Fee,
-    crossover: Crossover,
+    crossover: Option<Crossover>,
     call: Option<(ContractId, Vec<u8>)>,
 }
 
@@ -240,7 +238,7 @@ impl TransactionSkeleton {
         outputs: Vec<Note>,
         anchor: BlsScalar,
         fee: Fee,
-        crossover: Crossover,
+        crossover: Option<Crossover>,
         call: Option<(ContractId, Vec<u8>)>,
     ) -> Self {
         Self {
@@ -265,8 +263,11 @@ impl TransactionSkeleton {
 
         hasher = hasher
             .chain_update(self.anchor.to_bytes())
-            .chain_update(self.fee.to_bytes())
-            .chain_update(self.crossover.to_bytes());
+            .chain_update(self.fee.to_bytes());
+
+        if let Some(crossover) = &self.crossover {
+            hasher.update(&crossover.to_bytes());
+        }
 
         if let Some((cid, cdata)) = &self.call {
             hasher.update(cid.as_bytes());
@@ -301,7 +302,7 @@ impl From<UnprovenTransaction> for TransactionSkeleton {
             outputs: utx.outputs.iter().map(|o| o.0).collect(),
             anchor: utx.anchor,
             fee: utx.fee,
-            crossover: utx.crossover.0,
+            crossover: utx.crossover.map(|c| c.0),
             call: utx.call,
         }
     }
@@ -453,7 +454,7 @@ pub struct UnprovenTransaction {
     outputs: Vec<(Note, u64, JubJubScalar)>,
     anchor: BlsScalar,
     fee: Fee,
-    crossover: (Crossover, u64, JubJubScalar),
+    crossover: Option<(Crossover, u64, JubJubScalar)>,
     call: Option<(ContractId, Vec<u8>)>,
 }
 
@@ -467,7 +468,7 @@ impl UnprovenTransaction {
         inputs: Vec<(Note, u64, JubJubScalar)>,
         outputs: Vec<(Note, u64, JubJubScalar)>,
         fee: Fee,
-        crossover: (Crossover, u64, JubJubScalar),
+        crossover: Option<(Crossover, u64, JubJubScalar)>,
         call: Option<(ContractId, Vec<u8>)>,
     ) -> Result<Self, SC::Error> {
         let nullifiers: Vec<BlsScalar> = inputs
@@ -488,7 +489,7 @@ impl UnprovenTransaction {
             outputs.iter().map(|o| o.0).collect(),
             anchor,
             fee,
-            crossover.0,
+            crossover.map(|c| c.0),
             call,
         );
         let hash = skel.hash();
@@ -562,9 +563,10 @@ impl UnprovenTransaction {
             + total_output_len
             + BlsScalar::SIZE
             + Fee::SIZE
-            + Crossover::SIZE
             + u64::SIZE
-            + JubJubScalar::SIZE
+            + self.crossover.map_or(0, |_| {
+                Crossover::SIZE + u64::SIZE + JubJubScalar::SIZE
+            })
             + u64::SIZE
             + self
                 .call
@@ -589,10 +591,7 @@ impl UnprovenTransaction {
         writer.write(&self.anchor.to_bytes());
         writer.write(&self.fee.to_bytes());
 
-        writer.write(&self.crossover.0.to_bytes());
-        writer.write(&self.crossover.1.to_bytes());
-        writer.write(&self.crossover.2.to_bytes());
-
+        write_crossover_value_blinder(&mut writer, self.crossover);
         write_optional_call(&mut writer, self.call.as_ref());
 
         buf
@@ -623,11 +622,7 @@ impl UnprovenTransaction {
         let anchor = BlsScalar::from_reader(&mut buffer)?;
         let fee = Fee::from_reader(&mut buffer)?;
 
-        let c = Crossover::from_reader(&mut buffer)?;
-        let value = u64::from_reader(&mut buffer)?;
-        let blinder = JubJubScalar::from_reader(&mut buffer)?;
-
-        let crossover = (c, value, blinder);
+        let crossover = read_crossover_value_blinder(&mut buffer)?;
 
         let call = read_optional_call(&mut buffer)?;
 
@@ -667,8 +662,8 @@ impl UnprovenTransaction {
     }
 
     /// Returns the crossover of the transaction.
-    pub fn crossover(&self) -> &(Crossover, u64, JubJubScalar) {
-        &self.crossover
+    pub fn crossover(&self) -> Option<&(Crossover, u64, JubJubScalar)> {
+        self.crossover.as_ref()
     }
 
     /// Returns the call of the transaction.
@@ -697,6 +692,69 @@ fn write_optional_call<W: Write>(
     };
 
     Ok(())
+}
+
+fn write_crossover<W: Write>(
+    writer: &mut W,
+    crossover: Option<Crossover>,
+) -> Result<(), BytesError> {
+    match crossover {
+        Some(c) => {
+            writer.write(&1_u64.to_bytes())?;
+            writer.write(&c.to_bytes())?;
+        }
+        None => {
+            writer.write(&0_u64.to_bytes())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn write_crossover_value_blinder<W: Write>(
+    writer: &mut W,
+    crossover: Option<(Crossover, u64, JubJubScalar)>,
+) -> Result<(), BytesError> {
+    match crossover {
+        Some((crossover, value, blinder)) => {
+            writer.write(&1_u64.to_bytes())?;
+            writer.write(&crossover.to_bytes())?;
+            writer.write(&value.to_bytes())?;
+            writer.write(&blinder.to_bytes())?;
+        }
+        None => {
+            writer.write(&0_u64.to_bytes())?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Reads an optional crossover from the given buffer.
+fn read_crossover(buffer: &mut &[u8]) -> Result<Option<Crossover>, BytesError> {
+    let ser = match u64::from_reader(buffer)? {
+        0 => None,
+        _ => Some(Crossover::from_reader(buffer)?),
+    };
+
+    Ok(ser)
+}
+
+/// Reads an optional crossover from the given buffer.
+fn read_crossover_value_blinder(
+    buffer: &mut &[u8],
+) -> Result<Option<(Crossover, u64, JubJubScalar)>, BytesError> {
+    let ser = match u64::from_reader(buffer)? {
+        0 => None,
+        _ => {
+            let crossover = Crossover::from_reader(buffer)?;
+            let value = u64::from_reader(buffer)?;
+            let blinder = JubJubScalar::from_reader(buffer)?;
+            Some((crossover, value, blinder))
+        }
+    };
+
+    Ok(ser)
 }
 
 /// Reads an optional call from the given buffer. This should be called at the

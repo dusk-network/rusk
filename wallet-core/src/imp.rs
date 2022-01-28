@@ -17,7 +17,7 @@ use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_poseidon::sponge;
 use dusk_schnorr::Signature;
-use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
+use phoenix_core::{Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rusk_abi::ContractId;
 
@@ -235,7 +235,7 @@ where
             (output_note, value, output_blinder),
         ];
 
-        let crossover = zero_crossover(rng);
+        let crossover = None;
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
 
         let utx = UnprovenTransaction::new(
@@ -330,7 +330,7 @@ where
             inputs,
             outputs,
             fee,
-            (crossover, value, blinder),
+            Some((crossover, value, blinder)),
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -364,8 +364,6 @@ where
 
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
 
-        let (crossover, value, blinder) = zero_crossover(rng);
-
         let sk = self
             .store
             .retrieve_sk(staker_index)
@@ -391,7 +389,7 @@ where
             inputs,
             outputs,
             fee,
-            (crossover, value, blinder),
+            None,
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -473,7 +471,7 @@ where
             inputs,
             outputs,
             fee,
-            (crossover, stake, blinder),
+            Some((crossover, stake, blinder)),
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -530,31 +528,6 @@ fn contract_to_scalar(id: &ContractId) -> BlsScalar {
     scalar[31] &= 0x3f;
 
     BlsScalar::from_bytes(&scalar).unwrap_or_default()
-}
-
-/// Since there is no link in the current circuit between the crossover
-/// and the fee, we can generate one at random, and use only the value
-/// commitment + value + blinder. We then generate one with value zero
-/// and random blinder.
-fn zero_crossover<Rng: RngCore + CryptoRng>(
-    rng: &mut Rng,
-) -> (Crossover, u64, JubJubScalar) {
-    // FIXME Coupled to the logic of the circuit - should be solved by
-    //  changing the `phoenix_core` API.
-    let (a, b) = (
-        dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::random(rng),
-        dusk_jubjub::GENERATOR_EXTENDED * JubJubScalar::random(rng),
-    );
-    let psk = PublicSpendKey::new(a, b);
-
-    let nonce = BlsScalar::random(rng);
-    let (note, blinder) = generate_obfuscated_note(rng, &psk, 0, nonce);
-
-    // This only verifies if the note is obfuscated. Another example of coupled
-    // madness.
-    let (_, crossover) = note.try_into().unwrap();
-
-    (crossover, 0, blinder)
 }
 
 /// Generates an obfuscated note for the given public spend key.
