@@ -21,6 +21,8 @@ use phoenix_core::{Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 use rusk_abi::ContractId;
 
+use core::cmp;
+
 const MAX_INPUT_NOTES: usize = 4;
 
 /// The error type returned by this crate.
@@ -228,12 +230,31 @@ where
         let (output_note, output_blinder) =
             generate_obfuscated_note(rng, receiver, value, ref_id);
 
+        let total_output =
+            cmp::max(value, gas_limit) - cmp::min(value, gas_limit);
+        let total_input = inputs.iter().map(|(_, v, _)| *v).sum();
+
         // This is an implementation of sending funds from one key to another -
         // not calling a contract. This means there's one output note.
-        let outputs = vec![
-            // receiver note
-            (output_note, value, output_blinder),
-        ];
+        let outputs = if total_output < total_input {
+            let nonce = BlsScalar::random(rng);
+            let change = total_input - value - gas_limit;
+
+            let (change_note, change_blinder) =
+                generate_obfuscated_note(rng, refund, change, nonce);
+
+            vec![
+                // receiver note
+                (output_note, value, output_blinder),
+                // change note
+                (change_note, change, change_blinder),
+            ]
+        } else {
+            vec![
+                // receiver note
+                (output_note, value, output_blinder),
+            ]
+        };
 
         let crossover = None;
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
@@ -253,6 +274,7 @@ where
         self.prover
             .compute_proof_and_propagate(&utx)
             .map_err(Error::from_prover_err)?;
+
         Ok(())
     }
 
