@@ -114,8 +114,10 @@ impl TransferWrapper {
         C: Canon,
     {
         let contract = Contract::new(contract, bytecode.to_vec());
-
-        network.deploy(contract).expect("Failed to deploy contract")
+        let contract_id = rusk_abi::gen_contract_id(bytecode);
+        network
+            .deploy_with_id(contract_id, contract)
+            .expect("Failed to deploy contract")
     }
 
     pub fn state<C>(&self, contract: &ContractId) -> C

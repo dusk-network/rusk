@@ -13,6 +13,7 @@ mod wfco;
 mod wfct;
 
 use crate::services::rusk_proto;
+use crate::{Result, PUB_PARAMS};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
@@ -22,7 +23,7 @@ use tracing::{error, info};
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use dusk_wallet_core::UnprovenTransaction;
+use dusk_wallet_core::{Transaction, UnprovenTransaction};
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 pub use rusk_proto::prover_client::ProverClient;
@@ -63,6 +64,40 @@ macro_rules! handle {
 
 #[derive(Debug, Default)]
 pub struct RuskProver {}
+
+impl RuskProver {
+    pub fn preverify(tx: &Transaction) -> Result<bool> {
+        let tx_hash = tx.hash();
+        let inputs = tx.inputs();
+        let outputs = tx.outputs();
+        let proof = tx.proof();
+
+        let circuit = circuit_from_numbers(inputs.len(), outputs.len())
+            .ok_or_else(|| {
+                Status::invalid_argument(format!(
+                    "Expected: 0 < (inputs: {}) < 5, 0 ≤ (outputs: {}) < 3",
+                    inputs.len(),
+                    outputs.len()
+                ))
+            })?;
+
+        let mut pi = Vec::with_capacity(5 + inputs.len() + 2 * outputs.len());
+
+        pi.push(tx_hash.into());
+        pi.push(tx.anchor().into());
+        pi.extend(inputs.iter().map(|n| n.into()));
+        pi.push(tx.crossover().value_commitment().into());
+        pi.push(tx.fee().gas_limit.into());
+        pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
+
+        let keys = rusk_profile::keys_for(circuit.circuit_id())?;
+        let vd = &keys.get_verifier()?;
+
+        // Maybe we want to handle internal serialization error too, currently
+        // they map to `false`.
+        Ok(rusk_abi::verify_proof(&PUB_PARAMS, proof, vd, pi).unwrap_or(false))
+    }
+}
 
 #[tonic::async_trait]
 impl Prover for RuskProver {
