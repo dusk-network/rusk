@@ -19,9 +19,6 @@ use dusk_poseidon::sponge;
 use dusk_schnorr::Signature;
 use phoenix_core::{Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
-use rusk_abi::ContractId;
-
-use core::cmp;
 
 const MAX_INPUT_NOTES: usize = 4;
 
@@ -153,12 +150,22 @@ where
     /// required" algorithm to select which ones to use for this TX. This is
     /// done by picking notes largest to smallest until they combined have
     /// enough accumulated value.
+    ///
+    /// We also return the outputs with a possible change note (if applicable).
     #[allow(clippy::type_complexity)]
-    fn minimum_inputs_with_value(
+    fn inputs_and_change_output<Rng: RngCore + CryptoRng>(
         &self,
+        rng: &mut Rng,
         sender: &SecretSpendKey,
+        refund: &PublicSpendKey,
         value: u64,
-    ) -> Result<Vec<(Note, u64, JubJubScalar)>, Error<S, SC, PC>> {
+    ) -> Result<
+        (
+            Vec<(Note, u64, JubJubScalar)>,
+            Vec<(Note, u64, JubJubScalar)>,
+        ),
+        Error<S, SC, PC>,
+    > {
         let sender_vk = sender.view_key();
 
         // TODO find a way to get the block height from somewhere. Maybe it
@@ -186,7 +193,7 @@ where
         // are "popped" first.
         notes_and_values.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
 
-        let mut input_notes = Vec::with_capacity(notes.len());
+        let mut inputs = Vec::with_capacity(notes.len());
 
         let mut accumulated_value = 0;
         while accumulated_value < value {
@@ -194,14 +201,25 @@ where
             // is enough value in the notes.
             let (note, val, blinder) = notes_and_values.pop().unwrap();
             accumulated_value += val;
-            input_notes.push((note, val, blinder));
+            inputs.push((note, val, blinder));
         }
 
-        if input_notes.len() > MAX_INPUT_NOTES {
+        if inputs.len() > MAX_INPUT_NOTES {
             return Err(Error::NoteCombinationProblem);
         }
 
-        Ok(input_notes)
+        let change = accumulated_value - value;
+
+        let mut outputs = vec![];
+        if change > 0 {
+            let nonce = BlsScalar::random(rng);
+            let (change_note, change_blinder) =
+                generate_obfuscated_note(rng, refund, change, nonce);
+
+            outputs.push((change_note, change, change_blinder))
+        }
+
+        Ok((inputs, outputs))
     }
 
     /// Transfer Dusk from one key to another.
@@ -222,39 +240,17 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
-        let inputs = self.minimum_inputs_with_value(
+        let (inputs, mut outputs) = self.inputs_and_change_output(
+            rng,
             &sender,
+            refund,
             value + gas_limit * gas_price,
         )?;
 
         let (output_note, output_blinder) =
             generate_obfuscated_note(rng, receiver, value, ref_id);
 
-        let total_output =
-            cmp::max(value, gas_limit) - cmp::min(value, gas_limit);
-        let total_input = inputs.iter().map(|(_, v, _)| *v).sum();
-
-        // This is an implementation of sending funds from one key to another -
-        // not calling a contract. This means there's one output note.
-        let outputs = if total_output < total_input {
-            let nonce = BlsScalar::random(rng);
-            let change = total_input - value - gas_limit;
-
-            let (change_note, change_blinder) =
-                generate_obfuscated_note(rng, refund, change, nonce);
-
-            vec![
-                // receiver note
-                (output_note, value, output_blinder),
-                // change note
-                (change_note, change, change_blinder),
-            ]
-        } else {
-            vec![
-                // receiver note
-                (output_note, value, output_blinder),
-            ]
-        };
+        outputs.push((output_note, value, output_blinder));
 
         let crossover = None;
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
@@ -295,13 +291,12 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
-        let inputs = self.minimum_inputs_with_value(
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
             &sender,
+            refund,
             value + gas_limit * gas_price,
         )?;
-
-        // There's no outputs in a stake transaction.
-        let outputs = vec![];
 
         let blinder = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, refund, value, blinder);
@@ -323,7 +318,7 @@ where
         let pk = PublicKey::from(&sk);
 
         let contract_id = rusk_abi::stake_contract();
-        let address = contract_to_scalar(&contract_id);
+        let address = rusk_abi::contract_to_scalar(&contract_id);
 
         let mut m = crossover.to_hash_inputs().to_vec();
 
@@ -378,11 +373,12 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
-        let inputs =
-            self.minimum_inputs_with_value(&sender, gas_limit * gas_price)?;
-
-        // There's no outputs in an extend stake transaction.
-        let outputs = vec![];
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
 
         let fee = Fee::new(rng, gas_limit, gas_price, refund);
 
@@ -437,8 +433,12 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
-        let inputs =
-            self.minimum_inputs_with_value(&sender, gas_limit * gas_price)?;
+        let (inputs, mut outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
 
         let sk = self
             .store
@@ -465,7 +465,7 @@ where
         fee.gas_limit = gas_limit;
         fee.gas_price = gas_price;
 
-        let outputs = vec![(output_note, stake, note_blinder)];
+        outputs.push((output_note, stake, note_blinder));
 
         let proof = self
             .prover
@@ -541,15 +541,6 @@ where
 
         Ok(s)
     }
-}
-
-fn contract_to_scalar(id: &ContractId) -> BlsScalar {
-    let mut scalar = [0; 32];
-    scalar.copy_from_slice(id.as_bytes());
-
-    scalar[31] &= 0x3f;
-
-    BlsScalar::from_bytes(&scalar).unwrap_or_default()
 }
 
 /// Generates an obfuscated note for the given public spend key.
