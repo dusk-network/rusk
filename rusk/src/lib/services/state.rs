@@ -28,7 +28,8 @@ pub use super::rusk_proto::{
     GetOpeningRequest, GetOpeningResponse, GetProvisionersRequest,
     GetProvisionersResponse, GetStakeRequest, GetStakeResponse,
     GetStateRootRequest, GetStateRootResponse, PreverifyRequest,
-    PreverifyResponse, StateTransitionRequest, StateTransitionResponse,
+    PreverifyResponse, Provisioner, Stake as StakeProto,
+    StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
     VerifyStateTransitionResponse,
 };
@@ -305,7 +306,29 @@ impl State for Rusk {
     ) -> Result<Response<GetProvisionersResponse>, Status> {
         info!("Received GetProvisioners request");
 
-        Err(Status::unimplemented("Request not implemented"))
+        let state = self.state()?;
+        let provisioners = state
+            .get_provisioners()?
+            .into_iter()
+            .map(|(key, stake)| {
+                let raw_public_key_bls = key.to_raw_bytes().to_vec();
+                let public_key_bls = key.to_bytes().to_vec();
+
+                let stake = StakeProto {
+                    start_height: stake.eligibility(),
+                    end_height: stake.expiration(),
+                    amount: stake.value(),
+                };
+
+                Provisioner {
+                    raw_public_key_bls,
+                    public_key_bls,
+                    stakes: vec![stake],
+                }
+            })
+            .collect();
+
+        Ok(Response::new(GetProvisionersResponse { provisioners }))
     }
 
     async fn get_state_root(
