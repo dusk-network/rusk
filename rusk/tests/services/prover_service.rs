@@ -5,14 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::common::setup;
-use dusk_bls12_381_sign::{PublicKey, Signature};
+use dusk_bls12_381::BlsScalar;
+use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
+use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     ProverClient as WalletProverClient, StateClient, Store,
     UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
 };
+use parking_lot::Mutex;
 use phoenix_core::{Crossover, Fee};
 use phoenix_core::{Note, NoteType};
 use rand::{CryptoRng, RngCore};
@@ -23,8 +26,6 @@ use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tonic::transport::Channel;
 use tonic::transport::Server;
-
-use parking_lot::Mutex;
 /// Create a new wallet meant for tests. It includes a client that will always
 /// return a random anchor (same every time), and the default opening.
 ///

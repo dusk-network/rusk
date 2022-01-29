@@ -18,10 +18,24 @@ use tempfile::tempdir;
 use futures::TryFutureExt;
 use rusk::Result;
 use tokio::net::{UnixListener, UnixStream};
+use tokio::runtime::Handle;
+use tokio::task::block_in_place;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::Service;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
+
+pub trait Block {
+    fn wait(self) -> <Self as futures::Future>::Output
+    where
+        Self: Sized,
+        Self: futures::Future,
+    {
+        block_in_place(move || Handle::current().block_on(self))
+    }
+}
+
+impl<F, T> Block for F where F: futures::Future<Output = T> {}
 
 pub fn logger() {
     // Can't use `with_default_env` since we want to have a default
@@ -34,9 +48,6 @@ pub fn logger() {
     let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
 }
 
-// pub async fn setup<B>(ctor: &BackendCtor<B>) -> (Channel, Rusk)
-// where
-//     B: 'static + Backend,
 pub async fn setup() -> (
     Channel,
     async_stream::AsyncStream<
