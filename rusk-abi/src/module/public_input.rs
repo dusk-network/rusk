@@ -10,7 +10,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
 
 /// Enum that represents all possible types of public inputs
-#[derive(Canon, Clone)]
+#[derive(Debug, Canon, Clone)]
 pub enum PublicInput {
     /// A Public Input Point
     Point(JubJubAffine),
