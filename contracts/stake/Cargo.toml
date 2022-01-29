@@ -1,6 +1,6 @@
 [package]
 name = "stake-contract"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 
 [lib]
@@ -13,6 +13,7 @@ dusk-abi = "0.10"
 dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
 dusk-bls12_381-sign = { version = "0.1.0-rc", features = ["canon"] }
 dusk-bytes = "0.1"
+microkelvin = "0.10"
 dusk-hamt = { version = "0.5", default-features = false }
 dusk-pki = { version = "0.9.0-rc", default-features = false }
 dusk-plonk = { version = "0.9", optional = true }

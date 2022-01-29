@@ -103,6 +103,12 @@ impl RuskState {
             .get_contract_cast_state(&rusk_abi::stake_contract())?)
     }
 
+    /// Gets the provisioners currently in the stake contract.
+    pub fn get_provisioners(&self) -> Result<Vec<(PublicKey, Stake)>> {
+        let stake = self.stake_contract()?;
+        Ok(stake.stakes()?)
+    }
+
     /// Mints two notes into the transfer contract state, to pay gas fees.
     pub fn mint(
         &mut self,

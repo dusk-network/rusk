@@ -157,6 +157,13 @@ fn stake() {
 
     assert!(is_staked);
 
+    let stakes = wrapper
+        .stake_state()
+        .stakes()
+        .expect("Failed to fetch all stakes");
+
+    assert_eq!(stakes.len(), 1);
+
     let stake_p = wrapper
         .stake_state()
         .get_stake(&stake_pk)
