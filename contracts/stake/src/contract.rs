@@ -10,6 +10,7 @@ use canonical_derive::Canon;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 use dusk_hamt::Map;
+use microkelvin::First;
 use phoenix_core::Note;
 
 use alloc::vec::Vec;
@@ -66,6 +67,20 @@ impl StakeContract {
             .is_some();
 
         Ok(is_staked)
+    }
+
+    /// Gets a vector of all public keys and stakes.
+    pub fn stakes(&self) -> Result<Vec<(PublicKey, Stake)>, Error> {
+        let mut stakes = Vec::new();
+
+        if let Some(branch) = self.staked.first()? {
+            for leaf in branch {
+                let leaf = leaf?;
+                stakes.push((leaf.key, leaf.val));
+            }
+        }
+
+        Ok(stakes)
     }
 
     pub fn stake_sign_message(block_height: u64, stake: &Stake) -> Vec<u8> {
