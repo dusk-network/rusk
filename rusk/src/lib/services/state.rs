@@ -22,12 +22,13 @@ use tracing::info;
 pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
     EchoRequest, EchoResponse, ExecuteStateTransitionRequest,
-    ExecuteStateTransitionResponse, GetAnchorRequest, GetAnchorResponse,
-    GetNotesOwnedByRequest, GetNotesOwnedByResponse, GetOpeningRequest,
-    GetOpeningResponse, GetProvisionersRequest, GetProvisionersResponse,
-    GetStakeRequest, GetStakeResponse, GetStateRootRequest,
-    GetStateRootResponse, PreverifyRequest, PreverifyResponse,
-    StateTransitionRequest, StateTransitionResponse,
+    ExecuteStateTransitionResponse,
+    ExecutedTransaction as ExecutedTransactionProto, GetAnchorRequest,
+    GetAnchorResponse, GetNotesOwnedByRequest, GetNotesOwnedByResponse,
+    GetOpeningRequest, GetOpeningResponse, GetProvisionersRequest,
+    GetProvisionersResponse, GetStakeRequest, GetStakeResponse,
+    GetStateRootRequest, GetStateRootResponse, PreverifyRequest,
+    PreverifyResponse, StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
     VerifyStateTransitionResponse,
 };
@@ -98,13 +99,13 @@ impl Rusk {
         ))
     }
 
-    fn execute_transactions(
+    fn execute_transactions<T: From<Transaction>>(
         &self,
         network: &mut NetworkState,
         block_gas_meter: &mut GasMeter,
         block_height: u64,
         txs: &[TransactionProto],
-    ) -> Vec<TransactionProto> {
+    ) -> Vec<T> {
         txs.iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .filter_map(|tx| tx.ok())
@@ -122,15 +123,7 @@ impl Rusk {
             .take_while(|(_, gas_meter)| {
                 block_gas_meter.charge(gas_meter.spent()).is_ok()
             })
-            .map(|(tx, _)| {
-                let payload = tx.to_bytes();
-
-                TransactionProto {
-                    version: TX_VERSION,
-                    r#type: TX_TYPE_TRANSFER,
-                    payload,
-                }
-            })
+            .map(|(tx, _)| tx.into())
             .collect()
     }
 }
@@ -208,10 +201,13 @@ impl State for Rusk {
         )?;
 
         for note in [dusk_note, generator_note] {
-            txs.push(TransactionProto {
-                version: TX_VERSION,
-                r#type: TX_TYPE_COINBASE,
-                payload: note.to_bytes().to_vec(),
+            txs.push(ExecutedTransactionProto {
+                tx: Some(TransactionProto {
+                    version: TX_VERSION,
+                    r#type: TX_TYPE_COINBASE,
+                    payload: note.to_bytes().to_vec(),
+                }),
+                tx_hash: note.hash().to_bytes().to_vec(),
             })
         }
 
@@ -394,5 +390,27 @@ impl State for Rusk {
 
         let (stake, expiration) = (stake.value(), stake.expiration());
         Ok(Response::new(GetStakeResponse { stake, expiration }))
+    }
+}
+
+impl From<Transaction> for TransactionProto {
+    fn from(tx: Transaction) -> Self {
+        let payload = tx.to_bytes();
+
+        TransactionProto {
+            version: TX_VERSION,
+            r#type: TX_TYPE_TRANSFER,
+            payload,
+        }
+    }
+}
+
+impl From<Transaction> for ExecutedTransactionProto {
+    fn from(transaction: Transaction) -> Self {
+        let tx_hash = transaction.hash().to_bytes().to_vec();
+        ExecutedTransactionProto {
+            tx: Some(transaction.into()),
+            tx_hash,
+        }
     }
 }
