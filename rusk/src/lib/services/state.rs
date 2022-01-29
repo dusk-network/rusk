@@ -133,11 +133,15 @@ impl Rusk {
 impl State for Rusk {
     async fn echo(
         &self,
-        _request: Request<EchoRequest>,
+        request: Request<EchoRequest>,
     ) -> Result<Response<EchoResponse>, Status> {
         info!("Received Echo request");
 
-        Err(Status::unimplemented("Request not implemented"))
+        let request = request.into_inner();
+
+        Ok(Response::new(EchoResponse {
+            message: request.message,
+        }))
     }
 
     /// TODO: Currently it's just a pass through, does not verify the tx
