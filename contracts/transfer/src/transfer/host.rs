@@ -16,13 +16,18 @@ use rand::rngs::OsRng;
 
 lazy_static! {
     /// The key Dusk is paid to.
-    pub static ref DUSK_KEY: PublicSpendKey =  {
+    static ref DUSK_KEY: PublicSpendKey =  {
         let key_bytes = include_bytes!("../../dusk.psk");
         PublicSpendKey::from_bytes(key_bytes).expect("Dusk's key must be valid")
     };
 }
 
 impl TransferContract {
+    /// Returns a reference to the public spend key of Dusk network.
+    pub fn dusk_key() -> &'static PublicSpendKey {
+        &DUSK_KEY
+    }
+
     /// Adds two notes to the state - one as a reward for the block generator
     /// and another for Dusk foundation. The first note returned is the Dusk
     /// note, and the second the generator note.
