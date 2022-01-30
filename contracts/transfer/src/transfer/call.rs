@@ -59,6 +59,10 @@ pub enum Call {
         to: ContractId,
         value: u64,
     },
+
+    Mint {
+        notes: Vec<Note>,
+    },
 }
 
 impl Call {
@@ -177,6 +181,10 @@ impl Call {
     ) -> Self {
         Self::WithdrawFromTransparentToContract { to, value }
     }
+
+    pub fn mint(notes: Vec<Note>) -> Self {
+        Self::Mint { notes }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -184,8 +192,10 @@ mod wasm {
     use super::*;
     use crate::TransferContract;
 
+    use dusk_abi::ReturnValue;
+
     impl Call {
-        pub fn transact(self, contract: &mut TransferContract) -> bool {
+        pub fn transact(self, contract: &mut TransferContract) -> ReturnValue {
             match self {
                 Call::Execute {
                     anchor,
@@ -195,7 +205,7 @@ mod wasm {
                     notes,
                     spend_proof,
                     call,
-                } => contract.execute(
+                } => ReturnValue::from_canon(&contract.execute(
                     anchor,
                     nullifiers,
                     fee,
@@ -203,36 +213,44 @@ mod wasm {
                     notes,
                     spend_proof,
                     call,
-                ),
+                )),
 
                 Call::SendToContractTransparent {
                     address,
                     value,
                     spend_proof,
-                } => contract.send_to_contract_transparent(
-                    address,
-                    value,
-                    spend_proof,
+                } => ReturnValue::from_canon(
+                    &contract.send_to_contract_transparent(
+                        address,
+                        value,
+                        spend_proof,
+                    ),
                 ),
 
                 Call::WithdrawFromTransparent {
                     value,
                     note,
                     spend_proof,
-                } => {
-                    contract.withdraw_from_transparent(value, note, spend_proof)
-                }
+                } => ReturnValue::from_canon(
+                    &contract.withdraw_from_transparent(
+                        value,
+                        note,
+                        spend_proof,
+                    ),
+                ),
 
                 Call::SendToContractObfuscated {
                     address,
                     message,
                     message_address,
                     spend_proof,
-                } => contract.send_to_contract_obfuscated(
-                    address,
-                    message,
-                    message_address,
-                    spend_proof,
+                } => ReturnValue::from_canon(
+                    &contract.send_to_contract_obfuscated(
+                        address,
+                        message,
+                        message_address,
+                        spend_proof,
+                    ),
                 ),
 
                 Call::WithdrawFromObfuscated {
@@ -242,17 +260,26 @@ mod wasm {
                     change_address,
                     output,
                     spend_proof,
-                } => contract.withdraw_from_obfuscated(
-                    message,
-                    message_address,
-                    change,
-                    change_address,
-                    output,
-                    spend_proof,
-                ),
+                } => {
+                    ReturnValue::from_canon(&contract.withdraw_from_obfuscated(
+                        message,
+                        message_address,
+                        change,
+                        change_address,
+                        output,
+                        spend_proof,
+                    ))
+                }
 
                 Call::WithdrawFromTransparentToContract { to, value } => {
-                    contract.withdraw_from_transparent_to_contract(to, value)
+                    ReturnValue::from_canon(
+                        &contract
+                            .withdraw_from_transparent_to_contract(to, value),
+                    )
+                }
+
+                Call::Mint { notes } => {
+                    ReturnValue::from_canon(&contract.mint(notes))
                 }
             }
         }

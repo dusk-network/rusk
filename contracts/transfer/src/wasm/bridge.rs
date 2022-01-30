@@ -7,7 +7,7 @@
 use crate::{Call, TransferContract};
 
 use canonical::{Canon, CanonError, Sink, Source};
-use dusk_abi::{ContractState, ReturnValue};
+use dusk_abi::ContractState;
 
 const PAGE_SIZE: usize = 1024 * 32;
 
@@ -31,7 +31,7 @@ fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
     let mut sink = Sink::new(&mut bytes[..]);
 
     ContractState::from_canon(&contract).encode(&mut sink);
-    ReturnValue::from_canon(&ret).encode(&mut sink);
+    ret.encode(&mut sink);
 
     Ok(())
 }

@@ -5,12 +5,54 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_jubjub::JubJubScalar;
+use dusk_pki::Ownable;
 use phoenix_core::{Message, Note};
 use transfer_circuits::{
     DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
     WithdrawFromTransparentCircuit,
 };
 use transfer_wrapper::TransferWrapper;
+
+#[test]
+fn tree() {
+    let genesis_value = 10_000_000_000;
+    let gas_limit = 1_000_000_000;
+    let block_height = 1;
+    let mut wrapper = TransferWrapper::new(2324, genesis_value);
+
+    for n in 1..1000 {
+        let state = wrapper.transfer_state();
+        let note = state.get_note(n).expect("Query state failed");
+
+        assert!(note.is_none());
+
+        let (_, _, psk) = wrapper.identifier();
+        let note = Note::transparent(wrapper.rng(), &psk, n);
+        let address = note.stealth_address();
+
+        let notes = vec![note];
+
+        let notes = wrapper
+            .mint(gas_limit, block_height, notes)
+            .expect("Failed to mint!");
+
+        assert_eq!(1, notes.len());
+
+        let address_p = notes[0].stealth_address();
+
+        assert_eq!(address, address_p);
+
+        let state = wrapper.transfer_state();
+        let note = state
+            .get_note(n)
+            .expect("Query state failed")
+            .expect("Mint note should exist in the state");
+
+        let address_p = note.stealth_address();
+
+        assert_eq!(address, address_p);
+    }
+}
 
 #[test]
 fn send_to_contract_transparent() {

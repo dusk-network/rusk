@@ -228,6 +228,25 @@ impl TransferContract {
         true
     }
 
+    pub fn mint(&mut self, notes: Vec<Note>) -> Vec<Note> {
+        let caller = dusk_abi::caller();
+        if caller != rusk_abi::transfer_contract() {
+            panic!("Mint note can only be called from a contract!");
+        }
+
+        let notes = notes
+            .into_iter()
+            .map(|note| {
+                self.push_note_current_height(note)
+                    .expect("Failed to mint note")
+            })
+            .collect();
+
+        self.update_root().expect("Failed to update root");
+
+        notes
+    }
+
     pub fn execute(
         &mut self,
         anchor: BlsScalar,
