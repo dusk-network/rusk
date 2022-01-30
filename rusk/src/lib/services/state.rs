@@ -60,6 +60,28 @@ fn extract_coinbase(
 }
 
 impl Rusk {
+    pub fn notes<'a>(
+        &self,
+        state: &'a transfer_contract::TransferContract,
+        block_height: u64,
+    ) -> Result<impl Iterator<Item = Result<&'a Note, Error>>, Error> {
+        let notes = state
+            .notes()
+            .inner()
+            .annotated_iter_walk(
+                transfer_contract::transfer::tree::BlockHeightFilter(
+                    block_height,
+                ),
+            )
+            .expect("annotation error")
+            .into_iter()
+            .map(|result| {
+                result.map_err(|e| e.into()).map(|leaf| leaf.as_ref())
+            });
+
+        Ok(notes)
+    }
+
     fn any_nullifier_exists(&self, inputs: &[BlsScalar]) -> Result<bool> {
         Ok(self
             .state()?
@@ -329,13 +351,17 @@ impl State for Rusk {
 
         let vk = ViewKey::from_slice(&request.get_ref().vk)
             .map_err(Error::Serialization)?;
+        let block_height = request.get_ref().height;
 
-        let notes = self
-            .state()?
-            .fetch_notes(request.get_ref().height, &vk)?
-            .iter()
-            .map(|n| n.to_bytes().to_vec())
-            .collect();
+        let state = self.state()?.transfer_contract()?;
+        let notes = self.notes(&state, block_height);
+
+        // .notes(request.get_ref().height)?
+        // .fetch_notes(request.get_ref().height, &vk)?
+        // .iter()
+        // .map(|n| n.to_bytes().to_vec())
+        // .collect();
+        let notes = vec![];
         Ok(Response::new(GetNotesOwnedByResponse { notes }))
     }
 

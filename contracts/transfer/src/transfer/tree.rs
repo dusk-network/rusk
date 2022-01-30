@@ -219,7 +219,7 @@ impl Tree {
 }
 
 // Walker method to find the elements that are avobe a certain a block height.
-pub struct BlockHeightFilter(u64);
+pub struct BlockHeightFilter(pub u64);
 
 impl<C, A> Walker<C, A> for BlockHeightFilter
 where

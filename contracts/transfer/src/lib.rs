@@ -9,7 +9,7 @@
 extern crate alloc;
 
 mod error;
-mod transfer;
+pub mod transfer;
 
 #[cfg(target_arch = "wasm32")]
 mod wasm;

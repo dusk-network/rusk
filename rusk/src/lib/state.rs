@@ -123,9 +123,9 @@ impl RuskState {
 
         // SAFETY: this is safe because we know the transfer contract exists at
         // the given contract ID.
-        // unsafe {
-        //     self.set_contract_state(&rusk_abi::transfer_contract(),
-        // &transfer)? };
+        unsafe {
+            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
+        };
 
         Ok(notes)
     }
@@ -161,8 +161,8 @@ impl RuskState {
 
         // transfer.update_root()?;
 
-        // // SAFETY: this is safe because we know the transfer contract exists
-        // // at the given contract ID.
+        // // // SAFETY: this is safe because we know the transfer contract
+        // exists // // at the given contract ID.
         // unsafe {
         //     self.set_contract_state(&rusk_abi::transfer_contract(),
         // &transfer)? };
@@ -171,7 +171,7 @@ impl RuskState {
     }
 
     /// Returns all the notes from a given block height
-    fn notes(&self, height: u64) -> Result<Vec<Note>> {
+    pub fn notes(&self, height: u64) -> Result<Vec<Note>> {
         Ok(self
             .transfer_contract()?
             .notes_from_height(height)?

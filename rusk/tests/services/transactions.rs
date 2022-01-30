@@ -88,7 +88,10 @@ fn generate_note(rusk: &mut Rusk) -> Result<()> {
     let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
-    transfer.push_note(BLOCK_HEIGHT, note)?;
+    for _ in 0..10 {
+        transfer.push_note(BLOCK_HEIGHT, note)?;
+    }
+
     transfer.update_root()?;
 
     info!("Updating the new transfer contract state");
@@ -135,12 +138,13 @@ impl wallet::StateClient for TestStateClient {
 
         let response = client.get_notes_owned_by(request).wait()?;
 
-        response
-            .into_inner()
-            .notes
-            .iter()
-            .map(|n| Note::from_slice(&n).map_err(Error::Serialization))
-            .collect()
+        // response
+        //     .into_inner()
+        //     .notes
+        //     .iter()
+        //     .map(|n| Note::from_slice(&n).map_err(Error::Serialization))
+        //     .collect()
+        Ok(vec![])
     }
 
     /// Fetch the current anchor of the state.
@@ -191,115 +195,115 @@ impl wallet::ProverClient for TestProverClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<(), Self::Error> {
-        let mut client = ProverClient::new(self.channel.clone());
+        // let mut client = ProverClient::new(self.channel.clone());
 
-        let request = tonic::Request::new(ExecuteProverRequest {
-            utx: utx.to_var_bytes(),
-        });
+        // let request = tonic::Request::new(ExecuteProverRequest {
+        //     utx: utx.to_var_bytes(),
+        // });
 
-        let note = utx.inputs()[0].note();
-        let sk_r = SSK.sk_r(note.stealth_address());
-        let pkp: PublicKeyPair = sk_r.into();
+        // let note = utx.inputs()[0].note();
+        // let sk_r = SSK.sk_r(note.stealth_address());
+        // let pkp: PublicKeyPair = sk_r.into();
 
-        if !utx.inputs()[0].signature().verify(&pkp, utx.hash()) {
-            panic!("Schnorr failed");
-        }
+        // if !utx.inputs()[0].signature().verify(&pkp, utx.hash()) {
+        //     panic!("Schnorr failed");
+        // }
 
-        let response = client.prove_execute(request).wait()?;
+        // // let response = client.prove_execute(request).wait()?;
 
-        let response = response.into_inner();
+        // // let response = response.into_inner();
 
-        let tx_bytes = response.tx;
-        let tx =
-            Transaction::from_slice(&tx_bytes).map_err(Error::Serialization)?;
-        let tx_hash = tx.hash();
+        // // let tx_bytes = response.tx;
+        // // let tx =
+        // //     Transaction::from_slice(&tx_bytes).map_err(Error::
+        // Serialization)?; // let tx_hash = tx.hash();
 
-        let tx = TransactionProto {
-            version: 1,
-            r#type: 1,
-            payload: tx_bytes,
-        };
+        // // let tx = TransactionProto {
+        // //     version: 1,
+        // //     r#type: 1,
+        // //     payload: tx_bytes,
+        // // };
 
-        let request = tonic::Request::new(PreverifyRequest {
-            tx: Some(tx.clone()),
-        });
+        // // let request = tonic::Request::new(PreverifyRequest {
+        // //     tx: Some(tx.clone()),
+        // // });
 
-        let mut client = StateClient::new(self.channel.clone());
+        // // let mut client = StateClient::new(self.channel.clone());
 
-        let response = client.preverify(request).wait()?;
+        // // let response = client.preverify(request).wait()?;
 
-        let response = response.into_inner();
+        // // let response = response.into_inner();
 
-        assert_eq!(
-            response.tx_hash,
-            tx_hash.to_bytes().to_vec(),
-            "Hash mismatch"
-        );
+        // // assert_eq!(
+        // //     response.tx_hash,
+        // //     tx_hash.to_bytes().to_vec(),
+        // //     "Hash mismatch"
+        // // );
 
-        let response = client
-            .execute_state_transition({
-                ExecuteStateTransitionRequest {
-                    txs: vec![tx.clone().into()],
-                    block_height: BLOCK_HEIGHT,
-                    block_gas_limit: 100_000_000_000,
-                }
-            })
-            .wait()?;
+        // let response = client
+        //     .execute_state_transition({
+        //         ExecuteStateTransitionRequest {
+        //             txs: vec![tx.clone().into()],
+        //             block_height: BLOCK_HEIGHT,
+        //             block_gas_limit: 100_000_000_000,
+        //         }
+        //     })
+        //     .wait()?;
 
-        let response = response.into_inner();
+        // let response = response.into_inner();
 
-        assert_eq!(response.txs.len(), 3, "Should have three tx");
+        // assert_eq!(response.txs.len(), 3, "Should have three tx");
 
-        let transfer_txs: Vec<_> = response
-            .txs
-            .iter()
-            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
-            .collect();
+        // let transfer_txs: Vec<_> = response
+        //     .txs
+        //     .iter()
+        //     .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
+        //     .collect();
 
-        let coinbase_txs: Vec<_> = response
-            .txs
-            .iter()
-            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
-            .collect();
+        // let coinbase_txs: Vec<_> = response
+        //     .txs
+        //     .iter()
+        //     .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
+        //     .collect();
 
-        assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
-        assert_eq!(coinbase_txs.len(), 2, "Two coinbase txs");
+        // assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
+        // assert_eq!(coinbase_txs.len(), 2, "Two coinbase txs");
 
-        assert_eq!(
-            transfer_txs[0].tx_hash,
-            tx_hash.to_bytes().to_vec(),
-            "Hash mismatch"
-        );
+        // assert_eq!(
+        //     transfer_txs[0].tx_hash,
+        //     tx_hash.to_bytes().to_vec(),
+        //     "Hash mismatch"
+        // );
 
-        let state_root = &response.state_root;
+        // let state_root = &response.state_root;
 
-        info!("Received new state root: {:x?}", state_root);
+        // info!("Received new state root: {:x?}", state_root);
 
-        let mut txs = vec![];
-        txs.extend(transfer_txs);
-        txs.extend(coinbase_txs);
+        // let mut txs = vec![];
+        // txs.extend(transfer_txs);
+        // txs.extend(coinbase_txs);
 
-        let txs: Vec<_> = txs
-            .iter()
-            .map(|tx| tx.tx.as_ref().unwrap())
-            .cloned()
-            .collect();
+        // let txs: Vec<_> = txs
+        //     .iter()
+        //     .map(|tx| tx.tx.as_ref().unwrap())
+        //     .cloned()
+        //     .collect();
 
-        let response = client
-            .finalize(tonic::Request::new(StateTransitionRequest {
-                txs,
-                block_height: BLOCK_HEIGHT,
-                block_gas_limit: 100_000_000_000,
-                state_root: response.state_root,
-            }))
-            .wait()?;
+        // let response = client
+        //     .finalize(tonic::Request::new(StateTransitionRequest {
+        //         txs,
+        //         block_height: BLOCK_HEIGHT,
+        //         block_gas_limit: 100_000_000_000,
+        //         state_root: response.state_root,
+        //     }))
+        //     .wait()?;
 
-        let response = response.into_inner();
+        // let response = response.into_inner();
 
-        assert_eq!(response.txs.len(), 1, "Should have one tx");
+        // assert_eq!(response.txs.len(), 1, "Should have one tx");
 
-        let state_root = &response.state_root;
-        info!("Received new state root: {:x?}", state_root);
+        // let state_root = &response.state_root;
+        // info!("Received new state root: {:x?}", state_root);
 
         Ok(())
     }
@@ -365,15 +369,19 @@ pub async fn whatever() -> Result<()> {
     let mut rng = StdRng::seed_from_u64(0xdead);
     let nonce = BlsScalar::random(&mut rng);
 
-    println!("Balance before key 0: {:?}", wallet.get_balance(0));
-    println!("Balance before key 1: {:?}", wallet.get_balance(1));
+    // println!("Balance before key 0: {:?}", wallet.get_balance(0));
+    // println!("Balance before key 1: {:?}", wallet.get_balance(1));
 
     wallet
         .transfer(&mut rng, 0, &psk, &receiver, 1_000, 1_000_000_000, 1, nonce)
         .expect("Failed to transfer");
 
-    println!("Balance after key 0: {:?}", wallet.get_balance(0));
-    println!("Balance after key 1: {:?}", wallet.get_balance(1));
+    let rusk = STATE_LOCK.lock();
+    let note = rusk.state()?.transfer_contract()?.get_note(9)?;
+    println!("{:?}", note);
+
+    // println!("Balance after key 0: {:?}", wallet.get_balance(0));
+    // println!("Balance after key 1: {:?}", wallet.get_balance(1));
 
     Ok(())
 }

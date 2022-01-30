@@ -21,7 +21,7 @@ mod call;
 mod circuits;
 #[cfg(not(target_arch = "wasm32"))]
 mod host;
-mod tree;
+pub mod tree;
 
 use tree::Tree;
 

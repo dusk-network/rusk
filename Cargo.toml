@@ -30,9 +30,9 @@ overflow-checks = false
 incremental = false
 codegen-units = 16
 
-# [patch.crates-io]
+[patch.crates-io]
 # dusk-pki = { path = "../dusk-pki" }
 # dusk-jubjub = { path = "../jubjub" }
 # phoenix-core = { path = "../phoenix-core" }
-# dusk-wallet-core = { path = "../wallet-core" }
+dusk-wallet-core = { path = "../wallet-core" }
 # dusk-schnorr = { path = "../schnorr" }
