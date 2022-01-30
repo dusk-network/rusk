@@ -11,14 +11,27 @@ use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
+use dusk_bytes::Serializable;
 use dusk_pki::{Ownable, PublicSpendKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
+use lazy_static::lazy_static;
 use microkelvin::{Backend, BackendCtor};
 use phoenix_core::Note;
+use rand::rngs::OsRng;
 use rusk_abi::{self, POSEIDON_TREE_DEPTH};
-use rusk_vm::{ContractId, NetworkState, NetworkStateId};
+use rusk_vm::{ContractId, GasMeter, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract};
+use transfer_contract::Call;
 use transfer_contract::TransferContract;
+
+lazy_static! {
+    /// The key Dusk is paid to.
+    pub static ref DUSK_KEY: PublicSpendKey =  {
+        let key_bytes = include_bytes!("../../../dusk.psk");
+
+        PublicSpendKey::from_bytes(key_bytes).expect("Dusk's key must be valid")
+    };
+}
 
 pub struct RuskState(pub(crate) NetworkState);
 
@@ -116,24 +129,38 @@ impl RuskState {
         gas_spent: u64,
         generator: Option<&PublicSpendKey>,
     ) -> Result<(Note, Note)> {
+        let mut rng = OsRng::default();
+
         let (dusk_value, generator_value) =
             coinbase_value(block_height, gas_spent);
 
-        let mut transfer = self.transfer_contract()?;
-        let notes = transfer.mint(
-            block_height,
-            dusk_value,
-            generator_value,
-            generator,
-        )?;
+        let generator = generator.unwrap_or(&DUSK_KEY);
 
-        // SAFETY: this is safe because we know the transfer contract exists at
-        // the given contract ID.
-        unsafe {
-            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
-        };
+        let dusk_note = Note::transparent(&mut rng, &DUSK_KEY, dusk_value);
+        let generator_note =
+            Note::transparent(&mut rng, generator, generator_value);
 
-        Ok(notes)
+        let notes = vec![dusk_note, generator_note];
+        let mint = Call::mint(notes);
+        let gas_limit = 10_000_000_000;
+        let mut meter = GasMeter::with_limit(gas_limit);
+
+        let transfer = rusk_abi::transfer_contract();
+
+        let notes: Vec<Note> =
+            self.0.transact(transfer, block_height, mint, &mut meter)?;
+
+        let dusk_note = notes
+            .get(0)
+            .copied()
+            .ok_or(Error::CoinbaseValue(dusk_value, generator_value))?;
+
+        let generator_note = notes
+            .get(1)
+            .copied()
+            .ok_or(Error::CoinbaseValue(dusk_value, generator_value))?;
+
+        Ok((dusk_note, generator_note))
     }
 
     /// Pushes two notes onto the state, checking their amounts to be correct
