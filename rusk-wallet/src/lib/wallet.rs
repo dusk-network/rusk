@@ -47,7 +47,11 @@ impl CliWallet {
             // Check your current balance
             Balance { key } => {
                 let balance = self.wallet.get_balance(key)?;
-                println!("Your balance is: {} Dusk", balance / 1_000_000);
+                println!(
+                    "Balance for key {} is: {} Dusk ✅",
+                    key,
+                    balance / 1_000_000
+                );
             }
 
             // Retrieve public spend key
@@ -55,7 +59,7 @@ impl CliWallet {
                 let pk = self.wallet.public_spend_key(key)?;
                 let addr = pk.to_bytes();
                 let addr = bs58::encode(addr).into_string();
-                println!("The public address for key {} is: {:?}", key, addr);
+                println!("Public address for key {} is: {:?} ✅", key, addr);
             }
 
             // Send Dusk through the network
@@ -82,7 +86,7 @@ impl CliWallet {
                     gas_price.unwrap_or(0),
                     BlsScalar::zero(),
                 )?;
-                println!("Transfer sent!");
+                println!("Transfer sent! ✅");
             }
 
             // Start staking Dusk
@@ -104,7 +108,7 @@ impl CliWallet {
                     gas_limit,
                     gas_price.unwrap_or(0),
                 )?;
-                println!("Staked succesfully!");
+                println!("Stake success! ✅");
             }
 
             // Extend stake for a particular key
@@ -124,7 +128,7 @@ impl CliWallet {
                     gas_limit,
                     gas_price.unwrap_or(0),
                 )?;
-                println!("Stake extended succesfully!");
+                println!("Stake extension success! ✅");
             }
 
             // Withdraw a key's stake
@@ -144,7 +148,7 @@ impl CliWallet {
                     gas_limit,
                     gas_price.unwrap_or(0),
                 )?;
-                println!("Stake withdrawn succesfully!");
+                println!("Stake withdrawal success! ✅");
             }
 
             // Do nothing

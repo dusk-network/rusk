@@ -86,6 +86,9 @@ impl ProverClient for Prover {
         .into_inner()
         .tx;
 
+        let utx = bs58::encode(&tx_bytes).into_string();
+        println!("Transaction hash: {}", utx);
+
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
 

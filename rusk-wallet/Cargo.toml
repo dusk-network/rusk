@@ -19,7 +19,7 @@ bs58 = "0.4"
 rand = "0.8"
 aes = "0.7"
 
-dusk-wallet-core = "0.8.0-rc.1"
+dusk-wallet-core = "0.8.0-rc"
 canonical = "0.6"
 dusk-bytes = "0.1"
 dusk-pki = "0.9.0-rc"

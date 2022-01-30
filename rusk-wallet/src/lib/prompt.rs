@@ -222,9 +222,9 @@ pub(crate) fn request_key_index(key_type: &str) -> u64 {
     let question = requestty::Question::int("key")
         .message(format!("Select a {} key:", key_type))
         .default(0)
-        .validate_on_key(|i, _| i > 0 && i < i64::MAX)
+        .validate_on_key(|i, _| (0..=i64::MAX).contains(&i))
         .validate(|i, _| {
-            if i > 0 && i < i64::MAX {
+            if (0..=i64::MAX).contains(&i) {
                 Ok(())
             } else {
                 Err(format!("Please choose a key between 0 and {}", i64::MAX))
@@ -285,9 +285,9 @@ pub(crate) fn request_gas_limit() -> u64 {
     let question = requestty::Question::int("amt")
         .message("Introduce the gas spend limit for this transaction (µDusk):")
         .default(0)
-        .validate_on_key(|i, _| i > 0 && i < i64::MAX)
+        .validate_on_key(|i, _| (0..=i64::MAX).contains(&i))
         .validate(|i, _| {
-            if i > 0 && i < i64::MAX {
+            if (0..=i64::MAX).contains(&i) {
                 Ok(())
             } else {
                 Err(format!(
