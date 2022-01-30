@@ -98,6 +98,10 @@ impl TransferWrapper {
         &mut self.rng
     }
 
+    pub fn network(&mut self) -> &mut NetworkState {
+        &mut self.network
+    }
+
     pub fn deploy<C>(&mut self, contract: C, bytecode: &[u8]) -> ContractId
     where
         C: Canon,
@@ -541,6 +545,19 @@ impl TransferWrapper {
             execute,
             &mut self.gas,
         )
+    }
+
+    pub fn mint(
+        &mut self,
+        gas_limit: u64,
+        block_height: u64,
+        notes: Vec<Note>,
+    ) -> Result<Vec<Note>, VMError> {
+        self.gas = GasMeter::with_limit(gas_limit);
+        let mint = Call::mint(notes);
+
+        self.network
+            .transact(self.transfer, block_height, mint, &mut self.gas)
     }
 
     #[allow(clippy::too_many_arguments)]
