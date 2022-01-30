@@ -15,8 +15,8 @@ use rusk::services::rusk_proto::prover_client::ProverClient;
 use rusk::services::rusk_proto::state_client::StateClient;
 use rusk::services::rusk_proto::Transaction as TransactionProto;
 use rusk::services::state::{
-    GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
-    PreverifyRequest,
+    ExecuteStateTransitionRequest, GetAnchorRequest, GetNotesOwnedByRequest,
+    GetOpeningRequest, PreverifyRequest, StateTransitionRequest,
 };
 
 use dusk_bytes::{DeserializableSlice, Serializable};
@@ -214,13 +214,15 @@ impl wallet::ProverClient for TestProverClient {
             Transaction::from_slice(&tx_bytes).map_err(Error::Serialization)?;
         let tx_hash = tx.hash();
 
-        let tx = Some(TransactionProto {
+        let tx = TransactionProto {
             version: 1,
             r#type: 1,
             payload: tx_bytes,
-        });
+        };
 
-        let request = tonic::Request::new(PreverifyRequest { tx });
+        let request = tonic::Request::new(PreverifyRequest {
+            tx: Some(tx.clone()),
+        });
 
         let mut client = StateClient::new(self.channel.clone());
 
@@ -233,6 +235,71 @@ impl wallet::ProverClient for TestProverClient {
             tx_hash.to_bytes().to_vec(),
             "Hash mismatch"
         );
+
+        let response = client
+            .execute_state_transition({
+                ExecuteStateTransitionRequest {
+                    txs: vec![tx.clone().into()],
+                    block_height: BLOCK_HEIGHT,
+                    block_gas_limit: 100_000_000_000,
+                }
+            })
+            .wait()?;
+
+        let response = response.into_inner();
+
+        assert_eq!(response.txs.len(), 3, "Should have three tx");
+
+        let transfer_txs: Vec<_> = response
+            .txs
+            .iter()
+            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
+            .collect();
+
+        let coinbase_txs: Vec<_> = response
+            .txs
+            .iter()
+            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
+            .collect();
+
+        assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
+        assert_eq!(coinbase_txs.len(), 2, "Two coinbase txs");
+
+        assert_eq!(
+            transfer_txs[0].tx_hash,
+            tx_hash.to_bytes().to_vec(),
+            "Hash mismatch"
+        );
+
+        let state_root = &response.state_root;
+
+        info!("Received new state root: {:x?}", state_root);
+
+        let mut txs = vec![];
+        txs.extend(transfer_txs);
+        txs.extend(coinbase_txs);
+
+        let txs: Vec<_> = txs
+            .iter()
+            .map(|tx| tx.tx.as_ref().unwrap())
+            .cloned()
+            .collect();
+
+        let response = client
+            .finalize(tonic::Request::new(StateTransitionRequest {
+                txs,
+                block_height: BLOCK_HEIGHT,
+                block_gas_limit: 100_000_000_000,
+                state_root: response.state_root,
+            }))
+            .wait()?;
+
+        let response = response.into_inner();
+
+        assert_eq!(response.txs.len(), 1, "Should have one tx");
+
+        let state_root = &response.state_root;
+        info!("Received new state root: {:x?}", state_root);
 
         Ok(())
     }

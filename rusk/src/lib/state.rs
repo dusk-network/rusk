@@ -123,9 +123,9 @@ impl RuskState {
 
         // SAFETY: this is safe because we know the transfer contract exists at
         // the given contract ID.
-        unsafe {
-            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
-        };
+        // unsafe {
+        //     self.set_contract_state(&rusk_abi::transfer_contract(),
+        // &transfer)? };
 
         Ok(notes)
     }
@@ -156,16 +156,16 @@ impl RuskState {
             ));
         }
 
-        transfer.push_note(block_height, coinbase.0)?;
-        transfer.push_note(block_height, coinbase.1)?;
+        // transfer.push_note(block_height, coinbase.0)?;
+        // transfer.push_note(block_height, coinbase.1)?;
 
-        transfer.update_root()?;
+        // transfer.update_root()?;
 
-        // SAFETY: this is safe because we know the transfer contract exists at
-        // the given contract ID.
-        unsafe {
-            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
-        };
+        // // SAFETY: this is safe because we know the transfer contract exists
+        // // at the given contract ID.
+        // unsafe {
+        //     self.set_contract_state(&rusk_abi::transfer_contract(),
+        // &transfer)? };
 
         Ok(())
     }

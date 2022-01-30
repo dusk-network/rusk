@@ -44,7 +44,7 @@ fn extract_coinbase(
 
     // There must always be two Coinbase transactions
     let coinbases = coinbase_txs.len();
-    if coinbases == 2 {
+    if coinbases != 2 {
         return Err(Status::invalid_argument(format!(
             "Expected 2 coinbase transactions, got {}",
             coinbases
