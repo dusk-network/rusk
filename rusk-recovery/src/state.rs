@@ -94,16 +94,12 @@ where
 
     let transfer = Contract::new(
         genesis_transfer(),
-        &include_bytes!(
-      "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
-    )[..],
+        &include_bytes!("../../obj/transfer_contract.wasm")[..],
     );
 
     let stake = Contract::new(
         genesis_stake(),
-        &include_bytes!(
-            "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-        )[..],
+        &include_bytes!("../../obj/stake_contract.wasm")[..],
     );
 
     let mut network = NetworkState::default();

@@ -14,12 +14,8 @@ pub const TX_WITHDRAW_OBFUSCATED: u8 = 0x03;
 pub const TX_WITHDRAW_TO_CONTRACT: u8 = 0x04;
 pub const TRANSFER_TREE_DEPTH: usize = 17;
 
-const TRANSFER: &[u8] = include_bytes!(
-    "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
-);
-const STAKE: &[u8] = include_bytes!(
-    "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-);
+const TRANSFER: &[u8] = include_bytes!("../../../obj/transfer_contract.wasm");
+const STAKE: &[u8] = include_bytes!("../../../obj/stake_contract.wasm");
 const ALICE: &[u8] =
     include_bytes!("../../../target/wasm32-unknown-unknown/release/alice.wasm");
 const BOB: &[u8] =
