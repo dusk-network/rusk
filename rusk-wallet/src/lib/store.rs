@@ -15,6 +15,7 @@ use crate::lib::SEED_SIZE;
 use crate::Error;
 
 /// Stores all the user's settings and keystore in the file system
+#[derive(Clone)]
 pub struct LocalStore {
     path: PathBuf,
     seed: [u8; SEED_SIZE],

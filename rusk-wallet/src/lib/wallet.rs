@@ -4,20 +4,33 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fs;
+
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use dusk_bytes::Serializable;
 use dusk_jubjub::BlsScalar;
-use dusk_wallet_core::Wallet;
+use dusk_wallet_core::{Store, Wallet};
+
+use serde::Serialize;
 
 use crate::lib::clients::{Prover, State};
+use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
 use crate::lib::{prompt, SEED_SIZE};
 use crate::{CliCommand, Error};
 
+/// Bls key pair helper structure
+#[derive(Serialize)]
+struct BlsKeyPair {
+    secret_key_bls: String,
+    public_key_bls: String,
+}
+
 /// Interface to wallet_core lib
 pub(crate) struct CliWallet {
+    store: LocalStore,
     wallet: Wallet<LocalStore, State, Prover>,
 }
 
@@ -25,6 +38,7 @@ impl CliWallet {
     /// Creates a new CliWallet instance
     pub fn new(store: LocalStore, state: State, prover: Prover) -> Self {
         CliWallet {
+            store: store.clone(),
             wallet: Wallet::new(store, state, prover),
         }
     }
@@ -149,6 +163,38 @@ impl CliWallet {
                     gas_price.unwrap_or(0),
                 )?;
                 println!("Stake withdrawal success! ✅");
+            }
+
+            Export { key, plaintext } => {
+                // retrieve keys
+                let sk = self.store.retrieve_sk(key)?;
+                let pk = self.wallet.public_key(key)?;
+
+                // create node-compatible json structure
+                let bls = BlsKeyPair {
+                    secret_key_bls: base64::encode(sk.to_bytes()),
+                    public_key_bls: base64::encode(pk.to_bytes()),
+                };
+                let json = serde_json::to_string(&bls)?;
+
+                // encrypt data
+                let mut bytes = json.as_bytes().to_vec();
+                if !plaintext {
+                    let pwd = prompt::request_auth("Encryption password");
+                    bytes = encrypt(&bytes, pwd)?;
+                }
+
+                // write to disk
+                let mut path = dirs::home_dir().expect("user home dir");
+                path.push(format!("key{}", key));
+                path = path.with_extension("sk");
+
+                fs::write(&path, bytes)?;
+
+                println!(
+                    "Key pair exported to {} ✅",
+                    path.as_os_str().to_str().unwrap()
+                )
             }
 
             // Do nothing
