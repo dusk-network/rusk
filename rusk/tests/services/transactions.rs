@@ -262,7 +262,7 @@ impl wallet::ProverClient for TestProverClient {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn whatever() -> Result<()> {
+pub async fn wallet_grpc() -> Result<()> {
     let rusk = STATE_LOCK.lock();
 
     let (channel, incoming) = setup().await;
