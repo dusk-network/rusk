@@ -4,7 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod pki_service;
-pub mod prover_service;
-pub mod state_service;
-pub mod transactions;
+pub mod clients;
+pub mod crypto;
+pub mod error;
+pub mod prompt;
+pub mod store;
+pub mod wallet;
+
+pub const SEED_SIZE: usize = 64;

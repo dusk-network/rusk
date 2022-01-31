@@ -45,7 +45,7 @@ fn extract_coinbase(
 
     // There must always be two Coinbase transactions
     let coinbases = coinbase_txs.len();
-    if coinbases == 2 {
+    if coinbases != 2 {
         return Err(Status::invalid_argument(format!(
             "Expected 2 coinbase transactions, got {}",
             coinbases
@@ -100,13 +100,16 @@ impl Rusk {
         ))
     }
 
-    fn execute_transactions<T: From<Transaction>>(
+    fn execute_transactions<T>(
         &self,
         network: &mut NetworkState,
         block_gas_meter: &mut GasMeter,
         block_height: u64,
         txs: &[TransactionProto],
-    ) -> Vec<T> {
+    ) -> Vec<T>
+    where
+        T: From<Transaction>,
+    {
         txs.iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .filter_map(|tx| tx.ok())
@@ -422,7 +425,7 @@ impl State for Rusk {
 
 impl From<Transaction> for TransactionProto {
     fn from(tx: Transaction) -> Self {
-        let payload = tx.to_bytes();
+        let payload = tx.to_var_bytes();
 
         TransactionProto {
             version: TX_VERSION,

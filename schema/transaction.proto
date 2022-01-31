@@ -36,18 +36,5 @@ message Transaction {
 
 message ExecutedTransaction {
     Transaction tx = 1;
-    bytes tx_hash = 3;
-}
-
-message TransactionRequest {
-    bytes contract_address = 1;
-    uint32 op_code = 2;
-    bytes arguments = 3;
-    Fee fee = 4;
-}
-
-service TransactionService {
-    // A generic method to create a transaction which requires
-    // no special fields (no crossover, outputs, or specific proofs).
-    rpc NewTransaction(TransactionRequest) returns (Transaction) {}
+    bytes tx_hash = 2;
 }

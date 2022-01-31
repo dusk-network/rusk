@@ -4,14 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::provisioners::PROVISIONERS;
 use crate::theme::Theme;
+
 use microkelvin::{Backend, BackendCtor, DiskBackend, PersistError};
+use phoenix_core::Note;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use rusk_abi;
 use rusk_vm::{Contract, NetworkState, NetworkStateId};
-use stake_contract::StakeContract;
+use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use std::{fs, io};
 use tracing::info;
 use transfer_contract::TransferContract;
+
+/// Initial amount of the note inserted in the state.
+const GENESIS_DUSK: u64 = 1_000_000_000; // 1000 Dusk.
+/// The number of blocks after which the genesis stake expires.
+const GENESIS_EXPIRATION: u64 = 1_000_000;
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
@@ -35,6 +45,41 @@ fn diskbackend() -> BackendCtor<DiskBackend> {
     })
 }
 
+/// Creates a new transfer contract state with a single note in it - ownership
+/// of Dusk Network.
+fn genesis_transfer() -> TransferContract {
+    let mut transfer = TransferContract::default();
+    let mut rng = StdRng::seed_from_u64(0xdead_beef);
+
+    let note =
+        Note::transparent(&mut rng, TransferContract::dusk_key(), GENESIS_DUSK);
+    transfer
+        .push_note(0, note)
+        .expect("Genesis note to be pushed to the state");
+    transfer
+        .update_root()
+        .expect("Root to be updated after pushing genesis note");
+
+    transfer
+}
+
+/// Creates a new stake contract state with preset stakes added for the
+/// staking/consensus keys in the `keys/` folder. The stakes will all be the
+/// same and the minimum amount.
+fn genesis_stake() -> StakeContract {
+    let mut stake_contract = StakeContract::default();
+
+    let stake = Stake::new(MINIMUM_STAKE, 0, GENESIS_EXPIRATION);
+
+    for provisioner in PROVISIONERS.iter() {
+        stake_contract
+            .push_stake(*provisioner, stake)
+            .expect("Genesis stake to be pushed to the stake");
+    }
+
+    stake_contract
+}
+
 pub fn deploy<B>(ctor: &BackendCtor<B>) -> Result<NetworkStateId, PersistError>
 where
     B: 'static + Backend,
@@ -43,14 +88,14 @@ where
     info!("{} new network state", theme.action("Generating"));
 
     let transfer = Contract::new(
-        TransferContract::default(),
+        genesis_transfer(),
         &include_bytes!(
       "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     )[..],
     );
 
     let stake = Contract::new(
-        StakeContract::default(),
+        genesis_stake(),
         &include_bytes!(
             "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
         )[..],

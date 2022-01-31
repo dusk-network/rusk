@@ -435,7 +435,7 @@ mod tests {
     fn transaction_read_write() -> Result<()> {
         let mut tx = deterministic_tx();
 
-        let buf = tx.to_bytes();
+        let buf = tx.to_var_bytes();
         let decoded_tx = Transaction::from_bytes(&buf)?;
 
         assert_eq!(tx, decoded_tx);
