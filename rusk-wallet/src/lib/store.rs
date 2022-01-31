@@ -8,9 +8,7 @@ use std::path::PathBuf;
 use std::{fmt, fs};
 
 use blake3::Hash;
-use dusk_bls12_381_sign::SecretKey;
-use dusk_pki::SecretSpendKey;
-use dusk_wallet_core::{derive_sk, derive_ssk, Store};
+use dusk_wallet_core::Store;
 
 use crate::lib::crypto::EncryptedSeed;
 use crate::Error;
@@ -27,16 +25,6 @@ impl Store for LocalStore {
     /// Retrieves the seed used to derive keys.
     fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
         Ok(self.seed)
-    }
-
-    /// Retrieves a derived secret spend key from the store.
-    fn retrieve_ssk(&self, index: u64) -> Result<SecretSpendKey, Self::Error> {
-        Ok(derive_ssk(&self.seed, index))
-    }
-
-    /// Retrieves a derived secret key from the store.
-    fn retrieve_sk(&self, index: u64) -> Result<SecretKey, Error> {
-        Ok(derive_sk(&self.seed, index))
     }
 }
 

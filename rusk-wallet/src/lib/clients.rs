@@ -113,7 +113,6 @@ impl ProverClient for Prover {
         let mut buf = [0; STCT_INPUT_SIZE];
         let mut writer = &mut buf[..];
         writer.write(&fee.to_bytes())?;
-        writer.write(&fee.to_bytes())?;
         writer.write(&crossover.to_bytes())?;
         writer.write(&value.to_bytes())?;
         writer.write(&blinder.to_bytes())?;
