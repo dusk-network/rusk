@@ -10,27 +10,31 @@ use std::{fmt, fs};
 use blake3::Hash;
 use dusk_wallet_core::Store;
 
-use crate::lib::crypto::EncryptedSeed;
+use crate::lib::crypto::{decrypt, encrypt};
+use crate::lib::SEED_SIZE;
 use crate::Error;
 
 /// Stores all the user's settings and keystore in the file system
 pub struct LocalStore {
     path: PathBuf,
-    seed: [u8; 64],
+    seed: [u8; SEED_SIZE],
 }
 
 impl Store for LocalStore {
     type Error = Error;
 
     /// Retrieves the seed used to derive keys.
-    fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
+    fn get_seed(&self) -> Result<[u8; SEED_SIZE], Self::Error> {
         Ok(self.seed)
     }
 }
 
 impl LocalStore {
     /// Creates a new store
-    pub fn new(path: PathBuf, seed: [u8; 64]) -> Result<LocalStore, Error> {
+    pub fn new(
+        path: PathBuf,
+        seed: [u8; SEED_SIZE],
+    ) -> Result<LocalStore, Error> {
         // create the local store
         let store = LocalStore { path, seed };
 
@@ -46,14 +50,14 @@ impl LocalStore {
 
         // attempt to load and decode wallet
         let bytes = fs::read(&path)?;
-        if bytes.len() != EncryptedSeed::SIZE {
+        let bytes = decrypt(&bytes, pwd)?;
+
+        if bytes.len() != SEED_SIZE {
             return Err(Error::WalletFileCorrupted);
         }
-        let mut seed_bytes = [0u8; EncryptedSeed::SIZE];
-        seed_bytes.copy_from_slice(&bytes);
 
-        let seed = EncryptedSeed::from_bytes(&seed_bytes);
-        let seed = seed.decrypt(pwd)?;
+        let mut seed = [0u8; SEED_SIZE];
+        seed.copy_from_slice(&bytes);
 
         // create and return
         Ok(LocalStore { path, seed })
@@ -62,11 +66,10 @@ impl LocalStore {
     /// Saves wallet to a file
     pub fn save(&self, pwd: Hash) -> Result<(), Error> {
         // encrypt seed
-        let mut seed = EncryptedSeed::from_seed(self.seed);
-        seed.encrypt(pwd)?;
+        let enc_seed = encrypt(&self.seed, pwd)?;
 
         // write file
-        fs::write(&self.path, &seed.to_bytes())?;
+        fs::write(&self.path, enc_seed)?;
         Ok(())
     }
 }

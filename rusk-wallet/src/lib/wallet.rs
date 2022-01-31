@@ -12,8 +12,8 @@ use dusk_jubjub::BlsScalar;
 use dusk_wallet_core::Wallet;
 
 use crate::lib::clients::{Prover, State};
-use crate::lib::prompt;
 use crate::lib::store::LocalStore;
+use crate::lib::{prompt, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 /// Interface to wallet_core lib
@@ -70,7 +70,7 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
-                let mut addr_bytes = [0u8; 64];
+                let mut addr_bytes = [0u8; SEED_SIZE];
                 addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
                 let dest_addr =
                     dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
