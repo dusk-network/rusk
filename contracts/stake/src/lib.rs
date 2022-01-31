@@ -29,7 +29,7 @@ pub const MATURITY: u64 = 2 * EPOCH;
 pub const VALIDITY: u64 = 56 * EPOCH;
 
 /// The minimum amount of (micro)Dusk one can stake.
-pub const MINIMUM_STAKE: u64 = 5_000_000_000;
+pub const MINIMUM_STAKE: u64 = 1_000_000_000;
 
 pub const TX_STAKE: u8 = 0x00;
 pub const TX_EXTEND: u8 = 0x01;
