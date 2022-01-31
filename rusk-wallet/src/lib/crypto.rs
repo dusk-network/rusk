@@ -11,8 +11,9 @@ use blake3::Hash;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
 use rand::rngs::OsRng;
-use rand::Rng;
+use rand::RngCore;
 
+use crate::lib::SEED_SIZE;
 use crate::Error;
 
 type Aes256Cbc = Cbc<Aes256, Pkcs7>;
@@ -20,7 +21,7 @@ type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 /// Creates and recovers wallet seed from a 12-word BIP39 mnemonic phrase
 pub(crate) struct MnemSeed {
     pub phrase: String,
-    pub seed: [u8; 64],
+    pub seed: [u8; SEED_SIZE],
 }
 
 impl MnemSeed {
@@ -31,7 +32,7 @@ impl MnemSeed {
 
         // get the HD wallet seed
         let seed = Seed::new(&mnemonic, pwd);
-        let mut seed_bytes = [0u8; 64];
+        let mut seed_bytes = [0u8; SEED_SIZE];
         seed_bytes.copy_from_slice(seed.as_bytes());
 
         // create and return new MnemSeed
@@ -50,7 +51,7 @@ impl MnemSeed {
             Ok(m) => {
                 // recover the seed
                 let gen_seed = Seed::new(&m, pwd);
-                let mut seed = [0u8; 64];
+                let mut seed = [0u8; SEED_SIZE];
                 seed.copy_from_slice(gen_seed.as_bytes());
 
                 // return
@@ -64,77 +65,33 @@ impl MnemSeed {
     }
 }
 
-pub(crate) struct EncryptedSeed {
-    seed: [u8; 64],
-    enc: [u8; 80],
-    iv: [u8; 16],
+/// Encrypts data using a password.
+pub(crate) fn encrypt(plaintext: &[u8], pwd: Hash) -> Result<Vec<u8>, Error> {
+    let mut iv = vec![0; 16];
+    let mut rng = OsRng::default();
+    rng.fill_bytes(&mut iv);
+
+    let cipher = Aes256Cbc::new_from_slices(pwd.as_bytes(), &iv)?;
+    let enc = cipher.encrypt_vec(plaintext);
+
+    let ciphertext = iv.into_iter().chain(enc.into_iter()).collect();
+    Ok(ciphertext)
 }
 
-impl EncryptedSeed {
-    pub const SIZE: usize = 80 + 16;
+/// Decrypts data encrypted with `encrypt`.
+pub(crate) fn decrypt(ciphertext: &[u8], pwd: Hash) -> Result<Vec<u8>, Error> {
+    let iv = &ciphertext[..16];
+    let enc = &ciphertext[16..];
 
-    pub fn from_seed(seed: [u8; 64]) -> Self {
-        EncryptedSeed {
-            seed,
-            enc: [0u8; 80],
-            iv: [0u8; 16],
-        }
-    }
+    let cipher = Aes256Cbc::new_from_slices(pwd.as_bytes(), iv)?;
+    let plaintext = cipher.decrypt_vec(enc)?;
 
-    /// Parse incoming byte array containing both `enc` and `iv`
-    pub fn from_bytes(bytes: &[u8; Self::SIZE]) -> Self {
-        let mut enc = [0u8; 80];
-        let mut iv = [0u8; 16];
-
-        enc.copy_from_slice(&bytes[..80]);
-        iv.copy_from_slice(&bytes[80..]);
-
-        EncryptedSeed {
-            seed: [0u8; 64],
-            enc,
-            iv,
-        }
-    }
-
-    /// Returns encrypted seed in a byte array containing `enc` and `iv`
-    pub fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0; Self::SIZE];
-        buf[..80].copy_from_slice(&self.enc);
-        buf[80..].copy_from_slice(&self.iv);
-        buf
-    }
-
-    /// Decrypt the wallet seed using AES-256-CBC
-    /// Requires the ciphertext, the IV and the encryption key
-    /// Will return the seed in plaintext
-    pub fn decrypt(&self, pwd: Hash) -> Result<[u8; 64], Error> {
-        let cipher = Aes256Cbc::new_from_slices(pwd.as_bytes(), &self.iv)?;
-        let dec = cipher.decrypt_vec(&self.enc)?;
-        let mut seed = [0u8; 64];
-        seed.copy_from_slice(&dec);
-        Ok(seed)
-    }
-
-    /// Encrypt the wallet seed using AES-256-CBC
-    /// Requires the seed and the encryption key
-    /// Will return the ciphertext and the initialization vector (IV)
-    pub fn encrypt(&mut self, pwd: Hash) -> Result<(), Error> {
-        let mut iv = [0u8; 16];
-        let mut rng = OsRng::default();
-        rng.fill(&mut iv);
-
-        let cipher = Aes256Cbc::new_from_slices(pwd.as_bytes(), &iv)?;
-        let enc = cipher.encrypt_vec(&self.seed);
-        self.enc.copy_from_slice(&enc);
-        self.iv.copy_from_slice(&iv);
-
-        Ok(())
-    }
+    Ok(plaintext)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::EncryptedSeed;
+    use super::*;
 
     #[test]
     fn encrypt_and_decrypt() {
@@ -142,20 +99,15 @@ mod tests {
             b"0001020304050607000102030405060700010203040506070001020304050607";
         let pwd = blake3::hash("greatpassword".as_bytes());
 
-        // encrypt the same seed twice (separately)
-        let mut enc_seed = EncryptedSeed::from_seed(*seed);
-        enc_seed.encrypt(pwd).unwrap();
-        let mut enc_seed_t = EncryptedSeed::from_seed(*seed);
-        enc_seed_t.encrypt(pwd).unwrap();
+        let enc_seed = encrypt(seed, pwd).expect("seed to encrypt ok");
+        let enc_seed_t = encrypt(seed, pwd).expect("seed to encrypt ok");
 
         // check that random IV is correctly applied
-        let enc_bytes = enc_seed.to_bytes();
-        let enc_bytes_t = enc_seed_t.to_bytes();
-        assert_eq!(enc_bytes != enc_bytes_t, true);
+        assert_ne!(enc_seed, enc_seed_t);
+
+        let dec_seed = decrypt(&enc_seed, pwd).expect("seed to decrypt ok");
 
         // check that decryption matches original seed
-        let dec = EncryptedSeed::from_bytes(&enc_bytes);
-        let dec_seed = dec.decrypt(pwd).unwrap();
-        assert_eq!(dec_seed, *seed);
+        assert_eq!(dec_seed, seed);
     }
 }

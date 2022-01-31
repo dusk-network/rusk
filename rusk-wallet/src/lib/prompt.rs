@@ -12,9 +12,9 @@ use requestty::Question;
 use crate::CliCommand;
 
 /// Request the user to authenticate with a password
-pub(crate) fn request_auth() -> Hash {
+pub(crate) fn request_auth(msg: &str) -> Hash {
     let q = Question::password("password")
-        .message("Please enter your wallet's password:")
+        .message(format!("{}:", msg))
         .mask('*')
         .build();
     let a = requestty::prompt_one(q).unwrap();
@@ -79,6 +79,16 @@ pub(crate) fn confirm_recovery_phrase(phrase: String) {
     }
 }
 
+/// Confirm if file must be encrypted
+pub(crate) fn confirm_encryption() -> bool {
+    // let the user confirm if they want the file encrypted
+    let q = requestty::Question::confirm("encrypt")
+        .message("Encrypt the exported key pair file?")
+        .build();
+    let a = requestty::prompt_one(q).unwrap();
+    a.as_bool().unwrap()
+}
+
 /// Request the user to input the recovery phrase
 pub(crate) fn request_recovery_phrase() -> String {
     // let the user input the recovery phrase
@@ -138,6 +148,7 @@ pub(crate) fn command() -> Option<CliCommand> {
             "Stake Dusk",
             "Extend stake for a particular key",
             "Withdraw a key's stake",
+            "Export provisioner BLS key pair",
         ])
         .default_separator()
         .choice("Exit")
@@ -188,7 +199,7 @@ pub(crate) fn command() -> Option<CliCommand> {
             })
         }
         // Extend stake
-        5 => {
+        4 => {
             let key = request_key_index("spend");
             let stake_key = request_key_index("stake");
             let gas_limit = request_gas_limit();
@@ -201,7 +212,7 @@ pub(crate) fn command() -> Option<CliCommand> {
             })
         }
         // Withdraw stake
-        6 => {
+        5 => {
             let key = request_key_index("spend");
             let stake_key = request_key_index("stake");
             let gas_limit = request_gas_limit();
@@ -211,6 +222,16 @@ pub(crate) fn command() -> Option<CliCommand> {
                 stake_key,
                 gas_limit,
                 gas_price,
+            })
+        }
+        // Export BLS Key Pair
+        6 => {
+            let key = request_key_index("stake");
+            let encrypt = confirm_encryption();
+            //let pwd = prompt::request_auth();
+            Some(Export {
+                key,
+                plaintext: !encrypt,
             })
         }
         _ => None,

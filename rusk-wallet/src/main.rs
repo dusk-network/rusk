@@ -173,6 +173,17 @@ enum CliCommand {
         gas_price: Option<u64>,
     },
 
+    /// Export BLS provisioner key pair
+    Export {
+        /// Key index from which your Dusk was staked
+        #[clap(short, long)]
+        key: u64,
+
+        /// Don't encrypt the output file
+        #[clap(long)]
+        plaintext: bool,
+    },
+
     /// Run in interactive mode (default)
     Interactive,
 }
@@ -234,7 +245,7 @@ async fn main() -> Result<(), Error> {
 
     // request auth for wallet (if required)
     let pwd = if cmd.uses_wallet() {
-        prompt::request_auth()
+        prompt::request_auth("Please enter your wallet's password")
     } else {
         blake3::hash("".as_bytes())
     };
@@ -330,7 +341,7 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
     // let the user choose one
     if !wallets.is_empty() {
         let path = prompt::select_wallet(&dir, wallets);
-        let pwd = prompt::request_auth();
+        let pwd = prompt::request_auth("Please enter your wallet's password");
         let store = LocalStore::from_file(path, pwd)?;
         Ok(store)
     }

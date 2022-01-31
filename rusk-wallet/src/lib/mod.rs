@@ -10,3 +10,5 @@ pub mod error;
 pub mod prompt;
 pub mod store;
 pub mod wallet;
+
+pub const SEED_SIZE: usize = 64;

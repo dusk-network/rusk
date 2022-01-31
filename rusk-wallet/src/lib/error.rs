@@ -34,6 +34,8 @@ pub enum Error {
     Canon(canonical::CanonError),
     /// Filesystem errors
     IO(io::Error),
+    /// JSON serialization errors
+    JSON(serde_json::Error),
     /// Wallet Core lib errors
     WalletCore(Box<CoreError>),
     /// User graceful exit
@@ -94,6 +96,12 @@ impl From<block_modes::BlockModeError> for Error {
     }
 }
 
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Self::JSON(e)
+    }
+}
+
 impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
@@ -135,6 +143,9 @@ impl fmt::Display for Error {
             }
             Error::IO(err) => {
                 write!(f, "Filesystem errors: {}", err)
+            }
+            Error::JSON(err) => {
+                write!(f, "JSON serialization error: {}", err)
             }
             Error::WalletCore(err) => {
                 write!(f, "Wallet Core lib errors: {:?}", err)
@@ -185,6 +196,9 @@ impl fmt::Debug for Error {
             }
             Error::IO(err) => {
                 write!(f, "Filesystem errors: {}", err)
+            }
+            Error::JSON(err) => {
+                write!(f, "JSON serialization error: {}", err)
             }
             Error::WalletCore(err) => {
                 write!(f, "Wallet Core lib errors: {:?}", err)
