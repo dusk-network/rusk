@@ -7,3 +7,4 @@
 pub mod pki_service;
 pub mod prover_service;
 pub mod state_service;
+pub mod transactions;

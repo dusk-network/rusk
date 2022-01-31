@@ -93,7 +93,7 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 
     let psk = SSK.public_spend_key();
 
-    let initial_balance = 1_000_000_000; // 1 DUSK
+    let initial_balance = 1_000_000_000;
 
     let note = Note::transparent(&mut rng, &psk, initial_balance);
 

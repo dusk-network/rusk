@@ -6,7 +6,6 @@
 
 use transfer_contract::TransferContract;
 
-use dusk_abi::ContractId;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::SecretSpendKey;
 use phoenix_core::{Message, Note};

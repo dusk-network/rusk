@@ -235,7 +235,7 @@ mod serialization {
         tx_wire.write_all(&TX_VERSION.to_le_bytes()[..])?;
         tx_wire.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
 
-        let payload = tx.to_bytes();
+        let payload = tx.to_var_bytes();
         tx_wire.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
         tx_wire.write_all(&payload[..])?;
         tx_wire.write_all(&DUMMY_HASH[..])?;

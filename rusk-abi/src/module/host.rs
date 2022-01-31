@@ -21,7 +21,7 @@ use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 
 use crate::hash::Hasher;
-use crate::{PublicInput, RuskModule};
+use crate::{PublicInput, RuskModule, TRANSCRIPT_LABEL};
 
 /// Hashes a vector of [`BlsScalar`] using Poseidon's sponge function
 pub fn poseidon_hash(scalars: &[BlsScalar]) -> BlsScalar {
@@ -68,7 +68,7 @@ pub fn verify_proof(
         &verifier_data,
         &proof,
         pi.as_slice(),
-        b"dusk-network",
+        TRANSCRIPT_LABEL,
     )
     .is_ok())
 }
