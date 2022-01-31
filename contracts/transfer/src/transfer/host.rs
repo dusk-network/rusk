@@ -41,6 +41,18 @@ impl TransferContract {
         let generator_note =
             Note::transparent(&mut rng, generator, generator_value);
 
+        // Here we are adding the notes to the state without passing from the
+        // WebAssembly side. So we need to canonicalize them since any inner
+        // [`JubJubExtended`] would result a different form otherwise.
+        let dusk_note = Note::from_bytes(&dusk_note.to_bytes()).expect(
+            "Must be possible to deserialized a Note from its serialized form",
+        );
+
+        let generator_note = Note::from_bytes(&generator_note.to_bytes())
+            .expect(
+            "Must be possible to deserialized a Note from its serialized form",
+        );
+
         let dusk_note = self.push_note(block_height, dusk_note)?;
         let generator_note = self.push_note(block_height, generator_note)?;
 

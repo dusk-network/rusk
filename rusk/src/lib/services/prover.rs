@@ -34,7 +34,6 @@ pub use rusk_proto::{
     WfcoProverRequest, WfcoProverResponse, WfctProverRequest,
     WfctProverResponse,
 };
-use std::collections::HashMap;
 
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
@@ -81,12 +80,21 @@ impl RuskProver {
                 ))
             })?;
 
-        let mut pi = Vec::with_capacity(5 + inputs.len() + 2 * outputs.len());
+        let mut pi: Vec<rusk_abi::PublicInput> =
+            Vec::with_capacity(5 + inputs.len() + 2 * outputs.len());
 
         pi.push(tx_hash.into());
         pi.push(tx.anchor().into());
         pi.extend(inputs.iter().map(|n| n.into()));
-        pi.push(tx.crossover().value_commitment().into());
+
+        pi.push(
+            tx.crossover()
+                .copied()
+                .unwrap_or_default()
+                .value_commitment()
+                .into(),
+        );
+
         pi.push(tx.fee().gas_limit.into());
         pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
 
