@@ -73,6 +73,15 @@ impl LocalStore {
         fs::write(&self.path, enc_seed)?;
         Ok(())
     }
+
+    /// Returns the filename of this store
+    pub fn name(&self) -> Option<String> {
+        // extract the name
+        let p = &self.path;
+        let name = p.file_stem()?.to_str()?;
+
+        Some(String::from(name))
+    }
 }
 
 impl fmt::Debug for LocalStore {

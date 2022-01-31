@@ -36,7 +36,7 @@ pub(crate) const DATA_DIR: &str = ".dusk";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.1.1")]
+#[clap(version = "0.1.2")]
 #[clap(about = "Easily manage your Dusk", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -239,7 +239,7 @@ async fn main() -> Result<(), Error> {
         let mut pb = PathBuf::new();
         pb.push(cfg.data_dir);
         pb.push(cfg.wallet_name);
-        pb = pb.with_extension("dat");
+        pb.set_extension("dat");
         pb
     };
 
