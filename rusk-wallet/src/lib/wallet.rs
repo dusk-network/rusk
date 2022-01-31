@@ -8,12 +8,11 @@ use std::fs;
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use serde::Serialize;
 
 use dusk_bytes::Serializable;
 use dusk_jubjub::BlsScalar;
 use dusk_wallet_core::{Store, Wallet};
-
-use serde::Serialize;
 
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
@@ -21,11 +20,22 @@ use crate::lib::store::LocalStore;
 use crate::lib::{prompt, SEED_SIZE};
 use crate::{CliCommand, Error};
 
+mod base64 {
+    use serde::{Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &[u8], s: S) -> Result<S::Ok, S::Error> {
+        let base64 = base64::encode(v);
+        String::serialize(&base64, s)
+    }
+}
+
 /// Bls key pair helper structure
 #[derive(Serialize)]
 struct BlsKeyPair {
-    secret_key_bls: String,
-    public_key_bls: String,
+    #[serde(with = "base64")]
+    secret_key_bls: [u8; 32],
+    #[serde(with = "base64")]
+    public_key_bls: [u8; 96],
 }
 
 /// Interface to wallet_core lib
@@ -172,8 +182,8 @@ impl CliWallet {
 
                 // create node-compatible json structure
                 let bls = BlsKeyPair {
-                    secret_key_bls: base64::encode(sk.to_bytes()),
-                    public_key_bls: base64::encode(pk.to_bytes()),
+                    secret_key_bls: sk.to_bytes(),
+                    public_key_bls: pk.to_bytes(),
                 };
                 let json = serde_json::to_string(&bls)?;
 
@@ -185,9 +195,14 @@ impl CliWallet {
                 }
 
                 // write to disk
+                let filename = match self.store.name() {
+                    Some(name) => format!("{}-{}", name, key),
+                    None => key.to_string(),
+                };
+
                 let mut path = dirs::home_dir().expect("user home dir");
-                path.push(format!("key{}", key));
-                path = path.with_extension("sk");
+                path.push(&filename);
+                path.set_extension("key");
 
                 fs::write(&path, bytes)?;
 

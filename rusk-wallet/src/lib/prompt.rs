@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::env;
 use std::path::PathBuf;
 
 use blake3::Hash;
@@ -13,14 +14,19 @@ use crate::CliCommand;
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
-    let q = Question::password("password")
-        .message(format!("{}:", msg))
-        .mask('*')
-        .build();
-    let a = requestty::prompt_one(q).unwrap();
-    let pwd = a.as_string().unwrap_or("").to_string();
-    let pwd = blake3::hash(pwd.as_bytes());
-    pwd
+    let pwd = match env::var("RUSK_WALLET_PWD") {
+        Ok(p) => p,
+        Err(_) => {
+            let q = Question::password("password")
+                .message(format!("{}:", msg))
+                .mask('*')
+                .build();
+            let a = requestty::prompt_one(q).unwrap();
+            let p = a.as_string().unwrap();
+            p.to_string()
+        }
+    };
+    blake3::hash(pwd.as_bytes())
 }
 
 /// Request the user to create a wallet password
