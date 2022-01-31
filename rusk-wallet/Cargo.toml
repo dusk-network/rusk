@@ -1,0 +1,34 @@
+[package]
+name = "rusk-wallet"
+version = "0.1.1"
+edition = "2021"
+
+[dependencies]
+clap = { version = "3.0", features = ["derive"] }
+tokio = { version = "1.15", features = ["full"] }
+block-modes = "0.8"
+tiny-bip39 = "0.8"
+requestty = "0.3"
+crypto = "0.3"
+whoami = "1.2"
+blake3 = "1.3"
+tonic = "0.6"
+prost = "0.9"
+dirs = "4.0"
+bs58 = "0.4"
+rand = "0.8"
+aes = "0.7"
+
+dusk-wallet-core = "0.8.0-rc"
+canonical = "0.6"
+dusk-bytes = "0.1"
+dusk-pki = "0.9.0-rc"
+phoenix-core = "0.15.0-rc"
+dusk-schnorr = { version = "0.9.0-rc", default-features = false }
+dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
+dusk-plonk = { version = "^0.9", default-features = false }
+dusk-jubjub = { version = "^0.10", default-features = false }
+dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features = [ "canon" ] }
+
+[build-dependencies]
+tonic-build = "0.6"
