@@ -7,7 +7,7 @@
 use crate::provisioners::PROVISIONERS;
 use crate::theme::Theme;
 
-use microkelvin::{Backend, BackendCtor, DiskBackend, PersistError};
+use microkelvin::{Backend, BackendCtor, DiskBackend};
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -15,13 +15,16 @@ use rusk_abi;
 use rusk_vm::{Contract, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use std::{fs, io};
-use tracing::info;
+use tracing::{error, info};
 use transfer_contract::TransferContract;
 
 /// Initial amount of the note inserted in the state.
 const GENESIS_DUSK: u64 = 1_000_000_000; // 1000 Dusk.
 /// The number of blocks after which the genesis stake expires.
 const GENESIS_EXPIRATION: u64 = 1_000_000;
+
+const EXPECTED_ROOT: &str =
+    "09978bbf8037095dd849e21a95333538d7fec205733028b8aa78d0009e03901a";
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
@@ -80,7 +83,9 @@ fn genesis_stake() -> StakeContract {
     stake_contract
 }
 
-pub fn deploy<B>(ctor: &BackendCtor<B>) -> Result<NetworkStateId, PersistError>
+pub fn deploy<B>(
+    ctor: &BackendCtor<B>,
+) -> Result<NetworkStateId, Box<dyn std::error::Error>>
 where
     B: 'static + Backend,
 {
@@ -120,7 +125,16 @@ where
 
     info!("{} network state", theme.action("Storing"));
 
-    info!("{} {}", theme.action("Root"), hex::encode(network.root()));
+    let root = hex::encode(network.root());
+
+    if root != EXPECTED_ROOT {
+        error!("{} expected state root failed", theme.action("Checking"));
+        error!("{} {}", theme.error("Expected"), EXPECTED_ROOT);
+        error!("{} {}", theme.error("Computed"), root);
+        return Err("state root mismatch".into());
+    }
+
+    info!("{} {}", theme.action("Root"), root);
 
     let state_id = network.persist(ctor).expect("Error in persistence");
 
