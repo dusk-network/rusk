@@ -19,5 +19,6 @@ wasm: ## Build the WASM files
 		--release \
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
+	@cp ../../target/wasm32-unknown-unknown/release/stake_contract.wasm ../../obj
 
 .PHONY: check test utils wasm help
