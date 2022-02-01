@@ -12,7 +12,7 @@ allmacros: ## Build the workspace macro libs and test them
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
-state: wasm ## Create the network state
+state: ## Create the network state
 	$(MAKE) -C ./rusk-recovery state
 
 wasm: ## Generate the WASM for all the contracts
