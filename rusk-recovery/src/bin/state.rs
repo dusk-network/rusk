@@ -25,9 +25,9 @@ struct Cli {
     )]
     profile: PathBuf,
 
-    /// Overwrite the current state if exists
-    #[clap(short = 'w', long, env = "RUSK_OVERWRITE_STATE")]
-    overwrite: bool,
+    /// Builds the state from scratch instead of downloading it.
+    #[clap(short = 'w', long, env = "RUSK_BUILD_STATE")]
+    build: bool,
 
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
@@ -37,7 +37,7 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     task::run(
-        || rusk_recovery_tools::state::exec(args.overwrite),
+        || rusk_recovery_tools::state::exec(args.build),
         args.profile,
         args.verbose,
     )

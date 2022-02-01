@@ -1,6 +1,6 @@
 [package]
 name = "rusk-recovery"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
@@ -47,6 +47,8 @@ thiserror = "1.0"
 console = "0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
+http_req = "0.8"
+zip = "0.5"
 
 [features]
 state = []

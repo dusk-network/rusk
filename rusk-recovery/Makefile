@@ -5,7 +5,7 @@ keys: ## Build circuit keys
 	cargo run --release --bin rusk-recovery-keys --features keys
 
 state: ## Build network state
-	cargo run --release --bin rusk-recovery-state --features state -- -w
+	cargo run --release --bin rusk-recovery-state --features state
 
 test: ## Run Rusk tests
 	@cargo test \
@@ -14,4 +14,4 @@ test: ## Run Rusk tests
 		-- --nocapture \
 		--test-threads 1
 
-.PHONY: keys test help
+.PHONY: keys state test help
