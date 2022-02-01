@@ -74,10 +74,22 @@ pub fn get_rusk_profile_dir() -> Result<PathBuf, io::Error> {
 }
 
 fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
-    let mut profile = get_rusk_profile_dir()?;
-    profile.push("keys");
-    fs::create_dir_all(profile.clone())?;
-    Ok(profile)
+    env::var("RUSK_KEYS_PATH")
+        .map_or_else(
+            |_| get_rusk_profile_dir().ok(),
+            |e| Some(PathBuf::from(e)),
+        )
+        .and_then(|mut p| {
+            p.push("keys");
+            fs::create_dir_all(&p).map(|_| p).ok()
+        })
+        .ok_or_else(|| {
+            warn!("rusk-profile key's dir not found and impossible to create");
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                "User Profile Dir not found",
+            )
+        })
 }
 
 pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
