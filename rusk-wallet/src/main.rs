@@ -135,7 +135,7 @@ enum CliCommand {
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
-
+/*
     /// Extend stake for a particular key
     ExtendStake {
         /// Key index from which your Dusk was staked
@@ -154,7 +154,7 @@ enum CliCommand {
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
-
+*/
     /// Withdraw a key's stake
     WithdrawStake {
         /// Key index from which your Dusk was staked

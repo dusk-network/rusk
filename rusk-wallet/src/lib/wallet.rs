@@ -171,7 +171,7 @@ impl CliWallet {
                     Err(Error::Offline)
                 }
             }
-
+/*
             // Extend stake for a particular key
             ExtendStake {
                 key,
@@ -196,7 +196,7 @@ impl CliWallet {
                     Err(Error::Offline)
                 }
             }
-
+*/
             // Withdraw a key's stake
             WithdrawStake {
                 key,
