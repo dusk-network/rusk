@@ -63,6 +63,12 @@ impl MnemSeed {
             Err(_) => Err(Error::InvalidMnemonicPhrase),
         }
     }
+
+    /// Returns true if a given mnemonic phrase is valid
+    pub fn is_valid(phrase: &str) -> bool {
+        Mnemonic::from_phrase(phrase, Language::English).is_ok()
+    }
+
 }
 
 /// Encrypts data using a password.
