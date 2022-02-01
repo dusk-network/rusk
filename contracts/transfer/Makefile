@@ -14,7 +14,8 @@ utils: ## Build the WASM files of the test utils
 	$(MAKE) -C ../../ $@
 
 wasm: ## Build the WASM files
-	@cargo rustc \
+	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)=" \
+		cargo rustc \
 		--release \
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
