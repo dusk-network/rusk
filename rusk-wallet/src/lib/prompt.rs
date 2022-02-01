@@ -10,8 +10,9 @@ use std::path::PathBuf;
 use blake3::Hash;
 use requestty::Question;
 
-use crate::{CliCommand, WalletCfg};
 use crate::lib::crypto::MnemSeed;
+use crate::lib::to_udusk;
+use crate::{CliCommand, WalletCfg};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
@@ -22,7 +23,7 @@ pub(crate) fn request_auth(msg: &str) -> Hash {
                 .message(format!("{}:", msg))
                 .mask('*')
                 .build();
-            let a = requestty::prompt_one(q).unwrap();
+            let a = requestty::prompt_one(q).expect("password");
             let p = a.as_string().unwrap();
             p.to_string()
         }
@@ -41,7 +42,7 @@ pub(crate) fn create_password() -> Hash {
             .message("Enter a strong password for your wallet:")
             .mask('*')
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+        let a = requestty::prompt_one(q).expect("password");
         let pwd1 = a.as_string().unwrap_or("").to_string();
 
         // confirm password
@@ -49,7 +50,7 @@ pub(crate) fn create_password() -> Hash {
             .message("Please confirm your password:")
             .mask('*')
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+        let a = requestty::prompt_one(q).expect("password confirmation");
         let pwd2 = a.as_string().unwrap_or("").to_string();
 
         // check match
@@ -79,7 +80,8 @@ pub(crate) fn confirm_recovery_phrase(phrase: String) {
         let q = requestty::Question::confirm("proceed")
             .message("Have you backed up your recovery phrase?")
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+
+        let a = requestty::prompt_one(q).expect("confirmation");
         if a.as_bool().unwrap() {
             return;
         }
@@ -92,7 +94,8 @@ pub(crate) fn confirm_encryption() -> bool {
     let q = requestty::Question::confirm("encrypt")
         .message("Encrypt the exported key pair file?")
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+
+    let a = requestty::prompt_one(q).expect("confirmation");
     a.as_bool().unwrap()
 }
 
@@ -109,9 +112,9 @@ pub(crate) fn request_recovery_phrase() -> String {
                 Err("Please enter a valid recovery phrase".to_string())
             }
         })
-
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+
+    let a = requestty::prompt_one(q).expect("recovery phrase");
     let phrase = a.as_string().unwrap().to_string();
     phrase
 }
@@ -127,7 +130,8 @@ pub(crate) fn welcome() -> u8 {
         .default_separator()
         .choice("Exit")
         .build();
-    let answer = requestty::prompt_one(q).unwrap();
+
+    let answer = requestty::prompt_one(q).expect("choice");
     match answer.as_list_item().unwrap().index {
         0 => 1,
         1 => 2,
@@ -136,7 +140,10 @@ pub(crate) fn welcome() -> u8 {
 }
 
 /// Request the user to select a wallet to open
-pub(crate) fn select_wallet(dir: &str, wallets: Vec<String>) -> Option<PathBuf> {
+pub(crate) fn select_wallet(
+    dir: &str,
+    wallets: Vec<String>,
+) -> Option<PathBuf> {
     // select the wallet
     let q = Question::select("wallet")
         .message("Please select the wallet you wish to use:")
@@ -144,7 +151,7 @@ pub(crate) fn select_wallet(dir: &str, wallets: Vec<String>) -> Option<PathBuf> 
         .default_separator()
         .choice("Other...")
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+    let a = requestty::prompt_one(q).expect("choice");
     let wi = a.as_list_item().unwrap().index;
 
     if wi > wallets.len() {
@@ -156,12 +163,10 @@ pub(crate) fn select_wallet(dir: &str, wallets: Vec<String>) -> Option<PathBuf> 
         path.push(wallets[wi].clone());
         Some(path)
     }
-
 }
 
 /// Request a name for the wallet
 pub(crate) fn request_wallet_name() -> String {
-
     let q = Question::input("name")
         .message("Please enter a wallet name:")
         .validate_on_key(|name, _| !wallet_exists(name))
@@ -174,7 +179,7 @@ pub(crate) fn request_wallet_name() -> String {
         })
         .build();
 
-    let a = requestty::prompt_one(q).unwrap();
+    let a = requestty::prompt_one(q).expect("wallet name");
     a.as_string().unwrap().to_string()
 }
 
@@ -189,31 +194,22 @@ fn wallet_exists(name: &str) -> bool {
 
 /// Let the user choose a command to execute
 pub(crate) fn command(offline: bool) -> Option<CliCommand> {
-
     // notify the user if we're note connected
     let offline_notice = match offline {
         false => "",
         true => " [offline]",
     };
 
-    // choices differ if user is online or not
-    let choices = match offline {
-        false => {
-            vec![
-                "Retrieve my public spend key",
-                "Check my current balance",
-                "Send Dusk",
-                "Stake Dusk",
-                "Unstake Dusk",
-            ]
-        }
-        true => {
-            vec![
-                "Retrieve my public spend key",
-            ]
-        }
-    };
-
+    let mut choices = vec!["Retrieve my public spend key"];
+    let mut online_choices = vec![
+        "Check my current balance",
+        "Send Dusk",
+        "Stake Dusk",
+        "Unstake Dusk",
+    ];
+    if !offline {
+        choices.append(&mut online_choices)
+    }
 
     let msg = format!("What would you like to do?{}", offline_notice);
     let q = Question::select("action")
@@ -246,7 +242,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 })
             }
             // Exit
-            _ => None
+            _ => None,
         }
     } else {
         match index {
@@ -345,7 +341,7 @@ pub(crate) fn request_key_index(key_type: &str) -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
+    let a = requestty::prompt_one(question).expect("key index");
     let val = a.as_int().unwrap();
     u64::try_from(val).ok().unwrap()
 }
@@ -365,7 +361,7 @@ pub(crate) fn request_rcvr_addr() -> String {
         })
         .build();
 
-    let a = requestty::prompt_one(q).unwrap();
+    let a = requestty::prompt_one(q).expect("receiver address");
     a.as_string().unwrap().to_string()
 }
 
@@ -388,9 +384,9 @@ pub(crate) fn request_token_amt(action: &str) -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
-    let dusk_amt = a.as_float().unwrap();
-    (dusk_amt * 1_000_000.0) as u64
+    let a = requestty::prompt_one(question).expect("token amount");
+    let dusk = a.as_float().unwrap();
+    to_udusk(dusk)
 }
 
 /// Request gas spend limit
@@ -411,7 +407,7 @@ pub(crate) fn request_gas_limit() -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
+    let a = requestty::prompt_one(question).expect("gas limit");
     let val = a.as_int().unwrap();
     u64::try_from(val).ok().unwrap()
 }

@@ -17,6 +17,7 @@ use dusk_wallet_core::{Store, Wallet};
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
+use crate::lib::to_dusk;
 use crate::lib::{prompt, SEED_SIZE};
 use crate::{CliCommand, Error};
 
@@ -45,7 +46,6 @@ pub(crate) struct CliWallet {
 }
 
 impl CliWallet {
-
     /// Creates a new CliWallet instance
     pub fn new(store: LocalStore, state: State, prover: Prover) -> Self {
         CliWallet {
@@ -57,14 +57,14 @@ impl CliWallet {
     /// Creates a new offline CliWallet instance
     pub fn offline(store: LocalStore) -> Self {
         CliWallet {
-            store: store.clone(),
+            store,
             wallet: None,
         }
     }
 
     /// Runs the CliWallet in interactive mode
     pub fn interactive(&self) -> Result<(), Error> {
-        let offline = !self.wallet.is_some();
+        let offline = self.wallet.is_none();
         loop {
             match prompt::command(offline) {
                 Some(cmd) => {
@@ -91,7 +91,7 @@ impl CliWallet {
                     println!(
                         "> Balance for key {} is: {} Dusk",
                         key,
-                        balance / 1_000_000
+                        to_dusk(balance)
                     );
                     Ok(())
                 } else {
@@ -171,7 +171,7 @@ impl CliWallet {
                     Err(Error::Offline)
                 }
             }
-/*
+            /*
             // Extend stake for a particular key
             ExtendStake {
                 key,
@@ -196,7 +196,7 @@ impl CliWallet {
                     Err(Error::Offline)
                 }
             }
-*/
+            */
             // Withdraw a key's stake
             WithdrawStake {
                 key,
@@ -266,7 +266,7 @@ impl CliWallet {
             }
 
             // Do nothing
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 }

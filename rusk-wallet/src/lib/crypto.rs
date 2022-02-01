@@ -68,7 +68,6 @@ impl MnemSeed {
     pub fn is_valid(phrase: &str) -> bool {
         Mnemonic::from_phrase(phrase, Language::English).is_ok()
     }
-
 }
 
 /// Encrypts data using a password.

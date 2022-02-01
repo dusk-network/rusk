@@ -11,9 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Offline mode [#499] [#507]
+- Live validation to user interactive input
+- Improved navigation through interactive menus
+- "Pause" after command outputs for better readability
 
-### Changed
-- Notable UX improvements
+### Fixed
+- Bad UX when creating an already existing wallet with default name
 
 ## [0.1.2] - 2022-01-31
 

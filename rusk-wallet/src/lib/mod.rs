@@ -12,3 +12,15 @@ pub mod store;
 pub mod wallet;
 
 pub const SEED_SIZE: usize = 64;
+pub const ONE_MILLION: f64 = 1_000_000.0;
+
+/// Convert from Dusk to uDusk
+pub fn to_udusk(dusk: f64) -> u64 {
+    (dusk * ONE_MILLION) as u64
+}
+
+/// Convert from uDusk to Dusk
+pub fn to_dusk(udusk: u64) -> f64 {
+    let udusk = udusk as f64;
+    udusk / ONE_MILLION
+}
