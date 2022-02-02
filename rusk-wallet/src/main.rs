@@ -14,6 +14,7 @@ pub use lib::error::Error;
 use clap::{AppSettings, Parser, Subcommand};
 use std::fs;
 use std::path::{Path, PathBuf};
+use tonic::transport::Channel;
 
 use lib::clients::{Prover, State};
 use lib::crypto::MnemSeed;
@@ -36,11 +37,11 @@ pub(crate) const DATA_DIR: &str = ".dusk";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.1.2")]
+#[clap(version = "0.1.3")]
 #[clap(about = "Easily manage your Dusk", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
-pub struct WalletCfg {
+pub(crate) struct WalletCfg {
     /// Directory to store user data
     #[clap(short, long, default_value_t = WalletCfg::default_data_dir())]
     data_dir: String,
@@ -134,26 +135,26 @@ enum CliCommand {
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
+    /*
+        /// Extend stake for a particular key
+        ExtendStake {
+            /// Key index from which your Dusk was staked
+            #[clap(short, long)]
+            key: u64,
 
-    /// Extend stake for a particular key
-    ExtendStake {
-        /// Key index from which your Dusk was staked
-        #[clap(short, long)]
-        key: u64,
+            /// Staking key index used for this stake
+            #[clap(short, long)]
+            stake_key: u64,
 
-        /// Staking key index used for this stake
-        #[clap(short, long)]
-        stake_key: u64,
+            /// Max amt of gas for this transaction
+            #[clap(short = 'l', long)]
+            gas_limit: u64,
 
-        /// Max amt of gas for this transaction
-        #[clap(short = 'l', long)]
-        gas_limit: u64,
-
-        /// Max price you're willing to pay for gas used
-        #[clap(short = 'p', long)]
-        gas_price: Option<u64>,
-    },
-
+            /// Max price you're willing to pay for gas used
+            #[clap(short = 'p', long)]
+            gas_price: Option<u64>,
+        },
+    */
     /// Withdraw a key's stake
     WithdrawStake {
         /// Key index from which your Dusk was staked
@@ -218,6 +219,23 @@ impl WalletCfg {
     }
 }
 
+/// Client connections to rusk Services
+struct Rusk {
+    network: NetworkClient<Channel>,
+    state: StateClient<Channel>,
+    prover: ProverClient<Channel>,
+}
+
+/// Connect to rusk services
+async fn connect(addr: &str, port: &str) -> Result<Rusk, Error> {
+    let rusk_addr = format!("http://{}:{}", addr, port);
+    Ok(Rusk {
+        network: NetworkClient::connect(rusk_addr.clone()).await?,
+        state: StateClient::connect(rusk_addr.clone()).await?,
+        prover: ProverClient::connect(rusk_addr).await?,
+    })
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     use CliCommand::*;
@@ -237,8 +255,8 @@ async fn main() -> Result<(), Error> {
         p.with_extension("dat")
     } else {
         let mut pb = PathBuf::new();
-        pb.push(cfg.data_dir);
-        pb.push(cfg.wallet_name);
+        pb.push(&cfg.data_dir);
+        pb.push(&cfg.wallet_name);
         pb.set_extension("dat");
         pb
     };
@@ -258,18 +276,16 @@ async fn main() -> Result<(), Error> {
         _ => LocalStore::from_file(wallet_path, pwd)?,
     };
 
-    // connect to rusk services
-    let rusk_addr = format!("http://{}:{}", cfg.rusk_addr, cfg.rusk_port);
-
-    let network_client = NetworkClient::connect(rusk_addr.clone()).await?;
-    let state_client = StateClient::connect(rusk_addr.clone()).await?;
-    let prover_client = ProverClient::connect(rusk_addr).await?;
-
-    let prover = Prover::new(prover_client, network_client);
-    let state = State::new(state_client);
-
-    // create our wallet
-    let wallet = CliWallet::new(store, state, prover);
+    // create the wallet
+    let rusk = connect(&cfg.rusk_addr, &cfg.rusk_port).await;
+    let wallet = match rusk {
+        Ok(clients) => {
+            let prover = Prover::new(clients.prover, clients.network);
+            let state = State::new(clients.state);
+            CliWallet::new(store, state, prover)
+        }
+        Err(_) => CliWallet::offline(store),
+    };
 
     // run command(s)
     match cmd {
@@ -279,10 +295,12 @@ async fn main() -> Result<(), Error> {
 }
 
 /// Create a new wallet
-fn create(path: PathBuf) -> Result<LocalStore, Error> {
+fn create(mut path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
-    if path.is_file() {
-        return Err(Error::WalletFileExists);
+    while path.is_file() {
+        let name = prompt::request_wallet_name();
+        path.set_file_name(name);
+        path.set_extension("dat");
     }
 
     // generate mnemonic and seed
@@ -298,17 +316,19 @@ fn create(path: PathBuf) -> Result<LocalStore, Error> {
 
     // inform the user and return
     println!(
-        "Your new wallet was created: {}",
+        "> Your new wallet was created: {}",
         path.as_os_str().to_str().unwrap()
     );
     Ok(store)
 }
 
 /// Recover access to a lost wallet file
-fn recover(path: PathBuf) -> Result<LocalStore, Error> {
+fn recover(mut path: PathBuf) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
-    if path.is_file() {
-        return Err(Error::WalletFileExists);
+    while path.is_file() {
+        let name = prompt::request_wallet_name();
+        path.set_file_name(name);
+        path.set_extension("dat");
     }
 
     // ask user for 12-word recovery phrase
@@ -326,13 +346,13 @@ fn recover(path: PathBuf) -> Result<LocalStore, Error> {
 
     // inform the user and return
     println!(
-        "Your wallet was restored succesfully: {}",
+        "> Your wallet was restored succesfully: {}",
         path.as_os_str().to_str().unwrap()
     );
     Ok(store)
 }
 
-/// Run interactive mode
+/// Loads the store interactively
 fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
     // find existing wallets
     let dir = WalletCfg::default_data_dir();
@@ -340,10 +360,20 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
 
     // let the user choose one
     if !wallets.is_empty() {
-        let path = prompt::select_wallet(&dir, wallets);
-        let pwd = prompt::request_auth("Please enter your wallet's password");
-        let store = LocalStore::from_file(path, pwd)?;
-        Ok(store)
+        let wallet = prompt::select_wallet(&dir, wallets);
+        if let Some(w) = wallet {
+            let pwd =
+                prompt::request_auth("Please enter your wallet's password");
+            let store = LocalStore::from_file(w, pwd)?;
+            Ok(store)
+        } else {
+            let action = prompt::welcome();
+            match action {
+                1 => Ok(create(path)?),
+                2 => Ok(recover(path)?),
+                _ => Err(Error::UserExit),
+            }
+        }
     }
     // nothing found
     else {

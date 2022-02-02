@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.1.3] - 2022-02-01
+
+### Added
+- Offline mode [#499] [#507]
+- Live validation to user interactive input
+- Improved navigation through interactive menus
+- "Pause" after command outputs for better readability
+
+### Fixed
+- Bad UX when creating an already existing wallet with default name
+
 ## [0.1.2] - 2022-01-31
 
 ### Added
@@ -41,4 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#479]: https://github.com/dusk-network/rusk/issues/479
 [#492]: https://github.com/dusk-network/rusk/issues/492
 [#495]: https://github.com/dusk-network/rusk/issues/495
+[#499]: https://github.com/dusk-network/rusk/issues/499
 [#505]: https://github.com/dusk-network/rusk/issues/505
+[#507]: https://github.com/dusk-network/rusk/issues/507

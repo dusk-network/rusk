@@ -10,7 +10,9 @@ use std::path::PathBuf;
 use blake3::Hash;
 use requestty::Question;
 
-use crate::CliCommand;
+use crate::lib::crypto::MnemSeed;
+use crate::lib::to_udusk;
+use crate::{CliCommand, WalletCfg};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
@@ -21,7 +23,7 @@ pub(crate) fn request_auth(msg: &str) -> Hash {
                 .message(format!("{}:", msg))
                 .mask('*')
                 .build();
-            let a = requestty::prompt_one(q).unwrap();
+            let a = requestty::prompt_one(q).expect("password");
             let p = a.as_string().unwrap();
             p.to_string()
         }
@@ -40,7 +42,7 @@ pub(crate) fn create_password() -> Hash {
             .message("Enter a strong password for your wallet:")
             .mask('*')
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+        let a = requestty::prompt_one(q).expect("password");
         let pwd1 = a.as_string().unwrap_or("").to_string();
 
         // confirm password
@@ -48,7 +50,7 @@ pub(crate) fn create_password() -> Hash {
             .message("Please confirm your password:")
             .mask('*')
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+        let a = requestty::prompt_one(q).expect("password confirmation");
         let pwd2 = a.as_string().unwrap_or("").to_string();
 
         // check match
@@ -78,7 +80,8 @@ pub(crate) fn confirm_recovery_phrase(phrase: String) {
         let q = requestty::Question::confirm("proceed")
             .message("Have you backed up your recovery phrase?")
             .build();
-        let a = requestty::prompt_one(q).unwrap();
+
+        let a = requestty::prompt_one(q).expect("confirmation");
         if a.as_bool().unwrap() {
             return;
         }
@@ -91,7 +94,8 @@ pub(crate) fn confirm_encryption() -> bool {
     let q = requestty::Question::confirm("encrypt")
         .message("Encrypt the exported key pair file?")
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+
+    let a = requestty::prompt_one(q).expect("confirmation");
     a.as_bool().unwrap()
 }
 
@@ -100,8 +104,17 @@ pub(crate) fn request_recovery_phrase() -> String {
     // let the user input the recovery phrase
     let q = Question::input("phrase")
         .message("Please enter the recovery phrase:")
+        .validate_on_key(|phrase, _| MnemSeed::is_valid(phrase))
+        .validate(|phrase, _| {
+            if MnemSeed::is_valid(phrase) {
+                Ok(())
+            } else {
+                Err("Please enter a valid recovery phrase".to_string())
+            }
+        })
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+
+    let a = requestty::prompt_one(q).expect("recovery phrase");
     let phrase = a.as_string().unwrap().to_string();
     phrase
 }
@@ -117,7 +130,8 @@ pub(crate) fn welcome() -> u8 {
         .default_separator()
         .choice("Exit")
         .build();
-    let answer = requestty::prompt_one(q).unwrap();
+
+    let answer = requestty::prompt_one(q).expect("choice");
     match answer.as_list_item().unwrap().index {
         0 => 1,
         1 => 2,
@@ -126,121 +140,189 @@ pub(crate) fn welcome() -> u8 {
 }
 
 /// Request the user to select a wallet to open
-pub(crate) fn select_wallet(dir: &str, wallets: Vec<String>) -> PathBuf {
+pub(crate) fn select_wallet(
+    dir: &str,
+    wallets: Vec<String>,
+) -> Option<PathBuf> {
     // select the wallet
     let q = Question::select("wallet")
         .message("Please select the wallet you wish to use:")
         .choices(&wallets)
+        .default_separator()
+        .choice("Other...")
         .build();
-    let a = requestty::prompt_one(q).unwrap();
+    let a = requestty::prompt_one(q).expect("choice");
     let wi = a.as_list_item().unwrap().index;
 
-    // gen full path for selected wallet
-    let mut path = PathBuf::new();
-    path.push(dir);
-    path.push(wallets[wi].clone());
-    path
+    if wi > wallets.len() {
+        None
+    } else {
+        // gen full path for selected wallet
+        let mut path = PathBuf::new();
+        path.push(dir);
+        path.push(wallets[wi].clone());
+        Some(path)
+    }
+}
+
+/// Request a name for the wallet
+pub(crate) fn request_wallet_name() -> String {
+    let q = Question::input("name")
+        .message("Please enter a wallet name:")
+        .validate_on_key(|name, _| !wallet_exists(name))
+        .validate(|name, _| {
+            if !wallet_exists(name) {
+                Ok(())
+            } else {
+                Err("A wallet with this name already exists".to_string())
+            }
+        })
+        .build();
+
+    let a = requestty::prompt_one(q).expect("wallet name");
+    a.as_string().unwrap().to_string()
+}
+
+/// Checks if a wallet with this name already exists
+fn wallet_exists(name: &str) -> bool {
+    let mut pb = PathBuf::new();
+    pb.push(WalletCfg::default_data_dir());
+    pb.push(name);
+    pb.set_extension("dat");
+    pb.is_file()
 }
 
 /// Let the user choose a command to execute
-pub(crate) fn command() -> Option<CliCommand> {
-    let msg = "What would you like to do?";
+pub(crate) fn command(offline: bool) -> Option<CliCommand> {
+    // notify the user if we're note connected
+    let offline_notice = match offline {
+        false => "",
+        true => " [offline]",
+    };
+
+    let mut choices = vec!["Retrieve my public spend key"];
+    let mut online_choices = vec![
+        "Check my current balance",
+        "Send Dusk",
+        "Stake Dusk",
+        "Unstake Dusk",
+    ];
+    if !offline {
+        choices.append(&mut online_choices)
+    }
+
+    let msg = format!("What would you like to do?{}", offline_notice);
     let q = Question::select("action")
         .message(msg)
-        .choices(vec![
-            "Check my current balance",
-            "Retrieve my public spend key",
-            "Send Dusk",
-            "Stake Dusk",
-            "Extend stake for a particular key",
-            "Withdraw a key's stake",
-            "Export provisioner BLS key pair",
-        ])
+        .choices(choices)
+        .default_separator()
+        .choice("Export provisioner BLS key pair")
         .default_separator()
         .choice("Exit")
         .build();
 
-    let answer = requestty::prompt_one(q).unwrap();
+    let answer = requestty::prompt_one(q).expect("command");
+    let index = answer.as_list_item().unwrap().index;
 
     use CliCommand::*;
-    match answer.as_list_item().unwrap().index {
-        // Check balance
-        0 => {
-            let key = request_key_index("spend");
-            Some(Balance { key })
+    if offline {
+        match index {
+            // Public spend key
+            0 => {
+                let key = request_key_index("spend");
+                Some(Address { key })
+            }
+            // Export BLS Key Pair
+            2 => {
+                let key = request_key_index("stake");
+                let encrypt = confirm_encryption();
+                Some(Export {
+                    key,
+                    plaintext: !encrypt,
+                })
+            }
+            // Exit
+            _ => None,
         }
-        // Public spend key
-        1 => {
-            let key = request_key_index("spend");
-            Some(Address { key })
+    } else {
+        match index {
+            // Public spend key
+            0 => {
+                let key = request_key_index("spend");
+                Some(Address { key })
+            }
+            // Check balance
+            1 => {
+                let key = request_key_index("spend");
+                Some(Balance { key })
+            }
+            // Create transfer
+            2 => {
+                let key = request_key_index("spend");
+                let rcvr = request_rcvr_addr();
+                let amt = request_token_amt("transfer");
+                let gas_limit = request_gas_limit();
+                let gas_price = Some(0);
+                Some(Transfer {
+                    key,
+                    rcvr,
+                    amt,
+                    gas_limit,
+                    gas_price,
+                })
+            }
+            // Stake
+            3 => {
+                let key = request_key_index("spend");
+                let stake_key = request_key_index("stake");
+                let amt = request_token_amt("stake");
+                let gas_limit = request_gas_limit();
+                let gas_price = Some(0);
+                Some(Stake {
+                    key,
+                    stake_key,
+                    amt,
+                    gas_limit,
+                    gas_price,
+                })
+            }
+            // Extend stake
+            /*4 => {
+                let key = request_key_index("spend");
+                let stake_key = request_key_index("stake");
+                let gas_limit = request_gas_limit();
+                let gas_price = Some(0);
+                Some(ExtendStake {
+                    key,
+                    stake_key,
+                    gas_limit,
+                    gas_price,
+                })
+            }*/
+            // Withdraw stake
+            4 => {
+                let key = request_key_index("spend");
+                let stake_key = request_key_index("stake");
+                let gas_limit = request_gas_limit();
+                let gas_price = Some(0);
+                Some(WithdrawStake {
+                    key,
+                    stake_key,
+                    gas_limit,
+                    gas_price,
+                })
+            }
+            // Export BLS Key Pair
+            6 => {
+                let key = request_key_index("stake");
+                let encrypt = confirm_encryption();
+                Some(Export {
+                    key,
+                    plaintext: !encrypt,
+                })
+            }
+            _ => None,
         }
-        // Create transfer
-        2 => {
-            let key = request_key_index("spend");
-            let rcvr = request_rcvr_addr();
-            let amt = request_token_amt("transfer");
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(0);
-            Some(Transfer {
-                key,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
-            })
-        }
-        // Stake
-        3 => {
-            let key = request_key_index("spend");
-            let stake_key = request_key_index("stake");
-            let amt = request_token_amt("stake");
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(0);
-            Some(Stake {
-                key,
-                stake_key,
-                amt,
-                gas_limit,
-                gas_price,
-            })
-        }
-        // Extend stake
-        4 => {
-            let key = request_key_index("spend");
-            let stake_key = request_key_index("stake");
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(0);
-            Some(ExtendStake {
-                key,
-                stake_key,
-                gas_limit,
-                gas_price,
-            })
-        }
-        // Withdraw stake
-        5 => {
-            let key = request_key_index("spend");
-            let stake_key = request_key_index("stake");
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(0);
-            Some(WithdrawStake {
-                key,
-                stake_key,
-                gas_limit,
-                gas_price,
-            })
-        }
-        // Export BLS Key Pair
-        6 => {
-            let key = request_key_index("stake");
-            let encrypt = confirm_encryption();
-            //let pwd = prompt::request_auth();
-            Some(Export {
-                key,
-                plaintext: !encrypt,
-            })
-        }
-        _ => None,
     }
 }
 
@@ -259,14 +341,14 @@ pub(crate) fn request_key_index(key_type: &str) -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
+    let a = requestty::prompt_one(question).expect("key index");
     let val = a.as_int().unwrap();
     u64::try_from(val).ok().unwrap()
 }
 
 /// Request a receiver address
 pub(crate) fn request_rcvr_addr() -> String {
-    // let the user input the recovery phrase
+    // let the user input the receiver address
     let q = Question::input("addr")
         .message("Please enter the recipients address:")
         .validate_on_key(|addr, _| is_valid_addr(addr))
@@ -279,7 +361,7 @@ pub(crate) fn request_rcvr_addr() -> String {
         })
         .build();
 
-    let a = requestty::prompt_one(q).unwrap();
+    let a = requestty::prompt_one(q).expect("receiver address");
     a.as_string().unwrap().to_string()
 }
 
@@ -302,9 +384,9 @@ pub(crate) fn request_token_amt(action: &str) -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
-    let dusk_amt = a.as_float().unwrap();
-    (dusk_amt * 1_000_000.0) as u64
+    let a = requestty::prompt_one(question).expect("token amount");
+    let dusk = a.as_float().unwrap();
+    to_udusk(dusk)
 }
 
 /// Request gas spend limit
@@ -325,7 +407,7 @@ pub(crate) fn request_gas_limit() -> u64 {
         })
         .build();
 
-    let a = requestty::prompt_one(question).unwrap();
+    let a = requestty::prompt_one(question).expect("gas limit");
     let val = a.as_int().unwrap();
     u64::try_from(val).ok().unwrap()
 }

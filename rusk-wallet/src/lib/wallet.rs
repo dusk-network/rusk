@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::fs;
+use std::{fs, thread, time::Duration};
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -17,6 +17,7 @@ use dusk_wallet_core::{Store, Wallet};
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
+use crate::lib::to_dusk;
 use crate::lib::{prompt, SEED_SIZE};
 use crate::{CliCommand, Error};
 
@@ -41,7 +42,7 @@ struct BlsKeyPair {
 /// Interface to wallet_core lib
 pub(crate) struct CliWallet {
     store: LocalStore,
-    wallet: Wallet<LocalStore, State, Prover>,
+    wallet: Option<Wallet<LocalStore, State, Prover>>,
 }
 
 impl CliWallet {
@@ -49,15 +50,30 @@ impl CliWallet {
     pub fn new(store: LocalStore, state: State, prover: Prover) -> Self {
         CliWallet {
             store: store.clone(),
-            wallet: Wallet::new(store, state, prover),
+            wallet: Some(Wallet::new(store, state, prover)),
+        }
+    }
+
+    /// Creates a new offline CliWallet instance
+    pub fn offline(store: LocalStore) -> Self {
+        CliWallet {
+            store,
+            wallet: None,
         }
     }
 
     /// Runs the CliWallet in interactive mode
     pub fn interactive(&self) -> Result<(), Error> {
+        let offline = self.wallet.is_none();
         loop {
-            match prompt::command() {
-                Some(cmd) => self.run(cmd)?,
+            match prompt::command(offline) {
+                Some(cmd) => {
+                    // run command
+                    self.run(cmd)?;
+                    // wait for a second
+                    thread::sleep(Duration::from_millis(1000));
+                    println!("—")
+                }
                 None => return Ok(()),
             }
         }
@@ -70,20 +86,31 @@ impl CliWallet {
         match cmd {
             // Check your current balance
             Balance { key } => {
-                let balance = self.wallet.get_balance(key)?;
-                println!(
-                    "Balance for key {} is: {} Dusk ✅",
-                    key,
-                    balance / 1_000_000
-                );
+                if let Some(wallet) = &self.wallet {
+                    let balance = wallet.get_balance(key)?;
+                    println!(
+                        "> Balance for key {} is: {} Dusk",
+                        key,
+                        to_dusk(balance)
+                    );
+                    Ok(())
+                } else {
+                    Err(Error::Offline)
+                }
             }
 
             // Retrieve public spend key
             Address { key } => {
-                let pk = self.wallet.public_spend_key(key)?;
+                let pk = if let Some(wallet) = &self.wallet {
+                    wallet.public_spend_key(key)?
+                } else {
+                    let ssk = self.store.retrieve_ssk(key)?;
+                    ssk.public_spend_key()
+                };
                 let addr = pk.to_bytes();
                 let addr = bs58::encode(addr).into_string();
-                println!("Public address for key {} is: {:?} ✅", key, addr);
+                println!("> Public address for key {} is: {}", key, addr);
+                Ok(())
             }
 
             // Send Dusk through the network
@@ -94,23 +121,28 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
-                let mut addr_bytes = [0u8; SEED_SIZE];
-                addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
-                let dest_addr =
-                    dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
-                let my_addr = self.wallet.public_spend_key(key)?;
-                let mut rng = StdRng::from_entropy();
-                self.wallet.transfer(
-                    &mut rng,
-                    key,
-                    &my_addr,
-                    &dest_addr,
-                    amt,
-                    gas_limit,
-                    gas_price.unwrap_or(0),
-                    BlsScalar::zero(),
-                )?;
-                println!("Transfer sent! ✅");
+                if let Some(wallet) = &self.wallet {
+                    let mut addr_bytes = [0u8; SEED_SIZE];
+                    addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
+                    let dest_addr =
+                        dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
+                    let my_addr = wallet.public_spend_key(key)?;
+                    let mut rng = StdRng::from_entropy();
+                    wallet.transfer(
+                        &mut rng,
+                        key,
+                        &my_addr,
+                        &dest_addr,
+                        amt,
+                        gas_limit,
+                        gas_price.unwrap_or(0),
+                        BlsScalar::zero(),
+                    )?;
+                    println!("> Transfer sent!");
+                    Ok(())
+                } else {
+                    Err(Error::Offline)
+                }
             }
 
             // Start staking Dusk
@@ -121,20 +153,25 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
-                let my_addr = self.wallet.public_spend_key(key)?;
-                let mut rng = StdRng::from_entropy();
-                self.wallet.stake(
-                    &mut rng,
-                    key,
-                    stake_key,
-                    &my_addr,
-                    amt,
-                    gas_limit,
-                    gas_price.unwrap_or(0),
-                )?;
-                println!("Stake success! ✅");
+                if let Some(wallet) = &self.wallet {
+                    let my_addr = wallet.public_spend_key(key)?;
+                    let mut rng = StdRng::from_entropy();
+                    wallet.stake(
+                        &mut rng,
+                        key,
+                        stake_key,
+                        &my_addr,
+                        amt,
+                        gas_limit,
+                        gas_price.unwrap_or(0),
+                    )?;
+                    println!("> Stake success!");
+                    Ok(())
+                } else {
+                    Err(Error::Offline)
+                }
             }
-
+            /*
             // Extend stake for a particular key
             ExtendStake {
                 key,
@@ -142,19 +179,24 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
-                let my_addr = self.wallet.public_spend_key(key)?;
-                let mut rng = StdRng::from_entropy();
-                self.wallet.extend_stake(
-                    &mut rng,
-                    key,
-                    stake_key,
-                    &my_addr,
-                    gas_limit,
-                    gas_price.unwrap_or(0),
-                )?;
-                println!("Stake extension success! ✅");
+                if let Some(wallet) = &self.wallet {
+                    let my_addr = wallet.public_spend_key(key)?;
+                    let mut rng = StdRng::from_entropy();
+                    wallet.extend_stake(
+                        &mut rng,
+                        key,
+                        stake_key,
+                        &my_addr,
+                        gas_limit,
+                        gas_price.unwrap_or(0),
+                    )?;
+                    println!("> Stake extension success!");
+                    Ok(())
+                } else {
+                    Err(Error::Offline)
+                }
             }
-
+            */
             // Withdraw a key's stake
             WithdrawStake {
                 key,
@@ -162,23 +204,32 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
-                let my_addr = self.wallet.public_spend_key(key)?;
-                let mut rng = StdRng::from_entropy();
-                self.wallet.withdraw_stake(
-                    &mut rng,
-                    key,
-                    stake_key,
-                    &my_addr,
-                    gas_limit,
-                    gas_price.unwrap_or(0),
-                )?;
-                println!("Stake withdrawal success! ✅");
+                if let Some(wallet) = &self.wallet {
+                    let my_addr = wallet.public_spend_key(key)?;
+                    let mut rng = StdRng::from_entropy();
+                    wallet.withdraw_stake(
+                        &mut rng,
+                        key,
+                        stake_key,
+                        &my_addr,
+                        gas_limit,
+                        gas_price.unwrap_or(0),
+                    )?;
+                    println!("> Stake withdrawal success!");
+                    Ok(())
+                } else {
+                    Err(Error::Offline)
+                }
             }
 
             Export { key, plaintext } => {
                 // retrieve keys
                 let sk = self.store.retrieve_sk(key)?;
-                let pk = self.wallet.public_key(key)?;
+                let pk = if let Some(wallet) = &self.wallet {
+                    wallet.public_key(key)?
+                } else {
+                    From::from(&sk)
+                };
 
                 // create node-compatible json structure
                 let bls = BlsKeyPair {
@@ -194,12 +245,13 @@ impl CliWallet {
                     bytes = encrypt(&bytes, pwd)?;
                 }
 
-                // write to disk
+                // add wallet name to file
                 let filename = match self.store.name() {
                     Some(name) => format!("{}-{}", name, key),
                     None => key.to_string(),
                 };
 
+                // write to disk
                 let mut path = dirs::home_dir().expect("user home dir");
                 path.push(&filename);
                 path.set_extension("key");
@@ -207,15 +259,14 @@ impl CliWallet {
                 fs::write(&path, bytes)?;
 
                 println!(
-                    "Key pair exported to {} ✅",
+                    "> Key pair exported to {}",
                     path.as_os_str().to_str().unwrap()
-                )
+                );
+                Ok(())
             }
 
             // Do nothing
-            _ => {}
+            _ => Ok(()),
         }
-
-        Ok(())
     }
 }

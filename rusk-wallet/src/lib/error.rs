@@ -24,6 +24,8 @@ pub enum Error {
     Network(tonic::transport::Error),
     /// Connection error with rusk
     Connection(tonic::Status),
+    /// Command not available in offline mode
+    Offline,
     /// Wrong wallet password
     InvalidPassword,
     /// Bytes encoding errors
@@ -129,6 +131,9 @@ impl fmt::Display for Error {
             Error::Connection(err) => {
                 write!(f, "Connection error with rusk: {}", err)
             }
+            Error::Offline => {
+                write!(f, "Command not available in offline mode")
+            }
             Error::InvalidPassword => {
                 write!(f, "Wrong wallet password")
             }
@@ -181,6 +186,9 @@ impl fmt::Debug for Error {
             }
             Error::Connection(err) => {
                 write!(f, "Connection error with rusk: {}", err)
+            }
+            Error::Offline => {
+                write!(f, "Command not available in offline mode")
             }
             Error::InvalidPassword => {
                 write!(f, "Wrong wallet password")
