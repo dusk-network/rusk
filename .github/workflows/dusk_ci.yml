@@ -46,7 +46,7 @@ jobs:
       - run: >
           RUSK_PROFILE_PATH="/var/opt/build-cache"
           RUSK_KEEP_KEYS="1"
-          RUSK_OVERWRITE_STATE="1"
+          RUSK_BUILD_STATE="1"
           make -j test
       - name: "Clippy check release"
         uses: actions-rs/clippy-check@v1
