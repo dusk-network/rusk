@@ -109,19 +109,23 @@ impl Network for KadcastDispatcher {
         request: Request<PropagateMessage>,
     ) -> Result<Response<Null>, Status> {
         debug!("Received PropagateMessage request");
-        let req = request.get_ref();
 
-        let tx = Transaction::from_slice(&req.message)
-            .map_err(Error::Serialization)?;
-        let wire_message = serialization::network_marshal(&tx)?;
+        let wire_message = {
+            // Ensure that the received buffer is a transaction
+            let verified_tx =
+                Transaction::from_slice(&request.get_ref().message)
+                    .map_err(Error::Serialization)?;
+            let tx_bytes = verified_tx.to_var_bytes();
+            serialization::network_marshal(&tx_bytes)?
+        };
 
+        self.peer.broadcast(&wire_message, None).await;
         self.inbound_dispatcher
             .send((wire_message, self.dummy_addr, 0))
             .unwrap_or_else(|e| {
                 warn!("Error in dispatcher notification {}", e);
                 0
             });
-        self.peer.broadcast(&req.message, None).await;
         Ok(Response::new(Null {}))
     }
 
@@ -192,7 +196,7 @@ mod serialization {
     const DUMMY_HASH: [u8; 32] = [0; 32];
 
     /// This serialize a transaction in a way that is handled by the network
-    pub(super) fn network_marshal(tx: &Transaction) -> Result<Vec<u8>> {
+    pub(super) fn network_marshal(tx: &[u8]) -> Result<Vec<u8>> {
         // WIRE FORMAT:
         // - Length (uint64LE)
         // - Magic (4bytes)
@@ -219,7 +223,7 @@ mod serialization {
         Ok(network_message.to_vec())
     }
 
-    fn tx_marshal(tx: &Transaction) -> Result<Vec<u8>> {
+    fn tx_marshal(payload: &[u8]) -> Result<Vec<u8>> {
         // TX FORMAT
         // - Category
         // - Transaction
@@ -235,9 +239,8 @@ mod serialization {
         tx_wire.write_all(&TX_VERSION.to_le_bytes()[..])?;
         tx_wire.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
 
-        let payload = tx.to_var_bytes();
         tx_wire.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
-        tx_wire.write_all(&payload[..])?;
+        tx_wire.write_all(payload)?;
         tx_wire.write_all(&DUMMY_HASH[..])?;
         tx_wire.write_all(&0u64.to_le_bytes()[..])?; //GasLimit
         tx_wire.write_all(&0u64.to_le_bytes()[..])?; //GasPrice
