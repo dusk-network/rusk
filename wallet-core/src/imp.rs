@@ -146,6 +146,38 @@ where
             .map_err(Error::from_store_err)
     }
 
+    /// Fetches the notes and nullifiers in the state and returns the notes that
+    /// are still available for spending.
+    fn unspent_notes(
+        &self,
+        height: u64,
+        ssk: &SecretSpendKey,
+    ) -> Result<Vec<Note>, Error<S, SC, PC>> {
+        let vk = ssk.view_key();
+
+        let notes = self
+            .state
+            .fetch_notes(height, &vk)
+            .map_err(Error::from_state_err)?;
+
+        let nullifiers: Vec<_> =
+            notes.iter().map(|n| n.gen_nullifier(ssk)).collect();
+
+        let existing_nullifiers = self
+            .state
+            .fetch_existing_nullifiers(&nullifiers)
+            .map_err(Error::from_state_err)?;
+
+        let unspent_notes = notes
+            .into_iter()
+            .zip(nullifiers.into_iter())
+            .filter(|(_, nullifier)| !existing_nullifiers.contains(nullifier))
+            .map(|(note, _)| note)
+            .collect();
+
+        Ok(unspent_notes)
+    }
+
     /// Here we fetch the notes and perform a "minimum number of notes
     /// required" algorithm to select which ones to use for this TX. This is
     /// done by picking notes largest to smallest until they combined have
@@ -166,15 +198,12 @@ where
         ),
         Error<S, SC, PC>,
     > {
-        let sender_vk = sender.view_key();
-
         // TODO find a way to get the block height from somewhere. Maybe it
         //  should be determined by the client?
-        let mut notes = self
-            .state
-            .fetch_notes(0, &sender_vk)
-            .map_err(Error::from_state_err)?;
+        let mut notes = self.unspent_notes(0, sender)?;
         let mut notes_and_values = Vec::with_capacity(notes.len());
+
+        let sender_vk = sender.view_key();
 
         let mut accumulated_value = 0;
         for note in notes.drain(..) {
@@ -512,10 +541,7 @@ where
             .map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
-        let notes = self
-            .state
-            .fetch_notes(0, &vk)
-            .map_err(Error::from_state_err)?;
+        let notes = self.unspent_notes(0, &sender)?;
 
         let mut balance = 0;
         for note in notes.iter() {
