@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Default to UDS transport [#520]
+
 ## [0.1.3] - 2022-02-01
 
 ### Added
@@ -55,3 +58,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#499]: https://github.com/dusk-network/rusk/issues/499
 [#505]: https://github.com/dusk-network/rusk/issues/505
 [#507]: https://github.com/dusk-network/rusk/issues/507
+[#520]: https://github.com/dusk-network/rusk/issues/520
