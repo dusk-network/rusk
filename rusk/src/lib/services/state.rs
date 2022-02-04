@@ -34,6 +34,8 @@ pub use super::rusk_proto::{
     VerifyStateTransitionResponse,
 };
 
+pub(crate) type SpentTransaction = (Transaction, GasMeter);
+
 use super::{TX_TYPE_COINBASE, TX_TYPE_TRANSFER, TX_VERSION};
 /// Partition transactions into transfer and coinbase transactions, in this
 /// order.
@@ -108,7 +110,7 @@ impl Rusk {
         txs: &[TransactionProto],
     ) -> Vec<T>
     where
-        T: From<(Transaction, GasMeter)>,
+        T: From<SpentTransaction>,
     {
         txs.iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
@@ -421,31 +423,5 @@ impl State for Rusk {
 
         let (stake, expiration) = (stake.value(), stake.expiration());
         Ok(Response::new(GetStakeResponse { stake, expiration }))
-    }
-}
-
-impl From<(Transaction, GasMeter)> for TransactionProto {
-    fn from(spent_tx: (Transaction, GasMeter)) -> Self {
-        let tx = spent_tx.0;
-        let payload = tx.to_var_bytes();
-
-        TransactionProto {
-            version: TX_VERSION,
-            r#type: TX_TYPE_TRANSFER,
-            payload,
-        }
-    }
-}
-
-impl From<(Transaction, GasMeter)> for ExecutedTransactionProto {
-    fn from(spent_tx: (Transaction, GasMeter)) -> Self {
-        let transaction = &spent_tx.0;
-        let tx_hash = transaction.hash().to_bytes().to_vec();
-        let gas_spent = spent_tx.1.spent();
-        ExecutedTransactionProto {
-            tx: Some(spent_tx.into()),
-            tx_hash,
-            gas_spent,
-        }
     }
 }
