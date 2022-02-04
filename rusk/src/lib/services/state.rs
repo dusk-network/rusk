@@ -108,7 +108,7 @@ impl Rusk {
         txs: &[TransactionProto],
     ) -> Vec<T>
     where
-        T: From<Transaction>,
+        T: From<(Transaction, GasMeter)>,
     {
         txs.iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
@@ -127,7 +127,7 @@ impl Rusk {
             .take_while(|(_, gas_meter)| {
                 block_gas_meter.charge(gas_meter.spent()).is_ok()
             })
-            .map(|(tx, _)| tx.into())
+            .map(|tx_spent| tx_spent.into())
             .collect()
     }
 }
@@ -216,6 +216,7 @@ impl State for Rusk {
                     payload: note.to_bytes().to_vec(),
                 }),
                 tx_hash: note.hash().to_bytes().to_vec(),
+                gas_spent: 0,
             })
         }
 
@@ -423,8 +424,9 @@ impl State for Rusk {
     }
 }
 
-impl From<Transaction> for TransactionProto {
-    fn from(tx: Transaction) -> Self {
+impl From<(Transaction, GasMeter)> for TransactionProto {
+    fn from(spent_tx: (Transaction, GasMeter)) -> Self {
+        let tx = spent_tx.0;
         let payload = tx.to_var_bytes();
 
         TransactionProto {
@@ -435,12 +437,15 @@ impl From<Transaction> for TransactionProto {
     }
 }
 
-impl From<Transaction> for ExecutedTransactionProto {
-    fn from(transaction: Transaction) -> Self {
+impl From<(Transaction, GasMeter)> for ExecutedTransactionProto {
+    fn from(spent_tx: (Transaction, GasMeter)) -> Self {
+        let transaction = &spent_tx.0;
         let tx_hash = transaction.hash().to_bytes().to_vec();
+        let gas_spent = spent_tx.1.spent();
         ExecutedTransactionProto {
-            tx: Some(transaction.into()),
+            tx: Some(spent_tx.into()),
             tx_hash,
+            gas_spent,
         }
     }
 }
