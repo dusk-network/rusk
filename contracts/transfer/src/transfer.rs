@@ -6,15 +6,15 @@
 
 use crate::{Error, Map};
 
+use alloc::vec::Vec;
 use canonical_derive::Canon;
+use core::convert::TryFrom;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::hash::Hasher;
-
-use core::convert::TryFrom;
 
 mod call;
 #[cfg(feature = "circuits")]
@@ -135,6 +135,25 @@ impl TransferContract {
             Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
         })
     }
+
+    /// Takes a slice of nullifiers and returns a vector containing the ones
+    /// that already exists in the contract
+    pub fn find_existing_nullifiers(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Error> {
+        nullifiers
+            .iter()
+            .copied()
+            .filter_map(|n| {
+                self.nullifiers
+                    .get(&n)
+                    .map(|v| v.and(Some(n)))
+                    .map_err(|e| e.into())
+                    .transpose()
+            })
+            .collect()
+    }
 }
 
 impl TryFrom<Note> for TransferContract {
@@ -152,5 +171,45 @@ impl TryFrom<Note> for TransferContract {
         transfer.update_root()?;
 
         Ok(transfer)
+    }
+}
+
+#[cfg(test)]
+mod test_transfer {
+    use super::*;
+    use alloc::vec;
+
+    #[test]
+    fn find_existing_nullifiers() -> Result<(), Error> {
+        let mut transfer = TransferContract::default();
+
+        let (zero, one, two, three, ten, eleven) = (
+            BlsScalar::from(0),
+            BlsScalar::from(1),
+            BlsScalar::from(2),
+            BlsScalar::from(3),
+            BlsScalar::from(10),
+            BlsScalar::from(11),
+        );
+
+        let existing = transfer
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+
+        assert_eq!(existing.len(), 0);
+
+        for i in 1..10 {
+            transfer.nullifiers.insert(BlsScalar::from(i), ())?;
+        }
+
+        let existing = transfer
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+
+        assert_eq!(existing.len(), 3);
+
+        assert!(existing.contains(&one));
+        assert!(existing.contains(&two));
+        assert!(existing.contains(&three));
+
+        Ok(())
     }
 }
