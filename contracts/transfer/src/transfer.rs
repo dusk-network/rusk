@@ -173,3 +173,43 @@ impl TryFrom<Note> for TransferContract {
         Ok(transfer)
     }
 }
+
+#[cfg(test)]
+mod test_transfer {
+    use super::*;
+    use alloc::vec;
+
+    #[test]
+    fn find_existing_nullifiers() -> Result<(), Error> {
+        let mut transfer = TransferContract::default();
+
+        let (zero, one, two, three, ten, eleven) = (
+            BlsScalar::from(0),
+            BlsScalar::from(1),
+            BlsScalar::from(2),
+            BlsScalar::from(3),
+            BlsScalar::from(10),
+            BlsScalar::from(11),
+        );
+
+        let existing = transfer
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+
+        assert_eq!(existing.len(), 0);
+
+        for i in 1..10 {
+            transfer.nullifiers.insert(BlsScalar::from(i), ())?;
+        }
+
+        let existing = transfer
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+
+        assert_eq!(existing.len(), 3);
+
+        assert!(existing.contains(&one));
+        assert!(existing.contains(&two));
+        assert!(existing.contains(&three));
+
+        Ok(())
+    }
+}
