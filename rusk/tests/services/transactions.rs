@@ -10,10 +10,14 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
 use dusk_schnorr::{PublicKeyPair, Signature};
 use parking_lot::Mutex;
+use rusk::services::network::{KadcastDispatcher, NetworkServer};
 use rusk::services::prover::ExecuteProverRequest;
+use rusk::services::rusk_proto::network_client::NetworkClient;
 use rusk::services::rusk_proto::prover_client::ProverClient;
 use rusk::services::rusk_proto::state_client::StateClient;
-use rusk::services::rusk_proto::Transaction as TransactionProto;
+use rusk::services::rusk_proto::{
+    PropagateMessage, Transaction as TransactionProto,
+};
 use rusk::services::state::{
     GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
     PreverifyRequest,
@@ -209,6 +213,13 @@ impl wallet::ProverClient for TestProverClient {
 
         let response = response.into_inner();
 
+        let propagate_request = tonic::Request::new(PropagateMessage {
+            message: response.tx.clone(),
+        });
+
+        let mut network_client = NetworkClient::new(self.channel.clone());
+        let _ = network_client.propagate(propagate_request).wait()?;
+
         let tx_bytes = response.tx;
         let tx =
             Transaction::from_slice(&tx_bytes).map_err(Error::Serialization)?;
@@ -270,6 +281,9 @@ pub async fn wallet_grpc() -> Result<()> {
     let keys = KeysServer::new(RuskKeys::default());
     let state = StateServer::new(rusk.clone());
     let prover = ProverServer::new(RuskProver::default());
+    let dispatcher = KadcastDispatcher::default();
+    let mut kadcast_recv = dispatcher.subscribe();
+    let network = NetworkServer::new(dispatcher);
 
     drop(rusk);
 
@@ -278,6 +292,7 @@ pub async fn wallet_grpc() -> Result<()> {
             .add_service(keys)
             .add_service(state)
             .add_service(prover)
+            .add_service(network)
             .serve_with_incoming(incoming)
             .await
     });
@@ -307,6 +322,10 @@ pub async fn wallet_grpc() -> Result<()> {
 
     println!("Balance after key 0: {:?}", wallet.get_balance(0));
     println!("Balance after key 1: {:?}", wallet.get_balance(1));
+
+    let recv = kadcast_recv.try_recv();
+    let (_, _, h) = recv.expect("Transaction has not been locally propagated");
+    assert_eq!(h, 0, "Transaction locally propagated with wrong height");
 
     Ok(())
 }

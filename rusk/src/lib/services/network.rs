@@ -11,6 +11,7 @@ use blake2::{digest::consts::U32, Blake2b, Digest};
 use dusk_wallet_core::Transaction;
 use kadcast::config::Config as KadcastConfig;
 use kadcast::{MessageInfo, NetworkListen, Peer};
+use tokio::sync::broadcast::Receiver;
 use tokio::sync::broadcast::{self, error::RecvError, Sender};
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, warn};
@@ -23,7 +24,7 @@ pub use super::rusk_proto::{
     SendMessage,
 };
 use futures::Stream;
-use std::io::{ErrorKind, Write};
+use std::io::Write;
 use std::{net::SocketAddr, pin::Pin};
 
 use super::{TX_TYPE_TRANSFER, TX_VERSION};
@@ -35,6 +36,10 @@ pub struct KadcastDispatcher {
 }
 
 impl KadcastDispatcher {
+    pub fn subscribe(&self) -> Receiver<(Vec<u8>, SocketAddr, u8)> {
+        self.inbound_dispatcher.subscribe()
+    }
+
     pub fn new(config: KadcastConfig, hash_message: bool) -> KadcastDispatcher {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
@@ -178,6 +183,7 @@ impl Network for KadcastDispatcher {
 
 mod serialization {
     use super::*;
+    use dusk_bytes::Serializable;
 
     // const MAGIC_MAINNET: u32 = 0x7630401f;
     // const MAGIC_TESTNET: u32 = 0x74746e41;
@@ -187,13 +193,20 @@ mod serialization {
     const MAGIC_BYTES: [u8; 4] = MAGIC_DEVNET.to_le_bytes();
     const TX_CATEGORY: u8 = 10;
 
-    const RESERVED_FIELDS_BYTES: [u8; 8] = [0; 8];
-    const TX_HEADER_LEN: u64 = {
-        4u64 + // MAGIC
-        8u64 + // RESERVED_FIELDS
-        4u64 // CHECKSUM
+    const RESERVED_FIELDS_LEN: usize = 8;
+    const RESERVED_FIELDS_BYTES: [u8; RESERVED_FIELDS_LEN] =
+        [0; RESERVED_FIELDS_LEN];
+
+    const CHECKSUM_LENGTH: usize = 4;
+
+    const TX_HEADER_LEN: usize = {
+        u32::SIZE + // MAGIC
+        RESERVED_FIELDS_LEN + // RESERVED_FIELDS
+        CHECKSUM_LENGTH // CHECKSUM
     };
-    const DUMMY_HASH: [u8; 32] = [0; 32];
+
+    const HASH_LENGTH: usize = 32;
+    const DUMMY_HASH: [u8; HASH_LENGTH] = [0; HASH_LENGTH];
 
     /// This serialize a transaction in a way that is handled by the network
     pub(super) fn network_marshal(tx: &[u8]) -> Result<Vec<u8>> {
@@ -201,26 +214,26 @@ mod serialization {
         // - Length (uint64LE)
         // - Magic (4bytes)
         // - ReservedFields (8bytes) -- ex timestamp --> now int64=0
-        // - Checksum - blake2b256(Transaction)
+        // - Checksum - blake2b256(Transaction)[..4]
         // - Transaction
 
         let tx_wire = tx_marshal(tx)?;
         let checksum = {
             let mut hasher = Blake2b::<U32>::new();
             hasher.update(&tx_wire);
-            hasher.finalize().to_vec()
+            hasher.finalize()[..CHECKSUM_LENGTH].to_vec()
         };
-        let tx_len: u64 = tx_wire.len().try_into().map_err(|_| {
-            std::io::Error::new(ErrorKind::Other, "Tx len too long!")
-        })?;
+        let tx_len = tx_wire.len();
 
         let message_len = TX_HEADER_LEN + tx_len;
-        let mut network_message = &mut message_len.to_le_bytes()[..];
-        network_message.write_all(&MAGIC_BYTES[..])?;
-        network_message.write_all(&RESERVED_FIELDS_BYTES[..])?;
-        network_message.write_all(&checksum)?;
-        network_message.write_all(&tx_wire)?;
-        Ok(network_message.to_vec())
+        let mut network_message = vec![0u8; u64::SIZE + message_len];
+        let mut buffer = &mut network_message[..];
+        buffer.write_all(&(message_len as u64).to_le_bytes())?;
+        buffer.write_all(&MAGIC_BYTES[..])?;
+        buffer.write_all(&RESERVED_FIELDS_BYTES[..])?;
+        buffer.write_all(&checksum)?;
+        buffer.write_all(&tx_wire)?;
+        Ok(network_message)
     }
 
     fn tx_marshal(payload: &[u8]) -> Result<Vec<u8>> {
@@ -230,20 +243,29 @@ mod serialization {
         //   - uint32LE version
         //   - uint32LE txType
         //   - Payload
-        //     - uint32LE lenght
+        //     - uint32LE length
         //     - blob  payload
         //   - Hash (256 bit)
         //   - GasLimit (uint64LE)
         //   - GasPrice (uint64LE)
-        let mut tx_wire = &mut [TX_CATEGORY][..];
-        tx_wire.write_all(&TX_VERSION.to_le_bytes()[..])?;
-        tx_wire.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
-
-        tx_wire.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
-        tx_wire.write_all(payload)?;
-        tx_wire.write_all(&DUMMY_HASH[..])?;
-        tx_wire.write_all(&0u64.to_le_bytes()[..])?; //GasLimit
-        tx_wire.write_all(&0u64.to_le_bytes()[..])?; //GasPrice
-        Ok(tx_wire.to_vec())
+        let size = 1 // Category
+            + u32::SIZE // Version
+            + u32::SIZE // TxType
+            + u32::SIZE // Payload Length
+            + payload.len() // Payload
+            + HASH_LENGTH // Hash
+            + u64::SIZE // GasLimit
+            + u64::SIZE; // GasPrice
+        let mut tx_wire = vec![0u8; size];
+        let mut buffer = &mut tx_wire[..];
+        buffer.write_all(&[TX_CATEGORY])?;
+        buffer.write_all(&TX_VERSION.to_le_bytes()[..])?;
+        buffer.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
+        buffer.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
+        buffer.write_all(payload)?;
+        buffer.write_all(&DUMMY_HASH[..])?;
+        buffer.write_all(&0u64.to_le_bytes()[..])?; //GasLimit
+        buffer.write_all(&0u64.to_le_bytes()[..])?; //GasPrice
+        Ok(tx_wire)
     }
 }
