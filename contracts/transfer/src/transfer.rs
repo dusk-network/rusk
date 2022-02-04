@@ -6,15 +6,15 @@
 
 use crate::{Error, Map};
 
+use alloc::vec::Vec;
 use canonical_derive::Canon;
+use core::convert::TryFrom;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::hash::Hasher;
-
-use core::convert::TryFrom;
 
 mod call;
 #[cfg(feature = "circuits")]
@@ -134,6 +134,25 @@ impl TransferContract {
         nullifiers.iter().try_fold(false, |t, n| {
             Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
         })
+    }
+
+    /// Takes a slice of nullifiers and returns a vector containing the ones
+    /// that already exists in the contract
+    pub fn find_existing_nullifiers(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Error> {
+        nullifiers
+            .iter()
+            .copied()
+            .filter_map(|n| {
+                self.nullifiers
+                    .get(&n)
+                    .map(|v| v.and(Some(n)))
+                    .map_err(|e| e.into())
+                    .transpose()
+            })
+            .collect()
     }
 }
 
