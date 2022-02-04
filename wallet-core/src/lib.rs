@@ -151,6 +151,13 @@ pub trait StateClient {
     /// Fetch the current anchor of the state.
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
 
+    /// Asks the node to return the nullifiers that already exist from the given
+    /// nullifiers.
+    fn fetch_existing_nullifiers(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error>;
+
     /// Queries the node to find the opening for a specific note.
     fn fetch_opening(
         &self,

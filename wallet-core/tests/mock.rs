@@ -161,6 +161,13 @@ impl StateClient for TestStateClient {
         Ok(self.anchor)
     }
 
+    fn fetch_existing_nullifiers(
+        &self,
+        _: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error> {
+        Ok(vec![])
+    }
+
     fn fetch_opening(
         &self,
         _: &Note,

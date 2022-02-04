@@ -58,6 +58,19 @@ extern "C" {
         opening_len: *mut u32,
     ) -> u8;
 
+    /// Asks the node to find the nullifiers that are already in the state and
+    /// returns them.
+    ///
+    /// The nullifiers are to be serialized in sequence and written to
+    /// `existing_nullifiers` and their number should be written to
+    /// `existing_nullifiers_len`.
+    fn fetch_existing_nullifiers(
+        nullifiers: *const u8,
+        nullifiers_len: u32,
+        existing_nullifiers: *mut u8,
+        existing_nullifiers_len: *mut u32,
+    ) -> u8;
+
     /// Fetches the current anchor.
     fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
 
@@ -329,6 +342,52 @@ impl StateClient for FfiStateClient {
         )?;
 
         Ok(scalar)
+    }
+
+    fn fetch_existing_nullifiers(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error> {
+        let nullifiers_len = nullifiers.len();
+        let mut nullifiers_buf = vec![0u8; BlsScalar::SIZE * nullifiers_len];
+
+        let mut writer = &mut nullifiers_buf[..];
+
+        for nullifier in nullifiers {
+            writer.write(&nullifier.to_bytes()).map_err(
+                Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+            )?;
+        }
+
+        let mut existing_nullifiers_buf =
+            vec![0u8; BlsScalar::SIZE * nullifiers_len];
+        let mut existing_nullifiers_len = 0;
+
+        unsafe {
+            let r = fetch_existing_nullifiers(
+                &nullifiers_buf[0],
+                nullifiers_len as u32,
+                &mut existing_nullifiers_buf[0],
+                &mut existing_nullifiers_len,
+            );
+            if r != 0 {
+                return Err(r);
+            }
+        };
+
+        let mut existing_nullifiers =
+            Vec::with_capacity(existing_nullifiers_len as usize);
+
+        let mut reader = &existing_nullifiers_buf[..];
+        for _ in 0..existing_nullifiers_len {
+            existing_nullifiers.push(
+                BlsScalar::from_reader(&mut reader).map_err(
+                    Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+                )?,
+            );
+        }
+
+        Ok(existing_nullifiers)
     }
 
     fn fetch_opening(
