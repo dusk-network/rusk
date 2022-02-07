@@ -43,9 +43,17 @@ pub enum Error {
     StakeNotFound(PublicKey),
     /// Bad coinbase value (got, expected).
     CoinbaseValue(u64, u64),
+    /// Other
+    Other(Box<dyn std::error::Error>),
 }
 
 impl std::error::Error for Error {}
+
+impl From<Box<dyn std::error::Error>> for Error {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        Error::Other(err)
+    }
+}
 
 impl From<rusk_vm::VMError> for Error {
     fn from(err: rusk_vm::VMError) -> Self {
@@ -138,6 +146,7 @@ impl fmt::Display for Error {
                 got, expected
             ),
             Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
+            Error::Other(err) => write!(f, "Other error: {}", err),
         }
     }
 }
