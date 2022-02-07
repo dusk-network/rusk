@@ -99,6 +99,15 @@ mod tests {
     use super::*;
 
     #[test]
+    fn mnemonic_recovery() -> Result<(), Error> {
+        let pwd = "mypassword";
+        let ms = MnemSeed::new(pwd);
+        let recovered = MnemSeed::from_phrase(&ms.phrase, pwd)?;
+        assert_eq!(ms.seed, recovered.seed);
+        Ok(())
+    }
+
+    #[test]
     fn encrypt_and_decrypt() {
         let seed =
             b"0001020304050607000102030405060700010203040506070001020304050607";

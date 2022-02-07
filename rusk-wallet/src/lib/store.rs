@@ -153,3 +153,37 @@ impl fmt::Debug for LocalStore {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_localstore() -> Result<(), Error> {
+        // create a wallet
+        let path = PathBuf::from("/tmp/test_wallet.dat");
+        let seed = [123u8; 64];
+        let st = LocalStore::new(path.clone(), seed)?;
+
+        // store it on disk
+        let pwd = blake3::hash("mypassword".as_bytes());
+        st.save(pwd)?;
+
+        // load it back
+        let loaded = LocalStore::from_file(path, pwd)?;
+
+        // check name
+        match loaded.name() {
+            Some(name) => assert_eq!(name, "test_wallet"),
+            None => panic!("no wallet name"),
+        }
+
+        // check seed
+        let lseed = loaded.get_seed()?;
+        assert_eq!(lseed, seed);
+
+        Ok(())
+    }
+}
