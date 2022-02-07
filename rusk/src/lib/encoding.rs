@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![allow(non_snake_case)]
-use super::services::rusk_proto;
+use crate::services::state::SpentTransaction;
+use crate::services::{rusk_proto, TX_TYPE_TRANSFER, TX_VERSION};
 use crate::transaction::{Transaction, TransactionPayload};
 use core::convert::TryFrom;
 use dusk_bytes::{DeserializableSlice, Serializable};
@@ -172,5 +173,32 @@ impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
                 .map_err(|e| Status::failed_precondition(format!("{}", e)))?,
             payload,
         })
+    }
+}
+
+impl From<SpentTransaction> for rusk_proto::Transaction {
+    fn from(spent_tx: SpentTransaction) -> Self {
+        let tx = spent_tx.0;
+        let payload = tx.to_var_bytes();
+
+        rusk_proto::Transaction {
+            version: TX_VERSION,
+            r#type: TX_TYPE_TRANSFER,
+            payload,
+        }
+    }
+}
+
+impl From<SpentTransaction> for rusk_proto::ExecutedTransaction {
+    fn from(spent_tx: SpentTransaction) -> Self {
+        let transaction = &spent_tx.0;
+        let tx_hash = transaction.hash().to_bytes().to_vec();
+        let gas_spent = spent_tx.1.spent();
+
+        rusk_proto::ExecutedTransaction {
+            tx: Some(spent_tx.into()),
+            tx_hash,
+            gas_spent,
+        }
     }
 }
