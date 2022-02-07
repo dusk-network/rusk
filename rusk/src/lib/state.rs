@@ -13,54 +13,75 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::{Ownable, PublicSpendKey, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
-use microkelvin::{Backend, BackendCtor};
+use dusk_wallet_core::Transaction;
+use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk_abi::{self, POSEIDON_TREE_DEPTH};
-use rusk_vm::{ContractId, NetworkState, NetworkStateId};
+use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
+use std::sync::Arc;
 use transfer_contract::TransferContract;
 
-pub struct RuskState(pub(crate) NetworkState);
+pub struct RuskState(pub(crate) Arc<Mutex<NetworkState>>);
+
+impl Drop for RuskState {
+    fn drop(&mut self) {
+        self.0.lock().unstage();
+    }
+}
 
 impl RuskState {
-    /// Returns a reference to the underlying [`NetworkState`]
-    #[inline(always)]
-    pub fn inner(&self) -> &NetworkState {
-        &self.0
-    }
-
-    /// Returns a mutable reference to the underlying [`NetworkState`]
-    #[inline(always)]
-    pub fn inner_mut(&mut self) -> &mut NetworkState {
-        &mut self.0
+    pub(crate) fn network(&self) -> Arc<Mutex<NetworkState>> {
+        self.0.clone()
     }
 
     /// Returns the current root of the state tree
     pub fn root(&self) -> [u8; 32] {
-        self.0.root()
+        self.0.lock().root()
     }
 
-    pub(crate) fn persist<B>(
+    /// Accepts the current changes
+    pub fn accept(&mut self) {
+        self.0.lock().commit()
+    }
+
+    /// Finalize the current changes
+    pub fn finalize(&mut self) {
+        let mut network = self.0.lock();
+        network.commit();
+        network.push();
+    }
+
+    /// Revert to the last finalized state
+    pub fn revert(&mut self) {
+        self.0.lock().reset()
+    }
+
+    /// Executes a transaction on the state via the Transfer Contract
+    pub fn execute<R>(
         &mut self,
-        ctor: &BackendCtor<B>,
-    ) -> Result<NetworkStateId>
+        block_height: u64,
+        transaction: Transaction,
+        gas_meter: &mut GasMeter,
+    ) -> Result<R>
     where
-        B: 'static + Backend,
+        R: Canon,
     {
-        Ok(self.0.persist(ctor)?)
+        Ok(self.network().lock().transact::<Transaction, R>(
+            rusk_abi::transfer_contract(),
+            block_height,
+            transaction,
+            gas_meter,
+        )?)
     }
 
-    pub fn commit(&mut self) {
-        self.0.commit()
-    }
-
-    /// Returns a generic contract state. Needs to be casted to the specific
-    /// contract type.
-    pub fn contract_state(
-        &self,
-        contract_id: &ContractId,
-    ) -> Result<ContractState> {
-        Ok(self.0.get_contract_cast_state(contract_id)?)
+    /// Returns a snapshot of a generic contract state. Needs to be casted to
+    /// the specific contract type.
+    pub fn contract_state<C>(&self, contract_id: &ContractId) -> Result<C>
+    where
+        C: Canon,
+    {
+        Ok(self.0.lock().get_contract_cast_state(contract_id)?)
     }
 
     /// Set the contract state for the given Contract Id.
@@ -84,23 +105,20 @@ impl RuskState {
         ContractState::from_canon(state).encode(&mut sink);
         let mut source = Source::new(&bytes[..]);
         let contract_state = ContractState::decode(&mut source)?;
-        *self.0.get_contract_mut(contract_id)?.state_mut() = contract_state;
+        *self.0.lock().get_contract_mut(contract_id)?.state_mut() =
+            contract_state;
 
         Ok(())
     }
 
-    /// Returns the current state of the [`TransferContract`]
+    /// Returns a snapshot of the current state of the [`TransferContract`]
     pub fn transfer_contract(&self) -> Result<TransferContract> {
-        Ok(self
-            .0
-            .get_contract_cast_state(&rusk_abi::transfer_contract())?)
+        self.contract_state(&rusk_abi::transfer_contract())
     }
 
-    /// Returns the current state of the [`StakeContract`].
+    /// Returns a snapshot of the current state of the [`StakeContract`].
     pub fn stake_contract(&self) -> Result<StakeContract> {
-        Ok(self
-            .0
-            .get_contract_cast_state(&rusk_abi::stake_contract())?)
+        self.contract_state(&rusk_abi::stake_contract())
     }
 
     /// Gets the provisioners currently in the stake contract.
@@ -167,8 +185,8 @@ impl RuskState {
 
         transfer.update_root()?;
 
-        // SAFETY: this is safe because we know the transfer contract exists at
-        // the given contract ID.
+        // SAFETY: this is safe because we know the transfer contract exists
+        // at the given contract ID.
         unsafe {
             self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
         };
@@ -177,7 +195,7 @@ impl RuskState {
     }
 
     /// Returns all the notes from a given block height
-    fn notes(&self, height: u64) -> Result<Vec<Note>> {
+    pub fn notes(&self, height: u64) -> Result<Vec<Note>> {
         Ok(self
             .transfer_contract()?
             .notes_from_height(height)?
@@ -221,13 +239,31 @@ impl RuskState {
     pub fn fetch_stake(&self, pk: &PublicKey) -> Result<Stake> {
         Ok(self.stake_contract()?.get_stake(pk)?)
     }
+
+    /// Returns `true` if any of the nullifier given exists in the current
+    /// transfer contract's state.
+    pub fn any_nullifier_exists(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<bool, Error> {
+        Ok(self.transfer_contract()?.any_nullifier_exists(nullifiers)?)
+    }
+
+    /// Takes a slice of nullifiers and returns a vector containing the ones
+    /// that already exists in the current transfer contract's state.
+    pub fn find_existing_nullifiers(
+        &self,
+        inputs: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>> {
+        Ok(self.transfer_contract()?.find_existing_nullifiers(inputs)?)
+    }
 }
 
 /// Calculates the value that the coinbase notes should contain.
 ///
 /// 90% of the total value goes to the generator (rounded up).
 /// 10% of the total value goes to the Dusk address (rounded down).
-fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
+const fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
     let value = emission_amount(block_height) + gas_spent;
 
     let dusk_value = value / 10;
@@ -237,7 +273,7 @@ fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
 }
 
 /// This implements the emission schedule described in the economic paper.
-fn emission_amount(block_height: u64) -> u64 {
+const fn emission_amount(block_height: u64) -> u64 {
     match block_height {
         1..=12_500_000 => 16_000_000,
         12_500_001..=18_750_000 => 12_800_000,
