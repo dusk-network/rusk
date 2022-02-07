@@ -81,7 +81,7 @@ mod module_tests {
 
         let mut network = NetworkState::default();
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -126,7 +126,7 @@ mod module_tests {
 
         let mut network = NetworkState::default();
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -160,7 +160,7 @@ mod module_tests {
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         let mut network = NetworkState::default();
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -214,7 +214,7 @@ mod module_tests {
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         let mut network = NetworkState::default();
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -336,7 +336,7 @@ mod module_tests {
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         let mut network = NetworkState::default();
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -377,7 +377,7 @@ mod module_tests {
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         let mut network = NetworkState::default();
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
@@ -407,7 +407,7 @@ mod module_tests {
 
         let rusk_mod = RuskModule::new(&PUB_PARAMS);
         let mut network = NetworkState::default();
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let contract_id = network.deploy(contract).unwrap();
 
