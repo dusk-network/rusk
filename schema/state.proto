@@ -46,9 +46,7 @@ message VerifyStateTransitionRequest {
     fixed64 block_height = 3;
 }
 
-message VerifyStateTransitionResponse {
-    bool success = 1;
-}
+message VerifyStateTransitionResponse {}
 
 message GetProvisionersRequest {}
 
