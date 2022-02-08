@@ -14,7 +14,9 @@ pub use lib::error::Error;
 use clap::{AppSettings, Parser, Subcommand};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tonic::transport::Channel;
+use tokio::net::UnixStream;
+use tonic::transport::{Channel, Endpoint, Uri};
+use tower::service_fn;
 
 use lib::clients::{Prover, State};
 use lib::crypto::MnemSeed;
@@ -32,12 +34,14 @@ pub(crate) const RUSK_ADDR: &str = "127.0.0.1";
 pub(crate) const RUSK_PORT: &str = "8585";
 /// Default data directory name
 pub(crate) const DATA_DIR: &str = ".dusk";
+/// Default UDS path that Rusk GRPC-server will connect to
+pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 
 /// The CLI Wallet
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.1.3")]
+#[clap(version = "0.2.0")]
 #[clap(about = "Easily manage your Dusk", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -62,6 +66,14 @@ pub(crate) struct WalletCfg {
     /// Rusk port
     #[clap(short = 'p', long, default_value_t = RUSK_PORT.to_string())]
     rusk_port: String,
+
+    /// IPC method for communication with rusk [uds, tcp_ip]
+    #[clap(short = 'i', long, default_value_t = WalletCfg::default_ipc_method())]
+    ipc_method: String,
+
+    /// Path for setting up the unix domain socket
+    #[clap(short = 's', long, default_value_t = RUSK_SOCKET.to_string())]
+    socket_path: String,
 
     /// Command
     #[clap(subcommand)]
@@ -212,6 +224,11 @@ impl WalletCfg {
         user
     }
 
+    /// Default transport method for communication with Rusk
+    fn default_ipc_method() -> String {
+        "uds".to_string()
+    }
+
     /// Checks consistency of loaded configuration
     fn sanity_check(&self) -> Result<(), Error> {
         // TODO!
@@ -226,13 +243,31 @@ struct Rusk {
     prover: ProverClient<Channel>,
 }
 
-/// Connect to rusk services
-async fn connect(addr: &str, port: &str) -> Result<Rusk, Error> {
+/// Connect to rusk services via TCP
+async fn rusk_tcp(addr: &str, port: &str) -> Result<Rusk, Error> {
     let rusk_addr = format!("http://{}:{}", addr, port);
     Ok(Rusk {
         network: NetworkClient::connect(rusk_addr.clone()).await?,
         state: StateClient::connect(rusk_addr.clone()).await?,
         prover: ProverClient::connect(rusk_addr).await?,
+    })
+}
+
+/// Connect to rusk via UDS (Unix domain sockets)
+async fn rusk_uds(socket_path: String) -> Result<Rusk, Error> {
+    let channel = Endpoint::try_from("http://[::]:50051")
+        .expect("parse address")
+        .connect_with_connector(service_fn(move |_: Uri| {
+            let path = (&socket_path[..]).to_string();
+            UnixStream::connect(path)
+        }))
+        .await
+        .expect("Error generating a UDS Channel, try TCP");
+
+    Ok(Rusk {
+        network: NetworkClient::new(channel.clone()),
+        state: StateClient::new(channel.clone()),
+        prover: ProverClient::new(channel),
     })
 }
 
@@ -277,7 +312,12 @@ async fn main() -> Result<(), Error> {
     };
 
     // create the wallet
-    let rusk = connect(&cfg.rusk_addr, &cfg.rusk_port).await;
+    let rusk = if cfg.ipc_method == "uds" {
+        rusk_uds(cfg.socket_path).await
+    } else {
+        rusk_tcp(&cfg.rusk_addr, &cfg.rusk_port).await
+    };
+
     let wallet = match rusk {
         Ok(clients) => {
             let prover = Prover::new(clients.prover, clients.network);

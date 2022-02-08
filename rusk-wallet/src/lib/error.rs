@@ -16,6 +16,8 @@ pub enum Error {
     InvalidMnemonicPhrase,
     /// Wallet file content is not valid
     WalletFileCorrupted,
+    /// File version not recognized
+    UnknownFileVersion,
     /// Wallet file not found on disk
     WalletFileNotExists,
     /// A wallet file with this name already exists
@@ -115,6 +117,9 @@ impl fmt::Display for Error {
             Error::WalletFileCorrupted => {
                 write!(f, "Wallet file content is not valid")
             }
+            Error::UnknownFileVersion => {
+                write!(f, "File version not recognized")
+            }
             Error::WalletFileNotExists => {
                 write!(f, "Wallet file not found on disk")
             }
@@ -170,6 +175,9 @@ impl fmt::Debug for Error {
             }
             Error::WalletFileCorrupted => {
                 write!(f, "Wallet file content is not valid")
+            }
+            Error::UnknownFileVersion => {
+                write!(f, "File version not recognized")
             }
             Error::WalletFileNotExists => {
                 write!(f, "Wallet file not found on disk")
