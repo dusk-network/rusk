@@ -394,7 +394,7 @@ impl wallet::ProverClient for TestProverClient {
             }
         };
 
-        assert_eq!(response.txs.len(), 3, "Should have three tx");
+        assert_eq!(response.txs.len(), 2, "Should have two tx");
 
         let transfer_txs: Vec<_> = response
             .txs
@@ -409,7 +409,7 @@ impl wallet::ProverClient for TestProverClient {
             .collect();
 
         assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
-        assert_eq!(coinbase_txs.len(), 2, "Two coinbase txs");
+        assert_eq!(coinbase_txs.len(), 1, "One coinbase tx");
 
         assert_eq!(
             transfer_txs[0].tx_hash,
