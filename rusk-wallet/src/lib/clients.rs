@@ -13,7 +13,8 @@ use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient, StateClient, UnprovenTransaction, POSEIDON_TREE_DEPTH,
+    ProverClient, StateClient, Transaction, UnprovenTransaction,
+    POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note};
 
@@ -86,8 +87,9 @@ impl ProverClient for Prover {
         .into_inner()
         .tx;
 
-        let utx = bs58::encode(&tx_bytes).into_string();
-        println!("Transaction hash: {}", utx);
+        let tx = Transaction::from_slice(&tx_bytes)?;
+        let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+        println!("Transaction hash: {}", txh);
 
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
