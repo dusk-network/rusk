@@ -102,6 +102,12 @@ message FindExistingNullifiersResponse {
     repeated bytes nullifiers = 1;
 }
 
+message RevertRequest {}
+
+message RevertResponse {
+    bytes state_root = 1;
+}
+
 service State {
     rpc Echo(EchoRequest) returns (EchoResponse) {}
     rpc Preverify(PreverifyRequest) returns (PreverifyResponse) {}
@@ -109,6 +115,7 @@ service State {
     rpc VerifyStateTransition(VerifyStateTransitionRequest) returns (VerifyStateTransitionResponse) {}
     rpc Accept(StateTransitionRequest) returns (StateTransitionResponse) {}
     rpc Finalize(StateTransitionRequest) returns (StateTransitionResponse) {}
+    rpc Revert(RevertRequest) returns (RevertResponse) {}
     rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
     rpc GetStateRoot(GetStateRootRequest) returns (GetStateRootResponse) {}
     rpc GetNotesOwnedBy(GetNotesOwnedByRequest) returns (GetNotesOwnedByResponse) {}
