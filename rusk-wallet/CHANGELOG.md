@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2022-02-08
+
+### Changed 
+- Default `gas_price` from 0 to 0.001 Dusk [#539]
+
 ## [0.2.0] - 2022-02-04
 
 ### Added
@@ -53,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implementation of `Store` trait from `wallet-core`
 - Implementation of `State` and `Prover` traits from `wallet-core`
 
-
+[#539]: https://github.com/dusk-network/rusk/issues/539
 [#482]: https://github.com/dusk-network/rusk/issues/482
 [#479]: https://github.com/dusk-network/rusk/issues/479
 [#492]: https://github.com/dusk-network/rusk/issues/492

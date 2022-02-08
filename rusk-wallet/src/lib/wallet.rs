@@ -30,6 +30,9 @@ mod base64 {
     }
 }
 
+/// The default gas price is 0.001 Dusk.
+const DEFAULT_GAS_PRICE: u64 = 1_000;
+
 /// Bls key pair helper structure
 #[derive(Serialize)]
 struct BlsKeyPair {
@@ -135,7 +138,7 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                         BlsScalar::zero(),
                     )?;
                     println!("> Transfer sent!");
@@ -163,7 +166,7 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                     )?;
                     println!("> Stake success!");
                     Ok(())
@@ -213,7 +216,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                     )?;
                     println!("> Stake withdrawal success!");
                     Ok(())
