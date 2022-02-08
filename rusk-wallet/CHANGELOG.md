@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.2.0] - 2022-02-04
+
+### Added
+- Wallet file encoding version [#524]
+
+### Changed
+- Default to UDS transport [#520]
 
 ## [0.1.3] - 2022-02-01
 
@@ -55,3 +61,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#499]: https://github.com/dusk-network/rusk/issues/499
 [#505]: https://github.com/dusk-network/rusk/issues/505
 [#507]: https://github.com/dusk-network/rusk/issues/507
+[#520]: https://github.com/dusk-network/rusk/issues/520
