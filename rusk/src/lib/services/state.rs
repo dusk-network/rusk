@@ -64,6 +64,22 @@ fn extract_coinbase(
 }
 
 impl Rusk {
+    fn verify(&self, tx: &Transaction) -> Result<(), Status> {
+        if self.state()?.any_nullifier_exists(tx.inputs())? {
+            return Err(Status::failed_precondition(
+                "Nullifier(s) already exists in the state",
+            ));
+        }
+
+        if !RuskProver::preverify(tx)? {
+            return Err(Status::failed_precondition(
+                "Proof verification failed",
+            ));
+        }
+
+        Ok(())
+    }
+
     fn accept_transactions(
         &self,
         request: Request<StateTransitionRequest>,
@@ -160,17 +176,7 @@ impl State for Rusk {
 
         let tx_hash = tx.hash();
 
-        if self.state()?.any_nullifier_exists(tx.inputs())? {
-            return Err(Status::failed_precondition(
-                "Nullifier(s) already exists in the state",
-            ));
-        }
-
-        if !RuskProver::preverify(&tx)? {
-            return Err(Status::failed_precondition(
-                "Proof verification failed",
-            ));
-        }
+        self.verify(&tx)?;
 
         Ok(Response::new(PreverifyResponse {
             tx_hash: tx_hash.to_bytes().to_vec(),
@@ -239,30 +245,29 @@ impl State for Rusk {
 
         let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
 
-        let mut success = transfer_txs
+        let success = transfer_txs
             .iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .all(|tx| match tx {
+                Ok(tx) if self.verify(&tx).is_err() => false,
                 Ok(tx) => {
                     let block_height = request.block_height;
                     let mut gas_meter =
                         GasMeter::with_limit(tx.fee().gas_limit);
 
-                    state
-                        .execute::<()>(block_height, tx, &mut gas_meter)
-                        .is_ok()
-                        && block_gas_meter.charge(gas_meter.spent()).is_ok()
+                    let _ =
+                        state.execute::<()>(block_height, tx, &mut gas_meter);
+
+                    block_gas_meter.charge(gas_meter.spent()).is_ok()
                 }
                 Err(_) => false,
             });
 
         if !success {
-            return Ok(Response::new(VerifyStateTransitionResponse {
-                success: false,
-            }));
+            return Err(Status::invalid_argument("Invalid transactions block"));
         }
 
-        success &= state
+        let success = state
             .push_coinbase(
                 request.block_height,
                 block_gas_meter.spent(),
@@ -270,7 +275,13 @@ impl State for Rusk {
             )
             .is_ok();
 
-        Ok(Response::new(VerifyStateTransitionResponse { success }))
+        if !success {
+            return Err(Status::invalid_argument(
+                "Invalid coinbase in the block",
+            ));
+        }
+
+        Ok(Response::new(VerifyStateTransitionResponse {}))
     }
 
     async fn accept(
