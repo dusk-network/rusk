@@ -24,7 +24,7 @@ message StateTransitionRequest {
 }
 
 message StateTransitionResponse {
-    repeated Transaction txs = 1;
+    repeated ExecutedTransaction txs = 1;
     bytes state_root = 2; // NOTE: this might require a failure mode
 }
 
