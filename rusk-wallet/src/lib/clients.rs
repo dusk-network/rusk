@@ -6,14 +6,15 @@
 
 use canonical::{Canon, Source};
 use dusk_bls12_381_sign::PublicKey;
-use dusk_bytes::{Serializable, Write};
+use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::ViewKey;
 use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient, StateClient, UnprovenTransaction, POSEIDON_TREE_DEPTH,
+    ProverClient, StateClient, Transaction, UnprovenTransaction,
+    POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note};
 
@@ -30,8 +31,8 @@ use crate::rusk_proto::{
     ExecuteProverRequest, StctProverRequest, WfctProverRequest,
 };
 use crate::rusk_proto::{
-    GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
-    GetStakeRequest,
+    FindExistingNullifiersRequest, GetAnchorRequest, GetNotesOwnedByRequest,
+    GetOpeningRequest, GetStakeRequest,
 };
 
 use crate::Error;
@@ -86,8 +87,9 @@ impl ProverClient for Prover {
         .into_inner()
         .tx;
 
-        let utx = bs58::encode(&tx_bytes).into_string();
-        println!("Transaction hash: {}", utx);
+        let tx = Transaction::from_slice(&tx_bytes)?;
+        let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+        println!("Transaction hash: {}", txh);
 
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
@@ -241,6 +243,37 @@ impl StateClient for State {
         bytes.copy_from_slice(&res);
         let anchor = BlsScalar::from_bytes(&bytes)?;
         Ok(anchor)
+    }
+
+    /// Asks the node to return the nullifiers that already exist from the given
+    /// nullifiers.
+    fn fetch_existing_nullifiers(
+        &self,
+        nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error> {
+        let null_bytes: Vec<_> =
+            nullifiers.iter().map(|s| s.to_bytes().to_vec()).collect();
+
+        let msg = FindExistingNullifiersRequest {
+            nullifiers: null_bytes,
+        };
+        let req = tonic::Request::new(msg);
+
+        let mut state = self.client.lock().unwrap();
+        let res = block_in_place(move || {
+            Handle::current().block_on(async move {
+                state.find_existing_nullifiers(req).await
+            })
+        })?
+        .into_inner()
+        .nullifiers;
+
+        let nullifiers = res
+            .iter()
+            .map(|n| BlsScalar::from_slice(n))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(nullifiers)
     }
 
     /// Queries the node to find the opening for a specific note.
