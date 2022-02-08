@@ -43,11 +43,10 @@ pub fn logger() {
     // not the other way around.
     let directive = std::env::var("RUST_LOG")
         .unwrap_or_else(|_| "rusk=info,tests=info".to_string());
-    let filter = EnvFilter::new(directive);
 
+    let filter = EnvFilter::new(directive);
     let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
 }
-
 pub async fn setup() -> (
     Channel,
     async_stream::AsyncStream<

@@ -108,7 +108,7 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
         rusk_state
             .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
     }
-    rusk.persist(&mut rusk_state)?;
+    rusk_state.finalize();
 
     fetch_note(rusk)
 }
@@ -132,7 +132,7 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
             .set_contract_state(&rusk_abi::stake_contract(), &stake_contract)?;
     }
 
-    rusk.persist(&mut rusk_state)?;
+    rusk_state.finalize();
 
     Ok((pk, stake))
 }

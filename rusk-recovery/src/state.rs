@@ -126,6 +126,9 @@ where
 
     info!("{} network state", theme.action("Storing"));
 
+    network.commit();
+    network.push();
+
     info!("{} {}", theme.action("Root"), hex::encode(network.root()));
 
     let state_id = network.persist(ctor).expect("Error in persistence");

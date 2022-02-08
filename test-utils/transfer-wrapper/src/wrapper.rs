@@ -45,7 +45,7 @@ impl TransferWrapper {
         let mut network = NetworkState::new();
 
         let rusk_mod = RuskModule::new(&*PP);
-        network.register_host_module(rusk_mod);
+        NetworkState::register_host_module(rusk_mod);
 
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();

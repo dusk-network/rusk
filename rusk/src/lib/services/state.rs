@@ -15,7 +15,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
 use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
-use rusk_vm::{GasMeter, NetworkState};
+use rusk_vm::GasMeter;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
@@ -23,12 +23,13 @@ pub use super::rusk_proto::state_server::{State, StateServer};
 pub use super::rusk_proto::{
     EchoRequest, EchoResponse, ExecuteStateTransitionRequest,
     ExecuteStateTransitionResponse,
-    ExecutedTransaction as ExecutedTransactionProto, GetAnchorRequest,
-    GetAnchorResponse, GetNotesOwnedByRequest, GetNotesOwnedByResponse,
-    GetOpeningRequest, GetOpeningResponse, GetProvisionersRequest,
-    GetProvisionersResponse, GetStakeRequest, GetStakeResponse,
-    GetStateRootRequest, GetStateRootResponse, PreverifyRequest,
-    PreverifyResponse, Provisioner, Stake as StakeProto,
+    ExecutedTransaction as ExecutedTransactionProto,
+    FindExistingNullifiersRequest, FindExistingNullifiersResponse,
+    GetAnchorRequest, GetAnchorResponse, GetNotesOwnedByRequest,
+    GetNotesOwnedByResponse, GetOpeningRequest, GetOpeningResponse,
+    GetProvisionersRequest, GetProvisionersResponse, GetStakeRequest,
+    GetStakeResponse, GetStateRootRequest, GetStateRootResponse,
+    PreverifyRequest, PreverifyResponse, Provisioner, Stake as StakeProto,
     StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
     VerifyStateTransitionResponse,
@@ -63,13 +64,6 @@ fn extract_coinbase(
 }
 
 impl Rusk {
-    fn any_nullifier_exists(&self, inputs: &[BlsScalar]) -> Result<bool> {
-        Ok(self
-            .state()?
-            .transfer_contract()?
-            .any_nullifier_exists(inputs)?)
-    }
-
     fn accept_transactions(
         &self,
         request: Request<StateTransitionRequest>,
@@ -77,13 +71,12 @@ impl Rusk {
         let request = request.into_inner();
 
         let mut state = self.state()?;
-        let network = state.inner_mut();
         let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
         let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
 
         let txs = self.execute_transactions(
-            network,
+            &mut state,
             &mut block_gas_meter,
             request.block_height,
             &transfer_txs,
@@ -104,7 +97,7 @@ impl Rusk {
 
     fn execute_transactions<T>(
         &self,
-        network: &mut NetworkState,
+        state: &mut RuskState,
         block_gas_meter: &mut GasMeter,
         block_height: u64,
         txs: &[TransactionProto],
@@ -118,12 +111,13 @@ impl Rusk {
             .map(|tx| {
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
-                let _ = network.transact::<_, ()>(
-                    rusk_abi::transfer_contract(),
+                // We do not care if the transaction fails or succeeds here
+                let _ = state.execute::<()>(
                     block_height,
                     tx.clone(),
                     &mut gas_meter,
                 );
+
                 (tx, gas_meter)
             })
             .take_while(|(_, gas_meter)| {
@@ -167,7 +161,7 @@ impl State for Rusk {
 
         let tx_hash = tx.hash();
 
-        if self.any_nullifier_exists(tx.inputs())? {
+        if self.state()?.any_nullifier_exists(tx.inputs())? {
             return Err(Status::failed_precondition(
                 "Nullifier(s) already exists in the state",
             ));
@@ -191,14 +185,14 @@ impl State for Rusk {
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
         info!("Received ExecuteStateTransition request");
 
+        let mut state = self.state()?;
+
         let request = request.into_inner();
 
-        let mut state = self.state()?;
-        let network = state.inner_mut();
         let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
         let mut txs = self.execute_transactions(
-            network,
+            &mut state,
             &mut block_gas_meter,
             request.block_height,
             &request.txs,
@@ -209,6 +203,8 @@ impl State for Rusk {
             block_gas_meter.spent(),
             self.generator.as_ref(),
         )?;
+
+        let state_root = state.root().to_vec();
 
         for note in [dusk_note, generator_note] {
             txs.push(ExecutedTransactionProto {
@@ -223,7 +219,6 @@ impl State for Rusk {
         }
 
         let success = true;
-        let state_root = state.root().to_vec();
 
         Ok(Response::new(ExecuteStateTransitionResponse {
             success,
@@ -241,12 +236,11 @@ impl State for Rusk {
         let request = request.into_inner();
 
         let mut state = self.state()?;
-        let network = state.inner_mut();
         let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
         let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
 
-        let success = transfer_txs
+        let mut success = transfer_txs
             .iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .all(|tx| match tx {
@@ -255,13 +249,8 @@ impl State for Rusk {
                     let mut gas_meter =
                         GasMeter::with_limit(tx.fee().gas_limit);
 
-                    network
-                        .transact::<_, ()>(
-                            rusk_abi::transfer_contract(),
-                            block_height,
-                            tx,
-                            &mut gas_meter,
-                        )
+                    state
+                        .execute::<()>(block_height, tx, &mut gas_meter)
                         .is_ok()
                         && block_gas_meter.charge(gas_meter.spent()).is_ok()
                 }
@@ -274,11 +263,13 @@ impl State for Rusk {
             }));
         }
 
-        state.push_coinbase(
-            request.block_height,
-            block_gas_meter.spent(),
-            coinbase,
-        )?;
+        success &= state
+            .push_coinbase(
+                request.block_height,
+                block_gas_meter.spent(),
+                coinbase,
+            )
+            .is_ok();
 
         Ok(Response::new(VerifyStateTransitionResponse { success }))
     }
@@ -291,6 +282,7 @@ impl State for Rusk {
 
         let (response, mut state) = self.accept_transactions(request)?;
 
+        state.accept();
         self.persist(&mut state)?;
 
         Ok(response)
@@ -304,7 +296,7 @@ impl State for Rusk {
 
         let (response, mut state) = self.accept_transactions(request)?;
 
-        state.commit();
+        state.finalize();
         self.persist(&mut state)?;
 
         Ok(response)
@@ -359,13 +351,15 @@ impl State for Rusk {
 
         let vk = ViewKey::from_slice(&request.get_ref().vk)
             .map_err(Error::Serialization)?;
+        let block_height = request.get_ref().height;
 
-        let notes = self
-            .state()?
-            .fetch_notes(request.get_ref().height, &vk)?
+        let state = self.state()?;
+        let notes = state
+            .fetch_notes(block_height, &vk)?
             .iter()
-            .map(|n| n.to_bytes().to_vec())
+            .map(|note| note.to_bytes().to_vec())
             .collect();
+
         Ok(Response::new(GetNotesOwnedByResponse { notes }))
     }
 
@@ -411,6 +405,7 @@ impl State for Rusk {
         let mut bytes = [0u8; PublicKey::SIZE];
 
         let pk = request.get_ref().pk.as_slice();
+
         if pk.len() < PublicKey::SIZE {
             return Err(ERR.into());
         }
@@ -423,5 +418,32 @@ impl State for Rusk {
 
         let (stake, expiration) = (stake.value(), stake.expiration());
         Ok(Response::new(GetStakeResponse { stake, expiration }))
+    }
+
+    async fn find_existing_nullifiers(
+        &self,
+        request: Request<FindExistingNullifiersRequest>,
+    ) -> Result<Response<FindExistingNullifiersResponse>, Status> {
+        info!("Received FindExistingNullifiers request");
+
+        let nullifiers = &request.get_ref().nullifiers;
+
+        let nullifiers = nullifiers
+            .iter()
+            .map(|n| BlsScalar::from_slice(n).map_err(Error::Serialization))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let nullifiers = self
+            .state()?
+            .transfer_contract()?
+            .find_existing_nullifiers(&nullifiers)
+            .map_err(|_| {
+                Error::Serialization(dusk_bytes::Error::InvalidData)
+            })?;
+
+        let nullifiers =
+            nullifiers.iter().map(|n| n.to_bytes().to_vec()).collect();
+
+        Ok(Response::new(FindExistingNullifiersResponse { nullifiers }))
     }
 }

@@ -65,6 +65,13 @@ impl RuskBuilder {
 
     pub fn build(self) -> Result<Rusk> {
         let backend = self.backend;
+        let generator = self.generator;
+
+        let network = NetworkState::new();
+
+        let rusk_mod = RuskModule::new(&PUB_PARAMS);
+        NetworkState::register_host_module(rusk_mod);
+
         Persistence::with_backend(&backend(), |_| Ok(()))
             .or(Err(Error::BackendRegistrationFailed))?;
 
@@ -75,10 +82,11 @@ impl RuskBuilder {
             (None, None) => return Err(Error::BuilderInvalidState),
         };
 
-        let generator = self.generator;
+        let network = network.restore(id).or(Err(Error::RestoreFailed))?;
+        let network = Arc::new(Mutex::new(network));
 
         let rusk = Rusk {
-            state_id: Arc::new(Mutex::new(id)),
+            network,
             backend,
             path,
             generator,
@@ -98,8 +106,8 @@ impl RuskBuilder {
 
 #[derive(Clone)]
 pub struct Rusk {
-    pub state_id: Arc<Mutex<NetworkStateId>>,
     backend: fn() -> BackendCtor<DiskBackend>,
+    network: Arc<Mutex<NetworkState>>,
     path: Option<PathBuf>,
     generator: Option<PublicSpendKey>,
 }
@@ -112,14 +120,7 @@ impl Rusk {
 
     /// Returns the current state of the network
     pub fn state(&self) -> Result<RuskState> {
-        let state_id = *self.state_id.lock();
-
-        let mut network = NetworkState::new()
-            .restore(state_id)
-            .or(Err(Error::RestoreFailed))?;
-
-        let rusk_mod = RuskModule::new(&PUB_PARAMS);
-        network.register_host_module(rusk_mod);
+        let network = self.network.clone();
 
         Ok(RuskState(network))
     }
@@ -127,13 +128,13 @@ impl Rusk {
     /// Persist a state of the network as new state
     pub fn persist(&self, state: &mut RuskState) -> Result<NetworkStateId> {
         let backend = self.backend;
-        let state_id = state.persist(&backend())?;
-        *self.state_id.lock() = state_id;
+        let network = state.network();
+        let id = network.lock().persist(&backend())?;
 
         if let Some(path) = &self.path {
-            state_id.write(path)?;
+            id.write(path)?;
         }
 
-        Ok(state_id)
+        Ok(id)
     }
 }

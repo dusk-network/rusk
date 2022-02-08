@@ -43,7 +43,7 @@ fn mock_wallet<Rng: RngCore + CryptoRng>(
     let opening = Default::default();
 
     let node = TestWalletProverClient::new(client);
-    let state = TestStateClient::new(notes, anchor, opening);
+    let state = TestStateClient::new(notes, anchor, opening, vec![]);
 
     Wallet::new(store, state, node)
 }
@@ -152,6 +152,7 @@ pub struct TestStateClient {
     notes: Vec<Note>,
     anchor: BlsScalar,
     opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+    nullifiers: Vec<BlsScalar>,
 }
 
 impl TestStateClient {
@@ -159,11 +160,13 @@ impl TestStateClient {
         notes: Vec<Note>,
         anchor: BlsScalar,
         opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+        nullifiers: Vec<BlsScalar>,
     ) -> Self {
         Self {
             notes,
             anchor,
             opening,
+            nullifiers,
         }
     }
 }
@@ -192,6 +195,13 @@ impl StateClient for TestStateClient {
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         unimplemented!();
+    }
+
+    fn fetch_existing_nullifiers(
+        &self,
+        _nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error> {
+        Ok(self.nullifiers.clone())
     }
 }
 

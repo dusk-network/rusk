@@ -25,7 +25,7 @@ dusk-plonk = "0.9"
 lazy_static = "1.4"
 rand = "0.8"
 rusk-profile = { path = "../../rusk-profile" }
-rusk-vm = "0.8.0-rc"
+rusk-vm = "0.10.0-rc"
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 
 [dev-dependencies]
