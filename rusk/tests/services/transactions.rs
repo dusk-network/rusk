@@ -434,16 +434,13 @@ impl wallet::ProverClient for TestProverClient {
             .cloned()
             .collect();
 
-        let response = client
+        client
             .verify_state_transition(VerifyStateTransitionRequest {
                 txs: txs.clone(),
                 block_height: BLOCK_HEIGHT,
                 block_gas_limit: BLOCK_GAS_LIMIT,
             })
-            .wait()?
-            .into_inner();
-
-        assert!(response.success, "VerifyStateTransition failed");
+            .wait()?;
 
         let response = client
             .accept(StateTransitionRequest {
