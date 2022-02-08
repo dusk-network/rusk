@@ -29,10 +29,10 @@ pub use super::rusk_proto::{
     GetNotesOwnedByResponse, GetOpeningRequest, GetOpeningResponse,
     GetProvisionersRequest, GetProvisionersResponse, GetStakeRequest,
     GetStakeResponse, GetStateRootRequest, GetStateRootResponse,
-    PreverifyRequest, PreverifyResponse, Provisioner, Stake as StakeProto,
-    StateTransitionRequest, StateTransitionResponse,
-    Transaction as TransactionProto, VerifyStateTransitionRequest,
-    VerifyStateTransitionResponse,
+    PreverifyRequest, PreverifyResponse, Provisioner, RevertRequest,
+    RevertResponse, Stake as StakeProto, StateTransitionRequest,
+    StateTransitionResponse, Transaction as TransactionProto,
+    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
 
 pub(crate) type SpentTransaction = (Transaction, GasMeter);
@@ -143,7 +143,6 @@ impl State for Rusk {
         }))
     }
 
-    /// TODO: Currently it's just a pass through, does not verify the tx
     async fn preverify(
         &self,
         request: Request<PreverifyRequest>,
@@ -300,6 +299,21 @@ impl State for Rusk {
         self.persist(&mut state)?;
 
         Ok(response)
+    }
+
+    async fn revert(
+        &self,
+        _request: Request<RevertRequest>,
+    ) -> Result<Response<RevertResponse>, Status> {
+        info!("Received Revert request");
+
+        let mut state = self.state()?;
+
+        state.revert();
+        self.persist(&mut state)?;
+
+        let state_root = state.root().to_vec();
+        Ok(Response::new(RevertResponse { state_root }))
     }
 
     async fn get_provisioners(
