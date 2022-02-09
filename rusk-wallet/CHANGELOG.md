@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Default `gas_price` from 0 to 0.001 Dusk [#539]
+- Add `gas_price` to interactive mode [#544]
 
 ## [0.2.0] - 2022-02-04
 
@@ -68,3 +69,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#507]: https://github.com/dusk-network/rusk/issues/507
 [#520]: https://github.com/dusk-network/rusk/issues/520
 [#539]: https://github.com/dusk-network/rusk/issues/539
+[#544]: https://github.com/dusk-network/rusk/issues/544

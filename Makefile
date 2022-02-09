@@ -13,7 +13,7 @@ keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
 state: wasm ## Create the network state
-	$(MAKE) -C ./rusk-recovery state
+	$(MAKE) -C ./rusk-recovery state -w
 
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -j -C ./contracts wasm
