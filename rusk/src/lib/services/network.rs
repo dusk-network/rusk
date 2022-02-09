@@ -186,11 +186,11 @@ mod serialization {
     use dusk_bytes::Serializable;
 
     // const MAGIC_MAINNET: u32 = 0x7630401f;
-    // const MAGIC_TESTNET: u32 = 0x74746e41;
-    const MAGIC_DEVNET: u32 = 0x74736e40;
+    const MAGIC_TESTNET: u32 = 0x74746e41;
+    // const MAGIC_DEVNET: u32 = 0x74736e40;
     // const MAGIC_STRESSNET: u32 = 0x74726e39;
 
-    const MAGIC_BYTES: [u8; 4] = MAGIC_DEVNET.to_le_bytes();
+    const MAGIC_BYTES: [u8; 4] = MAGIC_TESTNET.to_le_bytes();
     const TX_CATEGORY: u8 = 10;
 
     const RESERVED_FIELDS_LEN: usize = 8;
