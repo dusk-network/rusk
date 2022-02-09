@@ -29,6 +29,10 @@ struct Cli {
     #[clap(short = 'w', long, env = "RUSK_BUILD_STATE")]
     build: bool,
 
+    /// Forces a build/download even if the state is in the profile path.
+    #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
+    force: bool,
+
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
     verbose: usize,
@@ -37,7 +41,7 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     task::run(
-        || rusk_recovery_tools::state::exec(args.build),
+        || rusk_recovery_tools::state::exec(args.build, args.force),
         args.profile,
         args.verbose,
     )
