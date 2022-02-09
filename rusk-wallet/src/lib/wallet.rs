@@ -18,7 +18,7 @@ use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
 use crate::lib::to_dusk;
-use crate::lib::{prompt, SEED_SIZE};
+use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -135,7 +135,7 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                         BlsScalar::zero(),
                     )?;
                     println!("> Transfer sent!");
@@ -163,7 +163,7 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                     )?;
                     println!("> Stake success!");
                     Ok(())
@@ -188,7 +188,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                     )?;
                     println!("> Stake extension success!");
                     Ok(())
@@ -213,7 +213,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(0),
+                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
                     )?;
                     println!("> Stake withdrawal success!");
                     Ok(())
