@@ -11,19 +11,25 @@ pub mod prompt;
 pub mod store;
 pub mod wallet;
 
-pub const SEED_SIZE: usize = 64;
-pub const ONE_MILLION: f64 = 1_000_000.0;
+// Types that define Dusk's denomination.
+pub type Dusk = f64;
+pub type MicroDusk = u64;
 
-/// The default gas price is 0.001 Dusk
-pub(crate) const DEFAULT_GAS_PRICE: u64 = 1_000;
+pub const SEED_SIZE: usize = 64;
+
+pub const ONE_MILLION: Dusk = 1_000_000.0;
+
+pub(crate) const DEFAULT_GAS_LIMIT: u64 = 100000;
+
+pub(crate) const DEFAULT_GAS_PRICE: Dusk = 0.000001;
 
 /// Convert from Dusk to uDusk
-pub fn to_udusk(dusk: f64) -> u64 {
-    (dusk * ONE_MILLION) as u64
+pub fn to_udusk(dusk: Dusk) -> MicroDusk {
+    (dusk * ONE_MILLION) as MicroDusk
 }
 
 /// Convert from uDusk to Dusk
-pub fn to_dusk(udusk: u64) -> f64 {
-    let udusk = udusk as f64;
+pub fn to_dusk(udusk: MicroDusk) -> Dusk {
+    let udusk = udusk as Dusk;
     udusk / ONE_MILLION
 }

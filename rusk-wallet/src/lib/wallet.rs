@@ -17,8 +17,8 @@ use dusk_wallet_core::{Store, Wallet};
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::to_dusk;
 use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
+use crate::lib::{to_dusk, to_udusk};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -127,7 +127,10 @@ impl CliWallet {
                     let dest_addr =
                         dusk_pki::PublicSpendKey::from_bytes(&addr_bytes)?;
                     let my_addr = wallet.public_spend_key(key)?;
+
                     let mut rng = StdRng::from_entropy();
+                    let ref_id = BlsScalar::random(&mut rng);
+
                     wallet.transfer(
                         &mut rng,
                         key,
@@ -135,8 +138,9 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
-                        BlsScalar::zero(),
+                        gas_price
+                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
+                        ref_id,
                     )?;
                     println!("> Transfer sent!");
                     Ok(())
@@ -163,7 +167,8 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
+                        gas_price
+                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
                     )?;
                     println!("> Stake success!");
                     Ok(())
@@ -213,7 +218,8 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
+                        gas_price
+                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
                     )?;
                     println!("> Stake withdrawal success!");
                     Ok(())

@@ -8,10 +8,12 @@ use std::env;
 use std::path::PathBuf;
 
 use blake3::Hash;
-use requestty::Question;
+use requestty::{Answers, Question};
 
 use crate::lib::crypto::MnemSeed;
-use crate::lib::{to_udusk, DEFAULT_GAS_PRICE};
+use crate::lib::{
+    to_udusk, Dusk, MicroDusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE,
+};
 use crate::{CliCommand, WalletCfg};
 
 /// Request the user to authenticate with a password
@@ -262,7 +264,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let rcvr = request_rcvr_addr();
                 let amt = request_token_amt("transfer");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(DEFAULT_GAS_PRICE);
+                let gas_price = Some(request_gas_price());
                 Some(Transfer {
                     key,
                     rcvr,
@@ -277,7 +279,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let stake_key = request_key_index("stake");
                 let amt = request_token_amt("stake");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(DEFAULT_GAS_PRICE);
+                let gas_price = Some(request_gas_price());
                 Some(Stake {
                     key,
                     stake_key,
@@ -304,7 +306,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let key = request_key_index("spend");
                 let stake_key = request_key_index("stake");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(DEFAULT_GAS_PRICE);
+                let gas_price = Some(request_gas_price());
                 Some(WithdrawStake {
                     key,
                     stake_key,
@@ -370,18 +372,21 @@ fn is_valid_addr(addr: &str) -> bool {
     bs58::decode(addr).into_vec().is_ok()
 }
 
+fn check_valid_denom(num: Dusk, _prev: &Answers) -> Result<(), String> {
+    if num.is_finite() && num > 0.0 {
+        Ok(())
+    } else {
+        Err("invalid denomination".to_owned())
+    }
+}
+
 /// Request amount of tokens
-pub(crate) fn request_token_amt(action: &str) -> u64 {
+pub(crate) fn request_token_amt(action: &str) -> MicroDusk {
     let question = requestty::Question::float("amt")
-        .message(format!("Introduce the amount to {} (Dusk):", action))
-        .default(0.0)
-        .validate(|num, _| {
-            if num.is_finite() && num.is_sign_positive() {
-                Ok(())
-            } else {
-                Err("Please enter a finite number".to_owned())
-            }
-        })
+        .message(format!("Introduce the amount to {}:", action))
+        .default(Dusk::default())
+        .validate_on_key(|n, prev| check_valid_denom(n, prev).is_ok())
+        .validate(check_valid_denom)
         .build();
 
     let a = requestty::prompt_one(question).expect("token amount");
@@ -389,25 +394,35 @@ pub(crate) fn request_token_amt(action: &str) -> u64 {
     to_udusk(dusk)
 }
 
-/// Request gas spend limit
+/// Request gas limit
 pub(crate) fn request_gas_limit() -> u64 {
     let question = requestty::Question::int("amt")
-        .message("Introduce the gas spend limit for this transaction (µDusk):")
-        .default(0)
-        .validate_on_key(|i, _| (0..=i64::MAX).contains(&i))
-        .validate(|i, _| {
-            if (0..=i64::MAX).contains(&i) {
+        .message("Introduce the gas limit for this transaction:")
+        .default(DEFAULT_GAS_LIMIT as i64)
+        .validate_on_key(|n, _| n > 0)
+        .validate(|n, _| {
+            if n > 0 {
                 Ok(())
             } else {
-                Err(format!(
-                    "Please introduce an amount between 0 and {}",
-                    i64::MAX
-                ))
+                Err("invalid gas limit".to_owned())
             }
         })
         .build();
 
     let a = requestty::prompt_one(question).expect("gas limit");
-    let val = a.as_int().unwrap();
-    u64::try_from(val).ok().unwrap()
+    a.as_int().unwrap() as u64
+}
+
+/// Request gas price
+pub(crate) fn request_gas_price() -> MicroDusk {
+    let question = requestty::Question::float("amt")
+        .message("Introduce the gas price for this transaction:")
+        .default(DEFAULT_GAS_PRICE)
+        .validate_on_key(|n, prev| check_valid_denom(n, prev).is_ok())
+        .validate(check_valid_denom)
+        .build();
+
+    let a = requestty::prompt_one(question).expect("gas price");
+    let dusk = a.as_float().unwrap();
+    to_udusk(dusk)
 }
