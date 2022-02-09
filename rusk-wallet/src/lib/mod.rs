@@ -14,6 +14,9 @@ pub mod wallet;
 pub const SEED_SIZE: usize = 64;
 pub const ONE_MILLION: f64 = 1_000_000.0;
 
+/// The default gas price is 0.001 Dusk
+pub(crate) const DEFAULT_GAS_PRICE: u64 = 1_000;
+
 /// Convert from Dusk to uDusk
 pub fn to_udusk(dusk: f64) -> u64 {
     (dusk * ONE_MILLION) as u64

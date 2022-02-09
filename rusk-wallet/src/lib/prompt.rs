@@ -11,7 +11,7 @@ use blake3::Hash;
 use requestty::Question;
 
 use crate::lib::crypto::MnemSeed;
-use crate::lib::to_udusk;
+use crate::lib::{to_udusk, DEFAULT_GAS_PRICE};
 use crate::{CliCommand, WalletCfg};
 
 /// Request the user to authenticate with a password
@@ -262,7 +262,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let rcvr = request_rcvr_addr();
                 let amt = request_token_amt("transfer");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(0);
+                let gas_price = Some(DEFAULT_GAS_PRICE);
                 Some(Transfer {
                     key,
                     rcvr,
@@ -277,7 +277,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let stake_key = request_key_index("stake");
                 let amt = request_token_amt("stake");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(0);
+                let gas_price = Some(DEFAULT_GAS_PRICE);
                 Some(Stake {
                     key,
                     stake_key,
@@ -291,7 +291,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let key = request_key_index("spend");
                 let stake_key = request_key_index("stake");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(0);
+                let gas_price = Some(DEFAULT_GAS_PRICE);
                 Some(ExtendStake {
                     key,
                     stake_key,
@@ -304,7 +304,7 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
                 let key = request_key_index("spend");
                 let stake_key = request_key_index("stake");
                 let gas_limit = request_gas_limit();
-                let gas_price = Some(0);
+                let gas_price = Some(DEFAULT_GAS_PRICE);
                 Some(WithdrawStake {
                     key,
                     stake_key,
