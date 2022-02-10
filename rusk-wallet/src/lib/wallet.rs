@@ -66,8 +66,35 @@ impl CliWallet {
     pub fn interactive(&self) -> Result<(), Error> {
         let offline = self.wallet.is_none();
         loop {
-            match prompt::command(offline) {
-                Some(cmd) => {
+            use prompt::PromptCommand;
+            match prompt::choose_command(offline) {
+                Some(pcmd) => {
+                    // load key balance first to provide interactive feedback
+                    let balance = if let Some(wallet) = &self.wallet {
+                        match pcmd {
+                            PromptCommand::Export => 0,
+                            PromptCommand::Address(key) => {
+                                wallet.get_balance(key)?
+                            }
+                            PromptCommand::Balance(key) => {
+                                wallet.get_balance(key)?
+                            }
+                            PromptCommand::Transfer(key) => {
+                                wallet.get_balance(key)?
+                            }
+                            PromptCommand::Stake(key) => {
+                                wallet.get_balance(key)?
+                            }
+                            PromptCommand::Withdraw(key) => {
+                                wallet.get_balance(key)?
+                            }
+                        }
+                    } else {
+                        0
+                    };
+
+                    // prepare command
+                    let cmd = prompt::prepare_command(pcmd, to_dusk(balance));
                     // run command
                     self.run(cmd)?;
                     // wait for a second

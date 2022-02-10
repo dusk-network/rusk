@@ -41,8 +41,8 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.2.1")]
-#[clap(about = "Easily manage your Dusk", long_about = None)]
+#[clap(version = "0.2.2")]
+#[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
 pub(crate) struct WalletCfg {
