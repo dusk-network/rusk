@@ -8,6 +8,7 @@ use crate::error::Error;
 use crate::services::prover::RuskProver;
 use crate::{Result, Rusk, RuskState};
 
+use crate::services::TX_VERSION;
 use canonical::{Canon, Sink};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
@@ -15,6 +16,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
 use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
+use rusk_abi::hash::Hasher;
 use rusk_vm::GasMeter;
 use tonic::{Request, Response, Status};
 use tracing::info;
@@ -37,28 +39,29 @@ pub use super::rusk_proto::{
 
 pub(crate) type SpentTransaction = (Transaction, GasMeter);
 
-use super::{TX_TYPE_COINBASE, TX_TYPE_TRANSFER, TX_VERSION};
-/// Partition transactions into transfer and coinbase transactions, in this
-/// order.
-fn extract_coinbase(
-    tx: Vec<TransactionProto>,
-) -> Result<(Vec<TransactionProto>, (Note, Note)), Status> {
-    let (transfer_txs, coinbase_txs): (Vec<_>, Vec<_>) =
-        tx.into_iter().partition(|tx| tx.r#type == TX_TYPE_TRANSFER);
+use super::TX_TYPE_COINBASE;
 
-    // There must always be two Coinbase transactions
+/// Partition transactions into transfer and coinbase notes.
+fn extract_coinbase(
+    txs: Vec<TransactionProto>,
+) -> Result<(Vec<TransactionProto>, (Note, Note)), Status> {
+    let (coinbase_txs, transfer_txs): (Vec<_>, Vec<_>) = txs
+        .into_iter()
+        .partition(|tx| tx.r#type == TX_TYPE_COINBASE);
+
     let coinbases = coinbase_txs.len();
-    if coinbases != 2 {
+    if coinbases != 1 {
         return Err(Status::invalid_argument(format!(
-            "Expected 2 coinbase transactions, got {}",
+            "Expected 1 coinbase, found {}",
             coinbases
         )));
     }
 
-    let dusk_note = Note::from_slice(&coinbase_txs[0].payload)
-        .map_err(Error::Serialization)?;
-    let generator_note = Note::from_slice(&coinbase_txs[1].payload)
-        .map_err(Error::Serialization)?;
+    let mut reader = &coinbase_txs[0].payload[..];
+    let dusk_note =
+        Note::from_reader(&mut reader).map_err(Error::Serialization)?;
+    let generator_note =
+        Note::from_reader(&mut reader).map_err(Error::Serialization)?;
 
     Ok((transfer_txs, (dusk_note, generator_note)))
 }
@@ -203,25 +206,32 @@ impl State for Rusk {
             &request.txs,
         );
 
+        // Mint coinbase notes and add a coinbase transaction to block
         let (dusk_note, generator_note) = state.mint(
             request.block_height,
             block_gas_meter.spent(),
             self.generator.as_ref(),
         )?;
 
-        let state_root = state.root().to_vec();
+        let mut payload = Vec::with_capacity(2 * Note::SIZE);
 
-        for note in [dusk_note, generator_note] {
-            txs.push(ExecutedTransactionProto {
-                tx: Some(TransactionProto {
-                    version: TX_VERSION,
-                    r#type: TX_TYPE_COINBASE,
-                    payload: note.to_bytes().to_vec(),
-                }),
-                tx_hash: note.hash().to_bytes().to_vec(),
-                gas_spent: 0,
-            })
-        }
+        payload.extend(dusk_note.to_bytes());
+        payload.extend(generator_note.to_bytes());
+
+        let tx_hash = Hasher::digest(&payload).to_bytes().to_vec();
+
+        txs.push(ExecutedTransactionProto {
+            tx: Some(TransactionProto {
+                version: TX_VERSION,
+                r#type: TX_TYPE_COINBASE,
+                payload,
+            }),
+            tx_hash,
+            gas_spent: 0, // coinbase transactions never cost anything
+        });
+
+        // Compute the new state root resulting from the state changes
+        let state_root = state.root().to_vec();
 
         let success = true;
 
