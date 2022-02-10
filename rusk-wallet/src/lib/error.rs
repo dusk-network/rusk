@@ -143,23 +143,32 @@ impl fmt::Display for Error {
                 write!(f, "Wrong wallet password")
             }
             Error::Bytes(err) => {
-                write!(f, "Bytes encoding errors: {:?}", err)
+                write!(f, "Bytes encoding error: {:?}", err)
             }
             Error::Base58(err) => {
-                write!(f, "Base58 errors: {}", err)
+                write!(f, "Base58 error: {}", err)
             }
             Error::Canon(err) => {
-                write!(f, "Canonical errors: {:?}", err)
+                write!(f, "Canonical error: {:?}", err)
             }
             Error::IO(err) => {
-                write!(f, "Filesystem errors: {}", err)
+                write!(f, "Filesystem error: {}", err)
             }
             Error::JSON(err) => {
                 write!(f, "JSON serialization error: {}", err)
             }
             Error::WalletCore(err) => {
-                write!(f, "Wallet Core lib errors: {:?}", err)
-            }
+                match err.as_ref() {
+                    CoreError::Store(e) => write!(f, "Store error: {}", e),
+                    CoreError::State(e) => write!(f, "State client error: {}", e),
+                    CoreError::Prover(e) => write!(f, "Prover client error: {}", e),
+                    CoreError::Canon(e) => write!(f, "Canonical error: {:?}", e),
+                    CoreError::Rng(e) => write!(f, "Random number generator error: {}", e),
+                    CoreError::Bytes(e) => write!(f, "Serialization error: {:?}", e),
+                    CoreError::Phoenix(e) => write!(f, "Transaction model error: {}", e),
+                    CoreError::NotEnoughBalance => write!(f, "Insufficient balance to perform this transaction"),
+                    CoreError::NoteCombinationProblem => write!(f, "Note combination for the given value is impossible given the maximum amount of inputs in a transaction."),
+                }            }
             Error::UserExit => {
                 write!(f, "Done")
             }
@@ -188,12 +197,12 @@ impl fmt::Debug for Error {
             Error::Network(err) => {
                 write!(
                     f,
-                    "Network error while communicating with rusk: {}",
+                    "Network error while communicating with rusk: {:?}",
                     err
                 )
             }
             Error::Connection(err) => {
-                write!(f, "Connection error with rusk: {}", err)
+                write!(f, "Connection error with rusk: {:?}", err)
             }
             Error::Offline => {
                 write!(f, "Command not available in offline mode")
@@ -202,22 +211,32 @@ impl fmt::Debug for Error {
                 write!(f, "Wrong wallet password")
             }
             Error::Bytes(err) => {
-                write!(f, "Bytes encoding errors: {:?}", err)
+                write!(f, "Bytes encoding error: {:?}", err)
             }
             Error::Base58(err) => {
-                write!(f, "Base58 errors: {}", err)
+                write!(f, "Base58 error: {:?}", err)
             }
             Error::Canon(err) => {
-                write!(f, "Canonical errors: {:?}", err)
+                write!(f, "Canonical error: {:?}", err)
             }
             Error::IO(err) => {
-                write!(f, "Filesystem errors: {}", err)
+                write!(f, "Filesystem error: {:?}", err)
             }
             Error::JSON(err) => {
-                write!(f, "JSON serialization error: {}", err)
+                write!(f, "JSON serialization error: {:?}", err)
             }
             Error::WalletCore(err) => {
-                write!(f, "Wallet Core lib errors: {:?}", err)
+                match err.as_ref() {
+                    CoreError::Store(e) => write!(f, "Store error: {:?}", e),
+                    CoreError::State(e) => write!(f, "State client error: {:?}", e),
+                    CoreError::Prover(e) => write!(f, "Prover client error: {:?}", e),
+                    CoreError::Canon(e) => write!(f, "Canonical error: {:?}", e),
+                    CoreError::Rng(e) => write!(f, "Random number generator error: {:?}", e),
+                    CoreError::Bytes(e) => write!(f, "Serialization error: {:?}", e),
+                    CoreError::Phoenix(e) => write!(f, "Transaction model error: {:?}", e),
+                    CoreError::NotEnoughBalance => write!(f, "Insufficient balance to perform this transaction"),
+                    CoreError::NoteCombinationProblem => write!(f, "Note combination for the given value is impossible given the maximum amount of inputs in a transaction."),
+                }
             }
             Error::UserExit => {
                 write!(f, "Done")

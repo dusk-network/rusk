@@ -41,7 +41,7 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.2.2")]
+#[clap(version = "0.2.3")]
 #[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -147,26 +147,7 @@ enum CliCommand {
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
-    /*
-        /// Extend stake for a particular key
-        ExtendStake {
-            /// Key index from which your Dusk was staked
-            #[clap(short, long)]
-            key: u64,
 
-            /// Staking key index used for this stake
-            #[clap(short, long)]
-            stake_key: u64,
-
-            /// Max amt of gas for this transaction
-            #[clap(short = 'l', long)]
-            gas_limit: u64,
-
-            /// Max price you're willing to pay for gas used
-            #[clap(short = 'p', long)]
-            gas_price: Option<u64>,
-        },
-    */
     /// Withdraw a key's stake
     WithdrawStake {
         /// Key index from which your Dusk was staked
@@ -272,6 +253,13 @@ async fn rusk_uds(socket_path: String) -> Result<Rusk, Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    if let Err(err) = exec().await {
+        println!("{}", err);
+    }
+    Ok(())
+}
+
+async fn exec() -> Result<(), Error> {
     use CliCommand::*;
 
     // parse cli arguments
