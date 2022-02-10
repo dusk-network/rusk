@@ -136,15 +136,16 @@ where
     Ok(state_id)
 }
 
-pub fn exec(build: bool) -> Result<(), Box<dyn Error>> {
+pub fn exec(build: bool, force: bool) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
 
     info!("{} Network state", theme.action("Checking"));
     let state_path = rusk_profile::get_rusk_state_dir()?;
     let id_path = rusk_profile::get_rusk_state_id_path()?;
 
-    // if the state already exists in the expected path stop.
-    if state_path.exists() && id_path.exists() {
+    // if we're not forcing a rebuild/download and the state already exists in
+    // the expected path, stop early.
+    if !force && state_path.exists() && id_path.exists() {
         info!("{} existing state", theme.info("Found"));
 
         let _ = NetworkStateId::read(&id_path)?;
