@@ -261,8 +261,7 @@ async fn rusk_uds(socket_path: String) -> Result<Rusk, Error> {
             let path = (&socket_path[..]).to_string();
             UnixStream::connect(path)
         }))
-        .await
-        .expect("Error generating a UDS Channel, try TCP");
+        .await?;
 
     Ok(Rusk {
         network: NetworkClient::new(channel.clone()),
