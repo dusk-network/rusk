@@ -203,32 +203,7 @@ impl CliWallet {
                     Err(Error::Offline)
                 }
             }
-            /*
-            // Extend stake for a particular key
-            ExtendStake {
-                key,
-                stake_key,
-                gas_limit,
-                gas_price,
-            } => {
-                if let Some(wallet) = &self.wallet {
-                    let my_addr = wallet.public_spend_key(key)?;
-                    let mut rng = StdRng::from_entropy();
-                    wallet.extend_stake(
-                        &mut rng,
-                        key,
-                        stake_key,
-                        &my_addr,
-                        gas_limit,
-                        gas_price.unwrap_or(DEFAULT_GAS_PRICE),
-                    )?;
-                    println!("> Stake extension success!");
-                    Ok(())
-                } else {
-                    Err(Error::Offline)
-                }
-            }
-            */
+
             // Withdraw a key's stake
             WithdrawStake {
                 key,
