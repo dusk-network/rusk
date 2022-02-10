@@ -114,7 +114,7 @@ pub trait ProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error>;
+    ) -> Result<Transaction, Self::Error>;
 
     /// Requests an STCT proof.
     fn request_stct_proof(

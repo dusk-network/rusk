@@ -29,7 +29,8 @@ use rand_core::{
 
 use crate::tx::UnprovenTransaction;
 use crate::{
-    Error, ProverClient, StateClient, Store, Wallet, POSEIDON_TREE_DEPTH,
+    Error, ProverClient, StateClient, Store, Transaction, Wallet,
+    POSEIDON_TREE_DEPTH,
 };
 
 extern "C" {
@@ -82,7 +83,12 @@ extern "C" {
     ) -> u8;
 
     /// Request the node to prove the given unproven transaction.
-    fn compute_proof_and_propagate(utx: *const u8, utx_len: u32) -> u8;
+    fn compute_proof_and_propagate(
+        utx: *const u8,
+        utx_len: u32,
+        tx: *mut u8,
+        tx_len: *mut u32,
+    ) -> u8;
 
     /// Requests the node to prove STCT.
     fn request_stct_proof(
@@ -438,20 +444,31 @@ impl ProverClient for FfiProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let utx_bytes = utx.to_var_bytes();
+
+        // A transaction is always smaller than an unproven transaction
+        let mut tx_buf = vec![0; utx_bytes.len()];
+        let mut tx_len = 0;
 
         unsafe {
             let r = compute_proof_and_propagate(
                 &utx_bytes[0],
                 utx_bytes.len() as u32,
+                &mut tx_buf[0],
+                &mut tx_len,
             );
             if r != 0 {
                 return Err(r);
             }
         }
 
-        Ok(())
+        let transaction = Transaction::from_slice(&tx_buf[..tx_len as usize])
+            .map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+
+        Ok(transaction)
     }
 
     fn request_stct_proof(
