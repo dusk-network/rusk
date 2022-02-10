@@ -8,7 +8,7 @@ use std::env;
 use std::path::PathBuf;
 
 use blake3::Hash;
-use requestty::{Answers, Question};
+use requestty::Question;
 
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
@@ -194,8 +194,17 @@ fn wallet_exists(name: &str) -> bool {
     pb.is_file()
 }
 
+pub(crate) enum PromptCommand {
+    Address(u64),
+    Balance(u64),
+    Transfer(u64),
+    Stake(u64),
+    Withdraw(u64),
+    Export,
+}
+
 /// Let the user choose a command to execute
-pub(crate) fn command(offline: bool) -> Option<CliCommand> {
+pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
     // notify the user if we're note connected
     let offline_notice = match offline {
         false => "",
@@ -226,104 +235,84 @@ pub(crate) fn command(offline: bool) -> Option<CliCommand> {
     let answer = requestty::prompt_one(q).expect("command");
     let index = answer.as_list_item().unwrap().index;
 
-    use CliCommand::*;
+    use PromptCommand::*;
+
     if offline {
         match index {
-            // Public spend key
-            0 => {
-                let key = request_key_index("spend");
-                Some(Address { key })
-            }
-            // Export BLS Key Pair
-            2 => {
-                let key = request_key_index("stake");
-                let encrypt = confirm_encryption();
-                Some(Export {
-                    key,
-                    plaintext: !encrypt,
-                })
-            }
-            // Exit
+            0 => Some(Address(request_key_index("spend"))),
+            2 => Some(Export),
             _ => None,
         }
     } else {
         match index {
-            // Public spend key
-            0 => {
-                let key = request_key_index("spend");
-                Some(Address { key })
-            }
-            // Check balance
-            1 => {
-                let key = request_key_index("spend");
-                Some(Balance { key })
-            }
-            // Create transfer
-            2 => {
-                let key = request_key_index("spend");
-                let rcvr = request_rcvr_addr();
-                let amt = request_token_amt("transfer");
-                let gas_limit = request_gas_limit();
-                let gas_price = Some(request_gas_price());
-                Some(Transfer {
-                    key,
-                    rcvr,
-                    amt,
-                    gas_limit,
-                    gas_price,
-                })
-            }
-            // Stake
-            3 => {
-                let key = request_key_index("spend");
-                let stake_key = request_key_index("stake");
-                let amt = request_token_amt("stake");
-                let gas_limit = request_gas_limit();
-                let gas_price = Some(request_gas_price());
-                Some(Stake {
-                    key,
-                    stake_key,
-                    amt,
-                    gas_limit,
-                    gas_price,
-                })
-            }
-            // Extend stake
-            /*4 => {
-                let key = request_key_index("spend");
-                let stake_key = request_key_index("stake");
-                let gas_limit = request_gas_limit();
-                let gas_price = Some(DEFAULT_GAS_PRICE);
-                Some(ExtendStake {
-                    key,
-                    stake_key,
-                    gas_limit,
-                    gas_price,
-                })
-            }*/
-            // Withdraw stake
-            4 => {
-                let key = request_key_index("spend");
-                let stake_key = request_key_index("stake");
-                let gas_limit = request_gas_limit();
-                let gas_price = Some(request_gas_price());
-                Some(WithdrawStake {
-                    key,
-                    stake_key,
-                    gas_limit,
-                    gas_price,
-                })
-            }
-            // Export BLS Key Pair
-            6 => {
-                let key = request_key_index("stake");
-                let encrypt = confirm_encryption();
-                Some(Export {
-                    key,
-                    plaintext: !encrypt,
-                })
-            }
+            0 => Some(Address(request_key_index("spend"))),
+            1 => Some(Balance(request_key_index("spend"))),
+            2 => Some(Transfer(request_key_index("spend"))),
+            3 => Some(Stake(request_key_index("spend"))),
+            4 => Some(Withdraw(request_key_index("spend"))),
+            6 => Some(Export),
             _ => None,
+        }
+    }
+}
+
+pub(crate) fn prepare_command(cmd: PromptCommand, balance: Dusk) -> CliCommand {
+    use CliCommand as Cli;
+    use PromptCommand as Prompt;
+
+    match cmd {
+        // Public spend key
+        Prompt::Address(key) => Cli::Address { key },
+        // Check balance
+        Prompt::Balance(key) => Cli::Balance { key },
+        // Create transfer
+        Prompt::Transfer(key) => {
+            let rcvr = request_rcvr_addr();
+            let amt = request_token_amt("transfer", balance);
+            let gas_limit = request_gas_limit();
+            let gas_price = Some(request_gas_price());
+            Cli::Transfer {
+                key,
+                rcvr,
+                amt,
+                gas_limit,
+                gas_price,
+            }
+        }
+        // Stake
+        Prompt::Stake(key) => {
+            let stake_key = request_key_index("stake");
+            let amt = request_token_amt("stake", balance);
+            let gas_limit = request_gas_limit();
+            let gas_price = Some(request_gas_price());
+            Cli::Stake {
+                key,
+                stake_key,
+                amt,
+                gas_limit,
+                gas_price,
+            }
+        }
+        // Withdraw stake
+        Prompt::Withdraw(key) => {
+            let stake_key = request_key_index("stake");
+            let gas_limit = request_gas_limit();
+            let gas_price = Some(request_gas_price());
+            Cli::WithdrawStake {
+                key,
+                stake_key,
+                gas_limit,
+                gas_price,
+            }
+        }
+        // Export BLS Key Pair
+        Prompt::Export => {
+            let key = request_key_index("stake");
+            let encrypt = confirm_encryption();
+            Cli::Export {
+                key,
+                plaintext: !encrypt,
+            }
         }
     }
 }
@@ -372,21 +361,25 @@ fn is_valid_addr(addr: &str) -> bool {
     bs58::decode(addr).into_vec().is_ok()
 }
 
-fn check_valid_denom(num: Dusk, _prev: &Answers) -> Result<(), String> {
+fn check_valid_denom(num: Dusk, balance: Dusk) -> Result<(), String> {
     if num.is_finite() && num > 0.0 {
-        Ok(())
+        if num < balance {
+            Ok(())
+        } else {
+            Err("insufficient balance".to_owned())
+        }
     } else {
         Err("invalid denomination".to_owned())
     }
 }
 
 /// Request amount of tokens
-pub(crate) fn request_token_amt(action: &str) -> MicroDusk {
+pub(crate) fn request_token_amt(action: &str, balance: Dusk) -> MicroDusk {
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount to {}:", action))
         .default(Dusk::default())
-        .validate_on_key(|n, prev| check_valid_denom(n, prev).is_ok())
-        .validate(check_valid_denom)
+        .validate_on_key(|n, _| check_valid_denom(n, balance).is_ok())
+        .validate(|n, _| check_valid_denom(n, balance))
         .build();
 
     let a = requestty::prompt_one(question).expect("token amount");
@@ -418,8 +411,8 @@ pub(crate) fn request_gas_price() -> MicroDusk {
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
         .default(DEFAULT_GAS_PRICE)
-        .validate_on_key(|n, prev| check_valid_denom(n, prev).is_ok())
-        .validate(check_valid_denom)
+        .validate_on_key(|n, _| check_valid_denom(n, Dusk::MAX).is_ok())
+        .validate(|n, _| check_valid_denom(n, Dusk::MAX))
         .build();
 
     let a = requestty::prompt_one(question).expect("gas price");
