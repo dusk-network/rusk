@@ -70,7 +70,8 @@ impl RuskProver {
             ))
         })?;
 
-        let tx = utx.prove(proof).to_var_bytes();
-        Ok(Response::new(ExecuteProverResponse { tx }))
+        Ok(Response::new(ExecuteProverResponse {
+            proof: proof.to_bytes().to_vec(),
+        }))
     }
 }

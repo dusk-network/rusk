@@ -145,8 +145,12 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     Ok(())
 }
 
+/// Transacts between two accounts on the in the same wallet and produces a
+/// block with a single transaction, checking balances are transferred
+/// successfully.
 fn wallet_transfer(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+    channel: tonic::transport::Channel,
     amount: u64,
 ) {
     // Sender psk
@@ -179,7 +183,7 @@ fn wallet_transfer(
     );
 
     // Execute a transfer
-    wallet
+    let tx = wallet
         .transfer(
             &mut rng,
             0,
@@ -191,6 +195,7 @@ fn wallet_transfer(
             nonce,
         )
         .expect("Failed to transfer");
+    generator_procedure(channel, &tx).expect("generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
     assert_eq!(
@@ -205,6 +210,136 @@ fn wallet_transfer(
         sender_initial_balance - amount,
         "Wrong resulting balance for the sender"
     );
+}
+
+/// Executes the procedure a block generator will go through to generate a block
+/// including a single transfer transaction, checking the outputs are as
+/// expected.
+fn generator_procedure(
+    channel: tonic::transport::Channel,
+    tx: &Transaction,
+) -> Result<()> {
+    let tx_hash = tx.hash();
+    let tx_bytes = tx.to_var_bytes();
+
+    let tx = TransactionProto {
+        version: 1,
+        r#type: 1,
+        payload: tx_bytes,
+    };
+
+    let mut client = StateClient::new(channel);
+
+    let response = client
+        .preverify(PreverifyRequest {
+            tx: Some(tx.clone()),
+        })
+        .wait()?
+        .into_inner();
+
+    assert_eq!(
+        response.tx_hash,
+        tx_hash.to_bytes().to_vec(),
+        "Hash mismatch"
+    );
+
+    // Since the purpose of the test is simulate a real transaction between
+    // different nodes, the 1st execute state transition response is cached
+    // and reused in the subsequent calls. This is done since only one
+    // node is actually involved in calling the `execute_state_transition`,
+    // where the rest is using the data received from the network.
+    let mut previous_response = EXECUTE_STATE_TRANSITION_RESPONSE.lock();
+    let response = match &*previous_response {
+        None => {
+            info!("First call to execute_state_transition");
+
+            let response = client
+                .execute_state_transition(ExecuteStateTransitionRequest {
+                    txs: vec![tx],
+                    block_height: BLOCK_HEIGHT,
+                    block_gas_limit: BLOCK_GAS_LIMIT,
+                })
+                .wait()?
+                .into_inner();
+            *previous_response = Some(response.clone());
+            response
+        }
+        Some(previous_response) => {
+            info!("Use response from the first execute_state_transition");
+
+            previous_response.clone()
+        }
+    };
+
+    assert_eq!(response.txs.len(), 2, "Should have two tx");
+
+    let transfer_txs: Vec<_> = response
+        .txs
+        .iter()
+        .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
+        .collect();
+
+    let coinbase_txs: Vec<_> = response
+        .txs
+        .iter()
+        .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
+        .collect();
+
+    assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
+    assert_eq!(coinbase_txs.len(), 1, "One coinbase tx");
+
+    assert_eq!(
+        transfer_txs[0].tx_hash,
+        tx_hash.to_bytes().to_vec(),
+        "Hash mismatch"
+    );
+
+    let execute_state_root = response.state_root.clone();
+
+    info!(
+        "execute_state_transition new root: {:?}",
+        hex::encode(&execute_state_root)
+    );
+
+    let mut txs = vec![];
+    txs.extend(transfer_txs);
+    txs.extend(coinbase_txs);
+
+    let txs: Vec<_> = txs
+        .iter()
+        .map(|tx| tx.tx.as_ref().unwrap())
+        .cloned()
+        .collect();
+
+    client
+        .verify_state_transition(VerifyStateTransitionRequest {
+            txs: txs.clone(),
+            block_height: BLOCK_HEIGHT,
+            block_gas_limit: BLOCK_GAS_LIMIT,
+        })
+        .wait()?;
+
+    let response = client
+        .accept(StateTransitionRequest {
+            txs,
+            block_height: BLOCK_HEIGHT,
+            block_gas_limit: BLOCK_GAS_LIMIT,
+            state_root: execute_state_root.clone(),
+        })
+        .wait()?
+        .into_inner();
+
+    assert_eq!(response.txs.len(), 1, "Should have one tx");
+
+    let accept_state_root = response.state_root;
+    info!("accept new root: {:?}", hex::encode(&accept_state_root));
+
+    assert_eq!(
+        accept_state_root, execute_state_root,
+        "Root should be equal"
+    );
+
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -323,7 +458,7 @@ impl wallet::ProverClient for TestProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let mut client = ProverClient::new(self.channel.clone());
 
         let response = client
@@ -333,136 +468,18 @@ impl wallet::ProverClient for TestProverClient {
             .wait()?
             .into_inner();
 
+        let proof =
+            Proof::from_slice(&response.proof).map_err(Error::Serialization)?;
+        let tx = utx.clone().prove(proof);
+
         let propagate_request = tonic::Request::new(PropagateMessage {
-            message: response.tx.clone(),
+            message: tx.to_var_bytes(),
         });
 
         let mut network_client = NetworkClient::new(self.channel.clone());
         let _ = network_client.propagate(propagate_request).wait()?;
 
-        let tx_bytes = response.tx;
-        let tx =
-            Transaction::from_slice(&tx_bytes).map_err(Error::Serialization)?;
-        let tx_hash = tx.hash();
-
-        let tx = TransactionProto {
-            version: 1,
-            r#type: 1,
-            payload: tx_bytes,
-        };
-
-        let mut client = StateClient::new(self.channel.clone());
-
-        let response = client
-            .preverify(PreverifyRequest {
-                tx: Some(tx.clone()),
-            })
-            .wait()?
-            .into_inner();
-
-        assert_eq!(
-            response.tx_hash,
-            tx_hash.to_bytes().to_vec(),
-            "Hash mismatch"
-        );
-
-        // Since the purpose of the test is simulate a real transaction between
-        // different nodes, the 1st execute state transition response is cached
-        // and reused in the subsequent calls. This is done since only one
-        // node is actually involved in calling the `execute_state_transition`,
-        // where the rest is using the data received from the network.
-        let mut previous_response = EXECUTE_STATE_TRANSITION_RESPONSE.lock();
-        let response = match &*previous_response {
-            None => {
-                info!("First call to execute_state_transition");
-
-                let response = client
-                    .execute_state_transition(ExecuteStateTransitionRequest {
-                        txs: vec![tx],
-                        block_height: BLOCK_HEIGHT,
-                        block_gas_limit: BLOCK_GAS_LIMIT,
-                    })
-                    .wait()?
-                    .into_inner();
-                *previous_response = Some(response.clone());
-                response
-            }
-            Some(previous_response) => {
-                info!("Use response from the first execute_state_transition");
-
-                previous_response.clone()
-            }
-        };
-
-        assert_eq!(response.txs.len(), 2, "Should have two tx");
-
-        let transfer_txs: Vec<_> = response
-            .txs
-            .iter()
-            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
-            .collect();
-
-        let coinbase_txs: Vec<_> = response
-            .txs
-            .iter()
-            .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
-            .collect();
-
-        assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
-        assert_eq!(coinbase_txs.len(), 1, "One coinbase tx");
-
-        assert_eq!(
-            transfer_txs[0].tx_hash,
-            tx_hash.to_bytes().to_vec(),
-            "Hash mismatch"
-        );
-
-        let execute_state_root = response.state_root.clone();
-
-        info!(
-            "execute_state_transition new root: {:?}",
-            hex::encode(&execute_state_root)
-        );
-
-        let mut txs = vec![];
-        txs.extend(transfer_txs);
-        txs.extend(coinbase_txs);
-
-        let txs: Vec<_> = txs
-            .iter()
-            .map(|tx| tx.tx.as_ref().unwrap())
-            .cloned()
-            .collect();
-
-        client
-            .verify_state_transition(VerifyStateTransitionRequest {
-                txs: txs.clone(),
-                block_height: BLOCK_HEIGHT,
-                block_gas_limit: BLOCK_GAS_LIMIT,
-            })
-            .wait()?;
-
-        let response = client
-            .accept(StateTransitionRequest {
-                txs,
-                block_height: BLOCK_HEIGHT,
-                block_gas_limit: BLOCK_GAS_LIMIT,
-                state_root: execute_state_root.clone(),
-            })
-            .wait()?
-            .into_inner();
-
-        assert_eq!(response.txs.len(), 1, "Should have one tx");
-
-        let accept_state_root = response.state_root;
-        info!("accept new root: {:?}", hex::encode(&accept_state_root));
-
-        assert_eq!(
-            accept_state_root, execute_state_root,
-            "Root should be equal"
-        );
-
-        Ok(())
+        Ok(tx)
     }
 
     /// Requests an STCT proof.
@@ -522,7 +539,9 @@ pub async fn wallet_grpc() -> Result<()> {
         TestStateClient {
             channel: channel.clone(),
         },
-        TestProverClient { channel },
+        TestProverClient {
+            channel: channel.clone(),
+        },
     );
 
     let rusk = STATE_LOCK.lock();
@@ -531,7 +550,7 @@ pub async fn wallet_grpc() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    wallet_transfer(&wallet, 1_000);
+    wallet_transfer(&wallet, channel.clone(), 1_000);
 
     // Check the state's root is changed from the original one
     let new_root = state.root();
@@ -548,7 +567,7 @@ pub async fn wallet_grpc() -> Result<()> {
     info!("Root after reset: {:?}", hex::encode(state.root()));
     assert_eq!(original_root, state.root(), "Root be the same again");
 
-    wallet_transfer(&wallet, 1_000);
+    wallet_transfer(&wallet, channel.clone(), 1_000);
 
     // Check the state's root is back to the original one
     info!(
