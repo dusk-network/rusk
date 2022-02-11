@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::tx::UnprovenTransaction;
-use crate::{ProverClient, StateClient, Store};
+use crate::{ProverClient, StateClient, Store, Transaction};
 
 use alloc::vec::Vec;
 
@@ -263,7 +263,7 @@ where
         gas_limit: u64,
         gas_price: u64,
         ref_id: BlsScalar,
-    ) -> Result<(), Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC, PC>> {
         let sender = self
             .store
             .retrieve_ssk(sender_index)
@@ -298,9 +298,7 @@ where
 
         self.prover
             .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)?;
-
-        Ok(())
+            .map_err(Error::from_prover_err)
     }
 
     /// Stakes an amount of Dusk.
@@ -314,7 +312,7 @@ where
         value: u64,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<(), Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC, PC>> {
         let sender = self
             .store
             .retrieve_ssk(sender_index)
@@ -383,8 +381,7 @@ where
 
         self.prover
             .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)?;
-        Ok(())
+            .map_err(Error::from_prover_err)
     }
 
     /// Extends staking for a particular key.
@@ -396,7 +393,7 @@ where
         refund: &PublicSpendKey,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<(), Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC, PC>> {
         let sender = self
             .store
             .retrieve_ssk(sender_index)
@@ -443,8 +440,7 @@ where
 
         self.prover
             .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)?;
-        Ok(())
+            .map_err(Error::from_prover_err)
     }
 
     /// Withdraw a key's stake.
@@ -456,7 +452,7 @@ where
         refund: &PublicSpendKey,
         gas_limit: u64,
         gas_price: u64,
-    ) -> Result<(), Error<S, SC, PC>> {
+    ) -> Result<Transaction, Error<S, SC, PC>> {
         let sender = self
             .store
             .retrieve_ssk(sender_index)
@@ -529,8 +525,7 @@ where
 
         self.prover
             .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)?;
-        Ok(())
+            .map_err(Error::from_prover_err)
     }
 
     /// Gets the balance of a key.

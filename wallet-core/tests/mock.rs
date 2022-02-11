@@ -187,9 +187,9 @@ impl ProverClient for TestProverClient {
     type Error = ();
     fn compute_proof_and_propagate(
         &self,
-        _: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
-        Ok(())
+        utx: &UnprovenTransaction,
+    ) -> Result<Transaction, Self::Error> {
+        Ok(utx.clone().prove(Proof::default()))
     }
 
     fn request_stct_proof(
@@ -242,7 +242,7 @@ impl ProverClient for CanonProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let utx_clone = utx.clone();
 
         let tx = utx_clone.prove(Proof::default());
@@ -293,7 +293,7 @@ impl ProverClient for SerdeProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let utx_bytes = utx.to_var_bytes();
         let utx_clone = UnprovenTransaction::from_slice(&utx_bytes)
             .expect("Successful deserialization");
