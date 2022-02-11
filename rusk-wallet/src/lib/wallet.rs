@@ -158,7 +158,7 @@ impl CliWallet {
                     let mut rng = StdRng::from_entropy();
                     let ref_id = BlsScalar::random(&mut rng);
 
-                    wallet.transfer(
+                    let tx = wallet.transfer(
                         &mut rng,
                         key,
                         &my_addr,
@@ -169,7 +169,9 @@ impl CliWallet {
                             .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
                         ref_id,
                     )?;
-                    println!("> Transfer sent!");
+
+                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    println!("> Transaction sent: {}", txh);
                     Ok(())
                 } else {
                     Err(Error::Offline)
@@ -187,7 +189,7 @@ impl CliWallet {
                 if let Some(wallet) = &self.wallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
-                    wallet.stake(
+                    let tx = wallet.stake(
                         &mut rng,
                         key,
                         stake_key,
@@ -197,7 +199,9 @@ impl CliWallet {
                         gas_price
                             .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
                     )?;
-                    println!("> Stake success!");
+
+                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    println!("> Staked successfuly: {}", txh);
                     Ok(())
                 } else {
                     Err(Error::Offline)
@@ -214,7 +218,7 @@ impl CliWallet {
                 if let Some(wallet) = &self.wallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
-                    wallet.withdraw_stake(
+                    let tx = wallet.withdraw_stake(
                         &mut rng,
                         key,
                         stake_key,
@@ -223,7 +227,9 @@ impl CliWallet {
                         gas_price
                             .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
                     )?;
-                    println!("> Stake withdrawal success!");
+
+                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    println!("> Stake withdrawn successfuly: {}", txh);
                     Ok(())
                 } else {
                     Err(Error::Offline)
