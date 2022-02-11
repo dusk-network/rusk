@@ -7,12 +7,13 @@
 use crate::common::setup;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
+use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient as WalletProverClient, StateClient, Store,
+    ProverClient as WalletProverClient, StateClient, Store, Transaction,
     UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 use parking_lot::Mutex;
@@ -26,6 +27,7 @@ use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tonic::transport::Channel;
 use tonic::transport::Server;
+
 /// Create a new wallet meant for tests. It includes a client that will always
 /// return a random anchor (same every time), and the default opening.
 ///
@@ -106,20 +108,25 @@ impl WalletProverClient for TestWalletProverClient {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
-        let utx = utx.to_var_bytes();
-        let request = tonic::Request::new(ExecuteProverRequest { utx });
+    ) -> Result<Transaction, Self::Error> {
+        let utx_bytes = utx.to_var_bytes();
+        let request =
+            tonic::Request::new(ExecuteProverRequest { utx: utx_bytes });
 
         let mut prover = self.client.lock();
-        block_in_place(move || {
+        let response = block_in_place(move || {
             Handle::current()
                 .block_on(async move { prover.prove_execute(request).await })
             // FIX_ME: Include network propagation test as soon as
             // NetworkService is included in tests
         })
-        .expect("successful call");
+        .expect("successful call")
+        .into_inner();
 
-        Ok(())
+        let proof = Proof::from_slice(&response.proof).expect("valid proof");
+        let tx = utx.clone().prove(proof);
+
+        Ok(tx)
     }
 
     /// Requests an STCT proof.
