@@ -7,9 +7,9 @@ message ExecuteProverRequest {
 }
 
 
-// A serialized `Transaction` from the `dusk-wallet-core` crate.
+// A Plonk proof for the Execute circuit.
 message ExecuteProverResponse {
-    bytes tx = 1;
+    bytes proof = 1;
 }
 
 // Request a proof for the STCT circuit.
