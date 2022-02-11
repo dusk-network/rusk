@@ -74,22 +74,26 @@ impl ProverClient for Prover {
     fn compute_proof_and_propagate(
         &self,
         utx: &UnprovenTransaction,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Transaction, Self::Error> {
         let utx_bytes = utx.to_var_bytes();
         let msg = ExecuteProverRequest { utx: utx_bytes };
         let req = tonic::Request::new(msg);
 
         let mut prover = self.client.lock().unwrap();
-        let tx_bytes = block_in_place(move || {
+        let proof_bytes = block_in_place(move || {
             Handle::current()
                 .block_on(async move { prover.prove_execute(req).await })
         })?
         .into_inner()
-        .tx;
+        .proof;
 
-        let tx = Transaction::from_slice(&tx_bytes)?;
+        let proof = Proof::from_slice(&proof_bytes).map_err(Error::Bytes)?;
+        let tx = utx.clone().prove(proof);
+
         let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
         println!("Transaction hash: {}", txh);
+
+        let tx_bytes = tx.to_var_bytes();
 
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
@@ -99,7 +103,7 @@ impl ProverClient for Prover {
             Handle::current().block_on(async move { net.propagate(req).await })
         })?;
 
-        Ok(())
+        Ok(tx)
     }
 
     /// Requests an STCT proof.
