@@ -76,12 +76,12 @@ impl Canon for Transaction {
     fn encoded_len(&self) -> usize {
         0u8.encoded_len()
             + self.anchor.encoded_len()
-            + self.anchor.encoded_len()
             + self.nullifiers.encoded_len()
             + self.fee.encoded_len()
             + self.crossover.encoded_len()
             + self.outputs.encoded_len()
             + self.proof.encoded_len()
+            + self.call.encoded_len()
     }
 }
 
