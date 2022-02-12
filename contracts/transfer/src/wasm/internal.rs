@@ -36,7 +36,7 @@ impl TransferContract {
 
     /// Minimum accepted price per unit of gas
     ///
-    /// The gas is always calculated in nano-dusk
+    /// The gas is always calculated in micro-dusk
     pub(crate) const fn minimum_gas_price() -> u64 {
         1
     }
