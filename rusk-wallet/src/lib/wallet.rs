@@ -17,8 +17,7 @@ use dusk_wallet_core::{Store, Wallet};
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
-use crate::lib::{to_dusk, to_udusk};
+use crate::lib::{prompt, to_dusk, to_udusk, DEFAULT_GAS_PRICE, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 mod base64 {

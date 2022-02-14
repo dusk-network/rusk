@@ -13,6 +13,7 @@ use requestty::Question;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
     to_udusk, Dusk, MicroDusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE,
+    MAX_CONVERTIBLE_DUSK, ONE_MICRO_DUSK,
 };
 use crate::{CliCommand, WalletCfg};
 
@@ -363,6 +364,18 @@ fn is_valid_addr(addr: &str) -> bool {
 
 fn check_valid_denom(num: Dusk, balance: Dusk) -> Result<(), String> {
     if num.is_finite() && num > 0.0 {
+        if num > MAX_CONVERTIBLE_DUSK {
+            return Err(format!(
+                "This is greater than the max amount allowed {}",
+                MAX_CONVERTIBLE_DUSK
+            ));
+        }
+        if num < ONE_MICRO_DUSK {
+            return Err(format!(
+                "Input too low, please increase at least to {}",
+                ONE_MICRO_DUSK
+            ));
+        }
         if num < balance {
             Ok(())
         } else {
