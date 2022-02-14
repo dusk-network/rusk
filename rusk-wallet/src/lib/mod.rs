@@ -19,9 +19,11 @@ pub const SEED_SIZE: usize = 64;
 
 pub const ONE_MILLION: Dusk = 1_000_000.0;
 
-pub(crate) const DEFAULT_GAS_LIMIT: u64 = 100000;
+pub(crate) const DEFAULT_GAS_LIMIT: u64 = 100_000;
+pub(crate) const DEFAULT_GAS_PRICE: Dusk = ONE_MICRO_DUSK;
 
-pub(crate) const DEFAULT_GAS_PRICE: Dusk = 0.000001;
+pub(crate) const MAX_CONVERTIBLE_DUSK: Dusk = Dusk::MAX / ONE_MILLION;
+pub(crate) const ONE_MICRO_DUSK: Dusk = 1_f64 / ONE_MILLION;
 
 /// Convert from Dusk to uDusk
 pub fn to_udusk(dusk: Dusk) -> MicroDusk {
