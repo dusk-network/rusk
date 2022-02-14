@@ -13,6 +13,7 @@ use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
+use microkelvin::Link;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::hash::Hasher;
 
@@ -32,11 +33,12 @@ pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 #[derive(Debug, Default, Clone, Canon)]
 pub struct TransferContract {
     pub(crate) notes: Tree,
-    pub(crate) nullifiers: Map<BlsScalar, ()>,
-    pub(crate) roots: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<ContractId, u64>,
-    pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
-    pub(crate) message_mapping_set: Map<ContractId, StealthAddress>,
+    pub(crate) nullifiers: Link<Map<BlsScalar, ()>, ()>,
+    pub(crate) roots: Link<Map<BlsScalar, ()>, ()>,
+    pub(crate) balances: Link<Map<ContractId, u64>, ()>,
+    pub(crate) message_mapping:
+        Link<Map<ContractId, Map<PublicKeyBytes, Message>>, ()>,
+    pub(crate) message_mapping_set: Link<Map<ContractId, StealthAddress>, ()>,
     pub(crate) var_crossover: Option<Crossover>,
     pub(crate) var_crossover_pk: Option<PublicKey>,
 }
@@ -70,11 +72,8 @@ impl TransferContract {
         contract: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
-        let map = self
-            .message_mapping
-            .get(contract)?
-            .ok_or(Error::ContractNotFound)?;
-
+        let inner = self.message_mapping.inner()?;
+        let map = inner.get(contract)?.ok_or(Error::ContractNotFound)?;
         let message = map.get(&pk.to_bytes())?.ok_or(Error::MessageNotFound)?;
 
         Ok(*message)
@@ -87,14 +86,14 @@ impl TransferContract {
         self.notes.notes(block_height)
     }
 
-    pub fn balances(&self) -> &Map<ContractId, u64> {
-        &self.balances
+    pub fn balances(&self) -> Result<Map<ContractId, u64>, Error> {
+        Ok(self.balances.inner()?.clone())
     }
 
     pub fn update_root(&mut self) -> Result<(), Error> {
+        let mut inner = self.roots.inner_mut()?;
         let root = self.notes.root()?;
-
-        self.roots.insert(root, ())?;
+        inner.insert(root, ())?;
 
         Ok(())
     }
@@ -132,7 +131,7 @@ impl TransferContract {
         nullifiers: &[BlsScalar],
     ) -> Result<bool, Error> {
         nullifiers.iter().try_fold(false, |t, n| {
-            Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
+            Ok(t || self.nullifiers.inner()?.get(n).map(|n| n.is_some())?)
         })
     }
 
@@ -142,11 +141,12 @@ impl TransferContract {
         &self,
         nullifiers: &[BlsScalar],
     ) -> Result<Vec<BlsScalar>, Error> {
+        let self_nullifiers = self.nullifiers.inner()?;
         nullifiers
             .iter()
             .copied()
             .filter_map(|n| {
-                self.nullifiers
+                self_nullifiers
                     .get(&n)
                     .map(|v| v.and(Some(n)))
                     .map_err(|e| e.into())
@@ -177,6 +177,7 @@ impl TryFrom<Note> for TransferContract {
 #[cfg(test)]
 mod test_transfer {
     use super::*;
+    use canonical::Canon;
 
     #[test]
     fn find_existing_nullifiers() -> Result<(), Error> {
@@ -197,7 +198,11 @@ mod test_transfer {
         assert_eq!(existing.len(), 0);
 
         for i in 1..10 {
-            transfer.nullifiers.insert(BlsScalar::from(i), ())?;
+            transfer
+                .nullifiers
+                .inner_mut()
+                .unwrap()
+                .insert(BlsScalar::from(i), ())?;
         }
 
         let existing = transfer

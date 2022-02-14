@@ -301,6 +301,7 @@ impl TransferWrapper {
         *self
             .transfer_state()
             .balances()
+            .expect("Could not get balances")
             .get(address)
             .unwrap()
             .as_deref()
