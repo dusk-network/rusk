@@ -177,7 +177,6 @@ impl TryFrom<Note> for TransferContract {
 #[cfg(test)]
 mod test_transfer {
     use super::*;
-    use canonical::Canon;
 
     #[test]
     fn find_existing_nullifiers() -> Result<(), Error> {

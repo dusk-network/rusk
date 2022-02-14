@@ -42,7 +42,8 @@ impl TransferContract {
     }
 
     pub(crate) fn root_exists(&self, root: &BlsScalar) -> Result<bool, Error> {
-        let root = self.roots.get(root)?;
+        let inner = self.roots.inner()?;
+        let root = inner.get(root)?;
 
         Ok(root.is_some())
     }
@@ -51,8 +52,9 @@ impl TransferContract {
         &mut self,
         nullifiers: Vec<BlsScalar>,
     ) -> Result<(), Error> {
+        let mut inner = self.nullifiers.inner_mut()?;
         for nullifier in nullifiers {
-            self.nullifiers.insert(nullifier, ())?;
+            inner.insert(nullifier, ())?;
         }
 
         Ok(())
@@ -64,6 +66,7 @@ impl TransferContract {
         pk: &PublicKey,
     ) -> Result<Message, Error> {
         self.message_mapping
+            .inner_mut()?
             .get_mut(address)?
             .ok_or(Error::MessageNotFound)?
             .remove(&pk.to_bytes())?
@@ -97,13 +100,14 @@ impl TransferContract {
         address: ContractId,
         value: u64,
     ) -> Result<(), Error> {
-        if let Some(mut balance) = self.balances.get_mut(&address)? {
+        let mut inner = self.balances.inner_mut()?;
+        if let Some(mut balance) = inner.get_mut(&address)? {
             *balance += value;
 
             return Ok(());
         }
 
-        self.balances.insert(address, value)?;
+        inner.insert(address, value)?;
 
         Ok(())
     }
@@ -117,7 +121,7 @@ impl TransferContract {
         // mapped mut
         use core::ops::DerefMut;
 
-        match self.balances.get_mut(address)? {
+        match self.balances.inner_mut()?.get_mut(address)? {
             Some(mut balance) => {
                 let bal_ref = balance.deref_mut();
                 let (bal, underflow) = bal_ref.overflowing_sub(value);
@@ -143,7 +147,7 @@ impl TransferContract {
     ) -> Result<(), Error> {
         let mut to_insert: Option<Map<PublicKeyBytes, Message>> = None;
 
-        match self.message_mapping.get_mut(&address)? {
+        match self.message_mapping.inner_mut()?.get_mut(&address)? {
             Some(mut map) => {
                 map.insert(message_address.pk_r().to_bytes(), message)?;
             }
@@ -156,10 +160,12 @@ impl TransferContract {
         }
 
         if let Some(map) = to_insert {
-            self.message_mapping.insert(address, map)?;
+            self.message_mapping.inner_mut()?.insert(address, map)?;
         }
 
-        self.message_mapping_set.insert(address, message_address)?;
+        self.message_mapping_set
+            .inner_mut()?
+            .insert(address, message_address)?;
 
         Ok(())
     }
