@@ -46,21 +46,15 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
 
     match tid {
         TX_STAKE => {
-            let (pk, signature, value, spend_proof): (
+            let (pk, signature, value, created_at, spend_proof): (
                 PublicKey,
                 Signature,
                 u64,
+                BlockHeight,
                 Vec<u8>,
             ) = Canon::decode(&mut source).expect("Failed to parse arguments");
 
-            contract.stake(pk, signature, value, spend_proof);
-        }
-
-        TX_EXTEND => {
-            let (pk, signature): (PublicKey, Signature) =
-                Canon::decode(&mut source).expect("Failed to parse arguments");
-
-            contract.extend(pk, signature);
+            contract.stake(pk, signature, value, created_at, spend_proof);
         }
 
         TX_WITHDRAW => {

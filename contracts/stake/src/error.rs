@@ -13,6 +13,7 @@ pub enum Error {
     StakeNotFound,
     StakeSerialization,
     StakeAlreadyExists,
+    InvalidCreatedAt,
     PlonkKeys,
     PlonkProver,
 }

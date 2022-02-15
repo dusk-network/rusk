@@ -12,28 +12,35 @@ use dusk_bytes::Serializable;
 #[derive(Debug, Default, Clone, Copy, Canon, PartialEq, Eq)]
 pub struct Stake {
     value: u64,
-    eligibility: u64,
-    expiration: u64,
+    eligibility: BlockHeight,
+    created_at: BlockHeight,
 }
 
 impl Stake {
-    pub const fn new(value: u64, eligibility: u64, expiration: u64) -> Self {
+    pub const fn new(
+        value: u64,
+        created_at: BlockHeight,
+        block_height: BlockHeight,
+    ) -> Self {
+        let epoch = Self::epoch(block_height);
+        let eligibility = block_height + MATURITY + epoch;
+
+        Self::with_eligibility(value, created_at, eligibility)
+    }
+
+    pub const fn with_eligibility(
+        value: u64,
+        created_at: BlockHeight,
+        eligibility: BlockHeight,
+    ) -> Self {
         Self {
             value,
+            created_at,
             eligibility,
-            expiration,
         }
     }
 
-    pub const fn from_block_height(value: u64, block_height: u64) -> Stake {
-        let epoch = Self::epoch(block_height);
-        let eligibility = block_height + MATURITY + epoch;
-        let expiration = block_height + MATURITY + VALIDITY + epoch;
-
-        Self::new(value, eligibility, expiration)
-    }
-
-    pub const fn epoch(block_height: u64) -> u64 {
+    pub const fn epoch(block_height: BlockHeight) -> u64 {
         EPOCH - block_height % EPOCH
     }
 
@@ -41,20 +48,16 @@ impl Stake {
         self.value
     }
 
-    pub const fn eligibility(&self) -> u64 {
+    pub const fn eligibility(&self) -> BlockHeight {
         self.eligibility
     }
 
-    pub const fn expiration(&self) -> u64 {
-        self.expiration
+    pub const fn created_at(&self) -> BlockHeight {
+        self.created_at
     }
 
     pub const fn is_valid(&self, block_height: u64) -> bool {
-        self.eligibility <= block_height && block_height < self.expiration
-    }
-
-    pub fn extend(&mut self) {
-        self.expiration += VALIDITY;
+        self.eligibility <= block_height
     }
 }
 
@@ -64,19 +67,21 @@ impl Serializable<24> for Stake {
     fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error> {
         let mut value = [0u8; 8];
         let mut eligibility = [0u8; 8];
-        let mut expiration = [0u8; 8];
+        let mut created_at = [0u8; 8];
 
         value.copy_from_slice(&buf[..8]);
         eligibility.copy_from_slice(&buf[8..16]);
-        expiration.copy_from_slice(&buf[16..24]);
+        created_at.copy_from_slice(&buf[16..24]);
 
         let value = u64::from_le_bytes(value);
         let eligibility = u64::from_le_bytes(eligibility);
-        let expiration = u64::from_le_bytes(expiration);
+        let created_at = BlockHeight::from_le_bytes(created_at);
 
-        let stake = Self::new(value, eligibility, expiration);
-
-        Ok(stake)
+        Ok(Self {
+            value,
+            eligibility,
+            created_at,
+        })
     }
 
     fn to_bytes(&self) -> [u8; Self::SIZE] {
@@ -84,7 +89,7 @@ impl Serializable<24> for Stake {
 
         (&mut bytes[..8]).copy_from_slice(&self.value.to_le_bytes());
         (&mut bytes[8..16]).copy_from_slice(&self.eligibility.to_le_bytes());
-        (&mut bytes[16..24]).copy_from_slice(&self.expiration.to_le_bytes());
+        (&mut bytes[16..24]).copy_from_slice(&self.created_at.to_le_bytes());
 
         bytes
     }
