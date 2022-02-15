@@ -36,34 +36,41 @@ pub(crate) fn request_auth(msg: &str) -> Hash {
 
 /// Request the user to create a wallet password
 pub(crate) fn create_password() -> Hash {
-    let mut pwd = String::from("");
+    let pwd = match env::var("RUSK_WALLET_PWD") {
+        Ok(p) => p,
+        Err(_) => {
+            let mut pwd = String::from("");
 
-    let mut pwds_match = false;
-    while !pwds_match {
-        // enter password
-        let q = Question::password("password")
-            .message("Enter a strong password for your wallet:")
-            .mask('*')
-            .build();
-        let a = requestty::prompt_one(q).expect("password");
-        let pwd1 = a.as_string().unwrap_or("").to_string();
+            let mut pwds_match = false;
+            while !pwds_match {
+                // enter password
+                let q = Question::password("password")
+                    .message("Enter a strong password for your wallet:")
+                    .mask('*')
+                    .build();
+                let a = requestty::prompt_one(q).expect("password");
+                let pwd1 = a.as_string().unwrap_or("").to_string();
 
-        // confirm password
-        let q = Question::password("password")
-            .message("Please confirm your password:")
-            .mask('*')
-            .build();
-        let a = requestty::prompt_one(q).expect("password confirmation");
-        let pwd2 = a.as_string().unwrap_or("").to_string();
+                // confirm password
+                let q = Question::password("password")
+                    .message("Please confirm your password:")
+                    .mask('*')
+                    .build();
+                let a =
+                    requestty::prompt_one(q).expect("password confirmation");
+                let pwd2 = a.as_string().unwrap_or("").to_string();
 
-        // check match
-        pwds_match = pwd1 == pwd2;
-        if pwds_match {
-            pwd = pwd1.to_string()
-        } else {
-            println!("Passwords don't match, please try again.");
+                // check match
+                pwds_match = pwd1 == pwd2;
+                if pwds_match {
+                    pwd = pwd1.to_string()
+                } else {
+                    println!("Passwords don't match, please try again.");
+                }
+            }
+            pwd
         }
-    }
+    };
 
     let pwd = blake3::hash(pwd.as_bytes());
     pwd

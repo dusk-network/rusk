@@ -41,7 +41,7 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.2.3")]
+#[clap(version = "0.2.4")]
 #[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -74,6 +74,10 @@ pub(crate) struct WalletCfg {
     /// Path for setting up the unix domain socket
     #[clap(short = 's', long, default_value_t = RUSK_SOCKET.to_string())]
     socket_path: String,
+
+    /// Skip wallet recovery phrase (useful for headless wallet creation)
+    #[clap(long)]
+    skip_recovery: bool,
 
     /// Command
     #[clap(subcommand)]
@@ -292,7 +296,7 @@ async fn exec() -> Result<(), Error> {
 
     // start our local store
     let store = match cmd {
-        Create => create(wallet_path)?,
+        Create => create(wallet_path, cfg.skip_recovery)?,
         Restore => recover(wallet_path)?,
         Interactive => interactive(wallet_path)?,
         _ => LocalStore::from_file(wallet_path, pwd)?,
@@ -323,7 +327,7 @@ async fn exec() -> Result<(), Error> {
 }
 
 /// Create a new wallet
-fn create(mut path: PathBuf) -> Result<LocalStore, Error> {
+fn create(mut path: PathBuf, skip_recovery: bool) -> Result<LocalStore, Error> {
     // prevent user from overwriting an existing wallet file
     while path.is_file() {
         let name = prompt::request_wallet_name();
@@ -333,7 +337,9 @@ fn create(mut path: PathBuf) -> Result<LocalStore, Error> {
 
     // generate mnemonic and seed
     let ms = MnemSeed::new("");
-    prompt::confirm_recovery_phrase(ms.phrase);
+    if !skip_recovery {
+        prompt::confirm_recovery_phrase(ms.phrase);
+    }
 
     // ask user for a password to secure the wallet
     let pwd = prompt::create_password();
@@ -397,7 +403,7 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
         } else {
             let action = prompt::welcome();
             match action {
-                1 => Ok(create(path)?),
+                1 => Ok(create(path, false)?),
                 2 => Ok(recover(path)?),
                 _ => Err(Error::UserExit),
             }
@@ -408,7 +414,7 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
         println!("No wallet files found at {}", &dir);
         let action = prompt::welcome();
         match action {
-            1 => Ok(create(path)?),
+            1 => Ok(create(path, false)?),
             2 => Ok(recover(path)?),
             _ => Err(Error::UserExit),
         }
