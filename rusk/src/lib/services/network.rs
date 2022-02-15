@@ -20,8 +20,8 @@ use crate::error::Error;
 
 pub use super::rusk_proto::{
     network_server::{Network, NetworkServer},
-    BroadcastMessage, Message, MessageMetadata, Null, PropagateMessage,
-    SendMessage,
+    AliveNodesRequest, AliveNodesResponse, BroadcastMessage, Message,
+    MessageMetadata, Null, PropagateMessage, SendMessage,
 };
 use futures::Stream;
 use std::io::Write;
@@ -144,6 +144,20 @@ impl Network for KadcastDispatcher {
             .broadcast(&req.message, Some(req.kadcast_height as usize))
             .await;
         Ok(Response::new(Null {}))
+    }
+
+    async fn alive_nodes(
+        &self,
+        request: Request<AliveNodesRequest>,
+    ) -> Result<Response<AliveNodesResponse>, Status> {
+        debug!("Received AliveNodes request");
+        let max_nodes = request.get_ref().max_nodes as usize;
+        let alive_nodes = self.peer.alive_nodes(max_nodes).await;
+        let address = alive_nodes
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>();
+        Ok(Response::new(AliveNodesResponse { address }))
     }
 
     type ListenStream =
