@@ -25,6 +25,14 @@ message SendMessage {
     string target_address = 2;
 }
 
+message AliveNodesRequest {
+    uint32 max_nodes = 1;
+}
+
+message AliveNodesResponse {
+    repeated string address = 1;
+}
+
 message Null {};
 
 service Network {
@@ -40,4 +48,7 @@ service Network {
 
     // Send a message to a specific target in the network
     rpc Send(SendMessage) returns (Null) {}
+
+    // Retrieve network nodes considered alive
+    rpc AliveNodes(AliveNodesRequest) returns (AliveNodesResponse) {}
 }
