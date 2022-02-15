@@ -18,6 +18,8 @@ OPTIONS:
                                        [default: uds]
     -s, --socket-path <SOCKET_PATH>    Path for setting up the unix domain socket [default: /tmp/
                                        rusk_listener]
+        --skip-recovery                Skip wallet recovery phrase (useful for headless wallet
+                                       creation)
     -h, --help                         Print help information
     -V, --version                      Print version information
 
@@ -32,7 +34,6 @@ SUBCOMMANDS:
     export            Export BLS provisioner key pair
     interactive       Run in interactive mode (default)
     help              Print this message or the help of the given subcommand(s)
-```
 
 ## Good to know
 
@@ -81,3 +82,8 @@ cargo r --release -- stake --help
 ```
 
 By default, you will always be prompted to enter the wallet password. To prevent this behavior, you can provide the password using the `RUSK_WALLET_PWD` environment variable. This is useful in CI or any other headless environment.
+
+Please note that `RUSK_WALLET_PWD` is effectively used for:
+- Wallet decryption (in all commands that use a wallet)
+- Wallet encryption (in `create`)
+- BLS key encryption (in `export`)
