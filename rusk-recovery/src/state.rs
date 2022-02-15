@@ -77,7 +77,7 @@ fn genesis_stake() -> StakeContract {
 
     for provisioner in PROVISIONERS.iter() {
         stake_contract
-            .push_stake(*provisioner, stake)
+            .push_stake(*provisioner, stake, 0)
             .expect("Genesis stake to be pushed to the stake");
     }
 

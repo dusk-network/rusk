@@ -121,9 +121,9 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
     let mut rusk_state = rusk.state()?;
     let mut stake_contract = rusk_state.stake_contract()?;
 
-    let stake = Stake::new(0xdead, 0xdead, 0xbeef);
+    let stake = Stake::with_eligibility(0xdead, 0, 0);
 
-    stake_contract.push_stake(pk, stake)?;
+    stake_contract.push_stake(pk, stake, 0)?;
 
     info!("Updating the new stake contract state");
 
@@ -283,8 +283,9 @@ pub async fn test_fetch_stake() -> Result<()> {
 
     let response = client.get_stake(request).await?.into_inner();
 
-    assert_eq!(stake.value(), response.stake);
-    assert_eq!(stake.expiration(), response.expiration);
+    assert_eq!(stake.value(), response.value);
+    assert_eq!(stake.created_at(), response.created_at);
+    assert_eq!(stake.eligibility(), response.eligibility);
 
     Ok(())
 }

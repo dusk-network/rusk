@@ -352,9 +352,9 @@ impl State for Rusk {
                 let public_key_bls = key.to_bytes().to_vec();
 
                 let stake = StakeProto {
-                    start_height: stake.eligibility(),
-                    end_height: stake.expiration(),
-                    amount: stake.value(),
+                    value: stake.value(),
+                    created_at: stake.created_at(),
+                    eligibility: stake.eligibility(),
                 };
 
                 Provisioner {
@@ -451,8 +451,11 @@ impl State for Rusk {
 
         let stake = self.state()?.fetch_stake(&pk)?;
 
-        let (stake, expiration) = (stake.value(), stake.expiration());
-        Ok(Response::new(GetStakeResponse { stake, expiration }))
+        Ok(Response::new(GetStakeResponse {
+            value: stake.value(),
+            created_at: stake.created_at(),
+            eligibility: stake.eligibility(),
+        }))
     }
 
     async fn find_existing_nullifiers(

@@ -441,7 +441,7 @@ impl wallet::StateClient for TestStateClient {
         Ok(nullifiers)
     }
 
-    /// Queries the node the amount staked by a key and its expiration.
+    /// Queries the node the amount staked by a key.
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         unimplemented!()
     }
@@ -567,7 +567,7 @@ pub async fn wallet_grpc() -> Result<()> {
     info!("Root after reset: {:?}", hex::encode(state.root()));
     assert_eq!(original_root, state.root(), "Root be the same again");
 
-    wallet_transfer(&wallet, channel.clone(), 1_000);
+    wallet_transfer(&wallet, channel, 1_000);
 
     // Check the state's root is back to the original one
     info!(
