@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::path::PathBuf;
 use std::{fs, thread, time::Duration};
 
 use rand::rngs::StdRng;
@@ -269,17 +270,43 @@ impl CliWallet {
                     None => key.to_string(),
                 };
 
-                // write to disk
-                let mut path = dirs::home_dir().expect("user home dir");
+                // output directory
+                let dir = match self.store.dir() {
+                    Some(dir) => dir,
+                    None => {
+                        let home = dirs::home_dir().expect("user home dir");
+                        let home = home
+                            .as_os_str()
+                            .to_str()
+                            .ok_or(Error::WalletFileNotExists)?;
+                        String::from(home)
+                    }
+                };
+
+                // construct path
+                let mut path = PathBuf::new();
+                path.push(&dir);
                 path.push(&filename);
                 path.set_extension("key");
 
+                // write key pair to disk
                 fs::write(&path, bytes)?;
 
                 println!(
                     "> Key pair exported to {}",
                     path.as_os_str().to_str().unwrap()
                 );
+
+                // write pub key to disk
+                let pkbytes = bs58::encode(pk.to_bytes()).into_vec();
+                path.set_extension("pub");
+                fs::write(&path, pkbytes)?;
+
+                println!(
+                    "> Pub key exported to {}",
+                    path.as_os_str().to_str().unwrap()
+                );
+
                 Ok(())
             }
 

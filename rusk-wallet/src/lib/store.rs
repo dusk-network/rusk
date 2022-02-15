@@ -139,6 +139,17 @@ impl LocalStore {
 
         Some(String::from(name))
     }
+
+    /// Returns current directory for this store
+    pub fn dir(&self) -> Option<String> {
+        let mut p = self.path.clone();
+        if p.pop() {
+            let dir = p.as_os_str().to_str()?;
+            Some(String::from(dir))
+        } else {
+            None
+        }
+    }
 }
 
 impl fmt::Debug for LocalStore {

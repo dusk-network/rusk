@@ -34,6 +34,7 @@ SUBCOMMANDS:
     export            Export BLS provisioner key pair
     interactive       Run in interactive mode (default)
     help              Print this message or the help of the given subcommand(s)
+```
 
 ## Good to know
 

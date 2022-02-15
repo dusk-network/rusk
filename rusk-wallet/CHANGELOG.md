@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2022-02-17
+
+### Changed
+- Default to current wallet directory for exported keys [#574]
+- Add an additional plain text file with the base58-encoded public key [#574]
+
+## [0.3.0] - 2022-02-17
+
+### Removed
+- Stake expiration [#566]
+
 ## [0.2.4] - 2022-02-15
 
 ### Added
@@ -91,4 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#539]: https://github.com/dusk-network/rusk/issues/539
 [#547]: https://github.com/dusk-network/rusk/issues/547
 [#554]: https://github.com/dusk-network/rusk/issues/554
+[#566]: https://github.com/dusk-network/rusk/issues/566
 [#569]: https://github.com/dusk-network/rusk/issues/569
+[#574]: https://github.com/dusk-network/rusk/issues/574
