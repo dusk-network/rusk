@@ -88,8 +88,9 @@ message GetStakeRequest {
 }
 
 message GetStakeResponse {
-    fixed64 stake = 1;
-    fixed64 expiration = 2;
+    fixed64 value = 1;
+    fixed64 created_at = 2;
+    fixed64 eligibility = 3;
 }
 
 message FindExistingNullifiersRequest {
