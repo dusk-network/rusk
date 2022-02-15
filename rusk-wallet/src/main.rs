@@ -112,7 +112,7 @@ enum CliCommand {
         #[clap(short, long)]
         rcvr: String,
 
-        /// Amount of Dusk to send
+        /// Amount of Dusk to send (in µDusk)
         #[clap(short, long)]
         amt: u64,
 
@@ -120,7 +120,7 @@ enum CliCommand {
         #[clap(short = 'l', long)]
         gas_limit: u64,
 
-        /// Max price you're willing to pay for gas used
+        /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
@@ -135,7 +135,7 @@ enum CliCommand {
         #[clap(short, long)]
         stake_key: u64,
 
-        /// Amount of Dusk to stake
+        /// Amount of Dusk to stake (in µDusk)
         #[clap(short, long)]
         amt: u64,
 
@@ -143,7 +143,7 @@ enum CliCommand {
         #[clap(short = 'l', long)]
         gas_limit: u64,
 
-        /// Max price you're willing to pay for gas used
+        /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
@@ -162,7 +162,7 @@ enum CliCommand {
         #[clap(short = 'l', long)]
         gas_limit: u64,
 
-        /// Max price you're willing to pay for gas used
+        /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
@@ -298,13 +298,14 @@ async fn exec() -> Result<(), Error> {
         _ => LocalStore::from_file(wallet_path, pwd)?,
     };
 
-    // create the wallet
+    // connect to rusk
     let rusk = if cfg.ipc_method == "uds" {
         rusk_uds(cfg.socket_path).await
     } else {
         rusk_tcp(&cfg.rusk_addr, &cfg.rusk_port).await
     };
 
+    // create our wallet
     let wallet = match rusk {
         Ok(clients) => {
             let prover = Prover::new(clients.prover, clients.network);

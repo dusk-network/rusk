@@ -90,9 +90,6 @@ impl ProverClient for Prover {
         let proof = Proof::from_slice(&proof_bytes).map_err(Error::Bytes)?;
         let tx = utx.clone().prove(proof);
 
-        let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
-        println!("Transaction hash: {}", txh);
-
         let tx_bytes = tx.to_var_bytes();
 
         let msg = PropagateMessage { message: tx_bytes };
