@@ -19,18 +19,16 @@ pub use stake::Stake;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
+pub type BlockHeight = u64;
+
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
 /// Maturity of the stake
 pub const MATURITY: u64 = 2 * EPOCH;
 
-/// Validity of the stake
-pub const VALIDITY: u64 = 56 * EPOCH;
-
 /// The minimum amount of (micro)Dusk one can stake.
 pub const MINIMUM_STAKE: u64 = 1_000_000_000;
 
 pub const TX_STAKE: u8 = 0x00;
-pub const TX_EXTEND: u8 = 0x01;
-pub const TX_WITHDRAW: u8 = 0x02;
+pub const TX_WITHDRAW: u8 = 0x01;

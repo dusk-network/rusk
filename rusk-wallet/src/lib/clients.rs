@@ -300,7 +300,7 @@ impl StateClient for State {
         Ok(branch)
     }
 
-    /// Queries the node the amount staked by a key and its expiration.
+    /// Queries the node for the amount staked by a key.
     fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
         let msg = GetStakeRequest {
             pk: pk.to_bytes().to_vec(),
@@ -314,6 +314,7 @@ impl StateClient for State {
         })?
         .into_inner();
 
-        Ok((res.stake, res.expiration))
+        // TODO return a proper value here
+        Ok((res.value, 0))
     }
 }

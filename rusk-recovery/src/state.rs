@@ -24,8 +24,6 @@ use zip::ZipArchive;
 
 /// Initial amount of the note inserted in the state.
 const GENESIS_DUSK: u64 = 1_000_000_000; // 1000 Dusk.
-/// The number of blocks after which the genesis stake expires.
-const GENESIS_EXPIRATION: u64 = 1_000_000;
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
@@ -73,11 +71,11 @@ fn genesis_transfer() -> TransferContract {
 fn genesis_stake() -> StakeContract {
     let mut stake_contract = StakeContract::default();
 
-    let stake = Stake::new(MINIMUM_STAKE, 0, GENESIS_EXPIRATION);
+    let stake = Stake::with_eligibility(MINIMUM_STAKE, 0, 0);
 
     for provisioner in PROVISIONERS.iter() {
         stake_contract
-            .push_stake(*provisioner, stake)
+            .push_stake(*provisioner, stake, 0)
             .expect("Genesis stake to be pushed to the stake");
     }
 

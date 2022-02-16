@@ -21,6 +21,7 @@ mod transaction;
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
     staked: Map<PublicKey, Stake>,
+    last_created: Map<PublicKey, BlockHeight>,
 }
 
 impl StakeContract {
@@ -35,12 +36,29 @@ impl StakeContract {
         &mut self,
         pk: PublicKey,
         stake: Stake,
+        block_height: BlockHeight,
     ) -> Result<(), Error> {
         let exists = self.staked.get(&pk)?.is_some();
         if exists {
             return Err(Error::StakeAlreadyExists);
         }
 
+        // `created_at` must never be larger than the block height.
+        if stake.created_at() > block_height {
+            return Err(Error::InvalidCreatedAt);
+        }
+
+        // A last_created entry is left when the stake is removed to be able to
+        // make this check. We try to remove it, and if it exists it must not be
+        // larger or equal to the given `created_at`.
+        if let Some(created_at) = self.last_created.get(&pk)? {
+            if stake.created_at() <= *created_at {
+                return Err(Error::InvalidCreatedAt);
+            }
+        }
+        self.last_created.remove(&pk)?;
+
+        self.last_created.insert(pk, stake.created_at())?;
         self.staked.insert(pk, stake)?;
 
         Ok(())
@@ -83,33 +101,21 @@ impl StakeContract {
         Ok(stakes)
     }
 
-    pub fn stake_sign_message(block_height: u64, stake: &Stake) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(8 + Stake::SIZE);
+    pub fn stake_sign_message(value: u64, created_at: BlockHeight) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(16);
 
-        bytes.extend(&block_height.to_le_bytes());
-        bytes.extend(stake.to_bytes());
-
-        bytes
-    }
-
-    pub fn extend_sign_message(block_height: u64, stake: &Stake) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(8 + Stake::SIZE);
-
-        bytes.extend(&block_height.to_le_bytes());
-        bytes.extend(stake.to_bytes());
+        bytes.extend(value.to_bytes());
+        bytes.extend(created_at.to_le_bytes());
 
         bytes
     }
 
-    pub fn withdraw_sign_message(
-        block_height: u64,
-        stake: &Stake,
-        note: &Note,
-    ) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(8 + Stake::SIZE + Note::SIZE);
+    pub fn withdraw_sign_message(stake: &Stake, note: &Note) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(24 + Note::SIZE);
 
-        bytes.extend(&block_height.to_le_bytes());
-        bytes.extend(stake.to_bytes());
+        bytes.extend(stake.value().to_le_bytes());
+        bytes.extend(stake.eligibility().to_le_bytes());
+        bytes.extend(stake.created_at().to_le_bytes());
         bytes.extend(note.to_bytes());
 
         bytes

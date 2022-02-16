@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, Stake, StakeContract, TX_EXTEND, TX_STAKE, TX_WITHDRAW};
+use crate::{Error, Stake, StakeContract, TX_STAKE, TX_WITHDRAW};
 
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381_sign::{PublicKey, Signature};
@@ -72,23 +72,12 @@ impl StakeContract {
 
         let proof = prove(circuit)?;
 
-        let transaction = (TX_STAKE, pk, signature, value, proof);
+        let transaction =
+            (TX_STAKE, pk, signature, value, stake.created_at(), proof);
         let transaction = Transaction::from_canon(&transaction);
         let transaction = (id, transaction);
 
         Ok(transaction)
-    }
-
-    pub fn extend_transaction(
-        pk: PublicKey,
-        signature: Signature,
-    ) -> (ContractId, Transaction) {
-        let id = rusk_abi::stake_contract();
-
-        let transaction = (TX_EXTEND, pk, signature);
-        let transaction = Transaction::from_canon(&transaction);
-
-        (id, transaction)
     }
 
     pub fn withdraw_transaction(

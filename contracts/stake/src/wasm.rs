@@ -22,6 +22,7 @@ impl StakeContract {
         pk: PublicKey,
         signature: Signature,
         value: u64,
+        created_at: BlockHeight,
         proof: Vec<u8>,
     ) {
         if value < MINIMUM_STAKE {
@@ -34,11 +35,10 @@ impl StakeContract {
         }
 
         let block_height = dusk_abi::block_height();
-        let stake = Stake::from_block_height(value, block_height);
+        let stake = Stake::new(value, created_at, block_height);
 
-        let message = Self::stake_sign_message(block_height, &stake);
-        let signature =
-            rusk_abi::verify_bls_sign(signature, pk.clone(), message);
+        let message = Self::stake_sign_message(value, created_at);
+        let signature = rusk_abi::verify_bls_sign(signature, pk, message);
 
         if !signature {
             panic!("The provided signature is invalid!");
@@ -52,38 +52,9 @@ impl StakeContract {
         dusk_abi::transact_raw(self, &transfer, &transaction, 0)
             .expect("Failed to send note to contract");
 
-        self.push_stake(pk, stake).expect(
+        self.push_stake(pk, stake, block_height).expect(
             "The provided key is already staked! It can only be extended",
         );
-    }
-
-    pub fn extend(&mut self, pk: PublicKey, signature: Signature) {
-        let mut stake = self.get_stake(&pk).expect("Failed to fetch stake");
-
-        let block_height = dusk_abi::block_height();
-        let expiration = stake.expiration();
-
-        if block_height + MATURITY < expiration {
-            panic!("The provided stake is not matured yet");
-        }
-
-        if block_height >= expiration {
-            panic!("The provided stake is expired!");
-        }
-
-        let message = Self::extend_sign_message(block_height, &stake);
-        let signature =
-            rusk_abi::verify_bls_sign(signature, pk.clone(), message);
-
-        if !signature {
-            panic!("The provided signature is invalid!");
-        }
-
-        stake.extend();
-
-        self.remove_stake(&pk).expect("Failed to remove stake");
-        self.push_stake(pk, stake)
-            .expect("Failed to reinsert the stake");
     }
 
     pub fn withdraw(
@@ -94,15 +65,9 @@ impl StakeContract {
         withdraw_proof: Vec<u8>,
     ) {
         let stake = self.get_stake(&pk).expect("Failed to fetch stake");
-        let block_height = dusk_abi::block_height();
 
-        if block_height < stake.expiration() + EPOCH {
-            panic!("The provided stake is expired");
-        }
-
-        let message = Self::withdraw_sign_message(block_height, &stake, &note);
-        let signature =
-            rusk_abi::verify_bls_sign(signature, pk.clone(), message);
+        let message = Self::withdraw_sign_message(&stake, &note);
+        let signature = rusk_abi::verify_bls_sign(signature, pk, message);
 
         if !signature {
             panic!("The provided signature is invalid!");
@@ -110,6 +75,7 @@ impl StakeContract {
 
         let value = stake.value();
         let call = Call::withdraw_from_transparent(value, note, withdraw_proof);
+
         let call = Transaction::from_canon(&call);
         let transfer = rusk_abi::transfer_contract();
 
