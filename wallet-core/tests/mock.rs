@@ -15,8 +15,8 @@ use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient, StateClient, Store, Transaction, UnprovenTransaction, Wallet,
-    POSEIDON_TREE_DEPTH,
+    ProverClient, StakeInfo, StateClient, Store, Transaction,
+    UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note, NoteType};
 use rand_core::{CryptoRng, RngCore};
@@ -175,8 +175,16 @@ impl StateClient for TestStateClient {
         Ok(self.opening.clone())
     }
 
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
-        Ok((100, 200))
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
+        Ok(StakeInfo {
+            value: 100,
+            eligibility: 0,
+            created_at: 0,
+        })
+    }
+
+    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
+        Ok(1)
     }
 }
 

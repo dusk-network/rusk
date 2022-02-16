@@ -29,7 +29,7 @@ use rand_core::{
 
 use crate::tx::UnprovenTransaction;
 use crate::{
-    Error, ProverClient, StateClient, Store, Transaction, Wallet,
+    Error, ProverClient, StakeInfo, StateClient, Store, Transaction, Wallet,
     POSEIDON_TREE_DEPTH,
 };
 
@@ -75,12 +75,17 @@ extern "C" {
     /// Fetches the current anchor.
     fn fetch_anchor(anchor: *mut [u8; BlsScalar::SIZE]) -> u8;
 
-    /// Fetches the current staked amount for a key.
+    /// Fetches the current stake for a key.
+    ///
+    /// The value, eligibility, and created_at should be written in sequence,
+    /// little endian, to the given buffer.
     fn fetch_stake(
         pk: *const [u8; PublicKey::SIZE],
-        stake: *mut u64,
-        expiration: *mut u64,
+        stake: *mut [u8; StakeInfo::SIZE],
     ) -> u8;
+
+    /// Fetches the current block height from the node.
+    fn fetch_block_height(height: &mut u64) -> u8;
 
     /// Request the node to prove the given unproven transaction.
     fn compute_proof_and_propagate(
@@ -201,29 +206,6 @@ pub unsafe extern "C" fn stake(
     0
 }
 
-/// Extends staking for a particular key.
-#[no_mangle]
-pub unsafe extern "C" fn extend_stake(
-    sender_index: u64,
-    staker_index: u64,
-    refund: *const [u8; PublicSpendKey::SIZE],
-    gas_limit: u64,
-    gas_price: u64,
-) -> u8 {
-    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
-
-    unwrap_or_bail!(WALLET.extend_stake(
-        &mut FfiRng,
-        sender_index,
-        staker_index,
-        &refund,
-        gas_price,
-        gas_limit
-    ));
-
-    0
-}
-
 /// Withdraw a key's stake.
 #[no_mangle]
 pub unsafe extern "C" fn withdraw_stake(
@@ -254,14 +236,15 @@ pub unsafe extern "C" fn get_balance(ssk_index: u64, balance: *mut u64) -> u8 {
     0
 }
 
-/// Gets the stake of a staking key and its expiration.
+/// Gets the stake of a key. The value, eligibility, and created_at are written
+/// in sequence to the given buffer.
 #[no_mangle]
 pub unsafe extern "C" fn get_stake(
     sk_index: u64,
-    stake: *mut u64,
-    expiration: *mut u64,
+    stake: *mut [u8; StakeInfo::SIZE],
 ) -> u8 {
-    (*stake, *expiration) = unwrap_or_bail!(WALLET.get_stake(sk_index));
+    let s = unwrap_or_bail!(WALLET.get_stake(sk_index)).to_bytes();
+    ptr::copy_nonoverlapping(&s[0], &mut (*stake)[0], s.len());
     0
 }
 
@@ -420,19 +403,35 @@ impl StateClient for FfiStateClient {
         Ok(branch)
     }
 
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         let pk = pk.to_bytes();
-        let mut stake = 0;
-        let mut expiration = 0;
+        let mut stake_buf = [0u8; StakeInfo::SIZE];
 
         unsafe {
-            let r = fetch_stake(&pk, &mut stake, &mut expiration);
+            let r = fetch_stake(&pk, &mut stake_buf);
             if r != 0 {
                 return Err(r);
             }
         }
 
-        Ok((stake, expiration))
+        let stake = StakeInfo::from_bytes(&stake_buf).map_err(
+            Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+        )?;
+
+        Ok(stake)
+    }
+
+    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
+        let mut block_height = 0;
+
+        unsafe {
+            let r = fetch_block_height(&mut block_height);
+            if r != 0 {
+                return Err(r);
+            }
+        }
+
+        Ok(block_height)
     }
 }
 

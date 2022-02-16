@@ -8,8 +8,27 @@
 
 mod mock;
 
+use dusk_bytes::Serializable;
 use dusk_plonk::prelude::BlsScalar;
+use dusk_wallet_core::StakeInfo;
 use mock::{mock_canon_wallet, mock_serde_wallet, mock_wallet};
+
+#[test]
+fn serde_stake() {
+    let stake = StakeInfo {
+        value: 0x4321,
+        eligibility: 0x1234,
+        created_at: 0x9876,
+    };
+
+    let stake_bytes = stake.to_bytes();
+    let des_stake =
+        StakeInfo::from_bytes(&stake_bytes).expect("serde to go correctly");
+
+    assert_eq!(stake.value, des_stake.value);
+    assert_eq!(stake.eligibility, des_stake.eligibility);
+    assert_eq!(stake.created_at, des_stake.created_at);
+}
 
 #[test]
 fn serde() {

@@ -21,6 +21,7 @@ mod tx;
 
 use alloc::vec::Vec;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::proof_system::Proof;
@@ -164,6 +165,51 @@ pub trait StateClient {
         note: &Note,
     ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error>;
 
-    /// Queries the node the amount staked by a key and its expiration.
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error>;
+    /// Queries the node for the stake of a key.
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<StakeInfo, Self::Error>;
+
+    /// Asks the node for the current block height.
+    fn fetch_block_height(&self) -> Result<u64, Self::Error>;
+}
+
+/// The stake of a particular key.
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+pub struct StakeInfo {
+    /// The amount staked.
+    pub value: u64,
+    /// Block by which the stake is valid.
+    pub eligibility: u64,
+    /// Block by which stake was created.
+    pub created_at: u64,
+}
+
+impl Serializable<24> for StakeInfo {
+    type Error = dusk_bytes::Error;
+
+    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let mut reader = &buf[..];
+
+        let value = u64::from_reader(&mut reader)?;
+        let eligibility = u64::from_reader(&mut reader)?;
+        let created_at = u64::from_reader(&mut reader)?;
+
+        Ok(Self {
+            value,
+            eligibility,
+            created_at,
+        })
+    }
+
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
+        let mut buf = [0u8; Self::SIZE];
+
+        buf[0..8].copy_from_slice(&self.value.to_bytes());
+        buf[8..16].copy_from_slice(&self.eligibility.to_bytes());
+        buf[16..24].copy_from_slice(&self.created_at.to_bytes());
+
+        buf
+    }
 }
