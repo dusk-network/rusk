@@ -13,7 +13,7 @@ use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient, StateClient, Transaction, UnprovenTransaction,
+    ProverClient, StakeInfo, StateClient, Transaction, UnprovenTransaction,
     POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note};
@@ -301,7 +301,7 @@ impl StateClient for State {
     }
 
     /// Queries the node for the amount staked by a key.
-    fn fetch_stake(&self, pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
+    fn fetch_stake(&self, pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         let msg = GetStakeRequest {
             pk: pk.to_bytes().to_vec(),
         };
@@ -314,7 +314,17 @@ impl StateClient for State {
         })?
         .into_inner();
 
-        // TODO return a proper value here
-        Ok((res.value, 0))
+        Ok(StakeInfo {
+            value: res.value,
+            eligibility: res.eligibility,
+            created_at: res.created_at,
+        })
+    }
+
+    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
+        // FIXME a value of zero entails that someone is only able to stake and
+        //  withdraw only once for a particular key. This should be fixed once
+        //  there is a way to query the node for the current block height.
+        Ok(0)
     }
 }
