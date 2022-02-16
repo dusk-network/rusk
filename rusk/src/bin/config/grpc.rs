@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -49,37 +49,40 @@ impl GrpcConfig {
             self.socket = socket.into();
         }
     }
-    pub fn inject_args(app: App<'_>) -> App<'_> {
-        app.arg(
-            Arg::new("socket")
-                .short('s')
-                .long("socket")
-                .value_name("socket")
-                .help("Path for setting up the UDS ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("ipc_method")
-                .long("ipc_method")
-                .value_name("ipc_method")
-                .possible_values(&["uds", "tcp_ip"])
-                .help("Inter-Process communication protocol you want to use ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("port")
-                .short('p')
-                .long("port")
-                .value_name("port")
-                .help("Port you want to use ")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("host")
-                .short('h')
-                .long("host")
-                .value_name("host")
-                .takes_value(true),
-        )
+    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+        command
+            .arg(
+                Arg::new("socket")
+                    .short('s')
+                    .long("socket")
+                    .value_name("socket")
+                    .help("Path for setting up the UDS ")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("ipc_method")
+                    .long("ipc_method")
+                    .value_name("ipc_method")
+                    .possible_values(&["uds", "tcp_ip"])
+                    .help(
+                        "Inter-Process communication protocol you want to use ",
+                    )
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("port")
+                    .short('p')
+                    .long("port")
+                    .value_name("port")
+                    .help("Port you want to use ")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("host")
+                    .short('h')
+                    .long("host")
+                    .value_name("host")
+                    .takes_value(true),
+            )
     }
 }

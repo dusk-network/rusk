@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use kadcast::config::Config;
 use serde::{Deserialize, Serialize};
 
@@ -36,8 +36,8 @@ impl KadcastConfig {
         self.0.auto_propagate = matches.is_present("kadcast_autobroadcast");
     }
 
-    pub fn inject_args(app: App<'_>) -> App<'_> {
-        app.arg(
+    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+        command.arg(
             Arg::new("kadcast_public_address")
                 .long("kadcast_public_address")
                 .long_help("This is the address where other peer can contact you. 

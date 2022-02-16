@@ -8,7 +8,7 @@ pub mod grpc;
 pub mod kadcast;
 pub mod wallet;
 
-use clap::{App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 use self::{grpc::GrpcConfig, kadcast::KadcastConfig, wallet::WalletConfig};
@@ -61,11 +61,11 @@ impl From<ArgMatches> for Config {
 }
 
 impl Config {
-    pub fn inject_args(app: App<'_>) -> App<'_> {
-        let app = KadcastConfig::inject_args(app);
-        let app = GrpcConfig::inject_args(app);
-        let app = WalletConfig::inject_args(app);
-        app.arg(
+    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+        let command = KadcastConfig::inject_args(command);
+        let command = GrpcConfig::inject_args(command);
+        let command = WalletConfig::inject_args(command);
+        command.arg(
             Arg::new("log-level")
                 .long("log-level")
                 .value_name("LOG")
