@@ -6,5 +6,6 @@
 
 pub mod pki_service;
 pub mod prover_service;
+pub mod stake;
 pub mod state_service;
-pub mod transactions;
+pub mod transfer;

@@ -38,7 +38,7 @@ dusk-bls12_381-sign = { version = "0.1.0-rc", features = ["canon"] }
 dusk-jubjub = { version = "0.10", features = ["canon"] }
 dusk-pki = "0.9.0-rc"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.10.0-rc"
+dusk-wallet-core = "0.11.0-rc"
 dusk-abi = "0.10"
 rusk-vm = { version = "0.10.0-rc", features = ["persistence"] }
 phoenix-core = "0.15.0-rc"

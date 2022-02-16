@@ -13,8 +13,8 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient as WalletProverClient, StateClient, Store, Transaction,
-    UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
+    ProverClient as WalletProverClient, StakeInfo, StateClient, Store,
+    Transaction, UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 use parking_lot::Mutex;
 use phoenix_core::{Crossover, Fee};
@@ -200,7 +200,7 @@ impl StateClient for TestStateClient {
         Ok(self.opening.clone())
     }
 
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         unimplemented!();
     }
 
@@ -209,6 +209,10 @@ impl StateClient for TestStateClient {
         _nullifiers: &[BlsScalar],
     ) -> Result<Vec<BlsScalar>, Self::Error> {
         Ok(self.nullifiers.clone())
+    }
+
+    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
+        unimplemented!()
     }
 }
 
