@@ -5,19 +5,22 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::tx::UnprovenTransaction;
-use crate::{ProverClient, StateClient, Store, Transaction};
+use crate::{ProverClient, StakeInfo, StateClient, Store, Transaction};
 
 use alloc::vec::Vec;
 
 use canonical::CanonError;
 use canonical::EncodeToVec;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use dusk_bls12_381_sign::{PublicKey, SecretKey, Signature};
 use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubScalar};
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
+use dusk_pki::{
+    Ownable, PublicSpendKey, SecretKey as SchnorrKey, SecretSpendKey,
+};
+use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
-use dusk_schnorr::Signature;
-use phoenix_core::{Error as PhoenixError, Fee, Note, NoteType};
+use dusk_schnorr::Signature as SchnorrSignature;
+use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
 
 const MAX_INPUT_NOTES: usize = 4;
@@ -115,8 +118,7 @@ impl<S, SC, PC> Wallet<S, SC, PC> {
 }
 
 const TX_STAKE: u8 = 0x00;
-const TX_EXTEND: u8 = 0x01;
-const TX_WITHDRAW: u8 = 0x02;
+const TX_WITHDRAW: u8 = 0x01;
 
 impl<S, SC, PC> Wallet<S, SC, PC>
 where
@@ -139,7 +141,7 @@ where
     pub fn public_key(
         &self,
         index: u64,
-    ) -> Result<BlsPublicKey, Error<S, SC, PC>> {
+    ) -> Result<PublicKey, Error<S, SC, PC>> {
         self.store
             .retrieve_sk(index)
             .map(|sk| From::from(&sk))
@@ -209,6 +211,7 @@ where
         for note in notes.drain(..) {
             let val = note.value(Some(&sender_vk))?;
             let blinder = note.blinding_factor(Some(&sender_vk))?;
+
             accumulated_value += val;
             notes_and_values.push((note, val, blinder));
         }
@@ -318,6 +321,12 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
+        let sk = self
+            .store
+            .retrieve_sk(staker_index)
+            .map_err(Error::from_store_err)?;
+        let pk = PublicKey::from(&sk);
+
         let (inputs, outputs) = self.inputs_and_change_output(
             rng,
             &sender,
@@ -334,36 +343,36 @@ where
         fee.gas_limit = gas_limit;
         fee.gas_price = gas_price;
 
-        let ssk = self
-            .store
-            .retrieve_ssk(staker_index)
-            .map_err(Error::from_store_err)?;
-
-        let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
-
-        let sk = SecretKey::from(sk_r);
-        let pk = PublicKey::from(&sk);
-
         let contract_id = rusk_abi::stake_contract();
         let address = rusk_abi::contract_to_scalar(&contract_id);
 
-        let mut m = crossover.to_hash_inputs().to_vec();
-
-        m.push(value.into());
-        m.push(address);
-
-        let message = sponge::hash(&m);
-        let signature = Signature::new(&sk, rng, message);
+        let stct_signature =
+            sign_stct(rng, &sender, &fee, &crossover, value, &address);
 
         let spend_proof = self
             .prover
             .request_stct_proof(
-                &fee, &crossover, value, blinder, address, signature,
+                &fee,
+                &crossover,
+                value,
+                blinder,
+                address,
+                stct_signature,
             )
-            .map_err(Error::from_prover_err)?;
+            .map_err(Error::from_prover_err)?
+            .to_bytes()
+            .to_vec();
+
+        let created_at = self
+            .state
+            .fetch_block_height()
+            .map_err(Error::from_state_err)?;
+
+        let signature = stake_sign(&sk, &pk, value, created_at);
 
         let call_data =
-            (TX_STAKE, pk, value, spend_proof.to_bytes()).encode_to_vec();
+            (TX_STAKE, pk, signature, value, created_at, spend_proof)
+                .encode_to_vec();
 
         let call = (contract_id, call_data);
 
@@ -375,65 +384,6 @@ where
             outputs,
             fee,
             Some((crossover, value, blinder)),
-            Some(call),
-        )
-        .map_err(Error::from_state_err)?;
-
-        self.prover
-            .compute_proof_and_propagate(&utx)
-            .map_err(Error::from_prover_err)
-    }
-
-    /// Extends staking for a particular key.
-    pub fn extend_stake<Rng: RngCore + CryptoRng>(
-        &self,
-        rng: &mut Rng,
-        sender_index: u64,
-        staker_index: u64,
-        refund: &PublicSpendKey,
-        gas_limit: u64,
-        gas_price: u64,
-    ) -> Result<Transaction, Error<S, SC, PC>> {
-        let sender = self
-            .store
-            .retrieve_ssk(sender_index)
-            .map_err(Error::from_store_err)?;
-
-        let (inputs, outputs) = self.inputs_and_change_output(
-            rng,
-            &sender,
-            refund,
-            gas_limit * gas_price,
-        )?;
-
-        let fee = Fee::new(rng, gas_limit, gas_price, refund);
-
-        let sk = self
-            .store
-            .retrieve_sk(staker_index)
-            .map_err(Error::from_store_err)?;
-
-        let pk = BlsPublicKey::from(&sk);
-
-        let (_, expiration) =
-            self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
-        let expiration = expiration.to_le_bytes();
-
-        let signature = sk.sign(&pk, &expiration);
-
-        let contract_id = rusk_abi::stake_contract();
-        let call_data = (TX_EXTEND, pk, signature).encode_to_vec();
-
-        let call = (contract_id, call_data);
-
-        let utx = UnprovenTransaction::new(
-            rng,
-            &self.state,
-            &sender,
-            inputs,
-            outputs,
-            fee,
-            None,
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -458,31 +408,28 @@ where
             .retrieve_ssk(sender_index)
             .map_err(Error::from_store_err)?;
 
-        let (inputs, mut outputs) = self.inputs_and_change_output(
+        let sk = self
+            .store
+            .retrieve_sk(staker_index)
+            .map_err(Error::from_store_err)?;
+        let pk = PublicKey::from(&sk);
+
+        let (inputs, outputs) = self.inputs_and_change_output(
             rng,
             &sender,
             refund,
             gas_limit * gas_price,
         )?;
 
-        let sk = self
-            .store
-            .retrieve_sk(staker_index)
-            .map_err(Error::from_store_err)?;
-
-        let pk = BlsPublicKey::from(&sk);
-
-        let (stake, expiration) =
+        let stake =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
 
-        let output_note =
-            Note::transparent(rng, &sender.public_spend_key(), stake);
-        let note_blinder = output_note
-            .blinding_factor(None)
-            .expect("Note is transparent so blinding factor is unencrypted");
-
         let blinder = JubJubScalar::random(rng);
-        let note = Note::obfuscated(rng, refund, stake, blinder);
+
+        // Since we're not transferring value *to* the contract the crossover
+        // shouldn't contain a value. As such the note used to created it should
+        // be valueless as well.
+        let note = Note::obfuscated(rng, refund, 0, blinder);
         let (mut fee, crossover) = note
             .try_into()
             .expect("Obfuscated notes should always yield crossovers");
@@ -490,25 +437,30 @@ where
         fee.gas_limit = gas_limit;
         fee.gas_price = gas_price;
 
-        outputs.push((output_note, stake, note_blinder));
+        let withdraw_note =
+            Note::transparent(rng, &sender.public_spend_key(), stake.value);
+        let withdraw_blinder = withdraw_note
+            .blinding_factor(None)
+            .expect("Note is transparent so blinding factor is unencrypted");
 
-        let proof = self
+        let withdraw_proof = self
             .prover
             .request_wfct_proof(
-                crossover.value_commitment().into(),
-                stake,
-                blinder,
+                withdraw_note.value_commitment().into(),
+                stake.value,
+                withdraw_blinder,
             )
-            .map_err(Error::from_prover_err)?;
+            .map_err(Error::from_prover_err)?
+            .to_bytes()
+            .to_vec();
 
-        let message = expiration.to_le_bytes();
-        let signature = sk.sign(&pk, &message);
+        let signature = withdraw_sign(&sk, &pk, &stake, &withdraw_note);
 
-        let contract_id = rusk_abi::stake_contract();
         let call_data =
-            (TX_WITHDRAW, pk, signature, output_note, proof.to_bytes())
+            (TX_WITHDRAW, pk, signature, withdraw_note, withdraw_proof)
                 .encode_to_vec();
 
+        let contract_id = rusk_abi::stake_contract();
         let call = (contract_id, call_data);
 
         let utx = UnprovenTransaction::new(
@@ -518,7 +470,7 @@ where
             inputs,
             outputs,
             fee,
-            Some((crossover, stake, blinder)),
+            Some((crossover, 0, blinder)),
             Some(call),
         )
         .map_err(Error::from_state_err)?;
@@ -550,18 +502,102 @@ where
     pub fn get_stake(
         &self,
         sk_index: u64,
-    ) -> Result<(u64, u64), Error<S, SC, PC>> {
+    ) -> Result<StakeInfo, Error<S, SC, PC>> {
         let sk = self
             .store
             .retrieve_sk(sk_index)
             .map_err(Error::from_store_err)?;
 
-        let pk = BlsPublicKey::from(&sk);
+        let pk = PublicKey::from(&sk);
 
         let s = self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
 
         Ok(s)
     }
+}
+
+const STCT_MESSAGE_SIZE: usize = 5 + PoseidonCipher::cipher_size();
+
+// TODO: this is copied from the circuits. We should find a way to reuse this
+//  instead of duplicating it.
+fn sign_stct<Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+    ssk: &SecretSpendKey,
+    fee: &Fee,
+    crossover: &Crossover,
+    value: u64,
+    address: &BlsScalar,
+) -> SchnorrSignature {
+    let sk_r = *ssk.sk_r(fee.stealth_address()).as_ref();
+    let secret = SchnorrKey::from(sk_r);
+
+    let message = {
+        let mut message = [BlsScalar::zero(); STCT_MESSAGE_SIZE];
+        let mut m = message.iter_mut();
+
+        crossover
+            .value_commitment()
+            .to_hash_inputs()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        if let Some(m) = m.next() {
+            *m = *crossover.nonce();
+        }
+
+        crossover
+            .encrypted_data()
+            .cipher()
+            .iter()
+            .zip(m.by_ref())
+            .for_each(|(c, m)| *m = *c);
+
+        if let Some(m) = m.next() {
+            *m = value.into();
+        }
+        if let Some(m) = m.next() {
+            *m = *address;
+        }
+
+        sponge::hash(&message)
+    };
+
+    SchnorrSignature::new(&secret, rng, message)
+}
+
+/// Creates a signature compatible with what the stake contract expects for a
+/// stake transaction.
+fn stake_sign(
+    sk: &SecretKey,
+    pk: &PublicKey,
+    value: u64,
+    created_at: u64,
+) -> Signature {
+    let mut bytes = Vec::with_capacity(16);
+
+    bytes.extend(value.to_bytes());
+    bytes.extend(created_at.to_le_bytes());
+
+    sk.sign(pk, &bytes)
+}
+
+/// Creates a signature compatible with what the stake contract expects for a
+/// withdraw transaction.
+fn withdraw_sign(
+    sk: &SecretKey,
+    pk: &PublicKey,
+    stake: &StakeInfo,
+    note: &Note,
+) -> Signature {
+    let mut bytes = Vec::with_capacity(24 + Note::SIZE);
+
+    bytes.extend(stake.value.to_le_bytes());
+    bytes.extend(stake.eligibility.to_le_bytes());
+    bytes.extend(stake.created_at.to_le_bytes());
+    bytes.extend(note.to_bytes());
+
+    sk.sign(pk, &bytes)
 }
 
 /// Generates an obfuscated note for the given public spend key.
