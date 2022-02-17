@@ -42,7 +42,7 @@ canonical_derive = "0.6"
 dusk-bytes = "0.1"
 dusk-bls12_381 = "0.8"
 dusk-bls12_381-sign = "0.1.0-rc"
-clap = { version = "3.0", features = ["cargo", "env", "derive"] }
+clap = { version = "3.1", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
 console = "0.12"
 tracing = "0.1"

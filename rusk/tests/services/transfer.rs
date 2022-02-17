@@ -43,7 +43,7 @@ use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
 
 use dusk_wallet_core::{
-    self as wallet, Store, Transaction, UnprovenTransaction,
+    self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
 };
 
 use phoenix_core::{Crossover, Fee, Note};
@@ -441,8 +441,11 @@ impl wallet::StateClient for TestStateClient {
         Ok(nullifiers)
     }
 
-    /// Queries the node the amount staked by a key.
-    fn fetch_stake(&self, _pk: &PublicKey) -> Result<(u64, u64), Self::Error> {
+    fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
+        unimplemented!()
+    }
+
+    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
         unimplemented!()
     }
 }

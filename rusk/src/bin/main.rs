@@ -10,7 +10,7 @@ mod services;
 mod unix;
 mod version;
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
 use rusk::services::pki::{KeysServer, RuskKeys};
@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
     let crate_name = &crate_info.crate_name.to_string();
     let version = show_version(crate_info);
-    let app = App::new(crate_name)
+    let command = Command::new(crate_name)
         .version(version.as_str())
         .author("Dusk Network B.V. All Rights Reserved.")
         .about("Rusk Server node.")
@@ -50,8 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .takes_value(true)
                 .required(false),
         );
-    let app = Config::inject_args(app);
-    let config = Config::from(app.get_matches());
+    let command = Config::inject_args(command);
+    let config = Config::from(command.get_matches());
 
     // Match tracing desired level.
     let log = match &config.log_level[..] {

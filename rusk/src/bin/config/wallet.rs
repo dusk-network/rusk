@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{App, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command};
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicSpendKey;
 use serde::{Deserialize, Serialize};
@@ -39,8 +39,8 @@ impl WalletConfig {
         }
     }
 
-    pub fn inject_args(app: App<'_>) -> App<'_> {
-        app.arg(
+    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+        command.arg(
             Arg::new("generator")
                 .long("generator")
                 .value_name("Generator Key")
