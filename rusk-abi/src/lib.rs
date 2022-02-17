@@ -15,6 +15,7 @@
 #![warn(missing_docs)]
 #![no_std]
 #![deny(clippy::all)]
+#![feature(const_fn_floating_point_arithmetic)]
 
 pub use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
@@ -47,6 +48,7 @@ pub fn contract_to_scalar(contract_id: &ContractId) -> BlsScalar {
     )
 }
 
+pub mod dusk;
 #[doc(hidden)]
 pub mod hash;
 
