@@ -7,13 +7,14 @@
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_pki::Ownable;
 use phoenix_core::Note;
+use rusk_abi::dusk::*;
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use transfer_circuits::SendToContractTransparentCircuit;
 use transfer_wrapper::TransferWrapper;
 
 #[test]
 fn stake() {
-    let genesis_value = 50_000_000_000;
+    let genesis_value = dusk(50_000.0);
     let mut wrapper = TransferWrapper::new(0xbeef, genesis_value);
 
     let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
