@@ -16,7 +16,8 @@ use dusk_poseidon::tree::PoseidonBranch;
 use dusk_wallet_core::Transaction;
 use parking_lot::Mutex;
 use phoenix_core::Note;
-use rusk_abi::{self, POSEIDON_TREE_DEPTH};
+use rusk_abi::dusk::*;
+use rusk_abi::POSEIDON_TREE_DEPTH;
 use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
 use std::sync::Arc;
@@ -275,14 +276,14 @@ const fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
 /// This implements the emission schedule described in the economic paper.
 const fn emission_amount(block_height: u64) -> u64 {
     match block_height {
-        1..=12_500_000 => 16_000_000,
-        12_500_001..=18_750_000 => 12_800_000,
-        18_750_001..=25_000_000 => 9_600_000,
-        25_000_001..=31_250_000 => 8_000_000,
-        31_250_001..=37_500_000 => 6_400_000,
-        37_500_001..=43_750_000 => 4_800_000,
-        43_750_001..=50_000_000 => 3_200_000,
-        50_000_001..=62_500_000 => 1_600_000,
-        _ => 0,
+        1..=12_500_000 => dusk(16.0),
+        12_500_001..=18_750_000 => dusk(12.8),
+        18_750_001..=25_000_000 => dusk(9.6),
+        25_000_001..=31_250_000 => dusk(8.0),
+        31_250_001..=37_500_000 => dusk(6.4),
+        37_500_001..=43_750_000 => dusk(4.8),
+        43_750_001..=50_000_000 => dusk(3.2),
+        50_000_001..=62_500_000 => dusk(1.6),
+        _ => dusk(0.0),
     }
 }

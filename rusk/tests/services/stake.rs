@@ -26,7 +26,7 @@ use rusk::services::state::{
     GetStakeRequest, PreverifyRequest, StateTransitionRequest,
     VerifyStateTransitionRequest,
 };
-use stake_contract::Stake;
+use stake_contract::{Stake, MINIMUM_STAKE};
 
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 
@@ -56,11 +56,12 @@ use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_plonk::proof_system::Proof;
 
 use dusk_poseidon::tree::PoseidonBranch;
+use rusk_abi::dusk::*;
 use rusk_abi::POSEIDON_TREE_DEPTH;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
-const INITIAL_BALANCE: u64 = 10_000_000_000;
+const INITIAL_BALANCE: Dusk = dusk(10_000.0);
 const MAX_NOTES: u64 = 10;
 const GAS_LIMIT: u64 = 5_000_000_000;
 
@@ -156,7 +157,7 @@ fn generate_stake(rusk: &mut Rusk) -> Result<()> {
     let mut rusk_state = rusk.state()?;
     let mut stake = rusk_state.stake_contract()?;
 
-    stake.push_stake(pk, Stake::with_eligibility(1_000_000_000, 0, 0), 0)?;
+    stake.push_stake(pk, Stake::with_eligibility(MINIMUM_STAKE, 0, 0), 0)?;
 
     info!("Updating the new stake contract state");
     unsafe {
@@ -587,7 +588,7 @@ pub async fn stake() -> Result<()> {
     info!("Original Root: {:?}", hex::encode(original_root));
 
     // Perform some staking actions.
-    wallet_stake(&wallet, channel, 1_000_000_000);
+    wallet_stake(&wallet, channel, MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
     let new_root = state.root();
