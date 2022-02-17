@@ -31,10 +31,11 @@ pub use super::rusk_proto::{
     GetNotesOwnedByResponse, GetOpeningRequest, GetOpeningResponse,
     GetProvisionersRequest, GetProvisionersResponse, GetStakeRequest,
     GetStakeResponse, GetStateRootRequest, GetStateRootResponse,
-    PreverifyRequest, PreverifyResponse, Provisioner, RevertRequest,
-    RevertResponse, Stake as StakeProto, StateTransitionRequest,
-    StateTransitionResponse, Transaction as TransactionProto,
-    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
+    PersistRequest, PersistResponse, PreverifyRequest, PreverifyResponse,
+    Provisioner, RevertRequest, RevertResponse, Stake as StakeProto,
+    StateTransitionRequest, StateTransitionResponse,
+    Transaction as TransactionProto, VerifyStateTransitionRequest,
+    VerifyStateTransitionResponse,
 };
 
 pub(crate) type SpentTransaction = (Transaction, GasMeter);
@@ -301,9 +302,7 @@ impl State for Rusk {
         info!("Received Accept request");
 
         let (response, mut state) = self.accept_transactions(request)?;
-
         state.accept();
-        self.persist(&mut state)?;
 
         Ok(response)
     }
@@ -315,9 +314,7 @@ impl State for Rusk {
         info!("Received Finalize request");
 
         let (response, mut state) = self.accept_transactions(request)?;
-
         state.finalize();
-        self.persist(&mut state)?;
 
         Ok(response)
     }
@@ -329,12 +326,34 @@ impl State for Rusk {
         info!("Received Revert request");
 
         let mut state = self.state()?;
-
         state.revert();
-        self.persist(&mut state)?;
 
         let state_root = state.root().to_vec();
         Ok(Response::new(RevertResponse { state_root }))
+    }
+
+    async fn persist(
+        &self,
+        request: Request<PersistRequest>,
+    ) -> Result<Response<PersistResponse>, Status> {
+        info!("Received Persist request");
+
+        let request = request.into_inner();
+
+        let mut state = self.state()?;
+        let state_root = state.root();
+
+        if request.state_root == state_root {
+            return Err(Status::invalid_argument(format!(
+                "state root mismatch. Expected {}, Got {}",
+                hex::encode(state_root),
+                hex::encode(request.state_root)
+            )));
+        }
+
+        self.persist(&mut state)?;
+
+        Ok(Response::new(PersistResponse {}))
     }
 
     async fn get_provisioners(

@@ -29,6 +29,7 @@ blake2 = "0.10"
 toml = "0.5"
 serde = "1.0"
 bs58 = "0.4"
+hex = "0.4"
 
 dusk-schnorr = "0.9.0-rc"
 dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
