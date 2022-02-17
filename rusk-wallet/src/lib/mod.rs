@@ -11,27 +11,12 @@ pub mod prompt;
 pub mod store;
 pub mod wallet;
 
-// Types that define Dusk's denomination.
-pub type Dusk = f64;
-pub type MicroDusk = u64;
+use rusk_abi::dusk::*;
 
 pub const SEED_SIZE: usize = 64;
 
-pub const ONE_MILLION: Dusk = 1_000_000.0;
+pub(crate) const MAX_CONVERTIBLE: f64 = f64::MAX / dusk(1.0) as f64;
+pub(crate) const MIN_CONVERTIBLE: f64 = from_dusk(LUX);
 
-pub(crate) const DEFAULT_GAS_LIMIT: u64 = 100_000;
-pub(crate) const DEFAULT_GAS_PRICE: Dusk = ONE_MICRO_DUSK;
-
-pub(crate) const MAX_CONVERTIBLE_DUSK: Dusk = Dusk::MAX / ONE_MILLION;
-pub(crate) const ONE_MICRO_DUSK: Dusk = 1_f64 / ONE_MILLION;
-
-/// Convert from Dusk to uDusk
-pub fn to_udusk(dusk: Dusk) -> MicroDusk {
-    (dusk * ONE_MILLION) as MicroDusk
-}
-
-/// Convert from uDusk to Dusk
-pub fn to_dusk(udusk: MicroDusk) -> Dusk {
-    let udusk = udusk as Dusk;
-    udusk / ONE_MILLION
-}
+pub(crate) const DEFAULT_GAS_LIMIT: u64 = 500_000_000;
+pub(crate) const DEFAULT_GAS_PRICE: f64 = from_dusk(LUX);

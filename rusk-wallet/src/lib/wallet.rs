@@ -14,11 +14,12 @@ use serde::Serialize;
 use dusk_bytes::Serializable;
 use dusk_jubjub::BlsScalar;
 use dusk_wallet_core::{Store, Wallet};
+use rusk_abi::dusk::*;
 
 use crate::lib::clients::{Prover, State};
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::{prompt, to_dusk, to_udusk, DEFAULT_GAS_PRICE, SEED_SIZE};
+use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -94,7 +95,7 @@ impl CliWallet {
                     };
 
                     // prepare command
-                    let cmd = prompt::prepare_command(pcmd, to_dusk(balance));
+                    let cmd = prompt::prepare_command(pcmd, from_dusk(balance));
                     // run command
                     self.run(cmd)?;
                     // wait for a second
@@ -118,7 +119,7 @@ impl CliWallet {
                     println!(
                         "> Balance for key {} is: {} Dusk",
                         key,
-                        to_dusk(balance)
+                        from_dusk(balance)
                     );
                     Ok(())
                 } else {
@@ -158,6 +159,8 @@ impl CliWallet {
                     let mut rng = StdRng::from_entropy();
                     let ref_id = BlsScalar::random(&mut rng);
 
+                    let default_price = dusk(DEFAULT_GAS_PRICE);
+
                     let tx = wallet.transfer(
                         &mut rng,
                         key,
@@ -165,8 +168,7 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price
-                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or(default_price),
                         ref_id,
                     )?;
 
@@ -191,6 +193,8 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
+                    let default_price = dusk(DEFAULT_GAS_PRICE);
+
                     let tx = wallet.stake(
                         &mut rng,
                         key,
@@ -198,8 +202,7 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price
-                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or(default_price),
                     )?;
 
                     let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
@@ -222,14 +225,15 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
+                    let default_price = dusk(DEFAULT_GAS_PRICE);
+
                     let tx = wallet.withdraw_stake(
                         &mut rng,
                         key,
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price
-                            .unwrap_or_else(|| to_udusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or(default_price),
                     )?;
 
                     let txh = bs58::encode(&tx.hash().to_bytes()).into_string();

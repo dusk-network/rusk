@@ -34,5 +34,7 @@ dusk-plonk = { version = "^0.9", default-features = false }
 dusk-jubjub = { version = "^0.10", default-features = false }
 dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features = [ "canon" ] }
 
+rusk-abi = { path = "../rusk-abi" }
+
 [build-dependencies]
 tonic-build = "0.6"

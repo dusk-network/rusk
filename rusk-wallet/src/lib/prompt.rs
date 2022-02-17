@@ -9,11 +9,12 @@ use std::path::PathBuf;
 
 use blake3::Hash;
 use requestty::Question;
+use rusk_abi::dusk::*;
 
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
-    to_udusk, Dusk, MicroDusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE,
-    MAX_CONVERTIBLE_DUSK, ONE_MICRO_DUSK,
+    Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
+    MIN_CONVERTIBLE,
 };
 use crate::{CliCommand, WalletCfg};
 
@@ -264,7 +265,7 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
     }
 }
 
-pub(crate) fn prepare_command(cmd: PromptCommand, balance: Dusk) -> CliCommand {
+pub(crate) fn prepare_command(cmd: PromptCommand, balance: f64) -> CliCommand {
     use CliCommand as Cli;
     use PromptCommand as Prompt;
 
@@ -369,18 +370,18 @@ fn is_valid_addr(addr: &str) -> bool {
     bs58::decode(addr).into_vec().is_ok()
 }
 
-fn check_valid_denom(num: Dusk, balance: Dusk) -> Result<(), String> {
+fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
     if num.is_finite() && num > 0.0 {
-        if num > MAX_CONVERTIBLE_DUSK {
+        if num > MAX_CONVERTIBLE {
             return Err(format!(
                 "This is greater than the max amount allowed {}",
-                MAX_CONVERTIBLE_DUSK
+                MAX_CONVERTIBLE
             ));
         }
-        if num < ONE_MICRO_DUSK {
+        if num < MIN_CONVERTIBLE {
             return Err(format!(
                 "Input too low, please increase at least to {}",
-                ONE_MICRO_DUSK
+                MIN_CONVERTIBLE
             ));
         }
         if num < balance {
@@ -394,17 +395,17 @@ fn check_valid_denom(num: Dusk, balance: Dusk) -> Result<(), String> {
 }
 
 /// Request amount of tokens
-pub(crate) fn request_token_amt(action: &str, balance: Dusk) -> MicroDusk {
+pub(crate) fn request_token_amt(action: &str, balance: f64) -> Dusk {
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount to {}:", action))
-        .default(Dusk::default())
+        .default(MIN_CONVERTIBLE)
         .validate_on_key(|n, _| check_valid_denom(n, balance).is_ok())
         .validate(|n, _| check_valid_denom(n, balance))
         .build();
 
     let a = requestty::prompt_one(question).expect("token amount");
-    let dusk = a.as_float().unwrap();
-    to_udusk(dusk)
+    let value = a.as_float().unwrap();
+    dusk(value)
 }
 
 /// Request gas limit
@@ -427,15 +428,15 @@ pub(crate) fn request_gas_limit() -> u64 {
 }
 
 /// Request gas price
-pub(crate) fn request_gas_price() -> MicroDusk {
+pub(crate) fn request_gas_price() -> Dusk {
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
         .default(DEFAULT_GAS_PRICE)
-        .validate_on_key(|n, _| check_valid_denom(n, Dusk::MAX).is_ok())
-        .validate(|n, _| check_valid_denom(n, Dusk::MAX))
+        .validate_on_key(|n, _| check_valid_denom(n, MAX_CONVERTIBLE).is_ok())
+        .validate(|n, _| check_valid_denom(n, MAX_CONVERTIBLE))
         .build();
 
     let a = requestty::prompt_one(question).expect("gas price");
-    let dusk = a.as_float().unwrap();
-    to_udusk(dusk)
+    let value = a.as_float().unwrap();
+    dusk(value)
 }
