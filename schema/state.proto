@@ -107,6 +107,12 @@ message RevertResponse {
     bytes state_root = 1;
 }
 
+message PersistRequest {
+    bytes state_root = 1;
+}
+
+message PersistResponse {}
+
 service State {
     rpc Echo(EchoRequest) returns (EchoResponse) {}
     rpc Preverify(PreverifyRequest) returns (PreverifyResponse) {}
@@ -115,6 +121,7 @@ service State {
     rpc Accept(StateTransitionRequest) returns (StateTransitionResponse) {}
     rpc Finalize(StateTransitionRequest) returns (StateTransitionResponse) {}
     rpc Revert(RevertRequest) returns (RevertResponse) {}
+    rpc Persist(PersistRequest) returns (PersistResponse) {}
     rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
     rpc GetStateRoot(GetStateRootRequest) returns (GetStateRootResponse) {}
     rpc GetNotesOwnedBy(GetNotesOwnedByRequest) returns (GetNotesOwnedByResponse) {}
