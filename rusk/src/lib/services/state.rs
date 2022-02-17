@@ -343,7 +343,7 @@ impl State for Rusk {
         let mut state = self.state()?;
         let state_root = state.root();
 
-        if request.state_root == state_root {
+        if request.state_root != state_root {
             return Err(Status::invalid_argument(format!(
                 "state root mismatch. Expected {}, Got {}",
                 hex::encode(state_root),
