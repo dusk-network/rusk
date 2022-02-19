@@ -12,6 +12,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
+use rusk_abi::dusk::*;
 use rusk_abi::PublicInput;
 
 impl TransferContract {
@@ -34,11 +35,9 @@ impl TransferContract {
         Ok(())
     }
 
-    /// Minimum accepted price per unit of gas
-    ///
-    /// The gas is always calculated in micro-dusk
-    pub(crate) const fn minimum_gas_price() -> u64 {
-        1
+    /// Minimum accepted price per unit of gas.
+    pub(crate) const fn minimum_gas_price() -> Dusk {
+        LUX
     }
 
     pub(crate) fn root_exists(&self, root: &BlsScalar) -> Result<bool, Error> {

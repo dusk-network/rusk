@@ -12,6 +12,7 @@ use microkelvin::{Backend, BackendCtor, DiskBackend};
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rusk_abi::dusk::*;
 use rusk_vm::{Contract, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use std::error::Error;
@@ -22,8 +23,8 @@ use tracing::log::error;
 use transfer_contract::TransferContract;
 use zip::ZipArchive;
 
-/// Initial amount of the note inserted in the state.
-const GENESIS_DUSK: u64 = 1_000_000_000; // 1000 Dusk.
+/// Amount of the note inserted in the genesis state.
+const GENESIS_DUSK: Dusk = dusk(1_000.0);
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
