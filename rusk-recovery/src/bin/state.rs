@@ -11,6 +11,8 @@ use clap::Parser;
 use std::path::PathBuf;
 use version::VERSION_BUILD;
 
+use rusk_recovery_tools::state::{exec, ExecConfig};
+
 #[derive(Parser, Debug)]
 #[clap(name = "rusk-recovery-state")]
 #[clap(author, version = &VERSION_BUILD[..], about, long_about = None)]
@@ -33,6 +35,14 @@ struct Cli {
     #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
     force: bool,
 
+    /// Builds a testnet state instead of a main. The state includes a
+    /// transparent note with a billion Dusk, assigned to a hardcoded faucet
+    /// address.
+    ///
+    /// If `build` is not set, this setting has no effect.
+    #[clap(short = 't', long, env = "RUSK_BUILD_TESTNET")]
+    testnet: bool,
+
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
     verbose: usize,
@@ -41,7 +51,13 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
     task::run(
-        || rusk_recovery_tools::state::exec(args.build, args.force),
+        || {
+            exec(ExecConfig {
+                build: args.build,
+                force: args.force,
+                testnet: args.testnet,
+            })
+        },
         args.profile,
         args.verbose,
     )

@@ -39,7 +39,7 @@ pub fn testbackend() -> BackendCtor<DiskBackend> {
 }
 
 static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let state_id = rusk_recovery_tools::state::deploy(&testbackend())
+    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())
         .expect("Failed to deploy state");
 
     let rusk = Rusk::builder(testbackend)
