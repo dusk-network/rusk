@@ -72,7 +72,7 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(&testbackend())?;
+    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
 
     let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
