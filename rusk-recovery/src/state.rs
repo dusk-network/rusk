@@ -7,7 +7,10 @@
 use crate::provisioners::PROVISIONERS;
 use crate::theme::Theme;
 
+use dusk_bytes::Serializable;
+use dusk_pki::PublicSpendKey;
 use http_req::request;
+use lazy_static::lazy_static;
 use microkelvin::{Backend, BackendCtor, DiskBackend};
 use phoenix_core::Note;
 use rand::rngs::StdRng;
@@ -25,6 +28,17 @@ use zip::ZipArchive;
 
 /// Amount of the note inserted in the genesis state.
 const GENESIS_DUSK: Dusk = dusk(1_000.0);
+
+/// Faucet note value.
+const FAUCET_DUSK: Dusk = dusk(1_000_000_000.0);
+
+lazy_static! {
+    pub static ref FAUCET_KEY: PublicSpendKey = {
+        let bytes = include_bytes!("../faucet.psk");
+        PublicSpendKey::from_bytes(bytes)
+            .expect("faucet should have a valid key")
+    };
+}
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
@@ -49,16 +63,26 @@ fn diskbackend() -> BackendCtor<DiskBackend> {
 }
 
 /// Creates a new transfer contract state with a single note in it - ownership
-/// of Dusk Network.
-fn genesis_transfer() -> TransferContract {
+/// of Dusk Network. If `testnet` is true an additional note - ownership of the
+/// faucet address - is added to the state.
+fn genesis_transfer(testnet: bool) -> TransferContract {
     let mut transfer = TransferContract::default();
     let mut rng = StdRng::seed_from_u64(0xdead_beef);
 
     let note =
         Note::transparent(&mut rng, TransferContract::dusk_key(), GENESIS_DUSK);
+
     transfer
         .push_note(0, note)
         .expect("Genesis note to be pushed to the state");
+
+    if testnet {
+        let note = Note::transparent(&mut rng, &*FAUCET_KEY, FAUCET_DUSK);
+        transfer
+            .push_note(0, note)
+            .expect("Faucet note to be pushed in the state");
+    }
+
     transfer
         .update_root()
         .expect("Root to be updated after pushing genesis note");
@@ -84,6 +108,7 @@ fn genesis_stake() -> StakeContract {
 }
 
 pub fn deploy<B>(
+    testnet: bool,
     ctor: &BackendCtor<B>,
 ) -> Result<NetworkStateId, Box<dyn Error>>
 where
@@ -93,7 +118,7 @@ where
     info!("{} new network state", theme.action("Generating"));
 
     let transfer = Contract::new(
-        genesis_transfer(),
+        genesis_transfer(testnet),
         &include_bytes!(
       "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     )[..],
@@ -135,7 +160,13 @@ where
     Ok(state_id)
 }
 
-pub fn exec(build: bool, force: bool) -> Result<(), Box<dyn Error>> {
+pub struct ExecConfig {
+    pub build: bool,
+    pub force: bool,
+    pub testnet: bool,
+}
+
+pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
 
     info!("{} Network state", theme.action("Checking"));
@@ -144,7 +175,7 @@ pub fn exec(build: bool, force: bool) -> Result<(), Box<dyn Error>> {
 
     // if we're not forcing a rebuild/download and the state already exists in
     // the expected path, stop early.
-    if !force && state_path.exists() && id_path.exists() {
+    if !config.force && state_path.exists() && id_path.exists() {
         info!("{} existing state", theme.info("Found"));
 
         let _ = NetworkStateId::read(&id_path)?;
@@ -157,10 +188,10 @@ pub fn exec(build: bool, force: bool) -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    if build {
+    if config.build {
         info!("{} new state", theme.info("Building"));
-        let state_id =
-            deploy(&diskbackend()).expect("Failed to deploy network state");
+        let state_id = deploy(config.testnet, &diskbackend())
+            .expect("Failed to deploy network state");
 
         info!("{} persisted id", theme.success("Storing"));
         state_id.write(&id_path)?;
