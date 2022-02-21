@@ -371,26 +371,14 @@ fn is_valid_addr(addr: &str) -> bool {
 }
 
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
-    if num.is_finite() && num > 0.0 {
-        if num > MAX_CONVERTIBLE {
-            return Err(format!(
-                "This is greater than the max amount allowed {}",
-                MAX_CONVERTIBLE
-            ));
+    let min = MIN_CONVERTIBLE;
+    let max = f64::min(balance, MAX_CONVERTIBLE);
+
+    match (min..=max).contains(&num) {
+        true => Ok(()),
+        false => {
+            Err(format!("The amount has to be between {} and {}", min, max))
         }
-        if num < MIN_CONVERTIBLE {
-            return Err(format!(
-                "Input too low, please increase at least to {}",
-                MIN_CONVERTIBLE
-            ));
-        }
-        if num < balance {
-            Ok(())
-        } else {
-            Err("insufficient balance".to_owned())
-        }
-    } else {
-        Err("invalid denomination".to_owned())
     }
 }
 
