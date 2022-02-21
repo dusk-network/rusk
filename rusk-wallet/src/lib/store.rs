@@ -51,6 +51,12 @@ impl LocalStore {
     /// Loads wallet file from file
     pub fn from_file(path: PathBuf, pwd: Hash) -> Result<LocalStore, Error> {
         // basic sanity check
+        let mut path = path;
+        if path.extension().is_none() {
+            path.set_extension("dat");
+        }
+
+        // make sure file exists
         if !path.is_file() {
             return Err(Error::WalletFileNotExists);
         }

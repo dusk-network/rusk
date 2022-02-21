@@ -421,21 +421,24 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
     }
 }
 
-/// Scan data directory and return a list of filenames
+/// Scan data directory and return a list of wallet names
 fn find_wallets(dir: &str) -> Result<Vec<String>, Error> {
-    // scan for wallets
     let dir = fs::read_dir(dir)?;
-    let names = dir
-        .map(|entry| {
-            entry
-                .ok()
-                .and_then(|e| {
-                    e.path()
-                        .file_name()
-                        .and_then(|name| name.to_str().map(String::from))
-                })
-                .unwrap()
+
+    let wallets = dir
+        .filter_map(|el| el.ok().map(|d| d.path()))
+        .filter(|path| path.is_file())
+        .filter(|path| match path.extension() {
+            Some(ext) => ext == "dat",
+            None => false,
         })
-        .collect::<Vec<String>>();
-    Ok(names)
+        .filter_map(|path| {
+            path.file_stem()
+                .map(|stem| stem.to_str())
+                .flatten()
+                .map(String::from)
+        })
+        .collect();
+
+    Ok(wallets)
 }
