@@ -6,9 +6,9 @@
 
 use crate::error::Error;
 use crate::services::prover::RuskProver;
+use crate::services::{TX_TYPE_COINBASE, TX_VERSION};
 use crate::{Result, Rusk, RuskState};
 
-use crate::services::TX_VERSION;
 use canonical::{Canon, Sink};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
@@ -40,8 +40,6 @@ pub use super::rusk_proto::{
 
 pub(crate) type SpentTransaction = (Transaction, GasMeter);
 
-use super::TX_TYPE_COINBASE;
-
 /// Partition transactions into transfer and coinbase notes.
 fn extract_coinbase(
     txs: Vec<TransactionProto>,
@@ -67,33 +65,6 @@ fn extract_coinbase(
     Ok((transfer_txs, (dusk_note, generator_note)))
 }
 
-/// Parses all transfer transactions, failing if any one of them fails.
-fn parse_txs(transfer_txs: Vec<TransactionProto>) -> Result<Vec<Transaction>> {
-    let mut txs = Vec::with_capacity(transfer_txs.len());
-
-    for tx in transfer_txs {
-        let tx = Transaction::from_slice(&tx.payload)
-            .map_err(Error::Serialization)?;
-        txs.push(tx);
-    }
-
-    Ok(txs)
-}
-
-/// Parses all transfer transactions, filtering out the ones that fail, and have
-/// a gas limit larger than the given limit.
-fn filtered_parse_txs(
-    transfer_txs: Vec<TransactionProto>,
-    gas_limit: u64,
-) -> Vec<Transaction> {
-    transfer_txs
-        .into_iter()
-        .map(|tx| Transaction::from_slice(&tx.payload))
-        .filter_map(|tx| tx.ok())
-        .filter(|tx| tx.fee().gas_limit < gas_limit)
-        .collect()
-}
-
 impl Rusk {
     fn verify(&self, tx: &Transaction) -> Result<(), Status> {
         if self.state()?.any_nullifier_exists(tx.inputs())? {
@@ -113,68 +84,45 @@ impl Rusk {
 
     fn accept_transactions(
         &self,
-        request: Request<StateTransitionRequest>,
+        block_height: u64,
+        block_gas_limit: u64,
+        txs: Vec<TransactionProto>,
     ) -> Result<(Response<StateTransitionResponse>, RuskState), Status> {
-        let request = request.into_inner();
-
         let mut state = self.state()?;
-        let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
+        let mut block_gas_left = block_gas_limit;
 
-        let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
+        let (transfer_txs, coinbase) = extract_coinbase(txs)?;
 
-        let transfer_txs = parse_txs(transfer_txs)?;
+        let mut txs = Vec::with_capacity(transfer_txs.len());
+        let mut dusk_spent = 0;
 
-        let (txs, dusk_spent) = self.execute_transactions(
-            &mut state,
-            &mut block_gas_meter,
-            request.block_height,
-            transfer_txs,
-        );
+        for tx in transfer_txs {
+            let tx = Transaction::from_slice(&tx.payload)
+                .map_err(Error::Serialization)?;
 
-        state.push_coinbase(request.block_height, dusk_spent, coinbase)?;
+            let gas_limit = tx.fee().gas_limit;
+
+            let mut gas_meter = GasMeter::with_limit(gas_limit);
+
+            let _ =
+                state.execute::<()>(block_height, tx.clone(), &mut gas_meter);
+
+            dusk_spent += gas_meter.spent() * tx.fee().gas_price;
+
+            block_gas_left = block_gas_left
+                .checked_sub(gas_meter.spent())
+                .ok_or_else(|| Status::invalid_argument("Out of gas"))?;
+
+            txs.push((tx, gas_meter).into());
+        }
+
+        state.push_coinbase(block_height, dusk_spent, coinbase)?;
         let state_root = state.root().to_vec();
 
         Ok((
             Response::new(StateTransitionResponse { txs, state_root }),
             state,
         ))
-    }
-
-    fn execute_transactions<T>(
-        &self,
-        state: &mut RuskState,
-        block_gas_meter: &mut GasMeter,
-        block_height: u64,
-        txs: Vec<Transaction>,
-    ) -> (Vec<T>, u64)
-    where
-        T: From<SpentTransaction>,
-    {
-        let txs: Vec<_> = txs
-            .into_iter()
-            .map(|tx| {
-                let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
-
-                // We do not care if the transaction fails or succeeds here
-                let _ = state.execute::<()>(
-                    block_height,
-                    tx.clone(),
-                    &mut gas_meter,
-                );
-
-                (tx, gas_meter)
-            })
-            .take_while(|(_, gas_meter)| {
-                block_gas_meter.charge(gas_meter.spent()).is_ok()
-            })
-            .collect();
-
-        let dusk_spent = txs.iter().fold(0, |dusk_spent, (tx, gas_meter)| {
-            dusk_spent + gas_meter.spent() * tx.fee().gas_price
-        });
-        let txs = txs.into_iter().map(|spent_tx| spent_tx.into()).collect();
-
-        (txs, dusk_spent)
     }
 }
 
@@ -228,17 +176,35 @@ impl State for Rusk {
 
         let request = request.into_inner();
 
-        let block_gas_limit = request.block_gas_limit;
-        let mut block_gas_meter = GasMeter::with_limit(block_gas_limit);
+        let mut block_gas_left = request.block_gas_limit;
 
-        let transfer_txs = filtered_parse_txs(request.txs, block_gas_limit);
+        let mut txs = Vec::with_capacity(request.txs.len() + 1);
+        let mut dusk_spent = 0;
 
-        let (mut txs, dusk_spent) = self.execute_transactions(
-            &mut state,
-            &mut block_gas_meter,
-            request.block_height,
-            transfer_txs,
-        );
+        // Here we discard transactions that:
+        // - Fail parsing
+        // - Have a gas limit that is larger than the running `block_gas_left`.
+        for tx in request.txs {
+            if let Ok(tx) = Transaction::from_slice(&tx.payload) {
+                let gas_limit = tx.fee().gas_limit;
+
+                if gas_limit <= block_gas_left {
+                    let mut gas_meter = GasMeter::with_limit(gas_limit);
+
+                    // We do not care if the transaction fails or succeeds here
+                    let _ = state.execute::<()>(
+                        request.block_height,
+                        tx.clone(),
+                        &mut gas_meter,
+                    );
+
+                    dusk_spent += gas_meter.spent() * tx.fee().gas_price;
+                    block_gas_left -= gas_meter.spent();
+
+                    txs.push((tx, gas_meter).into());
+                }
+            }
+        }
 
         // Mint coinbase notes and add a coinbase transaction to block
         let (dusk_note, generator_note) = state.mint(
@@ -284,47 +250,11 @@ impl State for Rusk {
 
         let request = request.into_inner();
 
-        let mut state = self.state()?;
-        let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
-
-        let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
-
-        let mut dusk_spent = 0;
-
-        let success = transfer_txs
-            .iter()
-            .map(|tx| Transaction::from_slice(&tx.payload))
-            .all(|tx| match tx {
-                Ok(tx) if self.verify(&tx).is_err() => false,
-                Ok(tx) => {
-                    let block_height = request.block_height;
-                    let mut gas_meter =
-                        GasMeter::with_limit(tx.fee().gas_limit);
-
-                    let gas_price = tx.fee().gas_price;
-                    let _ =
-                        state.execute::<()>(block_height, tx, &mut gas_meter);
-
-                    dusk_spent += gas_meter.spent() * gas_price;
-
-                    block_gas_meter.charge(gas_meter.spent()).is_ok()
-                }
-                Err(_) => false,
-            });
-
-        if !success {
-            return Err(Status::invalid_argument("Invalid transactions block"));
-        }
-
-        let success = state
-            .push_coinbase(request.block_height, dusk_spent, coinbase)
-            .is_ok();
-
-        if !success {
-            return Err(Status::invalid_argument(
-                "Invalid coinbase in the block",
-            ));
-        }
+        self.accept_transactions(
+            request.block_height,
+            request.block_gas_limit,
+            request.txs,
+        )?;
 
         Ok(Response::new(VerifyStateTransitionResponse {}))
     }
@@ -335,7 +265,14 @@ impl State for Rusk {
     ) -> Result<Response<StateTransitionResponse>, Status> {
         info!("Received Accept request");
 
-        let (response, mut state) = self.accept_transactions(request)?;
+        let request = request.into_inner();
+
+        let (response, mut state) = self.accept_transactions(
+            request.block_height,
+            request.block_gas_limit,
+            request.txs,
+        )?;
+
         state.accept();
 
         Ok(response)
@@ -347,7 +284,14 @@ impl State for Rusk {
     ) -> Result<Response<StateTransitionResponse>, Status> {
         info!("Received Finalize request");
 
-        let (response, mut state) = self.accept_transactions(request)?;
+        let request = request.into_inner();
+
+        let (response, mut state) = self.accept_transactions(
+            request.block_height,
+            request.block_gas_limit,
+            request.txs,
+        )?;
+
         state.finalize();
 
         Ok(response)
