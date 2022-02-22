@@ -132,11 +132,11 @@ impl RuskState {
     pub fn mint(
         &mut self,
         block_height: u64,
-        gas_spent: u64,
+        dusk_spent: u64,
         generator: Option<&PublicSpendKey>,
     ) -> Result<(Note, Note)> {
         let (dusk_value, generator_value) =
-            coinbase_value(block_height, gas_spent);
+            coinbase_value(block_height, dusk_spent);
 
         let mut transfer = self.transfer_contract()?;
         let notes = transfer.mint(
@@ -160,7 +160,7 @@ impl RuskState {
     pub fn push_coinbase(
         &mut self,
         block_height: u64,
-        gas_spent: u64,
+        dusk_spent: u64,
         coinbase: (Note, Note),
     ) -> Result<()> {
         let mut transfer = self.transfer_contract()?;
@@ -169,7 +169,7 @@ impl RuskState {
         let generator_value = coinbase.1.value(None)?;
 
         let (expected_dusk, expected_generator) =
-            coinbase_value(block_height, gas_spent);
+            coinbase_value(block_height, dusk_spent);
 
         if dusk_value != expected_dusk {
             return Err(Error::CoinbaseValue(dusk_value, expected_dusk));
@@ -264,8 +264,8 @@ impl RuskState {
 ///
 /// 90% of the total value goes to the generator (rounded up).
 /// 10% of the total value goes to the Dusk address (rounded down).
-const fn coinbase_value(block_height: u64, gas_spent: u64) -> (u64, u64) {
-    let value = emission_amount(block_height) + gas_spent;
+const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (u64, u64) {
+    let value = emission_amount(block_height) + dusk_spent;
 
     let dusk_value = value / 10;
     let generator_value = value - dusk_value;

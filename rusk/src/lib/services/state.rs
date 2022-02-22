@@ -95,18 +95,14 @@ impl Rusk {
 
         let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
 
-        let txs = self.execute_transactions(
+        let (txs, dusk_spent) = self.execute_transactions(
             &mut state,
             &mut block_gas_meter,
             request.block_height,
             &transfer_txs,
         );
 
-        state.push_coinbase(
-            request.block_height,
-            block_gas_meter.spent(),
-            coinbase,
-        )?;
+        state.push_coinbase(request.block_height, dusk_spent, coinbase)?;
         let state_root = state.root().to_vec();
 
         Ok((
@@ -121,11 +117,12 @@ impl Rusk {
         block_gas_meter: &mut GasMeter,
         block_height: u64,
         txs: &[TransactionProto],
-    ) -> Vec<T>
+    ) -> (Vec<T>, u64)
     where
         T: From<SpentTransaction>,
     {
-        txs.iter()
+        let txs: Vec<_> = txs
+            .iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
             .filter_map(|tx| tx.ok())
             .map(|tx| {
@@ -143,8 +140,14 @@ impl Rusk {
             .take_while(|(_, gas_meter)| {
                 block_gas_meter.charge(gas_meter.spent()).is_ok()
             })
-            .map(|tx_spent| tx_spent.into())
-            .collect()
+            .collect();
+
+        let dusk_spent = txs.iter().fold(0, |dusk_spent, (tx, gas_meter)| {
+            dusk_spent + gas_meter.spent() * tx.fee().gas_price
+        });
+        let txs = txs.into_iter().map(|spent_tx| spent_tx.into()).collect();
+
+        (txs, dusk_spent)
     }
 }
 
@@ -200,7 +203,7 @@ impl State for Rusk {
 
         let mut block_gas_meter = GasMeter::with_limit(request.block_gas_limit);
 
-        let mut txs = self.execute_transactions(
+        let (mut txs, dusk_spent) = self.execute_transactions(
             &mut state,
             &mut block_gas_meter,
             request.block_height,
@@ -210,7 +213,7 @@ impl State for Rusk {
         // Mint coinbase notes and add a coinbase transaction to block
         let (dusk_note, generator_note) = state.mint(
             request.block_height,
-            block_gas_meter.spent(),
+            dusk_spent,
             self.generator.as_ref(),
         )?;
 
@@ -256,6 +259,8 @@ impl State for Rusk {
 
         let (transfer_txs, coinbase) = extract_coinbase(request.txs)?;
 
+        let mut dusk_spent = 0;
+
         let success = transfer_txs
             .iter()
             .map(|tx| Transaction::from_slice(&tx.payload))
@@ -266,8 +271,11 @@ impl State for Rusk {
                     let mut gas_meter =
                         GasMeter::with_limit(tx.fee().gas_limit);
 
+                    let gas_price = tx.fee().gas_price;
                     let _ =
                         state.execute::<()>(block_height, tx, &mut gas_meter);
+
+                    dusk_spent += gas_meter.spent() * gas_price;
 
                     block_gas_meter.charge(gas_meter.spent()).is_ok()
                 }
@@ -279,11 +287,7 @@ impl State for Rusk {
         }
 
         let success = state
-            .push_coinbase(
-                request.block_height,
-                block_gas_meter.spent(),
-                coinbase,
-            )
+            .push_coinbase(request.block_height, dusk_spent, coinbase)
             .is_ok();
 
         if !success {
