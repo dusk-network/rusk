@@ -340,6 +340,11 @@ impl StateClient for FfiStateClient {
         let nullifiers_len = nullifiers.len();
         let mut nullifiers_buf = vec![0u8; BlsScalar::SIZE * nullifiers_len];
 
+        /// If no nullifiers come in, then none of them exist in the state.
+        if nullifiers_len == 0 {
+            return Ok(vec![]);
+        }
+
         let mut writer = &mut nullifiers_buf[..];
 
         for nullifier in nullifiers {
