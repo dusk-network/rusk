@@ -172,7 +172,7 @@ impl CliWallet {
                         ref_id,
                     )?;
 
-                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    let txh = hex::encode(&tx.hash().to_bytes());
                     println!("> Transaction sent: {}", txh);
 
                     Ok(())
@@ -205,7 +205,7 @@ impl CliWallet {
                         gas_price.unwrap_or(default_price),
                     )?;
 
-                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    let txh = hex::encode(&tx.hash().to_bytes());
                     println!("> Stake transaction sent: {}", txh);
 
                     Ok(())
@@ -236,7 +236,7 @@ impl CliWallet {
                         gas_price.unwrap_or(default_price),
                     )?;
 
-                    let txh = bs58::encode(&tx.hash().to_bytes()).into_string();
+                    let txh = hex::encode(&tx.hash().to_bytes());
                     println!("> Stake withdrawal transaction sent: {}", txh);
 
                     Ok(())

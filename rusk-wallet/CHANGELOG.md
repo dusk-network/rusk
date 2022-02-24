@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+## Changed
+- Use hex-encoded tx hashes on user-facing messages [#597]
+
 ## [0.4.0] - 2022-02-17
 
 ## Changed
@@ -111,3 +116,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#566]: https://github.com/dusk-network/rusk/issues/566
 [#569]: https://github.com/dusk-network/rusk/issues/569
 [#574]: https://github.com/dusk-network/rusk/issues/574
+[#597]: https://github.com/dusk-network/rusk/issues/597

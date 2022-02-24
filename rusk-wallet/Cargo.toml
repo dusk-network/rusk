@@ -22,6 +22,7 @@ dirs = "4.0"
 bs58 = "0.4"
 rand = "0.8"
 aes = "0.7"
+hex = "0.4"
 
 dusk-wallet-core = "0.12.0-rc"
 canonical = "0.7"
