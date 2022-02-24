@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::env;
 use std::path::PathBuf;
 use std::{fs, thread, time::Duration};
 
@@ -171,10 +172,16 @@ impl CliWallet {
                         gas_price.unwrap_or(default_price),
                         ref_id,
                     )?;
-
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    println!("> Transaction sent: {}", txh);
-
+                    let msg = match env::var("DUSK_EXPLORER_URL") {
+                        Ok(url) => {
+                            let url = format!("{}{}", url, txh);
+                            let _ = open::that(&url);
+                            format!("> Transaction sent: {}", url)
+                        }
+                        Err(_) => format!("> Transaction sent: {}", txh),
+                    };
+                    println!("{}", msg);
                     Ok(())
                 } else {
                     Err(Error::Offline)
@@ -206,8 +213,15 @@ impl CliWallet {
                     )?;
 
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    println!("> Stake transaction sent: {}", txh);
-
+                    let msg = match env::var("DUSK_EXPLORER_URL") {
+                        Ok(url) => {
+                            let url = format!("{}{}", url, txh);
+                            let _ = open::that(&url);
+                            format!("> Stake tx sent: {}", url)
+                        }
+                        Err(_) => format!("> Stake tx sent: {}", txh),
+                    };
+                    println!("{}", msg);
                     Ok(())
                 } else {
                     Err(Error::Offline)
@@ -237,8 +251,15 @@ impl CliWallet {
                     )?;
 
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    println!("> Stake withdrawal transaction sent: {}", txh);
-
+                    let msg = match env::var("DUSK_EXPLORER_URL") {
+                        Ok(url) => {
+                            let url = format!("{}{}", url, txh);
+                            let _ = open::that(&url);
+                            format!("> Withdraw stake tx sent: {}", url)
+                        }
+                        Err(_) => format!("> Withdraw stake tx sent: {}", txh),
+                    };
+                    println!("{}", msg);
                     Ok(())
                 } else {
                     Err(Error::Offline)
