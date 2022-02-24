@@ -72,6 +72,7 @@ impl CliWallet {
             match prompt::choose_command(offline) {
                 Some(pcmd) => {
                     // load key balance first to provide interactive feedback
+                    prompt::hide_cursor()?;
                     let balance = if let Some(wallet) = &self.wallet {
                         match pcmd {
                             PromptCommand::Export => 0,
@@ -94,11 +95,23 @@ impl CliWallet {
                     } else {
                         0
                     };
+                    prompt::show_cursor()?;
 
                     // prepare command
-                    let cmd = prompt::prepare_command(pcmd, from_dusk(balance));
-                    // run command
-                    self.run(cmd)?;
+                    if let Some(cmd) =
+                        prompt::prepare_command(pcmd, from_dusk(balance))
+                    {
+                        // run command
+                        if let Some(txh) = self.run(cmd)? {
+                            println!("\r> Transaction sent: {}", txh);
+                            if let Some(base_url) = env::var("DUSK_EXPLORER_URL").ok() {
+                                let url = format!("{}{}", base_url, txh);
+                                println!("> URL: {}", url);
+                                prompt::launch_explorer(url);
+                            };
+                        }
+                    }
+
                     // wait for a second
                     thread::sleep(Duration::from_millis(1000));
                     println!("—")
@@ -109,20 +122,23 @@ impl CliWallet {
     }
 
     /// Runs a command through wallet core lib
-    pub fn run(&self, cmd: CliCommand) -> Result<(), Error> {
+    /// On transactions, the transaction ID is returned
+    pub fn run(&self, cmd: CliCommand) -> Result<Option<String>, Error> {
         // perform whatever action user requested
         use CliCommand::*;
         match cmd {
             // Check your current balance
             Balance { key } => {
                 if let Some(wallet) = &self.wallet {
+                    prompt::hide_cursor()?;
                     let balance = wallet.get_balance(key)?;
                     println!(
-                        "> Balance for key {} is: {} Dusk",
+                        "\r> Balance for key {} is: {} Dusk",
                         key,
                         from_dusk(balance)
                     );
-                    Ok(())
+                    prompt::show_cursor()?;
+                    Ok(None)
                 } else {
                     Err(Error::Offline)
                 }
@@ -130,16 +146,18 @@ impl CliWallet {
 
             // Retrieve public spend key
             Address { key } => {
+                prompt::hide_cursor()?;
                 let pk = if let Some(wallet) = &self.wallet {
                     wallet.public_spend_key(key)?
                 } else {
                     let ssk = self.store.retrieve_ssk(key)?;
                     ssk.public_spend_key()
                 };
+                prompt::show_cursor()?;
                 let addr = pk.to_bytes();
                 let addr = bs58::encode(addr).into_string();
-                println!("> Public address for key {} is: {}", key, addr);
-                Ok(())
+                println!("\r> {}", addr);
+                Ok(None)
             }
 
             // Send Dusk through the network
@@ -151,6 +169,7 @@ impl CliWallet {
                 gas_price,
             } => {
                 if let Some(wallet) = &self.wallet {
+                    // prepare public keys
                     let mut addr_bytes = [0u8; SEED_SIZE];
                     addr_bytes.copy_from_slice(&bs58::decode(rcvr).into_vec()?);
                     let dest_addr =
@@ -160,8 +179,8 @@ impl CliWallet {
                     let mut rng = StdRng::from_entropy();
                     let ref_id = BlsScalar::random(&mut rng);
 
-                    let default_price = dusk(DEFAULT_GAS_PRICE);
-
+                    // transfer
+                    prompt::hide_cursor()?;
                     let tx = wallet.transfer(
                         &mut rng,
                         key,
@@ -169,20 +188,14 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(default_price),
+                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
                     )?;
+                    prompt::show_cursor()?;
+
+                    // compute transaction id
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    let msg = match env::var("DUSK_EXPLORER_URL") {
-                        Ok(url) => {
-                            let url = format!("{}{}", url, txh);
-                            let _ = open::that(&url);
-                            format!("> Transaction sent: {}", url)
-                        }
-                        Err(_) => format!("> Transaction sent: {}", txh),
-                    };
-                    println!("{}", msg);
-                    Ok(())
+                    Ok(Some(txh))
                 } else {
                     Err(Error::Offline)
                 }
@@ -200,8 +213,7 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
-                    let default_price = dusk(DEFAULT_GAS_PRICE);
-
+                    prompt::hide_cursor()?;
                     let tx = wallet.stake(
                         &mut rng,
                         key,
@@ -209,20 +221,13 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(default_price),
+                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
                     )?;
+                    prompt::show_cursor()?;
 
+                    // compute transaction id
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    let msg = match env::var("DUSK_EXPLORER_URL") {
-                        Ok(url) => {
-                            let url = format!("{}{}", url, txh);
-                            let _ = open::that(&url);
-                            format!("> Stake tx sent: {}", url)
-                        }
-                        Err(_) => format!("> Stake tx sent: {}", txh),
-                    };
-                    println!("{}", msg);
-                    Ok(())
+                    Ok(Some(txh))
                 } else {
                     Err(Error::Offline)
                 }
@@ -239,28 +244,20 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
-                    let default_price = dusk(DEFAULT_GAS_PRICE);
-
+                    prompt::hide_cursor()?;
                     let tx = wallet.withdraw_stake(
                         &mut rng,
                         key,
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(default_price),
+                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
                     )?;
+                    prompt::show_cursor()?;
 
+                    // compute tx id
                     let txh = hex::encode(&tx.hash().to_bytes());
-                    let msg = match env::var("DUSK_EXPLORER_URL") {
-                        Ok(url) => {
-                            let url = format!("{}{}", url, txh);
-                            let _ = open::that(&url);
-                            format!("> Withdraw stake tx sent: {}", url)
-                        }
-                        Err(_) => format!("> Withdraw stake tx sent: {}", txh),
-                    };
-                    println!("{}", msg);
-                    Ok(())
+                    Ok(Some(txh))
                 } else {
                     Err(Error::Offline)
                 }
@@ -332,11 +329,11 @@ impl CliWallet {
                     path.as_os_str().to_str().unwrap()
                 );
 
-                Ok(())
+                Ok(None)
             }
 
             // Do nothing
-            _ => Ok(()),
+            _ => Ok(None),
         }
     }
 }

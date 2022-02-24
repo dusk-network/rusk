@@ -5,7 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::env;
+use std::io::{stdout, Write};
 use std::path::PathBuf;
+use std::thread;
+use std::time::Duration;
+
+use crossterm::{
+    cursor::{Hide, Show},
+    ExecutableCommand,
+};
 
 use blake3::Hash;
 use requestty::Question;
@@ -16,7 +24,7 @@ use crate::lib::{
     Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
     MIN_CONVERTIBLE,
 };
-use crate::{CliCommand, WalletCfg};
+use crate::{CliCommand, Error, WalletCfg};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
@@ -265,27 +273,33 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
     }
 }
 
-pub(crate) fn prepare_command(cmd: PromptCommand, balance: f64) -> CliCommand {
+pub(crate) fn prepare_command(
+    cmd: PromptCommand,
+    balance: f64,
+) -> Option<CliCommand> {
     use CliCommand as Cli;
     use PromptCommand as Prompt;
 
     match cmd {
         // Public spend key
-        Prompt::Address(key) => Cli::Address { key },
+        Prompt::Address(key) => Some(Cli::Address { key }),
         // Check balance
-        Prompt::Balance(key) => Cli::Balance { key },
+        Prompt::Balance(key) => Some(Cli::Balance { key }),
         // Create transfer
         Prompt::Transfer(key) => {
             let rcvr = request_rcvr_addr();
             let amt = request_token_amt("transfer", balance);
             let gas_limit = request_gas_limit();
             let gas_price = Some(request_gas_price());
-            Cli::Transfer {
-                key,
-                rcvr,
-                amt,
-                gas_limit,
-                gas_price,
+            match user_confirm() {
+                false => None,
+                true => Some(Cli::Transfer {
+                    key,
+                    rcvr,
+                    amt,
+                    gas_limit,
+                    gas_price,
+                }),
             }
         }
         // Stake
@@ -294,12 +308,15 @@ pub(crate) fn prepare_command(cmd: PromptCommand, balance: f64) -> CliCommand {
             let amt = request_token_amt("stake", balance);
             let gas_limit = request_gas_limit();
             let gas_price = Some(request_gas_price());
-            Cli::Stake {
-                key,
-                stake_key,
-                amt,
-                gas_limit,
-                gas_price,
+            match user_confirm() {
+                false => None,
+                true => Some(Cli::Stake {
+                    key,
+                    stake_key,
+                    amt,
+                    gas_limit,
+                    gas_price,
+                }),
             }
         }
         // Withdraw stake
@@ -307,21 +324,24 @@ pub(crate) fn prepare_command(cmd: PromptCommand, balance: f64) -> CliCommand {
             let stake_key = request_key_index("stake");
             let gas_limit = request_gas_limit();
             let gas_price = Some(request_gas_price());
-            Cli::WithdrawStake {
-                key,
-                stake_key,
-                gas_limit,
-                gas_price,
+            match user_confirm() {
+                false => None,
+                true => Some(Cli::WithdrawStake {
+                    key,
+                    stake_key,
+                    gas_limit,
+                    gas_price,
+                }),
             }
         }
         // Export BLS Key Pair
         Prompt::Export => {
             let key = request_key_index("stake");
             let encrypt = confirm_encryption();
-            Cli::Export {
+            Some(Cli::Export {
                 key,
                 plaintext: !encrypt,
-            }
+            })
         }
     }
 }
@@ -367,7 +387,7 @@ pub(crate) fn request_rcvr_addr() -> String {
 
 /// Utility function to check if an address is valid
 fn is_valid_addr(addr: &str) -> bool {
-    bs58::decode(addr).into_vec().is_ok()
+    bs58::decode(addr).into_vec().is_ok() && addr.len() > 0
 }
 
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
@@ -427,4 +447,61 @@ pub(crate) fn request_gas_price() -> Dusk {
     let a = requestty::prompt_one(question).expect("gas price");
     let value = a.as_float().unwrap();
     dusk(value)
+}
+
+/// Request user confirmation for a command
+pub(crate) fn user_confirm() -> bool {
+    let q = requestty::Question::confirm("confirm")
+        .message("Transaction ready. Proceed?")
+        .build();
+
+    let a = requestty::prompt_one(q).expect("confirmation");
+    a.as_bool().unwrap_or(false)
+}
+
+/// Request Dusk block explorer open
+pub(crate) fn launch_explorer(url: String) -> bool {
+    let q = requestty::Question::confirm("launch")
+        .message("Launch block explorer?")
+        .build();
+
+    let a = requestty::prompt_one(q).expect("confirmation");
+    let open = a.as_bool().unwrap_or(false);
+
+    if open {
+        match open::that(url) {
+            Ok(()) => true,
+            Err(_) => false,
+        }
+    } else {
+        false
+    }
+}
+
+/// Prints a dynamic status update
+pub(crate) fn status(status: &str) {
+    let filln = 26 - status.len();
+    let fill = if filln > 0 {
+        " ".repeat(filln)
+    } else {
+        "".to_string()
+    };
+    print!("\r{}{}", status, fill);
+    let mut stdout = stdout();
+    stdout.flush().unwrap();
+    thread::sleep(Duration::from_millis(85));
+}
+
+/// Shows the terminal cursor
+pub(crate) fn show_cursor() -> Result<(), Error> {
+    let mut stdout = stdout();
+    stdout.execute(Show)?;
+    Ok(())
+}
+
+/// Hides the terminal cursor
+pub(crate) fn hide_cursor() -> Result<(), Error> {
+    let mut stdout = stdout();
+    stdout.execute(Hide)?;
+    Ok(())
 }

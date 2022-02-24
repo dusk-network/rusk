@@ -322,7 +322,13 @@ async fn exec() -> Result<(), Error> {
     // run command(s)
     match cmd {
         Interactive => wallet.interactive(),
-        _ => wallet.run(cmd),
+        _ => {
+            // in headless mode we only print the tx hash for convenience
+            if let Some(txh) = wallet.run(cmd)? {
+                println!("\r{}", txh);
+            }
+            Ok(())
+        }
     }
 }
 

@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+- Display progress info about transaction preparation [#600]
+
 ## Changed
 - Use hex-encoded tx hashes on user-facing messages [#597]
 - Open or display explorer URL on succesful transactions [#598]
-
 
 ## [0.4.0] - 2022-02-17
 
@@ -120,3 +122,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#574]: https://github.com/dusk-network/rusk/issues/574
 [#597]: https://github.com/dusk-network/rusk/issues/597
 [#598]: https://github.com/dusk-network/rusk/issues/598
+[#600]: https://github.com/dusk-network/rusk/issues/600
