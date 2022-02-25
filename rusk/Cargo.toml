@@ -31,28 +31,28 @@ serde = "1.0"
 bs58 = "0.4"
 hex = "0.4"
 
-dusk-schnorr = "0.9.0-rc"
-dusk-poseidon = { version = "0.23.0-rc", features = ["canon"] }
-dusk-plonk = { version = "0.9", features = ["canon" ]}
-dusk-bls12_381 = { version = "0.8", features = ["canon"] }
-dusk-bls12_381-sign = { version = "0.1.0-rc", features = ["canon"] }
-dusk-jubjub = { version = "0.10", features = ["canon"] }
-dusk-pki = "0.9.0-rc"
+dusk-schnorr = "0.10.0-rc"
+dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
+dusk-plonk = { version = "0.10", features = ["canon" ]}
+dusk-bls12_381 = { version = "0.9", features = ["canon"] }
+dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
+dusk-jubjub = { version = "0.11", features = ["canon"] }
+dusk-pki ="0.10.0-rc"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.11.0-rc"
-dusk-abi = "0.10"
-rusk-vm = { version = "0.10.0-rc", features = ["persistence"] }
-phoenix-core = "0.15.0-rc"
+dusk-wallet-core = "0.12.0-rc"
+dusk-abi = "0.11"
+rusk-vm = "0.12.0-rc"
+phoenix-core = "0.16.0-rc"
 kadcast = "0.4.0-rc.5"
-canonical = "0.6"
-canonical_derive = "0.6"
+canonical = "0.7"
+canonical_derive = "0.7"
 
 rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { path = "../circuits/transfer" }
 transfer-contract = { path = "../contracts/transfer" }
 stake-contract = { path = "../contracts/stake" }
 rusk-profile = { path = "../rusk-profile" }
-microkelvin = { version = "0.10", features = ["persistence"] }
+microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-abi = { path = "../rusk-abi" }
 parking_lot = "0.11"
 

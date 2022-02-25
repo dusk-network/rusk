@@ -8,7 +8,7 @@ resolver = "2"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = "0.10"
-canonical = "0.6"
-canonical_derive = "0.6"
+dusk-abi = "0.11"
+canonical = "0.7"
+canonical_derive = "0.7"
 rusk-abi = { path = "../../../rusk-abi", features = ["module"] }

@@ -6,14 +6,22 @@
 
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_pki::Ownable;
+use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use phoenix_core::Note;
 use rusk_abi::dusk::*;
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use transfer_circuits::SendToContractTransparentCircuit;
 use transfer_wrapper::TransferWrapper;
 
+fn testbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(DiskBackend::ephemeral)
+}
+
 #[test]
 fn stake() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backed found");
+
     let genesis_value = dusk(50_000.0);
     let mut wrapper = TransferWrapper::new(0xbeef, genesis_value);
 
@@ -24,8 +32,8 @@ fn stake() {
     let block_height = 2;
     let created_at = 1;
 
-    let gas_limit = 250_000_000;
     let gas_price = 1;
+    let gas_limit = dusk(0.5) / gas_price;
     let stake_value = MINIMUM_STAKE;
     let stake = Stake::new(stake_value, created_at, block_height);
 
@@ -149,7 +157,7 @@ fn stake() {
 
     assert!(is_staked);
 
-    let gas_limit = 1_000_000_000;
+    let gas_limit = dusk(1.5) / gas_price;
     let (fee, crossover) =
         wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
     wrapper

@@ -15,4 +15,4 @@ proc-macro = true
 blake3 = "0.3"
 
 [dev-dependencies]
-dusk-plonk = "0.9"
+dusk-plonk = "0.10"
