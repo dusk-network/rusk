@@ -1,6 +1,6 @@
 [package]
 name = "dusk-wallet-core"
-version = "0.11.0-rc.1"
+version = "0.12.0-rc.0"
 edition = "2021"
 description = "The core functionality of the Dusk wallet"
 license = "MPL-2.0"
@@ -9,20 +9,20 @@ license = "MPL-2.0"
 rand_core = "^0.6"
 rand_chacha = { version = "^0.3", default-features = false }
 sha2 = { version = "^0.10", default-features = false }
-phoenix-core = { version =  "0.15.0-rc", features = [ "canon" ] }
-dusk-pki = { version = "0.9.0-rc", features = [ "canon" ] }
+phoenix-core = { version =  "0.16.0-rc", features = [ "canon" ] }
+dusk-pki = { version = "0.10.0-rc", features = [ "canon" ] }
 dusk-bytes = "^0.1"
-dusk-schnorr = { version = "0.9.0-rc", default-features = false }
-dusk-jubjub = { version = "^0.10", default-features = false }
-dusk-poseidon = { version = "0.23.0-rc", features = [ "canon" ], default-features = false }
-dusk-plonk = { version = "^0.9", default-features = false }
-rusk-abi = "0.6"
-canonical = "^0.6"
-dusk-bls12_381-sign = { version = "0.1.0-rc", default-features = false, features = [ "canon" ] }
+dusk-schnorr = { version = "0.10.0-rc", default-features = false }
+dusk-jubjub = { version = "0.11", default-features = false }
+dusk-poseidon = { version = "0.25.0-rc", features = [ "canon" ], default-features = false }
+dusk-plonk = { version = "0.10", default-features = false }
+rusk-abi = "0.7"
+canonical = "0.7"
+dusk-bls12_381-sign = { version = "0.3.0-rc", default-features = false, features = [ "canon" ] }
 
 [dev-dependencies]
 rand = "^0.8"
-canonical_derive = "0.6"
+canonical_derive = "0.7"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
