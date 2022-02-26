@@ -1,28 +1,28 @@
 [package]
 name = "transfer-wrapper"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]
 alice = { path = "../contracts/alice" }
 bob = { path = "../contracts/bob" }
-canonical = "0.6"
-canonical_derive = "0.6"
-dusk-abi = "0.10"
+canonical = "0.7"
+canonical_derive = "0.7"
+dusk-abi = "0.11"
 rusk-abi = { path = "../../rusk-abi", features = ["module"] }
 dusk-bytes = "0.1"
-dusk-bls12_381 = { version = "0.8", default-features = false, features = ["canon"] }
-dusk-jubjub = { version = "0.10", default-features = false, features = ["canon"] }
-dusk-poseidon = { version = "0.23.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.9.0-rc", default-features = false }
-phoenix-core = { version = "0.15.0-rc", default-features = false, features = ["canon"] }
-dusk-hamt = { version = "0.5.0-rc", default-features = false }
-microkelvin = "0.10"
+dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
+dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
+dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
+dusk-pki = { version = "0.10.0-rc", default-features = false }
+phoenix-core = { version = "0.16.0-rc", default-features = false, features = ["canon"] }
+dusk-hamt = { version = "0.10.0-rc", default-features = false }
+microkelvin = "0.15.0-rc"
 lazy_static = "1.4"
 rand = "0.8"
 stake-contract = { path = "../../contracts/stake" }
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 transfer-contract = { path = "../../contracts/transfer" }
 rusk-profile = { path = "../../rusk-profile" }
-dusk-plonk = "0.9"
-rusk-vm = "0.10.0-rc"
+dusk-plonk = "0.10"
+rusk-vm = "0.12.0-rc"
