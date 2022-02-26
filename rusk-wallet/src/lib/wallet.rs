@@ -104,7 +104,8 @@ impl CliWallet {
                         // run command
                         if let Some(txh) = self.run(cmd)? {
                             println!("\r> Transaction sent: {}", txh);
-                            if let Some(base_url) = env::var("DUSK_EXPLORER_URL").ok() {
+                            if let Ok(base_url) = env::var("DUSK_EXPLORER_URL")
+                            {
                                 let url = format!("{}{}", base_url, txh);
                                 println!("> URL: {}", url);
                                 prompt::launch_explorer(url);
@@ -188,7 +189,7 @@ impl CliWallet {
                         &dest_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
                     )?;
                     prompt::show_cursor()?;
@@ -221,7 +222,7 @@ impl CliWallet {
                         &my_addr,
                         amt,
                         gas_limit,
-                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;
 
@@ -251,7 +252,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         gas_limit,
-                        gas_price.unwrap_or(dusk(DEFAULT_GAS_PRICE)),
+                        gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;
 

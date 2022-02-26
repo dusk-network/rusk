@@ -273,6 +273,7 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
     }
 }
 
+/// Let the user enter command data interactively
 pub(crate) fn prepare_command(
     cmd: PromptCommand,
     balance: f64,
@@ -287,67 +288,120 @@ pub(crate) fn prepare_command(
         Prompt::Balance(key) => Some(Cli::Balance { key }),
         // Create transfer
         Prompt::Transfer(key) => {
-            let rcvr = request_rcvr_addr();
-            let amt = request_token_amt("transfer", balance);
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(request_gas_price());
-            match user_confirm() {
+            let cmd = Cli::Transfer {
+                key,
+                rcvr: request_rcvr_addr(),
+                amt: request_token_amt("transfer", balance),
+                gas_limit: request_gas_limit(),
+                gas_price: Some(request_gas_price()),
+            };
+            match confirm(&cmd) {
+                true => Some(cmd),
                 false => None,
-                true => Some(Cli::Transfer {
-                    key,
-                    rcvr,
-                    amt,
-                    gas_limit,
-                    gas_price,
-                }),
             }
         }
         // Stake
         Prompt::Stake(key) => {
-            let stake_key = request_key_index("stake");
-            let amt = request_token_amt("stake", balance);
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(request_gas_price());
-            match user_confirm() {
+            let cmd = Cli::Stake {
+                key,
+                stake_key: request_key_index("stake"),
+                amt: request_token_amt("stake", balance),
+                gas_limit: request_gas_limit(),
+                gas_price: Some(request_gas_price()),
+            };
+            match confirm(&cmd) {
+                true => Some(cmd),
                 false => None,
-                true => Some(Cli::Stake {
-                    key,
-                    stake_key,
-                    amt,
-                    gas_limit,
-                    gas_price,
-                }),
             }
         }
         // Withdraw stake
         Prompt::Withdraw(key) => {
-            let stake_key = request_key_index("stake");
-            let gas_limit = request_gas_limit();
-            let gas_price = Some(request_gas_price());
-            match user_confirm() {
+            let cmd = Cli::WithdrawStake {
+                key,
+                stake_key: request_key_index("stake"),
+                gas_limit: request_gas_limit(),
+                gas_price: Some(request_gas_price()),
+            };
+            match confirm(&cmd) {
+                true => Some(cmd),
                 false => None,
-                true => Some(Cli::WithdrawStake {
-                    key,
-                    stake_key,
-                    gas_limit,
-                    gas_price,
-                }),
             }
         }
         // Export BLS Key Pair
-        Prompt::Export => {
-            let key = request_key_index("stake");
-            let encrypt = confirm_encryption();
-            Some(Cli::Export {
-                key,
-                plaintext: !encrypt,
-            })
-        }
+        Prompt::Export => Some(Cli::Export {
+            key: request_key_index("stake"),
+            plaintext: !confirm_encryption(),
+        }),
     }
 }
 
+/// Request user confirmation for a trasfer transaction
+fn confirm(cmd: &CliCommand) -> bool {
+    use CliCommand as Cli;
+    match cmd {
+        Cli::Transfer {
+            key: _,
+            rcvr,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price.unwrap();
+            println!(
+                "   > Recipient = {}..{}",
+                &rcvr[..10],
+                &rcvr[rcvr.len() - 11..]
+            );
+            println!("   > Amount to transfer = {} Dusk", to_dusk(amt));
+            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            ask_confirm()
+        }
+        Cli::Stake {
+            key: _,
+            stake_key,
+            amt,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price.unwrap();
+            println!("   > Stake key = {}", stake_key);
+            println!("   > Amount to stake = {} Dusk", to_dusk(amt));
+            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            ask_confirm()
+        }
+        Cli::WithdrawStake {
+            key: _,
+            stake_key,
+            gas_limit,
+            gas_price,
+        } => {
+            let max_fee = gas_limit * gas_price.unwrap();
+            println!("   > Stake key = {}", stake_key);
+            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            ask_confirm()
+        }
+        _ => true,
+    }
+}
+
+/// Returns dusk value of nano_dusk amt provided
+/// Note: This is only used for displaying purposes.
+fn to_dusk(nano_dusk: &u64) -> f64 {
+    let dusk = *nano_dusk as f64;
+    dusk / 1e9
+}
+
+/// Asks the user for confirmation
+fn ask_confirm() -> bool {
+    let q = requestty::Question::confirm("confirm")
+        .message("Transaction ready. Proceed?")
+        .build();
+    let a = requestty::prompt_one(q).expect("confirmation");
+    a.as_bool().unwrap_or(false)
+}
+
 /// Request a key index from the user
-pub(crate) fn request_key_index(key_type: &str) -> u64 {
+fn request_key_index(key_type: &str) -> u64 {
     let question = requestty::Question::int("key")
         .message(format!("Select a {} key:", key_type))
         .default(0)
@@ -367,7 +421,7 @@ pub(crate) fn request_key_index(key_type: &str) -> u64 {
 }
 
 /// Request a receiver address
-pub(crate) fn request_rcvr_addr() -> String {
+fn request_rcvr_addr() -> String {
     // let the user input the receiver address
     let q = Question::input("addr")
         .message("Please enter the recipients address:")
@@ -387,9 +441,10 @@ pub(crate) fn request_rcvr_addr() -> String {
 
 /// Utility function to check if an address is valid
 fn is_valid_addr(addr: &str) -> bool {
-    bs58::decode(addr).into_vec().is_ok() && addr.len() > 0
+    bs58::decode(addr).into_vec().is_ok() && !addr.is_empty()
 }
 
+/// Checks for a valid dusk denomination
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
     let min = MIN_CONVERTIBLE;
     let max = f64::min(balance, MAX_CONVERTIBLE);
@@ -403,7 +458,7 @@ fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
 }
 
 /// Request amount of tokens
-pub(crate) fn request_token_amt(action: &str, balance: f64) -> Dusk {
+fn request_token_amt(action: &str, balance: f64) -> Dusk {
     let question = requestty::Question::float("amt")
         .message(format!("Introduce the amount to {}:", action))
         .default(MIN_CONVERTIBLE)
@@ -417,7 +472,7 @@ pub(crate) fn request_token_amt(action: &str, balance: f64) -> Dusk {
 }
 
 /// Request gas limit
-pub(crate) fn request_gas_limit() -> u64 {
+fn request_gas_limit() -> u64 {
     let question = requestty::Question::int("amt")
         .message("Introduce the gas limit for this transaction:")
         .default(DEFAULT_GAS_LIMIT as i64)
@@ -436,7 +491,7 @@ pub(crate) fn request_gas_limit() -> u64 {
 }
 
 /// Request gas price
-pub(crate) fn request_gas_price() -> Dusk {
+fn request_gas_price() -> Dusk {
     let question = requestty::Question::float("amt")
         .message("Introduce the gas price for this transaction:")
         .default(DEFAULT_GAS_PRICE)
@@ -447,16 +502,6 @@ pub(crate) fn request_gas_price() -> Dusk {
     let a = requestty::prompt_one(question).expect("gas price");
     let value = a.as_float().unwrap();
     dusk(value)
-}
-
-/// Request user confirmation for a command
-pub(crate) fn user_confirm() -> bool {
-    let q = requestty::Question::confirm("confirm")
-        .message("Transaction ready. Proceed?")
-        .build();
-
-    let a = requestty::prompt_one(q).expect("confirmation");
-    a.as_bool().unwrap_or(false)
 }
 
 /// Request Dusk block explorer open

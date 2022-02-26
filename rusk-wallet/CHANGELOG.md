@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - Display progress info about transaction preparation [#600]
+- Display confirmation before sending a transaction [#602]
 
 ## Changed
 - Use hex-encoded tx hashes on user-facing messages [#597]
@@ -123,3 +124,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#597]: https://github.com/dusk-network/rusk/issues/597
 [#598]: https://github.com/dusk-network/rusk/issues/598
 [#600]: https://github.com/dusk-network/rusk/issues/600
+[#602]: https://github.com/dusk-network/rusk/issues/602

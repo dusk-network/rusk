@@ -252,6 +252,7 @@ impl StateClient for State {
         .into_inner()
         .anchor;
         prompt::status("Anchor received!");
+
         let mut bytes = [0u8; BlsScalar::SIZE];
         bytes.copy_from_slice(&res);
         let anchor = BlsScalar::from_bytes(&bytes)?;
