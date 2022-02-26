@@ -205,10 +205,23 @@ fn wallet_transfer(
     );
 
     // Check the sender's balance is changed accordingly
-    assert_eq!(
-        wallet.get_balance(0).expect("Failed to get the balance"),
-        sender_initial_balance - amount,
-        "Wrong resulting balance for the sender"
+    let sender_final_balance =
+        wallet.get_balance(0).expect("Failed to get the balance");
+    let fee = tx.fee();
+    let fee = fee.gas_limit * fee.gas_price;
+
+    assert!(
+        sender_initial_balance - amount - fee <= sender_final_balance,
+        "Final sender balance {} should be greater or equal than {}",
+        sender_final_balance,
+        sender_initial_balance - amount - fee
+    );
+
+    assert!(
+        sender_initial_balance - amount >= sender_final_balance,
+        "Final sender balance {} should be lesser or equal than {}",
+        sender_final_balance,
+        sender_initial_balance - amount
     );
 }
 
