@@ -12,8 +12,17 @@ use transfer_circuits::{
 };
 use transfer_wrapper::TransferWrapper;
 
+use microkelvin::{BackendCtor, DiskBackend, Persistence};
+
+fn testbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(DiskBackend::ephemeral)
+}
+
 #[test]
 fn send_to_contract_transparent() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
     let genesis_value = 10_000_000_000;
     let block_height = 1;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
@@ -74,6 +83,9 @@ fn send_to_contract_transparent() {
 
 #[test]
 fn send_to_contract_obfuscated() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
@@ -115,6 +127,9 @@ fn send_to_contract_obfuscated() {
 
 #[test]
 fn alice_ping() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
@@ -146,6 +161,9 @@ fn alice_ping() {
 
 #[test]
 fn withdraw_from_transparent() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
     let genesis_value = 50_000_000_000;
     let block_height = 1;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
@@ -298,6 +316,9 @@ fn withdraw_from_transparent() {
 
 #[test]
 fn withdraw_from_obfuscated() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
     let genesis_value = 10_000_000_000;
     let mut wrapper = TransferWrapper::new(2324, genesis_value);
 
