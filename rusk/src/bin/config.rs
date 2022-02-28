@@ -43,8 +43,7 @@ impl From<ArgMatches> for Config {
             matches
                 .value_of("config")
                 .map_or(Config::default(), |conf_path| {
-                    let toml =
-                        std::fs::read_to_string(conf_path.to_string()).unwrap();
+                    let toml = std::fs::read_to_string(conf_path).unwrap();
                     toml::from_str(&toml).unwrap()
                 });
 

@@ -89,7 +89,7 @@ where
     }
 }
 
-impl PoseidonTreeAnnotation<Leaf> for NotesAnnotation where Leaf:  {}
+impl PoseidonTreeAnnotation<Leaf> for NotesAnnotation where Leaf: {}
 
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Canon,
