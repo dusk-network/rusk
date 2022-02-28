@@ -1,4 +1,4 @@
-all: ## Generate the optimized WASM for the contract given
+wasm: ## Generate the optimized WASM for the contract given
 	@cargo rustc \
 		--manifest-path=./Cargo.toml \
 		--release \
