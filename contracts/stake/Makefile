@@ -7,11 +7,8 @@ check: wasm ## Run the Rust check on the project features
 	@cargo check --target wasm32-unknown-unknown
 	@cargo check
 
-test: utils wasm ## Perform the contract tests defined in the host module
+test: wasm ## Perform the contract tests defined in the host module
 	@cargo test --release
-
-utils: ## Build the WASM files of the test utils
-	$(MAKE) -C ../../ $@
 
 wasm: ## Build the WASM files
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)=" \
@@ -20,4 +17,4 @@ wasm: ## Build the WASM files
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
 
-.PHONY: check test utils wasm help
+.PHONY: check test wasm help
