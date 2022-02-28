@@ -16,7 +16,9 @@ state: wasm ## Create the network state
 	$(MAKE) -C ./rusk-recovery state
 
 wasm: ## Generate the WASM for all the contracts
-	$(MAKE) -j -C ./contracts wasm
+	$(MAKE) -C ./contracts $@
+	$(MAKE) -C ./test-utils $@
+	$(MAKE) -C ./rusk-abi $@
 
 circuits: keys ## Build and test circuit crates
 	$(MAKE) -j -C ./circuits test
@@ -24,12 +26,9 @@ circuits: keys ## Build and test circuit crates
 contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts test
 
-utils: ## Execute the test for utils
-	$(MAKE) -j -C ./test-utils wasm
-
-test: abi circuits state allmacros contracts utils ## Run the tests
+test: wasm abi circuits state allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
-	$(MAKE) -C ./test-utils test
+	$(MAKE) -C ./test-utils $@
 
 run: wasm ## Run the server
 	cargo run --release
