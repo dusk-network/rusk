@@ -1,6 +1,6 @@
 [package]
 name = "code-hasher"
-version = "0.2.0-rc.0"
+version = "0.3.0-rc.0"
 edition = "2021"
 
 readme = "README.md"
@@ -15,4 +15,4 @@ proc-macro = true
 blake3 = "0.3"
 
 [dev-dependencies]
-dusk-plonk = "0.9"
+dusk-plonk = "0.10"

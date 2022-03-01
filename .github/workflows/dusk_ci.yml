@@ -48,7 +48,7 @@ jobs:
           RUSK_KEEP_KEYS="1"
           RUSK_BUILD_STATE="1"
           RUSK_FORCE_STATE="1"
-          make -j test
+          make test
       - name: "Clippy check release"
         uses: actions-rs/clippy-check@v1
         env:

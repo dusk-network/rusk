@@ -11,7 +11,7 @@ use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
 use lazy_static::lazy_static;
-use microkelvin::{Backend, BackendCtor, DiskBackend};
+use microkelvin::{Backend, BackendCtor, DiskBackend, Persistence};
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -114,6 +114,8 @@ pub fn deploy<B>(
 where
     B: 'static + Backend,
 {
+    Persistence::with_backend(ctor, |_| Ok(()))?;
+
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
 

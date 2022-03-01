@@ -434,8 +434,7 @@ fn find_wallets(dir: &str) -> Result<Vec<String>, Error> {
         })
         .filter_map(|path| {
             path.file_stem()
-                .map(|stem| stem.to_str())
-                .flatten()
+                .and_then(|stem| stem.to_str())
                 .map(String::from)
         })
         .collect();
