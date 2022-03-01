@@ -41,7 +41,7 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[derive(Parser)]
 #[clap(name = "Dusk Wallet CLI")]
 #[clap(author = "Dusk Network B.V.")]
-#[clap(version = "0.5.1")]
+#[clap(version = "0.5.2")]
 #[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 //#[clap(global_setting(AppSettings::SubcommandRequiredElseHelp))]
@@ -66,6 +66,14 @@ pub(crate) struct WalletCfg {
     /// Rusk port
     #[clap(short = 'p', long, default_value_t = RUSK_PORT.to_string())]
     rusk_port: String,
+
+    /// Prover service address [default: `rusk_addr`]
+    #[clap(long)]
+    prover_addr: Option<String>,
+
+    /// Prover service port [default: `rusk_port`]
+    #[clap(long)]
+    prover_port: Option<String>,
 
     /// IPC method for communication with rusk [uds, tcp_ip]
     #[clap(short = 'i', long, default_value_t = WalletCfg::default_ipc_method())]
@@ -229,12 +237,11 @@ struct Rusk {
 }
 
 /// Connect to rusk services via TCP
-async fn rusk_tcp(addr: &str, port: &str) -> Result<Rusk, Error> {
-    let rusk_addr = format!("http://{}:{}", addr, port);
+async fn rusk_tcp(rusk_addr: String, prov_addr: String) -> Result<Rusk, Error> {
     Ok(Rusk {
         network: NetworkClient::connect(rusk_addr.clone()).await?,
-        state: StateClient::connect(rusk_addr.clone()).await?,
-        prover: ProverClient::connect(rusk_addr).await?,
+        state: StateClient::connect(rusk_addr).await?,
+        prover: ProverClient::connect(prov_addr).await?,
     })
 }
 
@@ -306,7 +313,13 @@ async fn exec() -> Result<(), Error> {
     let rusk = if cfg.ipc_method == "uds" {
         rusk_uds(cfg.socket_path).await
     } else {
-        rusk_tcp(&cfg.rusk_addr, &cfg.rusk_port).await
+        let rusk_addr = format!("http://{}:{}", cfg.rusk_addr, cfg.rusk_port);
+        let prov_addr = {
+            let host = cfg.prover_addr.as_ref().unwrap_or(&cfg.rusk_addr);
+            let port = cfg.prover_port.as_ref().unwrap_or(&cfg.rusk_port);
+            format!("http://{}:{}", host, port)
+        };
+        rusk_tcp(rusk_addr, prov_addr).await
     };
 
     // create our wallet
