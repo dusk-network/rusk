@@ -183,25 +183,37 @@ impl State for Rusk {
 
         // Here we discard transactions that:
         // - Fail parsing
-        // - Have a gas limit that is larger than the running `block_gas_left`.
+        // - Spend more gas than the running `block_gas_left`
         for tx in request.txs {
             if let Ok(tx) = Transaction::from_slice(&tx.payload) {
-                let gas_limit = tx.fee().gas_limit;
+                let mut forked_state = state.fork();
+                let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
-                if gas_limit <= block_gas_left {
-                    let mut gas_meter = GasMeter::with_limit(gas_limit);
+                // We do not care if the transaction fails or succeeds here
+                let _ = forked_state.execute::<()>(
+                    request.block_height,
+                    tx.clone(),
+                    &mut gas_meter,
+                );
 
-                    // We do not care if the transaction fails or succeeds here
-                    let _ = state.execute::<()>(
-                        request.block_height,
-                        tx.clone(),
-                        &mut gas_meter,
-                    );
+                let gas_spent = gas_meter.spent();
 
-                    dusk_spent += gas_meter.spent() * tx.fee().gas_price;
-                    block_gas_left -= gas_meter.spent();
+                // If the transaction executes with more gas than is left in the
+                // block reject it
+                if gas_spent > block_gas_left {
+                    continue;
+                }
 
-                    txs.push((tx, gas_meter).into());
+                block_gas_left -= gas_spent;
+                dusk_spent += gas_spent * tx.fee().gas_price;
+
+                state = forked_state;
+                txs.push((tx, gas_meter).into());
+
+                // No need to keep executing if there is no gas left in the
+                // block
+                if block_gas_left == 0 {
+                    break;
                 }
             }
         }
