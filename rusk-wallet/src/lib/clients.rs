@@ -23,6 +23,7 @@ use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tonic::transport::Channel;
 
+use crate::prompt;
 use crate::rusk_proto::network_client::NetworkClient;
 use crate::rusk_proto::prover_client::ProverClient as GrpcProverClient;
 use crate::rusk_proto::state_client::StateClient as GrpcStateClient;
@@ -79,6 +80,7 @@ impl ProverClient for Prover {
         let msg = ExecuteProverRequest { utx: utx_bytes };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Proving tx, please wait...");
         let mut prover = self.client.lock().unwrap();
         let proof_bytes = block_in_place(move || {
             Handle::current()
@@ -86,12 +88,14 @@ impl ProverClient for Prover {
         })?
         .into_inner()
         .proof;
+        prompt::status("Proof success!");
 
         let proof = Proof::from_slice(&proof_bytes).map_err(Error::Bytes)?;
         let tx = utx.clone().prove(proof);
 
         let tx_bytes = tx.to_var_bytes();
 
+        prompt::status("Propagating tx...");
         let msg = PropagateMessage { message: tx_bytes };
         let req = tonic::Request::new(msg);
 
@@ -99,6 +103,7 @@ impl ProverClient for Prover {
         let _ = block_in_place(move || {
             Handle::current().block_on(async move { net.propagate(req).await })
         })?;
+        prompt::status("Transaction propagated!");
 
         Ok(tx)
     }
@@ -127,6 +132,7 @@ impl ProverClient for Prover {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Requesting stct proof...");
         let mut prover = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -134,6 +140,7 @@ impl ProverClient for Prover {
         })?
         .into_inner()
         .proof;
+        prompt::status("Stct proof success!");
 
         let mut proof_bytes = [0u8; Proof::SIZE];
         proof_bytes.copy_from_slice(&res);
@@ -160,6 +167,7 @@ impl ProverClient for Prover {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Requesting wfct proof...");
         let mut prover = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -167,6 +175,7 @@ impl ProverClient for Prover {
         })?
         .into_inner()
         .proof;
+        prompt::status("Wfct proof success!");
 
         let mut proof_bytes = [0u8; Proof::SIZE];
         proof_bytes.copy_from_slice(&res);
@@ -207,6 +216,7 @@ impl StateClient for State {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Fetching notes...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -214,6 +224,7 @@ impl StateClient for State {
         })?
         .into_inner()
         .notes;
+        prompt::status("Notes received!");
 
         // collect notes
         let notes: Vec<Note> = res
@@ -232,6 +243,7 @@ impl StateClient for State {
         let msg = GetAnchorRequest {};
         let req = tonic::Request::new(msg);
 
+        prompt::status("Fetching anchor...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -239,6 +251,7 @@ impl StateClient for State {
         })?
         .into_inner()
         .anchor;
+        prompt::status("Anchor received!");
 
         let mut bytes = [0u8; BlsScalar::SIZE];
         bytes.copy_from_slice(&res);
@@ -260,6 +273,7 @@ impl StateClient for State {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Fetching nullifiers...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current().block_on(async move {
@@ -268,6 +282,7 @@ impl StateClient for State {
         })?
         .into_inner()
         .nullifiers;
+        prompt::status("Nullifiers received!");
 
         let nullifiers = res
             .iter()
@@ -287,6 +302,7 @@ impl StateClient for State {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Fetching opening notes...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -294,6 +310,7 @@ impl StateClient for State {
         })?
         .into_inner()
         .branch;
+        prompt::status("Opening notes received!");
 
         let mut src = Source::new(&res);
         let branch = Canon::decode(&mut src)?;
@@ -307,12 +324,14 @@ impl StateClient for State {
         };
         let req = tonic::Request::new(msg);
 
+        prompt::status("Fetching stake...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
                 .block_on(async move { state.get_stake(req).await })
         })?
         .into_inner();
+        prompt::status("Stake received!");
 
         Ok(StakeInfo {
             value: res.value,
