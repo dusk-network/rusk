@@ -76,7 +76,7 @@ macro_rules! execute_circuit_variant {
                     * JubJubScalar::zero())
                     + (GENERATOR_NUMS_EXTENDED * blinding_factor);
 
-                let fee = fee.gas_limit;
+                let fee = fee.gas_limit * fee.gas_price;
                 self.crossover = CircuitCrossover::new(
                     value_commitment,
                     value,
@@ -95,7 +95,7 @@ macro_rules! execute_circuit_variant {
                 blinder: JubJubScalar,
             ) {
                 let value_commitment = *crossover.value_commitment();
-                let fee = fee.gas_limit;
+                let fee = fee.gas_limit * fee.gas_price;
 
                 self.crossover = CircuitCrossover::new(
                     value_commitment,
