@@ -74,7 +74,7 @@ fn send_to_contract_transparent() {
         .cloned()
         .unwrap();
 
-    let remainder_value = genesis_value - account_value - gas_limit;
+    let remainder_value = genesis_value - account_value - gas_limit * gas_price;
     assert_eq!(
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
@@ -215,7 +215,7 @@ fn withdraw_from_transparent() {
         .cloned()
         .unwrap();
 
-    let remainder_value = genesis_value - alice_value - gas_limit;
+    let remainder_value = genesis_value - alice_value - gas_limit * gas_price;
     assert_eq!(
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
@@ -374,7 +374,7 @@ fn withdraw_from_obfuscated() {
         .cloned()
         .unwrap();
 
-    let remainder_value = genesis_value - account_value - gas_limit;
+    let remainder_value = genesis_value - account_value - gas_limit * gas_price;
     assert_eq!(
         remainder_value,
         remainder.value(Some(&remainder_vk)).unwrap()
