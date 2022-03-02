@@ -191,7 +191,7 @@ fn wallet_transfer(
             &receiver,
             amount,
             1_000_000_000,
-            1,
+            2,
             nonce,
         )
         .expect("Failed to transfer");

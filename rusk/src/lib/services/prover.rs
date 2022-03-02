@@ -95,7 +95,9 @@ impl RuskProver {
                 .into(),
         );
 
-        pi.push(tx.fee().gas_limit.into());
+        let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
+
+        pi.push(fee_value.into());
         pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
 
         let keys = rusk_profile::keys_for(circuit.circuit_id())?;
