@@ -160,6 +160,13 @@ enum CliCommand {
         gas_price: Option<u64>,
     },
 
+    /// Check your stake
+    StakeInfo {
+        /// Staking key used to sign the stake
+        #[clap(short, long)]
+        key: u64,
+    },
+
     /// Withdraw a key's stake
     WithdrawStake {
         /// Key index from which your Dusk was staked

@@ -32,6 +32,7 @@ SUBCOMMANDS:
     address           Retrieve public spend key
     transfer          Send Dusk through the network
     stake             Start staking Dusk
+    stake-info        Check your stake
     withdraw-stake    Withdraw a key's stake
     export            Export BLS provisioner key pair
     interactive       Run in interactive mode (default)

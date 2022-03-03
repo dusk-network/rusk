@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 - Optional configuration item to specify the prover URL [#612]
+- Get Stake information subcommand [#619]
 
 ## [0.5.1] - 2022-02-26
 
@@ -137,3 +138,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#602]: https://github.com/dusk-network/rusk/issues/602
 [#606]: https://github.com/dusk-network/rusk/issues/606
 [#612]: https://github.com/dusk-network/rusk/issues/612
+[#619]: https://github.com/dusk-network/rusk/issues/619
