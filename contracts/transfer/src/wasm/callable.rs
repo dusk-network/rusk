@@ -259,7 +259,10 @@ impl TransferContract {
         pi.push(anchor.into());
         pi.extend(nullifiers.iter().map(|n| n.into()));
         pi.push(crossover_commitment.into());
-        pi.push(fee.gas_limit.into());
+
+        let fee_value = fee.gas_limit * fee.gas_price;
+
+        pi.push(fee_value.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
 
         //  1. α ∈ R

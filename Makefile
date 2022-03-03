@@ -20,13 +20,13 @@ wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./test-utils $@
 	$(MAKE) -C ./rusk-abi $@
 
-circuits: keys ## Build and test circuit crates
+circuits: ## Build and test circuit crates
 	$(MAKE) -j -C ./circuits test
 
 contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts test
 
-test: wasm abi circuits state allmacros contracts ## Run the tests
+test: keys wasm abi circuits state allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils $@
 
