@@ -14,6 +14,8 @@ OPTIONS:
                                        directory
     -a, --rusk-addr <RUSK_ADDR>        Rusk address [default: 127.0.0.1]
     -p, --rusk-port <RUSK_PORT>        Rusk port [default: 8585]
+        --prover-addr <PROVER_ADDR>    Prover service address [default: `rusk_addr`]
+        --prover-port <PROVER_PORT>    Prover service port [default: `rusk_port`]
     -i, --ipc-method <IPC_METHOD>      IPC method for communication with rusk [uds, tcp_ip]
                                        [default: uds]
     -s, --socket-path <SOCKET_PATH>    Path for setting up the unix domain socket [default: /tmp/

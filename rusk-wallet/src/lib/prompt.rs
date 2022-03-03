@@ -441,7 +441,7 @@ fn request_rcvr_addr() -> String {
 
 /// Utility function to check if an address is valid
 fn is_valid_addr(addr: &str) -> bool {
-    bs58::decode(addr).into_vec().is_ok() && !addr.is_empty()
+    !addr.is_empty() && bs58::decode(addr).into_vec().is_ok()
 }
 
 /// Checks for a valid dusk denomination
