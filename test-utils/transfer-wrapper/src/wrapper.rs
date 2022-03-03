@@ -395,7 +395,8 @@ impl TransferWrapper {
             .collect();
 
         let mut outputs = vec![];
-        let output_value = input - fee.gas_limit - crossover_value;
+        let output_value =
+            input - fee.gas_limit * fee.gas_price - crossover_value;
 
         if output_value == 0 {
         } else if output_transparent {
