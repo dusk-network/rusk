@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bls12_381_sign::PublicKey;
-use dusk_bytes::Serializable;
+use dusk_bytes::DeserializableSlice;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -23,15 +23,6 @@ lazy_static! {
     ];
 }
 
-fn parse_key(bytes: &[u8]) -> PublicKey {
-    // FIXME: This is only done because `BadLength` is not implemented for
-    //  `dusk_bls12_381_sign::Error`. Otherwise we could use
-    //  `PublicKey::from_slice`
-    assert_eq!(bytes.len(), PublicKey::SIZE);
-
-    let mut key_bytes = [0u8; PublicKey::SIZE];
-    key_bytes.copy_from_slice(bytes);
-
-    PublicKey::from_bytes(&key_bytes)
-        .expect("Genesis consensus key to be valid")
+fn parse_key(key_bytes: &[u8]) -> PublicKey {
+    PublicKey::from_slice(key_bytes).expect("Genesis consensus key to be valid")
 }
