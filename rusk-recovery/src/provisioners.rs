@@ -6,21 +6,27 @@
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
+use include_dir::{include_dir, Dir, DirEntry};
 use lazy_static::lazy_static;
 
+const PROV_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/provisioners/");
+
 lazy_static! {
-    pub static ref PROVISIONERS: [PublicKey; 5] = {
-        [
-            parse_key(&include_str!("../provisioners/node_0.pub")),
-            parse_key(&include_str!("../provisioners/node_1.pub")),
-            parse_key(&include_str!("../provisioners/node_2.pub")),
-            parse_key(&include_str!("../provisioners/node_3.pub")),
-            parse_key(&include_str!("../provisioners/node_4.pub")),
-        ]
+    pub static ref PROVISIONERS: [PublicKey; PROV_DIR.entries().len()] = {
+        let files = PROV_DIR.entries().iter();
+        let keys: Vec<PublicKey> = files.map(parse_file).collect();
+        keys.try_into().unwrap()
     };
 }
 
-fn parse_key(bs58: &str) -> PublicKey {
+fn parse_file(dir_entry: &DirEntry) -> PublicKey {
+    let filename = dir_entry.path().file_name().unwrap();
+    let file = PROV_DIR.get_file(filename).unwrap();
+    let b58_bytes = file.contents();
+    parse_key(b58_bytes)
+}
+
+fn parse_key(bs58: &[u8]) -> PublicKey {
     let bytes = bs58::decode(bs58).into_vec().expect("Base58 decoding");
     // FIXME: This is only done because `BadLength` is not implemented for
     //  `dusk_bls12_381_sign::Error`. Otherwise we could use

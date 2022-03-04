@@ -50,6 +50,7 @@ tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
 zip = "0.5"
 bs58 = "0.4"
+include_dir = "0.7"
 
 [features]
 state = []
