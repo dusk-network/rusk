@@ -9,8 +9,18 @@ use dusk_bytes::Serializable;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref PROVISIONERS: [PublicKey; 1] =
-        [parse_key(include_bytes!("../provisioners/dusk.0.cpk")),];
+    pub static ref PROVISIONERS: [PublicKey; 10] = [
+        parse_key(include_bytes!("../provisioners/node_0.cpk")),
+        parse_key(include_bytes!("../provisioners/node_1.cpk")),
+        parse_key(include_bytes!("../provisioners/node_2.cpk")),
+        parse_key(include_bytes!("../provisioners/node_3.cpk")),
+        parse_key(include_bytes!("../provisioners/node_4.cpk")),
+        parse_key(include_bytes!("../provisioners/node_5.cpk")),
+        parse_key(include_bytes!("../provisioners/node_6.cpk")),
+        parse_key(include_bytes!("../provisioners/node_7.cpk")),
+        parse_key(include_bytes!("../provisioners/node_8.cpk")),
+        parse_key(include_bytes!("../provisioners/node_9.cpk")),
+    ];
 }
 
 fn parse_key(bytes: &[u8]) -> PublicKey {
