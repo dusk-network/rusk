@@ -216,6 +216,7 @@ pub(crate) enum PromptCommand {
     Balance(u64),
     Transfer(u64),
     Stake(u64),
+    StakeInfo(u64),
     Withdraw(u64),
     Export,
 }
@@ -233,6 +234,7 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
         "Check my current balance",
         "Send Dusk",
         "Stake Dusk",
+        "Check stake",
         "Unstake Dusk",
     ];
     if !offline {
@@ -266,8 +268,9 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
             1 => Some(Balance(request_key_index("spend"))),
             2 => Some(Transfer(request_key_index("spend"))),
             3 => Some(Stake(request_key_index("spend"))),
-            4 => Some(Withdraw(request_key_index("spend"))),
-            6 => Some(Export),
+            4 => Some(StakeInfo(request_key_index("stake"))),
+            5 => Some(Withdraw(request_key_index("spend"))),
+            7 => Some(Export),
             _ => None,
         }
     }
@@ -314,6 +317,8 @@ pub(crate) fn prepare_command(
                 false => None,
             }
         }
+        // Stake info
+        Prompt::StakeInfo(key) => Some(Cli::StakeInfo { key }),
         // Withdraw stake
         Prompt::Withdraw(key) => {
             let cmd = Cli::WithdrawStake {
@@ -386,7 +391,7 @@ fn confirm(cmd: &CliCommand) -> bool {
 
 /// Returns dusk value of nano_dusk amt provided
 /// Note: This is only used for displaying purposes.
-fn to_dusk(nano_dusk: &u64) -> f64 {
+pub fn to_dusk(nano_dusk: &u64) -> f64 {
     let dusk = *nano_dusk as f64;
     dusk / 1e9
 }

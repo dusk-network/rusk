@@ -75,7 +75,6 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let balance = if let Some(wallet) = &self.wallet {
                         match pcmd {
-                            PromptCommand::Export => 0,
                             PromptCommand::Address(key) => {
                                 wallet.get_balance(key)?
                             }
@@ -91,6 +90,9 @@ impl CliWallet {
                             PromptCommand::Withdraw(key) => {
                                 wallet.get_balance(key)?
                             }
+                            // these commands don't require balance
+                            PromptCommand::Export => 0,
+                            PromptCommand::StakeInfo(_) => 0,
                         }
                     } else {
                         0
@@ -229,6 +231,26 @@ impl CliWallet {
                     // compute transaction id
                     let txh = hex::encode(&tx.hash().to_bytes());
                     Ok(Some(txh))
+                } else {
+                    Err(Error::Offline)
+                }
+            }
+
+            // Check your current stake
+            StakeInfo { key } => {
+                if let Some(wallet) = &self.wallet {
+                    prompt::hide_cursor()?;
+                    let stake = wallet.get_stake(key)?;
+                    println!(
+                        "\r> Staking {} Dusk",
+                        prompt::to_dusk(&stake.value)
+                    );
+                    println!(
+                        "> Stake created at block {} and valid since block {}",
+                        &stake.created_at, &stake.eligibility
+                    );
+                    prompt::show_cursor()?;
+                    Ok(None)
                 } else {
                     Err(Error::Offline)
                 }
