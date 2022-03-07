@@ -94,6 +94,7 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
 /// staking/consensus keys in the `keys/` folder. The stakes will all be the
 /// same and the minimum amount.
 fn genesis_stake() -> StakeContract {
+    let theme = Theme::default();
     let mut stake_contract = StakeContract::default();
 
     let stake = Stake::with_eligibility(MINIMUM_STAKE, 0, 0);
@@ -103,6 +104,11 @@ fn genesis_stake() -> StakeContract {
             .push_stake(*provisioner, stake, 0)
             .expect("Genesis stake to be pushed to the stake");
     }
+    info!(
+        "{} Added {} provisioners",
+        theme.action("Generating"),
+        PROVISIONERS.len()
+    );
 
     stake_contract
 }

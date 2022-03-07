@@ -343,8 +343,8 @@ impl CliWallet {
                 );
 
                 // write pub key to disk
-                let pkbytes = bs58::encode(pk.to_bytes()).into_vec();
-                path.set_extension("pub");
+                let pkbytes = pk.to_bytes();
+                path.set_extension("cpk");
                 fs::write(&path, pkbytes)?;
 
                 println!(
