@@ -81,12 +81,18 @@ jobs:
           node-version: 16
           registry-url: https://npm.pkg.github.com
 
+      - name: Install Binaryen
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: >
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz &&
+          tar -xvf binaryen-version_105-x86_64-linux.tar.gz -C ~/.local --strip-components 1
+
       - name: Publish package
         if: startsWith(github.ref, 'refs/tags/v')
         # Move the compiled package to the root for better paths in the npm module.
         # We also automatically populate the version with the given tag.
         run: >
-          mv target/wasm32-unknown-unknown/release/dusk_wallet_core.wasm mod.wasm &&
+          ./asyncify.sh &&
           sed -i "/\"version\": \"0.0.1\"/s/\"0.0.1\"/\"${GITHUB_REF:11}\"/" package.json &&
           npm publish
         env:
