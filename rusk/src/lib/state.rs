@@ -58,6 +58,12 @@ impl RuskState {
         self.0.lock().reset()
     }
 
+    /// Fork the underlying network state, returning a new `RuskState`.
+    pub fn fork(&self) -> Self {
+        let network = self.0.lock().clone();
+        Self(Arc::new(Mutex::new(network)))
+    }
+
     /// Executes a transaction on the state via the Transfer Contract
     pub fn execute<R>(
         &mut self,
