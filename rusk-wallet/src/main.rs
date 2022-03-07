@@ -331,7 +331,11 @@ async fn exec() -> Result<(), Error> {
     // create our wallet
     let wallet = match rusk {
         Ok(clients) => {
-            let prover = Prover::new(clients.prover, clients.network);
+            let prover = Prover::new(
+                clients.prover,
+                clients.state.clone(),
+                clients.network,
+            );
             let state = State::new(clients.state);
             CliWallet::new(store, state, prover)
         }

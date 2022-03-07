@@ -27,13 +27,11 @@ use crate::prompt;
 use crate::rusk_proto::network_client::NetworkClient;
 use crate::rusk_proto::prover_client::ProverClient as GrpcProverClient;
 use crate::rusk_proto::state_client::StateClient as GrpcStateClient;
-use crate::rusk_proto::PropagateMessage;
 use crate::rusk_proto::{
-    ExecuteProverRequest, StctProverRequest, WfctProverRequest,
-};
-use crate::rusk_proto::{
-    FindExistingNullifiersRequest, GetAnchorRequest, GetNotesOwnedByRequest,
-    GetOpeningRequest, GetStakeRequest,
+    ExecuteProverRequest, FindExistingNullifiersRequest, GetAnchorRequest,
+    GetNotesOwnedByRequest, GetOpeningRequest, GetStakeRequest,
+    PreverifyRequest, PropagateMessage, StctProverRequest,
+    Transaction as TransactionProto, WfctProverRequest,
 };
 
 use crate::Error;
@@ -52,16 +50,19 @@ const WFCT_INPUT_SIZE: usize =
 #[derive(Debug)]
 pub struct Prover {
     client: Mutex<GrpcProverClient<Channel>>,
+    state: Mutex<GrpcStateClient<Channel>>,
     network: Mutex<NetworkClient<Channel>>,
 }
 
 impl Prover {
     pub fn new(
         client: GrpcProverClient<Channel>,
+        state: GrpcStateClient<Channel>,
         network: NetworkClient<Channel>,
     ) -> Self {
         Prover {
             client: Mutex::new(client),
+            state: Mutex::new(state),
             network: Mutex::new(network),
         }
     }
@@ -90,10 +91,23 @@ impl ProverClient for Prover {
         .proof;
         prompt::status("Proof success!");
 
+        prompt::status("Attempt to preverify tx...");
         let proof = Proof::from_slice(&proof_bytes).map_err(Error::Bytes)?;
         let tx = utx.clone().prove(proof);
-
         let tx_bytes = tx.to_var_bytes();
+        let tx_proto = TransactionProto {
+            version: 1,
+            r#type: 1,
+            payload: tx_bytes.clone(),
+        };
+        let msg = PreverifyRequest { tx: Some(tx_proto) };
+        let req = tonic::Request::new(msg);
+        let mut state = self.state.lock().unwrap();
+        block_in_place(move || {
+            Handle::current()
+                .block_on(async move { state.preverify(req).await })
+        })?;
+        prompt::status("Preverify success!");
 
         prompt::status("Propagating tx...");
         let msg = PropagateMessage { message: tx_bytes };
