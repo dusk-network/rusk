@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Change FFI to take pointers to `u64`
 - Change `withdraw` function to withdraw the reward for staking and
   participating in the consensus [#58]
 - Change `stake` and `withdraw` cryptographic signatures to what the stake

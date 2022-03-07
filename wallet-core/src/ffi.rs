@@ -139,10 +139,10 @@ pub unsafe extern "C" fn free(ptr: *mut u8, cap: u32) {
 /// Get the public spend key with the given index.
 #[no_mangle]
 pub unsafe extern "C" fn public_spend_key(
-    index: u64,
+    index: *const u64,
     psk: *mut [u8; PublicSpendKey::SIZE],
 ) -> u8 {
-    let key = unwrap_or_bail!(WALLET.public_spend_key(index)).to_bytes();
+    let key = unwrap_or_bail!(WALLET.public_spend_key(*index)).to_bytes();
     ptr::copy_nonoverlapping(&key[0], &mut (*psk)[0], key.len());
     0
 }
@@ -150,12 +150,12 @@ pub unsafe extern "C" fn public_spend_key(
 /// Creates a transfer transaction.
 #[no_mangle]
 pub unsafe extern "C" fn transfer(
-    sender_index: u64,
+    sender_index: *const u64,
     refund: *const [u8; PublicSpendKey::SIZE],
     receiver: *const [u8; PublicSpendKey::SIZE],
-    value: u64,
-    gas_limit: u64,
-    gas_price: u64,
+    value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
     ref_id: Option<&u64>,
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
@@ -167,12 +167,12 @@ pub unsafe extern "C" fn transfer(
 
     unwrap_or_bail!(WALLET.transfer(
         &mut FfiRng,
-        sender_index,
+        *sender_index,
         &refund,
         &receiver,
-        value,
-        gas_price,
-        gas_limit,
+        *value,
+        *gas_price,
+        *gas_limit,
         ref_id
     ));
 
@@ -182,23 +182,23 @@ pub unsafe extern "C" fn transfer(
 /// Creates a stake transaction.
 #[no_mangle]
 pub unsafe extern "C" fn stake(
-    sender_index: u64,
-    staker_index: u64,
+    sender_index: *const u64,
+    staker_index: *const u64,
     refund: *const [u8; PublicSpendKey::SIZE],
-    value: u64,
-    gas_limit: u64,
-    gas_price: u64,
+    value: *const u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
 
     unwrap_or_bail!(WALLET.stake(
         &mut FfiRng,
-        sender_index,
-        staker_index,
+        *sender_index,
+        *staker_index,
         &refund,
-        value,
-        gas_price,
-        gas_limit
+        *value,
+        *gas_price,
+        *gas_limit
     ));
 
     0
@@ -207,21 +207,21 @@ pub unsafe extern "C" fn stake(
 /// Unstake the value previously staked using the [`stake`] function.
 #[no_mangle]
 pub unsafe extern "C" fn unstake(
-    sender_index: u64,
-    staker_index: u64,
+    sender_index: *const u64,
+    staker_index: *const u64,
     refund: *const [u8; PublicSpendKey::SIZE],
-    gas_limit: u64,
-    gas_price: u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
 
     unwrap_or_bail!(WALLET.unstake(
         &mut FfiRng,
-        sender_index,
-        staker_index,
+        *sender_index,
+        *staker_index,
         &refund,
-        gas_price,
-        gas_limit
+        *gas_price,
+        *gas_limit
     ));
 
     0
@@ -231,21 +231,21 @@ pub unsafe extern "C" fn unstake(
 /// the consensus.
 #[no_mangle]
 pub unsafe extern "C" fn withdraw(
-    sender_index: u64,
-    staker_index: u64,
+    sender_index: *const u64,
+    staker_index: *const u64,
     refund: *const [u8; PublicSpendKey::SIZE],
-    gas_limit: u64,
-    gas_price: u64,
+    gas_limit: *const u64,
+    gas_price: *const u64,
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
 
     unwrap_or_bail!(WALLET.withdraw(
         &mut FfiRng,
-        sender_index,
-        staker_index,
+        *sender_index,
+        *staker_index,
         &refund,
-        gas_price,
-        gas_limit
+        *gas_price,
+        *gas_limit
     ));
 
     0
@@ -254,10 +254,10 @@ pub unsafe extern "C" fn withdraw(
 /// Gets the balance of a secret spend key.
 #[no_mangle]
 pub unsafe extern "C" fn get_balance(
-    ssk_index: u64,
+    ssk_index: *const u64,
     balance: *mut [u8; BalanceInfo::SIZE],
 ) -> u8 {
-    let b = unwrap_or_bail!(WALLET.get_balance(ssk_index)).to_bytes();
+    let b = unwrap_or_bail!(WALLET.get_balance(*ssk_index)).to_bytes();
     ptr::copy_nonoverlapping(&b[0], &mut (*balance)[0], b.len());
     0
 }
@@ -267,10 +267,10 @@ pub unsafe extern "C" fn get_balance(
 /// eligibility the first 16 bytes will be zero.
 #[no_mangle]
 pub unsafe extern "C" fn get_stake(
-    sk_index: u64,
+    sk_index: *const u64,
     stake: *mut [u8; StakeInfo::SIZE],
 ) -> u8 {
-    let s = unwrap_or_bail!(WALLET.get_stake(sk_index)).to_bytes();
+    let s = unwrap_or_bail!(WALLET.get_stake(*sk_index)).to_bytes();
     ptr::copy_nonoverlapping(&s[0], &mut (*stake)[0], s.len());
     0
 }
