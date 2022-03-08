@@ -35,7 +35,21 @@ message Transaction {
 }
 
 message ExecutedTransaction {
+    message Error {
+        enum Code {
+            UnknownContract = 0;
+            ContractPanic = 1;
+            OutOfGas = 2;
+            Other = 3;
+        }
+
+        Code code = 1;
+        bytes contract_id = 2;
+        string data = 3;
+    }
+
     Transaction tx = 1;
     bytes tx_hash = 2;
     uint64 gas_spent = 3;
-}
+    optional Error error = 4 ;
+ }
