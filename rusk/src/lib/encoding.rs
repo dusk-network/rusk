@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![allow(non_snake_case)]
+use crate::error::Error;
 use crate::services::state::SpentTransaction;
 use crate::services::{rusk_proto, TX_TYPE_TRANSFER, TX_VERSION};
 use crate::transaction::{Transaction, TransactionPayload};
@@ -15,6 +16,7 @@ use dusk_pki::{
     Ownable, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
 };
 use phoenix_core::Fee;
+use rusk_vm::VMError;
 use std::convert::TryInto;
 use tonic::{Code, Status};
 
@@ -176,9 +178,46 @@ impl TryFrom<&mut rusk_proto::Transaction> for Transaction {
     }
 }
 
-impl From<SpentTransaction> for rusk_proto::Transaction {
-    fn from(spent_tx: SpentTransaction) -> Self {
-        let tx = spent_tx.0;
+impl From<Error> for rusk_proto::executed_transaction::Error {
+    fn from(err: Error) -> Self {
+        use rusk_proto::executed_transaction::error::Code;
+
+        let (code, contract_id, data) = match err {
+            Error::Vm(e) => match e {
+                VMError::UnknownContract(id) => {
+                    (Code::UnknownContract, id, format!("{}", e))
+                }
+                VMError::ContractPanic(id, data) => {
+                    (Code::ContractPanic, id, data)
+                }
+                VMError::OutOfGas => (
+                    Code::OutOfGas,
+                    rusk_abi::transfer_contract(),
+                    format!("{}", e),
+                ),
+                _ => (
+                    Code::Other,
+                    rusk_abi::transfer_contract(),
+                    format!("{}", e),
+                ),
+            },
+            _ => (
+                Code::Other,
+                rusk_abi::transfer_contract(),
+                format!("{}", err),
+            ),
+        };
+
+        Self {
+            code: code.into(),
+            contract_id: contract_id.as_bytes().to_vec(),
+            data,
+        }
+    }
+}
+
+impl From<dusk_wallet_core::Transaction> for rusk_proto::Transaction {
+    fn from(tx: dusk_wallet_core::Transaction) -> Self {
         let payload = tx.to_var_bytes();
 
         rusk_proto::Transaction {
@@ -191,12 +230,15 @@ impl From<SpentTransaction> for rusk_proto::Transaction {
 
 impl From<SpentTransaction> for rusk_proto::ExecutedTransaction {
     fn from(spent_tx: SpentTransaction) -> Self {
-        let transaction = &spent_tx.0;
+        let (transaction, gas_meter, error) = spent_tx;
         let tx_hash = transaction.hash().to_bytes().to_vec();
-        let gas_spent = spent_tx.1.spent();
+        let gas_spent = gas_meter.spent();
+
+        let error = error.map(|e| e.into());
 
         rusk_proto::ExecutedTransaction {
-            tx: Some(spent_tx.into()),
+            error,
+            tx: Some(transaction.into()),
             tx_hash,
             gas_spent,
         }

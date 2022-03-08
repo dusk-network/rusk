@@ -38,7 +38,7 @@ pub use super::rusk_proto::{
     VerifyStateTransitionResponse,
 };
 
-pub(crate) type SpentTransaction = (Transaction, GasMeter);
+pub(crate) type SpentTransaction = (Transaction, GasMeter, Option<Error>);
 
 /// Partition transactions into transfer and coinbase notes.
 fn extract_coinbase(
@@ -104,7 +104,7 @@ impl Rusk {
 
             let mut gas_meter = GasMeter::with_limit(gas_limit);
 
-            let _ =
+            let result =
                 state.execute::<()>(block_height, tx.clone(), &mut gas_meter);
 
             dusk_spent += gas_meter.spent() * tx.fee().gas_price;
@@ -113,7 +113,7 @@ impl Rusk {
                 .checked_sub(gas_meter.spent())
                 .ok_or_else(|| Status::invalid_argument("Out of gas"))?;
 
-            txs.push((tx, gas_meter).into());
+            txs.push((tx, gas_meter, result.err()).into());
         }
 
         state.push_coinbase(block_height, dusk_spent, coinbase)?;
@@ -190,7 +190,7 @@ impl State for Rusk {
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
                 // We do not care if the transaction fails or succeeds here
-                let _ = forked_state.execute::<()>(
+                let result = forked_state.execute::<()>(
                     request.block_height,
                     tx.clone(),
                     &mut gas_meter,
@@ -208,7 +208,7 @@ impl State for Rusk {
                 dusk_spent += gas_spent * tx.fee().gas_price;
 
                 state = forked_state;
-                txs.push((tx, gas_meter).into());
+                txs.push((tx, gas_meter, result.err()).into());
 
                 // No need to keep executing if there is no gas left in the
                 // block
@@ -240,6 +240,7 @@ impl State for Rusk {
             }),
             tx_hash,
             gas_spent: 0, // coinbase transactions never cost anything
+            error: None,
         });
 
         // Compute the new state root resulting from the state changes
