@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::env;
-use std::path::PathBuf;
 use std::{fs, thread, time::Duration};
 
 use rand::rngs::StdRng;
@@ -316,21 +315,10 @@ impl CliWallet {
                 };
 
                 // output directory
-                let dir = match self.store.dir() {
-                    Some(dir) => dir,
-                    None => {
-                        let home = dirs::home_dir().expect("user home dir");
-                        let home = home
-                            .as_os_str()
-                            .to_str()
-                            .ok_or(Error::WalletFileNotExists)?;
-                        String::from(home)
-                    }
-                };
-
-                // construct path
-                let mut path = PathBuf::new();
-                path.push(&dir);
+                let mut path = self
+                    .store
+                    .dir()
+                    .unwrap_or_else(LocalStore::default_data_dir);
                 path.push(&filename);
                 path.set_extension("key");
 

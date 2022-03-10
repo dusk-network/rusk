@@ -19,12 +19,13 @@ use blake3::Hash;
 use requestty::Question;
 use rusk_abi::dusk::*;
 
+use super::store::LocalStore;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
     Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
     MIN_CONVERTIBLE,
 };
-use crate::{CliCommand, Error, WalletCfg};
+use crate::{CliCommand, Error};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
@@ -160,10 +161,9 @@ pub(crate) fn welcome() -> u8 {
 
 /// Request the user to select a wallet to open
 pub(crate) fn select_wallet(
-    dir: &str,
+    dir: &PathBuf,
     wallets: Vec<String>,
 ) -> Option<PathBuf> {
-    // select the wallet
     let q = Question::select("wallet")
         .message("Please select the wallet you wish to use:")
         .choices(&wallets)
@@ -188,9 +188,9 @@ pub(crate) fn select_wallet(
 pub(crate) fn request_wallet_name() -> String {
     let q = Question::input("name")
         .message("Please enter a wallet name:")
-        .validate_on_key(|name, _| !wallet_exists(name))
+        .validate_on_key(|name, _| !LocalStore::wallet_exists(name))
         .validate(|name, _| {
-            if !wallet_exists(name) {
+            if !LocalStore::wallet_exists(name) {
                 Ok(())
             } else {
                 Err("A wallet with this name already exists".to_string())
@@ -200,15 +200,6 @@ pub(crate) fn request_wallet_name() -> String {
 
     let a = requestty::prompt_one(q).expect("wallet name");
     a.as_string().unwrap().to_string()
-}
-
-/// Checks if a wallet with this name already exists
-fn wallet_exists(name: &str) -> bool {
-    let mut pb = PathBuf::new();
-    pb.push(WalletCfg::default_data_dir());
-    pb.push(name);
-    pb.set_extension("dat");
-    pb.is_file()
 }
 
 pub(crate) enum PromptCommand {
@@ -453,7 +444,6 @@ fn is_valid_addr(addr: &str) -> bool {
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
     let min = MIN_CONVERTIBLE;
     let max = f64::min(balance, MAX_CONVERTIBLE);
-
     match (min..=max).contains(&num) {
         true => Ok(()),
         false => {

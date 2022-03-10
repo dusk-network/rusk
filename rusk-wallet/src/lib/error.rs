@@ -4,69 +4,65 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use phoenix_core::Error as PhoenixError;
+use rand_core::Error as RngError;
 use std::{fmt, io};
 
 use super::clients;
+
+/// Wallet core error
 pub type CoreError =
     dusk_wallet_core::Error<crate::LocalStore, clients::State, clients::Prover>;
 
 /// Errors returned by this crate
 pub enum Error {
-    /// Recovery phrase is not valid
-    InvalidMnemonicPhrase,
-    /// Wallet file content is not valid
-    WalletFileCorrupted,
-    /// File version not recognized
-    UnknownFileVersion,
-    /// Wallet file not found on disk
-    WalletFileNotExists,
-    /// A wallet file with this name already exists
-    WalletFileExists,
+    /// State Client errors
+    State(StateError),
+    /// Prover Client errors
+    Prover(ProverError),
+    /// Local Store errors
+    Store(StoreError),
     /// Network error while communicating with rusk
     Network(tonic::transport::Error),
-    /// Connection error with rusk
-    Connection(tonic::Status),
     /// Command not available in offline mode
     Offline,
-    /// Wrong wallet password
-    InvalidPassword,
+    /// Filesystem errors
+    IO(io::Error),
+    /// JSON serialization errors
+    JSON(serde_json::Error),
     /// Bytes encoding errors
     Bytes(dusk_bytes::Error),
     /// Base58 errors
     Base58(bs58::decode::Error),
     /// Canonical errors
     Canon(canonical::CanonError),
-    /// Filesystem errors
-    IO(io::Error),
-    /// JSON serialization errors
-    JSON(serde_json::Error),
-    /// Wallet Core lib errors
-    WalletCore(Box<CoreError>),
+    /// Random number generator errors
+    Rng(RngError),
+    /// Transaction model errors
+    Phoenix(PhoenixError),
+    /// Not enough balance to perform transaction.
+    NotEnoughBalance,
+    /// Note combination for the given value is impossible given the maximum
+    /// amount if inputs in a transaction.
+    NoteCombinationProblem,
     /// User graceful exit
     UserExit,
 }
 
-impl From<dusk_bytes::Error> for Error {
-    fn from(e: dusk_bytes::Error) -> Self {
-        Self::Bytes(e)
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Self {
+        Self::JSON(e)
     }
 }
-
-impl From<canonical::CanonError> for Error {
-    fn from(e: canonical::CanonError) -> Self {
-        Self::Canon(e)
-    }
-}
-
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
         Self::IO(e)
     }
 }
 
-impl From<tonic::Status> for Error {
-    fn from(s: tonic::Status) -> Self {
-        Self::Connection(s)
+impl From<dusk_bytes::Error> for Error {
+    fn from(e: dusk_bytes::Error) -> Self {
+        Self::Bytes(e)
     }
 }
 
@@ -82,27 +78,38 @@ impl From<bs58::decode::Error> for Error {
     }
 }
 
+impl From<StateError> for Error {
+    fn from(e: StateError) -> Self {
+        Self::State(e)
+    }
+}
+
+impl From<ProverError> for Error {
+    fn from(e: ProverError) -> Self {
+        Self::Prover(e)
+    }
+}
+
+impl From<StoreError> for Error {
+    fn from(e: StoreError) -> Self {
+        Self::Store(e)
+    }
+}
+
 impl From<CoreError> for Error {
     fn from(e: CoreError) -> Self {
-        Self::WalletCore(Box::new(e))
-    }
-}
-
-impl From<block_modes::InvalidKeyIvLength> for Error {
-    fn from(_: block_modes::InvalidKeyIvLength) -> Self {
-        Self::WalletFileCorrupted
-    }
-}
-
-impl From<block_modes::BlockModeError> for Error {
-    fn from(_: block_modes::BlockModeError) -> Self {
-        Self::InvalidPassword
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(e: serde_json::Error) -> Self {
-        Self::JSON(e)
+        use dusk_wallet_core::Error as CoreErr;
+        match e {
+            CoreErr::Store(err) => Self::Store(err),
+            CoreErr::State(err) => Self::State(err),
+            CoreErr::Prover(err) => Self::Prover(err),
+            CoreErr::Canon(err) => Self::Canon(err),
+            CoreErr::Rng(err) => Self::Rng(err),
+            CoreErr::Bytes(err) => Self::Bytes(err),
+            CoreErr::Phoenix(err) => Self::Phoenix(err),
+            CoreErr::NotEnoughBalance => Self::NotEnoughBalance,
+            CoreErr::NoteCombinationProblem => Self::NoteCombinationProblem,
+        }
     }
 }
 
@@ -111,67 +118,21 @@ impl std::error::Error for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::InvalidMnemonicPhrase => {
-                write!(f, "Recovery phrase is not valid")
-            }
-            Error::WalletFileCorrupted => {
-                write!(f, "Wallet file content is not valid")
-            }
-            Error::UnknownFileVersion => {
-                write!(f, "File version not recognized")
-            }
-            Error::WalletFileNotExists => {
-                write!(f, "Wallet file not found on disk")
-            }
-            Error::WalletFileExists => {
-                write!(f, "A wallet file with this name already exists")
-            }
-            Error::Network(err) => {
-                write!(
-                    f,
-                    "Network error while communicating with rusk: {}",
-                    err
-                )
-            }
-            Error::Connection(err) => {
-                write!(f, "Connection error with rusk: {}", err)
-            }
-            Error::Offline => {
-                write!(f, "Command not available in offline mode")
-            }
-            Error::InvalidPassword => {
-                write!(f, "Wrong wallet password")
-            }
-            Error::Bytes(err) => {
-                write!(f, "Bytes encoding error: {:?}", err)
-            }
-            Error::Base58(err) => {
-                write!(f, "Base58 error: {}", err)
-            }
-            Error::Canon(err) => {
-                write!(f, "Canonical error: {:?}", err)
-            }
-            Error::IO(err) => {
-                write!(f, "Filesystem error: {}", err)
-            }
-            Error::JSON(err) => {
-                write!(f, "JSON serialization error: {}", err)
-            }
-            Error::WalletCore(err) => {
-                match err.as_ref() {
-                    CoreError::Store(e) => write!(f, "Store error: {}", e),
-                    CoreError::State(e) => write!(f, "State client error: {}", e),
-                    CoreError::Prover(e) => write!(f, "Prover client error: {}", e),
-                    CoreError::Canon(e) => write!(f, "Canonical error: {:?}", e),
-                    CoreError::Rng(e) => write!(f, "Random number generator error: {}", e),
-                    CoreError::Bytes(e) => write!(f, "Serialization error: {:?}", e),
-                    CoreError::Phoenix(e) => write!(f, "Transaction model error: {}", e),
-                    CoreError::NotEnoughBalance => write!(f, "Insufficient balance to perform this transaction"),
-                    CoreError::NoteCombinationProblem => write!(f, "Note combination for the given value is impossible given the maximum amount of inputs in a transaction."),
-                }            }
-            Error::UserExit => {
-                write!(f, "Done")
-            }
+            Error::State(err) => write!(f, "\r{}", err),
+            Error::Prover(err) => write!(f, "\r{}", err),
+            Error::Store(err) => write!(f, "\r{}", err),
+            Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{}", err),
+            Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please connect to a Rusk instance and try again."),
+            Error::IO(err) => write!(f, "\rAn IO error occurred:\n{}", err),
+            Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{}", err),
+            Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{}", err),
+            Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Rng(err) => write!(f, "\rAn error occured while using the random number generator:\n{}", err),
+            Error::Phoenix(err) => write!(f, "\rAn error occured in Phoenix:\n{}", err),
+            Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
+            Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
+            Error::UserExit => write!(f, "\rBye!"),
         }
     }
 }
@@ -179,67 +140,228 @@ impl fmt::Display for Error {
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::InvalidMnemonicPhrase => {
-                write!(f, "Recovery phrase is not valid")
+            Error::State(err) => write!(f, "\r{:?}", err),
+            Error::Prover(err) => write!(f, "\r{:?}", err),
+            Error::Store(err) => write!(f, "\r{:?}", err),
+            Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{:?}", err),
+            Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please connect to a Rusk instance and try again."),
+            Error::IO(err) => write!(f, "\rAn IO error occurred:\n{:?}", err),
+            Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::Rng(err) => write!(f, "\rAn error occured while using the random number generator:\n{:?}", err),
+            Error::Phoenix(err) => write!(f, "\rAn error occured in Phoenix:\n{:?}", err),
+            Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
+            Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
+            Error::UserExit => write!(f, "\rBye!"),
+        }
+    }
+}
+
+/// State client errors
+pub enum StateError {
+    /// Status of a Rusk request
+    Rusk(String),
+    /// Bytes encoding errors
+    Bytes(dusk_bytes::Error),
+    /// Canonical errors
+    Canon(canonical::CanonError),
+}
+
+impl From<dusk_bytes::Error> for StateError {
+    fn from(e: dusk_bytes::Error) -> Self {
+        Self::Bytes(e)
+    }
+}
+
+impl From<canonical::CanonError> for StateError {
+    fn from(e: canonical::CanonError) -> Self {
+        Self::Canon(e)
+    }
+}
+
+impl From<tonic::Status> for StateError {
+    fn from(s: tonic::Status) -> Self {
+        Self::Rusk(s.message().to_string())
+    }
+}
+
+impl fmt::Display for StateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StateError::Rusk(st) => {
+                write!(f, "\rRusk returned an error:\n{}", st)
             }
-            Error::WalletFileCorrupted => {
-                write!(f, "Wallet file content is not valid")
+            StateError::Bytes(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::UnknownFileVersion => {
-                write!(f, "File version not recognized")
+            StateError::Canon(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::WalletFileNotExists => {
-                write!(f, "Wallet file not found on disk")
+        }
+    }
+}
+
+impl fmt::Debug for StateError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StateError::Rusk(st) => {
+                write!(f, "\rRusk returned an error:\n{:?}", st)
             }
-            Error::WalletFileExists => {
-                write!(f, "A wallet file with this name already exists")
+            StateError::Bytes(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::Network(err) => {
-                write!(
-                    f,
-                    "Network error while communicating with rusk: {:?}",
-                    err
-                )
+            StateError::Canon(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::Connection(err) => {
-                write!(f, "Connection error with rusk: {:?}", err)
+        }
+    }
+}
+
+/// Prover client errors
+pub enum ProverError {
+    /// Status of a Rusk request
+    Rusk(String),
+    /// Bytes encoding errors
+    Bytes(dusk_bytes::Error),
+    /// Canonical errors
+    Canon(canonical::CanonError),
+}
+
+impl From<dusk_bytes::Error> for ProverError {
+    fn from(e: dusk_bytes::Error) -> Self {
+        Self::Bytes(e)
+    }
+}
+
+impl From<canonical::CanonError> for ProverError {
+    fn from(e: canonical::CanonError) -> Self {
+        Self::Canon(e)
+    }
+}
+
+impl From<tonic::Status> for ProverError {
+    fn from(s: tonic::Status) -> Self {
+        Self::Rusk(s.message().to_string())
+    }
+}
+
+impl fmt::Display for ProverError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ProverError::Rusk(st) => {
+                write!(f, "\rRusk returned an error:\n{}", st)
             }
-            Error::Offline => {
-                write!(f, "Command not available in offline mode")
+            ProverError::Bytes(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::InvalidPassword => {
-                write!(f, "Wrong wallet password")
+            ProverError::Canon(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::Bytes(err) => {
-                write!(f, "Bytes encoding error: {:?}", err)
+        }
+    }
+}
+
+impl fmt::Debug for ProverError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ProverError::Rusk(st) => {
+                write!(f, "\rRusk returned an error:\n{:?}", st)
             }
-            Error::Base58(err) => {
-                write!(f, "Base58 error: {:?}", err)
+            ProverError::Bytes(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::Canon(err) => {
-                write!(f, "Canonical error: {:?}", err)
+            ProverError::Canon(err) => {
+                write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
-            Error::IO(err) => {
-                write!(f, "Filesystem error: {:?}", err)
+        }
+    }
+}
+
+/// Store errors
+pub enum StoreError {
+    /// Wallet file content is not valid
+    WalletFileCorrupted,
+    /// File version not recognized
+    UnknownFileVersion,
+    /// Wallet file not found on disk
+    WalletFileNotExists,
+    /// A wallet file with this name already exists
+    WalletFileExists,
+    /// Wrong wallet password
+    InvalidPassword,
+    /// Recovery phrase is not valid
+    InvalidMnemonicPhrase,
+    /// Filesystem errors
+    IO(io::Error),
+}
+
+impl From<block_modes::InvalidKeyIvLength> for StoreError {
+    fn from(_: block_modes::InvalidKeyIvLength) -> Self {
+        Self::WalletFileCorrupted
+    }
+}
+
+impl From<block_modes::BlockModeError> for StoreError {
+    fn from(_: block_modes::BlockModeError) -> Self {
+        Self::InvalidPassword
+    }
+}
+
+impl From<io::Error> for StoreError {
+    fn from(e: io::Error) -> Self {
+        Self::IO(e)
+    }
+}
+
+impl fmt::Display for StoreError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StoreError::InvalidMnemonicPhrase => {
+                write!(f, "\rInvalid recovery phrase")
             }
-            Error::JSON(err) => {
-                write!(f, "JSON serialization error: {:?}", err)
+            StoreError::WalletFileCorrupted => {
+                write!(f, "\rWallet file content is not valid")
             }
-            Error::WalletCore(err) => {
-                match err.as_ref() {
-                    CoreError::Store(e) => write!(f, "Store error: {:?}", e),
-                    CoreError::State(e) => write!(f, "State client error: {:?}", e),
-                    CoreError::Prover(e) => write!(f, "Prover client error: {:?}", e),
-                    CoreError::Canon(e) => write!(f, "Canonical error: {:?}", e),
-                    CoreError::Rng(e) => write!(f, "Random number generator error: {:?}", e),
-                    CoreError::Bytes(e) => write!(f, "Serialization error: {:?}", e),
-                    CoreError::Phoenix(e) => write!(f, "Transaction model error: {:?}", e),
-                    CoreError::NotEnoughBalance => write!(f, "Insufficient balance to perform this transaction"),
-                    CoreError::NoteCombinationProblem => write!(f, "Note combination for the given value is impossible given the maximum amount of inputs in a transaction."),
-                }
+            StoreError::UnknownFileVersion => {
+                write!(f, "\rFile version not recognized")
             }
-            Error::UserExit => {
-                write!(f, "Done")
+            StoreError::WalletFileNotExists => {
+                write!(f, "\rWallet file not found on disk")
+            }
+            StoreError::WalletFileExists => {
+                write!(f, "\rA wallet file with this name already exists")
+            }
+            StoreError::InvalidPassword => write!(f, "\rWrong password"),
+            StoreError::IO(err) => {
+                write!(f, "\rAn IO error occurred:\n{}", err)
+            }
+        }
+    }
+}
+
+impl fmt::Debug for StoreError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StoreError::InvalidMnemonicPhrase => {
+                write!(f, "\rInvalid recovery phrase")
+            }
+            StoreError::WalletFileCorrupted => {
+                write!(f, "\rWallet file content is not valid")
+            }
+            StoreError::UnknownFileVersion => {
+                write!(f, "\rFile version not recognized")
+            }
+            StoreError::WalletFileNotExists => {
+                write!(f, "\rWallet file not found on disk")
+            }
+            StoreError::WalletFileExists => {
+                write!(f, "\rA wallet file with this name already exists")
+            }
+            StoreError::InvalidPassword => write!(f, "\rWrong password"),
+            StoreError::IO(err) => {
+                write!(f, "\rAn IO error occurred:\n{:?}", err)
             }
         }
     }

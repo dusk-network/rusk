@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 - Export consensus public key as binary
+- Interactive mode allows for directory and wallet file overriding
+- Rusk error messages are displayed without metadata
+- Paths are now mostly managed using `PathBuf`
 
 ## [0.5.2] - 2022-03-01
 
@@ -144,3 +147,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#606]: https://github.com/dusk-network/rusk/issues/606
 [#612]: https://github.com/dusk-network/rusk/issues/612
 [#619]: https://github.com/dusk-network/rusk/issues/619
+[#629]: https://github.com/dusk-network/rusk/issues/629
+[#630]: https://github.com/dusk-network/rusk/issues/630
