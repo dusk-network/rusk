@@ -271,17 +271,20 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
 pub(crate) fn prepare_command(
     cmd: PromptCommand,
     balance: f64,
-) -> Option<CliCommand> {
+) -> Result<Option<CliCommand>, Error> {
     use CliCommand as Cli;
     use PromptCommand as Prompt;
 
     match cmd {
         // Public spend key
-        Prompt::Address(key) => Some(Cli::Address { key }),
+        Prompt::Address(key) => Ok(Some(Cli::Address { key })),
         // Check balance
-        Prompt::Balance(key) => Some(Cli::Balance { key }),
+        Prompt::Balance(key) => Ok(Some(Cli::Balance { key })),
         // Create transfer
         Prompt::Transfer(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::Transfer {
                 key,
                 rcvr: request_rcvr_addr(),
@@ -290,12 +293,15 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Stake
         Prompt::Stake(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::Stake {
                 key,
                 stake_key: request_key_index("stake"),
@@ -304,14 +310,17 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Stake info
-        Prompt::StakeInfo(key) => Some(Cli::StakeInfo { key }),
+        Prompt::StakeInfo(key) => Ok(Some(Cli::StakeInfo { key })),
         // Withdraw stake
         Prompt::Withdraw(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::WithdrawStake {
                 key,
                 stake_key: request_key_index("stake"),
@@ -319,15 +328,15 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Export BLS Key Pair
-        Prompt::Export => Some(Cli::Export {
+        Prompt::Export => Ok(Some(Cli::Export {
             key: request_key_index("stake"),
             plaintext: !confirm_encryption(),
-        }),
+        })),
     }
 }
 

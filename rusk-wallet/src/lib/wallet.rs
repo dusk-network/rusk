@@ -100,7 +100,7 @@ impl CliWallet {
 
                     // prepare command
                     if let Some(cmd) =
-                        prompt::prepare_command(pcmd, from_dusk(balance))
+                        prompt::prepare_command(pcmd, from_dusk(balance))?
                     {
                         // run command
                         if let Some(txh) = self.run(cmd)? {
