@@ -19,12 +19,13 @@ use blake3::Hash;
 use requestty::Question;
 use rusk_abi::dusk::*;
 
+use super::store::LocalStore;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
     Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
     MIN_CONVERTIBLE,
 };
-use crate::{CliCommand, Error, WalletCfg};
+use crate::{CliCommand, Error};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
@@ -160,10 +161,9 @@ pub(crate) fn welcome() -> u8 {
 
 /// Request the user to select a wallet to open
 pub(crate) fn select_wallet(
-    dir: &str,
+    dir: &PathBuf,
     wallets: Vec<String>,
 ) -> Option<PathBuf> {
-    // select the wallet
     let q = Question::select("wallet")
         .message("Please select the wallet you wish to use:")
         .choices(&wallets)
@@ -188,9 +188,9 @@ pub(crate) fn select_wallet(
 pub(crate) fn request_wallet_name() -> String {
     let q = Question::input("name")
         .message("Please enter a wallet name:")
-        .validate_on_key(|name, _| !wallet_exists(name))
+        .validate_on_key(|name, _| !LocalStore::wallet_exists(name))
         .validate(|name, _| {
-            if !wallet_exists(name) {
+            if !LocalStore::wallet_exists(name) {
                 Ok(())
             } else {
                 Err("A wallet with this name already exists".to_string())
@@ -200,15 +200,6 @@ pub(crate) fn request_wallet_name() -> String {
 
     let a = requestty::prompt_one(q).expect("wallet name");
     a.as_string().unwrap().to_string()
-}
-
-/// Checks if a wallet with this name already exists
-fn wallet_exists(name: &str) -> bool {
-    let mut pb = PathBuf::new();
-    pb.push(WalletCfg::default_data_dir());
-    pb.push(name);
-    pb.set_extension("dat");
-    pb.is_file()
 }
 
 pub(crate) enum PromptCommand {
@@ -280,17 +271,20 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
 pub(crate) fn prepare_command(
     cmd: PromptCommand,
     balance: f64,
-) -> Option<CliCommand> {
+) -> Result<Option<CliCommand>, Error> {
     use CliCommand as Cli;
     use PromptCommand as Prompt;
 
     match cmd {
         // Public spend key
-        Prompt::Address(key) => Some(Cli::Address { key }),
+        Prompt::Address(key) => Ok(Some(Cli::Address { key })),
         // Check balance
-        Prompt::Balance(key) => Some(Cli::Balance { key }),
+        Prompt::Balance(key) => Ok(Some(Cli::Balance { key })),
         // Create transfer
         Prompt::Transfer(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::Transfer {
                 key,
                 rcvr: request_rcvr_addr(),
@@ -299,12 +293,15 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Stake
         Prompt::Stake(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::Stake {
                 key,
                 stake_key: request_key_index("stake"),
@@ -313,14 +310,17 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Stake info
-        Prompt::StakeInfo(key) => Some(Cli::StakeInfo { key }),
+        Prompt::StakeInfo(key) => Ok(Some(Cli::StakeInfo { key })),
         // Withdraw stake
         Prompt::Withdraw(key) => {
+            if balance == 0.0 {
+                return Err(Error::NotEnoughBalance);
+            }
             let cmd = Cli::WithdrawStake {
                 key,
                 stake_key: request_key_index("stake"),
@@ -328,15 +328,15 @@ pub(crate) fn prepare_command(
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
-                true => Some(cmd),
-                false => None,
+                true => Ok(Some(cmd)),
+                false => Ok(None),
             }
         }
         // Export BLS Key Pair
-        Prompt::Export => Some(Cli::Export {
+        Prompt::Export => Ok(Some(Cli::Export {
             key: request_key_index("stake"),
             plaintext: !confirm_encryption(),
-        }),
+        })),
     }
 }
 
@@ -453,7 +453,6 @@ fn is_valid_addr(addr: &str) -> bool {
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
     let min = MIN_CONVERTIBLE;
     let max = f64::min(balance, MAX_CONVERTIBLE);
-
     match (min..=max).contains(&num) {
         true => Ok(()),
         false => {

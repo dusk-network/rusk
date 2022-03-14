@@ -1,6 +1,6 @@
 [package]
 name = "rusk-wallet"
-version = "0.6.0-rc.0"
+version = "0.6.0-rc.1"
 edition = "2021"
 
 [dependencies]
@@ -11,6 +11,7 @@ serde_json = "1.0"
 block-modes = "0.8"
 tiny-bip39 = "0.8"
 crossterm = "0.22"
+rand_core = "0.6"
 requestty = "0.3"
 base64 = "0.13"
 crypto = "0.3"

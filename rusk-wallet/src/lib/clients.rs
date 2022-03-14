@@ -34,7 +34,7 @@ use crate::rusk_proto::{
     Transaction as TransactionProto, WfctProverRequest,
 };
 
-use crate::Error;
+use crate::{ProverError, StateError};
 
 const STCT_INPUT_SIZE: usize = Fee::SIZE
     + Crossover::SIZE
@@ -70,7 +70,7 @@ impl Prover {
 
 impl ProverClient for Prover {
     /// Error returned by the prover client.
-    type Error = Error;
+    type Error = ProverError;
 
     /// Requests that a node prove the given transaction and later propagates it
     fn compute_proof_and_propagate(
@@ -92,7 +92,8 @@ impl ProverClient for Prover {
         prompt::status("Proof success!");
 
         prompt::status("Attempt to preverify tx...");
-        let proof = Proof::from_slice(&proof_bytes).map_err(Error::Bytes)?;
+        let proof =
+            Proof::from_slice(&proof_bytes).map_err(ProverError::Bytes)?;
         let tx = utx.clone().prove(proof);
         let tx_bytes = tx.to_var_bytes();
         let tx_proto = TransactionProto {
@@ -216,7 +217,7 @@ impl State {
 /// Types that are clients of the state API.
 impl StateClient for State {
     /// Error returned by the node client.
-    type Error = Error;
+    type Error = StateError;
 
     /// Find notes for a view key, starting from the given block height.
     fn fetch_notes(

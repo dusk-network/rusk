@@ -14,7 +14,7 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 
 use crate::lib::SEED_SIZE;
-use crate::Error;
+use crate::StoreError;
 
 type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
@@ -44,7 +44,7 @@ impl MnemSeed {
     }
 
     /// Generate a seed given a mnemonic phrase and a password
-    pub fn from_phrase(phrase: &str, pwd: &str) -> Result<Self, Error> {
+    pub fn from_phrase(phrase: &str, pwd: &str) -> Result<Self, StoreError> {
         // generate mnemmonic from user's phrase
         let mnemonic = Mnemonic::from_phrase(phrase, Language::English);
         match mnemonic {
@@ -60,7 +60,7 @@ impl MnemSeed {
                     seed,
                 })
             }
-            Err(_) => Err(Error::InvalidMnemonicPhrase),
+            Err(_) => Err(StoreError::InvalidMnemonicPhrase),
         }
     }
 
@@ -71,7 +71,10 @@ impl MnemSeed {
 }
 
 /// Encrypts data using a password.
-pub(crate) fn encrypt(plaintext: &[u8], pwd: Hash) -> Result<Vec<u8>, Error> {
+pub(crate) fn encrypt(
+    plaintext: &[u8],
+    pwd: Hash,
+) -> Result<Vec<u8>, StoreError> {
     let mut iv = vec![0; 16];
     let mut rng = OsRng::default();
     rng.fill_bytes(&mut iv);
@@ -84,7 +87,10 @@ pub(crate) fn encrypt(plaintext: &[u8], pwd: Hash) -> Result<Vec<u8>, Error> {
 }
 
 /// Decrypts data encrypted with `encrypt`.
-pub(crate) fn decrypt(ciphertext: &[u8], pwd: Hash) -> Result<Vec<u8>, Error> {
+pub(crate) fn decrypt(
+    ciphertext: &[u8],
+    pwd: Hash,
+) -> Result<Vec<u8>, StoreError> {
     let iv = &ciphertext[..16];
     let enc = &ciphertext[16..];
 
@@ -99,7 +105,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mnemonic_recovery() -> Result<(), Error> {
+    fn mnemonic_recovery() -> Result<(), StoreError> {
         let pwd = "mypassword";
         let ms = MnemSeed::new(pwd);
         let recovered = MnemSeed::from_phrase(&ms.phrase, pwd)?;

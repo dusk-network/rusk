@@ -9,11 +9,10 @@ pub(crate) mod rusk_proto {
 }
 
 mod lib;
-pub use lib::error::Error;
+pub use lib::error::{Error, ProverError, StateError, StoreError};
 
 use clap::{AppSettings, Parser, Subcommand};
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
@@ -32,8 +31,6 @@ use rusk_proto::state_client::StateClient;
 pub(crate) const RUSK_ADDR: &str = "127.0.0.1";
 /// Default Rusk TCP port
 pub(crate) const RUSK_PORT: &str = "8585";
-/// Default data directory name
-pub(crate) const DATA_DIR: &str = ".dusk";
 /// Default UDS path that Rusk GRPC-server will connect to
 pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 
@@ -45,13 +42,13 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
 pub(crate) struct WalletCfg {
-    /// Directory to store user data
-    #[clap(short, long, default_value_t = WalletCfg::default_data_dir())]
-    data_dir: String,
+    /// Directory to store user data [default: `$HOME/.dusk`]
+    #[clap(short, long)]
+    data_dir: Option<PathBuf>,
 
-    /// Name for your wallet
-    #[clap(short = 'n', long, value_name = "NAME", default_value_t = WalletCfg::default_wallet_name())]
-    wallet_name: String,
+    /// Name for your wallet [default: `$(whoami)`]
+    #[clap(short = 'n', long, value_name = "NAME")]
+    wallet_name: Option<String>,
 
     /// Path to a wallet file. Overrides `data-dir` and `wallet-name`, useful
     /// when loading a wallet that's not in the default directory.
@@ -75,7 +72,7 @@ pub(crate) struct WalletCfg {
     prover_port: Option<String>,
 
     /// IPC method for communication with rusk [uds, tcp_ip]
-    #[clap(short = 'i', long, default_value_t = WalletCfg::default_ipc_method())]
+    #[clap(short = 'i', long, default_value = "uds")]
     ipc_method: String,
 
     /// Path for setting up the unix domain socket
@@ -206,35 +203,6 @@ impl CliCommand {
     }
 }
 
-impl WalletCfg {
-    /// Default data directory is in user's home dir
-    fn default_data_dir() -> String {
-        let home = dirs::home_dir().expect("OS not supported");
-        let path = Path::new(home.as_os_str()).join(DATA_DIR);
-        String::from(path.to_str().unwrap())
-    }
-
-    /// Default wallet name is essentially current username
-    fn default_wallet_name() -> String {
-        // get default user as default wallet name (remove whitespace)
-        let mut user: String = whoami::username();
-        user.retain(|c| !c.is_whitespace());
-        user.push_str(".dat");
-        user
-    }
-
-    /// Default transport method for communication with Rusk
-    fn default_ipc_method() -> String {
-        "uds".to_string()
-    }
-
-    /// Checks consistency of loaded configuration
-    fn sanity_check(&self) -> Result<(), Error> {
-        // TODO!
-        Ok(())
-    }
-}
-
 /// Client connections to rusk Services
 struct Rusk {
     network: NetworkClient<Channel>,
@@ -281,37 +249,48 @@ async fn exec() -> Result<(), Error> {
 
     // parse cli arguments
     let cfg: WalletCfg = WalletCfg::parse();
-    cfg.sanity_check()?;
 
-    // make sure directory exists
-    fs::create_dir_all(&cfg.data_dir)?;
+    // create directories
+    let data_dir = cfg.data_dir.unwrap_or_else(LocalStore::default_data_dir);
+    LocalStore::create_dir(&data_dir)?;
 
     // get command or default to interactive mode
     let cmd = cfg.command.unwrap_or(CliCommand::Interactive);
 
-    // prepare wallet path
-    let wallet_path = if let Some(p) = cfg.wallet_file {
-        p.with_extension("dat")
-    } else {
-        let mut pb = PathBuf::new();
-        pb.push(&cfg.data_dir);
-        pb.push(&cfg.wallet_name);
-        pb.set_extension("dat");
-        pb
-    };
-
     // request auth for wallet (if required)
-    let pwd = if cmd.uses_wallet() {
-        prompt::request_auth("Please enter your wallet's password")
+    let pwd = if cmd.uses_wallet() || cfg.wallet_file.is_some() {
+        prompt::request_auth("Please enter wallet password")
     } else {
         blake3::hash("".as_bytes())
+    };
+
+    // prepare wallet path
+    let mut path_override = false;
+    let wallet_path = if let Some(p) = cfg.wallet_file {
+        path_override = true;
+        p.with_extension("dat")
+    } else {
+        let wallet_name = cfg
+            .wallet_name
+            .unwrap_or_else(LocalStore::default_wallet_name);
+        let mut pb = PathBuf::new();
+        pb.push(&data_dir);
+        pb.push(&wallet_name);
+        pb.set_extension("dat");
+        pb
     };
 
     // start our local store
     let store = match cmd {
         Create => create(wallet_path, cfg.skip_recovery)?,
         Restore => recover(wallet_path)?,
-        Interactive => interactive(wallet_path)?,
+        Interactive => {
+            if path_override {
+                LocalStore::from_file(wallet_path, pwd)?
+            } else {
+                interactive(&data_dir)?
+            }
+        }
         _ => LocalStore::from_file(wallet_path, pwd)?,
     };
 
@@ -416,14 +395,14 @@ fn recover(mut path: PathBuf) -> Result<LocalStore, Error> {
 }
 
 /// Loads the store interactively
-fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
+fn interactive(dir: &PathBuf) -> Result<LocalStore, Error> {
     // find existing wallets
-    let dir = WalletCfg::default_data_dir();
-    let wallets = find_wallets(&dir)?;
+    let default = LocalStore::default_wallet();
+    let wallets = LocalStore::find_wallets(dir)?;
 
     // let the user choose one
     if !wallets.is_empty() {
-        let wallet = prompt::select_wallet(&dir, wallets);
+        let wallet = prompt::select_wallet(dir, wallets);
         if let Some(w) = wallet {
             let pwd =
                 prompt::request_auth("Please enter your wallet's password");
@@ -432,41 +411,21 @@ fn interactive(path: PathBuf) -> Result<LocalStore, Error> {
         } else {
             let action = prompt::welcome();
             match action {
-                1 => Ok(create(path, false)?),
-                2 => Ok(recover(path)?),
+                1 => Ok(create(default, false)?),
+                2 => Ok(recover(default)?),
                 _ => Err(Error::UserExit),
             }
         }
-    }
-    // nothing found
-    else {
-        println!("No wallet files found at {}", &dir);
+    } else {
+        println!(
+            "No wallet files found at {}",
+            &dir.as_os_str().to_str().unwrap_or("?")
+        );
         let action = prompt::welcome();
         match action {
-            1 => Ok(create(path, false)?),
-            2 => Ok(recover(path)?),
+            1 => Ok(create(default, false)?),
+            2 => Ok(recover(default)?),
             _ => Err(Error::UserExit),
         }
     }
-}
-
-/// Scan data directory and return a list of wallet names
-fn find_wallets(dir: &str) -> Result<Vec<String>, Error> {
-    let dir = fs::read_dir(dir)?;
-
-    let wallets = dir
-        .filter_map(|el| el.ok().map(|d| d.path()))
-        .filter(|path| path.is_file())
-        .filter(|path| match path.extension() {
-            Some(ext) => ext == "dat",
-            None => false,
-        })
-        .filter_map(|path| {
-            path.file_stem()
-                .and_then(|stem| stem.to_str())
-                .map(String::from)
-        })
-        .collect();
-
-    Ok(wallets)
 }
