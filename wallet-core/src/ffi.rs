@@ -29,8 +29,8 @@ use rand_core::{
 
 use crate::tx::UnprovenTransaction;
 use crate::{
-    Error, ProverClient, StakeInfo, StateClient, Store, Transaction, Wallet,
-    POSEIDON_TREE_DEPTH,
+    BalanceInfo, Error, ProverClient, StakeInfo, StateClient, Store,
+    Transaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 
 extern "C" {
@@ -231,8 +231,12 @@ pub unsafe extern "C" fn withdraw_stake(
 
 /// Gets the balance of a secret spend key.
 #[no_mangle]
-pub unsafe extern "C" fn get_balance(ssk_index: u64, balance: *mut u64) -> u8 {
-    *balance = unwrap_or_bail!(WALLET.get_balance(ssk_index));
+pub unsafe extern "C" fn get_balance(
+    ssk_index: u64,
+    balance: *mut [u8; BalanceInfo::SIZE],
+) -> u8 {
+    let b = unwrap_or_bail!(WALLET.get_balance(ssk_index)).to_bytes();
+    ptr::copy_nonoverlapping(&b[0], &mut (*balance)[0], b.len());
     0
 }
 

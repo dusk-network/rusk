@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::tx::UnprovenTransaction;
-use crate::{ProverClient, StakeInfo, StateClient, Store, Transaction};
+use crate::{
+    BalanceInfo, ProverClient, StakeInfo, StateClient, Store, Transaction,
+};
 
 use alloc::vec::Vec;
 
@@ -481,21 +483,29 @@ where
     }
 
     /// Gets the balance of a key.
-    pub fn get_balance(&self, ssk_index: u64) -> Result<u64, Error<S, SC, PC>> {
+    pub fn get_balance(
+        &self,
+        ssk_index: u64,
+    ) -> Result<BalanceInfo, Error<S, SC, PC>> {
         let sender = self
             .store
             .retrieve_ssk(ssk_index)
             .map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
-        let notes = self.unspent_notes(0, &sender)?;
+        let mut notes = self.unspent_notes(0, &sender)?;
+        let mut values = Vec::with_capacity(notes.len());
 
-        let mut balance = 0;
-        for note in notes.iter() {
-            balance += note.value(Some(&vk))?;
+        for note in notes.drain(..) {
+            values.push(note.value(Some(&vk))?);
         }
+        values.sort_by(|a, b| b.cmp(a));
 
-        Ok(balance)
+        let spendable = values.iter().take(MAX_INPUT_NOTES).sum();
+        let value =
+            spendable + values.iter().skip(MAX_INPUT_NOTES).sum::<u64>();
+
+        Ok(BalanceInfo { value, spendable })
     }
 
     /// Gets the stake and the expiration of said stake for a key.
