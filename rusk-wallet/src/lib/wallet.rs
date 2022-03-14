@@ -13,7 +13,7 @@ use serde::Serialize;
 
 use dusk_bytes::Serializable;
 use dusk_jubjub::BlsScalar;
-use dusk_wallet_core::{Store, Wallet};
+use dusk_wallet_core::{BalanceInfo, Store, Wallet};
 use rusk_abi::dusk::*;
 
 use crate::lib::clients::{Prover, State};
@@ -90,18 +90,28 @@ impl CliWallet {
                                 wallet.get_balance(key)?
                             }
                             // these commands don't require balance
-                            PromptCommand::Export => 0,
-                            PromptCommand::StakeInfo(_) => 0,
+                            PromptCommand::Export => BalanceInfo {
+                                value: 0,
+                                spendable: 0,
+                            },
+                            PromptCommand::StakeInfo(_) => BalanceInfo {
+                                value: 0,
+                                spendable: 0,
+                            },
                         }
                     } else {
-                        0
+                        BalanceInfo {
+                            value: 0,
+                            spendable: 0,
+                        }
                     };
                     prompt::show_cursor()?;
 
                     // prepare command
-                    if let Some(cmd) =
-                        prompt::prepare_command(pcmd, from_dusk(balance))?
-                    {
+                    if let Some(cmd) = prompt::prepare_command(
+                        pcmd,
+                        from_dusk(balance.spendable),
+                    )? {
                         // run command
                         if let Some(txh) = self.run(cmd)? {
                             println!("\r> Transaction sent: {}", txh);
@@ -135,9 +145,13 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let balance = wallet.get_balance(key)?;
                     println!(
-                        "\r> Balance for key {} is: {} Dusk",
+                        "\r> Total balance for key {} is: {} Dusk",
                         key,
-                        from_dusk(balance)
+                        from_dusk(balance.value)
+                    );
+                    println!(
+                        "\r> Maximum spendable per TX is: {} Dusk",
+                        from_dusk(balance.spendable)
                     );
                     prompt::show_cursor()?;
                     Ok(None)

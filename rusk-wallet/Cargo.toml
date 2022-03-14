@@ -27,7 +27,7 @@ rand = "0.8"
 aes = "0.7"
 hex = "0.4"
 
-dusk-wallet-core = "0.12.0-rc"
+dusk-wallet-core = "0.13.0-rc"
 canonical = "0.7"
 dusk-bytes = "0.1"
 dusk-pki ="0.10.0-rc"
