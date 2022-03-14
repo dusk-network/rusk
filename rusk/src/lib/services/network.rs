@@ -199,34 +199,32 @@ mod serialization {
     use super::*;
     use dusk_bytes::Serializable;
 
-    // const MAGIC_MAINNET: u32 = 0x7630401f;
-    const MAGIC_TESTNET: u32 = 0x74746e41;
-    // const MAGIC_DEVNET: u32 = 0x74736e40;
-    // const MAGIC_STRESSNET: u32 = 0x74726e39;
-
-    const MAGIC_BYTES: [u8; 4] = MAGIC_TESTNET.to_le_bytes();
     const TX_CATEGORY: u8 = 10;
 
     const RESERVED_FIELDS_LEN: usize = 8;
     const RESERVED_FIELDS_BYTES: [u8; RESERVED_FIELDS_LEN] =
         [0; RESERVED_FIELDS_LEN];
 
-    const CHECKSUM_LENGTH: usize = 4;
+    const CHECKSUM_LEN: usize = 4;
+
+    struct ProtocolVersion(u16, u16, u16);
+
+    const VERSION: ProtocolVersion = ProtocolVersion(0, 1, 0);
 
     const TX_HEADER_LEN: usize = {
-        u32::SIZE + // MAGIC
+        core::mem::size_of::<ProtocolVersion>() + 2 + // VERSION + Reserved bytes
         RESERVED_FIELDS_LEN + // RESERVED_FIELDS
-        CHECKSUM_LENGTH // CHECKSUM
+        CHECKSUM_LEN // CHECKSUM
     };
 
-    const HASH_LENGTH: usize = 32;
-    const DUMMY_HASH: [u8; HASH_LENGTH] = [0; HASH_LENGTH];
+    const HASH_LEN: usize = 32;
+    const DUMMY_HASH: [u8; HASH_LEN] = [0; HASH_LEN];
 
     /// This serialize a transaction in a way that is handled by the network
     pub(super) fn network_marshal(tx: &[u8]) -> Result<Vec<u8>> {
         // WIRE FORMAT:
         // - Length (uint64LE)
-        // - Magic (4bytes)
+        // - Version (8bytes)
         // - ReservedFields (8bytes) -- ex timestamp --> now int64=0
         // - Checksum - blake2b256(Transaction)[..4]
         // - Transaction
@@ -235,7 +233,7 @@ mod serialization {
         let checksum = {
             let mut hasher = Blake2b::<U32>::new();
             hasher.update(&tx_wire);
-            hasher.finalize()[..CHECKSUM_LENGTH].to_vec()
+            hasher.finalize()[..CHECKSUM_LEN].to_vec()
         };
         let tx_len = tx_wire.len();
 
@@ -243,7 +241,10 @@ mod serialization {
         let mut network_message = vec![0u8; u64::SIZE + message_len];
         let mut buffer = &mut network_message[..];
         buffer.write_all(&(message_len as u64).to_le_bytes())?;
-        buffer.write_all(&MAGIC_BYTES[..])?;
+        buffer.write_all(&[0u8; 2])?; //Version reserved bytes
+        buffer.write_all(&VERSION.0.to_le_bytes()[..])?;
+        buffer.write_all(&VERSION.1.to_le_bytes()[..])?;
+        buffer.write_all(&VERSION.2.to_le_bytes()[..])?;
         buffer.write_all(&RESERVED_FIELDS_BYTES[..])?;
         buffer.write_all(&checksum)?;
         buffer.write_all(&tx_wire)?;
@@ -267,7 +268,7 @@ mod serialization {
             + u32::SIZE // TxType
             + u32::SIZE // Payload Length
             + payload.len() // Payload
-            + HASH_LENGTH // Hash
+            + HASH_LEN // Hash
             + u64::SIZE // GasLimit
             + u64::SIZE; // GasPrice
         let mut tx_wire = vec![0u8; size];

@@ -195,6 +195,7 @@ fn wallet_transfer(
             nonce,
         )
         .expect("Failed to transfer");
+    info!("Tx ID: {}", hex::encode(tx.hash().to_bytes().to_vec()));
     generator_procedure(channel, &tx).expect("generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
@@ -597,7 +598,8 @@ pub async fn wallet_grpc() -> Result<()> {
     );
 
     let recv = kadcast_recv.try_recv();
-    let (_, _, h) = recv.expect("Transaction has not been locally propagated");
+    let (tx, _, h) = recv.expect("Transaction has not been locally propagated");
+    info!("{}", hex::encode(tx));
     assert_eq!(h, 0, "Transaction locally propagated with wrong height");
 
     Ok(())
