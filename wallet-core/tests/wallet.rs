@@ -79,8 +79,9 @@ fn transfer() {
 fn get_balance() {
     let mut rng = rand::thread_rng();
 
-    let wallet = mock_wallet(&mut rng, &[2500, 2500, 5000]);
-    let balance = wallet.get_balance(0).expect("Valid balance call");
+    let wallet = mock_wallet(&mut rng, &[2500, 5000, 2500, 5000, 5000]);
+    let info = wallet.get_balance(0).expect("Valid balance call");
 
-    assert_eq!(balance, 10000);
+    assert_eq!(info.value, 20000);
+    assert_eq!(info.spendable, 17500);
 }

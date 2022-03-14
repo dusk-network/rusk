@@ -172,6 +172,42 @@ pub trait StateClient {
     fn fetch_block_height(&self) -> Result<u64, Self::Error>;
 }
 
+/// Information about the balance of a particular key.
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+pub struct BalanceInfo {
+    /// The total value of the balance.
+    pub value: u64,
+    /// The maximum _spendable_ value in a single transaction. This is
+    /// different from `value` since there is a maximum number of notes one can
+    /// spend.
+    pub spendable: u64,
+}
+
+impl Serializable<16> for BalanceInfo {
+    type Error = dusk_bytes::Error;
+
+    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
+        let mut reader = &buf[..];
+
+        let value = u64::from_reader(&mut reader)?;
+        let spendable = u64::from_reader(&mut reader)?;
+
+        Ok(Self { value, spendable })
+    }
+
+    fn to_bytes(&self) -> [u8; Self::SIZE] {
+        let mut buf = [0u8; Self::SIZE];
+
+        buf[0..8].copy_from_slice(&self.value.to_bytes());
+        buf[8..16].copy_from_slice(&self.spendable.to_bytes());
+
+        buf
+    }
+}
+
 /// The stake of a particular key.
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct StakeInfo {
