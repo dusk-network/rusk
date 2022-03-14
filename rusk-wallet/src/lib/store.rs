@@ -49,7 +49,6 @@ impl LocalStore {
         // get default user as default wallet name (remove whitespace)
         let mut user: String = whoami::username();
         user.retain(|c| !c.is_whitespace());
-        user.push_str(".dat");
         user
     }
 

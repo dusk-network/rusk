@@ -30,6 +30,8 @@ pub enum Error {
     IO(io::Error),
     /// JSON serialization errors
     JSON(serde_json::Error),
+    /// TOML deserialization errors
+    TOML(toml::de::Error),
     /// Bytes encoding errors
     Bytes(dusk_bytes::Error),
     /// Base58 errors
@@ -54,6 +56,13 @@ impl From<serde_json::Error> for Error {
         Self::JSON(e)
     }
 }
+
+impl From<toml::de::Error> for Error {
+    fn from(e: toml::de::Error) -> Self {
+        Self::TOML(e)
+    }
+}
+
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
         Self::IO(e)
@@ -125,6 +134,7 @@ impl fmt::Display for Error {
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please connect to a Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{}", err),
+            Error::TOML(err) => write!(f, "\rFailed to read configuration file:\n{}", err),
             Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{}", err),
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
@@ -147,6 +157,7 @@ impl fmt::Debug for Error {
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please connect to a Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{:?}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
+            Error::TOML(err) => write!(f, "\rFailed to read configuration file:\n{}", err),
             Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),

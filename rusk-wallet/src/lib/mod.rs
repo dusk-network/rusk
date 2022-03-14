@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod clients;
+pub mod config;
 pub mod crypto;
 pub mod error;
 pub mod prompt;

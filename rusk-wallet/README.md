@@ -7,23 +7,42 @@ USAGE:
     rusk-wallet [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
-    -d, --data-dir <DATA_DIR>          Directory to store user data [default: /Users/$(whoami)/.dusk]
-    -n, --wallet-name <NAME>           Name for your wallet [default: $(whoami).dat]
-    -f, --wallet-file <PATH>           Path to a wallet file. Overrides `data-dir` and `wallet-
-                                       name`, useful when loading a wallet that's not in the default
-                                       directory
-    -a, --rusk-addr <RUSK_ADDR>        Rusk address [default: 127.0.0.1]
-    -p, --rusk-port <RUSK_PORT>        Rusk port [default: 8585]
-        --prover-addr <PROVER_ADDR>    Prover service address [default: `rusk_addr`]
-        --prover-port <PROVER_PORT>    Prover service port [default: `rusk_port`]
-    -i, --ipc-method <IPC_METHOD>      IPC method for communication with rusk [uds, tcp_ip]
-                                       [default: uds]
-    -s, --socket-path <SOCKET_PATH>    Path for setting up the unix domain socket [default: /tmp/
-                                       rusk_listener]
-        --skip-recovery                Skip wallet recovery phrase (useful for headless wallet
-                                       creation)
-    -h, --help                         Print help information
-    -V, --version                      Print version information
+    -d, --data-dir <DATA_DIR>
+            Directory to store user data [default: `$HOME/.dusk`]
+
+    -n, --wallet-name <NAME>
+            Name for your wallet [default: `$(whoami)`]
+
+    -f, --wallet-file <PATH>
+            Path to a wallet file. Overrides `data-dir` and `wallet-name`,
+            useful when loading a wallet that's not in the default directory
+
+    -a, --rusk-addr <RUSK_ADDR>
+            Rusk address
+
+    -p, --rusk-port <RUSK_PORT>
+            Rusk port
+
+        --prover-addr <PROVER_ADDR>
+            Prover service address [default: `rusk_addr`]
+
+        --prover-port <PROVER_PORT>
+            Prover service port [default: `rusk_port`]
+
+    -i, --ipc-method <IPC_METHOD>
+            IPC method for communication with rusk [uds, tcp_ip]
+
+    -s, --socket-path <SOCKET_PATH>
+            Path for setting up the unix domain socket
+
+        --skip-recovery <SKIP_RECOVERY>
+            Skip wallet recovery phrase (useful for headless wallet creation)
+
+    -h, --help
+            Print help information
+
+    -V, --version
+            Print version information
 
 SUBCOMMANDS:
     create            Create a new wallet
@@ -59,9 +78,17 @@ cd rusk/rusk-wallet/
 make build
 ```
 
-## Running the CLI
+## Configuring the CLI Wallet
 
-As previously mentioned, you should ideally have a [**Rusk**](https://github.com/dusk-network/rusk) instance running for full wallet capabilities.
+You will need to connect to a running [**Rusk**](https://github.com/dusk-network/rusk) instance for full wallet capabilities.
+
+Settings can be fed using a `config.toml` file. The CLI expects it to be either in your default data directory (`~/.dusk/config.toml`) or in the current working directory. The latter will be given priority if found first.
+
+The user can override any particular configuration variable without having to manually edit the config file by explicitly passing the corresponding runtime argument(s) when running the CLI.
+
+Here's an [example](config.toml) for reference.
+
+## Running the CLI Wallet
 
 ### Interactive mode
 
@@ -73,14 +100,14 @@ cargo r --release
 
 ### Headless mode
 
-Wallet can be run in headless mode by providing all the options required for a given subcommand. 
+Wallet can be run in headless mode by providing all the options required for a given subcommand. It is usually convenient to have a config file with the wallet settings, and then call the wallet with the desired subcommand and its options.
 
 To explore available options and commands, use the `help` command:
 ```
 cargo r --release -- help
 ```
 
-To further explore any specific command you can use `--help` on the command itself, for example:
+To further explore any specific command you can use `--help` on the command itself. For example, the following command will print all the information about the `stake` subcommand:
 ```
 cargo r --release -- stake --help
 ```

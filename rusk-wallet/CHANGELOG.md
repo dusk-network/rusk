@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Added
+- Settings can be loaded from a config file [#637]
+
 ## Changed
 - Export consensus public key as binary
 - Interactive mode allows for directory and wallet file overriding [#630]
@@ -150,3 +153,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#629]: https://github.com/dusk-network/rusk/issues/629
 [#630]: https://github.com/dusk-network/rusk/issues/630
 [#631]: https://github.com/dusk-network/rusk/issues/631
+[#637]: https://github.com/dusk-network/rusk/issues/637

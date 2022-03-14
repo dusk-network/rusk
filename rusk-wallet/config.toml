@@ -1,0 +1,15 @@
+# Wallet Config file
+[wallet]
+data_dir = "/Users/dusk/.dusk/"
+
+# Connection to Rusk
+[rusk]
+ipc_method = "tcp_ip"
+rusk_addr = "127.0.01"
+rusk_port = "8585"
+prover_addr = "127.0.01"
+prover_port = "8585"
+
+# Dusk explorer
+[explorer]
+tx_url = "https://explorer.dusk.network/tx/"
