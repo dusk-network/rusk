@@ -165,8 +165,10 @@ fn wallet_transfer(
     let nonce = BlsScalar::random(&mut rng);
 
     // Store the sender initial balance
-    let sender_initial_balance =
-        wallet.get_balance(0).expect("Failed to get the balance");
+    let sender_initial_balance = wallet
+        .get_balance(0)
+        .expect("Failed to get the balance")
+        .value;
 
     // Check the sender's initial balance is correct
     assert_eq!(
@@ -177,7 +179,10 @@ fn wallet_transfer(
 
     // Check the receiver initial balance is zero
     assert_eq!(
-        wallet.get_balance(1).expect("Failed to get the balance"),
+        wallet
+            .get_balance(1)
+            .expect("Failed to get the balance")
+            .value,
         0,
         "Wrong initial balance for the receiver"
     );
@@ -200,14 +205,19 @@ fn wallet_transfer(
 
     // Check the receiver's balance is changed accordingly
     assert_eq!(
-        wallet.get_balance(1).expect("Failed to get the balance"),
+        wallet
+            .get_balance(1)
+            .expect("Failed to get the balance")
+            .value,
         amount,
         "Wrong resulting balance for the receiver"
     );
 
     // Check the sender's balance is changed accordingly
-    let sender_final_balance =
-        wallet.get_balance(0).expect("Failed to get the balance");
+    let sender_final_balance = wallet
+        .get_balance(0)
+        .expect("Failed to get the balance")
+        .value;
     let fee = tx.fee();
     let fee = fee.gas_limit * fee.gas_price;
 

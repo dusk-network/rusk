@@ -172,12 +172,18 @@ fn wallet_transfer(
     let mut rng = StdRng::seed_from_u64(0xdead);
     let nonce = BlsScalar::random(&mut rng);
 
-    let initial_balance_0 =
-        wallet.get_balance(0).expect("Failed to get the balance");
-    let initial_balance_1 =
-        wallet.get_balance(1).expect("Failed to get the balance");
-    let initial_balance_2 =
-        wallet.get_balance(2).expect("Failed to get the balance");
+    let initial_balance_0 = wallet
+        .get_balance(0)
+        .expect("Failed to get the balance")
+        .value;
+    let initial_balance_1 = wallet
+        .get_balance(1)
+        .expect("Failed to get the balance")
+        .value;
+    let initial_balance_2 = wallet
+        .get_balance(2)
+        .expect("Failed to get the balance")
+        .value;
 
     // Check the senders initial balance is correct
     assert_eq!(
@@ -195,7 +201,10 @@ fn wallet_transfer(
 
     // Check the receiver initial balance is zero
     assert_eq!(
-        wallet.get_balance(3).expect("Failed to get the balance"),
+        wallet
+            .get_balance(3)
+            .expect("Failed to get the balance")
+            .value,
         0,
         "Wrong initial balance for the receiver"
     );
@@ -223,18 +232,25 @@ fn wallet_transfer(
 
     // Check the receiver's balance is changed accordingly
     assert_eq!(
-        wallet.get_balance(3).expect("Failed to get the balance"),
+        wallet
+            .get_balance(3)
+            .expect("Failed to get the balance")
+            .value,
         2 * amount,
         "Wrong resulting balance for the receiver"
     );
 
-    let final_balance_0 =
-        wallet.get_balance(0).expect("Failed to get the balance");
+    let final_balance_0 = wallet
+        .get_balance(0)
+        .expect("Failed to get the balance")
+        .value;
     let fee_0 = txs[0].fee();
     let fee_0 = fee_0.gas_limit * fee_0.gas_price;
 
-    let final_balance_1 =
-        wallet.get_balance(1).expect("Failed to get the balance");
+    let final_balance_1 = wallet
+        .get_balance(1)
+        .expect("Failed to get the balance")
+        .value;
     let fee_1 = txs[1].fee();
     let fee_1 = fee_1.gas_limit * fee_1.gas_price;
 
@@ -268,7 +284,10 @@ fn wallet_transfer(
 
     // Check the discarded transaction didn't change the balance
     assert_eq!(
-        wallet.get_balance(2).expect("Failed to get the balance"),
+        wallet
+            .get_balance(2)
+            .expect("Failed to get the balance")
+            .value,
         initial_balance_2,
         "Wrong resulting balance for discarded TX sender"
     );
