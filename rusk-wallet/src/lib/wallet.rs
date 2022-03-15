@@ -19,7 +19,7 @@ use crate::lib::clients::{Prover, State};
 use crate::lib::config::Config;
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::{prompt, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, SEED_SIZE};
+use crate::lib::{prompt, DEFAULT_GAS_LIMIT, MIN_GAS_LIMIT, DEFAULT_GAS_PRICE, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -203,6 +203,11 @@ impl CliWallet {
                     let mut rng = StdRng::from_entropy();
                     let ref_id = BlsScalar::random(&mut rng);
 
+                    let gas_limit = gas_limit.unwrap_or(DEFAULT_GAS_LIMIT);
+                    if gas_limit < MIN_GAS_LIMIT {
+                        return Err(Error::NotEnoughGas);
+                    }
+
                     // transfer
                     prompt::hide_cursor()?;
                     let tx = wallet.transfer(
@@ -211,7 +216,7 @@ impl CliWallet {
                         &my_addr,
                         &dest_addr,
                         amt,
-                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
+                        gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
                     )?;
@@ -237,6 +242,11 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
+                    let gas_limit = gas_limit.unwrap_or(DEFAULT_GAS_LIMIT);
+                    if gas_limit < MIN_GAS_LIMIT {
+                        return Err(Error::NotEnoughGas);
+                    }
+
                     prompt::hide_cursor()?;
                     let tx = wallet.stake(
                         &mut rng,
@@ -244,7 +254,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         amt,
-                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
+                        gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;
@@ -288,13 +298,18 @@ impl CliWallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
 
+                    let gas_limit = gas_limit.unwrap_or(DEFAULT_GAS_LIMIT);
+                    if gas_limit < MIN_GAS_LIMIT {
+                        return Err(Error::NotEnoughGas);
+                    }
+
                     prompt::hide_cursor()?;
                     let tx = wallet.withdraw_stake(
                         &mut rng,
                         key,
                         stake_key,
                         &my_addr,
-                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
+                        gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;

@@ -47,6 +47,8 @@ pub enum Error {
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a transaction.
     NoteCombinationProblem,
+    /// Not enough gas to perform this transaction
+    NotEnoughGas,
     /// User graceful exit
     UserExit,
 }
@@ -140,6 +142,7 @@ impl fmt::Display for Error {
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Rng(err) => write!(f, "\rAn error occured while using the random number generator:\n{}", err),
             Error::Phoenix(err) => write!(f, "\rAn error occured in Phoenix:\n{}", err),
+            Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
             Error::UserExit => write!(f, "\rBye!"),
@@ -163,6 +166,7 @@ impl fmt::Debug for Error {
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Rng(err) => write!(f, "\rAn error occured while using the random number generator:\n{:?}", err),
             Error::Phoenix(err) => write!(f, "\rAn error occured in Phoenix:\n{:?}", err),
+            Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
             Error::UserExit => write!(f, "\rBye!"),

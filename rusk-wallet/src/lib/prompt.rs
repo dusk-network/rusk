@@ -22,7 +22,7 @@ use rusk_abi::dusk::*;
 use super::store::LocalStore;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
-    Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
+    Dusk, DEFAULT_GAS_LIMIT, MIN_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
     MIN_CONVERTIBLE,
 };
 use crate::{CliCommand, Error};
@@ -480,12 +480,12 @@ fn request_gas_limit() -> u64 {
     let question = requestty::Question::int("amt")
         .message("Introduce the gas limit for this transaction:")
         .default(DEFAULT_GAS_LIMIT as i64)
-        .validate_on_key(|n, _| n > 0)
+        .validate_on_key(|n, _| n > (MIN_GAS_LIMIT as i64))
         .validate(|n, _| {
-            if n > 0 {
-                Ok(())
+            if n < MIN_GAS_LIMIT as i64 {
+                Err("Gas limit too low".to_owned())
             } else {
-                Err("invalid gas limit".to_owned())
+                Ok(())
             }
         })
         .build();
