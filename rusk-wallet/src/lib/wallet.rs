@@ -19,7 +19,9 @@ use crate::lib::clients::{Prover, State};
 use crate::lib::config::Config;
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::{prompt, DEFAULT_GAS_LIMIT, MIN_GAS_LIMIT, DEFAULT_GAS_PRICE, SEED_SIZE};
+use crate::lib::{
+    prompt, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MIN_GAS_LIMIT, SEED_SIZE,
+};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -82,9 +84,6 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let balance = if let Some(wallet) = &self.wallet {
                         match pcmd {
-                            PromptCommand::Address(key) => {
-                                wallet.get_balance(key)?
-                            }
                             PromptCommand::Balance(key) => {
                                 wallet.get_balance(key)?
                             }
@@ -98,11 +97,7 @@ impl CliWallet {
                                 wallet.get_balance(key)?
                             }
                             // these commands don't require balance
-                            PromptCommand::Export => BalanceInfo {
-                                value: 0,
-                                spendable: 0,
-                            },
-                            PromptCommand::StakeInfo(_) => BalanceInfo {
+                            _ => BalanceInfo {
                                 value: 0,
                                 spendable: 0,
                             },

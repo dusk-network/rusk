@@ -22,8 +22,8 @@ use rusk_abi::dusk::*;
 use super::store::LocalStore;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
-    Dusk, DEFAULT_GAS_LIMIT, MIN_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
-    MIN_CONVERTIBLE,
+    Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
+    MIN_CONVERTIBLE, MIN_GAS_LIMIT,
 };
 use crate::{CliCommand, Error};
 
