@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::env;
 use std::{fs, thread, time::Duration};
 
 use rand::rngs::StdRng;
@@ -17,6 +16,7 @@ use dusk_wallet_core::{BalanceInfo, Store, Wallet};
 use rusk_abi::dusk::*;
 
 use crate::lib::clients::{Prover, State};
+use crate::lib::config::Config;
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
 use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
@@ -42,22 +42,30 @@ struct BlsKeyPair {
 
 /// Interface to wallet_core lib
 pub(crate) struct CliWallet {
+    config: Config,
     store: LocalStore,
     wallet: Option<Wallet<LocalStore, State, Prover>>,
 }
 
 impl CliWallet {
     /// Creates a new CliWallet instance
-    pub fn new(store: LocalStore, state: State, prover: Prover) -> Self {
+    pub fn new(
+        cfg: Config,
+        store: LocalStore,
+        state: State,
+        prover: Prover,
+    ) -> Self {
         CliWallet {
+            config: cfg,
             store: store.clone(),
             wallet: Some(Wallet::new(store, state, prover)),
         }
     }
 
     /// Creates a new offline CliWallet instance
-    pub fn offline(store: LocalStore) -> Self {
+    pub fn offline(config: Config, store: LocalStore) -> Self {
         CliWallet {
+            config,
             store,
             wallet: None,
         }
@@ -115,7 +123,7 @@ impl CliWallet {
                         // run command
                         if let Some(txh) = self.run(cmd)? {
                             println!("\r> Transaction sent: {}", txh);
-                            if let Ok(base_url) = env::var("DUSK_EXPLORER_URL")
+                            if let Some(base_url) = &self.config.explorer.tx_url
                             {
                                 let url = format!("{}{}", base_url, txh);
                                 println!("> URL: {}", url);

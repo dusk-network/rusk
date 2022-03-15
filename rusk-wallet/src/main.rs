@@ -18,6 +18,7 @@ use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
 
 use lib::clients::{Prover, State};
+use lib::config::Config;
 use lib::crypto::MnemSeed;
 use lib::prompt;
 use lib::store::LocalStore;
@@ -27,13 +28,6 @@ use rusk_proto::network_client::NetworkClient;
 use rusk_proto::prover_client::ProverClient;
 use rusk_proto::state_client::StateClient;
 
-/// Default Rusk IP address
-pub(crate) const RUSK_ADDR: &str = "127.0.0.1";
-/// Default Rusk TCP port
-pub(crate) const RUSK_PORT: &str = "8585";
-/// Default UDS path that Rusk GRPC-server will connect to
-pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
-
 /// The CLI Wallet
 #[derive(Parser)]
 #[clap(version)]
@@ -41,7 +35,7 @@ pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
 #[clap(author = "Dusk Network B.V.")]
 #[clap(about = "A user-friendly, reliable command line interface to the Dusk wallet!", long_about = None)]
 #[clap(global_setting(AppSettings::DeriveDisplayOrder))]
-pub(crate) struct WalletCfg {
+pub(crate) struct WalletArgs {
     /// Directory to store user data [default: `$HOME/.dusk`]
     #[clap(short, long)]
     data_dir: Option<PathBuf>,
@@ -55,40 +49,28 @@ pub(crate) struct WalletCfg {
     #[clap(short = 'f', long, parse(from_os_str), value_name = "PATH")]
     wallet_file: Option<PathBuf>,
 
-    /// Rusk address
-    #[clap(short = 'a', long, default_value_t = RUSK_ADDR.to_string())]
-    rusk_addr: String,
+    /// IPC method for communication with rusk [uds, tcp_ip]
+    #[clap(short = 'i', long)]
+    ipc_method: Option<String>,
 
-    /// Rusk port
-    #[clap(short = 'p', long, default_value_t = RUSK_PORT.to_string())]
-    rusk_port: String,
+    /// Rusk address: socket path or fully quallified URL
+    #[clap(short = 'r', long)]
+    rusk_addr: Option<String>,
 
     /// Prover service address [default: `rusk_addr`]
-    #[clap(long)]
+    #[clap(short = 'p', long)]
     prover_addr: Option<String>,
-
-    /// Prover service port [default: `rusk_port`]
-    #[clap(long)]
-    prover_port: Option<String>,
-
-    /// IPC method for communication with rusk [uds, tcp_ip]
-    #[clap(short = 'i', long, default_value = "uds")]
-    ipc_method: String,
-
-    /// Path for setting up the unix domain socket
-    #[clap(short = 's', long, default_value_t = RUSK_SOCKET.to_string())]
-    socket_path: String,
 
     /// Skip wallet recovery phrase (useful for headless wallet creation)
     #[clap(long)]
-    skip_recovery: bool,
+    skip_recovery: Option<bool>,
 
     /// Command
     #[clap(subcommand)]
     command: Option<CliCommand>,
 }
 
-#[derive(Subcommand)]
+#[derive(Clone, Subcommand)]
 enum CliCommand {
     /// Create a new wallet
     Create,
@@ -211,16 +193,17 @@ struct Rusk {
 }
 
 /// Connect to rusk services via TCP
-async fn rusk_tcp(rusk_addr: String, prov_addr: String) -> Result<Rusk, Error> {
+async fn rusk_tcp(rusk_addr: &str, prov_addr: &str) -> Result<Rusk, Error> {
     Ok(Rusk {
-        network: NetworkClient::connect(rusk_addr.clone()).await?,
-        state: StateClient::connect(rusk_addr).await?,
-        prover: ProverClient::connect(prov_addr).await?,
+        network: NetworkClient::connect(rusk_addr.to_string()).await?,
+        state: StateClient::connect(rusk_addr.to_string()).await?,
+        prover: ProverClient::connect(prov_addr.to_string()).await?,
     })
 }
 
 /// Connect to rusk via UDS (Unix domain sockets)
-async fn rusk_uds(socket_path: String) -> Result<Rusk, Error> {
+async fn rusk_uds(socket_path: &str) -> Result<Rusk, Error> {
+    let socket_path = socket_path.to_string();
     let channel = Endpoint::try_from("http://[::]:50051")
         .expect("parse address")
         .connect_with_connector(service_fn(move |_: Uri| {
@@ -247,18 +230,22 @@ async fn main() -> Result<(), Error> {
 async fn exec() -> Result<(), Error> {
     use CliCommand::*;
 
-    // parse cli arguments
-    let cfg: WalletCfg = WalletCfg::parse();
+    // load configuration (or use default)
+    let mut cfg = Config::load().unwrap_or_else(Config::default);
+
+    // parse user args and merge with static config
+    let args = WalletArgs::parse();
+    let cmd = args.command.clone();
+    cfg.merge(args);
 
     // create directories
-    let data_dir = cfg.data_dir.unwrap_or_else(LocalStore::default_data_dir);
-    LocalStore::create_dir(&data_dir)?;
+    LocalStore::create_dir(&cfg.wallet.data_dir)?;
 
     // get command or default to interactive mode
-    let cmd = cfg.command.unwrap_or(CliCommand::Interactive);
+    let cmd = cmd.unwrap_or(CliCommand::Interactive);
 
     // request auth for wallet (if required)
-    let pwd = if cmd.uses_wallet() || cfg.wallet_file.is_some() {
+    let pwd = if cmd.uses_wallet() || cfg.wallet.file.is_some() {
         prompt::request_auth("Please enter wallet password")
     } else {
         blake3::hash("".as_bytes())
@@ -266,45 +253,39 @@ async fn exec() -> Result<(), Error> {
 
     // prepare wallet path
     let mut path_override = false;
-    let wallet_path = if let Some(p) = cfg.wallet_file {
-        path_override = true;
-        p.with_extension("dat")
-    } else {
-        let wallet_name = cfg
-            .wallet_name
-            .unwrap_or_else(LocalStore::default_wallet_name);
-        let mut pb = PathBuf::new();
-        pb.push(&data_dir);
-        pb.push(&wallet_name);
-        pb.set_extension("dat");
-        pb
+    let wallet_path = match cfg.wallet.file {
+        Some(ref p) => {
+            path_override = true;
+            p.with_extension("dat")
+        }
+        None => {
+            let mut pb = PathBuf::new();
+            pb.push(&cfg.wallet.data_dir);
+            pb.push(&cfg.wallet.name);
+            pb.set_extension("dat");
+            pb
+        }
     };
 
     // start our local store
     let store = match cmd {
-        Create => create(wallet_path, cfg.skip_recovery)?,
+        Create => create(wallet_path, cfg.wallet.skip_recovery)?,
         Restore => recover(wallet_path)?,
         Interactive => {
             if path_override {
                 LocalStore::from_file(wallet_path, pwd)?
             } else {
-                interactive(&data_dir)?
+                interactive(&cfg.wallet.data_dir)?
             }
         }
         _ => LocalStore::from_file(wallet_path, pwd)?,
     };
 
     // connect to rusk
-    let rusk = if cfg.ipc_method == "uds" {
-        rusk_uds(cfg.socket_path).await
+    let rusk = if cfg.rusk.ipc_method == "uds" {
+        rusk_uds(&cfg.rusk.rusk_addr).await
     } else {
-        let rusk_addr = format!("http://{}:{}", cfg.rusk_addr, cfg.rusk_port);
-        let prov_addr = {
-            let host = cfg.prover_addr.as_ref().unwrap_or(&cfg.rusk_addr);
-            let port = cfg.prover_port.as_ref().unwrap_or(&cfg.rusk_port);
-            format!("http://{}:{}", host, port)
-        };
-        rusk_tcp(rusk_addr, prov_addr).await
+        rusk_tcp(&cfg.rusk.rusk_addr, &cfg.rusk.prover_addr).await
     };
 
     // create our wallet
@@ -316,9 +297,12 @@ async fn exec() -> Result<(), Error> {
                 clients.network,
             );
             let state = State::new(clients.state);
-            CliWallet::new(store, state, prover)
+            CliWallet::new(cfg, store, state, prover)
         }
-        Err(_) => CliWallet::offline(store),
+        Err(err) => {
+            println!("{}", err);
+            CliWallet::offline(cfg, store)
+        }
     };
 
     // run command(s)
