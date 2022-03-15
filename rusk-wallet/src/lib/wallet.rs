@@ -19,7 +19,7 @@ use crate::lib::clients::{Prover, State};
 use crate::lib::config::Config;
 use crate::lib::crypto::encrypt;
 use crate::lib::store::LocalStore;
-use crate::lib::{prompt, DEFAULT_GAS_PRICE, SEED_SIZE};
+use crate::lib::{prompt, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, SEED_SIZE};
 use crate::{CliCommand, Error};
 
 mod base64 {
@@ -211,7 +211,7 @@ impl CliWallet {
                         &my_addr,
                         &dest_addr,
                         amt,
-                        gas_limit,
+                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
                     )?;
@@ -244,7 +244,7 @@ impl CliWallet {
                         stake_key,
                         &my_addr,
                         amt,
-                        gas_limit,
+                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;
@@ -294,7 +294,7 @@ impl CliWallet {
                         key,
                         stake_key,
                         &my_addr,
-                        gas_limit,
+                        gas_limit.unwrap_or(DEFAULT_GAS_LIMIT),
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
                     prompt::show_cursor()?;

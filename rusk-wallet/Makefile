@@ -4,6 +4,9 @@ help: ## Display this help screen
 build: ## Build the wallet
 	cargo b --release
 
+install: build
+	cargo install --path .
+
 test: build ## Run wallet tests
 	cargo test --release
 

@@ -289,7 +289,7 @@ pub(crate) fn prepare_command(
                 key,
                 rcvr: request_rcvr_addr(),
                 amt: request_token_amt("transfer", balance),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -306,7 +306,7 @@ pub(crate) fn prepare_command(
                 key,
                 stake_key: request_key_index("stake"),
                 amt: request_token_amt("stake", balance),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -324,7 +324,7 @@ pub(crate) fn prepare_command(
             let cmd = Cli::WithdrawStake {
                 key,
                 stake_key: request_key_index("stake"),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -351,7 +351,7 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
             println!(
                 "   > Recipient = {}..{}",
                 &rcvr[..10],
@@ -368,7 +368,7 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
             println!("   > Stake key = {}", stake_key);
             println!("   > Amount to stake = {} Dusk", to_dusk(amt));
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
@@ -380,7 +380,7 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
             println!("   > Stake key = {}", stake_key);
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
             ask_confirm()
