@@ -8,12 +8,10 @@ use std::{env, fs, path::PathBuf};
 
 use crate::{LocalStore, WalletArgs};
 
-/// Default Rusk IP address
-pub(crate) const RUSK_ADDR: &str = "127.0.0.1";
-/// Default Rusk TCP port
-pub(crate) const RUSK_PORT: &str = "8585";
-/// Default UDS path that Rusk GRPC-server will connect to
-pub(crate) const RUSK_SOCKET: &str = "/tmp/rusk_listener";
+/// Default IPC method for Rusk connections
+pub(crate) const IPC_DEFAULT: &str = "uds";
+/// Default Rusk address uses UDS
+pub(crate) const RUSK_ADDR: &str = "/tmp/rusk_listener";
 
 mod parser {
 
@@ -40,10 +38,7 @@ mod parser {
     pub struct ParsedRuskConfig {
         pub ipc_method: Option<String>,
         pub rusk_addr: Option<String>,
-        pub rusk_port: Option<String>,
         pub prover_addr: Option<String>,
-        pub prover_port: Option<String>,
-        pub socket_path: Option<String>,
     }
 
     #[derive(Deserialize)]
@@ -88,14 +83,8 @@ pub(crate) struct RuskConfig {
     pub ipc_method: String,
     /// Rusk address
     pub rusk_addr: String,
-    /// Rusk port
-    pub rusk_port: String,
     /// Prover service address
     pub prover_addr: String,
-    /// Prover service port
-    pub prover_port: String,
-    /// Path for setting up the unix domain socket
-    pub socket_path: String,
 }
 
 /// Dusk Explorer access information
@@ -109,15 +98,16 @@ impl Config {
     /// Attempt to load configuration from file
     pub fn load() -> Option<Config> {
         // search in default data dir and current working directory
-        let mut paths =
-            vec![env::current_dir().ok()?, LocalStore::default_data_dir()];
+        let paths =
+            vec![env::current_dir().ok()?, LocalStore::default_data_dir()]
+                .iter_mut()
+                .map(|p| {
+                    p.push("config");
+                    p.with_extension("toml")
+                })
+                .collect::<Vec<PathBuf>>();
 
-        for p in paths.iter_mut() {
-            // file is always called "config.toml"
-            p.push("config");
-            p.set_extension("toml");
-            println!("{}", p.display());
-
+        for p in paths.iter() {
             // attempt to read the file
             if let Ok(content) = fs::read_to_string(&p) {
                 match parser::parse(content.as_str()) {
@@ -154,18 +144,8 @@ impl Config {
             self.rusk.rusk_addr = rusk_addr.clone();
             self.rusk.prover_addr = rusk_addr;
         }
-        if let Some(rusk_port) = args.rusk_port {
-            self.rusk.rusk_port = rusk_port.clone();
-            self.rusk.prover_port = rusk_port;
-        }
         if let Some(prover_addr) = args.prover_addr {
             self.rusk.prover_addr = prover_addr;
-        }
-        if let Some(prover_port) = args.prover_port {
-            self.rusk.prover_port = prover_port;
-        }
-        if let Some(socket_path) = args.socket_path {
-            self.rusk.socket_path = socket_path;
         }
         if let Some(skip_recovery) = args.skip_recovery {
             self.wallet.skip_recovery = skip_recovery;
@@ -182,12 +162,9 @@ impl Config {
                 skip_recovery: false,
             },
             rusk: RuskConfig {
-                ipc_method: "uds".to_string(),
+                ipc_method: IPC_DEFAULT.to_string(),
                 rusk_addr: RUSK_ADDR.to_string(),
-                rusk_port: RUSK_PORT.to_string(),
                 prover_addr: RUSK_ADDR.to_string(),
-                prover_port: RUSK_PORT.to_string(),
-                socket_path: RUSK_SOCKET.to_string(),
             },
             explorer: ExplorerConfig { tx_url: None },
         }
@@ -213,27 +190,15 @@ impl From<parser::ParsedConfig> for Config {
                 ipc_method: parsed
                     .rusk
                     .ipc_method
-                    .unwrap_or_else(|| "uds".to_string()),
+                    .unwrap_or_else(|| IPC_DEFAULT.to_string()),
                 rusk_addr: parsed
                     .rusk
                     .rusk_addr
                     .unwrap_or_else(|| RUSK_ADDR.to_string()),
-                rusk_port: parsed
-                    .rusk
-                    .rusk_port
-                    .unwrap_or_else(|| RUSK_PORT.to_string()),
                 prover_addr: parsed
                     .rusk
                     .prover_addr
                     .unwrap_or_else(|| RUSK_ADDR.to_string()),
-                prover_port: parsed
-                    .rusk
-                    .prover_port
-                    .unwrap_or_else(|| RUSK_PORT.to_string()),
-                socket_path: parsed
-                    .rusk
-                    .socket_path
-                    .unwrap_or_else(|| RUSK_SOCKET.to_string()),
             },
             explorer: ExplorerConfig {
                 tx_url: parsed.explorer.tx_url,

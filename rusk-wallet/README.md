@@ -17,23 +17,14 @@ OPTIONS:
             Path to a wallet file. Overrides `data-dir` and `wallet-name`,
             useful when loading a wallet that's not in the default directory
 
-    -a, --rusk-addr <RUSK_ADDR>
-            Rusk address
-
-    -p, --rusk-port <RUSK_PORT>
-            Rusk port
-
-        --prover-addr <PROVER_ADDR>
-            Prover service address [default: `rusk_addr`]
-
-        --prover-port <PROVER_PORT>
-            Prover service port [default: `rusk_port`]
-
     -i, --ipc-method <IPC_METHOD>
             IPC method for communication with rusk [uds, tcp_ip]
 
-    -s, --socket-path <SOCKET_PATH>
-            Path for setting up the unix domain socket
+    -r, --rusk-addr <RUSK_ADDR>
+            Rusk address: socket path or fully quallified URL
+
+    -p  --prover-addr <PROVER_ADDR>
+            Prover service address [default: `rusk-addr`]
 
         --skip-recovery <SKIP_RECOVERY>
             Skip wallet recovery phrase (useful for headless wallet creation)

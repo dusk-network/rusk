@@ -49,29 +49,17 @@ pub(crate) struct WalletArgs {
     #[clap(short = 'f', long, parse(from_os_str), value_name = "PATH")]
     wallet_file: Option<PathBuf>,
 
-    /// Rusk address
-    #[clap(short = 'a', long)]
-    rusk_addr: Option<String>,
-
-    /// Rusk port
-    #[clap(short = 'p', long)]
-    rusk_port: Option<String>,
-
-    /// Prover service address [default: `rusk_addr`]
-    #[clap(long)]
-    prover_addr: Option<String>,
-
-    /// Prover service port [default: `rusk_port`]
-    #[clap(long)]
-    prover_port: Option<String>,
-
     /// IPC method for communication with rusk [uds, tcp_ip]
     #[clap(short = 'i', long)]
     ipc_method: Option<String>,
 
-    /// Path for setting up the unix domain socket
-    #[clap(short = 's', long)]
-    socket_path: Option<String>,
+    /// Rusk address: socket path or fully quallified URL
+    #[clap(short = 'r', long)]
+    rusk_addr: Option<String>,
+
+    /// Prover service address [default: `rusk_addr`]
+    #[clap(short = 'p', long)]
+    prover_addr: Option<String>,
 
     /// Skip wallet recovery phrase (useful for headless wallet creation)
     #[clap(long)]
@@ -265,15 +253,18 @@ async fn exec() -> Result<(), Error> {
 
     // prepare wallet path
     let mut path_override = false;
-    let wallet_path = if let Some(ref p) = cfg.wallet.file {
-        path_override = true;
-        p.with_extension("dat")
-    } else {
-        let mut pb = PathBuf::new();
-        pb.push(&cfg.wallet.data_dir);
-        pb.push(&cfg.wallet.name);
-        pb.set_extension("dat");
-        pb
+    let wallet_path = match cfg.wallet.file {
+        Some(ref p) => {
+            path_override = true;
+            p.with_extension("dat")
+        }
+        None => {
+            let mut pb = PathBuf::new();
+            pb.push(&cfg.wallet.data_dir);
+            pb.push(&cfg.wallet.name);
+            pb.set_extension("dat");
+            pb
+        }
     };
 
     // start our local store
@@ -292,17 +283,9 @@ async fn exec() -> Result<(), Error> {
 
     // connect to rusk
     let rusk = if cfg.rusk.ipc_method == "uds" {
-        rusk_uds(&cfg.rusk.socket_path).await
+        rusk_uds(&cfg.rusk.rusk_addr).await
     } else {
-        let rusk_addr =
-            format!("http://{}:{}", &cfg.rusk.rusk_addr, &cfg.rusk.rusk_port);
-        let prov_addr = {
-            format!(
-                "http://{}:{}",
-                &cfg.rusk.prover_addr, &cfg.rusk.prover_port
-            )
-        };
-        rusk_tcp(&rusk_addr, &prov_addr).await
+        rusk_tcp(&cfg.rusk.rusk_addr, &cfg.rusk.prover_addr).await
     };
 
     // create our wallet
