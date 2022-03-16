@@ -351,7 +351,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!(
                 "   > Recipient = {}..{}",
                 &rcvr[..10],
@@ -368,7 +370,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
             println!("   > Amount to stake = {} Dusk", to_dusk(amt));
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
@@ -380,7 +384,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit.unwrap() * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
             ask_confirm()
