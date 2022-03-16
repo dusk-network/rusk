@@ -23,7 +23,7 @@ use super::store::LocalStore;
 use crate::lib::crypto::MnemSeed;
 use crate::lib::{
     Dusk, DEFAULT_GAS_LIMIT, DEFAULT_GAS_PRICE, MAX_CONVERTIBLE,
-    MIN_CONVERTIBLE,
+    MIN_CONVERTIBLE, MIN_GAS_LIMIT,
 };
 use crate::{CliCommand, Error};
 
@@ -289,7 +289,7 @@ pub(crate) fn prepare_command(
                 key,
                 rcvr: request_rcvr_addr(),
                 amt: request_token_amt("transfer", balance),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -306,7 +306,7 @@ pub(crate) fn prepare_command(
                 key,
                 stake_key: request_key_index("stake"),
                 amt: request_token_amt("stake", balance),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -324,7 +324,7 @@ pub(crate) fn prepare_command(
             let cmd = Cli::WithdrawStake {
                 key,
                 stake_key: request_key_index("stake"),
-                gas_limit: request_gas_limit(),
+                gas_limit: Some(request_gas_limit()),
                 gas_price: Some(request_gas_price()),
             };
             match confirm(&cmd) {
@@ -351,7 +351,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!(
                 "   > Recipient = {}..{}",
                 &rcvr[..10],
@@ -368,7 +370,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
             println!("   > Amount to stake = {} Dusk", to_dusk(amt));
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
@@ -380,7 +384,9 @@ fn confirm(cmd: &CliCommand) -> bool {
             gas_limit,
             gas_price,
         } => {
-            let max_fee = gas_limit * gas_price.unwrap();
+            let gas_limit = gas_limit.expect("gas limit not set");
+            let gas_price = gas_price.expect("gas price not set");
+            let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
             println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
             ask_confirm()
@@ -480,12 +486,12 @@ fn request_gas_limit() -> u64 {
     let question = requestty::Question::int("amt")
         .message("Introduce the gas limit for this transaction:")
         .default(DEFAULT_GAS_LIMIT as i64)
-        .validate_on_key(|n, _| n > 0)
+        .validate_on_key(|n, _| n > (MIN_GAS_LIMIT as i64))
         .validate(|n, _| {
-            if n > 0 {
-                Ok(())
+            if n < MIN_GAS_LIMIT as i64 {
+                Err("Gas limit too low".to_owned())
             } else {
-                Err("invalid gas limit".to_owned())
+                Ok(())
             }
         })
         .build();

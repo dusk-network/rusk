@@ -19,5 +19,6 @@ pub const SEED_SIZE: usize = 64;
 pub(crate) const MAX_CONVERTIBLE: f64 = f64::MAX / dusk(1.0) as f64;
 pub(crate) const MIN_CONVERTIBLE: f64 = from_dusk(LUX);
 
+pub(crate) const MIN_GAS_LIMIT: u64 = 350_000_000;
 pub(crate) const DEFAULT_GAS_LIMIT: u64 = 500_000_000;
 pub(crate) const DEFAULT_GAS_PRICE: f64 = from_dusk(LUX);

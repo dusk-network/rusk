@@ -66,7 +66,7 @@ All other commands involve transactions, and thus require an active connection t
 ```
 git clone https://github.com/dusk-network/rusk.git
 cd rusk/rusk-wallet/
-make build
+make install
 ```
 
 ## Configuring the CLI Wallet
@@ -86,7 +86,7 @@ Here's an [example](config.toml) for reference.
 By default, the CLI runs in interactive mode when no arguments are provided.
 
 ```
-cargo r --release
+rusk-wallet
 ```
 
 ### Headless mode
@@ -95,12 +95,12 @@ Wallet can be run in headless mode by providing all the options required for a g
 
 To explore available options and commands, use the `help` command:
 ```
-cargo r --release -- help
+rusk-wallet help
 ```
 
 To further explore any specific command you can use `--help` on the command itself. For example, the following command will print all the information about the `stake` subcommand:
 ```
-cargo r --release -- stake --help
+rusk-wallet stake --help
 ```
 
 By default, you will always be prompted to enter the wallet password. To prevent this behavior, you can provide the password using the `RUSK_WALLET_PWD` environment variable. This is useful in CI or any other headless environment.

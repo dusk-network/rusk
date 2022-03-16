@@ -95,7 +95,7 @@ enum CliCommand {
     /// Send Dusk through the network
     Transfer {
         /// Key index from which to send Dusk
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
 
         /// Receiver address
@@ -108,7 +108,7 @@ enum CliCommand {
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
-        gas_limit: u64,
+        gas_limit: Option<u64>,
 
         /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
@@ -118,7 +118,7 @@ enum CliCommand {
     /// Start staking Dusk
     Stake {
         /// Key index from which to stake Dusk
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
 
         /// Staking key to sign this stake
@@ -131,7 +131,7 @@ enum CliCommand {
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
-        gas_limit: u64,
+        gas_limit: Option<u64>,
 
         /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
@@ -141,23 +141,23 @@ enum CliCommand {
     /// Check your stake
     StakeInfo {
         /// Staking key used to sign the stake
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
     },
 
     /// Withdraw a key's stake
     WithdrawStake {
         /// Key index from which your Dusk was staked
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
 
         /// Staking key index used for this stake
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         stake_key: u64,
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
-        gas_limit: u64,
+        gas_limit: Option<u64>,
 
         /// Max price you're willing to pay for gas used (in µDusk)
         #[clap(short = 'p', long)]
@@ -167,7 +167,7 @@ enum CliCommand {
     /// Export BLS provisioner key pair
     Export {
         /// Key index from which your Dusk was staked
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
 
         /// Don't encrypt the output file
