@@ -12,7 +12,7 @@ mod lib;
 pub use lib::error::{Error, ProverError, StateError, StoreError};
 
 use clap::{AppSettings, Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
@@ -230,16 +230,33 @@ async fn main() -> Result<(), Error> {
 async fn exec() -> Result<(), Error> {
     use CliCommand::*;
 
-    // load configuration (or use default)
-    let mut cfg = Config::load().unwrap_or_else(Config::default);
-
-    // parse user args and merge with static config
+    // parse user args
     let args = WalletArgs::parse();
     let cmd = args.command.clone();
-    cfg.merge(args);
+
+    // data directory needs to be clear from the start
+    let data_dir = args.data_dir.clone();
+    let data_dir = data_dir.unwrap_or_else(LocalStore::default_data_dir);
 
     // create directories
-    LocalStore::create_dir(&cfg.wallet.data_dir)?;
+    LocalStore::create_dir(&data_dir)?;
+
+    // load configuration (or use default)
+    let mut cfg = Config::load(&data_dir).unwrap_or_else(|| {
+        println!("No configuration found (using default)");
+        let default = Config::default(&data_dir);
+        match default.save() {
+            Ok(p) => println!(
+                "Feel free to edit {} with your desired settings.",
+                p.display()
+            ),
+            Err(err) => println!("{}", err),
+        }
+        default
+    });
+
+    // merge static config with parsed args
+    cfg.merge(args);
 
     // get command or default to interactive mode
     let cmd = cmd.unwrap_or(CliCommand::Interactive);
@@ -267,18 +284,29 @@ async fn exec() -> Result<(), Error> {
         }
     };
 
-    // start our local store
+    // creating and restoring are on their own
+    match cmd {
+        Create => {
+            create(&wallet_path, cfg.wallet.skip_recovery)?;
+            exit();
+        }
+        Restore => {
+            recover(&wallet_path)?;
+            exit();
+        }
+        _ => (),
+    }
+
+    // load our store
     let store = match cmd {
-        Create => create(wallet_path, cfg.wallet.skip_recovery)?,
-        Restore => recover(wallet_path)?,
         Interactive => {
             if path_override {
-                LocalStore::from_file(wallet_path, pwd)?
+                LocalStore::from_file(&wallet_path, pwd)?
             } else {
-                interactive(&cfg.wallet.data_dir)?
+                open_interactive(&cfg)?
             }
         }
-        _ => LocalStore::from_file(wallet_path, pwd)?,
+        _ => LocalStore::from_file(&wallet_path, pwd)?,
     };
 
     // connect to rusk
@@ -319,14 +347,7 @@ async fn exec() -> Result<(), Error> {
 }
 
 /// Create a new wallet
-fn create(mut path: PathBuf, skip_recovery: bool) -> Result<LocalStore, Error> {
-    // prevent user from overwriting an existing wallet file
-    while path.is_file() {
-        let name = prompt::request_wallet_name();
-        path.set_file_name(name);
-        path.set_extension("dat");
-    }
-
+fn create(path: &Path, skip_recovery: bool) -> Result<LocalStore, Error> {
     // generate mnemonic and seed
     let ms = MnemSeed::new("");
     if !skip_recovery {
@@ -337,26 +358,16 @@ fn create(mut path: PathBuf, skip_recovery: bool) -> Result<LocalStore, Error> {
     let pwd = prompt::create_password();
 
     // create the store and attempt to write it to disk
-    let store = LocalStore::new(path.clone(), ms.seed)?;
+    let store = LocalStore::new(path, ms.seed)?;
     store.save(pwd)?;
 
     // inform the user and return
-    println!(
-        "> Your new wallet was created: {}",
-        path.as_os_str().to_str().unwrap()
-    );
+    println!("> Your new wallet was created: {}", path.display());
     Ok(store)
 }
 
 /// Recover access to a lost wallet file
-fn recover(mut path: PathBuf) -> Result<LocalStore, Error> {
-    // prevent user from overwriting an existing wallet file
-    while path.is_file() {
-        let name = prompt::request_wallet_name();
-        path.set_file_name(name);
-        path.set_extension("dat");
-    }
-
+fn recover(path: &Path) -> Result<LocalStore, Error> {
     // ask user for 12-word recovery phrase
     let phrase = prompt::request_recovery_phrase();
 
@@ -367,49 +378,58 @@ fn recover(mut path: PathBuf) -> Result<LocalStore, Error> {
     let pwd = prompt::create_password();
 
     // create the store and attempt to write it to disk
-    let store = LocalStore::new(path.clone(), ms.seed)?;
+    let store = LocalStore::new(path, ms.seed)?;
     store.save(pwd)?;
 
     // inform the user and return
-    println!(
-        "> Your wallet was restored succesfully: {}",
-        path.as_os_str().to_str().unwrap()
-    );
+    println!("> Your wallet was restored succesfully: {}", path.display());
     Ok(store)
 }
 
 /// Loads the store interactively
-fn interactive(dir: &PathBuf) -> Result<LocalStore, Error> {
+fn open_interactive(cfg: &Config) -> Result<LocalStore, Error> {
     // find existing wallets
-    let default = LocalStore::default_wallet();
-    let wallets = LocalStore::find_wallets(dir)?;
-
-    // let the user choose one
+    let wallets = LocalStore::wallets_in(&cfg.wallet.data_dir)?;
     if !wallets.is_empty() {
-        let wallet = prompt::select_wallet(dir, wallets);
-        if let Some(w) = wallet {
+        // let the user choose one
+        let wallet = prompt::choose_wallet(&wallets);
+        if let Some(p) = wallet {
             let pwd =
                 prompt::request_auth("Please enter your wallet's password");
-            let store = LocalStore::from_file(w, pwd)?;
+            let store = LocalStore::from_file(&p, pwd)?;
             Ok(store)
         } else {
-            let action = prompt::welcome();
-            match action {
-                1 => Ok(create(default, false)?),
-                2 => Ok(recover(default)?),
-                _ => Err(Error::UserExit),
-            }
+            Ok(first_run(cfg)?)
         }
     } else {
-        println!(
-            "No wallet files found at {}",
-            &dir.as_os_str().to_str().unwrap_or("?")
-        );
-        let action = prompt::welcome();
-        match action {
-            1 => Ok(create(default, false)?),
-            2 => Ok(recover(default)?),
-            _ => Err(Error::UserExit),
-        }
+        println!("No wallet files found at {}", cfg.wallet.data_dir.display());
+        Ok(first_run(cfg)?)
     }
+}
+
+/// Welcome the user when no wallets are found
+fn first_run(cfg: &Config) -> Result<LocalStore, Error> {
+    // greet the user and ask for action
+    let action = prompt::welcome();
+    if action == 0 {
+        exit();
+    }
+
+    // let the user pick a name
+    let name = prompt::request_wallet_name(&cfg.wallet.data_dir);
+    let mut p = cfg.wallet.data_dir.clone();
+    p.push(name);
+    p.set_extension("dat");
+
+    // create the store
+    match action {
+        1 => Ok(create(&p, false)?),
+        2 => Ok(recover(&p)?),
+        _ => panic!("unrecongnized option"),
+    }
+}
+
+/// Terminates the program immediately with no errors
+fn exit() {
+    std::process::exit(0);
 }

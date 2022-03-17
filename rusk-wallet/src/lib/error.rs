@@ -31,7 +31,9 @@ pub enum Error {
     /// JSON serialization errors
     JSON(serde_json::Error),
     /// TOML deserialization errors
-    TOML(toml::de::Error),
+    ConfigRead(toml::de::Error),
+    /// TOML serialization errors
+    ConfigWrite(toml::ser::Error),
     /// Bytes encoding errors
     Bytes(dusk_bytes::Error),
     /// Base58 errors
@@ -49,8 +51,6 @@ pub enum Error {
     NoteCombinationProblem,
     /// Not enough gas to perform this transaction
     NotEnoughGas,
-    /// User graceful exit
-    UserExit,
 }
 
 impl From<serde_json::Error> for Error {
@@ -61,7 +61,13 @@ impl From<serde_json::Error> for Error {
 
 impl From<toml::de::Error> for Error {
     fn from(e: toml::de::Error) -> Self {
-        Self::TOML(e)
+        Self::ConfigRead(e)
+    }
+}
+
+impl From<toml::ser::Error> for Error {
+    fn from(e: toml::ser::Error) -> Self {
+        Self::ConfigWrite(e)
     }
 }
 
@@ -136,7 +142,8 @@ impl fmt::Display for Error {
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please configure a valid Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{}", err),
-            Error::TOML(err) => write!(f, "\rFailed to read configuration file:\n{}", err),
+            Error::ConfigRead(err) => write!(f, "\rFailed to read configuration file:\n{}", err),
+            Error::ConfigWrite(err) => write!(f, "\rFailed to write to configuration file:\n{}", err),
             Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{}", err),
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
@@ -145,7 +152,6 @@ impl fmt::Display for Error {
             Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
-            Error::UserExit => write!(f, "\rBye!"),
         }
     }
 }
@@ -160,7 +166,8 @@ impl fmt::Debug for Error {
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please configure a valid Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{:?}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
-            Error::TOML(err) => write!(f, "\rFailed to read configuration file:\n{}", err),
+            Error::ConfigRead(err) => write!(f, "\rFailed to read configuration file:\n{:?}", err),
+            Error::ConfigWrite(err) => write!(f, "\rFailed to write to configuration file:\n{:?}", err),
             Error::Bytes(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Base58(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
             Error::Canon(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),
@@ -169,7 +176,6 @@ impl fmt::Debug for Error {
             Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
-            Error::UserExit => write!(f, "\rBye!"),
         }
     }
 }

@@ -6,7 +6,7 @@
 
 use std::env;
 use std::io::{stdout, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::Duration;
 
@@ -160,13 +160,16 @@ pub(crate) fn welcome() -> u8 {
 }
 
 /// Request the user to select a wallet to open
-pub(crate) fn select_wallet(
-    dir: &PathBuf,
-    wallets: Vec<String>,
-) -> Option<PathBuf> {
+pub(crate) fn choose_wallet(wallets: &[PathBuf]) -> Option<PathBuf> {
+    let choices = wallets
+        .iter()
+        .filter_map(|p| p.file_stem())
+        .map(|name| String::from(name.to_str().unwrap_or("Error")))
+        .collect::<Vec<String>>();
+
     let q = Question::select("wallet")
-        .message("Please select the wallet you wish to use:")
-        .choices(&wallets)
+        .message("Please choose a wallet:")
+        .choices(choices)
         .default_separator()
         .choice("Other...")
         .build();
@@ -176,21 +179,17 @@ pub(crate) fn select_wallet(
     if wi > wallets.len() {
         None
     } else {
-        // gen full path for selected wallet
-        let mut path = PathBuf::new();
-        path.push(dir);
-        path.push(wallets[wi].clone());
-        Some(path)
+        Some(wallets[wi].clone())
     }
 }
 
 /// Request a name for the wallet
-pub(crate) fn request_wallet_name() -> String {
+pub(crate) fn request_wallet_name(dir: &Path) -> String {
     let q = Question::input("name")
         .message("Please enter a wallet name:")
-        .validate_on_key(|name, _| !LocalStore::wallet_exists(name))
+        .validate_on_key(|name, _| !LocalStore::wallet_exists(dir, name))
         .validate(|name, _| {
-            if !LocalStore::wallet_exists(name) {
+            if !LocalStore::wallet_exists(dir, name) {
                 Ok(())
             } else {
                 Err("A wallet with this name already exists".to_string())

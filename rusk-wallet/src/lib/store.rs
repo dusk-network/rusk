@@ -68,9 +68,8 @@ impl LocalStore {
     }
 
     /// Checks if a wallet with this name already exists
-    pub fn wallet_exists(name: &str) -> bool {
-        let mut pb = PathBuf::new();
-        pb.push(Self::default_data_dir());
+    pub fn wallet_exists(dir: &Path, name: &str) -> bool {
+        let mut pb = dir.to_path_buf();
         pb.push(name);
         pb.set_extension("dat");
         pb.is_file()
@@ -78,19 +77,25 @@ impl LocalStore {
 
     /// Creates a new store
     pub fn new(
-        path: PathBuf,
+        path: &Path,
         seed: [u8; SEED_SIZE],
     ) -> Result<LocalStore, StoreError> {
-        // create the local store
-        let store = LocalStore { path, seed };
+        // prevent user from overwriting an existing wallet file
+        if path.is_file() {
+            return Err(StoreError::WalletFileExists);
+        }
 
+        // create the local store
+        let store = LocalStore {
+            path: path.to_path_buf(),
+            seed,
+        };
         Ok(store)
     }
 
-    /// Scan data directory and return a list of wallet names
-    pub fn find_wallets(dir: &PathBuf) -> Result<Vec<String>, StoreError> {
+    /// Get full paths of all wallet files found in `dir`
+    pub fn wallets_in(dir: &PathBuf) -> Result<Vec<PathBuf>, StoreError> {
         let dir = fs::read_dir(dir)?;
-
         let wallets = dir
             .filter_map(|el| el.ok().map(|d| d.path()))
             .filter(|path| path.is_file())
@@ -98,23 +103,15 @@ impl LocalStore {
                 Some(ext) => ext == "dat",
                 None => false,
             })
-            .filter_map(|path| {
-                path.file_stem()
-                    .and_then(|stem| stem.to_str())
-                    .map(String::from)
-            })
             .collect();
 
         Ok(wallets)
     }
 
     /// Loads wallet file from file
-    pub fn from_file(
-        path: PathBuf,
-        pwd: Hash,
-    ) -> Result<LocalStore, StoreError> {
+    pub fn from_file(path: &Path, pwd: Hash) -> Result<LocalStore, StoreError> {
         // basic sanity check
-        let mut path = path;
+        let mut path = path.to_path_buf();
         if path.extension().is_none() {
             path.set_extension("dat");
         }
@@ -247,14 +244,14 @@ mod tests {
         // create a wallet
         let path = PathBuf::from("/tmp/test_wallet.dat");
         let seed = [123u8; 64];
-        let st = LocalStore::new(path.clone(), seed)?;
+        let st = LocalStore::new(&path, seed)?;
 
         // store it on disk
         let pwd = blake3::hash("mypassword".as_bytes());
         st.save(pwd)?;
 
         // load it back
-        let loaded = LocalStore::from_file(path, pwd)?;
+        let loaded = LocalStore::from_file(&path, pwd)?;
 
         // check name
         match loaded.name() {

@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- `data_dir` can be properly overriden [#656]
+
 ## Added
 - Settings can be loaded from a config file [#637]
+- Create config file if not exists [#647]
+- Notify user when defaulting configuration [#655]
 
 ## Changed
 - Export consensus public key as binary
@@ -154,3 +159,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#630]: https://github.com/dusk-network/rusk/issues/630
 [#631]: https://github.com/dusk-network/rusk/issues/631
 [#637]: https://github.com/dusk-network/rusk/issues/637
+[#647]: https://github.com/dusk-network/rusk/issues/647
+[#655]: https://github.com/dusk-network/rusk/issues/655
+[#656]: https://github.com/dusk-network/rusk/issues/656
