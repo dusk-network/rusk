@@ -30,3 +30,12 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 codegen-units = 16
+
+[profile.release.package.rusk-wallet]
+overflow-checks = true
+
+[profile.release.package.stake-contract]
+overflow-checks = true
+
+[profile.release.package.transfer-contract]
+overflow-checks = true
