@@ -84,9 +84,6 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let balance = if let Some(wallet) = &self.wallet {
                         match pcmd {
-                            PromptCommand::Balance(key) => {
-                                wallet.get_balance(key)?
-                            }
                             PromptCommand::Transfer(key) => {
                                 wallet.get_balance(key)?
                             }
