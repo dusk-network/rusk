@@ -93,11 +93,16 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
 /// Creates a new stake contract state with preset stakes added for the
 /// staking/consensus keys in the `keys/` folder. The stakes will all be the
 /// same and the minimum amount.
-fn genesis_stake() -> StakeContract {
+fn genesis_stake(testnet: bool) -> StakeContract {
     let theme = Theme::default();
     let mut stake_contract = StakeContract::default();
 
-    let stake = Stake::with_eligibility(MINIMUM_STAKE, 0, 0);
+    let stake_amount = match testnet {
+        true => dusk(1_000_000.0),
+        false => MINIMUM_STAKE,
+    };
+
+    let stake = Stake::with_eligibility(stake_amount, 0, 0);
 
     for provisioner in PROVISIONERS.iter() {
         stake_contract
@@ -133,7 +138,7 @@ where
     );
 
     let stake = Contract::new(
-        genesis_stake(),
+        genesis_stake(testnet),
         &include_bytes!(
             "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
         )[..],
