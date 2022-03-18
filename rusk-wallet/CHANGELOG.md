@@ -7,14 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- `data_dir` can be properly overriden [#656]
+
 ## Added
 - Settings can be loaded from a config file [#637]
+- Create config file if not exists [#647]
+- Notify user when defaulting configuration [#655]
 
 ## Changed
 - Export consensus public key as binary
 - Interactive mode allows for directory and wallet file overriding [#630]
 - Client errors implemented, Rusk error messages displayed without metadata [#629]
 - Transactions from wallets with no balance are halted immediately [#631]
+- Rusk and prover connections decoupled [#659]
+
 
 ## [0.5.2] - 2022-03-01
 
@@ -154,3 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#630]: https://github.com/dusk-network/rusk/issues/630
 [#631]: https://github.com/dusk-network/rusk/issues/631
 [#637]: https://github.com/dusk-network/rusk/issues/637
+[#647]: https://github.com/dusk-network/rusk/issues/647
+[#655]: https://github.com/dusk-network/rusk/issues/655
+[#656]: https://github.com/dusk-network/rusk/issues/656
+[#659]: https://github.com/dusk-network/rusk/issues/659

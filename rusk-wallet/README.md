@@ -24,7 +24,7 @@ OPTIONS:
             Rusk address: socket path or fully quallified URL
 
     -p  --prover-addr <PROVER_ADDR>
-            Prover service address [default: `rusk-addr`]
+            Prover service address
 
         --skip-recovery <SKIP_RECOVERY>
             Skip wallet recovery phrase (useful for headless wallet creation)
