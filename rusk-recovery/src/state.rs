@@ -98,7 +98,7 @@ fn genesis_stake(testnet: bool) -> StakeContract {
     let mut stake_contract = StakeContract::default();
 
     let stake_amount = match testnet {
-        true => dusk(1_000_000.0),
+        true => dusk(2_000_000.0),
         false => MINIMUM_STAKE,
     };
 

@@ -9,7 +9,7 @@ use dusk_bytes::DeserializableSlice;
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref PROVISIONERS: [PublicKey; 10] = [
+    pub static ref PROVISIONERS: [PublicKey; 15] = [
         parse_key(include_bytes!("../provisioners/node_0.cpk")),
         parse_key(include_bytes!("../provisioners/node_1.cpk")),
         parse_key(include_bytes!("../provisioners/node_2.cpk")),
@@ -20,6 +20,11 @@ lazy_static! {
         parse_key(include_bytes!("../provisioners/node_7.cpk")),
         parse_key(include_bytes!("../provisioners/node_8.cpk")),
         parse_key(include_bytes!("../provisioners/node_9.cpk")),
+        parse_key(include_bytes!("../provisioners/node_10.cpk")),
+        parse_key(include_bytes!("../provisioners/node_11.cpk")),
+        parse_key(include_bytes!("../provisioners/node_12.cpk")),
+        parse_key(include_bytes!("../provisioners/node_13.cpk")),
+        parse_key(include_bytes!("../provisioners/node_14.cpk")),
     ];
 }
 
