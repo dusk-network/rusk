@@ -22,8 +22,12 @@ pub enum Error {
     Prover(ProverError),
     /// Local Store errors
     Store(StoreError),
-    /// Network error while communicating with rusk
+    /// Network error
     Network(tonic::transport::Error),
+    /// Rusk connection failure
+    RuskConn(tonic::transport::Error),
+    /// Prover cluster connection failure
+    ProverConn(tonic::transport::Error),
     /// Command not available in offline mode
     Offline,
     /// Filesystem errors
@@ -139,6 +143,8 @@ impl fmt::Display for Error {
             Error::Prover(err) => write!(f, "\r{}", err),
             Error::Store(err) => write!(f, "\r{}", err),
             Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{}", err),
+            Error::RuskConn(err) => write!(f, "\rCouldn't establish connection with Rusk: {}\nPlease check your settings and try again.", err),
+            Error::ProverConn(err) => write!(f, "\rCouldn't establish connection with the prover cluster: {}\nPlease check your settings and try again.", err),
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please configure a valid Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{}", err),
@@ -163,6 +169,8 @@ impl fmt::Debug for Error {
             Error::Prover(err) => write!(f, "\r{:?}", err),
             Error::Store(err) => write!(f, "\r{:?}", err),
             Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{:?}", err),
+            Error::RuskConn(err) => write!(f, "\rCouldn't establish connection with Rusk:\n{:?}", err),
+            Error::ProverConn(err) => write!(f, "\rCouldn't establish connection with the prover cluster:\n{:?}", err),
             Error::Offline => write!(f, "\rThis command cannot be performed while offline. Please configure a valid Rusk instance and try again."),
             Error::IO(err) => write!(f, "\rAn IO error occurred:\n{:?}", err),
             Error::JSON(err) => write!(f, "\rA serialization error occurred:\n{:?}", err),

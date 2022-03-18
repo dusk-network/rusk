@@ -57,7 +57,7 @@ pub(crate) struct WalletArgs {
     #[clap(short = 'r', long)]
     rusk_addr: Option<String>,
 
-    /// Prover service address [default: `rusk_addr`]
+    /// Prover service address
     #[clap(short = 'p', long)]
     prover_addr: Option<String>,
 
@@ -195,9 +195,15 @@ struct Rusk {
 /// Connect to rusk services via TCP
 async fn rusk_tcp(rusk_addr: &str, prov_addr: &str) -> Result<Rusk, Error> {
     Ok(Rusk {
-        network: NetworkClient::connect(rusk_addr.to_string()).await?,
-        state: StateClient::connect(rusk_addr.to_string()).await?,
-        prover: ProverClient::connect(prov_addr.to_string()).await?,
+        network: NetworkClient::connect(rusk_addr.to_string())
+            .await
+            .map_err(Error::RuskConn)?,
+        state: StateClient::connect(rusk_addr.to_string())
+            .await
+            .map_err(Error::RuskConn)?,
+        prover: ProverClient::connect(prov_addr.to_string())
+            .await
+            .map_err(Error::ProverConn)?,
     })
 }
 

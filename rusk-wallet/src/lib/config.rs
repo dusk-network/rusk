@@ -159,8 +159,7 @@ impl Config {
             self.rusk.ipc_method = ipc_method;
         }
         if let Some(rusk_addr) = args.rusk_addr {
-            self.rusk.rusk_addr = rusk_addr.clone();
-            self.rusk.prover_addr = rusk_addr;
+            self.rusk.rusk_addr = rusk_addr
         }
         if let Some(prover_addr) = args.prover_addr {
             self.rusk.prover_addr = prover_addr;
