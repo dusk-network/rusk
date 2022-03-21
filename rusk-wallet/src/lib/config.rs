@@ -15,6 +15,8 @@ use std::{
 pub(crate) const IPC_DEFAULT: &str = "uds";
 /// Default Rusk address uses UDS
 pub(crate) const RUSK_ADDR: &str = "/tmp/rusk_listener";
+/// Default GraphQL endopoint
+pub(crate) const GQL_ADDR: &str = "http://nodes.dusk.network:9500/graphql";
 
 mod parser {
 
@@ -27,6 +29,7 @@ mod parser {
         pub wallet: ParsedWalletConfig,
         pub rusk: ParsedRuskConfig,
         pub explorer: ParsedExplorerConfig,
+        pub chain: ParsedChainConfig,
     }
 
     #[derive(Deserialize)]
@@ -49,6 +52,11 @@ mod parser {
         pub tx_url: Option<String>,
     }
 
+    #[derive(Deserialize)]
+    pub struct ParsedChainConfig {
+        pub gql_url: Option<String>,
+    }
+
     /// Attempts to parse the content of a file into config values
     pub fn parse(content: &str) -> Result<ParsedConfig, Error> {
         toml::from_str(content).map_err(Error::ConfigRead)
@@ -64,6 +72,8 @@ pub(crate) struct Config {
     pub rusk: RuskConfig,
     /// Dusk explorer configuration
     pub explorer: ExplorerConfig,
+    /// Dusk chain configuration
+    pub chain: ChainConfig,
 }
 
 /// Wallet and store configuration
@@ -95,6 +105,13 @@ pub(crate) struct RuskConfig {
 pub(crate) struct ExplorerConfig {
     /// Base url for transactions
     pub tx_url: Option<String>,
+}
+
+/// Dusk Chain configuration
+#[derive(Serialize)]
+pub(crate) struct ChainConfig {
+    /// GraphQL http endpoint
+    pub gql_url: String,
 }
 
 impl Config {
@@ -184,6 +201,9 @@ impl Config {
                 prover_addr: RUSK_ADDR.to_string(),
             },
             explorer: ExplorerConfig { tx_url: None },
+            chain: ChainConfig {
+                gql_url: GQL_ADDR.to_string(),
+            },
         }
     }
 }
@@ -219,6 +239,12 @@ impl From<parser::ParsedConfig> for Config {
             },
             explorer: ExplorerConfig {
                 tx_url: parsed.explorer.tx_url,
+            },
+            chain: ChainConfig {
+                gql_url: parsed
+                    .chain
+                    .gql_url
+                    .unwrap_or_else(|| GQL_ADDR.to_string()),
             },
         }
     }
