@@ -206,6 +206,14 @@ pub enum StateError {
     GraphQL(gql_client::GraphQLError),
     /// Failed to fetch block height
     BlockHeight,
+    /// Cache I/O errors
+    Cache(rusqlite::Error),
+}
+
+impl From<rusqlite::Error> for StateError {
+    fn from(e: rusqlite::Error) -> Self {
+        Self::Cache(e)
+    }
 }
 
 impl From<dusk_bytes::Error> for StateError {
@@ -254,6 +262,9 @@ impl fmt::Display for StateError {
             StateError::BlockHeight => {
                 write!(f, "\rFailed to obtain block height")
             }
+            StateError::Cache(err) => {
+                write!(f, "\rFailed to read/write cache:\n{:?}", err)
+            }
         }
     }
 }
@@ -275,6 +286,9 @@ impl fmt::Debug for StateError {
             }
             StateError::BlockHeight => {
                 write!(f, "\rFailed to obtain block height")
+            }
+            StateError::Cache(err) => {
+                write!(f, "\rFailed to read/write cache:\n{:?}", err)
             }
         }
     }

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub(crate) mod cache;
 pub mod clients;
 pub mod config;
 pub mod crypto;
