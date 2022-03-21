@@ -55,6 +55,9 @@ pub enum Error {
     NoteCombinationProblem,
     /// Not enough gas to perform this transaction
     NotEnoughGas,
+    /// Staking is only allowed when you're running your own local Rusk
+    /// instance (Tip: Point `rusk_addr` to "localhost" or "127.0.0.1")
+    StakingNotAllowed,
 }
 
 impl From<serde_json::Error> for Error {
@@ -158,6 +161,7 @@ impl fmt::Display for Error {
             Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
+            Error::StakingNotAllowed => write!(f, "\rStaking is only allowed when you're running your own local Rusk instance (Tip: Point `rusk_addr` to \"localhost\" or \"127.0.0.1\")"),
         }
     }
 }
@@ -184,6 +188,7 @@ impl fmt::Debug for Error {
             Error::NotEnoughGas => write!(f, "\rNot enough gas to perform this transaction"),
             Error::NotEnoughBalance => write!(f, "\rInsufficient balance to perform this operation"),
             Error::NoteCombinationProblem => write!(f, "\rNote combination for the given value is impossible given the maximum amount of inputs in a transaction"),
+            Error::StakingNotAllowed => write!(f, "\rStaking is only allowed when you're running your own local Rusk instance (Tip: Point `rusk_addr` to \"localhost\" or \"127.0.0.1\")"),
         }
     }
 }
