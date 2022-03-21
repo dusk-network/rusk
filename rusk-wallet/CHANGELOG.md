@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `data_dir` can be properly overriden [#656]
 
 ## Added
+- Notes cache [#650]
 - Settings can be loaded from a config file [#637]
 - Create config file if not exists [#647]
 - Notify user when defaulting configuration [#655]
@@ -163,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#631]: https://github.com/dusk-network/rusk/issues/631
 [#637]: https://github.com/dusk-network/rusk/issues/637
 [#647]: https://github.com/dusk-network/rusk/issues/647
+[#650]: https://github.com/dusk-network/rusk/issues/650
 [#651]: https://github.com/dusk-network/rusk/issues/651
 [#655]: https://github.com/dusk-network/rusk/issues/655
 [#656]: https://github.com/dusk-network/rusk/issues/656
