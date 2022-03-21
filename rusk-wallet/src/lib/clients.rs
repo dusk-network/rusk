@@ -18,7 +18,7 @@ use dusk_wallet_core::{
 };
 use phoenix_core::{Crossover, Fee, Note};
 use serde::Deserialize;
-
+use std::path::Path;
 use std::sync::Mutex;
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
@@ -36,6 +36,8 @@ use crate::rusk_proto::{
 };
 
 use crate::{ProverError, StateError};
+
+use super::cache::Cache;
 
 const STCT_INPUT_SIZE: usize = Fee::SIZE
     + Crossover::SIZE
@@ -202,21 +204,26 @@ impl ProverClient for Prover {
 }
 
 /// Implementation of the StateClient trait from wallet-core
-#[derive(Debug)]
 pub struct State {
     client: Mutex<GrpcStateClient<Channel>>,
     gql_url: String,
+    cache: Cache,
 }
 
 impl State {
-    pub fn new(client: GrpcStateClient<Channel>, gql_url: String) -> Self {
-        State {
+    pub fn new(
+        client: GrpcStateClient<Channel>,
+        gql_url: String,
+        data_dir: &Path,
+    ) -> Result<Self, StateError> {
+        let cache = Cache::new(data_dir)?;
+        Ok(State {
             client: Mutex::new(client),
             gql_url,
-        }
+            cache,
+        })
     }
 }
-
 /// Types that are clients of the state API.
 impl StateClient for State {
     /// Error returned by the node client.
@@ -225,16 +232,23 @@ impl StateClient for State {
     /// Find notes for a view key, starting from the given block height.
     fn fetch_notes(
         &self,
-        height: u64,
+        _height: u64,
         vk: &ViewKey,
     ) -> Result<Vec<Note>, Self::Error> {
+        prompt::status("Fetching block height...");
+        let current_block = self.fetch_block_height()?;
+        let psk = &vk.public_spend_key().to_bytes()[..];
+        prompt::status("Fetching cached notes...");
+        let cached_block_height = self.cache.last_block_height(psk);
+        let cached_notes = self.cache.cached_notes(psk)?;
+
         let msg = GetNotesOwnedByRequest {
-            height,
+            height: cached_block_height,
             vk: vk.to_bytes().to_vec(),
         };
         let req = tonic::Request::new(msg);
 
-        prompt::status("Fetching notes...");
+        prompt::status("Fetching fresh notes...");
         let mut state = self.client.lock().unwrap();
         let res = block_in_place(move || {
             Handle::current()
@@ -243,17 +257,32 @@ impl StateClient for State {
         .into_inner()
         .notes;
         prompt::status("Notes received!");
+        prompt::status("Handling notes...");
 
         // collect notes
-        let notes: Vec<Note> = res
+        let mut fresh_notes: Vec<Note> = res
             .into_iter()
-            .map(|n| {
+            .flat_map(|n| {
                 let mut bytes = [0u8; Note::SIZE];
                 bytes.copy_from_slice(&n);
-                Note::from_bytes(&bytes).unwrap()
+
+                let note = Note::from_bytes(&bytes).unwrap();
+                let key = note.hash().to_bytes().to_vec();
+                match cached_notes.contains_key(&key) {
+                    true => None,
+                    false => Some(note),
+                }
             })
             .collect();
-        Ok(notes)
+
+        prompt::status("Caching notes...");
+        self.cache.persist_notes(psk, &fresh_notes[..])?;
+        self.cache.persist_block_height(psk, current_block)?;
+        prompt::status("Cache updated!");
+
+        let mut ret: Vec<Note> = cached_notes.into_values().collect();
+        ret.append(&mut fresh_notes);
+        Ok(ret)
     }
 
     /// Fetch the current anchor of the state.

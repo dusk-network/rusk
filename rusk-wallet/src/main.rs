@@ -330,7 +330,11 @@ async fn exec() -> Result<(), Error> {
                 clients.state.clone(),
                 clients.network,
             );
-            let state = State::new(clients.state, cfg.chain.gql_url.clone());
+            let state = State::new(
+                clients.state,
+                cfg.chain.gql_url.clone(),
+                &data_dir,
+            )?;
             CliWallet::new(cfg, store, state, prover)
         }
         Err(err) => {
