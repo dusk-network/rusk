@@ -230,6 +230,19 @@ impl CliWallet {
                 gas_limit,
                 gas_price,
             } => {
+                // prevent users not running a local rusk instance from staking
+                const MATCHES: [&str; 2] = ["localhost", "127.0.0.1"];
+                let mut local_rusk = false;
+                for m in MATCHES.into_iter() {
+                    if self.config.rusk.rusk_addr.contains(m) {
+                        local_rusk = true;
+                        break;
+                    }
+                }
+                if !local_rusk {
+                    return Err(Error::StakingNotAllowed);
+                }
+
                 if let Some(wallet) = &self.wallet {
                     let my_addr = wallet.public_spend_key(key)?;
                     let mut rng = StdRng::from_entropy();
