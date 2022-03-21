@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use gql_client::GraphQLError;
 use phoenix_core::Error as PhoenixError;
 use rand_core::Error as RngError;
 use std::{fmt, io};
@@ -201,6 +202,10 @@ pub enum StateError {
     Bytes(dusk_bytes::Error),
     /// Canonical errors
     Canon(canonical::CanonError),
+    /// GraphQL errors
+    GraphQL(gql_client::GraphQLError),
+    /// Failed to fetch block height
+    BlockHeight,
 }
 
 impl From<dusk_bytes::Error> for StateError {
@@ -221,6 +226,12 @@ impl From<tonic::Status> for StateError {
     }
 }
 
+impl From<GraphQLError> for StateError {
+    fn from(e: gql_client::GraphQLError) -> Self {
+        Self::GraphQL(e)
+    }
+}
+
 impl fmt::Display for StateError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -232,6 +243,16 @@ impl fmt::Display for StateError {
             }
             StateError::Canon(err) => {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
+            }
+            StateError::GraphQL(err) => {
+                write!(
+                    f,
+                    "\rError fetching data from the node:\n{}",
+                    err.message()
+                )
+            }
+            StateError::BlockHeight => {
+                write!(f, "\rFailed to obtain block height")
             }
         }
     }
@@ -248,6 +269,12 @@ impl fmt::Debug for StateError {
             }
             StateError::Canon(err) => {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
+            }
+            StateError::GraphQL(err) => {
+                write!(f, "\rError fetching data from the node:\n{:?}", err)
+            }
+            StateError::BlockHeight => {
+                write!(f, "\rFailed to obtain block height")
             }
         }
     }

@@ -17,6 +17,7 @@ use dusk_wallet_core::{
     POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note};
+use serde::Deserialize;
 
 use std::sync::Mutex;
 use tokio::runtime::Handle;
@@ -204,12 +205,14 @@ impl ProverClient for Prover {
 #[derive(Debug)]
 pub struct State {
     client: Mutex<GrpcStateClient<Channel>>,
+    gql_url: String,
 }
 
 impl State {
-    pub fn new(client: GrpcStateClient<Channel>) -> Self {
+    pub fn new(client: GrpcStateClient<Channel>, gql_url: String) -> Self {
         State {
             client: Mutex::new(client),
+            gql_url,
         }
     }
 }
@@ -356,9 +359,38 @@ impl StateClient for State {
     }
 
     fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        // FIXME a value of zero entails that someone is only able to stake and
-        //  withdraw only once for a particular key. This should be fixed once
-        //  there is a way to query the node for the current block height.
-        Ok(0)
+        // graphql connection
+        use gql_client::Client;
+        let client = Client::new(&self.gql_url);
+
+        // define helper structs to deserialize response
+        #[derive(Deserialize)]
+        struct Height {
+            pub height: u64,
+        }
+        #[derive(Deserialize)]
+        struct Header {
+            pub header: Height,
+        }
+        #[derive(Deserialize)]
+        struct Blocks {
+            pub blocks: Vec<Header>,
+        }
+
+        // query the db
+        let query = "{blocks(last:1){header{height}}}";
+        let res = block_in_place(move || {
+            Handle::current()
+                .block_on(async move { client.query::<Blocks>(query).await })
+        })?;
+
+        // collect response
+        if let Some(r) = res {
+            if !r.blocks.is_empty() {
+                let h = r.blocks[0].header.height;
+                return Ok(h);
+            }
+        }
+        Err(StateError::BlockHeight)
     }
 }
