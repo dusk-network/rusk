@@ -1,12 +1,12 @@
-# Wallet configuration
 [wallet]
 
-# Connection to Rusk
 [rusk]
 ipc_method = "tcp_ip"
-rusk_addr = "http://127.0.0.1:8585"
-prover_addr = "http://127.0.0.1:8585"
+rusk_addr = "https://nodes.dusk.network:8585"
+prover_addr = "https://provers.dusk.network:8686"
 
-# Dusk explorer
 [explorer]
 tx_url = "https://explorer.dusk.network/transactions/transaction/?id="
+
+[chain]
+gql_url = "http://nodes.dusk.network:9500/graphql"
