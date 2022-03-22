@@ -73,11 +73,13 @@ make install
 
 You will need to connect to a running [**Rusk**](https://github.com/dusk-network/rusk) instance for full wallet capabilities.
 
-Settings can be fed using a `config.toml` file. The CLI expects it to be either in your default data directory (`~/.dusk/config.toml`) or in the current working directory. The latter will be given priority if found first.
+The default settings are located in [config.toml](config.toml).
 
-The user can override any particular configuration variable without having to manually edit the config file by explicitly passing the corresponding runtime argument(s) when running the CLI.
+The base data directory will be provided via the `--data-dir` argument. It defaults to `$HOME/.dusk/config.toml`.
 
-Here's an [example](config.toml) for reference.
+The configuration file `config.toml` will be read from the base data directory. If none is present, the default settings will be copied to the base data directory, and used.
+
+The CLI arguments takes precedence and overrides any configuration present in the configuration file.
 
 ## Running the CLI Wallet
 

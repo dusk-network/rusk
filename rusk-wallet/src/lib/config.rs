@@ -6,10 +6,7 @@
 
 use crate::{Error, LocalStore, WalletArgs};
 use serde::Serialize;
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, io, path::PathBuf};
 
 /// Default IPC method for Rusk connections
 pub(crate) const IPC_DEFAULT: &str = "uds";
@@ -116,48 +113,36 @@ pub(crate) struct ChainConfig {
 
 impl Config {
     /// Attempt to load configuration from file
-    pub fn load(data_dir: &Path) -> Option<Config> {
-        // search in default data dir and current working directory
-        let paths = vec![
-            env::current_dir().ok()?,
-            data_dir.to_path_buf(),
-            LocalStore::default_data_dir(),
-        ]
-        .iter_mut()
-        .map(|p| {
-            p.push("config");
-            p.with_extension("toml")
-        })
-        .collect::<Vec<PathBuf>>();
+    ///
+    /// If file doesn't exist, will extract the default and write in the
+    /// allocated dir
+    pub fn load(data_dir: PathBuf) -> Result<Config, Error> {
+        let file = data_dir.join("config").with_extension("toml");
 
-        for p in paths.iter() {
-            // attempt to read the file
-            if let Ok(content) = fs::read_to_string(&p) {
-                match parser::parse(content.as_str()) {
-                    Ok(loaded) => {
-                        println!("Using config from {}", p.display());
-                        return Some(loaded.into());
-                    }
-                    Err(err) => {
-                        println!("Failed to read {}:\n{}", p.display(), err);
-                    }
+        let contents = match fs::read_to_string(&file) {
+            Ok(c) => Ok(c),
+
+            // File not found - use default config
+            Err(e) if matches!(e.kind(), io::ErrorKind::NotFound) => {
+                let default = include_str!("../../config.toml");
+
+                match fs::write(&file, &default) {
+                    Ok(_) => println!("Default configuration generated: {}", file.display()),
+
+                    Err(e) => println!("Default configuration generated; failed to write in {}: {}", file.display(), e),
                 }
+
+                Ok(default.to_string())
             }
-        }
 
-        None
-    }
+            Err(e) => Err(e),
+        }?;
 
-    /// Saves current configuration
-    pub fn save(&self) -> Result<PathBuf, Error> {
-        let str = toml::to_string(self)?;
-        let path = {
-            let mut p = self.wallet.data_dir.clone();
-            p.push("config");
-            p.with_extension("toml")
-        };
-        fs::write(&path, &str)?;
-        Ok(path)
+        let mut config = parser::parse(&contents).map(Config::from)?;
+
+        config.wallet.data_dir = data_dir;
+
+        Ok(config)
     }
 
     /// Arguments that have been explicitly passed into this
@@ -183,27 +168,6 @@ impl Config {
         }
         if let Some(skip_recovery) = args.skip_recovery {
             self.wallet.skip_recovery = skip_recovery;
-        }
-    }
-
-    /// Default settings
-    pub fn default(data_dir: &Path) -> Config {
-        Config {
-            wallet: WalletConfig {
-                data_dir: data_dir.to_path_buf(),
-                name: LocalStore::default_wallet_name(),
-                file: None,
-                skip_recovery: false,
-            },
-            rusk: RuskConfig {
-                ipc_method: IPC_DEFAULT.to_string(),
-                rusk_addr: RUSK_ADDR.to_string(),
-                prover_addr: RUSK_ADDR.to_string(),
-            },
-            explorer: ExplorerConfig { tx_url: None },
-            chain: ChainConfig {
-                gql_url: GQL_ADDR.to_string(),
-            },
         }
     }
 }

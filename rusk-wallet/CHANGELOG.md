@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `data_dir` can be properly overriden [#656]
+- Invalid configuration should not fallback into default [#670]
 
 ## Added
 - Notes cache [#650]
@@ -169,3 +170,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#655]: https://github.com/dusk-network/rusk/issues/655
 [#656]: https://github.com/dusk-network/rusk/issues/656
 [#659]: https://github.com/dusk-network/rusk/issues/659
+[#670]: https://github.com/dusk-network/rusk/issues/670
