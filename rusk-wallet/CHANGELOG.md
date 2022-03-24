@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Transactions from wallets with no balance are halted immediately [#631]
 - Rusk and prover connections decoupled [#659]
 - Use upper-case DUSK for units of measure [#672]
-
+- Use DUSK as unit for stake and transfer [#668]
 
 ## [0.5.2] - 2022-03-01
 
@@ -171,5 +171,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#655]: https://github.com/dusk-network/rusk/issues/655
 [#656]: https://github.com/dusk-network/rusk/issues/656
 [#659]: https://github.com/dusk-network/rusk/issues/659
+[#668]: https://github.com/dusk-network/rusk/issues/668
 [#670]: https://github.com/dusk-network/rusk/issues/670
 [#672]: https://github.com/dusk-network/rusk/issues/672

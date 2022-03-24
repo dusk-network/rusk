@@ -207,7 +207,7 @@ impl CliWallet {
                         key,
                         &my_addr,
                         &dest_addr,
-                        amt,
+                        dusk(amt),
                         gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
@@ -258,7 +258,7 @@ impl CliWallet {
                         key,
                         stake_key,
                         &my_addr,
-                        amt,
+                        dusk(amt),
                         gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;

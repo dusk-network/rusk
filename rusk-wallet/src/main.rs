@@ -104,7 +104,7 @@ enum CliCommand {
 
         /// Amount of DUSK to send
         #[clap(short, long)]
-        amt: u64,
+        amt: f64,
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
@@ -127,7 +127,7 @@ enum CliCommand {
 
         /// Amount of DUSK to stake
         #[clap(short, long)]
-        amt: u64,
+        amt: f64,
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]

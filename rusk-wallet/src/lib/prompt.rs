@@ -362,7 +362,7 @@ fn confirm(cmd: &CliCommand) -> bool {
                 &rcvr[..10],
                 &rcvr[rcvr.len() - 11..]
             );
-            println!("   > Amount to transfer = {} DUSK", to_dusk(amt));
+            println!("   > Amount to transfer = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", to_dusk(&max_fee));
             ask_confirm()
         }
@@ -377,7 +377,7 @@ fn confirm(cmd: &CliCommand) -> bool {
             let gas_price = gas_price.expect("gas price not set");
             let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
-            println!("   > Amount to stake = {} DUSK", to_dusk(amt));
+            println!("   > Amount to stake = {} DUSK", amt);
             println!("   > Max fee = {} DUSK", to_dusk(&max_fee));
             ask_confirm()
         }
@@ -398,10 +398,10 @@ fn confirm(cmd: &CliCommand) -> bool {
     }
 }
 
-/// Returns DUSK value of nanoDUSK amt provided
+/// Returns DUSK value of LUX amt provided
 /// Note: This is only used for displaying purposes.
-pub fn to_dusk(nano_dusk: &u64) -> f64 {
-    let dusk = *nano_dusk as f64;
+pub fn to_dusk(lux: &u64) -> f64 {
+    let dusk = *lux as f64;
     dusk / 1e9
 }
 
@@ -471,17 +471,16 @@ fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
 }
 
 /// Request amount of tokens
-fn request_token_amt(action: &str, balance: f64) -> Dusk {
+fn request_token_amt(action: &str, balance: f64) -> f64 {
     let question = requestty::Question::float("amt")
-        .message(format!("Introduce the amount to {}:", action))
+        .message(format!("Introduce the amount of DUSK to {}:", action))
         .default(MIN_CONVERTIBLE)
         .validate_on_key(|n, _| check_valid_denom(n, balance).is_ok())
         .validate(|n, _| check_valid_denom(n, balance))
         .build();
 
     let a = requestty::prompt_one(question).expect("token amount");
-    let value = a.as_float().unwrap();
-    dusk(value)
+    a.as_float().unwrap()
 }
 
 /// Request gas limit
