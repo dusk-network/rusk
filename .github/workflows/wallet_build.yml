@@ -1,0 +1,41 @@
+name: compile_wallet_binaries
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build_and_test:
+    name: Build rusk-wallet binaries for ${{ matrix.os }} with ${{ matrix.compiler }}.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [ cargo ]
+        include:
+          - os: ubuntu-latest
+            compiler: cargo 
+            target: linux
+
+          - os: macos-latest
+            compiler: cargo 
+            target: macos
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Build Rusk binary
+        shell: bash
+        working-directory: ./rusk
+        run: ${{matrix.compiler}} b --release --verbose -p rusk-wallet
+
+      - name: "Upload Rusk Artifact"
+        uses: actions/upload-artifact@v2
+        with:
+          name: rusk-wallet
+          path: ./target/release/rusk-wallet
+          retention-days: 5
