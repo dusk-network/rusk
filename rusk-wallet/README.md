@@ -40,8 +40,8 @@ SUBCOMMANDS:
     restore           Restore a lost wallet
     balance           Check your current balance
     address           Retrieve public spend key
-    transfer          Send Dusk through the network
-    stake             Start staking Dusk
+    transfer          Send DUSK through the network
+    stake             Start staking DUSK
     stake-info        Check your stake
     withdraw-stake    Withdraw a key's stake
     export            Export BLS provisioner key pair

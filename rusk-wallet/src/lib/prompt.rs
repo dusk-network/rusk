@@ -226,10 +226,10 @@ pub(crate) fn choose_command(offline: bool) -> Option<PromptCommand> {
     let mut choices = vec!["Retrieve my public spend key"];
     let mut online_choices = vec![
         "Check my current balance",
-        "Send Dusk",
-        "Stake Dusk",
+        "Send DUSK",
+        "Stake DUSK",
         "Check stake",
-        "Unstake Dusk",
+        "Unstake DUSK",
     ];
     if !offline {
         choices.append(&mut online_choices)
@@ -362,8 +362,8 @@ fn confirm(cmd: &CliCommand) -> bool {
                 &rcvr[..10],
                 &rcvr[rcvr.len() - 11..]
             );
-            println!("   > Amount to transfer = {} Dusk", to_dusk(amt));
-            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            println!("   > Amount to transfer = {} DUSK", to_dusk(amt));
+            println!("   > Max fee = {} DUSK", to_dusk(&max_fee));
             ask_confirm()
         }
         Cli::Stake {
@@ -377,8 +377,8 @@ fn confirm(cmd: &CliCommand) -> bool {
             let gas_price = gas_price.expect("gas price not set");
             let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
-            println!("   > Amount to stake = {} Dusk", to_dusk(amt));
-            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            println!("   > Amount to stake = {} DUSK", to_dusk(amt));
+            println!("   > Max fee = {} DUSK", to_dusk(&max_fee));
             ask_confirm()
         }
         Cli::WithdrawStake {
@@ -391,14 +391,14 @@ fn confirm(cmd: &CliCommand) -> bool {
             let gas_price = gas_price.expect("gas price not set");
             let max_fee = gas_limit * gas_price;
             println!("   > Stake key = {}", stake_key);
-            println!("   > Max fee = {} Dusk", to_dusk(&max_fee));
+            println!("   > Max fee = {} DUSK", to_dusk(&max_fee));
             ask_confirm()
         }
         _ => true,
     }
 }
 
-/// Returns dusk value of nano_dusk amt provided
+/// Returns DUSK value of nanoDUSK amt provided
 /// Note: This is only used for displaying purposes.
 pub fn to_dusk(nano_dusk: &u64) -> f64 {
     let dusk = *nano_dusk as f64;
@@ -444,7 +444,7 @@ fn request_rcvr_addr() -> String {
             if is_valid_addr(addr) {
                 Ok(())
             } else {
-                Err("Please introduce a valid Dusk address".to_string())
+                Err("Please introduce a valid DUSK address".to_string())
             }
         })
         .build();
@@ -458,7 +458,7 @@ fn is_valid_addr(addr: &str) -> bool {
     !addr.is_empty() && bs58::decode(addr).into_vec().is_ok()
 }
 
-/// Checks for a valid dusk denomination
+/// Checks for a valid DUSK denomination
 fn check_valid_denom(num: f64, balance: f64) -> Result<(), String> {
     let min = MIN_CONVERTIBLE;
     let max = f64::min(balance, MAX_CONVERTIBLE);
