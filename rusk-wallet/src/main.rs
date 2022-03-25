@@ -81,14 +81,14 @@ enum CliCommand {
     /// Check your current balance
     Balance {
         /// Key index
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
     },
 
     /// Retrieve public spend key
     Address {
         /// Key index
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         key: u64,
     },
 
@@ -122,7 +122,7 @@ enum CliCommand {
         key: u64,
 
         /// Staking key to sign this stake
-        #[clap(short, long)]
+        #[clap(short, long, default_value_t = 0)]
         stake_key: u64,
 
         /// Amount of Dusk to stake (in µDusk)
@@ -241,25 +241,17 @@ async fn exec() -> Result<(), Error> {
     let cmd = args.command.clone();
 
     // data directory needs to be clear from the start
-    let data_dir = args.data_dir.clone();
-    let data_dir = data_dir.unwrap_or_else(LocalStore::default_data_dir);
+    let data_dir = args
+        .data_dir
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(LocalStore::default_data_dir);
 
     // create directories
     LocalStore::create_dir(&data_dir)?;
 
     // load configuration (or use default)
-    let mut cfg = Config::load(&data_dir).unwrap_or_else(|| {
-        println!("No configuration found (using default)");
-        let default = Config::default(&data_dir);
-        match default.save() {
-            Ok(p) => println!(
-                "Feel free to edit {} with your desired settings.",
-                p.display()
-            ),
-            Err(err) => println!("{}", err),
-        }
-        default
-    });
+    let mut cfg = Config::load(data_dir)?;
 
     // merge static config with parsed args
     cfg.merge(args);
@@ -333,7 +325,7 @@ async fn exec() -> Result<(), Error> {
             let state = State::new(
                 clients.state,
                 cfg.chain.gql_url.clone(),
-                &data_dir,
+                cfg.wallet.data_dir.as_path(),
             )?;
             CliWallet::new(cfg, store, state, prover)
         }

@@ -29,18 +29,22 @@ use crate::{CliCommand, Error};
 
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
-    let pwd = match env::var("RUSK_WALLET_PWD") {
-        Ok(p) => p,
-        Err(_) => {
+    let pwd = match env::var("RUSK_WALLET_PWD").ok() {
+        Some(p) => p,
+
+        None => {
             let q = Question::password("password")
                 .message(format!("{}:", msg))
                 .mask('*')
                 .build();
+
             let a = requestty::prompt_one(q).expect("password");
             let p = a.as_string().unwrap();
+
             p.to_string()
         }
     };
+
     blake3::hash(pwd.as_bytes())
 }
 
