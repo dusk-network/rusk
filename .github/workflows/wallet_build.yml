@@ -8,20 +8,20 @@ defaults:
     shell: bash
 
 jobs:
-  build_and_test:
+  build_and_publish:
     name: Build rusk-wallet binaries for ${{ matrix.os }} with ${{ matrix.compiler }}.
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        compiler: [ cargo ]
+        compiler: [cargo]
         include:
           - os: ubuntu-latest
-            compiler: cargo 
+            compiler: cargo
             target: linux
 
           - os: macos-latest
-            compiler: cargo 
+            compiler: cargo
             target: macos
 
     steps:
