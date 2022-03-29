@@ -28,6 +28,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      - name: Install dependencies
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+      - run: rustup component add rustfmt
+
       - name: Build Rusk binary
         shell: bash
         working-directory: ./rusk
