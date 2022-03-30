@@ -58,8 +58,8 @@ jobs:
           mkdir rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           echo "Fetching changelog and readme files..."
           mv target/release/rusk-wallet rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp CHANGELOG.mv rusk-wallet${{env.SEMVER}}-${{matrix.target}}
-          cp README.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          cp rusk-wallet/CHANGELOG.mv rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          cp rusk-wallet/README.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           tar -czvf ruskwallet${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           ls -la *.gz
 
