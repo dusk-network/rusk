@@ -145,12 +145,12 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let balance = wallet.get_balance(key)?;
                     println!(
-                        "\r> Total balance for key {} is: {} Dusk",
+                        "\r> Total balance for key {} is: {} DUSK",
                         key,
                         from_dusk(balance.value)
                     );
                     println!(
-                        "\r> Maximum spendable per TX is: {} Dusk",
+                        "\r> Maximum spendable per TX is: {} DUSK",
                         from_dusk(balance.spendable)
                     );
                     prompt::show_cursor()?;
@@ -176,7 +176,7 @@ impl CliWallet {
                 Ok(None)
             }
 
-            // Send Dusk through the network
+            // Send DUSK through the network
             Transfer {
                 key,
                 rcvr,
@@ -207,7 +207,7 @@ impl CliWallet {
                         key,
                         &my_addr,
                         &dest_addr,
-                        amt,
+                        dusk(amt),
                         gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                         ref_id,
@@ -222,7 +222,7 @@ impl CliWallet {
                 }
             }
 
-            // Start staking Dusk
+            // Start staking DUSK
             Stake {
                 key,
                 stake_key,
@@ -258,7 +258,7 @@ impl CliWallet {
                         key,
                         stake_key,
                         &my_addr,
-                        amt,
+                        dusk(amt),
                         gas_limit,
                         gas_price.unwrap_or_else(|| dusk(DEFAULT_GAS_PRICE)),
                     )?;
@@ -278,7 +278,7 @@ impl CliWallet {
                     prompt::hide_cursor()?;
                     let stake = wallet.get_stake(key)?;
                     println!(
-                        "\r> Staking {} Dusk",
+                        "\r> Staking {} DUSK",
                         prompt::to_dusk(&stake.value)
                     );
                     println!(

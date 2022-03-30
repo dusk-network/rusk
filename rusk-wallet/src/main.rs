@@ -92,9 +92,9 @@ enum CliCommand {
         key: u64,
     },
 
-    /// Send Dusk through the network
+    /// Send DUSK through the network
     Transfer {
-        /// Key index from which to send Dusk
+        /// Key index from which to send DUSK
         #[clap(short, long, default_value_t = 0)]
         key: u64,
 
@@ -102,22 +102,22 @@ enum CliCommand {
         #[clap(short, long)]
         rcvr: String,
 
-        /// Amount of Dusk to send (in µDusk)
+        /// Amount of DUSK to send
         #[clap(short, long)]
-        amt: u64,
+        amt: f64,
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
         gas_limit: Option<u64>,
 
-        /// Max price you're willing to pay for gas used (in µDusk)
+        /// Max price you're willing to pay for gas used (in LUX)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
 
-    /// Start staking Dusk
+    /// Start staking DUSK
     Stake {
-        /// Key index from which to stake Dusk
+        /// Key index from which to stake DUSK
         #[clap(short, long, default_value_t = 0)]
         key: u64,
 
@@ -125,15 +125,15 @@ enum CliCommand {
         #[clap(short, long, default_value_t = 0)]
         stake_key: u64,
 
-        /// Amount of Dusk to stake (in µDusk)
+        /// Amount of DUSK to stake
         #[clap(short, long)]
-        amt: u64,
+        amt: f64,
 
         /// Max amt of gas for this transaction
         #[clap(short = 'l', long)]
         gas_limit: Option<u64>,
 
-        /// Max price you're willing to pay for gas used (in µDusk)
+        /// Max price you're willing to pay for gas used (in LUX)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
@@ -147,7 +147,7 @@ enum CliCommand {
 
     /// Withdraw a key's stake
     WithdrawStake {
-        /// Key index from which your Dusk was staked
+        /// Key index from which your DUSK was staked
         #[clap(short, long, default_value_t = 0)]
         key: u64,
 
@@ -159,14 +159,14 @@ enum CliCommand {
         #[clap(short = 'l', long)]
         gas_limit: Option<u64>,
 
-        /// Max price you're willing to pay for gas used (in µDusk)
+        /// Max price you're willing to pay for gas used (in LUX)
         #[clap(short = 'p', long)]
         gas_price: Option<u64>,
     },
 
     /// Export BLS provisioner key pair
     Export {
-        /// Key index from which your Dusk was staked
+        /// Key index from which your DUSK was staked
         #[clap(short, long, default_value_t = 0)]
         key: u64,
 
