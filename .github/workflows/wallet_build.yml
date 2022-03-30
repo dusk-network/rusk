@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       dusk_blockchain_ref:
-        description: "GIT branch to checkout"
+        description: "GIT branch, ref, or SHA to checkout"
         required: true
         default: "master"
 
@@ -57,9 +57,9 @@ jobs:
         run: |
           mkdir rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           echo "Fetching changelog and readme files..."
-          curl -s https://raw.githubusercontent.com/dusk-network/rusk/${{github.event.inputs.dusk_blockchain_ref}}/rusk-wallet/CHANGELOG.md > rusk-wallet${{env.SEMVER}}-${{matrix.target}}/CHANGELOG.md
-          curl -s https://raw.githubusercontent.com/dusk-network/rusk/${{github.event.inputs.dusk_blockchain_ref}}/rusk-wallet/README.md > rusk-wallet${{env.SEMVER}}-${{matrix.target}}/README.md
           mv target/release/rusk-wallet rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          cp CHANGELOG.mv rusk-wallet${{env.SEMVER}}-${{matrix.target}}
+          cp README.md rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           tar -czvf ruskwallet${{env.SEMVER}}-${{matrix.target}}.tar.gz rusk-wallet${{env.SEMVER}}-${{matrix.target}}
           ls -la *.gz
 
