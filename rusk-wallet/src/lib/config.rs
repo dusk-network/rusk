@@ -52,6 +52,7 @@ mod parser {
     #[derive(Deserialize)]
     pub struct ParsedChainConfig {
         pub gql_url: Option<String>,
+        pub wait_for_tx: Option<bool>,
     }
 
     /// Attempts to parse the content of a file into config values
@@ -109,6 +110,8 @@ pub(crate) struct ExplorerConfig {
 pub(crate) struct ChainConfig {
     /// GraphQL http endpoint
     pub gql_url: String,
+    /// Wait for tx confirmation
+    pub wait_for_tx: bool,
 }
 
 impl Config {
@@ -169,6 +172,9 @@ impl Config {
         if let Some(skip_recovery) = args.skip_recovery {
             self.wallet.skip_recovery = skip_recovery;
         }
+        if let Some(wait_for_tx) = args.wait_for_tx {
+            self.chain.wait_for_tx = wait_for_tx;
+        }
     }
 }
 
@@ -209,6 +215,7 @@ impl From<parser::ParsedConfig> for Config {
                     .chain
                     .gql_url
                     .unwrap_or_else(|| GQL_ADDR.to_string()),
+                wait_for_tx: parsed.chain.wait_for_tx.unwrap_or(false),
             },
         }
     }

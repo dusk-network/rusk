@@ -20,6 +20,7 @@ use tower::service_fn;
 use lib::clients::{Prover, State};
 use lib::config::Config;
 use lib::crypto::MnemSeed;
+use lib::gql::GraphQL;
 use lib::prompt;
 use lib::store::LocalStore;
 use lib::wallet::CliWallet;
@@ -64,6 +65,10 @@ pub(crate) struct WalletArgs {
     /// Skip wallet recovery phrase (useful for headless wallet creation)
     #[clap(long)]
     skip_recovery: Option<bool>,
+
+    /// Wait for transaction confirmation from network
+    #[clap(long)]
+    wait_for_tx: Option<bool>,
 
     /// Command
     #[clap(subcommand)]
@@ -228,7 +233,10 @@ async fn rusk_uds(socket_path: &str) -> Result<Rusk, Error> {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     if let Err(err) = exec().await {
+        // display the error message (if any)
         println!("{}", err);
+        // give cursor back to the user
+        prompt::show_cursor()?;
     }
     Ok(())
 }
@@ -314,6 +322,9 @@ async fn exec() -> Result<(), Error> {
         rusk_tcp(&cfg.rusk.rusk_addr, &cfg.rusk.prover_addr).await
     };
 
+    // graphql helper
+    let gql = GraphQL::new(&cfg.chain.gql_url.clone());
+
     // create our wallet
     let wallet = match rusk {
         Ok(clients) => {
@@ -321,12 +332,11 @@ async fn exec() -> Result<(), Error> {
                 clients.prover,
                 clients.state.clone(),
                 clients.network,
+                gql.clone(),
+                cfg.chain.wait_for_tx,
             );
-            let state = State::new(
-                clients.state,
-                cfg.chain.gql_url.clone(),
-                cfg.wallet.data_dir.as_path(),
-            )?;
+            let state =
+                State::new(clients.state, gql, cfg.wallet.data_dir.as_path())?;
             CliWallet::new(cfg, store, state, prover)
         }
         Err(err) => {

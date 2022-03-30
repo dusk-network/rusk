@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Create config file if not exists [#647]
 - Notify user when defaulting configuration [#655]
 - Implementation for `State`'s `fetch_block_height` [#651]
+- Option to wait for transaction confirmation [#680]
 
 ## Changed
 - Export consensus public key as binary
@@ -174,3 +175,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#668]: https://github.com/dusk-network/rusk/issues/668
 [#670]: https://github.com/dusk-network/rusk/issues/670
 [#672]: https://github.com/dusk-network/rusk/issues/672
+[#680]: https://github.com/dusk-network/rusk/issues/680

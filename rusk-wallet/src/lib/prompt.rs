@@ -27,6 +27,10 @@ use crate::lib::{
 };
 use crate::{CliCommand, Error};
 
+/// Max status text length
+/// Used to clear buffer between prints
+const STATUS_SIZE: usize = 35;
+
 /// Request the user to authenticate with a password
 pub(crate) fn request_auth(msg: &str) -> Hash {
     let pwd = match env::var("RUSK_WALLET_PWD").ok() {
@@ -537,7 +541,7 @@ pub(crate) fn launch_explorer(url: String) -> bool {
 
 /// Prints a dynamic status update
 pub(crate) fn status(status: &str) {
-    let filln = 26 - status.len();
+    let filln = STATUS_SIZE - status.len();
     let fill = if filln > 0 {
         " ".repeat(filln)
     } else {

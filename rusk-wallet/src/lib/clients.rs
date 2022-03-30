@@ -17,14 +17,14 @@ use dusk_wallet_core::{
     POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note};
-use serde::Deserialize;
 use std::path::Path;
 use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tonic::transport::Channel;
 
-use crate::prompt;
 use crate::rusk_proto::network_client::NetworkClient;
 use crate::rusk_proto::prover_client::ProverClient as GrpcProverClient;
 use crate::rusk_proto::state_client::StateClient as GrpcStateClient;
@@ -35,9 +35,9 @@ use crate::rusk_proto::{
     Transaction as TransactionProto, WfctProverRequest,
 };
 
-use crate::{ProverError, StateError};
-
 use super::cache::Cache;
+use super::gql::{GraphQL, TxStatus};
+use crate::{prompt, ProverError, StateError};
 
 const STCT_INPUT_SIZE: usize = Fee::SIZE
     + Crossover::SIZE
@@ -55,6 +55,8 @@ pub struct Prover {
     client: Mutex<GrpcProverClient<Channel>>,
     state: Mutex<GrpcStateClient<Channel>>,
     network: Mutex<NetworkClient<Channel>>,
+    graphql: GraphQL,
+    wait_for_tx: bool,
 }
 
 impl Prover {
@@ -62,11 +64,15 @@ impl Prover {
         client: GrpcProverClient<Channel>,
         state: GrpcStateClient<Channel>,
         network: NetworkClient<Channel>,
+        graphql: GraphQL,
+        wait_for_tx: bool,
     ) -> Self {
         Prover {
             client: Mutex::new(client),
             state: Mutex::new(state),
             network: Mutex::new(network),
+            graphql,
+            wait_for_tx,
         }
     }
 }
@@ -122,6 +128,34 @@ impl ProverClient for Prover {
             Handle::current().block_on(async move { net.propagate(req).await })
         })?;
         prompt::status("Transaction propagated!");
+
+        if self.wait_for_tx {
+            let tx_id = hex::encode(tx.hash().to_bytes());
+
+            const TIMEOUT: i32 = 30;
+            let mut i = 1;
+            while i <= TIMEOUT {
+                let status = self.graphql.tx_status(&tx_id)?;
+                match status {
+                    TxStatus::Ok => break,
+                    TxStatus::Error(err) => {
+                        return Err(Self::Error::Transaction(err))
+                    }
+                    TxStatus::NotFound => {
+                        prompt::status(
+                            format!(
+                                "Waiting for confirmation... ({}/{})",
+                                i, TIMEOUT
+                            )
+                            .as_str(),
+                        );
+                        thread::sleep(Duration::from_millis(1000));
+                        i += 1;
+                    }
+                }
+            }
+            prompt::status("Transaction confirmed!");
+        }
 
         Ok(tx)
     }
@@ -206,20 +240,20 @@ impl ProverClient for Prover {
 /// Implementation of the StateClient trait from wallet-core
 pub struct State {
     client: Mutex<GrpcStateClient<Channel>>,
-    gql_url: String,
+    graphql: GraphQL,
     cache: Cache,
 }
 
 impl State {
     pub fn new(
         client: GrpcStateClient<Channel>,
-        gql_url: String,
+        graphql: GraphQL,
         data_dir: &Path,
     ) -> Result<Self, StateError> {
         let cache = Cache::new(data_dir)?;
         Ok(State {
             client: Mutex::new(client),
-            gql_url,
+            graphql,
             cache,
         })
     }
@@ -387,39 +421,9 @@ impl StateClient for State {
         })
     }
 
+    /// Queries GraphQL for the current block height
     fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        // graphql connection
-        use gql_client::Client;
-        let client = Client::new(&self.gql_url);
-
-        // define helper structs to deserialize response
-        #[derive(Deserialize)]
-        struct Height {
-            pub height: u64,
-        }
-        #[derive(Deserialize)]
-        struct Header {
-            pub header: Height,
-        }
-        #[derive(Deserialize)]
-        struct Blocks {
-            pub blocks: Vec<Header>,
-        }
-
-        // query the db
-        let query = "{blocks(last:1){header{height}}}";
-        let res = block_in_place(move || {
-            Handle::current()
-                .block_on(async move { client.query::<Blocks>(query).await })
-        })?;
-
-        // collect response
-        if let Some(r) = res {
-            if !r.blocks.is_empty() {
-                let h = r.blocks[0].header.height;
-                return Ok(h);
-            }
-        }
-        Err(StateError::BlockHeight)
+        let h = self.graphql.current_block_height()?;
+        Ok(h)
     }
 }
