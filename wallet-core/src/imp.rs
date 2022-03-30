@@ -204,13 +204,13 @@ where
     > {
         // TODO find a way to get the block height from somewhere. Maybe it
         //  should be determined by the client?
-        let mut notes = self.unspent_notes(0, sender)?;
+        let notes = self.unspent_notes(0, sender)?;
         let mut notes_and_values = Vec::with_capacity(notes.len());
 
         let sender_vk = sender.view_key();
 
         let mut accumulated_value = 0;
-        for note in notes.drain(..) {
+        for note in notes.into_iter() {
             let val = note.value(Some(&sender_vk))?;
             let blinder = note.blinding_factor(Some(&sender_vk))?;
 
@@ -222,27 +222,13 @@ where
             return Err(Error::NotEnoughBalance);
         }
 
-        // This sorts the notes from least valuable to most valuable. It
-        // helps in the minimum gas spent algorithm, where the largest notes
-        // are "popped" first.
-        notes_and_values.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
+        let inputs = pick_notes(value, notes_and_values);
 
-        let mut inputs = Vec::with_capacity(notes.len());
-
-        let mut accumulated_value = 0;
-        while accumulated_value < value {
-            // This unwrap is ok because at this point we can be sure there
-            // is enough value in the notes.
-            let (note, val, blinder) = notes_and_values.pop().unwrap();
-            accumulated_value += val;
-            inputs.push((note, val, blinder));
-        }
-
-        if inputs.len() > MAX_INPUT_NOTES {
+        if inputs.is_empty() {
             return Err(Error::NoteCombinationProblem);
         }
 
-        let change = accumulated_value - value;
+        let change = inputs.iter().map(|v| v.1).sum::<u64>() - value;
 
         let mut outputs = vec![];
         if change > 0 {
@@ -493,10 +479,10 @@ where
             .map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
-        let mut notes = self.unspent_notes(0, &sender)?;
+        let notes = self.unspent_notes(0, &sender)?;
         let mut values = Vec::with_capacity(notes.len());
 
-        for note in notes.drain(..) {
+        for note in notes.into_iter() {
             values.push(note.value(Some(&vk))?);
         }
         values.sort_by(|a, b| b.cmp(a));
@@ -524,6 +510,83 @@ where
 
         Ok(s)
     }
+}
+
+/// Pick the notes to be used in a transaction from a vector of notes.
+///
+/// The notes are picked in a way to maximize the number of notes used, while
+/// minimizing the value employed. To do this we sort the notes in ascending
+/// value order, and go through each combination in a lexicographic order
+/// until we find the first combination whose sum is larger or equal to
+/// the given value. If such a slice is not found, an empty vector is returned.
+///
+/// Note: it is presupposed that the input notes contain enough balance to cover
+/// the given `value`.
+fn pick_notes(
+    value: u64,
+    notes_and_values: Vec<(Note, u64, JubJubScalar)>,
+) -> Vec<(Note, u64, JubJubScalar)> {
+    let mut notes_and_values = notes_and_values;
+    let len = notes_and_values.len();
+
+    if len <= MAX_INPUT_NOTES {
+        return notes_and_values;
+    }
+
+    notes_and_values.sort_by(|(_, aval, _), (_, bval, _)| aval.cmp(bval));
+
+    pick_lexicographic(notes_and_values.len(), |indices| {
+        indices
+            .iter()
+            .map(|index| notes_and_values[*index].1)
+            .sum::<u64>()
+            >= value
+    })
+    .map(|indices| {
+        indices
+            .into_iter()
+            .map(|index| notes_and_values[index])
+            .collect()
+    })
+    .unwrap_or_default()
+}
+
+fn pick_lexicographic<F: Fn(&[usize; MAX_INPUT_NOTES]) -> bool>(
+    max_len: usize,
+    is_valid: F,
+) -> Option<[usize; MAX_INPUT_NOTES]> {
+    let mut indices = [0; MAX_INPUT_NOTES];
+    indices
+        .iter_mut()
+        .enumerate()
+        .for_each(|(i, index)| *index = i);
+
+    loop {
+        if is_valid(&indices) {
+            return Some(indices);
+        }
+
+        let mut i = MAX_INPUT_NOTES - 1;
+
+        while indices[i] == i + max_len - MAX_INPUT_NOTES {
+            if i > 0 {
+                i -= 1;
+            } else {
+                break;
+            }
+        }
+
+        indices[i] += 1;
+        for j in i + 1..MAX_INPUT_NOTES {
+            indices[j] = indices[j - 1] + 1;
+        }
+
+        if indices[MAX_INPUT_NOTES - 1] == max_len {
+            break;
+        }
+    }
+
+    None
 }
 
 const STCT_MESSAGE_SIZE: usize = 5 + PoseidonCipher::cipher_size();
@@ -631,4 +694,93 @@ fn generate_obfuscated_note<Rng: RngCore + CryptoRng>(
         ),
         blinder,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use rand::rngs::StdRng;
+    use rand_core::SeedableRng;
+
+    use super::*;
+
+    fn gen_notes(values: &[u64]) -> Vec<(Note, u64, JubJubScalar)> {
+        let mut rng = StdRng::seed_from_u64(0xbeef);
+
+        let ssk = SecretSpendKey::random(&mut rng);
+        let psk = ssk.public_spend_key();
+
+        let mut notes_and_values = Vec::with_capacity(values.len());
+
+        for value in values {
+            let note = Note::transparent(&mut rng, &psk, *value);
+            let blinder = JubJubScalar::random(&mut rng);
+
+            notes_and_values.push((note, *value, blinder));
+        }
+
+        notes_and_values
+    }
+
+    #[test]
+    fn note_picking_none() {
+        let values = [2, 1, 4, 3, 5, 7, 6];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(100, notes_and_values);
+
+        assert_eq!(picked.len(), 0);
+    }
+
+    #[test]
+    fn note_picking_1() {
+        let values = [1];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(1, notes_and_values);
+        assert_eq!(picked.len(), 1);
+    }
+
+    #[test]
+    fn note_picking_2() {
+        let values = [1, 2];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(2, notes_and_values);
+        assert_eq!(picked.len(), 2);
+    }
+
+    #[test]
+    fn note_picking_3() {
+        let values = [1, 3, 2];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(2, notes_and_values);
+        assert_eq!(picked.len(), 3);
+    }
+
+    #[test]
+    fn note_picking_4() {
+        let values = [4, 2, 1, 3];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(2, notes_and_values);
+        assert_eq!(picked.len(), 4);
+    }
+
+    #[test]
+    fn note_picking_4_plus() {
+        let values = [2, 1, 4, 3, 5, 7, 6];
+
+        let notes_and_values = gen_notes(&values);
+
+        let picked = pick_notes(20, notes_and_values);
+
+        assert_eq!(picked.len(), 4);
+        assert_eq!(picked.iter().map(|v| v.1).sum::<u64>(), 20);
+    }
 }
