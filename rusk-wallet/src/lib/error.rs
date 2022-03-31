@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use gql_client::GraphQLError;
 use phoenix_core::Error as PhoenixError;
 use rand_core::Error as RngError;
 use std::{fmt, io};
@@ -23,6 +22,8 @@ pub enum Error {
     Prover(ProverError),
     /// Local Store errors
     Store(StoreError),
+    /// GraphQL errors
+    GraphQL(GraphQLError),
     /// Network error
     Network(tonic::transport::Error),
     /// Rusk connection failure
@@ -121,6 +122,12 @@ impl From<StoreError> for Error {
     }
 }
 
+impl From<GraphQLError> for Error {
+    fn from(e: GraphQLError) -> Self {
+        Self::GraphQL(e)
+    }
+}
+
 impl From<CoreError> for Error {
     fn from(e: CoreError) -> Self {
         use dusk_wallet_core::Error as CoreErr;
@@ -146,6 +153,7 @@ impl fmt::Display for Error {
             Error::State(err) => write!(f, "\r{}", err),
             Error::Prover(err) => write!(f, "\r{}", err),
             Error::Store(err) => write!(f, "\r{}", err),
+            Error::GraphQL(err) => write!(f, "\r{}", err),
             Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{}", err),
             Error::RuskConn(err) => write!(f, "\rCouldn't establish connection with Rusk: {}\nPlease check your settings and try again.", err),
             Error::ProverConn(err) => write!(f, "\rCouldn't establish connection with the prover cluster: {}\nPlease check your settings and try again.", err),
@@ -173,6 +181,7 @@ impl fmt::Debug for Error {
             Error::State(err) => write!(f, "\r{:?}", err),
             Error::Prover(err) => write!(f, "\r{:?}", err),
             Error::Store(err) => write!(f, "\r{:?}", err),
+            Error::GraphQL(err) => write!(f, "\r{:?}", err),
             Error::Network(err) => write!(f, "\rA network error occurred while communicating with Rusk:\n{:?}", err),
             Error::RuskConn(err) => write!(f, "\rCouldn't establish connection with Rusk:\n{:?}", err),
             Error::ProverConn(err) => write!(f, "\rCouldn't establish connection with the prover cluster:\n{:?}", err),
@@ -203,9 +212,7 @@ pub enum StateError {
     /// Canonical errors
     Canon(canonical::CanonError),
     /// GraphQL errors
-    GraphQL(gql_client::GraphQLError),
-    /// Failed to fetch block height
-    BlockHeight,
+    GraphQL(GraphQLError),
     /// Cache I/O errors
     Cache(rusqlite::Error),
 }
@@ -222,6 +229,12 @@ impl From<dusk_bytes::Error> for StateError {
     }
 }
 
+impl From<GraphQLError> for StateError {
+    fn from(e: GraphQLError) -> Self {
+        Self::GraphQL(e)
+    }
+}
+
 impl From<canonical::CanonError> for StateError {
     fn from(e: canonical::CanonError) -> Self {
         Self::Canon(e)
@@ -231,12 +244,6 @@ impl From<canonical::CanonError> for StateError {
 impl From<tonic::Status> for StateError {
     fn from(s: tonic::Status) -> Self {
         Self::Rusk(s.message().to_string())
-    }
-}
-
-impl From<GraphQLError> for StateError {
-    fn from(e: gql_client::GraphQLError) -> Self {
-        Self::GraphQL(e)
     }
 }
 
@@ -253,14 +260,7 @@ impl fmt::Display for StateError {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
             StateError::GraphQL(err) => {
-                write!(
-                    f,
-                    "\rError fetching data from the node:\n{}",
-                    err.message()
-                )
-            }
-            StateError::BlockHeight => {
-                write!(f, "\rFailed to obtain block height")
+                write!(f, "\r{}", err)
             }
             StateError::Cache(err) => {
                 write!(f, "\rFailed to read/write cache:\n{:?}", err)
@@ -282,10 +282,7 @@ impl fmt::Debug for StateError {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
             }
             StateError::GraphQL(err) => {
-                write!(f, "\rError fetching data from the node:\n{:?}", err)
-            }
-            StateError::BlockHeight => {
-                write!(f, "\rFailed to obtain block height")
+                write!(f, "\r{:?}", err)
             }
             StateError::Cache(err) => {
                 write!(f, "\rFailed to read/write cache:\n{:?}", err)
@@ -302,6 +299,10 @@ pub enum ProverError {
     Bytes(dusk_bytes::Error),
     /// Canonical errors
     Canon(canonical::CanonError),
+    /// GraphQL errors
+    GraphQL(GraphQLError),
+    /// Transaction verification errors
+    Transaction(String),
 }
 
 impl From<dusk_bytes::Error> for ProverError {
@@ -322,6 +323,12 @@ impl From<tonic::Status> for ProverError {
     }
 }
 
+impl From<GraphQLError> for ProverError {
+    fn from(e: GraphQLError) -> Self {
+        Self::GraphQL(e)
+    }
+}
+
 impl fmt::Display for ProverError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -333,6 +340,12 @@ impl fmt::Display for ProverError {
             }
             ProverError::Canon(err) => {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
+            }
+            ProverError::GraphQL(err) => {
+                write!(f, "\r{}", err)
+            }
+            ProverError::Transaction(err) => {
+                write!(f, "\rTransaction failed: {}", err)
             }
         }
     }
@@ -349,6 +362,12 @@ impl fmt::Debug for ProverError {
             }
             ProverError::Canon(err) => {
                 write!(f, "\rA serialization error occurred:\n{:?}", err)
+            }
+            ProverError::GraphQL(err) => {
+                write!(f, "\r{:?}", err)
+            }
+            ProverError::Transaction(err) => {
+                write!(f, "\rTransaction failed: {:?}", err)
             }
         }
     }
@@ -437,6 +456,63 @@ impl fmt::Debug for StoreError {
             StoreError::InvalidPassword => write!(f, "\rWrong password"),
             StoreError::IO(err) => {
                 write!(f, "\rAn IO error occurred:\n{:?}", err)
+            }
+        }
+    }
+}
+
+pub enum GraphQLError {
+    /// Generic errors
+    Generic(gql_client::GraphQLError),
+    /// Failed to fetch block height
+    BlockHeight,
+    /// Failed to fetch transaction status
+    TxStatus,
+}
+
+impl From<gql_client::GraphQLError> for GraphQLError {
+    fn from(e: gql_client::GraphQLError) -> Self {
+        Self::Generic(e)
+    }
+}
+
+impl fmt::Display for GraphQLError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GraphQLError::Generic(err) => {
+                write!(
+                    f,
+                    "\rError fetching data from the node:\n{}\n{:#?}",
+                    err.message(),
+                    err.json()
+                )
+            }
+            GraphQLError::BlockHeight => {
+                write!(f, "\rFailed to obtain block height")
+            }
+            GraphQLError::TxStatus => {
+                write!(f, "\rFailed to obtain transaction status")
+            }
+        }
+    }
+}
+
+impl fmt::Debug for GraphQLError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GraphQLError::Generic(err) => {
+                write!(
+                    f,
+                    "\rError fetching data from the node:\n{}\n{:#?}",
+                    err.message(),
+                    err.json()
+                )
+            }
+            GraphQLError::BlockHeight => {
+                write!(f, "\rFailed to obtain block height")
+            }
+            GraphQLError::TxStatus => {
+                write!(f, "\rFailed to obtain transaction status")
             }
         }
     }
