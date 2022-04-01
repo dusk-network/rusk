@@ -6,7 +6,6 @@ members = [
     "macros/code-hasher",
     "rusk-recovery",
     "rusk-profile",
-    "rusk-wallet",
     "rusk-abi",
     "rusk",
     "test-utils/transfer-wrapper",
@@ -30,9 +29,6 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 codegen-units = 16
-
-[profile.release.package.rusk-wallet]
-overflow-checks = true
 
 [profile.release.package.stake-contract]
 overflow-checks = true
