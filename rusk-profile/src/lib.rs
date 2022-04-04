@@ -170,14 +170,9 @@ pub fn keys_for(id: &[u8; 32]) -> Result<Keys, io::Error> {
     let mut dir = get_rusk_keys_dir()?;
     dir.push(hex::encode(id));
 
-    let pk_dir = dir.with_extension("pk");
-    let vd_dir = dir.with_extension("vd");
-
-    if pk_dir.exists() && vd_dir.exists() {
-        Ok(Keys(*id))
-    } else {
-        Err(io::Error::new(io::ErrorKind::NotFound, "keys not found"))
-    }
+    // No need to check if the keys exist, because it's guaranteed to be
+    // checked by the get_verifier and get_prover functions.
+    Ok(Keys(*id))
 }
 
 pub fn add_keys_for(
