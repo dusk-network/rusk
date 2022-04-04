@@ -19,12 +19,12 @@ use tracing::{debug, error, warn};
 
 use crate::error::Error;
 
-pub use super::rusk_proto::{
+use futures::Stream;
+pub use rusk_schema::{
     network_server::{Network, NetworkServer},
     AliveNodesRequest, AliveNodesResponse, BroadcastMessage, Message,
     MessageMetadata, Null, PropagateMessage, SendMessage,
 };
-use futures::Stream;
 use std::io::Write;
 use std::{net::SocketAddr, pin::Pin};
 

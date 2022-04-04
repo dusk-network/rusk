@@ -21,8 +21,8 @@ use rusk_vm::GasMeter;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
-pub use super::rusk_proto::state_server::{State, StateServer};
-pub use super::rusk_proto::{
+pub use rusk_schema::state_server::{State, StateServer};
+pub use rusk_schema::{
     EchoRequest, EchoResponse, ExecuteStateTransitionRequest,
     ExecuteStateTransitionResponse,
     ExecutedTransaction as ExecutedTransactionProto,
@@ -38,7 +38,13 @@ pub use super::rusk_proto::{
     VerifyStateTransitionResponse,
 };
 
-pub(crate) type SpentTransaction = (Transaction, GasMeter, Option<Error>);
+pub(crate) struct SpentTransaction(Transaction, GasMeter, Option<Error>);
+
+impl SpentTransaction {
+    pub fn into_inner(self) -> (Transaction, GasMeter, Option<Error>) {
+        (self.0, self.1, self.2)
+    }
+}
 
 /// Partition transactions into transfer and coinbase notes.
 fn extract_coinbase(
@@ -113,7 +119,8 @@ impl Rusk {
                 .checked_sub(gas_meter.spent())
                 .ok_or_else(|| Status::invalid_argument("Out of gas"))?;
 
-            txs.push((tx, gas_meter, result.err()).into());
+            let spent_tx = SpentTransaction(tx, gas_meter, result.err());
+            txs.push(spent_tx.into());
         }
 
         state.push_coinbase(block_height, dusk_spent, coinbase)?;
@@ -208,7 +215,8 @@ impl State for Rusk {
                 dusk_spent += gas_spent * tx.fee().gas_price;
 
                 state = forked_state;
-                txs.push((tx, gas_meter, result.err()).into());
+                let spent_tx = SpentTransaction(tx, gas_meter, result.err());
+                txs.push(spent_tx.into());
 
                 // No need to keep executing if there is no gas left in the
                 // block

@@ -12,7 +12,6 @@ mod stct;
 mod wfco;
 mod wfct;
 
-use crate::services::rusk_proto;
 use crate::{Result, PUB_PARAMS};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
@@ -26,9 +25,9 @@ use dusk_schnorr::Signature;
 use dusk_wallet_core::{Transaction, UnprovenTransaction};
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
-pub use rusk_proto::prover_client::ProverClient;
-pub use rusk_proto::prover_server::{Prover, ProverServer};
-pub use rusk_proto::{
+pub use rusk_schema::prover_client::ProverClient;
+pub use rusk_schema::prover_server::{Prover, ProverServer};
+pub use rusk_schema::{
     ExecuteProverRequest, ExecuteProverResponse, StcoProverRequest,
     StcoProverResponse, StctProverRequest, StctProverResponse,
     WfcoProverRequest, WfcoProverResponse, WfctProverRequest,

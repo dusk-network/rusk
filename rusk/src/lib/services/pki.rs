@@ -9,14 +9,13 @@
 mod keygen;
 mod stealth_gen;
 
-use super::rusk_proto;
 use crate::services::ServiceRequestHandler;
 use keygen::KeyGenHandler;
 use stealth_gen::StealthAddrGenHandler;
 use tonic::{Request, Response, Status};
 use tracing::{error, info};
 
-pub use super::rusk_proto::{
+pub use rusk_schema::{
     keys_client::KeysClient,
     keys_server::{Keys, KeysServer},
     GenerateKeysRequest, GenerateKeysResponse, PublicKey, SecretKey,
