@@ -1,0 +1,21 @@
+syntax = "proto3";
+package rusk;
+
+message BN256Point {
+    bytes data = 1;
+}
+
+message GetBalanceResponse {
+    fixed64 balance = 1;
+}
+
+message GetWithdrawalTimeResponse {
+    fixed64 height = 1;
+}
+
+service Reward {
+    // Get reward balance of the given provisioner.
+    rpc GetBalance(BN256Point) returns (GetBalanceResponse) {} 
+    // Get height of the last reward withdrawal of a given provisioner.
+    rpc GetWithdrawalTime(BN256Point) returns (GetWithdrawalTimeResponse) {}
+}

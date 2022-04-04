@@ -1,0 +1,15 @@
+[package]
+name = "rusk-schema"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tonic = "0.6"
+prost = "0.9"
+
+dusk-pki ="0.10.0-rc"
+dusk-bytes = "0.1"
+phoenix-core = "0.16.0-rc"
+
+[build-dependencies]
+tonic-build = "0.6"

@@ -1,0 +1,55 @@
+syntax = "proto3";
+package rusk;
+
+import "keys.proto";
+
+message Crossover {
+    bytes value_commitment = 1; // JubJubCompressed
+    bytes nonce = 2; // JubJubScalar
+    bytes encrypted_data = 3;
+}
+message Fee {
+    uint64 gas_limit = 1;
+    uint64 gas_price = 2;
+    StealthAddress stealth_address = 3;
+}
+
+message Note {
+    enum NoteType {
+        TRANSPARENT = 0;
+        OBFUSCATED = 1;
+    }
+
+    NoteType note_type = 1;
+    bytes value_commitment = 2; // JubJubCompressed
+    bytes nonce = 3; // JubJubScalar
+    StealthAddress stealth_address = 4;
+    fixed64 pos = 5;
+    bytes encrypted_data = 6;
+}
+
+message Transaction {
+    uint32 version = 1;
+    uint32 type = 2;
+    bytes payload = 3;
+}
+
+message ExecutedTransaction {
+    message Error {
+        enum Code {
+            UnknownContract = 0;
+            ContractPanic = 1;
+            OutOfGas = 2;
+            Other = 3;
+        }
+
+        Code code = 1;
+        bytes contract_id = 2;
+        string data = 3;
+    }
+
+    Transaction tx = 1;
+    bytes tx_hash = 2;
+    uint64 gas_spent = 3;
+    optional Error error = 4 ;
+ }

@@ -1,0 +1,10 @@
+syntax = "proto3";
+package rusk;
+
+message EchoRequest {
+    string message = 1;
+}
+
+message EchoResponse {
+    string message = 1;
+}
