@@ -12,11 +12,11 @@ use dusk_bls12_381_sign::{
 use dusk_pki::{SecretKey, SecretSpendKey};
 use parking_lot::Mutex;
 use phoenix_core::Note;
-use rusk::services::rusk_proto::state_client::StateClient;
 use rusk::services::state::{
     GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
     GetStakeRequest,
 };
+use rusk_schema::state_client::StateClient;
 
 use dusk_bytes::Serializable;
 
@@ -144,11 +144,9 @@ fn get_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_notes() -> Result<()> {
-    let rusk = STATE_LOCK.lock();
-
     let (channel, incoming) = setup().await;
 
-    let rusk_server = rusk.clone();
+    let rusk_server = STATE_LOCK.lock().clone();
 
     tokio::spawn(async move {
         Server::builder()
@@ -157,8 +155,8 @@ pub async fn test_fetch_notes() -> Result<()> {
             .await
     });
 
-    let mut rusk = rusk;
-    let note = get_note(&mut rusk)?;
+    let note = get_note(&mut STATE_LOCK.lock())?;
+
     let vk = SSK.view_key();
 
     assert!(note.is_some(), "One note expected to be in the state");
@@ -181,11 +179,9 @@ pub async fn test_fetch_notes() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_anchor() -> Result<()> {
-    let mut rusk = STATE_LOCK.lock();
-
     let (channel, incoming) = setup().await;
 
-    let rusk_server = rusk.clone();
+    let rusk_server = STATE_LOCK.lock().clone();
     tokio::spawn(async move {
         Server::builder()
             .add_service(StateServer::new(rusk_server))
@@ -193,12 +189,15 @@ pub async fn test_fetch_anchor() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut rusk)?;
+    let anchor = {
+        let mut rusk = STATE_LOCK.lock();
+        let note = get_note(&mut rusk)?;
 
-    assert!(note.is_some(), "One note expected to be in the state");
+        assert!(note.is_some(), "One note expected to be in the state");
 
-    let rusk_state = rusk.state()?;
-    let anchor = rusk_state.fetch_anchor()?;
+        let rusk_state = rusk.state()?;
+        rusk_state.fetch_anchor()?
+    };
 
     let mut client = StateClient::new(channel.clone());
 
@@ -218,11 +217,9 @@ pub async fn test_fetch_anchor() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_opening() -> Result<()> {
-    let mut rusk = STATE_LOCK.lock();
-
     let (channel, incoming) = setup().await;
 
-    let rusk_server = rusk.clone();
+    let rusk_server = STATE_LOCK.lock().clone();
     tokio::spawn(async move {
         Server::builder()
             .add_service(StateServer::new(rusk_server))
@@ -230,13 +227,18 @@ pub async fn test_fetch_opening() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut rusk)?;
+    let (note, opening) = {
+        let mut rusk = STATE_LOCK.lock();
+        let note = get_note(&mut rusk)?;
 
-    assert!(note.is_some(), "One note expected to be in the state");
-    let note = note.unwrap();
+        assert!(note.is_some(), "One note expected to be in the state");
+        let note = note.unwrap();
 
-    let rusk_state = rusk.state()?;
-    let opening = rusk_state.fetch_opening(&note)?;
+        let rusk_state = rusk.state()?;
+        let opening = rusk_state.fetch_opening(&note)?;
+
+        (note, opening)
+    };
 
     let mut client = StateClient::new(channel.clone());
 
@@ -258,14 +260,11 @@ pub async fn test_fetch_opening() -> Result<()> {
 
     Ok(())
 }
-
 #[tokio::test(flavor = "multi_thread")]
 pub async fn test_fetch_stake() -> Result<()> {
-    let mut rusk = STATE_LOCK.lock();
-
     let (channel, incoming) = setup().await;
 
-    let rusk_server = rusk.clone();
+    let rusk_server = STATE_LOCK.lock().clone();
     tokio::spawn(async move {
         Server::builder()
             .add_service(StateServer::new(rusk_server))
@@ -273,7 +272,7 @@ pub async fn test_fetch_stake() -> Result<()> {
             .await
     });
 
-    let (pk, stake) = generate_stake(&mut rusk)?;
+    let (pk, stake) = generate_stake(&mut STATE_LOCK.lock())?;
 
     let mut client = StateClient::new(channel);
 

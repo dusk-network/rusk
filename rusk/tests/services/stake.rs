@@ -14,18 +14,16 @@ use rusk::services::network::{KadcastDispatcher, NetworkServer};
 use rusk::services::prover::{
     ExecuteProverRequest, StctProverRequest, WfctProverRequest,
 };
-use rusk::services::rusk_proto::network_client::NetworkClient;
-use rusk::services::rusk_proto::prover_client::ProverClient;
-use rusk::services::rusk_proto::state_client::StateClient;
-use rusk::services::rusk_proto::{
-    PropagateMessage, Transaction as TransactionProto,
-};
 use rusk::services::state::{
     ExecuteStateTransitionRequest, FindExistingNullifiersRequest,
     GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
     GetStakeRequest, PreverifyRequest, StateTransitionRequest,
     VerifyStateTransitionRequest,
 };
+use rusk_schema::network_client::NetworkClient;
+use rusk_schema::prover_client::ProverClient;
+use rusk_schema::state_client::StateClient;
+use rusk_schema::{PropagateMessage, Transaction as TransactionProto};
 use stake_contract::{Stake, MINIMUM_STAKE};
 
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
