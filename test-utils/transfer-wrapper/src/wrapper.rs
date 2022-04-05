@@ -10,6 +10,7 @@ use alice::Alice;
 use bob::Bob;
 use canonical::Canon;
 use dusk_abi::{ContractId, Transaction};
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
 use dusk_pki::{
@@ -21,7 +22,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::RuskModule;
 use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
-use stake_contract::StakeContract;
+use stake_contract::{Stake, StakeContract};
 use transfer_circuits::{
     CircuitInput, DeriveKey, ExecuteCircuit, SendToContractObfuscatedCircuit,
     SendToContractTransparentCircuit, StcoCrossover, StcoMessage,
@@ -31,8 +32,8 @@ use transfer_contract::{Call, Error as TransferError, TransferContract};
 pub struct TransferWrapper {
     rng: StdRng,
     network: NetworkState,
-    transfer: ContractId,
-    stake: ContractId,
+    transfer_id: ContractId,
+    stake_id: ContractId,
     alice: ContractId,
     bob: ContractId,
     gas: GasMeter,
@@ -41,6 +42,14 @@ pub struct TransferWrapper {
 
 impl TransferWrapper {
     pub fn new(seed: u64, initial_balance: u64) -> Self {
+        Self::with_stakes(seed, initial_balance, &[])
+    }
+
+    pub fn with_stakes(
+        seed: u64,
+        initial_balance: u64,
+        stakes: &[(BlsPublicKey, Stake)],
+    ) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
         let mut network = NetworkState::new();
 
@@ -50,10 +59,12 @@ impl TransferWrapper {
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
 
-        let transfer = if initial_balance > 0 {
+        let transfer_id = rusk_abi::transfer_contract();
+        let stake_id = rusk_abi::stake_contract();
+
+        let mut transfer = if initial_balance > 0 {
             let genesis =
                 Note::transparent(&mut rng, &genesis_psk, initial_balance);
-
             TransferContract::try_from(genesis).expect(
                 "Failed to create a transfer instance from a genesis note",
             )
@@ -61,23 +72,35 @@ impl TransferWrapper {
             TransferContract::default()
         };
 
-        let contract = Contract::new(transfer, TRANSFER.to_vec());
-        let transfer = rusk_abi::transfer_contract();
+        let stake = {
+            let mut contract = StakeContract::default();
+            for (pk, stake) in stakes {
+                contract
+                    .insert_stake(*pk, stake.clone())
+                    .expect("Failed to insert stake");
+                if let Some((value, _)) = stake.amount() {
+                    transfer
+                        .add_balance(stake_id, *value)
+                        .expect("Failed adding balance");
+                }
+            }
+            contract
+        };
+
+        let transfer_contract = Contract::new(transfer, TRANSFER.to_vec());
+        let stake_contract = Contract::new(stake, STAKE.to_vec());
+
         network
-            .deploy_with_id(transfer, contract)
+            .deploy_with_id(stake_id, stake_contract)
+            .expect("Failed to deploy contract");
+        network
+            .deploy_with_id(transfer_id, transfer_contract)
             .expect("Failed to deploy contract");
 
-        let contract = StakeContract::default();
-        let contract = Contract::new(contract, STAKE.to_vec());
-        let stake = rusk_abi::stake_contract();
-        network
-            .deploy_with_id(stake, contract)
-            .expect("Failed to deploy contract");
-
-        let alice = Alice::new(transfer);
+        let alice = Alice::new(transfer_id);
         let alice = Self::_deploy(&mut network, alice, ALICE);
 
-        let bob = Bob::new(transfer);
+        let bob = Bob::new(transfer_id);
         let bob = Self::_deploy(&mut network, bob, BOB);
 
         let gas = GasMeter::with_limit(1);
@@ -85,8 +108,8 @@ impl TransferWrapper {
         Self {
             rng,
             network,
-            transfer,
-            stake,
+            transfer_id,
+            stake_id,
             alice,
             bob,
             gas,
@@ -130,11 +153,11 @@ impl TransferWrapper {
     }
 
     pub fn stake_state(&self) -> StakeContract {
-        self.state(&self.stake)
+        self.state(&self.stake_id)
     }
 
     pub fn transfer_state(&self) -> TransferContract {
-        self.state(&self.transfer)
+        self.state(&self.transfer_id)
     }
 
     pub fn genesis_identifier(&self) -> (SecretSpendKey, Note) {
@@ -537,7 +560,7 @@ impl TransferWrapper {
         );
 
         self.network.transact::<_, ()>(
-            self.transfer,
+            self.transfer_id,
             block_height,
             execute,
             &mut self.gas,
@@ -608,7 +631,7 @@ impl TransferWrapper {
         );
 
         let transaction = call_stct.to_transaction();
-        let call = (self.transfer, transaction);
+        let call = (self.transfer_id, transaction);
 
         let (anchor, nullifiers, outputs, spend_proof_execute) = self
             .prepare_execute(
@@ -624,7 +647,7 @@ impl TransferWrapper {
 
         let call = call_stct
             .to_execute(
-                self.transfer,
+                self.transfer_id,
                 anchor,
                 nullifiers,
                 fee,
@@ -635,7 +658,7 @@ impl TransferWrapper {
             .unwrap();
 
         self.network.transact::<_, ()>(
-            self.transfer,
+            self.transfer_id,
             block_height,
             call,
             &mut self.gas,
@@ -729,7 +752,7 @@ impl TransferWrapper {
         );
 
         let transaction = call_stco.to_transaction();
-        let call = (self.transfer, transaction);
+        let call = (self.transfer_id, transaction);
 
         let (anchor, nullifiers, outputs, spend_proof_execute) = self
             .prepare_execute(
@@ -745,7 +768,7 @@ impl TransferWrapper {
 
         let call = call_stco
             .to_execute(
-                self.transfer,
+                self.transfer_id,
                 anchor,
                 nullifiers,
                 fee,
@@ -756,7 +779,7 @@ impl TransferWrapper {
             .unwrap();
 
         self.network.transact::<_, ()>(
-            self.transfer,
+            self.transfer_id,
             block_height,
             call,
             &mut self.gas,
