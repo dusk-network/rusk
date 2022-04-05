@@ -15,6 +15,27 @@ use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::PaymentInfo;
 
 impl TransferContract {
+    pub fn mint(
+        &mut self,
+        stealth_address: StealthAddress,
+        value: u64,
+        nonce: BlsScalar,
+    ) -> bool {
+        // Only the stake contract can mint notes to a particular stealth
+        // address. This happens when the reward for staking and participating
+        // in the consensus is withdrawn.
+        if dusk_abi::caller() != rusk_abi::stake_contract() {
+            panic!("Can only be called by the stake contract!")
+        }
+
+        let note = Note::transparent_stealth(stealth_address, value, nonce);
+
+        self.push_note_current_height(note)
+            .expect("Failed to append note to the state!");
+
+        true
+    }
+
     pub fn send_to_contract_transparent(
         &mut self,
         address: ContractId,

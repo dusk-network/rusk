@@ -91,22 +91,6 @@ impl TransferContract {
         Ok(())
     }
 
-    pub(crate) fn add_balance(
-        &mut self,
-        address: ContractId,
-        value: u64,
-    ) -> Result<(), Error> {
-        if let Some(mut balance) = self.balances.get_mut(&address)? {
-            *balance += value;
-
-            return Ok(());
-        }
-
-        self.balances.insert(address, value)?;
-
-        Ok(())
-    }
-
     pub(crate) fn sub_balance(
         &mut self,
         address: &ContractId,
