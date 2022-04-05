@@ -36,18 +36,7 @@ macro_rules! execute {
     };
 }
 
-execute!(execute_1_0, 1, 0);
-execute!(execute_1_1, 1, 1);
 execute!(execute_1_2, 1, 2);
-
-execute!(execute_2_0, 2, 0);
-execute!(execute_2_1, 2, 1);
 execute!(execute_2_2, 2, 2);
-
-execute!(execute_3_0, 3, 0);
-execute!(execute_3_1, 3, 1);
 execute!(execute_3_2, 3, 2);
-
-execute!(execute_4_0, 4, 0);
-execute!(execute_4_1, 4, 1);
 execute!(execute_4_2, 4, 2);

@@ -4,9 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
+
+use crate::ExecuteCircuit;
 
 #[derive(Debug, Clone)]
 pub struct CircuitOutput {
@@ -16,6 +19,16 @@ pub struct CircuitOutput {
 }
 
 impl CircuitOutput {
+    /// Zeroed stealth address used for padding
+    pub const ZERO_STEALTH_ADDRESS: StealthAddress = {
+        let pk = ExecuteCircuit::ZERO_COMMITMENT;
+        let pk = PublicKey::from_raw_unchecked(pk);
+
+        let r = ExecuteCircuit::ZERO_COMMITMENT;
+
+        StealthAddress::from_raw_unchecked(r, pk)
+    };
+
     pub fn new(note: Note, value: u64, blinding_factor: JubJubScalar) -> Self {
         Self {
             note,
@@ -30,6 +43,16 @@ impl CircuitOutput {
 
     pub const fn value_commitment(&self) -> &JubJubExtended {
         self.note.value_commitment()
+    }
+
+    pub fn pad() -> Self {
+        let note = Note::transparent_stealth(
+            Self::ZERO_STEALTH_ADDRESS,
+            0,
+            BlsScalar::zero(),
+        );
+
+        Self::new(note, 0, JubJubScalar::zero())
     }
 
     pub fn to_witness(&self, composer: &mut TurboComposer) -> WitnessOutput {

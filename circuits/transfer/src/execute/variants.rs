@@ -137,6 +137,12 @@ macro_rules! execute_circuit_variant {
             pub fn outputs(&self) -> &[CircuitOutput] {
                 self.outputs.as_slice()
             }
+
+            pub fn pad(&mut self) {
+                while self.outputs.len() < 2 {
+                    self.outputs.push(CircuitOutput::pad());
+                }
+            }
         }
 
         impl TryFrom<ExecuteCircuit> for $i {
@@ -334,15 +340,7 @@ macro_rules! execute_circuit_variant {
     };
 }
 
-execute_circuit_variant!(ExecuteCircuitOneZero, 15);
-execute_circuit_variant!(ExecuteCircuitOneOne, 15);
 execute_circuit_variant!(ExecuteCircuitOneTwo, 16);
-execute_circuit_variant!(ExecuteCircuitTwoZero, 16);
-execute_circuit_variant!(ExecuteCircuitTwoOne, 16);
 execute_circuit_variant!(ExecuteCircuitTwoTwo, 16);
-execute_circuit_variant!(ExecuteCircuitThreeZero, 17);
-execute_circuit_variant!(ExecuteCircuitThreeOne, 17);
 execute_circuit_variant!(ExecuteCircuitThreeTwo, 17);
-execute_circuit_variant!(ExecuteCircuitFourZero, 17);
-execute_circuit_variant!(ExecuteCircuitFourOne, 17);
 execute_circuit_variant!(ExecuteCircuitFourTwo, 17);
