@@ -9,7 +9,7 @@ use crate::TransferContract;
 use alloc::vec::Vec;
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::JubJubExtended;
+use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::PaymentInfo;
@@ -238,6 +238,15 @@ impl TransferContract {
         spend_proof: Vec<u8>,
         call: Option<(ContractId, Transaction)>,
     ) -> bool {
+        // Constant for a pedersen commitment with zero value.
+        //
+        // Calculated as `G^0 · G'^0`
+        pub const ZERO_COMMITMENT: JubJubAffine =
+            JubJubAffine::from_raw_unchecked(
+                BlsScalar::zero(),
+                BlsScalar::one(),
+            );
+
         let crossover_commitment = crossover
             .map(|c| c.value_commitment().clone())
             .unwrap_or_default();
@@ -264,6 +273,10 @@ impl TransferContract {
 
         pi.push(fee_value.into());
         pi.extend(notes.iter().map(|n| n.value_commitment().into()));
+        pi.extend(
+            (0usize..2usize.saturating_sub(notes.len()))
+                .map(|_| ZERO_COMMITMENT.into()),
+        );
 
         //  1. α ∈ R
         if !self
@@ -305,7 +318,7 @@ impl TransferContract {
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        let vd = Self::verifier_data_execute(inputs, outputs);
+        let vd = Self::verifier_data_execute(inputs);
         Self::assert_proof(spend_proof, vd, pi)
             .expect("Failed to verify the provided proof!");
 
