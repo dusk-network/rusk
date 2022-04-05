@@ -40,15 +40,15 @@ extern "C" {
     /// Fills a buffer with random numbers.
     fn fill_random(buf: *mut u8, buf_len: u32) -> u8;
 
-    /// Asks the node to finds the notes for a specific view key, starting from
-    /// a certain height.
+    /// Asks the node to finds the notes for a specific view key.
     ///
-    /// The notes are to be serialized in sequence and written to `notes`, and
-    /// the number of notes written should be put in `notes_len`.
+    /// An implementor should allocate - see [`malloc`] - a buffer large enough
+    /// to contain the serialized notes and write them all in sequence. A
+    /// pointer to the first element of the buffer should then be written in
+    /// `notes`, while the number of bytes written should be put in `notes_len`.
     fn fetch_notes(
-        height: u64,
         vk: *const [u8; ViewKey::SIZE],
-        notes: *mut u8,
+        notes: *mut *mut u8,
         notes_len: *mut u32,
     ) -> u8;
 
@@ -77,15 +77,13 @@ extern "C" {
 
     /// Fetches the current stake for a key.
     ///
-    /// The value, eligibility, and created_at should be written in sequence,
-    /// little endian, to the given buffer.
+    /// The value, eligibility, reward and counter should be written in
+    /// sequence, little endian, to the given buffer. If there is no value and
+    /// eligibility, the first 16 bytes should be zero.
     fn fetch_stake(
         pk: *const [u8; PublicKey::SIZE],
         stake: *mut [u8; StakeInfo::SIZE],
     ) -> u8;
-
-    /// Fetches the current block height from the node.
-    fn fetch_block_height(height: &mut u64) -> u8;
 
     /// Request the node to prove the given unproven transaction.
     fn compute_proof_and_propagate(
@@ -206,9 +204,9 @@ pub unsafe extern "C" fn stake(
     0
 }
 
-/// Withdraw a key's stake.
+/// Unstake the value previously staked using the [`stake`] function.
 #[no_mangle]
-pub unsafe extern "C" fn withdraw_stake(
+pub unsafe extern "C" fn unstake(
     sender_index: u64,
     staker_index: u64,
     refund: *const [u8; PublicSpendKey::SIZE],
@@ -217,7 +215,31 @@ pub unsafe extern "C" fn withdraw_stake(
 ) -> u8 {
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
 
-    unwrap_or_bail!(WALLET.withdraw_stake(
+    unwrap_or_bail!(WALLET.unstake(
+        &mut FfiRng,
+        sender_index,
+        staker_index,
+        &refund,
+        gas_price,
+        gas_limit
+    ));
+
+    0
+}
+
+/// Withdraw the rewards accumulated as a result of staking and taking part in
+/// the consensus.
+#[no_mangle]
+pub unsafe extern "C" fn withdraw(
+    sender_index: u64,
+    staker_index: u64,
+    refund: *const [u8; PublicSpendKey::SIZE],
+    gas_limit: u64,
+    gas_price: u64,
+) -> u8 {
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
+
+    unwrap_or_bail!(WALLET.withdraw(
         &mut FfiRng,
         sender_index,
         staker_index,
@@ -240,8 +262,9 @@ pub unsafe extern "C" fn get_balance(
     0
 }
 
-/// Gets the stake of a key. The value, eligibility, and created_at are written
-/// in sequence to the given buffer.
+/// Gets the stake of a key. The value, eligibility, reward, and counter are
+/// written in sequence to the given buffer. If there is no value and
+/// eligibility the first 16 bytes will be zero.
 #[no_mangle]
 pub unsafe extern "C" fn get_stake(
     sk_index: u64,
@@ -269,8 +292,6 @@ impl Store for FfiStore {
     }
 }
 
-// 1 MB for a buffer.
-const NOTES_BUF_SIZE: usize = 0x100000;
 // 512 KB for a buffer.
 const OPENING_BUF_SIZE: usize = 0x10000;
 
@@ -289,28 +310,28 @@ struct FfiStateClient;
 impl StateClient for FfiStateClient {
     type Error = u8;
 
-    fn fetch_notes(
-        &self,
-        height: u64,
-        vk: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
-        let mut notes_buf = vec![0u8; NOTES_BUF_SIZE];
+    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
+        let mut notes_ptr = ptr::null_mut();
+        let mut notes_len = 0;
 
-        let mut num_notes = 0;
-
-        unsafe {
-            let r = fetch_notes(
-                height,
-                &vk.to_bytes(),
-                &mut notes_buf[0],
-                &mut num_notes,
-            );
+        let notes_buf = unsafe {
+            let r = fetch_notes(&vk.to_bytes(), &mut notes_ptr, &mut notes_len);
             if r != 0 {
                 return Err(r);
             }
+
+            // SAFETY: the buffer is expected to have been allocated with the
+            // correct size. If this is not the case problems with the allocator
+            // *may* happen.
+            Vec::from_raw_parts(
+                notes_ptr,
+                notes_len as usize,
+                notes_len as usize,
+            )
         };
 
-        let mut notes = Vec::with_capacity(num_notes as usize);
+        let num_notes = notes_len as usize / Note::SIZE;
+        let mut notes = Vec::with_capacity(num_notes);
 
         let mut buf = &notes_buf[..];
         for _ in 0..num_notes {
@@ -428,19 +449,6 @@ impl StateClient for FfiStateClient {
         )?;
 
         Ok(stake)
-    }
-
-    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        let mut block_height = 0;
-
-        unsafe {
-            let r = fetch_block_height(&mut block_height);
-            if r != 0 {
-                return Err(r);
-            }
-        }
-
-        Ok(block_height)
     }
 }
 
@@ -613,6 +621,9 @@ impl<S: Store, SC: StateClient, PC: ProverClient> From<Error<S, SC, PC>>
             Error::NoteCombinationProblem => 249,
             Error::Canon(_) => 248,
             Error::Phoenix(_) => 247,
+            Error::AlreadyStaked(_) => 246,
+            Error::NotStaked(_) => 245,
+            Error::NoReward(_) => 244,
         }
     }
 }

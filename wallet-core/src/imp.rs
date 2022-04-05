@@ -18,6 +18,7 @@ use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubScalar};
 use dusk_pki::{
     Ownable, PublicSpendKey, SecretKey as SchnorrKey, SecretSpendKey,
+    StealthAddress,
 };
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
@@ -49,6 +50,15 @@ pub enum Error<S: Store, SC: StateClient, PC: ProverClient> {
     /// Note combination for the given value is impossible given the maximum
     /// amount if inputs in a transaction.
     NoteCombinationProblem,
+    /// The key is already staked. This happens when there already is an amount
+    /// staked for a key and the user tries to make a stake transaction.
+    AlreadyStaked((PublicKey, StakeInfo)),
+    /// The key is not staked. This happens when a key doesn't have an amount
+    /// staked and the user tries to make an unstake transaction.
+    NotStaked((PublicKey, StakeInfo)),
+    /// The key has no reward. This happens when a key has no reward in the
+    /// stake contract and the user tries to make a withdraw transaction.
+    NoReward((PublicKey, StakeInfo)),
 }
 
 impl<S: Store, SC: StateClient, PC: ProverClient> Error<S, SC, PC> {
@@ -120,7 +130,8 @@ impl<S, SC, PC> Wallet<S, SC, PC> {
 }
 
 const TX_STAKE: u8 = 0x00;
-const TX_WITHDRAW: u8 = 0x01;
+const TX_UNSTAKE: u8 = 0x01;
+const TX_WITHDRAW: u8 = 0x02;
 
 impl<S, SC, PC> Wallet<S, SC, PC>
 where
@@ -154,15 +165,12 @@ where
     /// are still available for spending.
     fn unspent_notes(
         &self,
-        height: u64,
         ssk: &SecretSpendKey,
     ) -> Result<Vec<Note>, Error<S, SC, PC>> {
         let vk = ssk.view_key();
 
-        let notes = self
-            .state
-            .fetch_notes(height, &vk)
-            .map_err(Error::from_state_err)?;
+        let notes =
+            self.state.fetch_notes(&vk).map_err(Error::from_state_err)?;
 
         let nullifiers: Vec<_> =
             notes.iter().map(|n| n.gen_nullifier(ssk)).collect();
@@ -202,9 +210,7 @@ where
         ),
         Error<S, SC, PC>,
     > {
-        // TODO find a way to get the block height from somewhere. Maybe it
-        //  should be determined by the client?
-        let notes = self.unspent_notes(0, sender)?;
+        let notes = self.unspent_notes(sender)?;
         let mut notes_and_values = Vec::with_capacity(notes.len());
 
         let sender_vk = sender.view_key();
@@ -322,6 +328,12 @@ where
             value + gas_limit * gas_price,
         )?;
 
+        let stake =
+            self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
+        if stake.amount.is_some() {
+            return Err(Error::AlreadyStaked((pk, stake)));
+        }
+
         let blinder = JubJubScalar::random(rng);
         let note = Note::obfuscated(rng, refund, value, blinder);
         let (mut fee, crossover) = note
@@ -351,16 +363,10 @@ where
             .to_bytes()
             .to_vec();
 
-        let created_at = self
-            .state
-            .fetch_block_height()
-            .map_err(Error::from_state_err)?;
-
-        let signature = stake_sign(&sk, &pk, value, created_at);
+        let signature = stake_sign(&sk, &pk, stake.counter, value);
 
         let call_data =
-            (TX_STAKE, pk, signature, value, created_at, spend_proof)
-                .encode_to_vec();
+            (TX_STAKE, pk, signature, value, spend_proof).encode_to_vec();
 
         let call = (contract_id, call_data);
 
@@ -381,8 +387,8 @@ where
             .map_err(Error::from_prover_err)
     }
 
-    /// Withdraw a key's stake.
-    pub fn withdraw_stake<Rng: RngCore + CryptoRng>(
+    /// Unstake a key from the stake contract.
+    pub fn unstake<Rng: RngCore + CryptoRng>(
         &self,
         rng: &mut Rng,
         sender_index: u64,
@@ -411,11 +417,12 @@ where
 
         let stake =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
+        let (value, _) = stake.amount.ok_or(Error::NotStaked((pk, stake)))?;
 
         let blinder = JubJubScalar::random(rng);
 
         // Since we're not transferring value *to* the contract the crossover
-        // shouldn't contain a value. As such the note used to created it should
+        // shouldn't contain a value. As such the note used to create it should
         // be valueless as well.
         let note = Note::obfuscated(rng, refund, 0, blinder);
         let (mut fee, crossover) = note
@@ -425,28 +432,105 @@ where
         fee.gas_limit = gas_limit;
         fee.gas_price = gas_price;
 
-        let withdraw_note =
-            Note::transparent(rng, &sender.public_spend_key(), stake.value);
-        let withdraw_blinder = withdraw_note
+        let unstake_note =
+            Note::transparent(rng, &sender.public_spend_key(), value);
+        let unstake_blinder = unstake_note
             .blinding_factor(None)
             .expect("Note is transparent so blinding factor is unencrypted");
 
-        let withdraw_proof = self
+        let unstake_proof = self
             .prover
             .request_wfct_proof(
-                withdraw_note.value_commitment().into(),
-                stake.value,
-                withdraw_blinder,
+                unstake_note.value_commitment().into(),
+                value,
+                unstake_blinder,
             )
             .map_err(Error::from_prover_err)?
             .to_bytes()
             .to_vec();
 
-        let signature = withdraw_sign(&sk, &pk, &stake, &withdraw_note);
+        let signature = unstake_sign(&sk, &pk, stake.counter, unstake_note);
 
         let call_data =
-            (TX_WITHDRAW, pk, signature, withdraw_note, withdraw_proof)
+            (TX_UNSTAKE, pk, signature, unstake_note, unstake_proof)
                 .encode_to_vec();
+
+        let contract_id = rusk_abi::stake_contract();
+        let call = (contract_id, call_data);
+
+        let utx = UnprovenTransaction::new(
+            rng,
+            &self.state,
+            &sender,
+            inputs,
+            outputs,
+            fee,
+            Some((crossover, 0, blinder)),
+            Some(call),
+        )
+        .map_err(Error::from_state_err)?;
+
+        self.prover
+            .compute_proof_and_propagate(&utx)
+            .map_err(Error::from_prover_err)
+    }
+
+    /// Withdraw the reward a key has reward if accumulated by staking and
+    /// taking part in operating the network.
+    pub fn withdraw<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u64,
+        staker_index: u64,
+        refund: &PublicSpendKey,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC, PC>> {
+        let sender = self
+            .store
+            .retrieve_ssk(sender_index)
+            .map_err(Error::from_store_err)?;
+        let sender_psk = sender.public_spend_key();
+
+        let sk = self
+            .store
+            .retrieve_sk(staker_index)
+            .map_err(Error::from_store_err)?;
+        let pk = PublicKey::from(&sk);
+
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
+
+        let stake =
+            self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
+        if stake.reward == 0 {
+            return Err(Error::NoReward((pk, stake)));
+        }
+
+        let withdraw_r = JubJubScalar::random(rng);
+        let address = sender_psk.gen_stealth_address(&withdraw_r);
+        let nonce = BlsScalar::random(rng);
+
+        let signature = withdraw_sign(&sk, &pk, stake.counter, address, nonce);
+
+        // Since we're not transferring value *to* the contract the crossover
+        // shouldn't contain a value. As such the note used to created it should
+        // be valueless as well.
+        let blinder = JubJubScalar::random(rng);
+        let note = Note::obfuscated(rng, refund, 0, blinder);
+        let (mut fee, crossover) = note
+            .try_into()
+            .expect("Obfuscated notes should always yield crossovers");
+
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
+
+        let call_data =
+            (TX_WITHDRAW, pk, signature, address, nonce).encode_to_vec();
 
         let contract_id = rusk_abi::stake_contract();
         let call = (contract_id, call_data);
@@ -479,7 +563,7 @@ where
             .map_err(Error::from_store_err)?;
         let vk = sender.view_key();
 
-        let notes = self.unspent_notes(0, &sender)?;
+        let notes = self.unspent_notes(&sender)?;
         let mut values = Vec::with_capacity(notes.len());
 
         for note in notes.into_iter() {
@@ -644,15 +728,31 @@ fn sign_stct<Rng: RngCore + CryptoRng>(
 fn stake_sign(
     sk: &SecretKey,
     pk: &PublicKey,
+    counter: u64,
     value: u64,
-    created_at: u64,
 ) -> Signature {
-    let mut bytes = Vec::with_capacity(16);
+    let mut msg = Vec::with_capacity(u64::SIZE + u64::SIZE);
 
-    bytes.extend(value.to_bytes());
-    bytes.extend(created_at.to_le_bytes());
+    msg.extend(counter.to_bytes());
+    msg.extend(value.to_bytes());
 
-    sk.sign(pk, &bytes)
+    sk.sign(pk, &msg)
+}
+
+/// Creates a signature compatible with what the stake contract expects for a
+/// unstake transaction.
+fn unstake_sign(
+    sk: &SecretKey,
+    pk: &PublicKey,
+    counter: u64,
+    note: Note,
+) -> Signature {
+    let mut msg = Vec::with_capacity(u64::SIZE + Note::SIZE);
+
+    msg.extend(counter.to_bytes());
+    msg.extend(note.to_bytes());
+
+    sk.sign(pk, &msg)
 }
 
 /// Creates a signature compatible with what the stake contract expects for a
@@ -660,17 +760,18 @@ fn stake_sign(
 fn withdraw_sign(
     sk: &SecretKey,
     pk: &PublicKey,
-    stake: &StakeInfo,
-    note: &Note,
+    counter: u64,
+    address: StealthAddress,
+    nonce: BlsScalar,
 ) -> Signature {
-    let mut bytes = Vec::with_capacity(24 + Note::SIZE);
+    let mut msg =
+        Vec::with_capacity(u64::SIZE + StealthAddress::SIZE + BlsScalar::SIZE);
 
-    bytes.extend(stake.value.to_le_bytes());
-    bytes.extend(stake.eligibility.to_le_bytes());
-    bytes.extend(stake.created_at.to_le_bytes());
-    bytes.extend(note.to_bytes());
+    msg.extend(counter.to_bytes());
+    msg.extend(address.to_bytes());
+    msg.extend(nonce.to_bytes());
 
-    sk.sign(pk, &bytes)
+    sk.sign(pk, &msg)
 }
 
 /// Generates an obfuscated note for the given public spend key.

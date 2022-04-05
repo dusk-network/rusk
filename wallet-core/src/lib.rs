@@ -21,7 +21,7 @@ mod tx;
 
 use alloc::vec::Vec;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
-use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_bytes::{DeserializableSlice, Serializable, Write};
 use dusk_jubjub::{BlsScalar, JubJubAffine, JubJubScalar};
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::proof_system::Proof;
@@ -142,12 +142,8 @@ pub trait StateClient {
     /// Error returned by the node client.
     type Error;
 
-    /// Find notes for a view key, starting from the given block height.
-    fn fetch_notes(
-        &self,
-        height: u64,
-        vk: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error>;
+    /// Find notes for a view key.
+    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error>;
 
     /// Fetch the current anchor of the state.
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
@@ -165,15 +161,13 @@ pub trait StateClient {
         note: &Note,
     ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error>;
 
-    /// Queries the node for the stake of a key.
+    /// Queries the node for the stake of a key. If the key has no stake, a
+    /// `Default` stake info should be returned.
     fn fetch_stake(&self, pk: &PublicKey) -> Result<StakeInfo, Self::Error>;
-
-    /// Asks the node for the current block height.
-    fn fetch_block_height(&self) -> Result<u64, Self::Error>;
 }
 
 /// Information about the balance of a particular key.
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct BalanceInfo {
     /// The total value of the balance.
     pub value: u64,
@@ -198,30 +192,36 @@ impl Serializable<16> for BalanceInfo {
         Ok(Self { value, spendable })
     }
 
+    #[allow(unused_must_use)]
     fn to_bytes(&self) -> [u8; Self::SIZE] {
         let mut buf = [0u8; Self::SIZE];
+        let mut writer = &mut buf[..];
 
-        buf[0..8].copy_from_slice(&self.value.to_bytes());
-        buf[8..16].copy_from_slice(&self.spendable.to_bytes());
+        writer.write(&self.value.to_bytes());
+        writer.write(&self.spendable.to_bytes());
 
         buf
     }
 }
 
 /// The stake of a particular key.
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct StakeInfo {
-    /// The amount staked.
-    pub value: u64,
-    /// Block by which the stake is valid.
-    pub eligibility: u64,
-    /// Block by which stake was created.
-    pub created_at: u64,
+    /// The value and eligibility of the stake, in that order.
+    pub amount: Option<(u64, u64)>,
+    /// The reward available for withdrawal.
+    pub reward: u64,
+    /// Signature counter.
+    pub counter: u64,
 }
 
-impl Serializable<24> for StakeInfo {
+impl Serializable<32> for StakeInfo {
     type Error = dusk_bytes::Error;
 
+    /// Deserializes in the same order as defined in [`to_bytes`]. If the
+    /// deserialized value is 0, then `amount` will be `None`. This means that
+    /// the eligibility value is left loose, and could be any number when value
+    /// is 0.
     fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
     where
         Self: Sized,
@@ -230,21 +230,35 @@ impl Serializable<24> for StakeInfo {
 
         let value = u64::from_reader(&mut reader)?;
         let eligibility = u64::from_reader(&mut reader)?;
-        let created_at = u64::from_reader(&mut reader)?;
+        let reward = u64::from_reader(&mut reader)?;
+        let counter = u64::from_reader(&mut reader)?;
+
+        let amount = match value > 0 {
+            true => Some((value, eligibility)),
+            false => None,
+        };
 
         Ok(Self {
-            value,
-            eligibility,
-            created_at,
+            amount,
+            reward,
+            counter,
         })
     }
 
+    /// Serializes the amount and the eligibility first, and then the reward and
+    /// the counter. If `amount` is `None`, and since a stake of no value should
+    /// not be possible, the first 16 bytes are filled with zeros.
+    #[allow(unused_must_use)]
     fn to_bytes(&self) -> [u8; Self::SIZE] {
         let mut buf = [0u8; Self::SIZE];
+        let mut writer = &mut buf[..];
 
-        buf[0..8].copy_from_slice(&self.value.to_bytes());
-        buf[8..16].copy_from_slice(&self.eligibility.to_bytes());
-        buf[16..24].copy_from_slice(&self.created_at.to_bytes());
+        let (value, eligibility) = self.amount.unwrap_or_default();
+
+        writer.write(&value.to_bytes());
+        writer.write(&eligibility.to_bytes());
+        writer.write(&self.reward.to_bytes());
+        writer.write(&self.counter.to_bytes());
 
         buf
     }

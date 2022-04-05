@@ -16,18 +16,18 @@ use mock::{mock_canon_wallet, mock_serde_wallet, mock_wallet};
 #[test]
 fn serde_stake() {
     let stake = StakeInfo {
-        value: 0x4321,
-        eligibility: 0x1234,
-        created_at: 0x9876,
+        amount: Some((1000, 0)),
+        reward: 100,
+        counter: 1,
     };
 
     let stake_bytes = stake.to_bytes();
     let des_stake =
         StakeInfo::from_bytes(&stake_bytes).expect("serde to go correctly");
 
-    assert_eq!(stake.value, des_stake.value);
-    assert_eq!(stake.eligibility, des_stake.eligibility);
-    assert_eq!(stake.created_at, des_stake.created_at);
+    assert_eq!(stake.amount, des_stake.amount);
+    assert_eq!(stake.reward, des_stake.reward);
+    assert_eq!(stake.counter, des_stake.counter);
 }
 
 #[test]
