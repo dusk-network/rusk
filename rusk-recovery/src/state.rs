@@ -33,6 +33,11 @@ const GENESIS_DUSK: Dusk = dusk(1_000.0);
 const FAUCET_DUSK: Dusk = dusk(1_000_000_000.0);
 
 lazy_static! {
+    pub static ref DUSK_KEY: PublicSpendKey = {
+        let bytes = include_bytes!("../dusk.psk");
+        PublicSpendKey::from_bytes(bytes)
+            .expect("faucet should have a valid key")
+    };
     pub static ref FAUCET_KEY: PublicSpendKey = {
         let bytes = include_bytes!("../faucet.psk");
         PublicSpendKey::from_bytes(bytes)
@@ -69,8 +74,7 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
     let mut transfer = TransferContract::default();
     let mut rng = StdRng::seed_from_u64(0xdead_beef);
 
-    let note =
-        Note::transparent(&mut rng, TransferContract::dusk_key(), GENESIS_DUSK);
+    let note = Note::transparent(&mut rng, &DUSK_KEY, GENESIS_DUSK);
 
     transfer
         .push_note(0, note)
@@ -87,7 +91,21 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
         .update_root()
         .expect("Root to be updated after pushing genesis note");
 
+    let stake_amount = stake_amount(testnet);
+    let stake_balance = stake_amount * PROVISIONERS.len() as u64;
+
     transfer
+        .add_balance(rusk_abi::stake_contract(), stake_balance)
+        .expect("Stake contract balance to be set with provisioner stakes");
+
+    transfer
+}
+
+const fn stake_amount(testnet: bool) -> Dusk {
+    match testnet {
+        true => dusk(2_000_000.0),
+        false => MINIMUM_STAKE,
+    }
 }
 
 /// Creates a new stake contract state with preset stakes added for the
@@ -97,16 +115,12 @@ fn genesis_stake(testnet: bool) -> StakeContract {
     let theme = Theme::default();
     let mut stake_contract = StakeContract::default();
 
-    let stake_amount = match testnet {
-        true => dusk(2_000_000.0),
-        false => MINIMUM_STAKE,
-    };
-
-    let stake = Stake::with_eligibility(stake_amount, 0, 0);
+    let stake_amount = stake_amount(testnet);
 
     for provisioner in PROVISIONERS.iter() {
+        let stake = Stake::with_eligibility(stake_amount, 0, 0);
         stake_contract
-            .push_stake(*provisioner, stake, 0)
+            .insert_stake(*provisioner, stake)
             .expect("Genesis stake to be pushed to the stake");
     }
     info!(
