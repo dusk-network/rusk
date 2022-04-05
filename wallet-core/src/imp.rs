@@ -52,13 +52,28 @@ pub enum Error<S: Store, SC: StateClient, PC: ProverClient> {
     NoteCombinationProblem,
     /// The key is already staked. This happens when there already is an amount
     /// staked for a key and the user tries to make a stake transaction.
-    AlreadyStaked((PublicKey, StakeInfo)),
+    AlreadyStaked {
+        /// The key that already has a stake.
+        key: PublicKey,
+        /// Information about the key's stake.
+        stake: StakeInfo,
+    },
     /// The key is not staked. This happens when a key doesn't have an amount
     /// staked and the user tries to make an unstake transaction.
-    NotStaked((PublicKey, StakeInfo)),
+    NotStaked {
+        /// The key that is not staked.
+        key: PublicKey,
+        /// Information about the key's stake.
+        stake: StakeInfo,
+    },
     /// The key has no reward. This happens when a key has no reward in the
     /// stake contract and the user tries to make a withdraw transaction.
-    NoReward((PublicKey, StakeInfo)),
+    NoReward {
+        /// The key that has no reward.
+        key: PublicKey,
+        /// Information about the key's stake.
+        stake: StakeInfo,
+    },
 }
 
 impl<S: Store, SC: StateClient, PC: ProverClient> Error<S, SC, PC> {
@@ -331,7 +346,7 @@ where
         let stake =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
         if stake.amount.is_some() {
-            return Err(Error::AlreadyStaked((pk, stake)));
+            return Err(Error::AlreadyStaked { key: pk, stake });
         }
 
         let blinder = JubJubScalar::random(rng);
@@ -417,7 +432,8 @@ where
 
         let stake =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
-        let (value, _) = stake.amount.ok_or(Error::NotStaked((pk, stake)))?;
+        let (value, _) =
+            stake.amount.ok_or(Error::NotStaked { key: pk, stake })?;
 
         let blinder = JubJubScalar::random(rng);
 
@@ -508,7 +524,7 @@ where
         let stake =
             self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
         if stake.reward == 0 {
-            return Err(Error::NoReward((pk, stake)));
+            return Err(Error::NoReward { key: pk, stake });
         }
 
         let withdraw_r = JubJubScalar::random(rng);
@@ -725,6 +741,9 @@ fn sign_stct<Rng: RngCore + CryptoRng>(
 
 /// Creates a signature compatible with what the stake contract expects for a
 /// stake transaction.
+///
+/// The counter is the number of transactions that have been sent to the
+/// transfer contract by a given key, and is reported in `StakeInfo`.
 fn stake_sign(
     sk: &SecretKey,
     pk: &PublicKey,
@@ -741,6 +760,9 @@ fn stake_sign(
 
 /// Creates a signature compatible with what the stake contract expects for a
 /// unstake transaction.
+///
+/// The counter is the number of transactions that have been sent to the
+/// transfer contract by a given key, and is reported in `StakeInfo`.
 fn unstake_sign(
     sk: &SecretKey,
     pk: &PublicKey,
@@ -757,6 +779,9 @@ fn unstake_sign(
 
 /// Creates a signature compatible with what the stake contract expects for a
 /// withdraw transaction.
+///
+/// The counter is the number of transactions that have been sent to the
+/// transfer contract by a given key, and is reported in `StakeInfo`.
 fn withdraw_sign(
     sk: &SecretKey,
     pk: &PublicKey,

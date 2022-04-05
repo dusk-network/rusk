@@ -621,9 +621,9 @@ impl<S: Store, SC: StateClient, PC: ProverClient> From<Error<S, SC, PC>>
             Error::NoteCombinationProblem => 249,
             Error::Canon(_) => 248,
             Error::Phoenix(_) => 247,
-            Error::AlreadyStaked(_) => 246,
-            Error::NotStaked(_) => 245,
-            Error::NoReward(_) => 244,
+            Error::AlreadyStaked { .. } => 246,
+            Error::NotStaked { .. } => 245,
+            Error::NoReward { .. } => 244,
         }
     }
 }
