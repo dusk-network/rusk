@@ -5,19 +5,20 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
+use crate::transaction::{CoinbasePayload, TransferPayload};
 use crate::Result;
 
 use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
-use dusk_pki::{Ownable, PublicSpendKey, ViewKey};
+use dusk_pki::{Ownable, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
-use dusk_wallet_core::Transaction;
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk_abi::dusk::*;
 use rusk_abi::POSEIDON_TREE_DEPTH;
+use rusk_recovery_tools::provisioners::DUSK_KEY;
 use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
 use std::sync::Arc;
@@ -68,13 +69,13 @@ impl RuskState {
     pub fn execute<R>(
         &mut self,
         block_height: u64,
-        transaction: Transaction,
+        transaction: TransferPayload,
         gas_meter: &mut GasMeter,
     ) -> Result<R>
     where
         R: Canon,
     {
-        Ok(self.network().lock().transact::<Transaction, R>(
+        Ok(self.network().lock().transact::<TransferPayload, R>(
             rusk_abi::transfer_contract(),
             block_height,
             transaction,
@@ -134,68 +135,66 @@ impl RuskState {
         Ok(stake.stakes()?)
     }
 
-    /// Mints two notes into the transfer contract state, to pay gas fees.
-    pub fn mint(
+    /// Generate a coinbase to award Dusk and the block generator with both
+    /// block fees and emission schedule.
+    pub fn generate_coinbase(
         &mut self,
         block_height: u64,
-        dusk_spent: u64,
-        generator: Option<&PublicSpendKey>,
-    ) -> Result<(Note, Note)> {
-        let (dusk_value, generator_value) =
-            coinbase_value(block_height, dusk_spent);
+        dusk_spent: Dusk,
+        generator: Option<&PublicKey>,
+    ) -> Result<CoinbasePayload> {
+        let generator = *generator.unwrap_or(&DUSK_KEY);
 
-        let mut transfer = self.transfer_contract()?;
-        let notes = transfer.mint(
+        let coinbase = CoinbasePayload {
             block_height,
-            dusk_value,
-            generator_value,
             generator,
-        )?;
-
-        // SAFETY: this is safe because we know the transfer contract exists at
-        // the given contract ID.
-        unsafe {
-            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
         };
 
-        Ok(notes)
+        self.push_coinbase(dusk_spent, &coinbase)?;
+
+        Ok(coinbase)
     }
 
-    /// Pushes two notes onto the state, checking their amounts to be correct
-    /// and updates it.
-    pub fn push_coinbase(
+    /// Pushes the coinbase onto the state
+    pub fn award_coinbase(
         &mut self,
         block_height: u64,
-        dusk_spent: u64,
-        coinbase: (Note, Note),
+        dusk_spent: Dusk,
+        coinbase: CoinbasePayload,
     ) -> Result<()> {
-        let mut transfer = self.transfer_contract()?;
-
-        let dusk_value = coinbase.0.value(None)?;
-        let generator_value = coinbase.1.value(None)?;
-
-        let (expected_dusk, expected_generator) =
-            coinbase_value(block_height, dusk_spent);
-
-        if dusk_value != expected_dusk {
-            return Err(Error::CoinbaseValue(dusk_value, expected_dusk));
-        }
-        if generator_value != expected_generator {
-            return Err(Error::CoinbaseValue(
-                generator_value,
-                expected_generator,
+        // Block height must be te same as the current block
+        if coinbase.block_height != block_height {
+            return Err(Error::CoinbaseBlockHeight(
+                coinbase.block_height,
+                block_height,
             ));
         }
 
-        transfer.push_note(block_height, coinbase.0)?;
-        transfer.push_note(block_height, coinbase.1)?;
+        self.push_coinbase(dusk_spent, &coinbase)?;
 
-        transfer.update_root()?;
+        Ok(())
+    }
 
-        // SAFETY: this is safe because we know the transfer contract exists
-        // at the given contract ID.
+    /// Pushes the coinbase rewards to the state.
+    fn push_coinbase(
+        &mut self,
+        dusk_spent: Dusk,
+        coinbase: &CoinbasePayload,
+    ) -> Result<()> {
+        let (dusk_value, generator_value) =
+            coinbase_value(coinbase.block_height, dusk_spent);
+
+        let generator_key = &coinbase.generator;
+
+        let mut stake = self.stake_contract()?;
+
+        stake.reward(&DUSK_KEY, dusk_value)?;
+        stake.reward(generator_key, generator_value)?;
+
+        // SAFETY: this is safe because we know the stake contract exists at the
+        // given contract ID
         unsafe {
-            self.set_contract_state(&rusk_abi::transfer_contract(), &transfer)?
+            self.set_contract_state(&rusk_abi::stake_contract(), &stake)?
         };
 
         Ok(())
@@ -242,9 +241,16 @@ impl RuskState {
             .ok_or_else(|| Error::OpeningNoteUndefined(*note.pos()))
     }
 
-    /// Returns the stake of a key.
+    /// Returns the stake of a key. If no stake is found, the default is
+    /// returned.
     pub fn fetch_stake(&self, pk: &PublicKey) -> Result<Stake> {
-        Ok(self.stake_contract()?.get_stake(pk)?)
+        let stake = self
+            .stake_contract()?
+            .get_stake(pk)?
+            .map(|stake| stake.clone())
+            .unwrap_or_default();
+
+        Ok(stake)
     }
 
     /// Returns `true` if any of the nullifier given exists in the current
@@ -270,7 +276,7 @@ impl RuskState {
 ///
 /// 90% of the total value goes to the generator (rounded up).
 /// 10% of the total value goes to the Dusk address (rounded down).
-const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (u64, u64) {
+const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (Dusk, Dusk) {
     let value = emission_amount(block_height) + dusk_spent;
 
     let dusk_value = value / 10;
@@ -280,7 +286,7 @@ const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (u64, u64) {
 }
 
 /// This implements the emission schedule described in the economic paper.
-const fn emission_amount(block_height: u64) -> u64 {
+const fn emission_amount(block_height: u64) -> Dusk {
     match block_height {
         1..=12_500_000 => dusk(16.0),
         12_500_001..=18_750_000 => dusk(12.8),

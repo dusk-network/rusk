@@ -8,7 +8,6 @@
 
 use crate::Result;
 use blake2::{digest::consts::U32, Blake2b, Digest};
-use dusk_wallet_core::Transaction;
 use kadcast::config::Config as KadcastConfig;
 use kadcast::{MessageInfo, NetworkListen, Peer};
 use tokio::sync::broadcast::Receiver;
@@ -18,6 +17,7 @@ use tracing::{debug, error, warn};
 
 use crate::error::Error;
 
+use crate::transaction::TransferPayload;
 use futures::Stream;
 pub use rusk_schema::{
     network_server::{Network, NetworkServer},
@@ -26,8 +26,6 @@ pub use rusk_schema::{
 };
 use std::io::Write;
 use std::{net::SocketAddr, pin::Pin};
-
-use super::{TX_TYPE_TRANSFER, TX_VERSION};
 
 pub struct KadcastDispatcher {
     dummy_addr: SocketAddr,
@@ -118,7 +116,7 @@ impl Network for KadcastDispatcher {
         let wire_message = {
             // Ensure that the received buffer is a transaction
             let verified_tx =
-                Transaction::from_slice(&request.get_ref().message)
+                TransferPayload::from_slice(&request.get_ref().message)
                     .map_err(Error::Serialization)?;
             let tx_bytes = verified_tx.to_var_bytes();
             serialization::network_marshal(&tx_bytes)?
@@ -198,6 +196,7 @@ impl Network for KadcastDispatcher {
 mod serialization {
     use super::*;
     use dusk_bytes::Serializable;
+    use rusk_schema::{TX_TYPE_TRANSFER, TX_VERSION};
 
     const TX_CATEGORY: u8 = 10;
 

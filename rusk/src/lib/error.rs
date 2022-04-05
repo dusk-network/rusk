@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::Serializable;
-use dusk_pki::PublicKey;
+use rusk_abi::dusk::Dusk;
 use std::{fmt, io};
 use tonic::Status;
 
@@ -39,10 +38,10 @@ pub enum Error {
     Status(tonic::Status),
     /// Canonical Errors
     Canonical(canonical::CanonError),
-    /// Stake not found for key.
-    StakeNotFound(PublicKey),
-    /// Bad coinbase value (got, expected).
-    CoinbaseValue(u64, u64),
+    /// Bad block height in coinbase (got, expected)
+    CoinbaseBlockHeight(u64, u64),
+    /// Bad dusk spent in coinbase (got, expected).
+    CoinbaseDuskSpent(Dusk, Dusk),
     /// Other
     Other(Box<dyn std::error::Error>),
 }
@@ -58,6 +57,12 @@ impl From<Box<dyn std::error::Error>> for Error {
 impl From<rusk_vm::VMError> for Error {
     fn from(err: rusk_vm::VMError) -> Self {
         Error::Vm(err)
+    }
+}
+
+impl From<dusk_bytes::Error> for Error {
+    fn from(err: dusk_bytes::Error) -> Self {
+        Self::Serialization(err)
     }
 }
 
@@ -137,16 +142,20 @@ impl fmt::Display for Error {
             }
             Error::Status(err) => write!(f, "Status Error: {}", err),
             Error::Canonical(err) => write!(f, "Canonical Error: {:?}", err),
-            Error::StakeNotFound(pk) => {
-                write!(f, "Couldn't find stake for {:?}", pk.to_bytes())
-            }
-            Error::CoinbaseValue(got, expected) => write!(
-                f,
-                "Received coinbase with value {}, expected {}",
-                got, expected
-            ),
             Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
             Error::Other(err) => write!(f, "Other error: {}", err),
+            Error::CoinbaseBlockHeight(got, expected) => write!(
+                f,
+                "Coinbase has block height {}, expected {}",
+                got, expected
+            ),
+            Error::CoinbaseDuskSpent(got, expected) => {
+                write!(
+                    f,
+                    "Coinbase has dusk spent {}, expected {}",
+                    got, expected
+                )
+            }
         }
     }
 }
@@ -154,5 +163,43 @@ impl fmt::Display for Error {
 impl From<Error> for Status {
     fn from(err: Error) -> Self {
         Status::internal(format!("{}", err))
+    }
+}
+
+impl From<Error> for rusk_schema::executed_transaction::Error {
+    fn from(err: Error) -> Self {
+        use rusk_schema::executed_transaction::error::Code;
+
+        let (code, contract_id, data) = match err {
+            Error::Vm(e) => match e {
+                rusk_vm::VMError::UnknownContract(id) => {
+                    (Code::UnknownContract, id, format!("{}", e))
+                }
+                rusk_vm::VMError::ContractPanic(id, data) => {
+                    (Code::ContractPanic, id, data)
+                }
+                rusk_vm::VMError::OutOfGas => (
+                    Code::OutOfGas,
+                    rusk_abi::transfer_contract(),
+                    format!("{}", e),
+                ),
+                _ => (
+                    Code::Other,
+                    rusk_abi::transfer_contract(),
+                    format!("{}", e),
+                ),
+            },
+            _ => (
+                Code::Other,
+                rusk_abi::transfer_contract(),
+                format!("{}", err),
+            ),
+        };
+
+        Self {
+            code: code.into(),
+            contract_id: contract_id.as_bytes().to_vec(),
+            data,
+        }
     }
 }

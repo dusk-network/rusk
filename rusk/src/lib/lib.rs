@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod encoding;
+use crate::error::Error;
+pub use crate::state::RuskState;
+
 pub mod error;
 pub mod services;
 pub mod state;
 pub mod transaction;
 
-use crate::error::Error;
-pub use crate::state::RuskState;
-use dusk_pki::PublicSpendKey;
+use dusk_bls12_381_sign::PublicKey;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -37,7 +37,7 @@ pub struct RuskBuilder {
     id: Option<NetworkStateId>,
     path: Option<PathBuf>,
     backend: fn() -> BackendCtor<DiskBackend>,
-    generator: Option<PublicSpendKey>,
+    generator: Option<PublicKey>,
 }
 
 impl RuskBuilder {
@@ -57,7 +57,7 @@ impl RuskBuilder {
 
     pub fn generator<T>(mut self, generator: T) -> Self
     where
-        T: Into<Option<PublicSpendKey>>,
+        T: Into<Option<PublicKey>>,
     {
         self.generator = generator.into();
         self
@@ -109,7 +109,7 @@ pub struct Rusk {
     backend: fn() -> BackendCtor<DiskBackend>,
     network: Arc<Mutex<NetworkState>>,
     path: Option<PathBuf>,
-    generator: Option<PublicSpendKey>,
+    generator: Option<PublicKey>,
 }
 
 impl Rusk {

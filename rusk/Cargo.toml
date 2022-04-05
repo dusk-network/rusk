@@ -33,13 +33,13 @@ hex = "0.4"
 
 dusk-schnorr = "0.10.0-rc"
 dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
-dusk-plonk = { version = "0.10", features = ["canon" ]}
+dusk-plonk = { version = "0.10", features = ["canon"] }
 dusk-bls12_381 = { version = "0.9", features = ["canon"] }
 dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
 dusk-jubjub = { version = "0.11", features = ["canon"] }
-dusk-pki ="0.10.0-rc"
+dusk-pki = "0.10.0-rc"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.13.0-rc"
+dusk-wallet-core = "0.14.0-rc.0"
 dusk-abi = "0.11"
 rusk-vm = "0.12.0-rc"
 phoenix-core = "0.16.0-rc"

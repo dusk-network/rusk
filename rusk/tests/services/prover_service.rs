@@ -176,11 +176,7 @@ impl TestStateClient {
 impl StateClient for TestStateClient {
     type Error = ();
 
-    fn fetch_notes(
-        &self,
-        _: u64,
-        _: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(&self, _: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         Ok(self.notes.clone())
     }
 
@@ -204,10 +200,6 @@ impl StateClient for TestStateClient {
         _nullifiers: &[BlsScalar],
     ) -> Result<Vec<BlsScalar>, Self::Error> {
         Ok(self.nullifiers.clone())
-    }
-
-    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        unimplemented!()
     }
 }
 
