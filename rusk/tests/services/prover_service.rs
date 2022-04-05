@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::common::setup;
+use crate::common::*;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
@@ -21,10 +21,8 @@ use phoenix_core::{Crossover, Fee};
 use phoenix_core::{Note, NoteType};
 use rand::{CryptoRng, RngCore};
 use rusk::services::prover::{ProverServer, RuskProver};
-use rusk::services::rusk_proto::prover_client::ProverClient;
-use rusk::services::rusk_proto::ExecuteProverRequest;
-use tokio::runtime::Handle;
-use tokio::task::block_in_place;
+use rusk_schema::prover_client::ProverClient;
+use rusk_schema::ExecuteProverRequest;
 use tonic::transport::Channel;
 use tonic::transport::Server;
 
@@ -114,14 +112,11 @@ impl WalletProverClient for TestWalletProverClient {
             tonic::Request::new(ExecuteProverRequest { utx: utx_bytes });
 
         let mut prover = self.client.lock();
-        let response = block_in_place(move || {
-            Handle::current()
-                .block_on(async move { prover.prove_execute(request).await })
-            // FIX_ME: Include network propagation test as soon as
-            // NetworkService is included in tests
-        })
-        .expect("successful call")
-        .into_inner();
+        let response = prover
+            .prove_execute(request)
+            .wait()
+            .expect("successful call")
+            .into_inner();
 
         let proof = Proof::from_slice(&response.proof).expect("valid proof");
         let tx = utx.clone().prove(proof);

@@ -7,10 +7,9 @@
 use crate::common::setup;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
-use dusk_plonk::prelude::*;
 use rusk::services::pki::{KeysServer, RuskKeys};
-use rusk::services::rusk_proto::keys_client::KeysClient;
-use rusk::services::rusk_proto::GenerateKeysRequest;
+use rusk_schema::keys_client::KeysClient;
+use rusk_schema::GenerateKeysRequest;
 use tonic::transport::Server;
 
 #[tokio::test(flavor = "multi_thread")]
@@ -32,25 +31,13 @@ pub async fn pki_walkthrough_uds() -> Result<(), Box<dyn std::error::Error>> {
 
     let sk = response.sk.unwrap();
     // Make sure as well, that the keys are related.
-    let a = JubJubScalar::from_slice(&sk.a).expect("Decoding error");
-    let b = JubJubScalar::from_slice(&sk.b).expect("Decoding error");
-    let sk = SecretSpendKey::new(a, b);
+    let sk = SecretSpendKey::from_slice(&sk.payload).expect("Decoding error");
 
     let vk = response.vk.unwrap();
-    let a = JubJubScalar::from_slice(&vk.a).expect("Decoding error");
-    let b = JubJubExtended::from(
-        JubJubAffine::from_slice(&vk.b_g).expect("Decoding error"),
-    );
-    let vk = ViewKey::new(a, b);
+    let vk = ViewKey::from_slice(&vk.payload).expect("Decoding error");
 
     let pk = response.pk.unwrap();
-    let a = JubJubExtended::from(
-        JubJubAffine::from_slice(&pk.a_g).expect("Decoding error"),
-    );
-    let b = JubJubExtended::from(
-        JubJubAffine::from_slice(&pk.b_g).expect("Decoding error"),
-    );
-    let psk = PublicSpendKey::new(a, b);
+    let psk = PublicSpendKey::from_slice(&pk.payload).expect("Decoding error");
 
     assert_eq!(sk.view_key(), vk);
     assert_eq!(sk.public_spend_key(), psk);

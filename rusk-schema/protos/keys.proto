@@ -2,23 +2,19 @@ syntax = "proto3";
 package rusk;
 
 message SecretKey {
-    bytes a = 1; // JubJubScalar
-    bytes b = 2; // JubJubScalar
+    bytes payload = 1;
 }
 
 message ViewKey {
-    bytes a = 1; // JubJubScalar
-    bytes b_g = 2; // JubJubCompressed, B = b * G
+    bytes payload = 1;
 }
 
 message PublicKey {
-    bytes a_g = 1; // JubJubCompressed, A = a * G
-    bytes b_g = 2; // JubJubCompressed, B = b * G
+    bytes payload = 1;
 }
 
 message StealthAddress {
-    bytes r_g = 1; // JubJubCompressed, R = r * G
-    bytes pk_r = 2; // JubJubCompressed
+    bytes payload = 1;
 }
 
 message GenerateKeysRequest {}

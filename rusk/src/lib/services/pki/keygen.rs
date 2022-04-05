@@ -6,14 +6,13 @@
 
 //! Public Key Infrastructure service implementation for the Rusk server.
 
-use super::rusk_proto;
 use super::ServiceRequestHandler;
 use dusk_pki::{PublicSpendKey, SecretSpendKey, ViewKey};
 use rand::thread_rng;
 use tonic::{Request, Response, Status};
 
 // Re-export the main types needed by PKI-GenerateKeys Service.
-pub use rusk_proto::{GenerateKeysRequest, GenerateKeysResponse};
+pub use rusk_schema::{GenerateKeysRequest, GenerateKeysResponse};
 
 /// Implementation of the ScoreGeneration Handler.
 pub struct KeyGenHandler<'a> {

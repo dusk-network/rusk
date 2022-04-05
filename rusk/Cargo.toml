@@ -46,6 +46,7 @@ phoenix-core = "0.16.0-rc"
 kadcast = "0.4.0-rc.5"
 canonical = "0.7"
 canonical_derive = "0.7"
+parking_lot = "0.11"
 
 rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { path = "../circuits/transfer" }
@@ -54,7 +55,7 @@ stake-contract = { path = "../contracts/stake" }
 rusk-profile = { path = "../rusk-profile" }
 microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-abi = { path = "../rusk-abi" }
-parking_lot = "0.11"
+rusk-schema = { path = "../rusk-schema" }
 
 [dev-dependencies]
 tower = "0.4"

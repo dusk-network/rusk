@@ -7,6 +7,7 @@ members = [
     "rusk-recovery",
     "rusk-profile",
     "rusk-abi",
+    "rusk-schema",
     "rusk",
     "test-utils/transfer-wrapper",
     "test-utils/contracts/alice",

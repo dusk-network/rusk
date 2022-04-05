@@ -6,7 +6,6 @@
 
 //! Public Key Infrastructure service implementation for the Rusk server.
 
-use super::rusk_proto;
 use super::ServiceRequestHandler;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::PublicSpendKey;
@@ -14,7 +13,7 @@ use std::convert::TryInto;
 use tonic::{Request, Response, Status};
 
 // Re-export the needed types for PKI-GenStealthAddr Service.
-pub use rusk_proto::{PublicKey, StealthAddress};
+pub use rusk_schema::{PublicKey, StealthAddress};
 
 /// Implementation of the ScoreGeneration Handler.
 pub struct StealthAddrGenHandler<'a> {
