@@ -8,7 +8,6 @@
 
 use crate::Result;
 use blake2::{digest::consts::U32, Blake2b, Digest};
-use dusk_bytes::Serializable;
 use dusk_wallet_core::Transaction;
 use kadcast::config::Config as KadcastConfig;
 use kadcast::{MessageInfo, NetworkListen, Peer};
@@ -122,10 +121,7 @@ impl Network for KadcastDispatcher {
                 Transaction::from_slice(&request.get_ref().message)
                     .map_err(Error::Serialization)?;
             let tx_bytes = verified_tx.to_var_bytes();
-            serialization::network_marshal(
-                &tx_bytes,
-                &verified_tx.hash().to_bytes().to_vec()[..],
-            )?
+            serialization::network_marshal(&tx_bytes)?
         };
 
         self.peer.broadcast(&wire_message, None).await;
@@ -221,13 +217,8 @@ mod serialization {
         CHECKSUM_LEN // CHECKSUM
     };
 
-    const HASH_LEN: usize = 32;
-
     /// This serialize a transaction in a way that is handled by the network
-    pub(super) fn network_marshal(
-        tx: &[u8],
-        tx_hash: &[u8],
-    ) -> Result<Vec<u8>> {
+    pub(super) fn network_marshal(tx: &[u8]) -> Result<Vec<u8>> {
         // WIRE FORMAT:
         // - Length (uint64LE)
         // - Version (8bytes)
@@ -235,7 +226,7 @@ mod serialization {
         // - Checksum - blake2b256(Transaction)[..4]
         // - Transaction
 
-        let tx_wire = tx_marshal(tx, tx_hash)?;
+        let tx_wire = tx_marshal(tx)?;
         let checksum = {
             let mut hasher = Blake2b::<U32>::new();
             hasher.update(&tx_wire);
@@ -257,7 +248,7 @@ mod serialization {
         Ok(network_message)
     }
 
-    fn tx_marshal(payload: &[u8], tx_hash: &[u8]) -> Result<Vec<u8>> {
+    fn tx_marshal(payload: &[u8]) -> Result<Vec<u8>> {
         // TX FORMAT
         // - Category
         // - Transaction
@@ -266,17 +257,11 @@ mod serialization {
         //   - Payload
         //     - uint32LE length
         //     - blob  payload
-        //   - Hash (256 bit)
-        //   - GasLimit (uint64LE)
-        //   - GasPrice (uint64LE)
         let size = 1 // Category
             + u32::SIZE // Version
             + u32::SIZE // TxType
             + u32::SIZE // Payload Length
-            + payload.len() // Payload
-            + HASH_LEN // Hash
-            + u64::SIZE // GasLimit
-            + u64::SIZE; // GasPrice
+            + payload.len(); // Payload
         let mut tx_wire = vec![0u8; size];
         let mut buffer = &mut tx_wire[..];
         buffer.write_all(&[TX_CATEGORY])?;
@@ -284,9 +269,6 @@ mod serialization {
         buffer.write_all(&TX_TYPE_TRANSFER.to_le_bytes()[..])?;
         buffer.write_all(&(payload.len() as u32).to_le_bytes()[..])?;
         buffer.write_all(payload)?;
-        buffer.write_all(tx_hash)?;
-        buffer.write_all(&0u64.to_le_bytes()[..])?; //GasLimit
-        buffer.write_all(&0u64.to_le_bytes()[..])?; //GasPrice
         Ok(tx_wire)
     }
 }
