@@ -33,4 +33,5 @@ pub const MATURITY: u64 = 2 * EPOCH;
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 pub const TX_STAKE: u8 = 0x00;
-pub const TX_WITHDRAW: u8 = 0x01;
+pub const TX_UNSTAKE: u8 = 0x01;
+pub const TX_WITHDRAW: u8 = 0x02;

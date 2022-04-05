@@ -10,10 +10,6 @@ use core::fmt;
 #[derive(Debug, Clone)]
 pub enum Error {
     Canon(CanonError),
-    StakeNotFound,
-    StakeSerialization,
-    StakeAlreadyExists,
-    InvalidCreatedAt,
     PlonkKeys,
     PlonkProver,
 }

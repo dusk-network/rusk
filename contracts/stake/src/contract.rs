@@ -7,69 +7,87 @@
 use crate::*;
 
 use canonical_derive::Canon;
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 use dusk_hamt::Map;
+use dusk_pki::StealthAddress;
 use microkelvin::First;
 use phoenix_core::Note;
 
 use alloc::vec::Vec;
+use core::ops::{Deref, DerefMut};
 
 #[cfg(feature = "transaction")]
 mod transaction;
 
+/// Contract keeping track of each public key's stake.
+///
+/// A caller can stake Dusk, and have it attached to a public key. This stake
+/// has a maturation period, after which it is considered valid and the key
+/// eligible to participate in the consensus.
+///
+/// Rewards may be received by a public key regardless of whether they have a
+/// valid stake.
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
-    staked: Map<PublicKey, Stake>,
-    last_created: Map<PublicKey, BlockHeight>,
+    pub(crate) stakes: Map<PublicKey, Stake>,
 }
 
 impl StakeContract {
-    pub fn get_stake(&self, key: &PublicKey) -> Result<Stake, Error> {
-        self.staked
-            .get(key)?
-            .map(|s| *s)
-            .ok_or(Error::StakeNotFound)
+    /// Gets a reference to a stake.
+    pub fn get_stake(
+        &self,
+        key: &PublicKey,
+    ) -> Result<Option<impl Deref<Target = Stake> + '_>, Error> {
+        Ok(self.stakes.get(key)?)
     }
 
-    pub fn push_stake(
+    /// Gets a mutable reference to a stake.
+    pub fn get_stake_mut(
         &mut self,
-        pk: PublicKey,
-        stake: Stake,
-        block_height: BlockHeight,
-    ) -> Result<(), Error> {
-        let exists = self.staked.get(&pk)?.is_some();
-        if exists {
-            return Err(Error::StakeAlreadyExists);
-        }
-
-        // `created_at` must never be larger than the block height.
-        if stake.created_at() > block_height {
-            return Err(Error::InvalidCreatedAt);
-        }
-
-        // A last_created entry is left when the stake is removed to be able to
-        // make this check. We try to remove it, and if it exists it must not be
-        // larger or equal to the given `created_at`.
-        if let Some(created_at) = self.last_created.get(&pk)? {
-            if stake.created_at() <= *created_at {
-                return Err(Error::InvalidCreatedAt);
-            }
-        }
-        self.last_created.remove(&pk)?;
-
-        self.last_created.insert(pk, stake.created_at())?;
-        self.staked.insert(pk, stake)?;
-
-        Ok(())
+        key: &PublicKey,
+    ) -> Result<Option<impl DerefMut<Target = Stake> + '_>, Error> {
+        Ok(self.stakes.get_mut(key)?)
     }
 
-    pub fn remove_stake(&mut self, pk: &PublicKey) -> Result<(), Error> {
-        let removed = self.staked.remove(pk)?.is_some();
-        if !removed {
-            return Err(Error::StakeNotFound);
+    /// Pushes the given `stake` onto the state for a given `public_key`. If a
+    /// stake already exists for the given key, it is returned.
+    pub fn insert_stake(
+        &mut self,
+        public_key: PublicKey,
+        stake: Stake,
+    ) -> Result<Option<Stake>, Error> {
+        Ok(self.stakes.insert(public_key, stake)?)
+    }
+
+    /// Gets a mutable reference to the stake of a given key. If said stake
+    /// doesn't exist, a default one is inserted and a mutable reference
+    /// returned.
+    pub(crate) fn load_mut_stake(
+        &mut self,
+        pk: &PublicKey,
+    ) -> Result<impl DerefMut<Target = Stake> + '_, Error> {
+        let is_missing = self.stakes.get(pk)?.is_none();
+
+        if is_missing {
+            let stake = Stake::default();
+            self.stakes.insert(*pk, stake)?;
         }
 
+        // SAFETY: unwrap is ok since we're sure we inserted an element
+        Ok(self.stakes.get_mut(pk)?.unwrap())
+    }
+
+    /// Rewards a `public_key` with the given `value`. If a stake does not exist
+    /// in the map for the key one will be created.
+    pub fn reward(
+        &mut self,
+        public_key: &PublicKey,
+        value: u64,
+    ) -> Result<(), Error> {
+        let mut stake = self.load_mut_stake(public_key)?;
+        stake.increase_reward(value);
         Ok(())
     }
 
@@ -79,7 +97,7 @@ impl StakeContract {
         key: &PublicKey,
     ) -> Result<bool, Error> {
         let is_staked = self
-            .staked
+            .stakes
             .get(key)?
             .filter(|s| s.is_valid(block_height))
             .is_some();
@@ -91,32 +109,46 @@ impl StakeContract {
     pub fn stakes(&self) -> Result<Vec<(PublicKey, Stake)>, Error> {
         let mut stakes = Vec::new();
 
-        if let Some(branch) = self.staked.first()? {
+        if let Some(branch) = self.stakes.first()? {
             for leaf in branch {
                 let leaf = leaf?;
-                stakes.push((leaf.key, leaf.val));
+                stakes.push((leaf.key, leaf.val.clone()));
             }
         }
 
         Ok(stakes)
     }
 
-    pub fn stake_sign_message(value: u64, created_at: BlockHeight) -> Vec<u8> {
+    pub fn stake_sign_message(counter: u64, value: u64) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(16);
 
+        bytes.extend(counter.to_bytes());
         bytes.extend(value.to_bytes());
-        bytes.extend(created_at.to_le_bytes());
 
         bytes
     }
 
-    pub fn withdraw_sign_message(stake: &Stake, note: &Note) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(24 + Note::SIZE);
+    pub fn unstake_sign_message(counter: u64, note: Note) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(u64::SIZE + Note::SIZE);
 
-        bytes.extend(stake.value().to_le_bytes());
-        bytes.extend(stake.eligibility().to_le_bytes());
-        bytes.extend(stake.created_at().to_le_bytes());
+        bytes.extend(counter.to_bytes());
         bytes.extend(note.to_bytes());
+
+        bytes
+    }
+
+    pub fn withdraw_sign_message(
+        counter: u64,
+        address: StealthAddress,
+        nonce: BlsScalar,
+    ) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(
+            u64::SIZE + StealthAddress::SIZE + BlsScalar::SIZE,
+        );
+
+        bytes.extend(counter.to_bytes());
+        bytes.extend(address.to_bytes());
+        bytes.extend(nonce.to_bytes());
 
         bytes
     }

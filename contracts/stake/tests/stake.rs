@@ -4,10 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
-use dusk_pki::Ownable;
+use dusk_jubjub::JubJubScalar;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
-use phoenix_core::Note;
+use phoenix_core::{Fee, Note};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use rusk_abi::dusk::*;
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use transfer_circuits::SendToContractTransparentCircuit;
@@ -15,6 +18,169 @@ use transfer_wrapper::TransferWrapper;
 
 fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
+}
+
+#[test]
+fn withdraw() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk = SecretKey::random(&mut rng);
+    let pk = PublicKey::from(&sk);
+
+    let reward_value = dusk(1000.0);
+    let genesis_value = dusk(50_000.0);
+    let block_height = 1;
+
+    let gas_price = 1;
+    let gas_limit = dusk(1.0) / gas_price;
+
+    let stake = Stake::new(0, reward_value, block_height);
+    let mut wrapper =
+        TransferWrapper::with_stakes(0xbeef, genesis_value, &[(pk, stake)]);
+
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
+    let (_, refund_vk, _) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
+    let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
+
+    let fee = Fee::new(&mut rng, gas_limit, gas_price, &remainder_psk);
+
+    let withdraw_r = JubJubScalar::random(&mut rng);
+    let withdraw_address = withdraw_psk.gen_stealth_address(&withdraw_r);
+    let withdraw_nonce = BlsScalar::random(&mut rng);
+
+    let withdraw_msg = StakeContract::withdraw_sign_message(
+        0,
+        withdraw_address,
+        withdraw_nonce,
+    );
+    let withdraw_sig = sk.sign(&pk, &withdraw_msg);
+
+    let transaction = StakeContract::withdraw_transaction(
+        pk,
+        withdraw_sig,
+        withdraw_address,
+        withdraw_nonce,
+    );
+
+    wrapper
+        .execute(
+            block_height,
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_vk,
+            &remainder_psk,
+            true,
+            fee,
+            None,
+            Some(transaction),
+        )
+        .expect("Failed to execute withdraw transaction");
+
+    let notes = wrapper.notes_owned_by(0, &withdraw_vk);
+
+    assert_eq!(notes.len(), 1);
+
+    let withdraw_value = notes[0]
+        .value(None)
+        .expect("Reward note should be transparent");
+    assert_eq!(
+        withdraw_value, reward_value,
+        "Reward withdrawn should be consistent"
+    );
+
+    let stake_contract = wrapper.stake_state();
+    let stake = stake_contract
+        .get_stake(&pk)
+        .expect("Failed querying the state")
+        .expect("Stake should still exist after withdraw");
+
+    assert_eq!(stake.reward(), 0, "Remaining reward should be 0");
+    assert_eq!(stake.counter(), 1, "Counter should be incremented");
+}
+
+#[test]
+fn unstake() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk = SecretKey::random(&mut rng);
+    let pk = PublicKey::from(&sk);
+
+    let stake_value = dusk(10_000.0);
+    let genesis_value = dusk(50_000.0);
+    let block_height = 1;
+
+    let gas_price = 1;
+    let gas_limit = dusk(1.0) / gas_price;
+
+    let stake = Stake::new(stake_value, 0, block_height);
+    let mut wrapper =
+        TransferWrapper::with_stakes(0xbeef, genesis_value, &[(pk, stake)]);
+
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
+    let (_, refund_vk, refund_psk) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
+    let (_, unstake_vk, unstake_psk) = wrapper.identifier();
+
+    let (fee, crossover) =
+        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
+
+    let unstake_note = Note::transparent(&mut rng, &unstake_psk, stake_value);
+    let unstake_blinder = unstake_note
+        .blinding_factor(None)
+        .expect("Decrypt transparent note is infallible");
+
+    let unstake_message = StakeContract::unstake_sign_message(0, unstake_note);
+    let unstake_sig = sk.sign(&pk, &unstake_message);
+
+    let transaction = StakeContract::unstake_transaction(
+        pk,
+        unstake_sig,
+        unstake_note,
+        unstake_blinder,
+    )
+    .expect("Failed to produce withdraw transaction");
+
+    wrapper
+        .execute(
+            block_height,
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_vk,
+            &remainder_psk,
+            true,
+            fee,
+            Some(crossover),
+            Some(transaction),
+        )
+        .expect("Failed to execute unstake transaction");
+
+    let notes = wrapper.notes_owned_by(block_height, &unstake_vk);
+
+    assert_eq!(notes.len(), 1);
+
+    let unstake_value = notes[0]
+        .value(None)
+        .expect("Unstake note should be transparent");
+    assert_eq!(
+        unstake_value, stake_value,
+        "Unstake value should be consistent"
+    );
+
+    let stake_contract = wrapper.stake_state();
+    let stake = stake_contract
+        .get_stake(&pk)
+        .expect("Failed querying the state")
+        .expect("Stake should still exist after unstake");
+
+    assert_eq!(stake.amount(), None, "There should be no stake amount");
+    assert_eq!(stake.counter(), 1, "Counter should be incremented");
 }
 
 #[test]
@@ -27,22 +193,20 @@ fn stake() {
 
     let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
     let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
-    let (remainder_ssk, remainder_vk, remainder_psk) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
 
     let block_height = 2;
-    let created_at = 1;
 
     let gas_price = 1;
-    let gas_limit = dusk(0.5) / gas_price;
+    let gas_limit = dusk(1.0) / gas_price;
     let stake_value = MINIMUM_STAKE;
-    let stake = Stake::new(stake_value, created_at, block_height);
 
-    let stake_secret = SecretKey::random(wrapper.rng());
-    let stake_pk = PublicKey::from(&stake_secret);
-    let stake_message =
-        StakeContract::stake_sign_message(stake_value, created_at);
-    let stake_signature =
-        stake_secret.sign(&stake_pk, stake_message.as_slice());
+    let sk = SecretKey::random(wrapper.rng());
+    let pk = PublicKey::from(&sk);
+
+    let stake_message = StakeContract::stake_sign_message(0, stake_value);
+
+    let stake_signature = sk.sign(&pk, stake_message.as_slice());
 
     let (fee, crossover) =
         wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
@@ -65,20 +229,11 @@ fn stake() {
         &crossover,
         blinder,
         stct_signature,
-        stake_pk,
+        pk,
         stake_signature,
-        stake,
+        stake_value,
     )
     .expect("Failed to produce stake transaction");
-
-    let eligibility = stake.eligibility();
-
-    let is_staked = wrapper
-        .stake_state()
-        .is_staked(eligibility, &stake_pk)
-        .expect("Failed to query state");
-
-    assert!(!is_staked);
 
     wrapper
         .execute(
@@ -92,108 +247,25 @@ fn stake() {
             Some(crossover),
             Some(transaction),
         )
-        .expect("Failed to stake");
+        .expect("Failed to execute stake transaction");
 
-    let is_staked = wrapper
-        .stake_state()
-        .is_staked(eligibility, &stake_pk)
-        .expect("Failed to query state");
+    let stake_contract = wrapper.stake_state();
+    let stake = stake_contract
+        .get_stake(&pk)
+        .expect("Failed querying the state")
+        .expect("Stake should exist after stake");
 
-    assert!(is_staked);
+    let (staked_value, eligibility) =
+        stake.amount().expect("Stake should have an amount");
 
-    let stake_p = wrapper
-        .stake_state()
-        .get_stake(&stake_pk)
-        .expect("Failed to fetch stake");
-
-    assert_eq!(stake, stake_p);
-
-    let block_height = block_height + 1;
-
-    let stakes = wrapper
-        .stake_state()
-        .stakes()
-        .expect("Failed to fetch all stakes");
-
-    assert_eq!(stakes.len(), 1);
-
-    let unspent_note = wrapper
-        .notes_owned_by(block_height, &remainder_vk)
-        .first()
-        .copied()
-        .expect("Failed to fetch refund note");
-
-    let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
-    let withdraw_note =
-        Note::transparent(wrapper.rng(), &withdraw_psk, stake_value);
-
-    let withdraw_stealth_address = withdraw_note.stealth_address();
-
-    let withdraw_blinder = withdraw_note
-        .blinding_factor(None)
-        .expect("Decrypt transparent note is infallible");
-
-    let withdraw_message =
-        StakeContract::withdraw_sign_message(&stake, &withdraw_note);
-
-    let withdraw_signature =
-        stake_secret.sign(&stake_pk, withdraw_message.as_slice());
-
-    let transaction = StakeContract::withdraw_transaction(
-        stake_pk,
-        withdraw_signature,
-        withdraw_note,
-        stake_value,
-        withdraw_blinder,
-    )
-    .expect("Failed to produce withdraw transaction");
-
-    let eligibility = stake.eligibility();
-
-    let is_staked = wrapper
-        .stake_state()
-        .is_staked(eligibility, &stake_pk)
-        .expect("Failed to query state");
-
-    assert!(is_staked);
-
-    let gas_limit = dusk(1.5) / gas_price;
-    let (fee, crossover) =
-        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
-    wrapper
-        .execute(
-            block_height,
-            &[unspent_note],
-            &[remainder_ssk],
-            &refund_vk,
-            &remainder_psk,
-            true,
-            fee,
-            Some(crossover),
-            Some(transaction),
-        )
-        .expect("Failed to withdraw");
-
-    let is_staked = wrapper
-        .stake_state()
-        .is_staked(eligibility, &stake_pk)
-        .expect("Failed to query state");
-
-    assert!(!is_staked);
-
-    let note = wrapper
-        .notes_owned_by(block_height, &withdraw_vk)
-        .first()
-        .copied()
-        .expect("Failed to fetch withdraw note");
-
-    let stealth_address = note.stealth_address();
-
-    assert_eq!(withdraw_stealth_address, stealth_address);
-
-    let value = note
-        .value(None)
-        .expect("Failed to decrypt transparent note");
-
-    assert_eq!(stake_value, value);
+    assert_eq!(
+        stake_value, *staked_value,
+        "The staked amount should be consistent"
+    );
+    assert_eq!(
+        *eligibility,
+        Stake::eligibility_from_height(block_height),
+        "Eligibility should be as expected"
+    );
+    assert_eq!(stake.counter(), 1, "Counter should be incremented");
 }

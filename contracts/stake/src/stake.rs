@@ -7,90 +7,125 @@
 use crate::*;
 
 use canonical_derive::Canon;
-use dusk_bytes::Serializable;
 
-#[derive(Debug, Default, Clone, Copy, Canon, PartialEq, Eq)]
+/// The representation of a public key's stake.
+///
+/// A user can stake for a particular `amount` larger in value than the
+/// `MINIMUM_STAKE` value and is `reward`ed for participating in the consensus.
+/// A stake is valid only after a particular block height - called the
+/// eligibility.
+///
+/// To keep track of the number of interactions a public key has had with the
+/// contract a `counter` is used to prevent repeat attacks - where the same
+/// signature could be used to prove ownership of the secret key in two
+/// different transactions.
+#[derive(Debug, Default, Clone, Canon, PartialEq, Eq)]
 pub struct Stake {
-    value: u64,
-    eligibility: BlockHeight,
-    created_at: BlockHeight,
+    amount: Option<(u64, BlockHeight)>,
+    reward: u64,
+    counter: u64,
 }
 
 impl Stake {
+    /// Create a new stake given its initial `value` and `reward`, together with
+    /// the `block_height` of its creation.
     pub const fn new(
         value: u64,
-        created_at: BlockHeight,
+        reward: u64,
         block_height: BlockHeight,
     ) -> Self {
-        let epoch = Self::epoch(block_height);
-        let eligibility = block_height + MATURITY + epoch;
-
-        Self::with_eligibility(value, created_at, eligibility)
+        let eligibility = Self::eligibility_from_height(block_height);
+        Self::with_eligibility(value, reward, eligibility)
     }
 
+    /// Create a new stake given its initial `value` and `reward`, together with
+    /// the `eligibility`.
     pub const fn with_eligibility(
         value: u64,
-        created_at: BlockHeight,
+        reward: u64,
         eligibility: BlockHeight,
     ) -> Self {
+        let amount = match value {
+            0 => None,
+            _ => Some((value, eligibility)),
+        };
+
         Self {
-            value,
-            created_at,
-            eligibility,
+            amount,
+            reward,
+            counter: 0,
         }
     }
 
-    pub const fn epoch(block_height: BlockHeight) -> u64 {
-        EPOCH - block_height % EPOCH
+    /// Returns the value the user is staking, together with its eligibility.
+    pub const fn amount(&self) -> Option<&(u64, BlockHeight)> {
+        self.amount.as_ref()
     }
 
-    pub const fn value(&self) -> u64 {
-        self.value
+    /// Returns the value of the reward.
+    pub const fn reward(&self) -> u64 {
+        self.reward
     }
 
-    pub const fn eligibility(&self) -> BlockHeight {
-        self.eligibility
+    /// Returns the interaction count of the stake.
+    pub const fn counter(&self) -> u64 {
+        self.counter
     }
 
-    pub const fn created_at(&self) -> BlockHeight {
-        self.created_at
+    /// Insert a stake [`amount`] with a particular `value`, starting from a
+    /// particular `block_height`.
+    ///
+    /// # Panics
+    /// If the value is zero or the stake already contains an amount.
+    pub fn insert_amount(&mut self, value: u64, block_height: BlockHeight) {
+        if value == 0 {
+            panic!("A stake can't have zero value");
+        }
+
+        if self.amount.is_some() {
+            panic!("Can't stake twice for the same key!");
+        }
+
+        let eligibility = Self::eligibility_from_height(block_height);
+        self.amount = Some((value, eligibility));
     }
 
-    pub const fn is_valid(&self, block_height: u64) -> bool {
-        self.eligibility <= block_height
-    }
-}
-
-impl Serializable<24> for Stake {
-    type Error = Error;
-
-    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error> {
-        let mut value = [0u8; 8];
-        let mut eligibility = [0u8; 8];
-        let mut created_at = [0u8; 8];
-
-        value.copy_from_slice(&buf[..8]);
-        eligibility.copy_from_slice(&buf[8..16]);
-        created_at.copy_from_slice(&buf[16..24]);
-
-        let value = u64::from_le_bytes(value);
-        let eligibility = u64::from_le_bytes(eligibility);
-        let created_at = BlockHeight::from_le_bytes(created_at);
-
-        Ok(Self {
-            value,
-            eligibility,
-            created_at,
-        })
+    /// Increases the held reward by the given `value`.
+    pub fn increase_reward(&mut self, value: u64) {
+        self.reward += value
     }
 
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut bytes = [0u8; Self::SIZE];
+    /// Removes the total [`amount`] staked.
+    ///
+    /// # Panics
+    /// If the stake has no amount.
+    pub fn remove_amount(&mut self) -> (u64, BlockHeight) {
+        self.amount
+            .take()
+            .expect("Can't withdraw non-existing amount!")
+    }
 
-        (&mut bytes[..8]).copy_from_slice(&self.value.to_le_bytes());
-        (&mut bytes[8..16]).copy_from_slice(&self.eligibility.to_le_bytes());
-        (&mut bytes[16..24]).copy_from_slice(&self.created_at.to_le_bytes());
+    /// Sets the reward to zero.
+    pub fn deplete_reward(&mut self) {
+        self.reward = 0;
+    }
 
-        bytes
+    /// Increment the interaction [`counter`].
+    pub fn increment_counter(&mut self) {
+        self.counter += 1;
+    }
+
+    /// Returns true if the stake is valid - meaning there is an amount staked
+    /// and the given `block_height` is larger or equal to the stake's
+    /// eligibility. If there is no `amount` staked this is false.
+    pub fn is_valid(&self, block_height: BlockHeight) -> bool {
+        self.amount
+            .map(|(_, eligibility)| block_height >= eligibility)
+            .unwrap_or_default()
+    }
+
+    pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
+        let epoch = EPOCH - block_height % EPOCH;
+        block_height + MATURITY + epoch
     }
 }
