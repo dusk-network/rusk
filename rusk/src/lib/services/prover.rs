@@ -80,7 +80,7 @@ impl RuskProver {
             })?;
 
         let mut pi: Vec<rusk_abi::PublicInput> =
-            Vec::with_capacity(5 + inputs.len() + 2 * outputs.len());
+            Vec::with_capacity(9 + inputs.len());
 
         pi.push(tx_hash.into());
         pi.push(tx.anchor().into());
@@ -98,6 +98,10 @@ impl RuskProver {
 
         pi.push(fee_value.into());
         pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
+        pi.extend(
+            (0usize..2usize.saturating_sub(outputs.len()))
+                .map(|_| ExecuteCircuit::ZERO_COMMITMENT.into()),
+        );
 
         let keys = rusk_profile::keys_for(circuit.circuit_id())?;
         let vd = &keys.get_verifier()?;
@@ -152,19 +156,13 @@ fn circuit_from_numbers(
 ) -> Option<ExecuteCircuit> {
     use ExecuteCircuit::*;
 
-    match (num_inputs, num_outputs) {
-        (1, 0) => Some(ExecuteCircuitOneZero(Default::default())),
-        (1, 1) => Some(ExecuteCircuitOneOne(Default::default())),
-        (1, 2) => Some(ExecuteCircuitOneTwo(Default::default())),
-        (2, 0) => Some(ExecuteCircuitTwoZero(Default::default())),
-        (2, 1) => Some(ExecuteCircuitTwoOne(Default::default())),
-        (2, 2) => Some(ExecuteCircuitTwoTwo(Default::default())),
-        (3, 0) => Some(ExecuteCircuitThreeZero(Default::default())),
-        (3, 1) => Some(ExecuteCircuitThreeOne(Default::default())),
-        (3, 2) => Some(ExecuteCircuitThreeTwo(Default::default())),
-        (4, 0) => Some(ExecuteCircuitFourZero(Default::default())),
-        (4, 1) => Some(ExecuteCircuitFourOne(Default::default())),
-        (4, 2) => Some(ExecuteCircuitFourTwo(Default::default())),
+    match num_inputs {
+        1 if num_outputs < 3 => Some(ExecuteCircuitOneTwo(Default::default())),
+        2 if num_outputs < 3 => Some(ExecuteCircuitTwoTwo(Default::default())),
+        3 if num_outputs < 3 => {
+            Some(ExecuteCircuitThreeTwo(Default::default()))
+        }
+        4 if num_outputs < 3 => Some(ExecuteCircuitFourTwo(Default::default())),
         _ => None,
     }
 }
