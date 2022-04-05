@@ -1,2 +1,3 @@
 # rusk-schema
-Schema definition for all of the Rusk GRPC services
+
+Schema definition for Rusk GRPC services
