@@ -280,39 +280,11 @@ macro_rules! execute_circuit_variant {
 }
 
 execute_circuit_variant!(
-    ExecuteOneZeroCircuitLoader,
-    ExecuteCircuitOneZero,
-    "ExecuteOneZero",
-    1,
-    0
-);
-execute_circuit_variant!(
-    ExecuteOneOneCircuitLoader,
-    ExecuteCircuitOneOne,
-    "ExecuteOneOne",
-    1,
-    1
-);
-execute_circuit_variant!(
     ExecuteOneTwoCircuitLoader,
     ExecuteCircuitOneTwo,
     "ExecuteOneTwo",
     1,
     2
-);
-execute_circuit_variant!(
-    ExecuteTwoZeroCircuitLoader,
-    ExecuteCircuitTwoZero,
-    "ExecuteTwoZero",
-    2,
-    0
-);
-execute_circuit_variant!(
-    ExecuteTwoOneCircuitLoader,
-    ExecuteCircuitTwoOne,
-    "ExecuteTwoOne",
-    2,
-    1
 );
 execute_circuit_variant!(
     ExecuteTwoTwoCircuitLoader,
@@ -322,39 +294,11 @@ execute_circuit_variant!(
     2
 );
 execute_circuit_variant!(
-    ExecuteThreeZeroCircuitLoader,
-    ExecuteCircuitThreeZero,
-    "ExecuteThreeZero",
-    3,
-    0
-);
-execute_circuit_variant!(
-    ExecuteThreeOneCircuitLoader,
-    ExecuteCircuitThreeOne,
-    "ExecuteThreeOne",
-    3,
-    1
-);
-execute_circuit_variant!(
     ExecuteThreeTwoCircuitLoader,
     ExecuteCircuitThreeTwo,
     "ExecuteThreeTwo",
     3,
     2
-);
-execute_circuit_variant!(
-    ExecuteFourZeroCircuitLoader,
-    ExecuteCircuitFourZero,
-    "ExecuteFourZero",
-    4,
-    0
-);
-execute_circuit_variant!(
-    ExecuteFourOneCircuitLoader,
-    ExecuteCircuitFourOne,
-    "ExecuteFourOne",
-    4,
-    1
 );
 execute_circuit_variant!(
     ExecuteFourTwoCircuitLoader,
