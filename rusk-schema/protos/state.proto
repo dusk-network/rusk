@@ -88,9 +88,13 @@ message GetStakeRequest {
 }
 
 message GetStakeResponse {
-    fixed64 value = 1;
-    fixed64 created_at = 2;
-    fixed64 eligibility = 3;
+    message Amount {
+        fixed64 value = 1;
+        fixed64 eligibility = 2;
+    }
+    Amount amount = 1;
+    fixed64 reward = 2;
+    fixed64 counter = 3;
 }
 
 message FindExistingNullifiersRequest {
