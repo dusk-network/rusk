@@ -80,7 +80,8 @@ fn check_keys_cache(
                 loader.circuit_name()
             );
 
-            match rusk_profile::keys_for(loader.circuit_id()) {
+            let keys = rusk_profile::keys_for(loader.circuit_id())?;
+            match keys.get_verifier() {
                 Ok(_) => {
                     info!(
                         "{}   {}",
