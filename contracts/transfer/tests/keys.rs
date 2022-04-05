@@ -52,23 +52,14 @@ fn verifier_data_wdfo() {
 #[test]
 fn verifier_data_execute() {
     let variants = vec![
-        (ExecuteCircuitOneZero::CIRCUIT_ID, 1, 0),
-        (ExecuteCircuitOneOne::CIRCUIT_ID, 1, 1),
-        (ExecuteCircuitOneTwo::CIRCUIT_ID, 1, 2),
-        (ExecuteCircuitTwoZero::CIRCUIT_ID, 2, 0),
-        (ExecuteCircuitTwoOne::CIRCUIT_ID, 2, 1),
-        (ExecuteCircuitTwoTwo::CIRCUIT_ID, 2, 2),
-        (ExecuteCircuitThreeZero::CIRCUIT_ID, 3, 0),
-        (ExecuteCircuitThreeOne::CIRCUIT_ID, 3, 1),
-        (ExecuteCircuitThreeTwo::CIRCUIT_ID, 3, 2),
-        (ExecuteCircuitFourZero::CIRCUIT_ID, 4, 0),
-        (ExecuteCircuitFourOne::CIRCUIT_ID, 4, 1),
-        (ExecuteCircuitFourTwo::CIRCUIT_ID, 4, 2),
+        (ExecuteCircuitOneTwo::CIRCUIT_ID, 1),
+        (ExecuteCircuitTwoTwo::CIRCUIT_ID, 2),
+        (ExecuteCircuitThreeTwo::CIRCUIT_ID, 3),
+        (ExecuteCircuitFourTwo::CIRCUIT_ID, 4),
     ];
 
-    for (id, inputs, outputs) in variants {
-        let contract =
-            TransferContract::verifier_data_execute(inputs, outputs).to_vec();
+    for (id, inputs) in variants {
+        let contract = TransferContract::verifier_data_execute(inputs).to_vec();
         let rusk = verifier_data_bytes(&id);
 
         assert_eq!(rusk, contract);
