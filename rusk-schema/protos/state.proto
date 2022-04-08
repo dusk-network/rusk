@@ -21,6 +21,7 @@ message StateTransitionRequest {
     fixed64 block_gas_limit = 2;
     fixed64 block_height = 3;
     bytes state_root = 4;
+    bytes generator = 5;
 }
 
 message StateTransitionResponse {
@@ -32,6 +33,7 @@ message ExecuteStateTransitionRequest {
     repeated Transaction txs = 1;
     fixed64 block_gas_limit = 2;
     fixed64 block_height = 3;
+    bytes generator = 4;
 }
 
 message ExecuteStateTransitionResponse {
@@ -44,6 +46,7 @@ message VerifyStateTransitionRequest {
     repeated Transaction txs = 1;
     fixed64 block_gas_limit = 2;
     fixed64 block_height = 3;
+    bytes generator = 4;
 }
 
 message VerifyStateTransitionResponse {}
