@@ -6,19 +6,17 @@
 
 pub mod grpc;
 pub mod kadcast;
-pub mod wallet;
 
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
-use self::{grpc::GrpcConfig, kadcast::KadcastConfig, wallet::WalletConfig};
+use self::{grpc::GrpcConfig, kadcast::KadcastConfig};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct Config {
     pub(crate) log_level: String,
     pub(crate) kadcast_test: bool,
     pub(crate) grpc: GrpcConfig,
-    pub(crate) wallet: WalletConfig,
     pub(crate) kadcast: KadcastConfig,
 }
 
@@ -32,7 +30,6 @@ impl Default for Config {
             kadcast_test: false,
             grpc: GrpcConfig::default(),
             kadcast: KadcastConfig::default(),
-            wallet: WalletConfig::default(),
         }
     }
 }
@@ -54,7 +51,6 @@ impl From<ArgMatches> for Config {
 
         rusk_config.grpc.merge(&matches);
         rusk_config.kadcast.merge(&matches);
-        rusk_config.wallet.merge(&matches);
         rusk_config
     }
 }
@@ -63,7 +59,6 @@ impl Config {
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
         let command = KadcastConfig::inject_args(command);
         let command = GrpcConfig::inject_args(command);
-        let command = WalletConfig::inject_args(command);
         command.arg(
             Arg::new("log-level")
                 .long("log-level")
