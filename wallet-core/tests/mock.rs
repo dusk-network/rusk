@@ -149,11 +149,7 @@ impl TestStateClient {
 impl StateClient for TestStateClient {
     type Error = ();
 
-    fn fetch_notes(
-        &self,
-        _: u64,
-        _: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(&self, _: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         Ok(self.notes.clone())
     }
 
@@ -177,14 +173,10 @@ impl StateClient for TestStateClient {
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         Ok(StakeInfo {
-            value: 100,
-            eligibility: 0,
-            created_at: 0,
+            amount: Some((100, 0)),
+            reward: 0,
+            counter: 0,
         })
-    }
-
-    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        Ok(1)
     }
 }
 
