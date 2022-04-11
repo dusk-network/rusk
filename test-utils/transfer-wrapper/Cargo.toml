@@ -1,6 +1,6 @@
 [package]
 name = "transfer-wrapper"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 [dependencies]
@@ -15,6 +15,7 @@ dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon
 dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
 dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.10.0-rc", default-features = false }
+dusk-bls12_381-sign = "0.3.0-rc.0"
 phoenix-core = { version = "0.16.0-rc", default-features = false, features = ["canon"] }
 dusk-hamt = { version = "0.10.0-rc", default-features = false }
 microkelvin = "0.15.0-rc"

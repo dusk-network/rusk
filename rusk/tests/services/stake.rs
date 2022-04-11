@@ -61,7 +61,7 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: Dusk = dusk(10_000.0);
 const MAX_NOTES: u64 = 10;
-const GAS_LIMIT: u64 = 5_000_000_000;
+const GAS_LIMIT: u64 = 10_000_000_000;
 
 // Function used to creates a temporary diskbackend for Rusk
 fn testbackend() -> BackendCtor<DiskBackend> {
@@ -119,6 +119,11 @@ static SK: Lazy<SecretKey> = Lazy::new(|| {
     TestStore.retrieve_sk(0).expect("Should not fail in test")
 });
 
+static RSK: Lazy<SecretKey> = Lazy::new(|| {
+    info!("Generating BLS SecretKey");
+    TestStore.retrieve_sk(1).expect("Should not fail in test")
+});
+
 fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -151,11 +156,16 @@ fn generate_stake(rusk: &mut Rusk) -> Result<()> {
     info!("Generating a stake");
 
     let pk = PublicKey::from(&*SK);
+    let rpk = PublicKey::from(&*RSK);
 
     let mut rusk_state = rusk.state()?;
     let mut stake = rusk_state.stake_contract()?;
 
-    stake.push_stake(pk, Stake::with_eligibility(MINIMUM_STAKE, 0, 0), 0)?;
+    stake.insert_stake(pk, Stake::with_eligibility(MINIMUM_STAKE, 0, 0))?;
+    stake.insert_stake(
+        rpk,
+        Stake::with_eligibility(MINIMUM_STAKE, MINIMUM_STAKE, 0),
+    )?;
 
     info!("Updating the new stake contract state");
     unsafe {
@@ -173,7 +183,7 @@ fn generate_stake(rusk: &mut Rusk) -> Result<()> {
 fn wallet_stake(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     channel: tonic::transport::Channel,
-    amount: u64,
+    value: u64,
 ) {
     // Sender psk
     let psk = SSK.public_spend_key();
@@ -183,23 +193,34 @@ fn wallet_stake(
     wallet.get_stake(0).expect("stake to not be found");
 
     let tx = wallet
-        .stake(&mut rng, 0, 1, &psk, amount, GAS_LIMIT, 1)
+        .stake(&mut rng, 0, 2, &psk, value, GAS_LIMIT, 1)
         .expect("Failed to stake");
     generator_procedure(channel.clone(), &tx)
         .expect("generator procedure to succeed");
 
-    let stake = wallet.get_stake(1).expect("stake to be found");
+    let stake = wallet.get_stake(2).expect("stake to be found");
+    let stake_value = stake.amount.expect("stake should have an amount").0;
 
-    assert_eq!(stake.value, amount);
+    assert_eq!(stake_value, value);
 
     let _ = wallet.get_stake(0).expect("stake to be found");
 
     let tx = wallet
-        .withdraw_stake(&mut rng, 0, 0, &psk, GAS_LIMIT, 1)
-        .expect("Failed to withdraw stake");
+        .unstake(&mut rng, 0, 0, &psk, GAS_LIMIT, 1)
+        .expect("Failed to unstake");
+    generator_procedure(channel.clone(), &tx)
+        .expect("generator procedure to succeed");
+
+    let stake = wallet.get_stake(0).expect("stake should still be state");
+    assert_eq!(stake.amount, None);
+
+    let tx = wallet
+        .withdraw(&mut rng, 0, 1, &psk, GAS_LIMIT, 1)
+        .expect("failed to withdraw reward");
     generator_procedure(channel, &tx).expect("generator procedure to succeed");
 
-    wallet.get_stake(0).expect_err("stake is still in state");
+    let stake = wallet.get_stake(1).expect("stake should still be state");
+    assert_eq!(stake.reward, 0);
 }
 
 /// Executes the procedure a block generator will go through to generate a block
@@ -335,15 +356,11 @@ impl wallet::StateClient for TestStateClient {
     type Error = Error;
 
     /// Find notes for a view key, starting from the given block height.
-    fn fetch_notes(
-        &self,
-        height: u64,
-        vk: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
 
         let request = tonic::Request::new(GetNotesOwnedByRequest {
-            height,
+            height: 0,
             vk: vk.to_bytes().to_vec(),
         });
 
@@ -424,15 +441,15 @@ impl wallet::StateClient for TestStateClient {
 
         let response = client.get_stake(request).wait()?.into_inner();
 
-        Ok(StakeInfo {
-            value: response.value,
-            eligibility: response.eligibility,
-            created_at: response.created_at,
-        })
-    }
+        let amount = response
+            .amount
+            .map(|amount| (amount.value, amount.eligibility));
 
-    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
-        Ok(BLOCK_HEIGHT)
+        Ok(StakeInfo {
+            amount,
+            reward: response.reward,
+            counter: response.counter,
+        })
     }
 }
 

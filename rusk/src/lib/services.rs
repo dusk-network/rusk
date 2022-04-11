@@ -7,11 +7,8 @@
 use tonic::{Request, Response, Status};
 
 pub mod network;
-pub mod pki;
 pub mod prover;
 pub mod state;
-
-pub(crate) use rusk_schema::{TX_TYPE_COINBASE, TX_TYPE_TRANSFER, TX_VERSION};
 
 /// A trait that defines the general workflow that the handlers for every
 /// GRPC request should follow.

@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use clap::{Arg, ArgMatches, Command};
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
-use dusk_pki::PublicSpendKey;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
@@ -15,15 +15,14 @@ pub(crate) struct WalletConfig {
     generator: Option<String>,
 }
 
-fn parse_generator(key: &str) -> Option<PublicSpendKey> {
-    bs58::decode(key)
-        .into_vec()
+fn parse_generator(key: &str) -> Option<PublicKey> {
+    hex::decode(key)
         .ok()
-        .and_then(|key| PublicSpendKey::from_slice(&key).ok())
+        .and_then(|key| PublicKey::from_slice(&key).ok())
 }
 
 impl WalletConfig {
-    pub(crate) fn generator(&self) -> Option<PublicSpendKey> {
+    pub(crate) fn generator(&self) -> Option<PublicKey> {
         parse_generator(self.generator.as_deref()?)
     }
 

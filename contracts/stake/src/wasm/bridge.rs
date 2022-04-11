@@ -8,7 +8,9 @@ use crate::*;
 
 use canonical::{Canon, Sink, Source};
 use dusk_abi::{ContractState, ReturnValue};
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, Signature};
+use dusk_pki::StealthAddress;
 use phoenix_core::Note;
 use rusk_abi::PaymentInfo;
 
@@ -46,18 +48,17 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
 
     match tid {
         TX_STAKE => {
-            let (pk, signature, value, created_at, spend_proof): (
+            let (pk, signature, value, spend_proof): (
                 PublicKey,
                 Signature,
                 u64,
-                BlockHeight,
                 Vec<u8>,
             ) = Canon::decode(&mut source).expect("Failed to parse arguments");
 
-            contract.stake(pk, signature, value, created_at, spend_proof);
+            contract.stake(pk, signature, value, spend_proof);
         }
 
-        TX_WITHDRAW => {
+        TX_UNSTAKE => {
             let (pk, signature, note, withdraw_proof): (
                 PublicKey,
                 Signature,
@@ -65,7 +66,18 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
                 Vec<u8>,
             ) = Canon::decode(&mut source).expect("Failed to parse arguments");
 
-            contract.withdraw(pk, signature, note, withdraw_proof);
+            contract.unstake(pk, signature, note, withdraw_proof);
+        }
+
+        TX_WITHDRAW => {
+            let (pk, signature, address, nonce): (
+                PublicKey,
+                Signature,
+                StealthAddress,
+                BlsScalar,
+            ) = Canon::decode(&mut source).expect("Failed to parse arguments");
+
+            contract.withdraw(pk, signature, address, nonce);
         }
 
         _ => panic!("Tx id not implemented"),

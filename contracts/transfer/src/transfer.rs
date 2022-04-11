@@ -19,8 +19,6 @@ use rusk_abi::hash::Hasher;
 mod call;
 #[cfg(feature = "circuits")]
 mod circuits;
-#[cfg(not(target_arch = "wasm32"))]
-mod host;
 mod tree;
 
 use tree::Tree;
@@ -89,6 +87,21 @@ impl TransferContract {
 
     pub fn balances(&self) -> &Map<ContractId, u64> {
         &self.balances
+    }
+
+    pub fn add_balance(
+        &mut self,
+        address: ContractId,
+        value: u64,
+    ) -> Result<(), Error> {
+        if let Some(mut balance) = self.balances.get_mut(&address)? {
+            *balance += value;
+            return Ok(());
+        }
+
+        self.balances.insert(address, value)?;
+
+        Ok(())
     }
 
     pub fn update_root(&mut self) -> Result<(), Error> {

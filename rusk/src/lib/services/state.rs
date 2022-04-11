@@ -6,7 +6,7 @@
 
 use crate::error::Error;
 use crate::services::prover::RuskProver;
-use crate::services::{TX_TYPE_COINBASE, TX_VERSION};
+use crate::transaction::{CoinbasePayload, SpentTransaction, TransferPayload};
 use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
@@ -14,17 +14,15 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
-use dusk_wallet_core::Transaction;
 use phoenix_core::Note;
-use rusk_abi::hash::Hasher;
 use rusk_vm::GasMeter;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
 pub use rusk_schema::state_server::{State, StateServer};
 pub use rusk_schema::{
-    EchoRequest, EchoResponse, ExecuteStateTransitionRequest,
-    ExecuteStateTransitionResponse,
+    get_stake_response::Amount, EchoRequest, EchoResponse,
+    ExecuteStateTransitionRequest, ExecuteStateTransitionResponse,
     ExecutedTransaction as ExecutedTransactionProto,
     FindExistingNullifiersRequest, FindExistingNullifiersResponse,
     GetAnchorRequest, GetAnchorResponse, GetNotesOwnedByRequest,
@@ -35,21 +33,13 @@ pub use rusk_schema::{
     Provisioner, RevertRequest, RevertResponse, Stake as StakeProto,
     StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
-    VerifyStateTransitionResponse,
+    VerifyStateTransitionResponse, TX_TYPE_COINBASE,
 };
 
-pub(crate) struct SpentTransaction(Transaction, GasMeter, Option<Error>);
-
-impl SpentTransaction {
-    pub fn into_inner(self) -> (Transaction, GasMeter, Option<Error>) {
-        (self.0, self.1, self.2)
-    }
-}
-
-/// Partition transactions into transfer and coinbase notes.
+/// Partition transactions into transfer and coinbase.
 fn extract_coinbase(
     txs: Vec<TransactionProto>,
-) -> Result<(Vec<TransactionProto>, (Note, Note)), Status> {
+) -> Result<(Vec<TransactionProto>, CoinbasePayload), Status> {
     let (coinbase_txs, transfer_txs): (Vec<_>, Vec<_>) = txs
         .into_iter()
         .partition(|tx| tx.r#type == TX_TYPE_COINBASE);
@@ -62,17 +52,16 @@ fn extract_coinbase(
         )));
     }
 
-    let mut reader = &coinbase_txs[0].payload[..];
-    let dusk_note =
-        Note::from_reader(&mut reader).map_err(Error::Serialization)?;
-    let generator_note =
-        Note::from_reader(&mut reader).map_err(Error::Serialization)?;
+    let coinbase = CoinbasePayload::from_slice(&coinbase_txs[0].payload[..])
+        .map_err(|_| {
+            Status::invalid_argument("Failed to deserialize coinbase")
+        })?;
 
-    Ok((transfer_txs, (dusk_note, generator_note)))
+    Ok((transfer_txs, coinbase))
 }
 
 impl Rusk {
-    fn verify(&self, tx: &Transaction) -> Result<(), Status> {
+    fn verify(&self, tx: &TransferPayload) -> Result<(), Status> {
         if self.state()?.any_nullifier_exists(tx.inputs())? {
             return Err(Status::failed_precondition(
                 "Nullifier(s) already exists in the state",
@@ -103,7 +92,7 @@ impl Rusk {
         let mut dusk_spent = 0;
 
         for tx in transfer_txs {
-            let tx = Transaction::from_slice(&tx.payload)
+            let tx = TransferPayload::from_slice(&tx.payload)
                 .map_err(Error::Serialization)?;
 
             let gas_limit = tx.fee().gas_limit;
@@ -123,7 +112,7 @@ impl Rusk {
             txs.push(spent_tx.into());
         }
 
-        state.push_coinbase(block_height, dusk_spent, coinbase)?;
+        state.award_coinbase(block_height, dusk_spent, coinbase)?;
         let state_root = state.root().to_vec();
 
         Ok((
@@ -160,7 +149,7 @@ impl State for Rusk {
             Status::invalid_argument("Transaction is required")
         })?;
 
-        let tx = Transaction::from_slice(&tx_proto.payload)
+        let tx = TransferPayload::from_slice(&tx_proto.payload)
             .map_err(Error::Serialization)?;
 
         let tx_hash = tx.hash();
@@ -192,7 +181,7 @@ impl State for Rusk {
         // - Fail parsing
         // - Spend more gas than the running `block_gas_left`
         for tx in request.txs {
-            if let Ok(tx) = Transaction::from_slice(&tx.payload) {
+            if let Ok(tx) = TransferPayload::from_slice(&tx.payload) {
                 let mut forked_state = state.fork();
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
@@ -226,30 +215,13 @@ impl State for Rusk {
             }
         }
 
-        // Mint coinbase notes and add a coinbase transaction to block
-        let (dusk_note, generator_note) = state.mint(
+        let coinbase = state.generate_coinbase(
             request.block_height,
             dusk_spent,
             self.generator.as_ref(),
         )?;
 
-        let mut payload = Vec::with_capacity(2 * Note::SIZE);
-
-        payload.extend(dusk_note.to_bytes());
-        payload.extend(generator_note.to_bytes());
-
-        let tx_hash = Hasher::digest(&payload).to_bytes().to_vec();
-
-        txs.push(ExecutedTransactionProto {
-            tx: Some(TransactionProto {
-                version: TX_VERSION,
-                r#type: TX_TYPE_COINBASE,
-                payload,
-            }),
-            tx_hash,
-            gas_spent: 0, // coinbase transactions never cost anything
-            error: None,
-        });
+        txs.push(coinbase.into());
 
         // Compute the new state root resulting from the state changes
         let state_root = state.root().to_vec();
@@ -365,21 +337,24 @@ impl State for Rusk {
         let provisioners = state
             .get_provisioners()?
             .into_iter()
-            .map(|(key, stake)| {
-                let raw_public_key_bls = key.to_raw_bytes().to_vec();
-                let public_key_bls = key.to_bytes().to_vec();
+            .filter_map(|(key, stake)| {
+                stake.amount().copied().map(|(value, eligibility)| {
+                    let raw_public_key_bls = key.to_raw_bytes().to_vec();
+                    let public_key_bls = key.to_bytes().to_vec();
 
-                let stake = StakeProto {
-                    value: stake.value(),
-                    created_at: stake.created_at(),
-                    eligibility: stake.eligibility(),
-                };
+                    let stake = StakeProto {
+                        value,
+                        eligibility,
+                        reward: stake.reward(),
+                        counter: stake.counter(),
+                    };
 
-                Provisioner {
-                    raw_public_key_bls,
-                    public_key_bls,
-                    stakes: vec![stake],
-                }
+                    Provisioner {
+                        raw_public_key_bls,
+                        public_key_bls,
+                        stakes: vec![stake],
+                    }
+                })
             })
             .collect();
 
@@ -468,11 +443,15 @@ impl State for Rusk {
         let pk = PublicKey::from_bytes(&bytes).map_err(|_| ERR)?;
 
         let stake = self.state()?.fetch_stake(&pk)?;
+        let amount = stake
+            .amount()
+            .copied()
+            .map(|(value, eligibility)| Amount { value, eligibility });
 
         Ok(Response::new(GetStakeResponse {
-            value: stake.value(),
-            created_at: stake.created_at(),
-            eligibility: stake.eligibility(),
+            amount,
+            reward: stake.reward(),
+            counter: stake.counter(),
         }))
     }
 

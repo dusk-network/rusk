@@ -26,6 +26,8 @@ lazy_static! {
         parse_key(include_bytes!("../provisioners/node_13.cpk")),
         parse_key(include_bytes!("../provisioners/node_14.cpk")),
     ];
+    pub static ref DUSK_KEY: PublicKey =
+        parse_key(include_bytes!("../dusk.cpk"));
 }
 
 fn parse_key(key_bytes: &[u8]) -> PublicKey {

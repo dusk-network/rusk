@@ -59,6 +59,12 @@ pub enum Call {
         to: ContractId,
         value: u64,
     },
+
+    Mint {
+        address: StealthAddress,
+        value: u64,
+        nonce: BlsScalar,
+    },
 }
 
 impl Call {
@@ -177,6 +183,14 @@ impl Call {
     ) -> Self {
         Self::WithdrawFromTransparentToContract { to, value }
     }
+
+    pub fn mint(address: StealthAddress, value: u64, nonce: BlsScalar) -> Self {
+        Self::Mint {
+            address,
+            value,
+            nonce,
+        }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -254,6 +268,12 @@ mod wasm {
                 Call::WithdrawFromTransparentToContract { to, value } => {
                     contract.withdraw_from_transparent_to_contract(to, value)
                 }
+
+                Call::Mint {
+                    address,
+                    value,
+                    nonce,
+                } => contract.mint(address, value, nonce),
             }
         }
     }

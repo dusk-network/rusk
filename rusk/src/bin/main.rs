@@ -13,7 +13,6 @@ mod version;
 use clap::{Arg, Command};
 use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
-use rusk::services::pki::{KeysServer, RuskKeys};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
 use rusk::{Result, Rusk};
@@ -84,13 +83,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.kadcast_test,
         );
 
-        let keys = KeysServer::new(RuskKeys::default());
         let network = NetworkServer::new(kadcast);
         let state = StateServer::new(rusk);
         let prover = ProverServer::new(RuskProver::default());
 
         Server::builder()
-            .add_service(keys)
             .add_service(network)
             .add_service(state)
             .add_service(prover)

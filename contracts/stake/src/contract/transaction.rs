@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, Stake, StakeContract, TX_STAKE, TX_WITHDRAW};
+use crate::{Error, *};
 
 use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_bytes::Serializable;
+use dusk_pki::StealthAddress;
 use dusk_schnorr::Signature as SchnorrSignature;
 use lazy_static::lazy_static;
 use phoenix_core::{Crossover, Fee, Note};
@@ -54,12 +55,10 @@ impl StakeContract {
         stct_signature: SchnorrSignature,
         pk: PublicKey,
         signature: Signature,
-        stake: Stake,
+        value: u64,
     ) -> Result<(ContractId, Transaction), Error> {
         let id = rusk_abi::stake_contract();
         let address = rusk_abi::contract_to_scalar(&id);
-
-        let value = stake.value();
 
         let circuit = SendToContractTransparentCircuit::new(
             fee,
@@ -72,23 +71,21 @@ impl StakeContract {
 
         let proof = prove(circuit)?;
 
-        let transaction =
-            (TX_STAKE, pk, signature, value, stake.created_at(), proof);
+        let transaction = (TX_STAKE, pk, signature, value, proof);
         let transaction = Transaction::from_canon(&transaction);
-        let transaction = (id, transaction);
 
-        Ok(transaction)
+        Ok((id, transaction))
     }
 
-    pub fn withdraw_transaction(
+    pub fn unstake_transaction(
         pk: PublicKey,
         signature: Signature,
         note: Note,
-        value: u64,
         blinder: JubJubScalar,
     ) -> Result<(ContractId, Transaction), Error> {
         let id = rusk_abi::stake_contract();
 
+        let value = note.value(None).expect("Transparent note");
         let commitment = *note.value_commitment();
 
         let circuit =
@@ -96,10 +93,23 @@ impl StakeContract {
 
         let proof = prove(circuit)?;
 
-        let transaction = (TX_WITHDRAW, pk, signature, note, proof);
+        let transaction = (TX_UNSTAKE, pk, signature, note, proof);
         let transaction = Transaction::from_canon(&transaction);
-        let transaction = (id, transaction);
 
-        Ok(transaction)
+        Ok((id, transaction))
+    }
+
+    pub fn withdraw_transaction(
+        pk: PublicKey,
+        signature: Signature,
+        address: StealthAddress,
+        nonce: BlsScalar,
+    ) -> (ContractId, Transaction) {
+        let id = rusk_abi::stake_contract();
+
+        let transaction = (TX_WITHDRAW, pk, signature, address, nonce);
+        let transaction = Transaction::from_canon(&transaction);
+
+        (id, transaction)
     }
 }

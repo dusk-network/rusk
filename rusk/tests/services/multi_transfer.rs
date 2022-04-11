@@ -421,15 +421,11 @@ impl wallet::StateClient for TestStateClient {
     type Error = Error;
 
     /// Find notes for a view key, starting from the given block height.
-    fn fetch_notes(
-        &self,
-        height: u64,
-        vk: &ViewKey,
-    ) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
 
         let request = tonic::Request::new(GetNotesOwnedByRequest {
-            height,
+            height: 0,
             vk: vk.to_bytes().to_vec(),
         });
 
@@ -501,10 +497,6 @@ impl wallet::StateClient for TestStateClient {
     }
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
-        unimplemented!()
-    }
-
-    fn fetch_block_height(&self) -> Result<u64, Self::Error> {
         unimplemented!()
     }
 }
