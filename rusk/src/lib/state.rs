@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::transaction::{CoinbasePayload, TransferPayload};
+use crate::transaction::TransferPayload;
 use crate::Result;
 
 use canonical::{Canon, Sink, Source};
@@ -135,56 +135,17 @@ impl RuskState {
         Ok(stake.stakes()?)
     }
 
-    /// Generate a coinbase to award Dusk and the block generator with both
-    /// block fees and emission schedule.
-    pub fn generate_coinbase(
-        &mut self,
-        block_height: u64,
-        dusk_spent: Dusk,
-        generator: Option<&PublicKey>,
-    ) -> Result<CoinbasePayload> {
-        let generator = *generator.unwrap_or(&DUSK_KEY);
-
-        let coinbase = CoinbasePayload {
-            block_height,
-            generator,
-        };
-
-        self.push_coinbase(dusk_spent, &coinbase)?;
-
-        Ok(coinbase)
-    }
-
-    /// Pushes the coinbase onto the state
-    pub fn award_coinbase(
-        &mut self,
-        block_height: u64,
-        dusk_spent: Dusk,
-        coinbase: CoinbasePayload,
-    ) -> Result<()> {
-        // Block height must be te same as the current block
-        if coinbase.block_height != block_height {
-            return Err(Error::CoinbaseBlockHeight(
-                coinbase.block_height,
-                block_height,
-            ));
-        }
-
-        self.push_coinbase(dusk_spent, &coinbase)?;
-
-        Ok(())
-    }
-
     /// Pushes the coinbase rewards to the state.
-    fn push_coinbase(
+    pub fn push_coinbase(
         &mut self,
+        block_height: u64,
         dusk_spent: Dusk,
-        coinbase: &CoinbasePayload,
+        generator: &PublicKey,
     ) -> Result<()> {
         let (dusk_value, generator_value) =
-            coinbase_value(coinbase.block_height, dusk_spent);
+            coinbase_value(block_height, dusk_spent);
 
-        let generator_key = &coinbase.generator;
+        let generator_key = generator;
 
         let mut stake = self.stake_contract()?;
 

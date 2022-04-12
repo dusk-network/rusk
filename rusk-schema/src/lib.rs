@@ -11,7 +11,6 @@ use dusk_pki::Ownable;
 use tonic::Status;
 
 pub const TX_VERSION: u32 = 1;
-pub const TX_TYPE_COINBASE: u32 = 0;
 pub const TX_TYPE_TRANSFER: u32 = 1;
 
 impl From<dusk_pki::PublicSpendKey> for PublicKey {

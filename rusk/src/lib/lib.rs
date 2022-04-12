@@ -12,7 +12,6 @@ pub mod services;
 pub mod state;
 pub mod transaction;
 
-use dusk_bls12_381_sign::PublicKey;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -37,7 +36,6 @@ pub struct RuskBuilder {
     id: Option<NetworkStateId>,
     path: Option<PathBuf>,
     backend: fn() -> BackendCtor<DiskBackend>,
-    generator: Option<PublicKey>,
 }
 
 impl RuskBuilder {
@@ -46,7 +44,6 @@ impl RuskBuilder {
             id: None,
             path: None,
             backend,
-            generator: None,
         }
     }
 
@@ -55,17 +52,8 @@ impl RuskBuilder {
         self
     }
 
-    pub fn generator<T>(mut self, generator: T) -> Self
-    where
-        T: Into<Option<PublicKey>>,
-    {
-        self.generator = generator.into();
-        self
-    }
-
     pub fn build(self) -> Result<Rusk> {
         let backend = self.backend;
-        let generator = self.generator;
 
         let network = NetworkState::new();
 
@@ -89,7 +77,6 @@ impl RuskBuilder {
             network,
             backend,
             path,
-            generator,
         };
 
         Ok(rusk)
@@ -109,7 +96,6 @@ pub struct Rusk {
     backend: fn() -> BackendCtor<DiskBackend>,
     network: Arc<Mutex<NetworkState>>,
     path: Option<PathBuf>,
-    generator: Option<PublicKey>,
 }
 
 impl Rusk {

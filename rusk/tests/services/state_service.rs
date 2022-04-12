@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::common::keys::*;
 use crate::common::setup;
 use canonical::{Canon, Sink};
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
-use dusk_pki::{SecretKey, SecretSpendKey};
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk::services::state::{
@@ -51,27 +49,6 @@ static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
 });
 
 const BLOCK_HEIGHT: u64 = 1;
-
-pub static SSK: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey");
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    SecretSpendKey::random(&mut rng)
-});
-
-pub static SK: Lazy<SecretKey> = Lazy::new(|| {
-    info!("Generating SecretKey");
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    SecretKey::random(&mut rng)
-});
-
-pub static BLS_SK: Lazy<BlsSecretKey> = Lazy::new(|| {
-    info!("Generating BlsSecretKey");
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    BlsSecretKey::random(&mut rng)
-});
 
 fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
     info!("Fetching the first note from the state");
