@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod encoding;
+pub mod keys;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 

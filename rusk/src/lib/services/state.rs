@@ -6,7 +6,7 @@
 
 use crate::error::Error;
 use crate::services::prover::RuskProver;
-use crate::transaction::{CoinbasePayload, SpentTransaction, TransferPayload};
+use crate::transaction::{SpentTransaction, TransferPayload};
 use crate::{Result, Rusk, RuskState};
 
 use canonical::{Canon, Sink};
@@ -33,32 +33,8 @@ pub use rusk_schema::{
     Provisioner, RevertRequest, RevertResponse, Stake as StakeProto,
     StateTransitionRequest, StateTransitionResponse,
     Transaction as TransactionProto, VerifyStateTransitionRequest,
-    VerifyStateTransitionResponse, TX_TYPE_COINBASE,
+    VerifyStateTransitionResponse,
 };
-
-/// Partition transactions into transfer and coinbase.
-fn extract_coinbase(
-    txs: Vec<TransactionProto>,
-) -> Result<(Vec<TransactionProto>, CoinbasePayload), Status> {
-    let (coinbase_txs, transfer_txs): (Vec<_>, Vec<_>) = txs
-        .into_iter()
-        .partition(|tx| tx.r#type == TX_TYPE_COINBASE);
-
-    let coinbases = coinbase_txs.len();
-    if coinbases != 1 {
-        return Err(Status::invalid_argument(format!(
-            "Expected 1 coinbase, found {}",
-            coinbases
-        )));
-    }
-
-    let coinbase = CoinbasePayload::from_slice(&coinbase_txs[0].payload[..])
-        .map_err(|_| {
-            Status::invalid_argument("Failed to deserialize coinbase")
-        })?;
-
-    Ok((transfer_txs, coinbase))
-}
 
 impl Rusk {
     fn verify(&self, tx: &TransferPayload) -> Result<(), Status> {
@@ -81,12 +57,11 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        txs: Vec<TransactionProto>,
+        transfer_txs: Vec<TransactionProto>,
+        generator: PublicKey,
     ) -> Result<(Response<StateTransitionResponse>, RuskState), Status> {
         let mut state = self.state()?;
         let mut block_gas_left = block_gas_limit;
-
-        let (transfer_txs, coinbase) = extract_coinbase(txs)?;
 
         let mut txs = Vec::with_capacity(transfer_txs.len());
         let mut dusk_spent = 0;
@@ -112,7 +87,7 @@ impl Rusk {
             txs.push(spent_tx.into());
         }
 
-        state.award_coinbase(block_height, dusk_spent, coinbase)?;
+        state.push_coinbase(block_height, dusk_spent, &generator)?;
         let state_root = state.root().to_vec();
 
         Ok((
@@ -215,13 +190,10 @@ impl State for Rusk {
             }
         }
 
-        let coinbase = state.generate_coinbase(
-            request.block_height,
-            dusk_spent,
-            self.generator.as_ref(),
-        )?;
+        let generator = PublicKey::from_slice(&request.generator)
+            .map_err(Error::Serialization)?;
 
-        txs.push(coinbase.into());
+        state.push_coinbase(request.block_height, dusk_spent, &generator)?;
 
         // Compute the new state root resulting from the state changes
         let state_root = state.root().to_vec();
@@ -242,11 +214,13 @@ impl State for Rusk {
         info!("Received VerifyStateTransition request");
 
         let request = request.into_inner();
-
+        let generator = PublicKey::from_slice(&request.generator)
+            .map_err(Error::Serialization)?;
         self.accept_transactions(
             request.block_height,
             request.block_gas_limit,
             request.txs,
+            generator,
         )?;
 
         Ok(Response::new(VerifyStateTransitionResponse {}))
@@ -259,11 +233,13 @@ impl State for Rusk {
         info!("Received Accept request");
 
         let request = request.into_inner();
-
+        let generator = PublicKey::from_slice(&request.generator)
+            .map_err(Error::Serialization)?;
         let (response, mut state) = self.accept_transactions(
             request.block_height,
             request.block_gas_limit,
             request.txs,
+            generator,
         )?;
 
         state.accept();
@@ -278,11 +254,13 @@ impl State for Rusk {
         info!("Received Finalize request");
 
         let request = request.into_inner();
-
+        let generator = PublicKey::from_slice(&request.generator)
+            .map_err(Error::Serialization)?;
         let (response, mut state) = self.accept_transactions(
             request.block_height,
             request.block_gas_limit,
             request.txs,
+            generator,
         )?;
 
         state.finalize();

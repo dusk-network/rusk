@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::common::keys::BLS_SK;
 use crate::common::*;
 use canonical::{Canon, Source};
 use dusk_bls12_381_sign::PublicKey;
@@ -327,16 +328,19 @@ fn generator_procedure(
         );
     }
 
+    let generator = PublicKey::from(&*BLS_SK);
+
     let response = client
         .execute_state_transition(ExecuteStateTransitionRequest {
             txs: protos,
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
+            generator: generator.to_bytes().to_vec(),
         })
         .wait()?
         .into_inner();
 
-    assert_eq!(response.txs.len(), 3, "Should have three txs");
+    assert_eq!(response.txs.len(), 2, "Should have two txs");
 
     let transfer_txs: Vec<_> = response
         .txs
@@ -344,14 +348,7 @@ fn generator_procedure(
         .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
         .collect();
 
-    let coinbase_txs: Vec<_> = response
-        .txs
-        .iter()
-        .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
-        .collect();
-
     assert_eq!(transfer_txs.len(), 2, "Two transfer txs");
-    assert_eq!(coinbase_txs.len(), 1, "One coinbase tx");
 
     let execute_state_root = response.state_root.clone();
 
@@ -362,7 +359,6 @@ fn generator_procedure(
 
     let mut txs = vec![];
     txs.extend(transfer_txs);
-    txs.extend(coinbase_txs);
 
     let txs: Vec<_> = txs
         .iter()
@@ -375,6 +371,7 @@ fn generator_procedure(
             txs: txs.clone(),
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
+            generator: generator.to_bytes().to_vec(),
         })
         .wait()?;
 
@@ -384,6 +381,7 @@ fn generator_procedure(
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
             state_root: execute_state_root.clone(),
+            generator: generator.to_bytes().to_vec(),
         })
         .wait()?
         .into_inner();

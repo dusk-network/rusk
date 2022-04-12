@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::common::keys::BLS_SK;
 use crate::common::*;
 use canonical::{Canon, Source};
 use dusk_bls12_381_sign::PublicKey;
@@ -266,6 +267,8 @@ fn generator_procedure(
         "Hash mismatch"
     );
 
+    let generator = PublicKey::from(&*BLS_SK);
+
     // Since the purpose of the test is simulate a real transaction between
     // different nodes, the 1st execute state transition response is cached
     // and reused in the subsequent calls. This is done since only one
@@ -281,6 +284,7 @@ fn generator_procedure(
                     txs: vec![tx],
                     block_height: BLOCK_HEIGHT,
                     block_gas_limit: BLOCK_GAS_LIMIT,
+                    generator: generator.to_bytes().to_vec(),
                 })
                 .wait()?
                 .into_inner();
@@ -294,7 +298,7 @@ fn generator_procedure(
         }
     };
 
-    assert_eq!(response.txs.len(), 2, "Should have two tx");
+    assert_eq!(response.txs.len(), 1, "Should have only one tx");
 
     let transfer_txs: Vec<_> = response
         .txs
@@ -302,14 +306,7 @@ fn generator_procedure(
         .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
         .collect();
 
-    let coinbase_txs: Vec<_> = response
-        .txs
-        .iter()
-        .filter(|etx| etx.tx.as_ref().unwrap().r#type == 0)
-        .collect();
-
     assert_eq!(transfer_txs.len(), 1, "Only one transfer tx");
-    assert_eq!(coinbase_txs.len(), 1, "One coinbase tx");
 
     assert_eq!(
         transfer_txs[0].tx_hash,
@@ -326,7 +323,6 @@ fn generator_procedure(
 
     let mut txs = vec![];
     txs.extend(transfer_txs);
-    txs.extend(coinbase_txs);
 
     let txs: Vec<_> = txs
         .iter()
@@ -339,6 +335,7 @@ fn generator_procedure(
             txs: txs.clone(),
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
+            generator: generator.to_bytes().to_vec(),
         })
         .wait()?;
 
@@ -348,6 +345,7 @@ fn generator_procedure(
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
             state_root: execute_state_root.clone(),
+            generator: generator.to_bytes().to_vec(),
         })
         .wait()?
         .into_inner();

@@ -9,11 +9,9 @@ use crate::Error;
 use std::ops::Deref;
 
 use canonical_derive::Canon;
-use dusk_bls12_381_sign::PublicKey;
-use dusk_bytes::{DeserializableSlice, Error as BytesError, Serializable};
+use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_wallet_core::Transaction;
-use rusk_abi::hash::Hasher;
-use rusk_schema::{TX_TYPE_COINBASE, TX_TYPE_TRANSFER, TX_VERSION};
+use rusk_schema::{TX_TYPE_TRANSFER, TX_VERSION};
 use rusk_vm::GasMeter;
 
 /// The payload for a transfer transaction.
@@ -66,64 +64,6 @@ impl From<TransferPayload> for rusk_schema::Transaction {
 /// spent in a block. They're not processed through the virtual machine. Instead
 /// they are used to directly mutate the stake contract, incrementing the reward
 /// for the given generator.
-pub struct CoinbasePayload {
-    pub block_height: u64,
-    pub generator: PublicKey,
-}
-
-impl Serializable<104> for CoinbasePayload {
-    type Error = BytesError;
-
-    fn from_bytes(buf: &[u8; Self::SIZE]) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let reader = &mut &buf[..];
-
-        let block_height = u64::from_reader(reader)?;
-        let generator = PublicKey::from_reader(reader)?;
-
-        Ok(Self {
-            block_height,
-            generator,
-        })
-    }
-
-    fn to_bytes(&self) -> [u8; Self::SIZE] {
-        let mut buf = [0u8; Self::SIZE];
-
-        buf[0..8].copy_from_slice(&self.block_height.to_bytes());
-        buf[8..104].copy_from_slice(&self.generator.to_bytes());
-
-        buf
-    }
-}
-
-impl From<CoinbasePayload> for rusk_schema::Transaction {
-    fn from(coinbase: CoinbasePayload) -> Self {
-        let payload = coinbase.to_bytes().to_vec();
-
-        rusk_schema::Transaction {
-            version: TX_VERSION,
-            r#type: TX_TYPE_COINBASE,
-            payload,
-        }
-    }
-}
-
-impl From<CoinbasePayload> for rusk_schema::ExecutedTransaction {
-    fn from(coinbase: CoinbasePayload) -> Self {
-        let payload = coinbase.to_bytes().to_vec();
-        let tx_hash = Hasher::digest(&payload).to_bytes().to_vec();
-
-        rusk_schema::ExecutedTransaction {
-            tx: Some(coinbase.into()),
-            tx_hash,
-            gas_spent: 0,
-            error: None,
-        }
-    }
-}
 
 pub struct SpentTransaction(
     pub TransferPayload,
