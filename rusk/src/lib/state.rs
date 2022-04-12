@@ -8,6 +8,9 @@ use crate::error::Error;
 use crate::transaction::TransferPayload;
 use crate::Result;
 
+use std::cmp::max;
+use std::sync::Arc;
+
 use canonical::{Canon, Sink, Source};
 use dusk_abi::ContractState;
 use dusk_bls12_381::BlsScalar;
@@ -21,7 +24,6 @@ use rusk_abi::POSEIDON_TREE_DEPTH;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
 use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
-use std::sync::Arc;
 use transfer_contract::TransferContract;
 
 pub struct RuskState(pub(crate) Arc<Mutex<NetworkState>>);
@@ -165,26 +167,40 @@ impl RuskState {
     pub fn notes(&self, height: u64) -> Result<Vec<Note>> {
         Ok(self
             .transfer_contract()?
-            .notes_from_height(height)?
-            .map(|note| *note.expect("Failed to fetch note from canonical"))
+            .leaves_from_height(height)?
+            .map(|leaf| leaf.expect("Failed to fetch leaf from canonical"))
+            .map(|leaf| leaf.note)
             .collect())
     }
 
-    /// Returns the note at a given block height and [`ViewKey`]
-    pub fn fetch_notes(&self, height: u64, vk: &ViewKey) -> Result<Vec<Note>> {
-        Ok(self
-            .notes(height)?
-            .iter()
-            .filter(|n| vk.owns(n.stealth_address()))
-            .copied()
-            .collect())
+    /// Returns the notes from a given block height and owned by [`ViewKey`],
+    /// together with the highest block height found in the tree.
+    pub fn fetch_notes(
+        &self,
+        height: u64,
+        vk: &ViewKey,
+    ) -> Result<(Vec<Note>, u64)> {
+        let mut height = height;
+
+        let notes = self
+            .transfer_contract()?
+            .leaves_from_height(height)?
+            .map(|leaf| *leaf.expect("Failed to fetch leaf from canonical"))
+            .map(|leaf| {
+                height = max(height, leaf.block_height.into());
+                leaf.note
+            })
+            .filter(|note| vk.owns(note.stealth_address()))
+            .collect();
+
+        Ok((notes, height))
     }
 
     /// Returns the anchor
     pub fn fetch_anchor(&self) -> Result<BlsScalar> {
         Ok(self
             .transfer_contract()?
-            .notes()
+            .tree()
             .inner()
             .root()
             .unwrap_or_default())
@@ -196,7 +212,7 @@ impl RuskState {
         note: &Note,
     ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>> {
         self.transfer_contract()?
-            .notes()
+            .tree()
             .opening(*note.pos())
             .map_err(|_| Error::OpeningPositionNotFound(*note.pos()))?
             .ok_or_else(|| Error::OpeningNoteUndefined(*note.pos()))

@@ -360,13 +360,11 @@ impl State for Rusk {
         let block_height = request.get_ref().height;
 
         let state = self.state()?;
-        let notes = state
-            .fetch_notes(block_height, &vk)?
-            .iter()
-            .map(|note| note.to_bytes().to_vec())
-            .collect();
 
-        Ok(Response::new(GetNotesOwnedByResponse { notes }))
+        let (notes, height) = state.fetch_notes(block_height, &vk)?;
+        let notes = notes.iter().map(|note| note.to_bytes().to_vec()).collect();
+
+        Ok(Response::new(GetNotesOwnedByResponse { notes, height }))
     }
 
     async fn get_anchor(
