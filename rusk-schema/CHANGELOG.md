@@ -1,0 +1,33 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Add the latest block `height` in `GetNotesOwnedByResponse` [#651]
+- Insert `generator` in state transition requests [#699]
+
+### Changed
+
+- Change `Stake` and `GetStakeResponse` to support new stake contract spec [#614]
+
+## [0.1.0] - 2021-04-05
+
+### Added
+
+- Initial release
+
+[#699]: https://github.com/dusk-network/rusk/issues/699
+[#651]: https://github.com/dusk-network/rusk/issues/651
+[#614]: https://github.com/dusk-network/rusk/issues/614
+
+<!-- Releases -->
+
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-schema-v0.2.0...HEAD
+[0.2.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0...rusk-schema-v0.2.0
+[0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0
