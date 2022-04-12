@@ -21,7 +21,7 @@ mod call;
 mod circuits;
 mod tree;
 
-use tree::Tree;
+use tree::{Leaf, Tree};
 
 pub use call::Call;
 
@@ -29,7 +29,7 @@ pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct TransferContract {
-    pub(crate) notes: Tree,
+    pub(crate) tree: Tree,
     pub(crate) nullifiers: Map<BlsScalar, ()>,
     pub(crate) roots: Map<BlsScalar, ()>,
     pub(crate) balances: Map<ContractId, u64>,
@@ -41,7 +41,7 @@ pub struct TransferContract {
 
 impl TransferContract {
     pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
-        self.notes.get(pos).map(|l| l.map(|l| l.into()))
+        self.tree.get(pos).map(|l| l.map(|l| l.into()))
     }
 
     /// Push a note to the contract's state with the given block height
@@ -53,14 +53,14 @@ impl TransferContract {
         block_height: u64,
         note: Note,
     ) -> Result<Note, Error> {
-        let pos = self.notes.push((block_height, note).into())?;
+        let pos = self.tree.push((block_height, note).into())?;
         let note = self.get_note(pos)?.ok_or(Error::NoteNotFound)?;
 
         Ok(note)
     }
 
-    pub fn notes(&self) -> &Tree {
-        &self.notes
+    pub fn tree(&self) -> &Tree {
+        &self.tree
     }
 
     pub fn message(
@@ -78,11 +78,11 @@ impl TransferContract {
         Ok(*message)
     }
 
-    pub fn notes_from_height(
+    pub fn leaves_from_height(
         &self,
         block_height: u64,
-    ) -> Result<impl Iterator<Item = Result<&Note, Error>>, Error> {
-        self.notes.notes(block_height)
+    ) -> Result<impl Iterator<Item = Result<&Leaf, Error>>, Error> {
+        self.tree.leaves(block_height)
     }
 
     pub fn balances(&self) -> &Map<ContractId, u64> {
@@ -105,7 +105,7 @@ impl TransferContract {
     }
 
     pub fn update_root(&mut self) -> Result<(), Error> {
-        let root = self.notes.root()?;
+        let root = self.tree.root()?;
 
         self.roots.insert(root, ())?;
 

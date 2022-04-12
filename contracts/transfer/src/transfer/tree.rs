@@ -204,17 +204,15 @@ impl Tree {
         Ok(self.tree.branch(pos)?)
     }
 
-    pub fn notes(
+    pub fn leaves(
         &self,
         block_height: u64,
-    ) -> Result<impl Iterator<Item = Result<&Note, Error>>, Error> {
+    ) -> Result<impl Iterator<Item = Result<&Leaf, Error>>, Error> {
         Ok(self
             .tree
             .annotated_iter_walk(BlockHeightFilter(block_height))?
             .into_iter()
-            .map(|result| {
-                result.map_err(|e| e.into()).map(|leaf| leaf.as_ref())
-            }))
+            .map(|result| result.map_err(|e| e.into())))
     }
 }
 
