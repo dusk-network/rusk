@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `asyncify`ing FFI imports
 - Add `unstake` function to allow unstaking a previously staked amount [#58]
 - Add `fetch_existing_nullifiers` to the `StateClient` [#41]
 
 ### Changed
 
+- Change FFI to take pointers to `u64`
 - Change `withdraw` function to withdraw the reward for staking and
   participating in the consensus [#58]
 - Change `stake` and `withdraw` cryptographic signatures to what the stake
