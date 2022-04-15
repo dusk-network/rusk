@@ -53,7 +53,7 @@ const BLOCK_HEIGHT: u64 = 1;
 fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
     info!("Fetching the first note from the state");
     let vk = SSK.view_key();
-    let notes = rusk.state()?.fetch_notes(BLOCK_HEIGHT, &vk)?;
+    let (notes, _) = rusk.state()?.fetch_notes(BLOCK_HEIGHT, &vk)?;
 
     if notes.len() == 1 {
         trace!("Note found");
@@ -142,11 +142,14 @@ pub async fn test_fetch_notes() -> Result<()> {
         vk: vk.to_bytes().to_vec(),
     });
 
-    let response = client.get_notes_owned_by(request).await?;
+    let response = client.get_notes_owned_by(request).await?.into_inner();
 
-    let len = response.into_inner().notes.len();
-
-    assert_eq!(len, 1, "Expected 1 note");
+    assert_eq!(response.notes.len(), 1, "Expected 1 note");
+    assert_eq!(
+        response.height, BLOCK_HEIGHT,
+        "Expected latest block height to be {}",
+        BLOCK_HEIGHT
+    );
 
     Ok(())
 }

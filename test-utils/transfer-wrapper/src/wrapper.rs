@@ -306,9 +306,10 @@ impl TransferWrapper {
 
     pub fn notes(&self, block_height: u64) -> Vec<Note> {
         self.transfer_state()
-            .notes_from_height(block_height)
+            .leaves_from_height(block_height)
             .expect("Failed to fetch notes iterator from state")
-            .map(|note| *note.expect("Failed to fetch note from canonical"))
+            .map(|leaf| *leaf.expect("Failed to fetch note from canonical"))
+            .map(|leaf| leaf.note)
             .collect()
     }
 
@@ -340,7 +341,7 @@ impl TransferWrapper {
 
     pub fn anchor(&mut self) -> BlsScalar {
         self.transfer_state()
-            .notes()
+            .tree()
             .inner()
             .root()
             .unwrap_or_default()
@@ -348,7 +349,7 @@ impl TransferWrapper {
 
     pub fn opening(&mut self, pos: u64) -> PoseidonBranch<TRANSFER_TREE_DEPTH> {
         self.transfer_state()
-            .notes()
+            .tree()
             .opening(pos)
             .unwrap_or_else(|_| {
                 panic!("Failed to fetch note of position {:?} for opening", pos)

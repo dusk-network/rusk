@@ -70,6 +70,7 @@ message GetNotesOwnedByRequest {
 
 message GetNotesOwnedByResponse {
     repeated bytes notes = 1;
+    uint64 height = 2;
 }
 
 message GetAnchorRequest {}
