@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `GetNotes` call to stream notes from the server [#702]
+
+### Deprecated
+
+- Mark `GetNotesOwnedByRequest` fields as `[deprecated=true]` [#702]
+
 ## [0.3.0] - 2021-04-26
 
 ### Added
@@ -35,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [#704]: https://github.com/dusk-network/rusk/issues/704
+[#702]: https://github.com/dusk-network/rusk/issues/702
 [#699]: https://github.com/dusk-network/rusk/issues/699
 [#651]: https://github.com/dusk-network/rusk/issues/651
 [#614]: https://github.com/dusk-network/rusk/issues/614
