@@ -32,6 +32,8 @@ pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
     PublicParameters::from_slice_unchecked(pp.as_slice())
 });
 
+const STREAM_BUF_SIZE: usize = 64;
+
 pub struct RuskBuilder {
     id: Option<NetworkStateId>,
     path: Option<PathBuf>,
@@ -77,6 +79,7 @@ impl RuskBuilder {
             network,
             backend,
             path,
+            stream_buffer_size: STREAM_BUF_SIZE,
         };
 
         Ok(rusk)
@@ -96,6 +99,7 @@ pub struct Rusk {
     backend: fn() -> BackendCtor<DiskBackend>,
     network: Arc<Mutex<NetworkState>>,
     path: Option<PathBuf>,
+    stream_buffer_size: usize,
 }
 
 impl Rusk {
