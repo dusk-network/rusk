@@ -49,7 +49,6 @@ fn initial_state() -> Result<Rusk> {
 
     Ok(rusk)
 }
-
 fn push_note(rusk_state: &mut RuskState) -> Result<()> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
@@ -74,6 +73,7 @@ fn push_note(rusk_state: &mut RuskState) -> Result<()> {
     Ok(())
 }
 
+#[test]
 pub fn rusk_state_accepted() -> Result<()> {
     // Setup the logger
     logger();
@@ -95,6 +95,7 @@ pub fn rusk_state_accepted() -> Result<()> {
     Ok(())
 }
 
+#[test]
 pub fn rusk_state_finalized() -> Result<()> {
     // Setup the logger
     logger();
@@ -115,6 +116,7 @@ pub fn rusk_state_finalized() -> Result<()> {
     Ok(())
 }
 
+#[test]
 pub fn rusk_state_ephemeral() -> Result<()> {
     // Setup the logger
     logger();
@@ -134,6 +136,26 @@ pub fn rusk_state_ephemeral() -> Result<()> {
 
         push_note(&mut state)?;
 
+        let transfer = state.transfer_contract()?;
+
+        assert!(transfer.get_note(1)?.is_some(), "Note added");
+        assert!(transfer.get_note(2)?.is_some(), "Note added");
+        assert!(transfer.get_note(3)?.is_some(), "Note added");
+
+        // Testing that cloning the current state is not affecting either the
+        // current scope or the outer scope.
+
+        let mut state_cloned = state.clone();
+
+        state_cloned.revert();
+
+        let transfer = state_cloned.transfer_contract()?;
+
+        assert!(transfer.get_note(1)?.is_some(), "Note still present");
+        assert!(transfer.get_note(2)?.is_none(), "Note removed");
+        assert!(transfer.get_note(3)?.is_none(), "Note removed");
+
+        // The original state didn't change
         let transfer = state.transfer_contract()?;
 
         assert!(transfer.get_note(1)?.is_some(), "Note added");

@@ -17,6 +17,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::{Ownable, ViewKey};
 use dusk_poseidon::tree::PoseidonBranch;
+use parking_lot::lock_api::RawMutex;
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk_abi::dusk::*;
@@ -26,45 +27,57 @@ use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
 use transfer_contract::TransferContract;
 
-pub struct RuskState(pub(crate) Arc<Mutex<NetworkState>>);
+pub struct RuskState(Arc<Mutex<NetworkState>>);
 
 impl Drop for RuskState {
     fn drop(&mut self) {
-        self.0.lock().unstage();
+        self.inner_mut().unstage();
+        unsafe { self.0.raw().unlock() };
+    }
+}
+
+impl Clone for RuskState {
+    fn clone(&self) -> Self {
+        let network = self.inner().clone();
+        Self::new(Arc::new(Mutex::new(network)))
     }
 }
 
 impl RuskState {
-    pub(crate) fn network(&self) -> Arc<Mutex<NetworkState>> {
-        self.0.clone()
+    pub(crate) fn new(network: Arc<Mutex<NetworkState>>) -> Self {
+        let raw = unsafe { network.raw() };
+        raw.lock();
+        Self(network)
+    }
+
+    pub(crate) fn inner(&self) -> &NetworkState {
+        unsafe { self.0.data_ptr().as_ref().expect("NetworkState's pointer") }
+    }
+
+    fn inner_mut(&mut self) -> &mut NetworkState {
+        unsafe { self.0.data_ptr().as_mut().expect("NetworkState's pointer") }
     }
 
     /// Returns the current root of the state tree
     pub fn root(&self) -> [u8; 32] {
-        self.0.lock().root()
+        self.inner().root()
     }
 
     /// Accepts the current changes
     pub fn accept(&mut self) {
-        self.0.lock().commit()
+        self.inner_mut().commit()
     }
 
     /// Finalize the current changes
     pub fn finalize(&mut self) {
-        let mut network = self.0.lock();
+        let network = self.inner_mut();
         network.commit();
         network.push();
     }
 
     /// Revert to the last finalized state
     pub fn revert(&mut self) {
-        self.0.lock().reset()
-    }
-
-    /// Fork the underlying network state, returning a new `RuskState`.
-    pub fn fork(&self) -> Self {
-        let network = self.0.lock().clone();
-        Self(Arc::new(Mutex::new(network)))
+        self.inner_mut().reset()
     }
 
     /// Executes a transaction on the state via the Transfer Contract
@@ -77,7 +90,7 @@ impl RuskState {
     where
         R: Canon,
     {
-        Ok(self.network().lock().transact::<TransferPayload, R>(
+        Ok(self.inner_mut().transact::<TransferPayload, R>(
             rusk_abi::transfer_contract(),
             block_height,
             transaction,
@@ -91,7 +104,7 @@ impl RuskState {
     where
         C: Canon,
     {
-        Ok(self.0.lock().get_contract_cast_state(contract_id)?)
+        Ok(self.inner().get_contract_cast_state(contract_id)?)
     }
 
     /// Set the contract state for the given Contract Id.
@@ -115,7 +128,7 @@ impl RuskState {
         ContractState::from_canon(state).encode(&mut sink);
         let mut source = Source::new(&bytes[..]);
         let contract_state = ContractState::decode(&mut source)?;
-        *self.0.lock().get_contract_mut(contract_id)?.state_mut() =
+        *self.inner_mut().get_contract_mut(contract_id)?.state_mut() =
             contract_state;
 
         Ok(())

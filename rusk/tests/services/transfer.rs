@@ -35,7 +35,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk};
+use rusk::{Result, Rusk, RuskState};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -72,9 +72,9 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 fn initial_state() -> Result<Rusk> {
     let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
 
-    let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
+    let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let state = rusk.state()?;
+    let mut state = rusk.state()?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -87,7 +87,7 @@ fn initial_state() -> Result<Rusk> {
         "Expect to have ONLY one note at the genesis state",
     );
 
-    generate_notes(&mut rusk, 1)?;
+    generate_notes(&mut state, 1)?;
 
     let transfer = state.transfer_contract()?;
 
@@ -98,7 +98,7 @@ fn initial_state() -> Result<Rusk> {
         MAX_NOTES
     );
 
-    rusk.state()?.finalize();
+    state.finalize();
 
     Ok(rusk)
 }
@@ -120,7 +120,7 @@ static EXECUTE_STATE_TRANSITION_RESPONSE: Lazy<
     Mutex::new(None)
 });
 
-fn generate_notes(rusk: &mut Rusk, block_height: u64) -> Result<()> {
+fn generate_notes(rusk_state: &mut RuskState, block_height: u64) -> Result<()> {
     info!("Generating a note for block height {}", block_height);
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -128,7 +128,6 @@ fn generate_notes(rusk: &mut Rusk, block_height: u64) -> Result<()> {
 
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
-    let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
     for _ in 0..MAX_NOTES {
@@ -208,7 +207,7 @@ fn wallet_transfer(
     info!("Tx ID: {}", hex::encode(tx.hash().to_bytes()));
     generator_procedure(channel.clone(), &tx, block_height)
         .expect("generator procedure to succeed");
-    empty_block(channel.clone(), block_height + 1)
+    empty_block(channel, block_height + 1)
         .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
@@ -701,15 +700,14 @@ pub async fn wallet_grpc() -> Result<()> {
     );
 
     let rusk = STATE_LOCK.lock();
-    let mut state = rusk.state()?;
-    let original_root = state.root();
+    let original_root = rusk.state()?.root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     wallet_transfer(&wallet, channel.clone(), 1_000, 2);
 
     // Check the state's root is changed from the original one
-    let new_root = state.root();
+    let new_root = rusk.state()?.root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -717,23 +715,27 @@ pub async fn wallet_grpc() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    state.revert();
+    rusk.state()?.revert();
     cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(state.root()));
-    assert_eq!(original_root, state.root(), "Root be the same again");
+    info!("Root after reset: {:?}", hex::encode(rusk.state()?.root()));
+    assert_eq!(
+        original_root,
+        rusk.state()?.root(),
+        "Root be the same again"
+    );
 
     wallet_transfer(&wallet, channel, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(state.root())
+        hex::encode(rusk.state()?.root())
     );
     assert_eq!(
         new_root,
-        state.root(),
+        rusk.state()?.root(),
         "Root is the same compare to the first transfer"
     );
 

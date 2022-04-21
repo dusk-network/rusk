@@ -112,14 +112,14 @@ impl Rusk {
     pub fn state(&self) -> Result<RuskState> {
         let network = self.network.clone();
 
-        Ok(RuskState(network))
+        Ok(RuskState::new(network))
     }
 
     /// Persist a state of the network as new state
     pub fn persist(&self, state: &mut RuskState) -> Result<NetworkStateId> {
         let backend = self.backend;
-        let network = state.network();
-        let id = network.lock().persist(&backend())?;
+        let network = state.inner();
+        let id = network.persist(&backend())?;
 
         if let Some(path) = &self.path {
             id.write(path)?;
