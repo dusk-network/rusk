@@ -63,6 +63,7 @@ test-context = "0.1"
 async-trait = "0.1"
 tempfile = "3.2"
 hex = "0.4"
+rusk-recovery = { path = "../rusk-recovery", features = [ "genesis" ] }
 
 [build-dependencies]
 tonic-build = "0.6"
