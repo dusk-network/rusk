@@ -9,6 +9,8 @@ use crate::services::prover::RuskProver;
 use crate::transaction::{SpentTransaction, TransferPayload};
 use crate::{Result, Rusk, RuskState};
 
+use std::collections::BTreeSet;
+
 use canonical::{Canon, Sink};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
@@ -66,9 +68,20 @@ impl Rusk {
         let mut txs = Vec::with_capacity(transfer_txs.len());
         let mut dusk_spent = 0;
 
+        let mut nullifiers = BTreeSet::new();
+
         for tx in transfer_txs {
             let tx = TransferPayload::from_slice(&tx.payload)
                 .map_err(Error::Serialization)?;
+
+            for input in tx.inputs() {
+                if !nullifiers.insert(*input) {
+                    return Err(Status::invalid_argument(format!(
+                        "Repeated nullifier: {:x?}",
+                        input
+                    )));
+                }
+            }
 
             let gas_limit = tx.fee().gas_limit;
 
@@ -149,14 +162,26 @@ impl State for Rusk {
 
         let mut block_gas_left = request.block_gas_limit;
 
-        let mut txs = Vec::with_capacity(request.txs.len() + 1);
+        let mut txs = Vec::with_capacity(request.txs.len());
+        let mut discarded_txs = Vec::with_capacity(request.txs.len());
+
         let mut dusk_spent = 0;
+
+        let mut nullifiers = BTreeSet::new();
 
         // Here we discard transactions that:
         // - Fail parsing
+        // - Use nullifiers that are already use by previous TXs
         // - Spend more gas than the running `block_gas_left`
-        for tx in request.txs {
-            if let Ok(tx) = TransferPayload::from_slice(&tx.payload) {
+        'tx_loop: for req_tx in request.txs {
+            if let Ok(tx) = TransferPayload::from_slice(&req_tx.payload) {
+                for input in tx.inputs() {
+                    if !nullifiers.insert(*input) {
+                        discarded_txs.push(req_tx);
+                        continue 'tx_loop;
+                    }
+                }
+
                 let mut forked_state = state.fork();
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
@@ -198,12 +223,10 @@ impl State for Rusk {
         // Compute the new state root resulting from the state changes
         let state_root = state.root().to_vec();
 
-        let success = true;
-
         Ok(Response::new(ExecuteStateTransitionResponse {
-            success,
-            txs,
             state_root,
+            txs,
+            discarded_txs,
         }))
     }
 
