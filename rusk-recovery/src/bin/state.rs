@@ -28,6 +28,8 @@ struct Cli {
     profile: PathBuf,
 
     /// Builds the state from scratch instead of downloading it.
+    ///
+    /// This flag requires the `genesis` feature.
     #[clap(short = 'w', long, env = "RUSK_BUILD_STATE")]
     build: bool,
 

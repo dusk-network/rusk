@@ -7,7 +7,11 @@
 #[cfg(feature = "keys")]
 pub mod keys;
 #[cfg(feature = "state")]
+pub mod provisioners;
+#[cfg(feature = "state")]
 pub mod state;
 
-pub mod provisioners;
+#[cfg(all(feature = "genesis", feature = "state"))]
+pub mod genesis;
+
 pub mod theme;
