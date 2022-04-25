@@ -25,23 +25,9 @@ rustc_tools_util = "0.2"
 [dependencies]
 hex = "0.4"
 rustc_tools_util = "0.2"
-dusk-plonk = { version = "0.10", features = ["canon", "std"] }
-dusk-pki ="0.10.0-rc"
-phoenix-core = "0.16.0-rc"
 rand = "0.8"
-transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
-transfer-contract = { path = "../contracts/transfer", default-features = false }
-stake-contract = { path = "../contracts/stake", default-features = false }
-microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-vm = "0.12.0-rc"
-rusk-profile = { path = "../rusk-profile" }
-rusk-abi = { path = "../rusk-abi" }
 lazy_static = "1.4"
-canonical = "0.7"
-canonical_derive = "0.7"
-dusk-bytes = "0.1"
-dusk-bls12_381 = "0.9"
-dusk-bls12_381-sign = "0.3.0-rc"
 clap = { version = "3.1", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
 console = "0.12"
@@ -49,7 +35,35 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
 zip = "0.5"
+rusk-profile = { path = "../rusk-profile" }
+
+dusk-plonk = { version = "0.10", features = ["canon", "std"], optional = true }
+microkelvin = { version = "0.15.0-rc", features = ["persistence"], optional = true }
+dusk-bls12_381 = { version = "0.9", optional = true }
+dusk-bls12_381-sign = { version = "0.3.0-rc", optional = true }
+dusk-bytes =  { version = "0.1", optional = true }
+transfer-circuits = { path = "../circuits/transfer", features=["builder"], optional = true }
+transfer-contract = { path = "../contracts/transfer", default-features = false, optional = true }
+stake-contract = { path = "../contracts/stake", default-features = false, optional = true }
+rusk-abi = { path = "../rusk-abi", optional = true }
+dusk-pki = { version = "0.10.0-rc", optional = true }
+phoenix-core = { version = "0.16.0-rc", optional = true }
 
 [features]
-state = []
-keys = []
+keys = [
+    "dusk-plonk",
+    "transfer-circuits",
+    "dusk-bls12_381",
+    "dusk-pki",
+    "phoenix-core",
+]
+state = ["microkelvin", "dusk-bls12_381-sign", "dusk-bytes"]
+genesis = [
+    "state",
+    "transfer-contract",
+    "stake-contract",
+    "transfer-circuits",
+    "rusk-abi",
+    "dusk-pki",
+    "phoenix-core",
+]
