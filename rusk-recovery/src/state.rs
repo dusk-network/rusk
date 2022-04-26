@@ -305,3 +305,9 @@ fn download_state() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+
+// if state features is enable this constant include bytes from folder specified in OUT_DIR env variable
+// otherwise it is empty
+#[cfg(feature = "state")]
+pub const STATE_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/state.zip"));

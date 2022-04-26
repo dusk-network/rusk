@@ -11,7 +11,7 @@ use clap::Parser;
 use std::path::PathBuf;
 use version::VERSION_BUILD;
 
-use rusk_recovery_tools::state::{exec, ExecConfig};
+use rusk_recovery_tools::state::{ExecConfig, STATE_ZIP, exec};
 
 #[derive(Parser, Debug)]
 #[clap(name = "rusk-recovery-state")]
@@ -49,6 +49,7 @@ struct Cli {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("size {}", STATE_ZIP.len());
     let args = Cli::parse();
     task::run(
         || {

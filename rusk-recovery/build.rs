@@ -17,4 +17,13 @@ fn main() {
         "cargo:rustc-env=RUSTC_RELEASE_CHANNEL={}",
         rustc_tools_util::get_channel().unwrap_or_default()
     );
+
+    #[cfg(feature = "state")]
+    {
+        println!("cargo:rerun-if-env-changed=RUSK_BUILD_STATE");
+        crate::state::embed_state()
+    }
 }
+
+#[cfg(feature = "state")]
+mod state;

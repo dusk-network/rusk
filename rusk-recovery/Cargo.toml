@@ -21,6 +21,9 @@ required-features = ["state"]
 
 [build-dependencies]
 rustc_tools_util = "0.2"
+http_req = "0.8"
+zip = "0.5"
+rusk-profile = { path = "../rusk-profile" }
 
 [dependencies]
 hex = "0.4"
@@ -49,6 +52,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
 zip = "0.5"
+
+
 
 [features]
 state = []
