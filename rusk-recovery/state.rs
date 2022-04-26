@@ -1,11 +1,92 @@
+use std::{
+    env,
+    error::Error,
+    fs,
+    io::{Cursor, Read, Write},
+};
+
+use crate::provisioners::PROVISIONERS;
+use http_req::request;
+use zip::ZipArchive;
+
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::provisioners::PROVISIONERS;
-use crate::theme::Theme;
+const STATE_URL: &str =
+    "https://dusk-infra.ams3.digitaloceanspaces.com/keys/rusk-state.zip";
+pub fn embed_state() {
+    let state = get_state().unwrap();
+    println!("{}", state.len());
+
+    //write the state in folder specified by OUT_DIR env var
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_path = format!("{}/state.zip", out_dir);
+    let mut file = fs::File::create(out_path).unwrap();
+    file.write_all(&state).unwrap();
+}
+
+/// return the bytes of the state depending on RUSK_BUILD_STATE env
+/// If it's set, it build the state from scratch. Otherwise, it download the
+/// state from the network
+fn get_state() -> Result<Vec<u8>, Box<dyn Error>> {
+    let testnet = true;
+    if env::var("RUSK_BUILD_STATE").is_ok() {
+        println!("{} new state", ("Building"));
+        let state_id = deploy(testnet, &diskbackend())
+            .expect("Failed to deploy network state");
+
+        println!("{} persisted id", ("Storing"));
+        let out_dir = env::var("OUT_DIR").unwrap();
+        let mut id_path = std::path::PathBuf::from(out_dir);
+        id_path.push("state.id");
+        state_id.write(&id_path)?;
+       
+    } else {
+        download_state()
+    }
+}
+
+/// Downloads the state into the rusk profile directory.
+fn download_state() -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut buffer = vec![];
+    let response = request::get(STATE_URL, &mut buffer)?;
+
+    // only accept success codes.
+    if !response.status_code().is_success() {
+        return Err(format!(
+            "State download error: HTTP {}",
+            response.status_code()
+        )
+        .into());
+    }
+    Ok(buffer)
+
+    // println!("{} state archive into", "Unzipping");
+
+    // let reader = Cursor::new(buffer);
+    // let mut zip = ZipArchive::new(reader)?;
+
+    // let mut profile_path = rusk_profile::get_rusk_profile_dir()?;
+    // profile_path.pop();
+
+    // for i in 0..zip.len() {
+    //     let mut entry = zip.by_index(i)?;
+    //     let entry_path = profile_path.join(entry.name());
+
+    //     if entry.is_dir() {
+    //         let _ = fs::create_dir_all(entry_path);
+    //     } else {
+    //         let mut buffer = Vec::with_capacity(entry.size() as usize);
+    //         entry.read_to_end(&mut buffer)?;
+    //         let _ = fs::write(entry_path, buffer)?;
+    //     }
+    // }
+
+    // Ok(())
+}
 
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
@@ -17,13 +98,8 @@ use rand::SeedableRng;
 use rusk_abi::dusk::*;
 use rusk_vm::{Contract, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
-use std::error::Error;
-use std::io::{Cursor, Read};
-use std::{fs, io};
-use tracing::info;
-use tracing::log::error;
+use std::io;
 use transfer_contract::TransferContract;
-use zip::ZipArchive;
 
 /// Amount of the note inserted in the genesis state.
 const GENESIS_DUSK: Dusk = dusk(1_000.0);
@@ -33,12 +109,12 @@ const FAUCET_DUSK: Dusk = dusk(1_000_000_000.0);
 
 lazy_static! {
     pub static ref DUSK_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../dusk.psk");
+        let bytes = include_bytes!("./dusk.psk");
         PublicSpendKey::from_bytes(bytes)
             .expect("faucet should have a valid key")
     };
     pub static ref FAUCET_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../faucet.psk");
+        let bytes = include_bytes!("./faucet.psk");
         PublicSpendKey::from_bytes(bytes)
             .expect("faucet should have a valid key")
     };
@@ -46,8 +122,14 @@ lazy_static! {
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
-        let dir = rusk_profile::get_rusk_state_dir()
-            .expect("Failed to get Rusk profile directory");
+        //create a Pathbuf for a temporary directory in OUT_DIR folder
+        let out_dir = env::var("OUT_DIR").unwrap();
+        let mut dir = std::path::PathBuf::from(out_dir);
+        dir.push("rusk-state");
+        let _ = fs::create_dir_all(dir.clone());
+
+        // let dir = rusk_profile::get_rusk_state_dir()
+        //     .expect("Failed to get Rusk profile directory");
 
         fs::remove_dir_all(&dir)
             .or_else(|e| {
@@ -111,7 +193,6 @@ const fn stake_amount(testnet: bool) -> Dusk {
 /// staking/consensus keys in the `keys/` folder. The stakes will all be the
 /// same and the minimum amount.
 fn genesis_stake(testnet: bool) -> StakeContract {
-    let theme = Theme::default();
     let mut stake_contract = StakeContract::default();
 
     let stake_amount = stake_amount(testnet);
@@ -122,9 +203,9 @@ fn genesis_stake(testnet: bool) -> StakeContract {
             .insert_stake(*provisioner, stake)
             .expect("Genesis stake to be pushed to the stake");
     }
-    info!(
+    println!(
         "{} Added {} provisioners",
-        theme.action("Generating"),
+        ("Generating"),
         PROVISIONERS.len()
     );
 
@@ -140,160 +221,44 @@ where
 {
     Persistence::with_backend(ctor, |_| Ok(()))?;
 
-    let theme = Theme::default();
-    info!("{} new network state", theme.action("Generating"));
+    println!("{} new network state", ("Generating"));
 
     let transfer = Contract::new(
         genesis_transfer(testnet),
         &include_bytes!(
-      "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
-    )[..],
+            "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+        )[..],
     );
 
     let stake = Contract::new(
         genesis_stake(testnet),
         &include_bytes!(
-            "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
+            "../target/wasm32-unknown-unknown/release/stake_contract.wasm"
         )[..],
     );
 
     let mut network = NetworkState::default();
 
-    info!(
-        "{} Genesis Transfer Contract state",
-        theme.action("Deploying")
-    );
+    println!("{} Genesis Transfer Contract state", ("Deploying"));
 
     network
         .deploy_with_id(rusk_abi::transfer_contract(), transfer)
         .expect("Genesis Transfer Contract should be deployed");
 
-    info!("{} Genesis Stake Contract state", theme.action("Deploying"));
+    println!("{} Genesis Stake Contract state", ("Deploying"));
 
     network
         .deploy_with_id(rusk_abi::stake_contract(), stake)
         .expect("Genesis Transfer Contract should be deployed");
 
-    info!("{} network state", theme.action("Storing"));
+    println!("{} network state", ("Storing"));
 
     network.commit();
     network.push();
 
-    info!("{} {}", theme.action("Root"), hex::encode(network.root()));
+    println!("{} {}", ("Root"), hex::encode(network.root()));
 
     let state_id = network.persist(ctor).expect("Error in persistence");
 
     Ok(state_id)
 }
-
-pub struct ExecConfig {
-    pub build: bool,
-    pub force: bool,
-    pub testnet: bool,
-}
-
-pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
-    let theme = Theme::default();
-
-    info!("{} Network state", theme.action("Checking"));
-    let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
-
-    // if we're not forcing a rebuild/download and the state already exists in
-    // the expected path, stop early.
-    if !config.force && state_path.exists() && id_path.exists() {
-        info!("{} existing state", theme.info("Found"));
-
-        let _ = NetworkStateId::read(&id_path)?;
-
-        info!(
-            "{} state id at {}",
-            theme.success("Checked"),
-            id_path.display()
-        );
-        return Ok(());
-    }
-
-    if config.build {
-        info!("{} new state", theme.info("Building"));
-        let state_id = deploy(config.testnet, &diskbackend())
-            .expect("Failed to deploy network state");
-
-        info!("{} persisted id", theme.success("Storing"));
-        state_id.write(&id_path)?;
-    } else {
-        info!("{} state from previous build", theme.info("Downloading"));
-
-        if let Err(err) = download_state() {
-            error!("{} downloading state", theme.error("Failed"));
-            return Err(err);
-        }
-    }
-
-    if !state_path.exists() {
-        error!(
-            "{} network state at {}",
-            theme.error("Missing"),
-            state_path.display()
-        );
-        return Err("Missing state at expected path".into());
-    }
-
-    if !id_path.exists() {
-        error!(
-            "{} persisted id at {}",
-            theme.error("Missing"),
-            id_path.display()
-        );
-        return Err("Missing persisted id at expected path".into());
-    }
-
-    info!(
-        "{} network state at {}",
-        theme.success("Stored"),
-        state_path.display()
-    );
-    info!(
-        "{} persisted id at {}",
-        theme.success("Stored"),
-        id_path.display()
-    );
-
-    Ok(())
-}
-
-/// Downloads the state into the rusk profile directory.
-fn download_state() -> Result<(), Box<dyn Error>> {
-    let theme = Theme::default();
-
-    let mut buffer = STATE_ZIP;
-   
-    info!("{} state archive into", theme.info("Unzipping"));
-
-    let reader = Cursor::new(buffer);
-    let mut zip = ZipArchive::new(reader)?;
-
-    let mut profile_path = rusk_profile::get_rusk_profile_dir()?;
-    profile_path.pop();
-
-    for i in 0..zip.len() {
-        let mut entry = zip.by_index(i)?;
-        let entry_path = profile_path.join(entry.name());
-
-        if entry.is_dir() {
-            let _ = fs::create_dir_all(entry_path);
-        } else {
-            let mut buffer = Vec::with_capacity(entry.size() as usize);
-            entry.read_to_end(&mut buffer)?;
-            let _ = fs::write(entry_path, buffer)?;
-        }
-    }
-
-    Ok(())
-}
-
-
-// if state features is enable this constant include bytes from folder specified in OUT_DIR env variable
-// otherwise it is empty
-#[cfg(feature = "state")]
-pub const STATE_ZIP: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/state.zip"));
