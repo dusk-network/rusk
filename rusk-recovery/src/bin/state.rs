@@ -27,21 +27,10 @@ struct Cli {
     )]
     profile: PathBuf,
 
-    /// Builds the state from scratch instead of downloading it.
-    #[clap(short = 'w', long, env = "RUSK_BUILD_STATE")]
-    build: bool,
-
     /// Forces a build/download even if the state is in the profile path.
     #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
     force: bool,
 
-    /// Builds a testnet state instead of a main. The state includes a
-    /// transparent note with a billion Dusk, assigned to a hardcoded faucet
-    /// address.
-    ///
-    /// If `build` is not set, this setting has no effect.
-    #[clap(short = 't', long, env = "RUSK_BUILD_TESTNET")]
-    testnet: bool,
 
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
@@ -54,9 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     task::run(
         || {
             exec(ExecConfig {
-                build: args.build,
                 force: args.force,
-                testnet: args.testnet,
             })
         },
         args.profile,

@@ -1,20 +1,20 @@
-use std::{
-    env,
-    error::Error,
-    fs,
-    io::{Cursor, Read, Write},
-};
-
-use crate::provisioners::PROVISIONERS;
-use http_req::request;
-use zip::ZipArchive;
-
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::{
+    env,
+    error::Error,
+    fs,
+    io::{Read, Write},
+};
+
+use crate::state::provisioners::PROVISIONERS;
+pub mod provisioners;
+mod ziputil;
+use http_req::request;
 const STATE_URL: &str =
     "https://dusk-infra.ams3.digitaloceanspaces.com/keys/rusk-state.zip";
 pub fn embed_state() {
@@ -32,21 +32,49 @@ pub fn embed_state() {
 /// If it's set, it build the state from scratch. Otherwise, it download the
 /// state from the network
 fn get_state() -> Result<Vec<u8>, Box<dyn Error>> {
-    let testnet = true;
     if env::var("RUSK_BUILD_STATE").is_ok() {
-        println!("{} new state", ("Building"));
-        let state_id = deploy(testnet, &diskbackend())
-            .expect("Failed to deploy network state");
-
-        println!("{} persisted id", ("Storing"));
-        let out_dir = env::var("OUT_DIR").unwrap();
-        let mut id_path = std::path::PathBuf::from(out_dir);
-        id_path.push("state.id");
-        state_id.write(&id_path)?;
-       
+        build_state()
     } else {
         download_state()
     }
+}
+
+fn build_state() -> Result<Vec<u8>, Box<dyn Error>> {
+    // check if the value of the environment variable named RUSK_BUILD_TESTNET
+    // is true
+
+    let testnet = env::var("RUSK_BUILD_TESTNET")
+        .map(|v| v.parse::<bool>().unwrap_or(false))
+        .unwrap_or(false);
+
+    println!("{} new state", ("Building"));
+    let state_id = deploy(testnet, &diskbackend())
+        .expect("Failed to deploy network state");
+
+    println!("{} persisted id", ("Storing"));
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let mut build_path = std::path::PathBuf::from(out_dir.clone());
+
+    build_path.push("build-state");
+
+    let mut id_path = std::path::PathBuf::from(build_path.clone());
+    id_path.push("state.id");
+    state_id.write(&id_path)?;
+
+    let mut out_path = std::path::PathBuf::from(out_dir);
+    out_path.push("state.zip");
+
+    ziputil::zip_dir(
+        build_path.to_str().unwrap(),
+        out_path.to_str().unwrap(),
+        zip::CompressionMethod::Deflated,
+    )?;
+
+    //read file out.zip to vec
+    let mut file = fs::File::open(out_path.to_str().unwrap())?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+    Ok(buffer)
 }
 
 /// Downloads the state into the rusk profile directory.
@@ -125,7 +153,8 @@ fn diskbackend() -> BackendCtor<DiskBackend> {
         //create a Pathbuf for a temporary directory in OUT_DIR folder
         let out_dir = env::var("OUT_DIR").unwrap();
         let mut dir = std::path::PathBuf::from(out_dir);
-        dir.push("rusk-state");
+        dir.push("build-state");
+        dir.push("state");
         let _ = fs::create_dir_all(dir.clone());
 
         // let dir = rusk_profile::get_rusk_state_dir()
@@ -223,19 +252,22 @@ where
 
     println!("{} new network state", ("Generating"));
 
-    let transfer = Contract::new(
-        genesis_transfer(testnet),
-        &include_bytes!(
-            "../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
-        )[..],
-    );
+    let transfer_path =
+        "../target/wasm32-unknown-unknown/release/transfer_contract.wasm";
+    let transfer_bytes = fs::read(transfer_path).map_err(|e| {
+        println!("couldn't read {}: {}", transfer_path, e);
+        e
+    })?;
+    let transfer =
+        Contract::new(genesis_transfer(testnet), &transfer_bytes[..]);
 
-    let stake = Contract::new(
-        genesis_stake(testnet),
-        &include_bytes!(
-            "../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-        )[..],
-    );
+    let stake_path =
+        "../target/wasm32-unknown-unknown/release/stake_contract.wasm";
+    let stake_bytes = fs::read(stake_path).map_err(|e| {
+        println!("couldn't read {}: {}", stake_path, e);
+        e
+    })?;
+    let stake = Contract::new(genesis_stake(testnet), &stake_bytes[..]);
 
     let mut network = NetworkState::default();
 

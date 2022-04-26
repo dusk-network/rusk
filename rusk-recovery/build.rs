@@ -27,6 +27,3 @@ fn main() {
 
 #[cfg(feature = "state")]
 mod state;
-
-#[cfg(feature = "state")]
-mod provisioners;
