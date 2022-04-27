@@ -49,7 +49,9 @@ message VerifyStateTransitionRequest {
     bytes generator = 4;
 }
 
-message VerifyStateTransitionResponse {}
+message VerifyStateTransitionResponse {
+    bytes state_root = 1;
+}
 
 message GetProvisionersRequest {}
 
