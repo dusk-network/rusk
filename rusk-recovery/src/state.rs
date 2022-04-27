@@ -13,6 +13,7 @@ use rusk_vm::NetworkStateId;
 use std::error::Error;
 use std::fs;
 use std::io::{Cursor, Read};
+use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing::log::error;
 use zip::ZipArchive;
@@ -57,8 +58,11 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     }
 
     info!("{} state from previous build", theme.info("Deploying"));
+    
+    let mut profile_path = rusk_profile::get_rusk_profile_dir()?;
+    profile_path.pop();
 
-    if let Err(err) = deploy_state() {
+    if let Err(err) = deploy_state(&profile_path) {
         error!("{} deploying state", theme.error("Failed"));
         return Err(err);
     }
@@ -95,8 +99,8 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-/// Deploy the state into the rusk profile directory.
-fn deploy_state() -> Result<(), Box<dyn Error>> {
+/// Deploy the state into a directory.
+pub fn deploy_state(profile_path: &Path) -> Result<NetworkStateId, Box<dyn Error>> {
     let theme = Theme::default();
 
     let buffer = STATE_ZIP;
@@ -105,9 +109,6 @@ fn deploy_state() -> Result<(), Box<dyn Error>> {
 
     let reader = Cursor::new(buffer);
     let mut zip = ZipArchive::new(reader)?;
-
-    let mut profile_path = rusk_profile::get_rusk_profile_dir()?;
-    profile_path.pop();
 
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i)?;
@@ -121,8 +122,10 @@ fn deploy_state() -> Result<(), Box<dyn Error>> {
             let _ = fs::write(entry_path, buffer)?;
         }
     }
-
-    Ok(())
+    let mut id_path = std::path::PathBuf::from(profile_path.clone());
+    id_path.push("state.id");
+    let state_id = NetworkStateId::read(&id_path)?;
+    Ok(state_id)
 }
 
 // if state features is enable this constant include bytes from folder specified
