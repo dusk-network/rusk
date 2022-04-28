@@ -239,14 +239,16 @@ impl State for Rusk {
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
             .map_err(Error::Serialization)?;
-        self.accept_transactions(
+        let (response, _) = self.accept_transactions(
             request.block_height,
             request.block_gas_limit,
             request.txs,
             generator,
         )?;
 
-        Ok(Response::new(VerifyStateTransitionResponse {}))
+        let state_root = response.get_ref().state_root.to_vec();
+
+        Ok(Response::new(VerifyStateTransitionResponse { state_root }))
     }
 
     async fn accept(
