@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2021-04-26
+
+### Added
+
+- Add `discarded_txs` field to `ExecuteStateTransitionResponse` [#704]
+
+### Removed
+
+- Remove `success` field from `ExecuteStateTransitionResponse` [#704]
+
 ## [0.2.0] - 2021-04-15
 
 ### Added
@@ -24,12 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
+[#704]: https://github.com/dusk-network/rusk/issues/704
 [#699]: https://github.com/dusk-network/rusk/issues/699
 [#651]: https://github.com/dusk-network/rusk/issues/651
 [#614]: https://github.com/dusk-network/rusk/issues/614
 
 <!-- Releases -->
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-schema-v0.2.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-schema-v0.3.0...HEAD
+[0.3.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.2.0...rusk-schema-v0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0...rusk-schema-v0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0
