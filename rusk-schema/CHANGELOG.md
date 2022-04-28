@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2021-04-28
+
+### Added
+
+- Add `state_root` to VST response [#708]
+- Add `GetNotes` call to stream notes from the server [#702]
+
+### Deprecated
+
+- Mark `GetNotesOwnedByRequest` fields as `[deprecated=true]` [#702]
+
 ## [0.3.0] - 2021-04-26
 
 ### Added
@@ -34,14 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[#704]: https://github.com/dusk-network/rusk/issues/704
+[#708]: https://github.com/dusk-network/rusk/issues/708
+[#702]: https://github.com/dusk-network/rusk/issues/702
 [#699]: https://github.com/dusk-network/rusk/issues/699
 [#651]: https://github.com/dusk-network/rusk/issues/651
 [#614]: https://github.com/dusk-network/rusk/issues/614
 
 <!-- Releases -->
 
-[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-schema-v0.3.0...HEAD
+[Unreleased]: https://github.com/dusk-network/rusk/compare/rusk-schema-v0.3.1...HEAD
+[0.3.1]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.3.0...rusk-schema-v0.3.1
 [0.3.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.2.0...rusk-schema-v0.3.0
 [0.2.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0...rusk-schema-v0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-schema-v0.1.0

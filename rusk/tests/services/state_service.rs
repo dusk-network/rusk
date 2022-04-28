@@ -5,18 +5,20 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::common::keys::*;
-use crate::common::setup;
+use crate::common::*;
+
 use canonical::{Canon, Sink};
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use futures::StreamExt;
 use parking_lot::Mutex;
 use phoenix_core::Note;
 use rusk::services::state::{
-    GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
-    GetStakeRequest,
+    GetAnchorRequest, GetNotesOwnedByRequest, GetNotesRequest,
+    GetOpeningRequest, GetStakeRequest,
 };
 use rusk_schema::state_client::StateClient;
 
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 
 use once_cell::sync::Lazy;
 use rand::prelude::*;
@@ -50,6 +52,7 @@ static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
 
 const BLOCK_HEIGHT: u64 = 1;
 
+#[allow(deprecated)]
 fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
     info!("Fetching the first note from the state");
     let vk = SSK.view_key();
@@ -117,6 +120,66 @@ fn get_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+pub async fn test_get_notes() -> Result<()> {
+    let (channel, incoming) = setup().await;
+
+    let rusk_server = STATE_LOCK.lock().clone();
+
+    tokio::spawn(async move {
+        Server::builder()
+            .add_service(StateServer::new(rusk_server))
+            .serve_with_incoming(incoming)
+            .await
+    });
+
+    let note = get_note(&mut STATE_LOCK.lock())?;
+
+    let vk = SSK.view_key();
+
+    assert!(note.is_some(), "One note expected to be in the state");
+    let note = note.unwrap();
+
+    let mut client = StateClient::new(channel.clone());
+
+    // request with a view key
+    let request = tonic::Request::new(GetNotesRequest {
+        height: BLOCK_HEIGHT,
+        vk: vk.to_bytes().to_vec(),
+    });
+
+    let mut stream = client.get_notes(request).await?.into_inner();
+    let mut notes = vec![];
+
+    while let Some(response) = stream.next().await {
+        let response = response.expect("The response should be successful");
+        notes.push(Note::from_slice(&response.note)?);
+    }
+
+    assert_eq!(notes.len(), 1, "There should be one note in the state");
+    assert_eq!(notes[0], note, "Received note should be the generated note");
+
+    // request without a view key
+    let request = tonic::Request::new(GetNotesRequest {
+        height: BLOCK_HEIGHT,
+        vk: vec![],
+    });
+
+    let mut stream = client.get_notes(request).await?.into_inner();
+    let mut notes = vec![];
+
+    while let Some(response) = stream.next().await {
+        let response = response.expect("The response should be successful");
+        notes.push(Note::from_slice(&response.note)?);
+    }
+
+    assert_eq!(notes.len(), 1, "There should be one note in the state");
+    assert_eq!(notes[0], note, "Received note should be the generated note");
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+#[allow(deprecated)]
 pub async fn test_fetch_notes() -> Result<()> {
     let (channel, incoming) = setup().await;
 

@@ -163,18 +163,9 @@ impl RuskState {
         Ok(())
     }
 
-    /// Returns all the notes from a given block height
-    pub fn notes(&self, height: u64) -> Result<Vec<Note>> {
-        Ok(self
-            .transfer_contract()?
-            .leaves_from_height(height)?
-            .map(|leaf| leaf.expect("Failed to fetch leaf from canonical"))
-            .map(|leaf| leaf.note)
-            .collect())
-    }
-
     /// Returns the notes from a given block height and owned by [`ViewKey`],
     /// together with the highest block height found in the tree.
+    #[deprecated]
     pub fn fetch_notes(
         &self,
         height: u64,

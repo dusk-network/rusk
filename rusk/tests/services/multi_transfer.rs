@@ -6,17 +6,19 @@
 
 use crate::common::keys::BLS_SK;
 use crate::common::*;
+
 use canonical::{Canon, Source};
 use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_schnorr::Signature;
+use futures::StreamExt;
 use parking_lot::Mutex;
 use rusk::services::network::{KadcastDispatcher, NetworkServer};
 use rusk::services::prover::ExecuteProverRequest;
 use rusk::services::state::{
     ExecuteStateTransitionRequest, FindExistingNullifiersRequest,
-    GetAnchorRequest, GetNotesOwnedByRequest, GetOpeningRequest,
-    PreverifyRequest, StateTransitionRequest, VerifyStateTransitionRequest,
+    GetAnchorRequest, GetNotesRequest, GetOpeningRequest, PreverifyRequest,
+    StateTransitionRequest, VerifyStateTransitionRequest,
 };
 use rusk_schema::network_client::NetworkClient;
 use rusk_schema::prover_client::ProverClient;
@@ -422,19 +424,20 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
 
-        let request = tonic::Request::new(GetNotesOwnedByRequest {
+        let request = tonic::Request::new(GetNotesRequest {
             height: 0,
             vk: vk.to_bytes().to_vec(),
         });
 
-        let response = client.get_notes_owned_by(request).wait()?;
+        let stream = client.get_notes(request).wait()?.into_inner();
 
-        response
-            .into_inner()
-            .notes
-            .iter()
-            .map(|n| Note::from_slice(n).map_err(Error::Serialization))
+        Ok(stream
+            .map(|response| {
+                let response = response.expect("Stream item should be Ok()");
+                Note::from_slice(&response.note).expect("Note should be valid")
+            })
             .collect()
+            .wait())
     }
 
     /// Fetch the current anchor of the state.

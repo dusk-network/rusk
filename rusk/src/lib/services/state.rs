@@ -10,14 +10,20 @@ use crate::transaction::{SpentTransaction, TransferPayload};
 use crate::{Result, Rusk, RuskState};
 
 use std::collections::BTreeSet;
+use std::pin::Pin;
 
 use canonical::{Canon, Sink};
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::ViewKey;
+use futures::{Stream, StreamExt};
 use phoenix_core::Note;
 use rusk_vm::GasMeter;
+use tokio::spawn;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_util::task::LocalPoolHandle;
 use tonic::{Request, Response, Status};
 use tracing::info;
 
@@ -28,14 +34,14 @@ pub use rusk_schema::{
     ExecutedTransaction as ExecutedTransactionProto,
     FindExistingNullifiersRequest, FindExistingNullifiersResponse,
     GetAnchorRequest, GetAnchorResponse, GetNotesOwnedByRequest,
-    GetNotesOwnedByResponse, GetOpeningRequest, GetOpeningResponse,
-    GetProvisionersRequest, GetProvisionersResponse, GetStakeRequest,
-    GetStakeResponse, GetStateRootRequest, GetStateRootResponse,
-    PersistRequest, PersistResponse, PreverifyRequest, PreverifyResponse,
-    Provisioner, RevertRequest, RevertResponse, Stake as StakeProto,
-    StateTransitionRequest, StateTransitionResponse,
-    Transaction as TransactionProto, VerifyStateTransitionRequest,
-    VerifyStateTransitionResponse,
+    GetNotesOwnedByResponse, GetNotesRequest, GetNotesResponse,
+    GetOpeningRequest, GetOpeningResponse, GetProvisionersRequest,
+    GetProvisionersResponse, GetStakeRequest, GetStakeResponse,
+    GetStateRootRequest, GetStateRootResponse, PersistRequest, PersistResponse,
+    PreverifyRequest, PreverifyResponse, Provisioner, RevertRequest,
+    RevertResponse, Stake as StakeProto, StateTransitionRequest,
+    StateTransitionResponse, Transaction as TransactionProto,
+    VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
 
 impl Rusk {
@@ -374,6 +380,76 @@ impl State for Rusk {
         Ok(Response::new(GetStateRootResponse { state_root }))
     }
 
+    type GetNotesStream =
+        Pin<Box<dyn Stream<Item = Result<GetNotesResponse, Status>> + Send>>;
+
+    async fn get_notes(
+        &self,
+        request: Request<GetNotesRequest>,
+    ) -> Result<Response<Self::GetNotesStream>, Status> {
+        info!("Received GetNotes request");
+
+        let request = request.into_inner();
+
+        let vk = match request.vk.is_empty() {
+            false => {
+                let vk = ViewKey::from_slice(&request.vk)
+                    .map_err(Error::Serialization)?;
+                Some(vk)
+            }
+            true => None,
+        };
+
+        let state = self.state()?;
+        let transfer = state.transfer_contract().map_err(Error::from)?;
+
+        let (sender, receiver) = mpsc::channel(self.stream_buffer_size);
+
+        // Spawn a task that's responsible for iterating through the leaves of
+        // the transfer contract tree and sending them through the sender
+        spawn(async move {
+            let local_pool = LocalPoolHandle::new(1);
+            local_pool
+                .spawn_pinned(move || async move {
+                    let mut leaves_iter = transfer
+                        .leaves_from_height(request.height)
+                        .expect("Failed iterating through leaves")
+                        .map(|item| item.map(|leaf| *leaf));
+
+                    for item in leaves_iter.by_ref() {
+                        // Filter out the notes that are not owned by the given
+                        // view key(if it was given)
+                        if let Some(vk) = vk {
+                            if let Ok(leaf) = item.as_ref() {
+                                if !vk.owns(&leaf.note) {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if sender.send(item).await.is_err() {
+                            break;
+                        }
+                    }
+                })
+                .await
+        });
+
+        // Make a stream from the receiver and map the elements to be the
+        // expected output
+        let stream = ReceiverStream::new(receiver).map(|item| {
+            item.map(|leaf| GetNotesResponse {
+                note: leaf.note.to_bytes().to_vec(),
+                height: leaf.block_height.into(),
+            })
+            .map_err(|_| {
+                Status::internal("Failed iterating through the poseidon tree")
+            })
+        });
+        Ok(Response::new(Box::pin(stream) as Self::GetNotesStream))
+    }
+
+    #[allow(deprecated)]
     async fn get_notes_owned_by(
         &self,
         request: Request<GetNotesOwnedByRequest>,

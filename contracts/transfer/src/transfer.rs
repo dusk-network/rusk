@@ -21,9 +21,10 @@ mod call;
 mod circuits;
 mod tree;
 
-use tree::{Leaf, Tree};
+use tree::Tree;
 
 pub use call::Call;
+pub use tree::Leaf;
 
 pub type PublicKeyBytes = [u8; PublicKey::SIZE];
 
