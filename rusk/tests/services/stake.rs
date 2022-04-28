@@ -37,6 +37,7 @@ use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
+use tempfile::{TempDir, tempdir};
 use tracing::info;
 
 use tonic::transport::Server;
@@ -64,14 +65,23 @@ const INITIAL_BALANCE: Dusk = dusk(10_000.0);
 const MAX_NOTES: u64 = 10;
 const GAS_LIMIT: u64 = 10_000_000_000;
 
+static TEMP_DIR: Lazy<TempDir> = Lazy::new(|| tempdir().unwrap());
+
+fn ephemeral() -> Result<DiskBackend, microkelvin::PersistError> {
+    let dir = TEMP_DIR.path();
+    let mut dir = dir.to_path_buf();
+    dir.push("state");
+    DiskBackend::new(dir)
+}
+
 // Function used to creates a temporary diskbackend for Rusk
 fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
+    BackendCtor::new(ephemeral)
 }
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let state_id = rusk_recovery_tools::state::deploy_state (TEMP_DIR.path())?;
 
     let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
 

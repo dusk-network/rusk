@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fs;
+
 use crate::common::keys::BLS_SK;
 use crate::common::*;
 
@@ -35,6 +37,7 @@ use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
+use tempfile::{tempdir, TempDir};
 use tracing::info;
 
 use tonic::transport::Server;
@@ -60,17 +63,25 @@ const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 600_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
+static TEMP_DIR: Lazy<TempDir> = Lazy::new(|| tempdir().unwrap());
+
+fn ephemeral() -> Result<DiskBackend, microkelvin::PersistError> {
+    let dir = TEMP_DIR.path();
+    let mut dir = dir.to_path_buf();
+    dir.push("state");
+    DiskBackend::new(dir)
+}
+
 // Function used to creates a temporary diskbackend for Rusk
 fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
+    BackendCtor::new(ephemeral)
 }
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let state_id = rusk_recovery_tools::state::deploy_state(TEMP_DIR.path())?;
 
     let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
-
     let state = rusk.state()?;
     let transfer = state.transfer_contract()?;
 
@@ -100,7 +111,12 @@ fn initial_state() -> Result<Rusk> {
 }
 
 static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let rusk = initial_state().expect("Failed to create initial state");
+    let rusk = initial_state()
+        .map_err(|w| {
+            info!("Failed to create initial state {}", w);
+            std::thread::sleep(std::time::Duration::from_secs(10000));
+        })
+        .expect("Failed to create initial state");
     Mutex::new(rusk)
 });
 

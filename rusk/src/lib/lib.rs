@@ -72,7 +72,15 @@ impl RuskBuilder {
             (None, None) => return Err(Error::BuilderInvalidState),
         };
 
-        let network = network.restore(id).or(Err(Error::RestoreFailed))?;
+        let network = network.restore(id);
+
+
+        if let Err(r)=network {
+            tracing::error!("{}", r);
+            return Err(Error::RestoreFailed);
+        }
+        let network = network.unwrap();
+        
         let network = Arc::new(Mutex::new(network));
 
         let rusk = Rusk {

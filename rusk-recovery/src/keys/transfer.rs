@@ -6,7 +6,6 @@
 
 use crate::keys::CircuitLoader;
 use crate::keys::PUB_PARAMS;
-use dusk_bls12_381::BlsScalar;
 use dusk_pki::SecretSpendKey;
 use dusk_plonk::prelude::*;
 use phoenix_core::{Message, Note};

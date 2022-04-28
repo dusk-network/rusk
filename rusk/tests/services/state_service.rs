@@ -27,6 +27,8 @@ use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
+use tempfile::TempDir;
+use tempfile::tempdir;
 use tracing::{info, trace};
 
 use tonic::transport::Server;
@@ -34,12 +36,25 @@ use tonic::transport::Server;
 use rusk::services::state::StateServer;
 use stake_contract::Stake;
 
-pub fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
+
+static TEMP_DIR: Lazy<TempDir> = Lazy::new(|| tempdir().unwrap());
+
+fn ephemeral() -> Result<DiskBackend, microkelvin::PersistError> {
+    let dir = TEMP_DIR.path();
+    let mut dir = dir.to_path_buf();
+    dir.push("state");
+    DiskBackend::new(dir)
 }
 
+// Function used to creates a temporary diskbackend for Rusk
+fn testbackend() -> BackendCtor<DiskBackend> {
+    BackendCtor::new(ephemeral)
+}
+
+// Creates the Rusk initial state for the tests below
+
 static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())
+    let state_id = rusk_recovery_tools::state::deploy_state (TEMP_DIR.path())
         .expect("Failed to deploy state");
 
     let rusk = Rusk::builder(testbackend)

@@ -11,39 +11,36 @@ use crate::theme::Theme;
 use dusk_plonk::prelude::*;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use once_cell::sync::Lazy;
 
 use tracing::{info, warn};
 
-lazy_static::lazy_static! {
-    static ref PUB_PARAMS: PublicParameters = {
-        let theme = Theme::default();
-        info!("{} CRS from cache" , theme.action("Fetching"));
-        match rusk_profile::get_common_reference_string() {
-            Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
-                let pp = PublicParameters::from_slice_unchecked(&buff[..]);
-                info!("{} CRS" , theme.info("Loaded"));
-                pp
-            },
+pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
+    let theme = Theme::default();
+    info!("{} CRS from cache", theme.action("Fetching"));
+    match rusk_profile::get_common_reference_string() {
+        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
+            let pp = PublicParameters::from_slice_unchecked(&buff[..]);
+            info!("{} CRS", theme.info("Loaded"));
+            pp
+        },
 
-            _ => {
-                warn!("{} new CRS due to cache miss" , theme.warn("Building"));
-                let mut rng = StdRng::seed_from_u64(0xbeef);
+        _ => {
+            warn!("{} new CRS due to cache miss", theme.warn("Building"));
+            let mut rng = StdRng::seed_from_u64(0xbeef);
 
-                let pp = PublicParameters::setup(1 << 17, &mut rng)
-                    .expect("Cannot initialize Public Parameters");
+            let pp = PublicParameters::setup(1 << 17, &mut rng)
+                .expect("Cannot initialize Public Parameters");
 
-                rusk_profile::set_common_reference_string(
-                    pp.to_raw_var_bytes(),
-                )
+            rusk_profile::set_common_reference_string(pp.to_raw_var_bytes())
                 .expect("Unable to write the CRS");
 
-                info!("{} CRS" , theme.info("Cached"));
+            info!("{} CRS", theme.info("Cached"));
 
-                pp
-            }
+            pp
         }
-    };
-}
+    }
+});
 
 pub trait CircuitLoader {
     fn circuit_id(&self) -> &[u8; 32];
@@ -123,7 +120,7 @@ pub fn run_circuit_keys_checks(
 }
 
 pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
-    lazy_static::initialize(&PUB_PARAMS);
+    Lazy::force(&PUB_PARAMS);
 
     run_circuit_keys_checks(
         keep_keys,

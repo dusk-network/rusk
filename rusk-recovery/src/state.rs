@@ -8,28 +8,25 @@ use crate::theme::Theme;
 
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use rusk_vm::NetworkStateId;
 use std::error::Error;
 use std::fs;
 use std::io::{Cursor, Read};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tracing::info;
 use tracing::log::error;
 use zip::ZipArchive;
 
-lazy_static! {
-    pub static ref DUSK_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../dusk.psk");
-        PublicSpendKey::from_bytes(bytes)
-            .expect("faucet should have a valid key")
-    };
-    pub static ref FAUCET_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../faucet.psk");
-        PublicSpendKey::from_bytes(bytes)
-            .expect("faucet should have a valid key")
-    };
-}
+pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+    let bytes = include_bytes!("../dusk.psk");
+    PublicSpendKey::from_bytes(bytes).expect("dusk should have a valid key")
+});
+
+pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+    let bytes = include_bytes!("../faucet.psk");
+    PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
+});
 
 pub struct ExecConfig {
     pub force: bool,
@@ -58,9 +55,8 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     }
 
     info!("{} state from previous build", theme.info("Deploying"));
-    
-    let mut profile_path = rusk_profile::get_rusk_profile_dir()?;
-    profile_path.pop();
+
+    let profile_path = rusk_profile::get_rusk_profile_dir()?;
 
     if let Err(err) = deploy_state(&profile_path) {
         error!("{} deploying state", theme.error("Failed"));
@@ -100,30 +96,48 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 }
 
 /// Deploy the state into a directory.
-pub fn deploy_state(profile_path: &Path) -> Result<NetworkStateId, Box<dyn Error>> {
+pub fn deploy_state(
+    profile_path: &Path,
+) -> Result<NetworkStateId, Box<dyn Error>> {
     let theme = Theme::default();
 
     let buffer = STATE_ZIP;
 
-    info!("{} state archive into", theme.info("Unzipping"));
+    info!(
+        "{} state archive into {}",
+        theme.info("Unzipping"),
+        profile_path.display()
+    );
 
     let reader = Cursor::new(buffer);
     let mut zip = ZipArchive::new(reader)?;
+    info!("readed");
 
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i)?;
         let entry_path = profile_path.join(entry.name());
+        info!(
+            "{} {} into {:?}",
+            theme.info("Unzipping"),
+            entry.name(),
+            entry_path
+        );
 
         if entry.is_dir() {
-            let _ = fs::create_dir_all(entry_path);
+            fs::create_dir_all(entry_path).expect("Unable to create dir");
         } else {
             let mut buffer = Vec::with_capacity(entry.size() as usize);
+            if let Some(parent) = entry_path.parent() {
+                fs::create_dir_all(parent)
+                    .expect("Unable to create parent dir");
+            }
             entry.read_to_end(&mut buffer)?;
-            let _ = fs::write(entry_path, buffer)?;
+            fs::write(entry_path, buffer).expect("Unable to write file");
         }
     }
-    let mut id_path = std::path::PathBuf::from(profile_path.clone());
+    let mut id_path = std::path::PathBuf::from(profile_path);
     id_path.push("state.id");
+    info!("reading id_path {:?}", id_path);
     let state_id = NetworkStateId::read(&id_path)?;
     Ok(state_id)
 }

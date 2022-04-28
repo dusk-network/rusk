@@ -6,10 +6,10 @@
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
-lazy_static! {
-    pub static ref PROVISIONERS: [PublicKey; 15] = [
+pub static PROVISIONERS: Lazy<[PublicKey; 15]> = Lazy::new(|| {
+    [
         parse_key(include_bytes!("../provisioners/node_0.cpk")),
         parse_key(include_bytes!("../provisioners/node_1.cpk")),
         parse_key(include_bytes!("../provisioners/node_2.cpk")),
@@ -25,10 +25,8 @@ lazy_static! {
         parse_key(include_bytes!("../provisioners/node_12.cpk")),
         parse_key(include_bytes!("../provisioners/node_13.cpk")),
         parse_key(include_bytes!("../provisioners/node_14.cpk")),
-    ];
-    pub static ref DUSK_KEY: PublicKey =
-        parse_key(include_bytes!("../dusk.cpk"));
-}
+    ]
+});
 
 fn parse_key(key_bytes: &[u8]) -> PublicKey {
     PublicKey::from_slice(key_bytes).expect("Genesis consensus key to be valid")

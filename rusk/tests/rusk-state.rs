@@ -7,12 +7,14 @@
 pub mod common;
 use crate::common::*;
 use dusk_pki::SecretSpendKey;
+use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk, RuskState};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
+use tempfile::{TempDir, tempdir};
 use tracing::info;
 
 use phoenix_core::Note;
@@ -20,14 +22,24 @@ use phoenix_core::Note;
 const BLOCK_HEIGHT: u64 = 1;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
+
+static TEMP_DIR: Lazy<TempDir> = Lazy::new(|| tempdir().unwrap());
+
+fn ephemeral() -> Result<DiskBackend, microkelvin::PersistError> {
+    let dir = TEMP_DIR.path();
+    let mut dir = dir.to_path_buf();
+    dir.push("state");
+    DiskBackend::new(dir)
+}
+
 // Function used to creates a temporary diskbackend for Rusk
 fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
+    BackendCtor::new(ephemeral)
 }
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let state_id = rusk_recovery_tools::state::deploy_state(TEMP_DIR.path())?;
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
