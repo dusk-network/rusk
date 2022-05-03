@@ -4,6 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+
 use crate::common::keys::BLS_SK;
 use crate::common::*;
 
@@ -56,7 +59,6 @@ use dusk_plonk::proof_system::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use rusk_abi::POSEIDON_TREE_DEPTH;
 
-const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
@@ -85,7 +87,7 @@ fn initial_state() -> Result<Rusk> {
         "Expect to have ONLY one note at the genesis state",
     );
 
-    generate_notes(&mut rusk)?;
+    generate_notes(&mut rusk, 1)?;
 
     let transfer = state.transfer_contract()?;
 
@@ -118,8 +120,8 @@ static EXECUTE_STATE_TRANSITION_RESPONSE: Lazy<
     Mutex::new(None)
 });
 
-fn generate_notes(rusk: &mut Rusk) -> Result<()> {
-    info!("Generating a note");
+fn generate_notes(rusk: &mut Rusk, block_height: u64) -> Result<()> {
+    info!("Generating a note for block height {}", block_height);
     let mut rng = StdRng::seed_from_u64(0xdead);
 
     let psk = SSK.public_spend_key();
@@ -130,7 +132,7 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     let mut transfer = rusk_state.transfer_contract()?;
 
     for _ in 0..MAX_NOTES {
-        transfer.push_note(BLOCK_HEIGHT, note)?;
+        transfer.push_note(block_height, note)?;
     }
 
     transfer.update_root()?;
@@ -153,6 +155,7 @@ fn wallet_transfer(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     channel: tonic::transport::Channel,
     amount: u64,
+    block_height: u64,
 ) {
     // Sender psk
     let psk = SSK.public_spend_key();
@@ -203,7 +206,10 @@ fn wallet_transfer(
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
     info!("Tx ID: {}", hex::encode(tx.hash().to_bytes()));
-    generator_procedure(channel, &tx).expect("generator procedure to succeed");
+    generator_procedure(channel.clone(), &tx, block_height)
+        .expect("generator procedure to succeed");
+    empty_block(channel.clone(), block_height + 1)
+        .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
     assert_eq!(
@@ -244,6 +250,7 @@ fn wallet_transfer(
 fn generator_procedure(
     channel: tonic::transport::Channel,
     tx: &Transaction,
+    block_height: u64,
 ) -> Result<()> {
     let tx_hash = tx.hash();
     let tx_bytes = tx.to_var_bytes();
@@ -284,7 +291,7 @@ fn generator_procedure(
             let response = client
                 .execute_state_transition(ExecuteStateTransitionRequest {
                     txs: vec![tx],
-                    block_height: BLOCK_HEIGHT,
+                    block_height,
                     block_gas_limit: BLOCK_GAS_LIMIT,
                     generator: generator.to_bytes().to_vec(),
                 })
@@ -335,7 +342,7 @@ fn generator_procedure(
     client
         .verify_state_transition(VerifyStateTransitionRequest {
             txs: txs.clone(),
-            block_height: BLOCK_HEIGHT,
+            block_height,
             block_gas_limit: BLOCK_GAS_LIMIT,
             generator: generator.to_bytes().to_vec(),
         })
@@ -344,7 +351,7 @@ fn generator_procedure(
     let response = client
         .accept(StateTransitionRequest {
             txs,
-            block_height: BLOCK_HEIGHT,
+            block_height,
             block_gas_limit: BLOCK_GAS_LIMIT,
             state_root: execute_state_root.clone(),
             generator: generator.to_bytes().to_vec(),
@@ -355,7 +362,95 @@ fn generator_procedure(
     assert_eq!(response.txs.len(), 1, "Should have one tx");
 
     let accept_state_root = response.state_root;
-    info!("accept new root: {:?}", hex::encode(&accept_state_root));
+    info!(
+        "accept block {} with new root: {:?}",
+        block_height,
+        hex::encode(&accept_state_root)
+    );
+
+    assert_eq!(
+        accept_state_root, execute_state_root,
+        "Root should be equal"
+    );
+
+    Ok(())
+}
+
+/// Executes the procedure a block generator will go through to generate a block
+/// including a single transfer transaction, checking the outputs are as
+/// expected.
+fn empty_block(
+    channel: tonic::transport::Channel,
+    block_height: u64,
+) -> Result<()> {
+    let mut client = StateClient::new(channel);
+
+    let generator = PublicKey::from(&*BLS_SK);
+
+    let response = client
+        .execute_state_transition(ExecuteStateTransitionRequest {
+            txs: vec![],
+            block_height,
+            block_gas_limit: BLOCK_GAS_LIMIT,
+            generator: generator.to_bytes().to_vec(),
+        })
+        .wait()?
+        .into_inner();
+
+    assert_eq!(response.txs.len(), 0, "no tx");
+
+    let transfer_txs: Vec<_> = response
+        .txs
+        .iter()
+        .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
+        .collect();
+
+    assert_eq!(transfer_txs.len(), 0, "note transfer tx");
+
+    let execute_state_root = response.state_root.clone();
+
+    info!(
+        "execute_state_transition new root: {:?}",
+        hex::encode(&execute_state_root)
+    );
+
+    let mut txs = vec![];
+    txs.extend(transfer_txs);
+
+    let txs: Vec<_> = txs
+        .iter()
+        .map(|tx| tx.tx.as_ref().unwrap())
+        .cloned()
+        .collect();
+
+    client
+        .verify_state_transition(VerifyStateTransitionRequest {
+            txs: txs.clone(),
+            block_height,
+            block_gas_limit: BLOCK_GAS_LIMIT,
+            generator: generator.to_bytes().to_vec(),
+        })
+        .wait()?;
+
+    let response = client
+        .accept(StateTransitionRequest {
+            txs,
+            block_height,
+            block_gas_limit: BLOCK_GAS_LIMIT,
+            state_root: execute_state_root.clone(),
+            generator: generator.to_bytes().to_vec(),
+        })
+        .wait()?
+        .into_inner();
+
+    assert_eq!(response.txs.len(), 0, "no tx");
+
+    let accept_state_root = response.state_root;
+    info!(
+        "accept empty block {} with new root: {:?}",
+        block_height,
+        hex::encode(&accept_state_root)
+    );
 
     assert_eq!(
         accept_state_root, execute_state_root,
@@ -379,6 +474,22 @@ impl wallet::Store for TestStore {
 #[derive(Debug, Clone)]
 struct TestStateClient {
     channel: tonic::transport::Channel,
+    cache: Arc<RwLock<HashMap<Vec<u8>, DummyCacheItem>>>,
+}
+
+#[derive(Default, Debug, Clone)]
+struct DummyCacheItem {
+    notes: Vec<Note>,
+    last_heigth: u64,
+}
+
+impl DummyCacheItem {
+    fn add(&mut self, note: Note, block_height: u64) {
+        if !self.notes.contains(&note) {
+            self.notes.push(note);
+            self.last_heigth = block_height;
+        }
+    }
 }
 
 impl wallet::StateClient for TestStateClient {
@@ -387,21 +498,44 @@ impl wallet::StateClient for TestStateClient {
     /// Find notes for a view key, starting from the given block height.
     fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
+        let cache_read = self.cache.read().unwrap();
+        let mut vk_cache = if cache_read.contains_key(&vk.to_bytes().to_vec()) {
+            cache_read.get(&vk.to_bytes().to_vec()).unwrap().clone()
+        } else {
+            DummyCacheItem::default()
+        };
 
         let request = tonic::Request::new(GetNotesRequest {
-            height: 0,
+            height: vk_cache.last_heigth,
             vk: vk.to_bytes().to_vec(),
         });
+        info!("Requesting notes from height {}", vk_cache.last_heigth);
 
         let stream = client.get_notes(request).wait()?.into_inner();
 
-        Ok(stream
+        let response_notes = stream
             .map(|response| {
                 let response = response.expect("Stream item should be Ok()");
-                Note::from_slice(&response.note).expect("Note should be valid")
+                (
+                    Note::from_slice(&response.note)
+                        .expect("Note should be valid"),
+                    response.height,
+                )
             })
-            .collect()
-            .wait())
+            .collect::<Vec<(Note, u64)>>()
+            .wait();
+
+        for (note, block_height) in response_notes {
+            // Filter out duplicated notes and update the last
+            vk_cache.add(note, block_height)
+        }
+        drop(cache_read);
+        self.cache
+            .write()
+            .unwrap()
+            .insert(vk.to_bytes().to_vec(), vk_cache.clone());
+
+        Ok(vk_cache.notes)
     }
 
     /// Fetch the current anchor of the state.
@@ -552,11 +686,14 @@ pub async fn wallet_grpc() -> Result<()> {
             .await
     });
 
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
     // Create a wallet
     let wallet = wallet::Wallet::new(
         TestStore,
         TestStateClient {
             channel: channel.clone(),
+            cache: cache.clone(),
         },
         TestProverClient {
             channel: channel.clone(),
@@ -569,7 +706,7 @@ pub async fn wallet_grpc() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    wallet_transfer(&wallet, channel.clone(), 1_000);
+    wallet_transfer(&wallet, channel.clone(), 1_000, 2);
 
     // Check the state's root is changed from the original one
     let new_root = state.root();
@@ -581,12 +718,13 @@ pub async fn wallet_grpc() -> Result<()> {
 
     // Revert the state
     state.revert();
+    cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
     info!("Root after reset: {:?}", hex::encode(state.root()));
     assert_eq!(original_root, state.root(), "Root be the same again");
 
-    wallet_transfer(&wallet, channel, 1_000);
+    wallet_transfer(&wallet, channel, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
