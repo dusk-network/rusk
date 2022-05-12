@@ -8,6 +8,7 @@
 use super::unix;
 
 use futures::TryFutureExt;
+use rusk::services::version::RuskVersionLayer;
 use std::path::Path;
 use tokio::net::UnixListener;
 
@@ -20,7 +21,7 @@ type TonicError = Box<dyn std::error::Error + Send + Sync>;
 
 #[cfg(not(target_os = "windows"))]
 pub(crate) async fn startup_with_uds<S, A>(
-    router: Router<S, A>,
+    router: Router<S, A, RuskVersionLayer>,
     socket: &str,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
@@ -52,7 +53,7 @@ where
 }
 
 pub(crate) async fn startup_with_tcp_ip<S, A>(
-    router: Router<S, A>,
+    router: Router<S, A, RuskVersionLayer>,
     host: &str,
     port: &str,
 ) -> Result<(), Box<dyn std::error::Error>>

@@ -20,9 +20,12 @@ tokio-util = { version = "0.7", features = ["rt"] }
 async-stream = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["fmt", "env-filter"] }
+hyper = { version = "0.14", features = ["full"] }
 clap = { version = "3.1", features = ["env"] }
 prost = "0.9"
+tower = "0.4"
 futures = "0.3"
+semver = "1.0"
 anyhow = "1.0"
 rustc_tools_util = "0.2"
 rand = "0.8"
@@ -60,7 +63,6 @@ rusk-abi = { path = "../rusk-abi" }
 rusk-schema = { path = "../rusk-schema" }
 
 [dev-dependencies]
-tower = "0.4"
 test-context = "0.1"
 async-trait = "0.1"
 tempfile = "3.2"
