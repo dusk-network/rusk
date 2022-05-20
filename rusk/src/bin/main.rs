@@ -15,6 +15,7 @@ use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
+use rusk::services::version::{CompatibilityInterceptor, RuskVersionLayer};
 use rusk::{Result, Rusk};
 use rustc_tools_util::{get_version_info, VersionInfo};
 use tonic::transport::Server;
@@ -82,11 +83,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.kadcast_test,
         );
 
-        let network = NetworkServer::new(kadcast);
-        let state = StateServer::new(rusk);
-        let prover = ProverServer::new(RuskProver::default());
+        let network =
+            NetworkServer::with_interceptor(kadcast, CompatibilityInterceptor);
+        let state =
+            StateServer::with_interceptor(rusk, CompatibilityInterceptor);
+        let prover = ProverServer::with_interceptor(
+            RuskProver::default(),
+            CompatibilityInterceptor,
+        );
 
         Server::builder()
+            .layer(RuskVersionLayer::default())
             .add_service(network)
             .add_service(state)
             .add_service(prover)

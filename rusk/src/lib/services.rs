@@ -9,6 +9,7 @@ use tonic::{Request, Response, Status};
 pub mod network;
 pub mod prover;
 pub mod state;
+pub mod version;
 
 /// A trait that defines the general workflow that the handlers for every
 /// GRPC request should follow.
