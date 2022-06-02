@@ -188,7 +188,7 @@ impl State for Rusk {
                     }
                 }
 
-                let mut forked_state = state.fork();
+                let mut forked_state = state.clone();
                 let mut gas_meter = GasMeter::with_limit(tx.fee().gas_limit);
 
                 // We do not care if the transaction fails or succeeds here

@@ -23,7 +23,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::{Result, Rusk};
+use rusk::{Result, Rusk, RuskState};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -53,10 +53,10 @@ static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
 const BLOCK_HEIGHT: u64 = 1;
 
 #[allow(deprecated)]
-fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
+fn fetch_note(rusk_state: &RuskState) -> Result<Option<Note>> {
     info!("Fetching the first note from the state");
     let vk = SSK.view_key();
-    let (notes, _) = rusk.state()?.fetch_notes(BLOCK_HEIGHT, &vk)?;
+    let (notes, _) = rusk_state.fetch_notes(BLOCK_HEIGHT, &vk)?;
 
     if notes.len() == 1 {
         trace!("Note found");
@@ -67,7 +67,7 @@ fn fetch_note(rusk: &Rusk) -> Result<Option<Note>> {
     }
 }
 
-fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
+fn generate_note(rusk_state: &mut RuskState) -> Result<Option<Note>> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -77,7 +77,6 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
 
     let note = Note::transparent(&mut rng, &psk, initial_balance);
 
-    let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
     transfer.push_note(BLOCK_HEIGHT, note)?;
@@ -90,7 +89,7 @@ fn generate_note(rusk: &mut Rusk) -> Result<Option<Note>> {
     }
     rusk_state.finalize();
 
-    fetch_note(rusk)
+    fetch_note(rusk_state)
 }
 
 fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
@@ -114,9 +113,9 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
     Ok((pk, stake))
 }
 
-fn get_note(rusk: &mut Rusk) -> Result<Option<Note>> {
+fn get_note(rusk_state: &mut RuskState) -> Result<Option<Note>> {
     info!("Try to obtain the first note from the state");
-    fetch_note(rusk).or_else(|_| generate_note(rusk))
+    fetch_note(rusk_state).or_else(|_| generate_note(rusk_state))
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -132,7 +131,7 @@ pub async fn test_get_notes() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut STATE_LOCK.lock())?;
+    let note = get_note(&mut STATE_LOCK.lock().state()?)?;
 
     let vk = SSK.view_key();
 
@@ -192,7 +191,7 @@ pub async fn test_fetch_notes() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut STATE_LOCK.lock())?;
+    let note = get_note(&mut STATE_LOCK.lock().state()?)?;
 
     let vk = SSK.view_key();
 
@@ -230,12 +229,13 @@ pub async fn test_fetch_anchor() -> Result<()> {
     });
 
     let anchor = {
-        let mut rusk = STATE_LOCK.lock();
-        let note = get_note(&mut rusk)?;
+        let rusk = STATE_LOCK.lock();
+        let mut rusk_state = rusk.state()?;
+
+        let note = get_note(&mut rusk_state)?;
 
         assert!(note.is_some(), "One note expected to be in the state");
 
-        let rusk_state = rusk.state()?;
         rusk_state.fetch_anchor()?
     };
 
@@ -268,13 +268,14 @@ pub async fn test_fetch_opening() -> Result<()> {
     });
 
     let (note, opening) = {
-        let mut rusk = STATE_LOCK.lock();
-        let note = get_note(&mut rusk)?;
+        let rusk = STATE_LOCK.lock();
+        let mut rusk_state = rusk.state()?;
+
+        let note = get_note(&mut rusk_state)?;
 
         assert!(note.is_some(), "One note expected to be in the state");
         let note = note.unwrap();
 
-        let rusk_state = rusk.state()?;
         let opening = rusk_state.fetch_opening(&note)?;
 
         (note, opening)

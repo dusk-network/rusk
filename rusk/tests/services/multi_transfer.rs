@@ -31,7 +31,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk};
+use rusk::{Result, Rusk, RuskState};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -69,9 +69,9 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 fn initial_state() -> Result<Rusk> {
     let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
 
-    let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
+    let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let state = rusk.state()?;
+    let mut state = rusk.state()?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -84,7 +84,7 @@ fn initial_state() -> Result<Rusk> {
         "Expect to have ONLY one note at the genesis state",
     );
 
-    generate_notes(&mut rusk)?;
+    generate_notes(&mut state)?;
 
     let transfer = state.transfer_contract()?;
 
@@ -94,7 +94,7 @@ fn initial_state() -> Result<Rusk> {
         "Expect to have only 3 notes",
     );
 
-    rusk.state()?.finalize();
+    state.finalize();
 
     Ok(rusk)
 }
@@ -105,21 +105,21 @@ static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
 });
 
 static SSK_0: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey");
+    info!("Generating SecretSpendKey #0");
     TestStore.retrieve_ssk(0).expect("Should not fail in test")
 });
 
 static SSK_1: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey");
+    info!("Generating SecretSpendKey #1");
     TestStore.retrieve_ssk(1).expect("Should not fail in test")
 });
 
 static SSK_2: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey");
+    info!("Generating SecretSpendKey #2");
     TestStore.retrieve_ssk(2).expect("Should not fail in test")
 });
 
-fn generate_notes(rusk: &mut Rusk) -> Result<()> {
+fn generate_notes(rusk_state: &mut RuskState) -> Result<()> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -131,7 +131,6 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     let note_1 = Note::transparent(&mut rng, &psk_1, INITIAL_BALANCE);
     let note_2 = Note::transparent(&mut rng, &psk_2, INITIAL_BALANCE);
 
-    let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
     transfer.push_note(BLOCK_HEIGHT, note_0)?;
@@ -147,7 +146,6 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     }
 
     rusk_state.finalize();
-
     Ok(())
 }
 
@@ -600,15 +598,14 @@ pub async fn multi_transfer() -> Result<()> {
     );
 
     let rusk = STATE_LOCK.lock();
-    let state = rusk.state()?;
-    let original_root = state.root();
+    let original_root = rusk.state()?.root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     wallet_transfer(&wallet, channel, 1_000);
 
     // Check the state's root is changed from the original one
-    let new_root = state.root();
+    let new_root = rusk.state()?.root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

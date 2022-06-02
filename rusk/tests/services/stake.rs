@@ -33,7 +33,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk};
+use rusk::{Result, Rusk, RuskState};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -73,9 +73,9 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 fn initial_state() -> Result<Rusk> {
     let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
 
-    let mut rusk = Rusk::builder(testbackend).id(state_id).build()?;
+    let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let state = rusk.state()?;
+    let mut state = rusk.state()?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -88,8 +88,8 @@ fn initial_state() -> Result<Rusk> {
         "Expect to have ONLY one note at the genesis state",
     );
 
-    generate_notes(&mut rusk)?;
-    generate_stake(&mut rusk)?;
+    generate_notes(&mut state)?;
+    generate_stake(&mut state)?;
 
     let transfer = state.transfer_contract()?;
 
@@ -100,7 +100,7 @@ fn initial_state() -> Result<Rusk> {
         MAX_NOTES
     );
 
-    rusk.state()?.finalize();
+    state.finalize();
 
     Ok(rusk)
 }
@@ -125,7 +125,7 @@ static RSK: Lazy<SecretKey> = Lazy::new(|| {
     TestStore.retrieve_sk(1).expect("Should not fail in test")
 });
 
-fn generate_notes(rusk: &mut Rusk) -> Result<()> {
+fn generate_notes(rusk_state: &mut RuskState) -> Result<()> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -133,7 +133,6 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
 
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
-    let mut rusk_state = rusk.state()?;
     let mut transfer = rusk_state.transfer_contract()?;
 
     for _ in 0..MAX_NOTES {
@@ -153,13 +152,12 @@ fn generate_notes(rusk: &mut Rusk) -> Result<()> {
     Ok(())
 }
 
-fn generate_stake(rusk: &mut Rusk) -> Result<()> {
+fn generate_stake(rusk_state: &mut RuskState) -> Result<()> {
     info!("Generating a stake");
 
     let pk = PublicKey::from(&*SK);
     let rpk = PublicKey::from(&*RSK);
 
-    let mut rusk_state = rusk.state()?;
     let mut stake = rusk_state.stake_contract()?;
 
     stake.insert_stake(pk, Stake::with_eligibility(MINIMUM_STAKE, 0, 0))?;
@@ -596,8 +594,7 @@ pub async fn stake() -> Result<()> {
     );
 
     let rusk = STATE_LOCK.lock();
-    let state = rusk.state()?;
-    let original_root = state.root();
+    let original_root = rusk.state()?.root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
@@ -605,7 +602,7 @@ pub async fn stake() -> Result<()> {
     wallet_stake(&wallet, channel, MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
-    let new_root = state.root();
+    let new_root = rusk.state()?.root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
