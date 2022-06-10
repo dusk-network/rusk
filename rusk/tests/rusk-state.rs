@@ -16,6 +16,7 @@ use microkelvin::{BackendCtor, DiskBackend};
 use tracing::info;
 
 use phoenix_core::Note;
+use uuid::Uuid;
 
 const BLOCK_HEIGHT: u64 = 1;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -31,7 +32,7 @@ fn initial_state() -> Result<Rusk> {
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -80,7 +81,7 @@ pub fn rusk_state_accepted() -> Result<()> {
 
     let rusk = initial_state()?;
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     push_note(&mut state)?;
 
     let transfer = state.transfer_contract()?;
@@ -102,7 +103,7 @@ pub fn rusk_state_finalized() -> Result<()> {
 
     let rusk = initial_state()?;
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     push_note(&mut state)?;
 
     let transfer = state.transfer_contract()?;
@@ -126,7 +127,7 @@ pub fn rusk_state_ephemeral() -> Result<()> {
     // The state is dropped at the end of the block, all changes that are not
     // accepted / finalized are lost
     {
-        let mut state = rusk.state()?;
+        let mut state = rusk.state(Uuid::new_v4())?;
 
         push_note(&mut state)?;
         state.finalize();
@@ -163,7 +164,7 @@ pub fn rusk_state_ephemeral() -> Result<()> {
         assert!(transfer.get_note(3)?.is_some(), "Note added");
     }
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     let transfer = state.transfer_contract()?;
 
     assert!(transfer.get_note(1)?.is_some(), "Note still present");

@@ -57,6 +57,7 @@ use dusk_plonk::proof_system::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use rusk_abi::dusk::*;
 use rusk_abi::POSEIDON_TREE_DEPTH;
+use uuid::Uuid;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
@@ -75,7 +76,7 @@ fn initial_state() -> Result<Rusk> {
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -594,7 +595,7 @@ pub async fn stake() -> Result<()> {
     );
 
     let rusk = STATE_LOCK.lock();
-    let original_root = rusk.state()?.root();
+    let original_root = rusk.state(Uuid::new_v4())?.root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
@@ -602,7 +603,7 @@ pub async fn stake() -> Result<()> {
     wallet_stake(&wallet, channel, MINIMUM_STAKE);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state()?.root();
+    let new_root = rusk.state(Uuid::new_v4())?.root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)

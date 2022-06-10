@@ -17,6 +17,7 @@ use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use std::path::PathBuf;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use rusk_abi::{self, RuskModule};
 use rusk_vm::{NetworkState, NetworkStateId};
@@ -109,10 +110,10 @@ impl Rusk {
     }
 
     /// Returns the current state of the network
-    pub fn state(&self) -> Result<RuskState> {
+    pub fn state(&self, uuid: Uuid) -> Result<RuskState> {
         let network = self.network.clone();
 
-        Ok(RuskState::new(network))
+        Ok(RuskState::new(network, uuid))
     }
 
     /// Persist a state of the network as new state

@@ -62,6 +62,11 @@ microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-abi = { path = "../rusk-abi" }
 rusk-schema = { path = "../rusk-schema" }
 
+uuid = {version = "1.1",features = [
+    "v4",                # Lets you generate random UUIDs
+    "fast-rng",          # Use a faster (but still sufficiently random) RNG
+]}
+
 [dev-dependencies]
 test-context = "0.1"
 async-trait = "0.1"

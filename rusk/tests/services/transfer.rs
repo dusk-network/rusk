@@ -58,6 +58,7 @@ use dusk_plonk::proof_system::Proof;
 
 use dusk_poseidon::tree::PoseidonBranch;
 use rusk_abi::POSEIDON_TREE_DEPTH;
+use uuid::Uuid;
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -74,7 +75,7 @@ fn initial_state() -> Result<Rusk> {
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
-    let mut state = rusk.state()?;
+    let mut state = rusk.state(Uuid::new_v4())?;
     let transfer = state.transfer_contract()?;
 
     assert!(
@@ -700,14 +701,14 @@ pub async fn wallet_grpc() -> Result<()> {
     );
 
     let rusk = STATE_LOCK.lock();
-    let original_root = rusk.state()?.root();
+    let original_root = rusk.state(Uuid::new_v4())?.root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     wallet_transfer(&wallet, channel.clone(), 1_000, 2);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state()?.root();
+    let new_root = rusk.state(Uuid::new_v4())?.root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -715,14 +716,17 @@ pub async fn wallet_grpc() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    rusk.state()?.revert();
+    rusk.state(Uuid::new_v4())?.revert();
     cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(rusk.state()?.root()));
+    info!(
+        "Root after reset: {:?}",
+        hex::encode(rusk.state(Uuid::new_v4())?.root())
+    );
     assert_eq!(
         original_root,
-        rusk.state()?.root(),
+        rusk.state(Uuid::new_v4())?.root(),
         "Root be the same again"
     );
 
@@ -731,11 +735,11 @@ pub async fn wallet_grpc() -> Result<()> {
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state()?.root())
+        hex::encode(rusk.state(Uuid::new_v4())?.root())
     );
     assert_eq!(
         new_root,
-        rusk.state()?.root(),
+        rusk.state(Uuid::new_v4())?.root(),
         "Root is the same compare to the first transfer"
     );
 

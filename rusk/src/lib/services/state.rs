@@ -43,10 +43,11 @@ pub use rusk_schema::{
     StateTransitionResponse, Transaction as TransactionProto,
     VerifyStateTransitionRequest, VerifyStateTransitionResponse,
 };
+use uuid::Uuid;
 
 impl Rusk {
-    fn verify(&self, tx: &TransferPayload) -> Result<(), Status> {
-        if self.state()?.any_nullifier_exists(tx.inputs())? {
+    fn verify(&self, tx: &TransferPayload, uuid: Uuid) -> Result<(), Status> {
+        if self.state(uuid)?.any_nullifier_exists(tx.inputs())? {
             return Err(Status::failed_precondition(
                 "Nullifier(s) already exists in the state",
             ));
@@ -67,8 +68,9 @@ impl Rusk {
         block_gas_limit: u64,
         transfer_txs: Vec<TransactionProto>,
         generator: PublicKey,
+        uuid: Uuid,
     ) -> Result<(Response<StateTransitionResponse>, RuskState), Status> {
-        let mut state = self.state()?;
+        let mut state = self.state(uuid)?;
         let mut block_gas_left = block_gas_limit;
 
         let mut txs = Vec::with_capacity(transfer_txs.len());
@@ -135,7 +137,8 @@ impl State for Rusk {
         &self,
         request: Request<PreverifyRequest>,
     ) -> Result<Response<PreverifyResponse>, Status> {
-        info!("Received Preverify request");
+        let uuid = Uuid::new_v4();
+        info!("Received Preverify request {}", uuid);
 
         let request = request.into_inner();
 
@@ -148,7 +151,8 @@ impl State for Rusk {
 
         let tx_hash = tx.hash();
 
-        self.verify(&tx)?;
+        self.verify(&tx, uuid)?;
+        info!("Finishing Preverify request {}", uuid);
 
         Ok(Response::new(PreverifyResponse {
             tx_hash: tx_hash.to_bytes().to_vec(),
@@ -160,9 +164,10 @@ impl State for Rusk {
         &self,
         request: Request<ExecuteStateTransitionRequest>,
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
-        info!("Received ExecuteStateTransition request");
+        let uuid = Uuid::new_v4();
+        info!("Received ExecuteStateTransition request {}", uuid);
 
-        let mut state = self.state()?;
+        let mut state = self.state(uuid)?;
 
         let request = request.into_inner();
 
@@ -229,6 +234,7 @@ impl State for Rusk {
         // Compute the new state root resulting from the state changes
         let state_root = state.root().to_vec();
 
+        info!("Finishing ExecuteStateTransition request {}", uuid);
         Ok(Response::new(ExecuteStateTransitionResponse {
             state_root,
             txs,
@@ -240,7 +246,8 @@ impl State for Rusk {
         &self,
         request: Request<VerifyStateTransitionRequest>,
     ) -> Result<Response<VerifyStateTransitionResponse>, Status> {
-        info!("Received VerifyStateTransition request");
+        let uuid = Uuid::new_v4();
+        info!("Received VerifyStateTransition request {}", uuid);
 
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
@@ -250,9 +257,11 @@ impl State for Rusk {
             request.block_gas_limit,
             request.txs,
             generator,
+            uuid,
         )?;
 
         let state_root = response.get_ref().state_root.to_vec();
+        info!("Finishing VerifyStateTransition request {}", uuid);
 
         Ok(Response::new(VerifyStateTransitionResponse { state_root }))
     }
@@ -261,7 +270,8 @@ impl State for Rusk {
         &self,
         request: Request<StateTransitionRequest>,
     ) -> Result<Response<StateTransitionResponse>, Status> {
-        info!("Received Accept request");
+        let uuid = Uuid::new_v4();
+        info!("Received Accept request {}", uuid);
 
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
@@ -271,9 +281,12 @@ impl State for Rusk {
             request.block_gas_limit,
             request.txs,
             generator,
+            uuid,
         )?;
 
         state.accept();
+
+        info!("Finishing Accept request {}", uuid);
 
         Ok(response)
     }
@@ -282,7 +295,8 @@ impl State for Rusk {
         &self,
         request: Request<StateTransitionRequest>,
     ) -> Result<Response<StateTransitionResponse>, Status> {
-        info!("Received Finalize request");
+        let uuid = Uuid::new_v4();
+        info!("Received Finalize request {}", uuid);
 
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
@@ -292,10 +306,11 @@ impl State for Rusk {
             request.block_gas_limit,
             request.txs,
             generator,
+            uuid,
         )?;
 
         state.finalize();
-
+        info!("Finishing Finalize request {}", uuid);
         Ok(response)
     }
 
@@ -303,12 +318,14 @@ impl State for Rusk {
         &self,
         _request: Request<RevertRequest>,
     ) -> Result<Response<RevertResponse>, Status> {
-        info!("Received Revert request");
+        let uuid = Uuid::new_v4();
+        info!("Received Revert request {}", uuid);
 
-        let mut state = self.state()?;
+        let mut state = self.state(uuid)?;
         state.revert();
 
         let state_root = state.root().to_vec();
+        info!("Finishing Revert request {}", uuid);
         Ok(Response::new(RevertResponse { state_root }))
     }
 
@@ -316,11 +333,12 @@ impl State for Rusk {
         &self,
         request: Request<PersistRequest>,
     ) -> Result<Response<PersistResponse>, Status> {
-        info!("Received Persist request");
+        let uuid = Uuid::new_v4();
+        info!("Received Persist request, {}", uuid);
 
         let request = request.into_inner();
 
-        let mut state = self.state()?;
+        let mut state = self.state(uuid)?;
         let state_root = state.root();
 
         if request.state_root != state_root {
@@ -332,7 +350,7 @@ impl State for Rusk {
         }
 
         self.persist(&mut state)?;
-
+        info!("Finishing Persist request {}", uuid);
         Ok(Response::new(PersistResponse {}))
     }
 
@@ -340,9 +358,10 @@ impl State for Rusk {
         &self,
         _request: Request<GetProvisionersRequest>,
     ) -> Result<Response<GetProvisionersResponse>, Status> {
-        info!("Received GetProvisioners request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetProvisioners request {}", uuid);
 
-        let state = self.state()?;
+        let state = self.state(uuid)?;
         let provisioners = state
             .get_provisioners()?
             .into_iter()
@@ -366,7 +385,7 @@ impl State for Rusk {
                 })
             })
             .collect();
-
+        info!("Finishing GetProvisioners request {}", uuid);
         Ok(Response::new(GetProvisionersResponse { provisioners }))
     }
 
@@ -374,9 +393,11 @@ impl State for Rusk {
         &self,
         _request: Request<GetStateRootRequest>,
     ) -> Result<Response<GetStateRootResponse>, Status> {
-        info!("Received GetEphemeralStateRoot request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetEphemeralStateRoot request {}", uuid);
 
-        let state_root = self.state()?.root().to_vec();
+        let state_root = self.state(uuid)?.root().to_vec();
+        info!("Finishing GetEphemeralStateRoot request {}", uuid);
         Ok(Response::new(GetStateRootResponse { state_root }))
     }
 
@@ -387,7 +408,8 @@ impl State for Rusk {
         &self,
         request: Request<GetNotesRequest>,
     ) -> Result<Response<Self::GetNotesStream>, Status> {
-        info!("Received GetNotes request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetNotes request {}", uuid);
 
         let request = request.into_inner();
 
@@ -400,7 +422,7 @@ impl State for Rusk {
             true => None,
         };
 
-        let state = self.state()?;
+        let state = self.state(uuid)?;
         let transfer = state.transfer_contract().map_err(Error::from)?;
 
         let (sender, receiver) = mpsc::channel(self.stream_buffer_size);
@@ -431,6 +453,7 @@ impl State for Rusk {
                             break;
                         }
                     }
+                    info!("Finishing GetNotes stream request {}", uuid);
                 })
                 .await
         });
@@ -446,6 +469,7 @@ impl State for Rusk {
                 Status::internal("Failed iterating through the poseidon tree")
             })
         });
+        info!("Finishing GetNotes init request {}", uuid);
         Ok(Response::new(Box::pin(stream) as Self::GetNotesStream))
     }
 
@@ -454,17 +478,19 @@ impl State for Rusk {
         &self,
         request: Request<GetNotesOwnedByRequest>,
     ) -> Result<Response<GetNotesOwnedByResponse>, Status> {
-        info!("Received GetNotesOwnedBy request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetNotesOwnedBy request {}", uuid);
 
         let vk = ViewKey::from_slice(&request.get_ref().vk)
             .map_err(Error::Serialization)?;
         let block_height = request.get_ref().height;
 
-        let state = self.state()?;
+        let state = self.state(uuid)?;
 
         let (notes, height) = state.fetch_notes(block_height, &vk)?;
         let notes = notes.iter().map(|note| note.to_bytes().to_vec()).collect();
 
+        info!("Finishing GetNotesOwnedBy request {}", uuid);
         Ok(Response::new(GetNotesOwnedByResponse { notes, height }))
     }
 
@@ -472,9 +498,11 @@ impl State for Rusk {
         &self,
         _request: Request<GetAnchorRequest>,
     ) -> Result<Response<GetAnchorResponse>, Status> {
-        info!("Received GetAnchor request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetAnchor request {}", uuid);
 
-        let anchor = self.state()?.fetch_anchor()?.to_bytes().to_vec();
+        let anchor = self.state(uuid)?.fetch_anchor()?.to_bytes().to_vec();
+        info!("Finishing GetAnchor request {}", uuid);
         Ok(Response::new(GetAnchorResponse { anchor }))
     }
 
@@ -482,12 +510,13 @@ impl State for Rusk {
         &self,
         request: Request<GetOpeningRequest>,
     ) -> Result<Response<GetOpeningResponse>, Status> {
-        info!("Received GetOpening request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetOpening request {}", uuid);
 
         let note = Note::from_slice(&request.get_ref().note)
             .map_err(Error::Serialization)?;
 
-        let branch = self.state()?.fetch_opening(&note)?;
+        let branch = self.state(uuid)?.fetch_opening(&note)?;
 
         const PAGE_SIZE: usize = 1024 * 64;
         let mut bytes = [0u8; PAGE_SIZE];
@@ -496,6 +525,7 @@ impl State for Rusk {
         let len = branch.encoded_len();
         let branch = (&bytes[..len]).to_vec();
 
+        info!("Finishing GetOpening request {}", uuid);
         Ok(Response::new(GetOpeningResponse { branch }))
     }
 
@@ -503,7 +533,8 @@ impl State for Rusk {
         &self,
         request: Request<GetStakeRequest>,
     ) -> Result<Response<GetStakeResponse>, Status> {
-        info!("Received GetStake request");
+        let uuid = Uuid::new_v4();
+        info!("Received GetStake request {}", uuid);
 
         const ERR: Error = Error::Serialization(dusk_bytes::Error::InvalidData);
 
@@ -519,12 +550,13 @@ impl State for Rusk {
 
         let pk = PublicKey::from_bytes(&bytes).map_err(|_| ERR)?;
 
-        let stake = self.state()?.fetch_stake(&pk)?;
+        let stake = self.state(uuid)?.fetch_stake(&pk)?;
         let amount = stake
             .amount()
             .copied()
             .map(|(value, eligibility)| Amount { value, eligibility });
 
+        info!("Finishing GetStake request {}", uuid);
         Ok(Response::new(GetStakeResponse {
             amount,
             reward: stake.reward(),
@@ -536,7 +568,8 @@ impl State for Rusk {
         &self,
         request: Request<FindExistingNullifiersRequest>,
     ) -> Result<Response<FindExistingNullifiersResponse>, Status> {
-        info!("Received FindExistingNullifiers request");
+        let uuid = Uuid::new_v4();
+        info!("Received FindExistingNullifiers request {}", uuid);
 
         let nullifiers = &request.get_ref().nullifiers;
 
@@ -546,7 +579,7 @@ impl State for Rusk {
             .collect::<Result<Vec<_>, _>>()?;
 
         let nullifiers = self
-            .state()?
+            .state(uuid)?
             .transfer_contract()?
             .find_existing_nullifiers(&nullifiers)
             .map_err(|_| {
@@ -556,6 +589,7 @@ impl State for Rusk {
         let nullifiers =
             nullifiers.iter().map(|n| n.to_bytes().to_vec()).collect();
 
+        info!("Finishing FindExistingNullifiers request {}", uuid);
         Ok(Response::new(FindExistingNullifiersResponse { nullifiers }))
     }
 }

@@ -33,6 +33,7 @@ use tonic::transport::Server;
 
 use rusk::services::state::StateServer;
 use stake_contract::Stake;
+use uuid::Uuid;
 
 pub fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
@@ -97,7 +98,7 @@ fn generate_stake(rusk: &mut Rusk) -> Result<(BlsPublicKey, Stake)> {
 
     let pk = BlsPublicKey::from(&*BLS_SK);
 
-    let mut rusk_state = rusk.state()?;
+    let mut rusk_state = rusk.state(Uuid::new_v4())?;
     let mut stake_contract = rusk_state.stake_contract()?;
 
     let stake = Stake::with_eligibility(0xdead, 0, 0);
@@ -131,7 +132,7 @@ pub async fn test_get_notes() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut STATE_LOCK.lock().state()?)?;
+    let note = get_note(&mut STATE_LOCK.lock().state(Uuid::new_v4())?)?;
 
     let vk = SSK.view_key();
 
@@ -191,7 +192,7 @@ pub async fn test_fetch_notes() -> Result<()> {
             .await
     });
 
-    let note = get_note(&mut STATE_LOCK.lock().state()?)?;
+    let note = get_note(&mut STATE_LOCK.lock().state(Uuid::new_v4())?)?;
 
     let vk = SSK.view_key();
 
@@ -230,7 +231,7 @@ pub async fn test_fetch_anchor() -> Result<()> {
 
     let anchor = {
         let rusk = STATE_LOCK.lock();
-        let mut rusk_state = rusk.state()?;
+        let mut rusk_state = rusk.state(Uuid::new_v4())?;
 
         let note = get_note(&mut rusk_state)?;
 
@@ -269,7 +270,7 @@ pub async fn test_fetch_opening() -> Result<()> {
 
     let (note, opening) = {
         let rusk = STATE_LOCK.lock();
-        let mut rusk_state = rusk.state()?;
+        let mut rusk_state = rusk.state(Uuid::new_v4())?;
 
         let note = get_note(&mut rusk_state)?;
 

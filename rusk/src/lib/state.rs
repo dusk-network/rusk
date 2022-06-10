@@ -8,6 +8,9 @@ use crate::error::Error;
 use crate::transaction::TransferPayload;
 use crate::Result;
 
+use tracing::info;
+use uuid::Uuid;
+
 use std::cmp::max;
 use std::sync::Arc;
 
@@ -27,27 +30,33 @@ use rusk_vm::{ContractId, GasMeter, NetworkState};
 use stake_contract::{Stake, StakeContract};
 use transfer_contract::TransferContract;
 
-pub struct RuskState(Arc<Mutex<NetworkState>>);
+pub struct RuskState(Arc<Mutex<NetworkState>>, Uuid);
 
 impl Drop for RuskState {
     fn drop(&mut self) {
         self.inner_mut().unstage();
+        info!("Unlocking state with uuid: {}", self.1);
         unsafe { self.0.raw().unlock() };
+        info!("Unlocked state with uuid: {}", self.1);
     }
 }
 
 impl Clone for RuskState {
     fn clone(&self) -> Self {
         let network = self.inner().clone();
-        Self::new(Arc::new(Mutex::new(network)))
+        let uuid = uuid::Uuid::new_v4();
+        info!("Cloning state with uuid: {} to {}", self.1, uuid);
+        Self::new(Arc::new(Mutex::new(network)), uuid)
     }
 }
 
 impl RuskState {
-    pub(crate) fn new(network: Arc<Mutex<NetworkState>>) -> Self {
+    pub(crate) fn new(network: Arc<Mutex<NetworkState>>, uuid: Uuid) -> Self {
         let raw = unsafe { network.raw() };
+        info!("Locking state with uuid: {}", uuid);
         raw.lock();
-        Self(network)
+        info!("Locked state with uuid: {}", uuid);
+        Self(network, uuid)
     }
 
     pub(crate) fn inner(&self) -> &NetworkState {
