@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::fmt::Display;
 use std::task::{Context, Poll};
 
 use hyper::header::HeaderValue;
@@ -12,6 +13,7 @@ use semver::{Version, VersionReq};
 use tonic::service::Interceptor;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
+use tracing::{error, info};
 
 /// Rusk version
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -42,6 +44,7 @@ where
         + Send
         + 'static,
     S::Future: Send + 'static,
+    S::Error: Display,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -64,11 +67,26 @@ where
         let clone = self.inner.clone();
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
+        let xray = uuid::Uuid::new_v4();
+        let path = req.uri().path().to_owned();
+        info!("[{}] {} - received request", xray, path);
+
         Box::pin(async move {
-            let mut response = inner.call(req).await?;
-            let headers = response.headers_mut();
-            headers.append("x-rusk-version", HeaderValue::from_static(VERSION));
-            Ok(response)
+            let response = inner.call(req).await;
+            match response {
+                Ok(mut response) => {
+                    response.headers_mut().append(
+                        "x-rusk-version",
+                        HeaderValue::from_str(VERSION).unwrap(),
+                    );
+                    info!("[{}] {} - OK", xray, path);
+                    Ok(response)
+                }
+                Err(e) => {
+                    error!("[{}] {} - ERROR {}", xray, path, e);
+                    Err(e)
+                }
+            }
         })
     }
 }
