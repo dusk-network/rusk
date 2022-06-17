@@ -18,7 +18,6 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
 use once_cell::sync::Lazy;
 use tonic::{Request, Response, Status};
-use tracing::{error, info};
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
@@ -40,25 +39,6 @@ use transfer_circuits::{
     StcoCrossover, StcoMessage, WfoChange, WfoCommitment,
     WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
-
-macro_rules! handle {
-    ($self: ident, $req: ident, $handler: ident, $name: expr) => {{
-        info!("Received {} request", $name);
-        match $self.$handler(&$req.get_ref()) {
-            Ok(response) => {
-                info!(
-                    "{} was successfully processed. Sending response...",
-                    $name
-                );
-                Ok(response)
-            }
-            Err(e) => {
-                error!("An error occurred processing {}: {:?}", $name, e);
-                Err(e)
-            }
-        }
-    }};
-}
 
 #[derive(Debug, Default)]
 pub struct RuskProver {}
@@ -118,35 +98,35 @@ impl Prover for RuskProver {
         &self,
         request: Request<ExecuteProverRequest>,
     ) -> Result<Response<ExecuteProverResponse>, Status> {
-        return handle!(self, request, prove_execute, "prove_execute");
+        self.prove_execute(request.get_ref())
     }
 
     async fn prove_stct(
         &self,
         request: Request<StctProverRequest>,
     ) -> Result<Response<StctProverResponse>, Status> {
-        return handle!(self, request, prove_stct, "prove_stct");
+        self.prove_stct(request.get_ref())
     }
 
     async fn prove_stco(
         &self,
         request: Request<StcoProverRequest>,
     ) -> Result<Response<StcoProverResponse>, Status> {
-        return handle!(self, request, prove_stco, "prove_stco");
+        self.prove_stco(request.get_ref())
     }
 
     async fn prove_wfct(
         &self,
         request: Request<WfctProverRequest>,
     ) -> Result<Response<WfctProverResponse>, Status> {
-        return handle!(self, request, prove_wfct, "prove_wfct");
+        self.prove_wfct(request.get_ref())
     }
 
     async fn prove_wfco(
         &self,
         request: Request<WfcoProverRequest>,
     ) -> Result<Response<WfcoProverResponse>, Status> {
-        return handle!(self, request, prove_wfco, "prove_wfco");
+        self.prove_wfco(request.get_ref())
     }
 }
 

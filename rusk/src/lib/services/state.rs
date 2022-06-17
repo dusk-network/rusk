@@ -25,7 +25,6 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_util::task::LocalPoolHandle;
 use tonic::{Request, Response, Status};
-use tracing::info;
 
 pub use rusk_schema::state_server::{State, StateServer};
 pub use rusk_schema::{
@@ -122,8 +121,6 @@ impl State for Rusk {
         &self,
         request: Request<EchoRequest>,
     ) -> Result<Response<EchoResponse>, Status> {
-        info!("Received Echo request");
-
         let request = request.into_inner();
 
         Ok(Response::new(EchoResponse {
@@ -135,8 +132,6 @@ impl State for Rusk {
         &self,
         request: Request<PreverifyRequest>,
     ) -> Result<Response<PreverifyResponse>, Status> {
-        info!("Received Preverify request");
-
         let request = request.into_inner();
 
         let tx_proto = request.tx.ok_or_else(|| {
@@ -160,8 +155,6 @@ impl State for Rusk {
         &self,
         request: Request<ExecuteStateTransitionRequest>,
     ) -> Result<Response<ExecuteStateTransitionResponse>, Status> {
-        info!("Received ExecuteStateTransition request");
-
         let mut state = self.state()?;
 
         let request = request.into_inner();
@@ -240,8 +233,6 @@ impl State for Rusk {
         &self,
         request: Request<VerifyStateTransitionRequest>,
     ) -> Result<Response<VerifyStateTransitionResponse>, Status> {
-        info!("Received VerifyStateTransition request");
-
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
             .map_err(Error::Serialization)?;
@@ -261,8 +252,6 @@ impl State for Rusk {
         &self,
         request: Request<StateTransitionRequest>,
     ) -> Result<Response<StateTransitionResponse>, Status> {
-        info!("Received Accept request");
-
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
             .map_err(Error::Serialization)?;
@@ -282,8 +271,6 @@ impl State for Rusk {
         &self,
         request: Request<StateTransitionRequest>,
     ) -> Result<Response<StateTransitionResponse>, Status> {
-        info!("Received Finalize request");
-
         let request = request.into_inner();
         let generator = PublicKey::from_slice(&request.generator)
             .map_err(Error::Serialization)?;
@@ -303,8 +290,6 @@ impl State for Rusk {
         &self,
         _request: Request<RevertRequest>,
     ) -> Result<Response<RevertResponse>, Status> {
-        info!("Received Revert request");
-
         let mut state = self.state()?;
         state.revert();
 
@@ -316,8 +301,6 @@ impl State for Rusk {
         &self,
         request: Request<PersistRequest>,
     ) -> Result<Response<PersistResponse>, Status> {
-        info!("Received Persist request");
-
         let request = request.into_inner();
 
         let mut state = self.state()?;
@@ -340,8 +323,6 @@ impl State for Rusk {
         &self,
         _request: Request<GetProvisionersRequest>,
     ) -> Result<Response<GetProvisionersResponse>, Status> {
-        info!("Received GetProvisioners request");
-
         let state = self.state()?;
         let provisioners = state
             .get_provisioners()?
@@ -374,8 +355,6 @@ impl State for Rusk {
         &self,
         _request: Request<GetStateRootRequest>,
     ) -> Result<Response<GetStateRootResponse>, Status> {
-        info!("Received GetEphemeralStateRoot request");
-
         let state_root = self.state()?.root().to_vec();
         Ok(Response::new(GetStateRootResponse { state_root }))
     }
@@ -387,8 +366,6 @@ impl State for Rusk {
         &self,
         request: Request<GetNotesRequest>,
     ) -> Result<Response<Self::GetNotesStream>, Status> {
-        info!("Received GetNotes request");
-
         let request = request.into_inner();
 
         let vk = match request.vk.is_empty() {
@@ -454,8 +431,6 @@ impl State for Rusk {
         &self,
         request: Request<GetNotesOwnedByRequest>,
     ) -> Result<Response<GetNotesOwnedByResponse>, Status> {
-        info!("Received GetNotesOwnedBy request");
-
         let vk = ViewKey::from_slice(&request.get_ref().vk)
             .map_err(Error::Serialization)?;
         let block_height = request.get_ref().height;
@@ -472,8 +447,6 @@ impl State for Rusk {
         &self,
         _request: Request<GetAnchorRequest>,
     ) -> Result<Response<GetAnchorResponse>, Status> {
-        info!("Received GetAnchor request");
-
         let anchor = self.state()?.fetch_anchor()?.to_bytes().to_vec();
         Ok(Response::new(GetAnchorResponse { anchor }))
     }
@@ -482,8 +455,6 @@ impl State for Rusk {
         &self,
         request: Request<GetOpeningRequest>,
     ) -> Result<Response<GetOpeningResponse>, Status> {
-        info!("Received GetOpening request");
-
         let note = Note::from_slice(&request.get_ref().note)
             .map_err(Error::Serialization)?;
 
@@ -503,8 +474,6 @@ impl State for Rusk {
         &self,
         request: Request<GetStakeRequest>,
     ) -> Result<Response<GetStakeResponse>, Status> {
-        info!("Received GetStake request");
-
         const ERR: Error = Error::Serialization(dusk_bytes::Error::InvalidData);
 
         let mut bytes = [0u8; PublicKey::SIZE];
@@ -536,8 +505,6 @@ impl State for Rusk {
         &self,
         request: Request<FindExistingNullifiersRequest>,
     ) -> Result<Response<FindExistingNullifiersResponse>, Status> {
-        info!("Received FindExistingNullifiers request");
-
         let nullifiers = &request.get_ref().nullifiers;
 
         let nullifiers = nullifiers
