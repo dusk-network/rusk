@@ -53,15 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let command = Config::inject_args(command);
     let config = Config::from(command.get_matches());
 
-    // Match tracing desired level.
-    let log = match &config.log_level[..] {
-        "error" => tracing::Level::ERROR,
-        "warn" => tracing::Level::WARN,
-        "info" => tracing::Level::INFO,
-        "debug" => tracing::Level::DEBUG,
-        "trace" => tracing::Level::TRACE,
-        _ => unreachable!(),
-    };
+    let log = config.log_level();
 
     // Generate a subscriber with the desired log level.
     let subscriber =
@@ -71,7 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // so this subscriber will be used as the default in all threads for the
     // remainder of the duration of the program, similar to how `loggers`
     // work in the `log` crate.
-    match &config.log_type[..] {
+    match config.log_type().as_str() {
         "json" => {
             let subscriber = subscriber.json().flatten_event(true).finish();
             tracing::subscriber::set_global_default(subscriber)?;
