@@ -15,6 +15,7 @@ use self::{grpc::GrpcConfig, kadcast::KadcastConfig};
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct Config {
     pub(crate) log_level: String,
+    pub(crate) log_type: String,
     pub(crate) kadcast_test: bool,
     pub(crate) grpc: GrpcConfig,
     pub(crate) kadcast: KadcastConfig,
@@ -23,10 +24,14 @@ pub(crate) struct Config {
 /// Default log_level.
 pub(crate) const LOG_LEVEL: &str = "info";
 
+/// Default log_type.
+pub(crate) const LOG_TYPE: &str = "coloured";
+
 impl Default for Config {
     fn default() -> Self {
         Config {
             log_level: LOG_LEVEL.to_string(),
+            log_type: LOG_TYPE.to_string(),
             kadcast_test: false,
             grpc: GrpcConfig::default(),
             kadcast: KadcastConfig::default(),
@@ -48,6 +53,9 @@ impl From<ArgMatches> for Config {
         if let Some(log) = matches.value_of("log-level") {
             rusk_config.log_level = log.into();
         }
+        if let Some(log_type) = matches.value_of("log-type") {
+            rusk_config.log_type = log_type.into();
+        }
 
         rusk_config.grpc.merge(&matches);
         rusk_config.kadcast.merge(&matches);
@@ -65,6 +73,15 @@ impl Config {
                 .value_name("LOG")
                 .possible_values(&["error", "warn", "info", "debug", "trace"])
                 .help("Output log level")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::new("log-type")
+                .long("log-type")
+                .value_name("LOG_TYPE")
+                .possible_values(&["coloured", "plan", "json"])
+                .help("Change the log format accordingly")
+                .default_value("coloured")
                 .takes_value(true),
         )
         .arg(
