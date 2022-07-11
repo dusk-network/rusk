@@ -1,13 +1,16 @@
-socket = '/tmp/rusk_listener'
-host = '127.0.0.1'
-port = '8585'
-log_level = 'info'
+# log_level = 'info'
+# log_type = 'coloured'
 kadcast_test = false
-#ipc_method = 'uds'
+
+[grpc]
+socket = '/tmp/rusk_listener'
+host = '0.0.0.0'
+port = '8585'
+ipc_method = 'tcp_ip'
 
 [kadcast]
 public_address = '127.0.0.1:9000'
-#listen_address = '127.0.0.1:9000'
+# listen_address = '127.0.0.1:9000'
 bootstrapping_nodes = []
 auto_propagate = true
 channel_size = 1000
@@ -20,7 +23,7 @@ bucket_ttl = '1h'
 
 [kadcast.network]
 udp_recv_buffer_size = 5000000
-#udp_send_backoff_timeout = '50us'
+# udp_send_backoff_timeout = '50us'
 udp_send_retry_interval = '5ms'
 udp_send_retry_count = 3
 

@@ -7,32 +7,27 @@
 pub mod grpc;
 pub mod kadcast;
 
+use std::str::FromStr;
+
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 use self::{grpc::GrpcConfig, kadcast::KadcastConfig};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Config {
-    pub(crate) log_level: String,
+    log_level: Option<String>,
+    log_type: Option<String>,
     pub(crate) kadcast_test: bool,
     pub(crate) grpc: GrpcConfig,
     pub(crate) kadcast: KadcastConfig,
 }
 
 /// Default log_level.
-pub(crate) const LOG_LEVEL: &str = "info";
+const DEFAULT_LOG_LEVEL: &str = "info";
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            log_level: LOG_LEVEL.to_string(),
-            kadcast_test: false,
-            grpc: GrpcConfig::default(),
-            kadcast: KadcastConfig::default(),
-        }
-    }
-}
+/// Default log_type.
+const DEFAULT_LOG_TYPE: &str = "coloured";
 
 impl From<ArgMatches> for Config {
     fn from(matches: ArgMatches) -> Self {
@@ -45,8 +40,15 @@ impl From<ArgMatches> for Config {
                 });
 
         rusk_config.kadcast_test = matches.is_present("kadcast_test");
-        if let Some(log) = matches.value_of("log-level") {
-            rusk_config.log_level = log.into();
+
+        // Overwrite config log-level
+        if let Some(log_level) = matches.value_of("log-level") {
+            rusk_config.log_level = Some(log_level.into());
+        }
+
+        // Overwrite config log-type
+        if let Some(log_type) = matches.value_of("log-type") {
+            rusk_config.log_type = Some(log_type.into());
         }
 
         rusk_config.grpc.merge(&matches);
@@ -68,6 +70,14 @@ impl Config {
                 .takes_value(true),
         )
         .arg(
+            Arg::new("log-type")
+                .long("log-type")
+                .value_name("LOG_TYPE")
+                .possible_values(&["coloured", "plain", "json"])
+                .help("Change the log format accordingly")
+                .takes_value(true),
+        )
+        .arg(
             Arg::new("kadcast_test")
                 .long("kadcast_test")
                 .env("KADCAST_TEST")
@@ -75,5 +85,22 @@ impl Config {
                 .takes_value(false)
                 .required(false),
         )
+    }
+
+    pub(crate) fn log_type(&self) -> String {
+        match &self.log_type {
+            None => DEFAULT_LOG_TYPE.into(),
+            Some(log_type) => log_type.into(),
+        }
+    }
+
+    pub(crate) fn log_level(&self) -> tracing::Level {
+        let log_level = match &self.log_level {
+            None => DEFAULT_LOG_LEVEL,
+            Some(log_level) => log_level,
+        };
+        tracing::Level::from_str(log_level).unwrap_or_else(|e| {
+            panic!("Invalid log-level specified '{}' - {}", log_level, e)
+        })
     }
 }
