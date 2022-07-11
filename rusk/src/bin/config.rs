@@ -73,7 +73,7 @@ impl Config {
             Arg::new("log-type")
                 .long("log-type")
                 .value_name("LOG_TYPE")
-                .possible_values(&["coloured", "plan", "json"])
+                .possible_values(&["coloured", "plain", "json"])
                 .help("Change the log format accordingly")
                 .takes_value(true),
         )

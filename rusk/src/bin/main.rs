@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let subscriber = subscriber.json().flatten_event(true).finish();
             tracing::subscriber::set_global_default(subscriber)?;
         }
-        "plan" => {
+        "plain" => {
             let subscriber = subscriber.with_ansi(false).finish();
             tracing::subscriber::set_global_default(subscriber)?;
         }
