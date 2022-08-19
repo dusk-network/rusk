@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{Block, Header, RoundUpdate};
+use crate::commons::{Block, Header, RoundUpdate, SelectError};
 use crate::frame::Frame;
 use crate::phase::Phase;
 
@@ -26,8 +26,9 @@ impl Context {
     }
 }
 
+
 pub struct Consensus {
-    phases: Vec<Box<dyn Phase>>,
+    phases: [Phase;3],
 }
 
 impl Consensus {
@@ -37,10 +38,9 @@ impl Consensus {
         sec_red_rx: Receiver<MsgReduction>,
     ) -> Self {
         Self {
-            phases: vec![
-                Box::new(selection::step::Selection::new(new_block_rx)),
-                Box::new(firststep::step::Reduction::new(first_red_rx)),
-                Box::new(secondstep::step::Reduction::new(sec_red_rx)),
+            phases: [Phase::Selection(selection::step::Selection::new(new_block_rx)),
+                Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
+                Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
             ],
         }
     }
