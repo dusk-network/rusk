@@ -4,7 +4,7 @@ use tracing::trace;
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate, SelectError};
 use crate::event_loop::MsgHandler;
 use crate::frame::Frame;
 use crate::messages::MsgReduction;
@@ -27,6 +27,6 @@ impl MsgHandler<MsgReduction> for Reduction {
         //TODO: Republish
         //TODO: CollectVote
 
-        Ok(Frame::Nil)
+        Err(ConsensusError::NotImplemented)
     }
 }

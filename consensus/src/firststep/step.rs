@@ -10,7 +10,6 @@ use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::firststep::handler;
 use crate::messages::MsgReduction;
-use async_trait::async_trait;
 
 use crate::frame;
 use crate::frame::Frame;
@@ -34,11 +33,8 @@ impl Reduction {
             handler: handler::Reduction {},
         }
     }
-}
 
-#[async_trait]
-impl Phase for Reduction {
-    fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, frame: &Frame) {
         let empty = frame::NewBlock::default();
 
         let mut _new_block = match frame {
@@ -51,7 +47,7 @@ impl Phase for Reduction {
         trace!("initializing with frame: {:?}  ", frame);
     }
 
-    async fn run(
+    pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,

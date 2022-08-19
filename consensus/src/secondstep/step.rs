@@ -9,7 +9,6 @@ use crate::event_loop::event_loop;
 use crate::messages::MsgReduction;
 use crate::phase::*;
 use crate::secondstep::handler;
-use async_trait::async_trait;
 
 use crate::frame::{Frame, StepVotes};
 use tokio::sync::mpsc::Receiver;
@@ -30,11 +29,8 @@ impl Reduction {
             handler: handler::Reduction {},
         }
     }
-}
 
-#[async_trait]
-impl Phase for Reduction {
-    fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, frame: &Frame) {
         let empty = StepVotes::default();
 
         let _step_votes = match frame {
@@ -47,7 +43,7 @@ impl Phase for Reduction {
         trace!("initializing with frame: {:?}  ", frame);
     }
 
-    async fn run(
+    pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
@@ -61,7 +57,8 @@ impl Phase for Reduction {
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         String::from("2nd_reduction")
     }
 }
+

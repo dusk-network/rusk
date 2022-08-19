@@ -27,6 +27,6 @@ impl MsgHandler<MsgReduction> for Reduction {
         //TODO: Republish
         //TODO: CollectVote
 
-        Ok(Frame::Nil)
+        Err(ConsensusError::NotImplemented)
     }
 }

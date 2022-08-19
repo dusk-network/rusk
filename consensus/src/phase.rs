@@ -7,21 +7,36 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 
 use crate::frame::Frame;
-use async_trait::async_trait;
 use tokio::sync::oneshot;
+use crate::selection;
+use crate::{firststep, secondstep};
 
-#[async_trait]
-pub trait Phase {
-    // Initialize a new phase execution.
-    fn initialize(&mut self, pkg: &Frame);
+pub enum Phase{
+    Selection(selection::step::Selection),
+    Reduction1(firststep::step::Reduction),
+    Reduction2(secondstep::step::Reduction),
+}
 
-    // run executes a phase and returns a Frame to be used as input for next phase.
-    async fn run(
+impl Phase {
+    pub fn initialize(&mut self, frame: &Frame) {
+        match self {
+            Self::Selection(sel) => sel.initialize(frame),
+            Self::Reduction1(red_1) => red_1.initialize(frame),
+            Self::Reduction2(red_2) => red_2.initialize(frame),
+        };
+    }
+
+    pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError>;
+    ) -> Result<Frame, SelectError> {
+        match self {
+            Self::Selection(sel) => sel.run(ctx_recv, ru, step).await,
+            Self::Reduction1(red_1) => red_1.run(ctx_recv, ru, step).await,
+            Self::Reduction2(red_2) => red_2.run(ctx_recv, ru, step).await,
+        }
+    }
 
-    fn name(&self) -> String;
 }

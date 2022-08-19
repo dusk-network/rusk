@@ -12,7 +12,6 @@ use crate::messages::MsgNewBlock;
 use crate::selection::handler;
 
 use crate::event_loop::event_loop;
-use async_trait::async_trait;
 
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
@@ -30,21 +29,12 @@ impl Selection {
             handler: handler::Selection {},
         }
     }
-}
 
-impl Drop for Selection {
-    fn drop(&mut self) {
-        trace!("cleanup");
-    }
-}
-
-#[async_trait]
-impl Phase for Selection {
-    fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, frame: &Frame) {
         trace!("initializing with frame: {:?}  ", frame);
     }
 
-    async fn run(
+    pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
@@ -54,7 +44,13 @@ impl Phase for Selection {
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         String::from("selection")
+    }
+}
+
+impl Drop for Selection {
+    fn drop(&mut self) {
+        trace!("cleanup");
     }
 }
