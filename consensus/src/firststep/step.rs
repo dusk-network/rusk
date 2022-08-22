@@ -43,8 +43,6 @@ impl Reduction {
             Frame::Empty => &empty,
             Frame::Nil => &empty,
         };
-
-        trace!("initializing with frame: {:?}  ", frame);
     }
 
     pub async fn run(
@@ -56,12 +54,14 @@ impl Reduction {
         // TODO: If isMember()
         // TODO: send_reduction in async way
 
-        trace!("running {:?} round:{} step:{}", self.name(), ru.round, step);
-
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         String::from("1th_reduction")
+    }
+
+    pub fn close(&self) {
+        // TODO:
     }
 }

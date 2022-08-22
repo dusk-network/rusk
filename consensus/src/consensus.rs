@@ -74,7 +74,7 @@ impl Consensus {
                 step += 1;
 
                 // Initialize new phase with frame created by previous phase.
-                phase.initialize(&frame);
+                phase.initialize(&frame, ru.round, step);
 
                 // Execute a phase.
                 // An error returned here terminates consensus round.
@@ -87,6 +87,12 @@ impl Consensus {
                     }
                 }
             }
+        }
+
+
+        // close all phases
+        for phase in self.phases.iter_mut() {
+            phase.close();
         }
 
         trace!("Wait for agreement loop to terminate");

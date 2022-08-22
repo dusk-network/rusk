@@ -10,7 +10,7 @@
 use std::fmt;
 
 // TODO: consider replacing most of the fields with a full copy of a the tip.
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default,Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub(crate) round: u64,

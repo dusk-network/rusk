@@ -8,8 +8,33 @@ use crate::consensus::Context;
 
 use crate::frame::Frame;
 use tokio::sync::oneshot;
+use tracing::trace;
 use crate::selection;
 use crate::{firststep, secondstep};
+
+macro_rules! await_phase {
+    ($e:expr, $n:ident ( $($args:expr), *)) => {
+        {
+           match $e {
+                Phase::Selection(p) => p.$n($($args,)*).await,
+                Phase::Reduction1(p) => p.$n($($args,)*).await,
+                Phase::Reduction2(p) => p.$n($($args,)*).await,
+            }
+        }
+    };
+}
+
+macro_rules! call_phase {
+    ($e:expr, $n:ident ( $($args:expr), *)) => {
+        {
+           match $e {
+                Phase::Selection(p) => p.$n($($args,)*),
+                Phase::Reduction1(p) => p.$n($($args,)*),
+                Phase::Reduction2(p) => p.$n($($args,)*),
+            }
+        }
+    };
+}
 
 pub enum Phase{
     Selection(selection::step::Selection),
@@ -18,12 +43,9 @@ pub enum Phase{
 }
 
 impl Phase {
-    pub fn initialize(&mut self, frame: &Frame) {
-        match self {
-            Self::Selection(sel) => sel.initialize(frame),
-            Self::Reduction1(red_1) => red_1.initialize(frame),
-            Self::Reduction2(red_2) => red_2.initialize(frame),
-        };
+    pub fn initialize(&mut self, frame: &Frame, round: u64, step: u8) {
+        trace!("init phase:{} with frame {:?} at round:{} step:{}", self.name(),frame, round, step);
+        call_phase!(self, initialize(frame))
     }
 
     pub async fn run(
@@ -32,11 +54,15 @@ impl Phase {
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        match self {
-            Self::Selection(sel) => sel.run(ctx_recv, ru, step).await,
-            Self::Reduction1(red_1) => red_1.run(ctx_recv, ru, step).await,
-            Self::Reduction2(red_2) => red_2.run(ctx_recv, ru, step).await,
-        }
+        trace!("running phase:{} round:{:?} step:{}", self.name(), ru, step);
+        await_phase!(self, run(ctx_recv, ru, step))
     }
 
+    pub fn close(&self)  {
+        call_phase!(self, close())
+    }
+
+    fn name(&self) -> String {
+        call_phase!(self, name())
+    }
 }

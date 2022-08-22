@@ -31,7 +31,7 @@ impl Selection {
     }
 
     pub fn initialize(&mut self, frame: &Frame) {
-        trace!("initializing with frame: {:?}  ", frame);
+       // TODO:
     }
 
     pub async fn run(
@@ -40,12 +40,17 @@ impl Selection {
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        trace!("running {:?} round:{} step:{}", self.name(), ru.round, step);
+        //TODO: Perform sortition
+        //TODO: If IsMember GenerateCandidate
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
     pub fn name(&self) -> String {
         String::from("selection")
+    }
+
+    pub fn close(&self) {
+        // TODO:
     }
 }
 
