@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{Block, Header, RoundUpdate, SelectError};
+use crate::commons::{Block, Header, RoundUpdate};
 use crate::frame::Frame;
 use crate::phase::Phase;
 
@@ -11,6 +11,7 @@ use crate::selection;
 use crate::{firststep, secondstep};
 
 use crate::messages::{MsgNewBlock, MsgReduction};
+use crate::user::provisioners::Provisioners;
 use std::thread::sleep;
 use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
@@ -26,9 +27,8 @@ impl Context {
     }
 }
 
-
 pub struct Consensus {
-    phases: [Phase;3],
+    phases: [Phase; 3],
 }
 
 impl Consensus {
@@ -38,7 +38,8 @@ impl Consensus {
         sec_red_rx: Receiver<MsgReduction>,
     ) -> Self {
         Self {
-            phases: [Phase::Selection(selection::step::Selection::new(new_block_rx)),
+            phases: [
+                Phase::Selection(selection::step::Selection::new(new_block_rx)),
                 Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
                 Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
             ],
@@ -54,7 +55,11 @@ impl Consensus {
     // until either a new round is produced or the node needs to re-sync. The
     // Agreement loop (acting roundwise) runs concurrently with the generation-selection-reduction
     // loop (acting step-wise).
-    pub async fn spin(&mut self, ru: RoundUpdate) {
+    pub async fn spin(&mut self, ru: RoundUpdate, mut provisioners: Provisioners) {
+        // Enable/Disable all members stakes depending on the current round.
+        // If a stake is not eligible for this round, it's disabled.
+        provisioners.update_eligibility_flag(ru.round);
+
         // Round context channel.
         let (round_ctx_tx, mut round_ctx_rx) = oneshot::channel::<Context>();
 
@@ -80,7 +85,7 @@ impl Consensus {
                 // An error returned here terminates consensus round.
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
-                match phase.run(&mut round_ctx_rx, ru, step).await {
+                match phase.run(&provisioners, &mut round_ctx_rx, ru, step).await {
                     Ok(next_frame) => frame = next_frame,
                     Err(_) => {
                         break 'exit;
@@ -88,7 +93,6 @@ impl Consensus {
                 }
             }
         }
-
 
         // close all phases
         for phase in self.phases.iter_mut() {
