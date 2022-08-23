@@ -7,13 +7,12 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::messages::MsgReduction;
-use crate::phase::*;
 use crate::secondstep::handler;
 
 use crate::frame::{Frame, StepVotes};
+use crate::user::provisioners::Provisioners;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
-use tracing::trace;
 
 #[allow(unused)]
 pub struct Reduction {
@@ -44,6 +43,7 @@ impl Reduction {
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        _provionsers: &Provisioners,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
@@ -60,4 +60,3 @@ impl Reduction {
         // TODO:
     }
 }
-

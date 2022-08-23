@@ -1,4 +1,3 @@
-use tracing::trace;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -12,15 +11,12 @@ pub struct Selection {}
 
 impl MsgHandler<MsgNewBlock> for Selection {
     // Handle а new_block message.
-    fn handle(
+    fn handle_internal(
         &mut self,
         msg: MsgNewBlock,
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<Frame, ConsensusError> {
-        //TODO: should_process
-        trace!("handle msg {:?}", msg);
-
         match self.verify(&msg) {
             None => self.on_valid_new_block(&msg),
             Some(_err) => Err(ConsensusError::InvalidBlock),

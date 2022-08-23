@@ -7,13 +7,14 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 
 use crate::frame::Frame;
+use crate::selection;
+use crate::user::provisioners::Provisioners;
+use crate::{firststep, secondstep};
 use tokio::sync::oneshot;
 use tracing::trace;
-use crate::selection;
-use crate::{firststep, secondstep};
 
 macro_rules! await_phase {
-    ($e:expr, $n:ident ( $($args:expr), *)) => {
+    ($e:expr, $n:ident ( $($args:expr), *), $await:ident) => {
         {
            match $e {
                 Phase::Selection(p) => p.$n($($args,)*).await,
@@ -36,7 +37,7 @@ macro_rules! call_phase {
     };
 }
 
-pub enum Phase{
+pub enum Phase {
     Selection(selection::step::Selection),
     Reduction1(firststep::step::Reduction),
     Reduction2(secondstep::step::Reduction),
@@ -44,25 +45,34 @@ pub enum Phase{
 
 impl Phase {
     pub fn initialize(&mut self, frame: &Frame, round: u64, step: u8) {
-        trace!("init phase:{} with frame {:?} at round:{} step:{}", self.name(),frame, round, step);
+        trace!(
+            "init phase:{} with frame {:?} at round:{} step:{}",
+            self.name(),
+            frame,
+            round,
+            step
+        );
         call_phase!(self, initialize(frame))
     }
 
     pub async fn run(
         &mut self,
+        provionsers: &Provisioners,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
         trace!("running phase:{} round:{:?} step:{}", self.name(), ru, step);
-        await_phase!(self, run(ctx_recv, ru, step))
-    }
 
-    pub fn close(&self)  {
-        call_phase!(self, close())
+        // TODO: consider here to execute sortition and pass committee instead of provisioners
+        await_phase!(self, run(ctx_recv,  provionsers, ru, step), await)
     }
 
     fn name(&self) -> String {
         call_phase!(self, name())
+    }
+
+    pub fn close(&self) {
+        call_phase!(self, close())
     }
 }

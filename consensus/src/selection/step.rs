@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
-use crate::phase::*;
-
 use crate::consensus::Context;
 use crate::frame::Frame;
 use crate::messages::MsgNewBlock;
@@ -13,6 +11,7 @@ use crate::selection::handler;
 
 use crate::event_loop::event_loop;
 
+use crate::user::provisioners::Provisioners;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tracing::trace;
@@ -30,13 +29,14 @@ impl Selection {
         }
     }
 
-    pub fn initialize(&mut self, frame: &Frame) {
-       // TODO:
+    pub fn initialize(&mut self, _frame: &Frame) {
+        // TODO:
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        _provionsers: &Provisioners,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {

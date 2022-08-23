@@ -3,6 +3,7 @@ extern crate core;
 pub mod commons;
 pub mod consensus;
 pub mod messages;
+pub mod user;
 
 mod event_loop;
 mod firststep;
