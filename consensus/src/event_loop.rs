@@ -7,14 +7,17 @@
 use crate::commons::{ConsensusError, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::frame::Frame;
+use crate::messages::Message;
+use std::fmt::Debug;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
+use tracing::trace;
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
-pub async fn event_loop<T: Default, C: MsgHandler<T>>(
+pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
     phase: &mut C,
     rx: &mut mpsc::Receiver<T>,
     ctx_recv: &mut oneshot::Receiver<Context>,
@@ -51,8 +54,27 @@ pub async fn event_loop<T: Default, C: MsgHandler<T>>(
 }
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
-pub trait MsgHandler<T> {
-    fn handle(&mut self, msg: T, ru: RoundUpdate, step: u8) -> Result<Frame, ConsensusError>;
+pub trait MsgHandler<T: Debug + Message> {
+    // handle is the handler to process a new message in the first place.
+    // Only if it's valid to current round and step, it delegates it to the Phase::handler.
+    fn handle(&mut self, msg: T, ru: RoundUpdate, step: u8) -> Result<Frame, ConsensusError> {
+        trace!("handle msg {:?}", msg);
+
+        // this the equivalent of should_process.
+        if !msg.compare(ru.round, step) {
+            return Err(ConsensusError::InvalidRoundStep);
+        }
+
+        self.handle_internal(msg, ru, step)
+    }
+
+    // handle_internal should be implemented by each Phase.
+    fn handle_internal(
+        &mut self,
+        msg: T,
+        ru: RoundUpdate,
+        step: u8,
+    ) -> Result<Frame, ConsensusError>;
 }
 
 // select_multi extends time::timeout_at with another channel that brings the message payload.

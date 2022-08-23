@@ -14,10 +14,27 @@ pub struct MsgHeader {
     pub block_hash: [u8; 32],
 }
 
+impl MsgHeader {
+    pub fn compare(&self, _round: u64, _step: u8) -> bool {
+        // TODO: implement header compare
+        true
+    }
+}
+
+pub trait Message {
+    fn compare(&self, round: u64, step: u8) -> bool;
+}
+
 #[derive(Default, Debug)]
 pub struct MsgReduction {
     pub header: MsgHeader,
     pub signed_hash: [u8; 32],
+}
+
+impl Message for MsgReduction {
+    fn compare(&self, round: u64, step: u8) -> bool {
+        self.header.compare(round, step)
+    }
 }
 
 #[derive(Default, Debug)]
@@ -26,4 +43,10 @@ pub struct MsgNewBlock {
     pub prev_hash: [u8; 32],
     pub candidate: Block,
     pub signed_hash: [u8; 32],
+}
+
+impl Message for MsgNewBlock {
+    fn compare(&self, round: u64, step: u8) -> bool {
+        self.header.compare(round, step)
+    }
 }
