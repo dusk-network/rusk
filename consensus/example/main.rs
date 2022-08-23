@@ -1,9 +1,13 @@
+use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use tokio::sync::mpsc;
 use tracing::trace;
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::{MsgNewBlock, MsgReduction};
+use consensus::user::provisioners::{HashablePubKey, Provisioners};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use tokio::task::JoinHandle;
 
 // Message producer feeds Consensus steps with empty messages.
@@ -26,6 +30,19 @@ fn spawn_message_producer(
     })
 }
 
+fn gen_mocked_provisioners() -> Provisioners {
+    let mut mocked = Provisioners::new();
+
+    for i in 1..10 {
+        let rng = &mut StdRng::seed_from_u64(i as u64);
+        let sk = SecretKey::random(rng);
+
+        mocked.add_member(HashablePubKey::new(PublicKey::from(&sk)), 1000000, 0, 0);
+    }
+
+    mocked
+}
+
 async fn perform_basic_run() {
     {
         // Initialize message sources that feeds Consensus.
@@ -35,12 +52,14 @@ async fn perform_basic_run() {
 
         let producer = spawn_message_producer(tx, red1_tx, red2_tx);
 
+        let mocked = gen_mocked_provisioners();
+
         let mut c = Consensus::new(rx, first_red_rx, sec_red_tx);
         let n = 5;
         // Run consensus for N rounds
         for r in 0..n {
             c.reset_state_machine();
-            c.spin(RoundUpdate::new(r)).await;
+            c.spin(RoundUpdate::new(r), mocked.clone()).await;
         }
 
         producer.abort();
