@@ -33,7 +33,7 @@ fn spawn_message_producer(
 fn gen_mocked_provisioners() -> Provisioners {
     let mut mocked = Provisioners::new();
 
-    for i in 1..10 {
+    for i in 1..3 {
         let rng = &mut StdRng::seed_from_u64(i as u64);
         let sk = SecretKey::random(rng);
 

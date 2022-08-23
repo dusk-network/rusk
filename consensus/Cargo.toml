@@ -10,7 +10,13 @@ edition = "2021"
 tokio = { version = "1", features = ["full"] }
 tracing-subscriber =  "0.2"
 tracing = "0.1"
+dusk-bls12_381-sign = "0.4.0"
+rand_core = { version = "0.5.1", default-features = false }
+sha3 = {version = "0.10.2"}
 
+[dev-dependencies]
+rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+hex-literal = {version = "0.3.4"}
 
 [[example]]
 name = "testbed"

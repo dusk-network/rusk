@@ -6,7 +6,6 @@
 
 use crate::commons::ConsensusError;
 use dusk_bls12_381_sign::PublicKey;
-use rand_core::RngCore;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
@@ -121,7 +120,7 @@ impl Provisioners {
 
     pub fn add_member(
         &mut self,
-        pub_bls_key: HashablePubKey,
+        pubkey_bls: HashablePubKey,
         value: u64,
         reward: u64,
         eligibility: u64,
@@ -129,8 +128,8 @@ impl Provisioners {
         let stake = Stake::new(value, reward, eligibility);
 
         self.members
-            .entry(pub_bls_key.clone())
-            .or_insert(Member::new(pub_bls_key))
+            .entry(pubkey_bls.clone())
+            .or_insert(Member::new(pubkey_bls))
             .add_stake(stake);
 
         None

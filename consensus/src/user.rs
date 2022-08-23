@@ -5,3 +5,4 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 mod committee;
 pub mod provisioners;
+pub(crate) mod sortition;
