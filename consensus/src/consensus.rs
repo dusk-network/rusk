@@ -60,6 +60,8 @@ impl Consensus {
         // If a stake is not eligible for this round, it's disabled.
         provisioners.update_eligibility_flag(ru.round);
 
+        trace!("start consensus spin with :{:?}", provisioners);
+
         // Round context channel.
         let (round_ctx_tx, mut round_ctx_rx) = oneshot::channel::<Context>();
 

@@ -1,11 +1,34 @@
-use crate::commons::ConsensusError;
-use std::collections::HashMap;
-
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
+use crate::commons::ConsensusError;
+use dusk_bls12_381_sign::PublicKey;
+use rand_core::RngCore;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+
+// HashablePubKey satisfies Hash trait for dusk_bls12_381_sign::PublicKey.
+// TODO: We can support this in dusk_bls12_381_sign instead.
+#[derive(Eq, PartialEq, Clone, Debug, Default)]
+pub struct HashablePubKey(PublicKey);
+
+impl HashablePubKey {
+    pub fn new(pubkey: PublicKey) -> Self {
+        Self { 0: pubkey }
+    }
+}
+
+impl Hash for HashablePubKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // TODO: to_bytes is private
+        state.write(self.0.pk_t().to_raw_bytes().as_slice());
+        state.finish();
+    }
+}
+
 #[derive(Copy, Clone, Default, Debug)]
 #[allow(unused)]
 pub struct Stake {
@@ -31,18 +54,18 @@ impl Stake {
 pub struct Member {
     // stake and flag enabled/disabled.
     stakes: Vec<(Stake, bool)>,
-    public_key_bls: BlsPubKey,
-    raw_public_key_bls: [u8; 193],
+    pubkey_bls: HashablePubKey,
+    raw_pubkey_bls: [u8; 193],
 }
 
 impl Member {
-    pub fn new(public_key_bls: BlsPubKey) -> Self {
+    pub fn new(pubkey_bls: HashablePubKey) -> Self {
+        let raw_pubkey_bls = pubkey_bls.0.to_raw_bytes();
         Self {
             stakes: vec![],
-            public_key_bls,
-            raw_public_key_bls: [0; 193],
+            pubkey_bls,
+            raw_pubkey_bls,
         }
-        // TODO: m.raw_public_key_bls = raw_from_bls_key();
     }
 
     // AddStake appends a stake to the stake set.
@@ -78,25 +101,15 @@ impl Default for Member {
     fn default() -> Member {
         Member {
             stakes: vec![],
-            public_key_bls: BlsPubKey::default(),
-            raw_public_key_bls: [0; 193],
+            pubkey_bls: HashablePubKey::default(),
+            raw_pubkey_bls: [0; 193],
         }
-    }
-}
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct BlsPubKey([u8; 96]);
-
-impl Default for BlsPubKey {
-    #[inline]
-    fn default() -> BlsPubKey {
-        BlsPubKey { 0: [0; 96] }
     }
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct Provisioners {
-    members: HashMap<BlsPubKey, Member>,
+    members: HashMap<HashablePubKey, Member>,
 }
 
 impl Provisioners {
@@ -108,7 +121,7 @@ impl Provisioners {
 
     pub fn add_member(
         &mut self,
-        pub_bls_key: BlsPubKey,
+        pub_bls_key: HashablePubKey,
         value: u64,
         reward: u64,
         eligibility: u64,
