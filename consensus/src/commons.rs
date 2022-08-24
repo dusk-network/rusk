@@ -7,6 +7,7 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 
+use dusk_bls12_381_sign::PublicKey;
 use std::fmt;
 
 // TODO: consider replacing most of the fields with a full copy of a the tip.
@@ -16,12 +17,14 @@ pub struct RoundUpdate {
     pub(crate) round: u64,
     pub(crate) seed: [u8; 32],
     pub(crate) hash: [u8; 32],
+    pub(crate) pubkey_bls: PublicKey,
 }
 
 impl RoundUpdate {
-    pub fn new(round: u64) -> Self {
+    pub fn new(round: u64, pubkey_bls: PublicKey) -> Self {
         RoundUpdate {
             round,
+            pubkey_bls,
             ..Default::default()
         }
     }

@@ -87,7 +87,10 @@ impl Consensus {
                 // An error returned here terminates consensus round.
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
-                match phase.run(&provisioners, &mut round_ctx_rx, ru, step).await {
+                match phase
+                    .run(&mut provisioners, &mut round_ctx_rx, ru, step)
+                    .await
+                {
                     Ok(next_frame) => frame = next_frame,
                     Err(_) => {
                         break 'exit;

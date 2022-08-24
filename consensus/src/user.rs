@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-mod committee;
+pub(crate) mod committee;
 pub mod provisioners;
 pub(crate) mod sortition;
+pub mod stake;

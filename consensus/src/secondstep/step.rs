@@ -10,9 +10,12 @@ use crate::messages::MsgReduction;
 use crate::secondstep::handler;
 
 use crate::frame::{Frame, StepVotes};
+use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
+
+pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
@@ -43,11 +46,27 @@ impl Reduction {
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
-        _provionsers: &Provisioners,
+        provionsers: &mut Provisioners,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        // TODO: If isMember()
+        // Perform sortition to generate committee of size=64 for Reduction step.
+        // The extracted members are the provisioners eligible to vote on this particular round and step
+        // TODO: Committee::new is the same in all Phases (only size differs). This could be moved to Phase::run instead.
+        let step_committee = Committee::new(
+            ru.pubkey_bls.clone(),
+            provionsers,
+            ru.seed,
+            ru.round,
+            step,
+            COMMITTEE_SIZE,
+        );
+
+        if step_committee.am_member() {
+            // TODO: SendReduction async
+            // TODO: Register my reduction locally
+        }
+
         // TODO: send_reduction in async way
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }

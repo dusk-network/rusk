@@ -5,7 +5,7 @@ use tracing::trace;
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::{MsgNewBlock, MsgReduction};
-use consensus::user::provisioners::{HashablePubKey, Provisioners};
+use consensus::user::provisioners::{HashablePubKey, Provisioners, DUSK};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use tokio::task::JoinHandle;
@@ -30,17 +30,20 @@ fn spawn_message_producer(
     })
 }
 
-fn gen_mocked_provisioners() -> Provisioners {
+fn gen_mocked_provisioners() -> (Provisioners, Vec<PublicKey>) {
     let mut mocked = Provisioners::new();
+    let mut bls_keys: Vec<PublicKey> = vec![];
 
-    for i in 1..3 {
+    for i in 1..5 {
         let rng = &mut StdRng::seed_from_u64(i as u64);
         let sk = SecretKey::random(rng);
+        let pubkey = PublicKey::from(&sk);
 
-        mocked.add_member(HashablePubKey::new(PublicKey::from(&sk)), 1000000, 0, 0);
+        bls_keys.push(pubkey.clone());
+        mocked.add_member(HashablePubKey::new(pubkey), 1000 * DUSK, 0, 0);
     }
 
-    mocked
+    (mocked, bls_keys)
 }
 
 async fn perform_basic_run() {
@@ -59,7 +62,8 @@ async fn perform_basic_run() {
         // Run consensus for N rounds
         for r in 0..n {
             c.reset_state_machine();
-            c.spin(RoundUpdate::new(r), mocked.clone()).await;
+            c.spin(RoundUpdate::new(r, mocked.1[0]), mocked.0.clone())
+                .await;
         }
 
         producer.abort();
