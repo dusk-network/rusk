@@ -5,9 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::ConsensusError;
+use crate::user::sortition;
+use crate::user::stake::Stake;
 use dusk_bls12_381_sign::PublicKey;
+use num_bigint::BigInt;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+use tracing::trace;
+
+pub const DUSK: u64 = 100_000_000;
 
 // HashablePubKey satisfies Hash trait for dusk_bls12_381_sign::PublicKey.
 // TODO: We can support this in dusk_bls12_381_sign instead.
@@ -28,30 +34,10 @@ impl Hash for HashablePubKey {
     }
 }
 
-#[derive(Copy, Clone, Default, Debug)]
-#[allow(unused)]
-pub struct Stake {
-    value: u64,
-    reward: u64,
-    counter: u64,
-    eligibility: u64,
-}
-
-impl Stake {
-    pub fn new(value: u64, reward: u64, eligibility: u64) -> Self {
-        Self {
-            value,
-            reward,
-            eligibility,
-            counter: 0,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 #[allow(unused)]
 pub struct Member {
-    // stake and flag enabled/disabled.
+    // stake and eligibility flag
     stakes: Vec<(Stake, bool)>,
     pubkey_bls: HashablePubKey,
     raw_pubkey_bls: [u8; 193],
@@ -67,6 +53,10 @@ impl Member {
         }
     }
 
+    pub fn get_public_key(&self) -> PublicKey {
+        self.pubkey_bls.0.clone()
+    }
+
     // AddStake appends a stake to the stake set.
     pub fn add_stake(&mut self, stake: Stake) {
         self.stakes.push((stake, false));
@@ -74,24 +64,41 @@ impl Member {
 
     pub fn update_eligibility_flag(&mut self, round: u64) {
         for stake in self.stakes.iter_mut() {
-            stake.1 = stake.0.eligibility > round;
+            stake.1 = stake.0.eligible_since <= round;
         }
     }
 
     pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
         for stake in self.stakes.iter_mut() {
-            let stake_val = stake.0.value;
+            let stake_val = stake.0.intermediate_value;
             if stake_val > 0 {
                 if stake_val < value {
-                    stake.0.value = 0;
+                    stake.0.intermediate_value = 0;
                     return stake_val;
                 }
-                stake.0.value -= value;
+                stake.0.intermediate_value -= value;
                 return value;
             }
         }
 
         0
+    }
+
+    pub fn restore_intermediate_value(&mut self) {
+        for stake in self.stakes.iter_mut() {
+            stake.0.restore_intermediate_value();
+        }
+    }
+
+    fn get_total_eligible_stake(&self) -> BigInt {
+        let mut total: u64 = 0;
+        for stake in self.stakes.iter() {
+            if stake.1 {
+                total += stake.0.intermediate_value;
+            }
+        }
+
+        BigInt::from(total)
     }
 }
 
@@ -123,9 +130,9 @@ impl Provisioners {
         pubkey_bls: HashablePubKey,
         value: u64,
         reward: u64,
-        eligibility: u64,
+        eligible_since: u64,
     ) -> Option<ConsensusError> {
-        let stake = Stake::new(value, reward, eligibility);
+        let stake = Stake::new(value, reward, eligible_since);
 
         self.members
             .entry(pubkey_bls.clone())
@@ -135,15 +142,77 @@ impl Provisioners {
         None
     }
 
-    // calc_total_active_weight sums up the total weight of all **enabled** stakes
-    pub fn calc_total_active_weight(&self) -> u64 {
+    // update_eligibility_flag enables or disables stakes depending on specified round.
+    pub fn update_eligibility_flag(&mut self, round: u64) {
+        for m in self.members.iter_mut() {
+            m.1.update_eligibility_flag(round)
+        }
+    }
+
+    // create_committee runs the deterministic sortition function, which determines
+    // who will be in the committee for a given step and round
+    pub fn create_committee(
+        &mut self,
+        seed: [u8; 32],
+        round: u64,
+        step: u8,
+        size: usize,
+    ) -> Vec<PublicKey> {
+        let mut committee: Vec<PublicKey> = vec![];
+
+        // Restore intermediate value of all stakes.
+        for m in self.members.iter_mut() {
+            m.1.restore_intermediate_value();
+        }
+
+        let mut total_amount_stake = BigInt::from(self.calc_total_eligible_weight());
+        trace!("sortition: total_amount_stake: {:?}", total_amount_stake);
+
+        let mut counter: i32 = 0;
+        loop {
+            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == size {
+                break;
+            }
+
+            trace!("sortition: total_amount_stake: {:?}", total_amount_stake);
+
+            // 1. Compute n ← H(seed ∣∣ round ∣∣ step ∣∣ counter)
+            let hash = sortition::create_sortition_hash(seed, round, step, counter);
+            counter += 1;
+
+            // 2. Compute d ← n mod s
+            let score = sortition::generate_sortition_score(hash, &total_amount_stake);
+
+            trace!("sortition: score: {:?}", score);
+
+            // NB: The public key can be extracted multiple times per committee.
+            match self.extract_and_subtract_member(&score) {
+                Some(m) => {
+                    // append the public key to the committee set.
+                    committee.push(m.0.get_public_key());
+
+                    let subtracted_stake = m.1;
+                    if total_amount_stake > subtracted_stake {
+                        total_amount_stake -= subtracted_stake;
+                    } else {
+                        total_amount_stake = BigInt::from(0);
+                    }
+                }
+                None => panic!("invalid score"),
+            }
+        }
+
+        committee
+    }
+
+    // calc_total_eligible_weight sums up the total weight of all **eligible** stakes
+    fn calc_total_eligible_weight(&self) -> u64 {
         let mut total_weight = 0;
         for m in self.members.iter() {
             for s in m.1.stakes.iter() {
-                // Add stake value to total_weight only if it is enabled.
-                // NB: a stake must be enabled/disabled accordingly at the beginning of each round.
+                // Add stake value to total_weight only if it is eligible.
                 if s.1 {
-                    total_weight += s.0.value;
+                    total_weight += s.0.intermediate_value;
                 }
             }
         }
@@ -152,7 +221,8 @@ impl Provisioners {
     }
 
     // get_active_stakes_num returns the count of all enabled stakes.
-    pub fn get_active_stakes_num(&self) -> usize {
+    #[allow(unused)]
+    fn get_active_stakes_num(&self) -> usize {
         let mut size: usize = 0;
         for m in self.members.iter() {
             for s in m.1.stakes.iter() {
@@ -165,23 +235,25 @@ impl Provisioners {
         size
     }
 
-    // update_eligibility_flag enables or disables stakes depending on specified round.
-    pub fn update_eligibility_flag(&mut self, round: u64) {
-        for m in self.members.iter_mut() {
-            m.1.update_eligibility_flag(round)
-        }
-    }
+    fn extract_and_subtract_member(&mut self, score: &BigInt) -> Option<(Member, BigInt)> {
+        let mut score = score.clone();
 
-    // create_voting_committee runs the deterministic sortition function, which determines
-    // who will be in the committee for a given step and round
-    pub fn create_voting_committee(
-        &self,
-        _seed: [u8; 32],
-        _round: u64,
-        _step: u8,
-        _size: usize,
-    ) -> bool {
-        // TODO: create_voting_committee
-        true
+        if self.members.is_empty() {
+            return None;
+        }
+
+        loop {
+            for m in self.members.iter_mut() {
+                let total_stake = m.1.get_total_eligible_stake();
+                if total_stake >= score {
+                    // Subtract 1 from the value extracted and rebalance accordingly.
+                    let subtracted_stake = BigInt::from(m.1.subtract_from_stake(1 * DUSK));
+
+                    return Some((m.1.clone(), subtracted_stake));
+                }
+
+                score -= total_stake;
+            }
+        }
     }
 }
