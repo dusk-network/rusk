@@ -4,52 +4,41 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::user::provisioners::{HashablePubKey, Provisioners};
-use dusk_bls12_381_sign::PublicKey;
-use std::collections::HashMap;
-use tracing::trace;
+use crate::user::provisioners::{Provisioners, PublicKey};
+use crate::user::sortition;
+use std::collections::BTreeMap;
 
 #[allow(unused)]
-// 0: BLS Public key mapped to its occurrences.
+// 0: BLS public key mapped to its occurrences.
 // 1: This provisioner BLS public key.
 #[derive(Default, Debug)]
-pub struct Committee(HashMap<HashablePubKey, usize>, PublicKey);
+pub struct Committee(BTreeMap<PublicKey, usize>, PublicKey);
 
 #[allow(unused)]
 impl Committee {
     pub fn new(
         pubkey_bls: PublicKey,
         provisioners: &mut Provisioners,
-        seed: [u8; 32],
-        round: u64,
-        step: u8,
-        size: usize,
+        cfg: sortition::Config,
     ) -> Self {
-        let mut committee = Self::default();
-
         // Generate committee using deterministic sortition.
-        let res = provisioners.create_committee(seed, round, step, size);
+        let res = provisioners.create_committee(cfg.clone());
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
-        for member_key in res.as_slice() {
-            *committee
-                .0
-                .entry(HashablePubKey::new(member_key.clone()))
-                .or_insert(0) += 1;
-        }
+        let mut committee = Self {
+            0: BTreeMap::new(),
+            1: pubkey_bls,
+        };
 
-        trace!(
-            "committee at round/step {}/{} {:?}",
-            round,
-            step,
-            &committee
-        );
+        for member_key in res.as_slice() {
+            *committee.0.entry(member_key.clone()).or_insert(0) += 1;
+        }
 
         committee
     }
 
     pub fn is_member(&self, pubkey_bls: PublicKey) -> bool {
-        self.0.contains_key(&HashablePubKey::new(pubkey_bls))
+        self.0.contains_key(&pubkey_bls)
     }
 
     pub fn am_member(&self) -> bool {
@@ -57,7 +46,14 @@ impl Committee {
     }
 
     pub fn votes_for(&self, pubkey_bls: PublicKey) -> Option<&usize> {
-        self.0.get(&HashablePubKey::new(pubkey_bls))
+        self.0.get(&pubkey_bls)
+    }
+
+    // get_occurrences returns values in a sorted vec. (testing purposes only)
+    pub fn get_occurrences(&self) -> Vec<usize> {
+        let mut vec: Vec<usize> = self.0.clone().into_values().collect();
+        vec.sort();
+        vec
     }
 
     pub fn size(&self) -> usize {

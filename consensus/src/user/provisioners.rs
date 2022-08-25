@@ -4,32 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::ConsensusError;
 use crate::user::sortition;
 use crate::user::stake::Stake;
-use dusk_bls12_381_sign::PublicKey;
 use num_bigint::BigInt;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 use tracing::trace;
 
 pub const DUSK: u64 = 100_000_000;
+pub const RAW_PUBLIC_BLS_SIZE: usize = 193;
+pub const PUBLIC_BLS_SIZE: usize = 96;
 
-// HashablePubKey satisfies Hash trait for dusk_bls12_381_sign::PublicKey.
-// TODO: We can support this in dusk_bls12_381_sign instead.
-#[derive(Eq, PartialEq, Clone, Debug, Default)]
-pub struct HashablePubKey(PublicKey);
+// TODO: We should use dusk_bls12_381_sign::PublicKey instead.
+#[derive(Eq, PartialEq, Clone, Copy, Debug, Ord, PartialOrd)]
+pub struct PublicKey([u8; PUBLIC_BLS_SIZE]);
 
-impl HashablePubKey {
-    pub fn new(pubkey: PublicKey) -> Self {
-        Self { 0: pubkey }
+impl PublicKey {
+    pub fn new(input: [u8; PUBLIC_BLS_SIZE]) -> Self {
+        Self { 0: input }
     }
 }
 
-impl Hash for HashablePubKey {
+impl Hash for PublicKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        // TODO: to_bytes is private
-        state.write(self.0.pk_t().to_raw_bytes().as_slice());
+        state.write(self.0.as_slice());
         state.finish();
     }
 }
@@ -39,13 +37,14 @@ impl Hash for HashablePubKey {
 pub struct Member {
     // stake and eligibility flag
     stakes: Vec<(Stake, bool)>,
-    pubkey_bls: HashablePubKey,
-    raw_pubkey_bls: [u8; 193],
+    pubkey_bls: PublicKey,
+    raw_pubkey_bls: [u8; RAW_PUBLIC_BLS_SIZE],
 }
 
 impl Member {
-    pub fn new(pubkey_bls: HashablePubKey) -> Self {
-        let raw_pubkey_bls = pubkey_bls.0.to_raw_bytes();
+    pub fn new(pubkey_bls: PublicKey) -> Self {
+        // TODO: let raw_pubkey_bls = pubkey_bls.0.to_raw_bytes();
+        let raw_pubkey_bls = [0; RAW_PUBLIC_BLS_SIZE];
         Self {
             stakes: vec![],
             pubkey_bls,
@@ -54,10 +53,10 @@ impl Member {
     }
 
     pub fn get_public_key(&self) -> PublicKey {
-        self.pubkey_bls.0.clone()
+        self.pubkey_bls.clone()
     }
 
-    // AddStake appends a stake to the stake set.
+    // AddStake appends a stake to the stake set with eligible_flag=false.
     pub fn add_stake(&mut self, stake: Stake) {
         self.stakes.push((stake, false));
     }
@@ -102,44 +101,53 @@ impl Member {
     }
 }
 
+impl Default for PublicKey {
+    #[inline]
+    fn default() -> PublicKey {
+        PublicKey {
+            0: [0; PUBLIC_BLS_SIZE],
+        }
+    }
+}
+
 impl Default for Member {
     #[inline]
     fn default() -> Member {
         Member {
             stakes: vec![],
-            pubkey_bls: HashablePubKey::default(),
-            raw_pubkey_bls: [0; 193],
+            pubkey_bls: PublicKey::default(),
+            raw_pubkey_bls: [0; RAW_PUBLIC_BLS_SIZE],
         }
     }
 }
 
 #[derive(Clone, Default, Debug)]
 pub struct Provisioners {
-    members: HashMap<HashablePubKey, Member>,
+    members: BTreeMap<PublicKey, Member>,
 }
 
 impl Provisioners {
     pub fn new() -> Self {
         Self {
-            members: HashMap::new(),
+            members: BTreeMap::new(),
         }
     }
 
     pub fn add_member(
         &mut self,
-        pubkey_bls: HashablePubKey,
+        pubkey_bls: PublicKey,
         value: u64,
         reward: u64,
         eligible_since: u64,
-    ) -> Option<ConsensusError> {
-        let stake = Stake::new(value, reward, eligible_since);
-
+    ) {
         self.members
             .entry(pubkey_bls.clone())
             .or_insert(Member::new(pubkey_bls))
-            .add_stake(stake);
+            .add_stake(Stake::new(value, reward, eligible_since));
+    }
 
-        None
+    pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
+        self.add_member(pubkey_bls, value, 0, 0)
     }
 
     // update_eligibility_flag enables or disables stakes depending on specified round.
@@ -151,13 +159,7 @@ impl Provisioners {
 
     // create_committee runs the deterministic sortition function, which determines
     // who will be in the committee for a given step and round
-    pub fn create_committee(
-        &mut self,
-        seed: [u8; 32],
-        round: u64,
-        step: u8,
-        size: usize,
-    ) -> Vec<PublicKey> {
+    pub fn create_committee(&mut self, cfg: sortition::Config) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
 
         // Restore intermediate value of all stakes.
@@ -170,14 +172,13 @@ impl Provisioners {
 
         let mut counter: i32 = 0;
         loop {
-            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == size {
+            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == cfg.3 {
                 break;
             }
 
             trace!("sortition: total_amount_stake: {:?}", total_amount_stake);
-
             // 1. Compute n ← H(seed ∣∣ round ∣∣ step ∣∣ counter)
-            let hash = sortition::create_sortition_hash(seed, round, step, counter);
+            let hash = sortition::create_sortition_hash(cfg.0, cfg.1, cfg.2, counter);
             counter += 1;
 
             // 2. Compute d ← n mod s
@@ -235,8 +236,8 @@ impl Provisioners {
         size
     }
 
-    fn extract_and_subtract_member(&mut self, score: &BigInt) -> Option<(Member, BigInt)> {
-        let mut score = score.clone();
+    fn extract_and_subtract_member(&mut self, s: &BigInt) -> Option<(Member, BigInt)> {
+        let mut score = s.clone();
 
         if self.members.is_empty() {
             return None;

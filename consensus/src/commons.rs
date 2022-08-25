@@ -7,7 +7,7 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 
-use dusk_bls12_381_sign::PublicKey;
+use crate::user::provisioners::PublicKey;
 use std::fmt;
 
 // TODO: consider replacing most of the fields with a full copy of a the tip.

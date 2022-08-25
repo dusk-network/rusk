@@ -18,17 +18,17 @@ impl MsgHandler<MsgNewBlock> for Selection {
         _step: u8,
     ) -> Result<Frame, ConsensusError> {
         match self.verify(&msg) {
-            None => self.on_valid_new_block(&msg),
-            Some(_err) => Err(ConsensusError::InvalidBlock),
+            Ok(_) => self.on_valid_new_block(&msg),
+            Err(err) => Err(err),
         }
     }
 }
 
 impl Selection {
-    fn verify(&self, _msg: &MsgNewBlock) -> Option<ConsensusError> {
+    fn verify(&self, _msg: &MsgNewBlock) -> Result<(), ConsensusError> {
         // TODO: Verify newblock msg signature
         // TODO: Verify newblock candidate
-        Some(ConsensusError::NotImplemented)
+        Err(ConsensusError::NotImplemented)
     }
 
     fn on_valid_new_block(&mut self, _msg: &MsgNewBlock) -> Result<Frame, ConsensusError> {

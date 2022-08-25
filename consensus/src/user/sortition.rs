@@ -8,6 +8,9 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
+#[derive(Debug, Clone, Default)]
+pub struct Config(pub [u8; 32], pub u64, pub u8, pub usize);
+
 // The deterministic procedure requires the set of active stakes,
 // ordered in ascending order from oldest to newest, the latest global seed,
 // current consensus round and current consensus step.

@@ -1,13 +1,15 @@
-use dusk_bls12_381_sign::{PublicKey, SecretKey};
+use hex::FromHex;
+use std::env;
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 use tokio::sync::mpsc;
 use tracing::trace;
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::{MsgNewBlock, MsgReduction};
-use consensus::user::provisioners::{HashablePubKey, Provisioners, DUSK};
-use rand::rngs::StdRng;
-use rand::SeedableRng;
+use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
 use tokio::task::JoinHandle;
 
 // Message producer feeds Consensus steps with empty messages.
@@ -30,20 +32,35 @@ fn spawn_message_producer(
     })
 }
 
-fn gen_mocked_provisioners() -> (Provisioners, Vec<PublicKey>) {
-    let mut mocked = Provisioners::new();
-    let mut bls_keys: Vec<PublicKey> = vec![];
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
+}
 
-    for i in 1..5 {
-        let rng = &mut StdRng::seed_from_u64(i as u64);
-        let sk = SecretKey::random(rng);
-        let pubkey = PublicKey::from(&sk);
+fn read_provisioners() -> Provisioners {
+    // TODO: duplciated code
+    let test_data = env::var("CARGO_MANIFEST_DIR").unwrap_or_default() + "/tests/provisioners.txt";
 
-        bls_keys.push(pubkey.clone());
-        mocked.add_member(HashablePubKey::new(pubkey), 1000 * DUSK, 0, 0);
+    // Create provisioners with bls keys read from an external file.
+    let mut p = Provisioners::new();
+    if let Ok(lines) = read_lines(test_data) {
+        let mut i = 1;
+        for line in lines {
+            if let Ok(bls_key) = line {
+                // parse hex from file line
+                let key = <[u8; 96]>::from_hex(bls_key).unwrap_or([0; 96]);
+                let stake_value = 1000 * i * DUSK;
+
+                p.add_member_with_value(PublicKey::new(key), stake_value);
+
+                i += 1;
+            }
+        }
     }
-
-    (mocked, bls_keys)
+    p
 }
 
 async fn perform_basic_run() {
@@ -55,14 +72,14 @@ async fn perform_basic_run() {
 
         let producer = spawn_message_producer(tx, red1_tx, red2_tx);
 
-        let mocked = gen_mocked_provisioners();
+        let p = read_provisioners();
 
         let mut c = Consensus::new(rx, first_red_rx, sec_red_tx);
         let n = 5;
         // Run consensus for N rounds
         for r in 0..n {
             c.reset_state_machine();
-            c.spin(RoundUpdate::new(r, mocked.1[0]), mocked.0.clone())
+            c.spin(RoundUpdate::new(r, PublicKey::default()), p.clone())
                 .await;
         }
 

@@ -12,6 +12,7 @@ use crate::secondstep::handler;
 use crate::frame::{Frame, StepVotes};
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 
@@ -56,10 +57,7 @@ impl Reduction {
         let step_committee = Committee::new(
             ru.pubkey_bls.clone(),
             provionsers,
-            ru.seed,
-            ru.round,
-            step,
-            COMMITTEE_SIZE,
+            sortition::Config(ru.seed, ru.round, step, COMMITTEE_SIZE),
         );
 
         if step_committee.am_member() {
