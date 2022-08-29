@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::frame::Frame;
 use crate::messages::Message;
+use crate::user::committee::Committee;
 use std::fmt::Debug;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
@@ -23,6 +24,7 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
     ctx_recv: &mut oneshot::Receiver<Context>,
     ru: RoundUpdate,
     step: u8,
+    committee: &Committee,
 ) -> Result<Frame, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
@@ -30,7 +32,7 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
         match select_multi(rx, ctx_recv, deadline.unwrap()).await {
             // A message has arrived.
             // Delegate message processing and verification to the Step itself.
-            Ok(msg) => match phase.handle(msg, ru, step) {
+            Ok(msg) => match phase.handle(msg, ru, step, committee) {
                 // Fully valid state reached on this step. Return it as an output.
                 // Populate next step with it.
                 Ok(f) => break Ok(f),
@@ -57,12 +59,23 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
 pub trait MsgHandler<T: Debug + Message> {
     // handle is the handler to process a new message in the first place.
     // Only if it's valid to current round and step, it delegates it to the Phase::handler.
-    fn handle(&mut self, msg: T, ru: RoundUpdate, step: u8) -> Result<Frame, ConsensusError> {
+    fn handle(
+        &mut self,
+        msg: T,
+        ru: RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<Frame, ConsensusError> {
         trace!("handle msg {:?}", msg);
 
         // this the equivalent of should_process.
         if !msg.compare(ru.round, step) {
             return Err(ConsensusError::InvalidRoundStep);
+        }
+
+        // Ensure the message originates from a committee member.
+        if committee.is_member(msg.get_pubkey_bls()) {
+            return Err(ConsensusError::NotCommitteeMember);
         }
 
         self.handle_internal(msg, ru, step)

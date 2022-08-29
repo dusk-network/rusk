@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Block;
+use crate::user::provisioners::PublicKey;
 
 #[derive(Default, Debug)]
 pub struct MsgHeader {
-    pub pubkey_bls: [u8; 32],
+    pub pubkey_bls: PublicKey,
     pub round: u64,
     pub step: u8,
     pub block_hash: [u8; 32],
@@ -23,6 +24,7 @@ impl MsgHeader {
 
 pub trait Message {
     fn compare(&self, round: u64, step: u8) -> bool;
+    fn get_pubkey_bls(&self) -> PublicKey;
 }
 
 #[derive(Default, Debug)]
@@ -34,6 +36,9 @@ pub struct MsgReduction {
 impl Message for MsgReduction {
     fn compare(&self, round: u64, step: u8) -> bool {
         self.header.compare(round, step)
+    }
+    fn get_pubkey_bls(&self) -> PublicKey {
+        self.header.pubkey_bls
     }
 }
 
@@ -48,5 +53,8 @@ pub struct MsgNewBlock {
 impl Message for MsgNewBlock {
     fn compare(&self, round: u64, step: u8) -> bool {
         self.header.compare(round, step)
+    }
+    fn get_pubkey_bls(&self) -> PublicKey {
+        self.header.pubkey_bls
     }
 }

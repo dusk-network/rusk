@@ -67,5 +67,6 @@ pub enum ConsensusError {
     InvalidRoundStep,
     InvalidBlock,
     InvalidSignature,
+    NotCommitteeMember,
     NotImplemented,
 }

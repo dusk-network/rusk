@@ -50,8 +50,15 @@ impl Selection {
 
         // TODO: drain queued messages
 
-        // TODO: event_loop to borrow committee
-        event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
+        event_loop(
+            &mut self.handler,
+            &mut self.msg_rx,
+            ctx_recv,
+            ru,
+            step,
+            &committee,
+        )
+        .await
     }
 
     pub fn name(&self) -> String {
