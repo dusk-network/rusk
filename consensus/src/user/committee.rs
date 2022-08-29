@@ -24,16 +24,13 @@ impl Committee {
         // Generate committee using deterministic sortition.
         // TODO: Provisioners list in golang impl is sorted by big.Int representation of a BLS key.
         //
-        let res = provisioners.create_committee(cfg.clone());
+        let res = provisioners.create_committee(cfg);
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
-        let mut committee = Self {
-            0: BTreeMap::new(),
-            1: pubkey_bls,
-        };
+        let mut committee = Self(BTreeMap::new(), pubkey_bls);
 
         for member_key in res.as_slice() {
-            *committee.0.entry(member_key.clone()).or_insert(0) += 1;
+            *committee.0.entry(*member_key).or_insert(0) += 1;
         }
 
         committee

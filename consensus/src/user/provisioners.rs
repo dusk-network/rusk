@@ -8,7 +8,6 @@ use crate::user::sortition;
 use crate::user::stake::Stake;
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
-use std::hash::{Hash, Hasher};
 use tracing::trace;
 
 pub const DUSK: u64 = 100_000_000;
@@ -21,14 +20,7 @@ pub struct PublicKey([u8; PUBLIC_BLS_SIZE]);
 
 impl PublicKey {
     pub fn new(input: [u8; PUBLIC_BLS_SIZE]) -> Self {
-        Self { 0: input }
-    }
-}
-
-impl Hash for PublicKey {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.0.as_slice());
-        state.finish();
+        Self(input)
     }
 }
 
@@ -53,7 +45,7 @@ impl Member {
     }
 
     pub fn get_public_key(&self) -> PublicKey {
-        self.pubkey_bls.clone()
+        self.pubkey_bls
     }
 
     // AddStake appends a stake to the stake set with eligible_flag=false.
@@ -104,9 +96,7 @@ impl Member {
 impl Default for PublicKey {
     #[inline]
     fn default() -> PublicKey {
-        PublicKey {
-            0: [0; PUBLIC_BLS_SIZE],
-        }
+        PublicKey([0; PUBLIC_BLS_SIZE])
     }
 }
 
@@ -141,8 +131,8 @@ impl Provisioners {
         eligible_since: u64,
     ) {
         self.members
-            .entry(pubkey_bls.clone())
-            .or_insert(Member::new(pubkey_bls))
+            .entry(pubkey_bls)
+            .or_insert_with(|| Member::new(pubkey_bls))
             .add_stake(Stake::new(value, reward, eligible_since));
     }
 
@@ -248,7 +238,7 @@ impl Provisioners {
                 let total_stake = m.1.get_total_eligible_stake();
                 if total_stake >= score {
                     // Subtract 1 from the value extracted and rebalance accordingly.
-                    let subtracted_stake = BigInt::from(m.1.subtract_from_stake(1 * DUSK));
+                    let subtracted_stake = BigInt::from(m.1.subtract_from_stake(DUSK));
 
                     return Some((m.1.clone(), subtracted_stake));
                 }

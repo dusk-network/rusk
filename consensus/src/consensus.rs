@@ -17,7 +17,7 @@ use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::{info, trace };
+use tracing::{info, trace};
 
 pub const MAX_STEP_NUM: u8 = 213;
 
@@ -39,7 +39,6 @@ impl Consensus {
         first_red_rx: Receiver<MsgReduction>,
         sec_red_rx: Receiver<MsgReduction>,
     ) -> Self {
-
         let selection = Phase::Selection(selection::step::Selection::new(new_block_rx));
         trace!("phase memory size {}", std::mem::size_of_val(&selection));
 
@@ -56,7 +55,6 @@ impl Consensus {
     pub fn reset_state_machine(&mut self) {
         // TODO:
     }
-
 
     // Spin the consensus state machine. The consensus runs for the whole round
     // until either a new round is produced or the node needs to re-sync. The

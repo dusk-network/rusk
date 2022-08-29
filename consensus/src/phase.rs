@@ -72,7 +72,7 @@ impl Phase {
         // The extracted members are the provisioners eligible to vote on this particular round and step.
         // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
         let step_committee = Committee::new(
-            ru.pubkey_bls.clone(),
+            ru.pubkey_bls,
             provionsers,
             sortition::Config(ru.seed, ru.round, step, size),
         );
