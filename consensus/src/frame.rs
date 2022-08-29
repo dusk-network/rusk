@@ -18,5 +18,4 @@ pub enum Frame {
     StepVotes(StepVotes),
     NewBlock(NewBlock),
     Empty,
-    Nil,
 }

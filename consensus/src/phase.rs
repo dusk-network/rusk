@@ -8,7 +8,9 @@ use crate::consensus::Context;
 
 use crate::frame::Frame;
 use crate::selection;
+use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
 use crate::{firststep, secondstep};
 use tokio::sync::oneshot;
 use tracing::trace;
@@ -64,15 +66,22 @@ impl Phase {
     ) -> Result<Frame, SelectError> {
         trace!("running phase:{} round:{:?} step:{}", self.name(), ru, step);
 
+        let size = call_phase!(self, get_committee_size());
+
+        // Perform deterministic_sortition to generate committee of size=N.
+        // The extracted members are the provisioners eligible to vote on this particular round and step.
+        // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
+        let step_committee = Committee::new(
+            ru.pubkey_bls.clone(),
+            provionsers,
+            sortition::Config(ru.seed, ru.round, step, size),
+        );
+
         // TODO: consider here to execute sortition and pass committee instead of provisioners
-        await_phase!(self, run(ctx_recv,  provionsers, ru, step), await)
+        await_phase!(self, run(ctx_recv,  step_committee, ru, step), await)
     }
 
     fn name(&self) -> String {
         call_phase!(self, name())
-    }
-
-    pub fn close(&self) {
-        call_phase!(self, close())
     }
 }

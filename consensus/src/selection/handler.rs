@@ -34,6 +34,6 @@ impl Selection {
     fn on_valid_new_block(&mut self, _msg: &MsgNewBlock) -> Result<Frame, ConsensusError> {
         // TODO: store candidate block
         // TODO: republish new_block
-        Ok(Frame::Nil)
+        Ok(Frame::Empty)
     }
 }

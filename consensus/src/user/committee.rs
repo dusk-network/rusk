@@ -22,6 +22,8 @@ impl Committee {
         cfg: sortition::Config,
     ) -> Self {
         // Generate committee using deterministic sortition.
+        // TODO: Provisioners list in golang impl is sorted by big.Int representation of a BLS key.
+        //
         let res = provisioners.create_committee(cfg.clone());
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
@@ -51,9 +53,7 @@ impl Committee {
 
     // get_occurrences returns values in a sorted vec. (testing purposes only)
     pub fn get_occurrences(&self) -> Vec<usize> {
-        let mut vec: Vec<usize> = self.0.clone().into_values().collect();
-        vec.sort();
-        vec
+        self.0.clone().into_values().collect()
     }
 
     pub fn size(&self) -> usize {

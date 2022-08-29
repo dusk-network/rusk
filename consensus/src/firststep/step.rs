@@ -13,8 +13,6 @@ use crate::messages::MsgReduction;
 use crate::frame;
 use crate::frame::Frame;
 use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 
@@ -44,32 +42,24 @@ impl Reduction {
             Frame::NewBlock(f) => f,
             Frame::StepVotes(_) => panic!("invalid frame"),
             Frame::Empty => &empty,
-            Frame::Nil => &empty,
         };
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
-        provionsers: &mut Provisioners,
+        committee: Committee,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        // Perform sortition to generate committee of size=64 for Reduction step.
-        // The extracted members are the provisioners eligible to vote on this particular round and step
-        // TODO: Committee::new is the same in all Phases (only size differs). This could be moved to Phase::run instead.
-        let step_committee = Committee::new(
-            ru.pubkey_bls.clone(),
-            provionsers,
-            sortition::Config(ru.seed, ru.round, step, COMMITTEE_SIZE),
-        );
-
-        if step_committee.am_member() {
+        if committee.am_member() {
             // TODO: SendReduction async
             // TODO: Register my reduction locally
         }
 
-        // TODO: Move step_committee to event_loop
+        // TODO: drain queued messages
+
+        // TODO: event_loop to borrow committee
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
@@ -77,7 +67,7 @@ impl Reduction {
         String::from("1th_reduction")
     }
 
-    pub fn close(&self) {
-        // TODO:
+    pub fn get_committee_size(&self) -> usize {
+        COMMITTEE_SIZE
     }
 }

@@ -17,7 +17,9 @@ use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::{info, trace};
+use tracing::{info, trace };
+
+pub const MAX_STEP_NUM: u8 = 213;
 
 #[derive(Default)]
 pub struct Context {}
@@ -37,9 +39,13 @@ impl Consensus {
         first_red_rx: Receiver<MsgReduction>,
         sec_red_rx: Receiver<MsgReduction>,
     ) -> Self {
+
+        let selection = Phase::Selection(selection::step::Selection::new(new_block_rx));
+        trace!("phase memory size {}", std::mem::size_of_val(&selection));
+
         Self {
             phases: [
-                Phase::Selection(selection::step::Selection::new(new_block_rx)),
+                selection,
                 Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
                 Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
             ],
@@ -50,6 +56,7 @@ impl Consensus {
     pub fn reset_state_machine(&mut self) {
         // TODO:
     }
+
 
     // Spin the consensus state machine. The consensus runs for the whole round
     // until either a new round is produced or the node needs to re-sync. The
@@ -72,9 +79,9 @@ impl Consensus {
         // Consensus loop
         // Initialize and run consensus loop concurrently with agreement loop.
         let mut step: u8 = 0;
-        let mut frame = Frame::Nil;
+        let mut frame = Frame::Empty;
 
-        'exit: while step < 213 {
+        'exit: while step < MAX_STEP_NUM {
             // Perform a single iteration.
             // An iteration runs all registered phases in a row.
             for phase in self.phases.iter_mut() {
@@ -97,11 +104,6 @@ impl Consensus {
                     }
                 }
             }
-        }
-
-        // close all phases
-        for phase in self.phases.iter_mut() {
-            phase.close();
         }
 
         trace!("Wait for agreement loop to terminate");

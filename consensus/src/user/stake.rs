@@ -8,7 +8,7 @@
 pub struct Stake {
     // Value should be initialized only at constructor.
     // It's later used to restore intermediate_value on each new sortition execution.
-    // In that way, we don't need to perform a deep copy of all provisioners members and their stakes as it's used to be.
+    // In that way, we don't need to perform a deep copy of all provisioners members and their stakes as it used to be.
     value: u64,
 
     pub intermediate_value: u64,

@@ -12,8 +12,6 @@ use crate::selection::handler;
 use crate::event_loop::event_loop;
 
 use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tracing::trace;
@@ -40,27 +38,19 @@ impl Selection {
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
-        provionsers: &mut Provisioners,
+        committee: Committee,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        //TODO: Perform sortition
-
-        // Perform sortition to generate committee of size=1 for Selection step.
-        // The extracted member is the Block Generator of current consensus iteration.
-        let step_committee = Committee::new(
-            ru.pubkey_bls.clone(),
-            provionsers,
-            sortition::Config(ru.seed, ru.round, step, COMMITTEE_SIZE),
-        );
-
-        if step_committee.am_member() {
+        if committee.am_member() {
             // TODO: GenerateBlock
-            // TODO: Publish Candidate Block
+            // TODO: Publish NewBlock message
+            // TODO: Pass the NewBlock to this phase event loop
         }
 
-        // TODO: Move step_committee to event_loop
+        // TODO: drain queued messages
 
+        // TODO: event_loop to borrow committee
         event_loop(&mut self.handler, &mut self.msg_rx, ctx_recv, ru, step).await
     }
 
@@ -68,8 +58,8 @@ impl Selection {
         String::from("selection")
     }
 
-    pub fn close(&self) {
-        // TODO:
+    pub fn get_committee_size(&self) -> usize {
+        COMMITTEE_SIZE
     }
 }
 

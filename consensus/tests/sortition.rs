@@ -24,7 +24,7 @@ fn test_deterministic_sortition_1() {
     p.update_eligibility_flag(cfg.1);
 
     assert_eq!(
-        vec![4, 9, 13, 16, 22],
+        vec![4, 13, 9, 16, 22],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -44,7 +44,7 @@ fn test_deterministic_sortition_2() {
     p.update_eligibility_flag(cfg.1);
 
     assert_eq!(
-        vec![1, 5, 11, 13, 15],
+        vec![1, 5, 13, 11, 15],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
