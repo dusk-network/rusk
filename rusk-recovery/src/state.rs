@@ -10,8 +10,8 @@ use crate::theme::Theme;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
-use lazy_static::lazy_static;
 use microkelvin::{Backend, BackendCtor, DiskBackend, Persistence};
+use once_cell::sync::Lazy;
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -32,18 +32,15 @@ const GENESIS_DUSK: Dusk = dusk(1_000.0);
 /// Faucet note value.
 const FAUCET_DUSK: Dusk = dusk(1_000_000_000.0);
 
-lazy_static! {
-    pub static ref DUSK_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../dusk.psk");
-        PublicSpendKey::from_bytes(bytes)
-            .expect("faucet should have a valid key")
-    };
-    pub static ref FAUCET_KEY: PublicSpendKey = {
-        let bytes = include_bytes!("../faucet.psk");
-        PublicSpendKey::from_bytes(bytes)
-            .expect("faucet should have a valid key")
-    };
-}
+pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+    let bytes = include_bytes!("../dusk.psk");
+    PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
+});
+
+pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
+    let bytes = include_bytes!("../faucet.psk");
+    PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
+});
 
 fn diskbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(|| {
