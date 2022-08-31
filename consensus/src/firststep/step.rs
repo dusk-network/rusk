@@ -70,8 +70,8 @@ impl Reduction {
         .await
     }
 
-    pub fn name(&self) -> String {
-        String::from("1th_reduction")
+    pub fn name(&self) -> &'static str {
+        "1th_reduction"
     }
 
     pub fn get_committee_size(&self) -> usize {

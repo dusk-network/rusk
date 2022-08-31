@@ -6,9 +6,9 @@
 
 use crate::user::sortition;
 use crate::user::stake::Stake;
+use hex::ToHex;
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
-use tracing::trace;
 
 pub const DUSK: u64 = 100_000_000;
 pub const RAW_PUBLIC_BLS_SIZE: usize = 193;
@@ -21,6 +21,12 @@ pub struct PublicKey([u8; PUBLIC_BLS_SIZE]);
 impl PublicKey {
     pub fn new(input: [u8; PUBLIC_BLS_SIZE]) -> Self {
         Self(input)
+    }
+
+    pub fn encode_short_hex(&self) -> String {
+        let mut hex = self.0.as_slice().encode_hex::<String>();
+        hex.truncate(16);
+        hex
     }
 }
 
@@ -158,7 +164,6 @@ impl Provisioners {
         }
 
         let mut total_amount_stake = BigInt::from(self.calc_total_eligible_weight());
-        trace!("sortition: total_amount_stake: {:?}", total_amount_stake);
 
         let mut counter: i32 = 0;
         loop {
@@ -166,7 +171,6 @@ impl Provisioners {
                 break;
             }
 
-            trace!("sortition: total_amount_stake: {:?}", total_amount_stake);
             // 1. Compute n ← H(seed ∣∣ round ∣∣ step ∣∣ counter)
             let hash = sortition::create_sortition_hash(cfg.0, cfg.1, cfg.2, counter);
             counter += 1;
@@ -174,13 +178,11 @@ impl Provisioners {
             // 2. Compute d ← n mod s
             let score = sortition::generate_sortition_score(hash, &total_amount_stake);
 
-            trace!("sortition: score: {:?}", score);
-
             // NB: The public key can be extracted multiple times per committee.
             match self.extract_and_subtract_member(&score) {
                 Some(m) => {
                     // append the public key to the committee set.
-                    committee.push(m.0.get_public_key());
+                    committee.push(m.0);
 
                     let subtracted_stake = m.1;
                     if total_amount_stake > subtracted_stake {
@@ -226,7 +228,7 @@ impl Provisioners {
         size
     }
 
-    fn extract_and_subtract_member(&mut self, s: &BigInt) -> Option<(Member, BigInt)> {
+    fn extract_and_subtract_member(&mut self, s: &BigInt) -> Option<(PublicKey, BigInt)> {
         let mut score = s.clone();
 
         if self.members.is_empty() {
@@ -237,14 +239,23 @@ impl Provisioners {
             for m in self.members.iter_mut() {
                 let total_stake = m.1.get_total_eligible_stake();
                 if total_stake >= score {
-                    // Subtract 1 from the value extracted and rebalance accordingly.
+                    // Subtract 1 DUSK from the value extracted and rebalance accordingly.
                     let subtracted_stake = BigInt::from(m.1.subtract_from_stake(DUSK));
 
-                    return Some((m.1.clone(), subtracted_stake));
+                    return Some((m.1.get_public_key(), subtracted_stake));
                 }
 
                 score -= total_stake;
             }
         }
+    }
+}
+
+impl IntoIterator for Provisioners {
+    type Item = (PublicKey, Member);
+    type IntoIter = std::collections::btree_map::IntoIter<PublicKey, Member>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.members.into_iter()
     }
 }

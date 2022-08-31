@@ -18,8 +18,6 @@ impl MsgHandler<MsgReduction> for Reduction {
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<Frame, ConsensusError> {
-        //TODO: IsMember
-
         //TODO: VerifySignature
         //TODO: Republish
         //TODO: CollectVote

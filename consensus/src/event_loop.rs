@@ -14,7 +14,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::trace;
+use tracing::{trace};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
@@ -38,7 +38,9 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
                 Ok(f) => break Ok(f),
                 // An error here means an invalid message has arrived.
                 // We need to continue waiting for either a valid message or timeout event.
-                Err(_e) => continue,
+                Err(_e) => {
+                    continue;
+                }
             },
             // Error from select_multi means an loop-exit event.
             Err(e) => match e {

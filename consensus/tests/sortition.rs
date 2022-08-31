@@ -7,7 +7,7 @@
 use consensus::user::committee::Committee;
 use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
 use consensus::user::sortition::Config;
-use hex;
+
 use hex::FromHex;
 use std::env;
 use std::fs::File;

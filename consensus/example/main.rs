@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::trace;
 
@@ -11,6 +12,7 @@ use consensus::consensus::Consensus;
 use consensus::messages::{MsgNewBlock, MsgReduction};
 use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
 use tokio::task::JoinHandle;
+use tokio::time;
 
 // Message producer feeds Consensus steps with empty messages.
 fn spawn_message_producer(
@@ -64,27 +66,34 @@ fn read_provisioners() -> Provisioners {
 }
 
 async fn perform_basic_run() {
-    {
-        // Initialize message sources that feeds Consensus.
+    // Initialize message sources that feeds Consensus.
+    let mocked = read_provisioners();
+    let provisioners = mocked.clone();
+    for p in mocked.into_iter() {
+        spawn_node(p.0, provisioners.clone());
+    }
+
+    time::sleep(Duration::from_secs(120)).await;
+}
+
+fn spawn_node(pubkey_bls: PublicKey, p: Provisioners) {
+    tokio::spawn(async move {
         let (tx, rx) = mpsc::channel::<MsgNewBlock>(100);
         let (red1_tx, first_red_rx) = mpsc::channel::<MsgReduction>(100);
         let (red2_tx, sec_red_tx) = mpsc::channel::<MsgReduction>(100);
 
         let producer = spawn_message_producer(tx, red1_tx, red2_tx);
 
-        let p = read_provisioners();
-
         let mut c = Consensus::new(rx, first_red_rx, sec_red_tx);
         let n = 5;
         // Run consensus for N rounds
         for r in 0..n {
             c.reset_state_machine();
-            c.spin(RoundUpdate::new(r, PublicKey::default()), p.clone())
-                .await;
+            c.spin(RoundUpdate::new(r, pubkey_bls), p.clone()).await;
         }
 
         producer.abort();
-    }
+    });
 }
 
 fn main() {

@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 #[allow(unused)]
 // 0: BLS public key mapped to its occurrences.
 // 1: This provisioner BLS public key.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Committee(BTreeMap<PublicKey, usize>, PublicKey);
 
 #[allow(unused)]
@@ -22,13 +22,10 @@ impl Committee {
         cfg: sortition::Config,
     ) -> Self {
         // Generate committee using deterministic sortition.
-        // TODO: Provisioners list in golang impl is sorted by big.Int representation of a BLS key.
-        //
         let res = provisioners.create_committee(cfg);
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
         let mut committee = Self(BTreeMap::new(), pubkey_bls);
-
         for member_key in res.as_slice() {
             *committee.0.entry(*member_key).or_insert(0) += 1;
         }
@@ -44,11 +41,16 @@ impl Committee {
         self.is_member(self.1)
     }
 
+    // get_my_pubkey returns this provisioner BLS public key.
+    pub fn get_my_pubkey(&self) -> PublicKey {
+        self.1
+    }
+
     pub fn votes_for(&self, pubkey_bls: PublicKey) -> Option<&usize> {
         self.0.get(&pubkey_bls)
     }
 
-    // get_occurrences returns values in a sorted vec. (testing purposes only)
+    // get_occurrences returns values in a vec
     pub fn get_occurrences(&self) -> Vec<usize> {
         self.0.clone().into_values().collect()
     }

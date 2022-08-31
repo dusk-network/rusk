@@ -10,8 +10,7 @@
 use crate::user::provisioners::PublicKey;
 use std::fmt;
 
-// TODO: consider replacing most of the fields with a full copy of a the tip.
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Default, Debug, Copy, Clone)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub(crate) round: u64,
@@ -61,7 +60,7 @@ pub enum SelectError {
     Timeout,
 }
 
-#[allow(unused)]
+#[derive(Debug)]
 pub enum ConsensusError {
     // TODO: Rename InvalidRoundStep
     InvalidRoundStep,

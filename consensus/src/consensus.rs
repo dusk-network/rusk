@@ -17,9 +17,9 @@ use std::time::Duration;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 
-pub const MAX_STEP_NUM: u8 = 213;
+pub const CONSENSUS_MAX_STEP: u8 = 213;
 
 #[derive(Default)]
 pub struct Context {}
@@ -65,8 +65,6 @@ impl Consensus {
         // If a stake is not eligible for this round, it's disabled.
         provisioners.update_eligibility_flag(ru.round);
 
-        trace!("start consensus spin with :{:?}", provisioners);
-
         // Round context channel.
         let (round_ctx_tx, mut round_ctx_rx) = oneshot::channel::<Context>();
 
@@ -79,11 +77,16 @@ impl Consensus {
         let mut step: u8 = 0;
         let mut frame = Frame::Empty;
 
-        'exit: while step < MAX_STEP_NUM {
+        'exit: loop {
             // Perform a single iteration.
             // An iteration runs all registered phases in a row.
             for phase in self.phases.iter_mut() {
                 step += 1;
+                if step >= CONSENSUS_MAX_STEP {
+                    error!("max steps reached");
+                    aggr_handle.abort();
+                    break 'exit;
+                }
 
                 // Initialize new phase with frame created by previous phase.
                 phase.initialize(&frame, ru.round, step);
@@ -104,14 +107,13 @@ impl Consensus {
             }
         }
 
-        trace!("Wait for agreement loop to terminate");
-
         let winning_block = aggr_handle.await.unwrap();
         info!("Winning block: {}", winning_block);
 
         self.teardown();
     }
 
+    // TODO: Implement agreement loop.
     pub fn spawn_agreement_loop(
         &mut self,
         round_ctx_sender: oneshot::Sender<Context>,

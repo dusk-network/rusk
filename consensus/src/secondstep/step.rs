@@ -11,8 +11,11 @@ use crate::secondstep::handler;
 
 use crate::frame::{Frame, StepVotes};
 use crate::user::committee::Committee;
+use crate::user::provisioners::PublicKey;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
+
+use tracing::debug;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
@@ -49,7 +52,7 @@ impl Reduction {
         step: u8,
     ) -> Result<Frame, SelectError> {
         if committee.am_member() {
-            // TODO: SendReduction async
+            self.spawn_send_reduction(committee.get_my_pubkey(), ru.round, step);
             // TODO: Register my reduction locally
         }
 
@@ -65,11 +68,24 @@ impl Reduction {
         .await
     }
 
-    pub fn name(&self) -> String {
-        String::from("2nd_reduction")
+    pub fn name(&self) -> &'static str {
+        "2nd_reduction"
     }
 
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
+    }
+
+    fn spawn_send_reduction(&self, pubkey: PublicKey, round: u64, step: u8) {
+        let name = self.name();
+        tokio::spawn(async move {
+            debug!(
+                "send reduction at {} round={}, step={}, bls_key={}",
+                name,
+                round,
+                step,
+                pubkey.encode_short_hex()
+            );
+        });
     }
 }

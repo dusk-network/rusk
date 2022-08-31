@@ -13,10 +13,10 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep};
 use tokio::sync::oneshot;
-use tracing::trace;
+use tracing::{debug, trace};
 
 macro_rules! await_phase {
-    ($e:expr, $n:ident ( $($args:expr), *), $await:ident) => {
+    ($e:expr, $n:ident ( $($args:expr), *)) => {
         {
            match $e {
                 Phase::Selection(p) => p.$n($($args,)*).await,
@@ -59,12 +59,18 @@ impl Phase {
 
     pub async fn run(
         &mut self,
-        provionsers: &mut Provisioners,
+        provisioners: &mut Provisioners,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        trace!("running phase:{} round:{:?} step:{}", self.name(), ru, step);
+        debug!(
+            "execute {} round={}, step={}, bls_key={}",
+            self.name(),
+            ru.round,
+            step,
+            ru.pubkey_bls.encode_short_hex()
+        );
 
         let size = call_phase!(self, get_committee_size());
 
@@ -73,15 +79,14 @@ impl Phase {
         // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
         let step_committee = Committee::new(
             ru.pubkey_bls,
-            provionsers,
+            provisioners,
             sortition::Config(ru.seed, ru.round, step, size),
         );
 
-        // TODO: consider here to execute sortition and pass committee instead of provisioners
-        await_phase!(self, run(ctx_recv,  step_committee, ru, step), await)
+        await_phase!(self, run(ctx_recv, step_committee, ru, step))
     }
 
-    fn name(&self) -> String {
+    fn name(&self) -> &'static str {
         call_phase!(self, name())
     }
 }
