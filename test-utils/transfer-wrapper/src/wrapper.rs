@@ -53,7 +53,7 @@ impl TransferWrapper {
         let mut rng = StdRng::seed_from_u64(seed);
         let mut network = NetworkState::new();
 
-        let rusk_mod = RuskModule::new(&*PP);
+        let rusk_mod = RuskModule::new(&PP);
         NetworkState::register_host_module(rusk_mod);
 
         let genesis_ssk = SecretSpendKey::random(&mut rng);
@@ -298,7 +298,7 @@ impl TransferWrapper {
         let (pk, _) = Self::circuit_keys(&C::CIRCUIT_ID);
 
         circuit
-            .prove(&*PP, &pk, b"dusk-network")
+            .prove(&PP, &pk, b"dusk-network")
             .expect("Failed to generate proof")
             .to_bytes()
             .to_vec()
@@ -514,11 +514,11 @@ impl TransferWrapper {
         let id = execute_proof.circuit_id();
         let (pk, vd) = Self::circuit_keys(id);
 
-        let proof = execute_proof.prove(&*PP, &pk).unwrap();
+        let proof = execute_proof.prove(&PP, &pk).unwrap();
         let pi = execute_proof.public_inputs();
 
         // Sanity check
-        ExecuteCircuit::verify(&*PP, &vd, &proof, pi.as_slice()).unwrap();
+        ExecuteCircuit::verify(&PP, &vd, &proof, pi.as_slice()).unwrap();
 
         let proof = proof.to_bytes().to_vec();
 
@@ -622,7 +622,7 @@ impl TransferWrapper {
         let (pk, _) =
             Self::circuit_keys(&SendToContractTransparentCircuit::CIRCUIT_ID);
         let spend_proof_stct =
-            stct_proof.prove(&*PP, &pk, b"dusk-network").unwrap();
+            stct_proof.prove(&PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
         let call_stct = Call::send_to_contract_transparent(
@@ -741,7 +741,7 @@ impl TransferWrapper {
         let (pk, _) =
             Self::circuit_keys(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
         let spend_proof_stco =
-            stco_proof.prove(&*PP, &pk, b"dusk-network").unwrap();
+            stco_proof.prove(&PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
         let message_address = message_psk.gen_stealth_address(&message_r);
