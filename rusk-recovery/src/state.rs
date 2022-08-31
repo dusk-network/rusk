@@ -81,7 +81,7 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
         .expect("Genesis note to be pushed to the state");
 
     if testnet {
-        let note = Note::transparent(&mut rng, &*FAUCET_KEY, FAUCET_DUSK);
+        let note = Note::transparent(&mut rng, &FAUCET_KEY, FAUCET_DUSK);
         transfer
             .push_note(0, note)
             .expect("Faucet note to be pushed in the state");
@@ -299,7 +299,7 @@ fn download_state() -> Result<(), Box<dyn Error>> {
         } else {
             let mut buffer = Vec::with_capacity(entry.size() as usize);
             entry.read_to_end(&mut buffer)?;
-            let _ = fs::write(entry_path, buffer)?;
+            fs::write(entry_path, buffer)?;
         }
     }
 
