@@ -494,7 +494,7 @@ impl State for Rusk {
         let mut sink = Sink::new(&mut bytes[..]);
         branch.encode(&mut sink);
         let len = branch.encoded_len();
-        let branch = (&bytes[..len]).to_vec();
+        let branch = (bytes[..len]).to_vec();
 
         Ok(Response::new(GetOpeningResponse { branch }))
     }
@@ -515,7 +515,7 @@ impl State for Rusk {
             return Err(ERR.into());
         }
 
-        (&mut bytes[..PublicKey::SIZE]).copy_from_slice(&pk[..PublicKey::SIZE]);
+        (bytes[..PublicKey::SIZE]).copy_from_slice(&pk[..PublicKey::SIZE]);
 
         let pk = PublicKey::from_bytes(&bytes).map_err(|_| ERR)?;
 

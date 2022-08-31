@@ -146,8 +146,7 @@ pub fn clean_outdated_keys(ids: &[[u8; 32]]) -> Result<(), io::Error> {
 
     fs::read_dir(&get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
-        .filter(|res| res.is_ok())
-        .map(|res| res.unwrap())
+        .filter_map(|res| res.ok())
         .filter(|e| e.is_file())
         .filter(|p| match extension(p) {
             Some("pk" | "vd") => file_stem(p)
@@ -199,8 +198,7 @@ pub fn clear_all_keys() -> Result<(), io::Error> {
 
     fs::read_dir(&get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
-        .filter(|res| res.is_ok())
-        .map(|res| res.unwrap())
+        .filter_map(|res| res.ok())
         .filter(|e| e.is_file())
         .filter(|p| matches!(extension(p), Some("pk" | "vd")))
         .try_for_each(|path| {
