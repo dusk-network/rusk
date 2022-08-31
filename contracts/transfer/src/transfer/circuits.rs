@@ -85,3 +85,59 @@ impl TransferContract {
         message
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate std;
+
+    use dusk_plonk::prelude::Circuit;
+    use transfer_circuits::*;
+    #[test]
+    fn circuits_id() {
+        // This test is required to explicitly check that circuits ID are the
+        // one expected.
+        //
+        // When a circuit id change, it should be noticed with a compiler error
+        // because the circuits key file are renamed. But this error is
+        // not raised if the `make keys` command is configured to preserve old
+        // keys (like the one launche by the CI)
+
+        test_circuit::<SendToContractTransparentCircuit>(
+            "b1f318350b747200deaa17172a0552c460fe5997f1dcf87d72186f9952d5af79",
+        );
+        test_circuit::<SendToContractObfuscatedCircuit>(
+            "3cefe190dd7d4ed0f2dfae8d95f7552e22fc7b073e3441b72269478e5c8d9924",
+        );
+        test_circuit::<WithdrawFromTransparentCircuit>(
+            "701e5ad43e8f4afce9e2d714ef0ee88d33fe9404ce0b88733be4d602eadf51e7",
+        );
+        test_circuit::<WithdrawFromObfuscatedCircuit>(
+            "88afddca21d7285681173a1b3f529374cc98574347471d29b2ba7ee4ff624267",
+        );
+        test_circuit::<ExecuteCircuitOneTwo>(
+            "2253a0e4f0ad48a1829ebe2e5c65724969b18eb64ca02e1b06a0b3679c66e467",
+        );
+        test_circuit::<ExecuteCircuitTwoTwo>(
+            "610f9fe94d561bca6c0e6ae6497fbb16efbe741dd75caf12614b4b20227d8930",
+        );
+        test_circuit::<ExecuteCircuitThreeTwo>(
+            "d954be1a252ade293eaa8067b626e6dbbf5e5b57513eaa10daa67fd098c9e21f",
+        );
+        test_circuit::<ExecuteCircuitFourTwo>(
+            "9b9df193bb76ba1d8e2936a2f5c907dd36c91775b71a390b4b1356199ac22d30",
+        );
+    }
+
+    fn test_circuit<T>(expected_id: &str)
+    where
+        T: Circuit,
+    {
+        let expected_id = hex::decode(expected_id).expect("Cannot decode hex");
+        assert_eq!(
+            T::CIRCUIT_ID,
+            &expected_id[..],
+            "Check failed for {} circuit",
+            std::any::type_name::<T>()
+        );
+    }
+}

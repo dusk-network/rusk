@@ -30,6 +30,7 @@ transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
 
 [dev-dependencies]
 transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }
+hex = "0.4"
 
 [features]
 default = ["circuits"]
