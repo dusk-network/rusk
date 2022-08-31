@@ -55,7 +55,7 @@ pub fn hash(attr: TokenStream, input: TokenStream) -> TokenStream {
     token_stream.pop();
     token_stream.push_str(&format!(
         "    const {}: [u8; 32] = {:?};",
-        attrs_split.get(0).expect("Missing const name"),
+        attrs_split.first().expect("Missing const name"),
         id
     ));
     token_stream.push_str(" }");
