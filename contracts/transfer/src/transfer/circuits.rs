@@ -15,10 +15,10 @@ const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk
 const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/701e5ad43e8f4afce9e2d714ef0ee88d33fe9404ce0b88733be4d602eadf51e7.vd"));
 const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/88afddca21d7285681173a1b3f529374cc98574347471d29b2ba7ee4ff624267.vd"));
 
-const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/2253a0e4f0ad48a1829ebe2e5c65724969b18eb64ca02e1b06a0b3679c66e467.vd"));
-const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/610f9fe94d561bca6c0e6ae6497fbb16efbe741dd75caf12614b4b20227d8930.vd"));
-const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/d954be1a252ade293eaa8067b626e6dbbf5e5b57513eaa10daa67fd098c9e21f.vd"));
-const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/9b9df193bb76ba1d8e2936a2f5c907dd36c91775b71a390b4b1356199ac22d30.vd"));
+const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/1b6c2bac3faa4a291a14b99ec769b8276e2bf558e4d790160d0d0673ff186b19.vd"));
+const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/ed4e1cf742834b4e7ec62422bc1a26ee10f52d3a74a07f68115ae4bec0a314e5.vd"));
+const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/064fccb786800ce91d0ac5f7fd1b264e4951438fbb3e875ffe333ac2064838d0.vd"));
+const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/408dae6c6ffbac2b5492958773da1f1c03c1912f6a1e6613214344132ab60c63.vd"));
 
 impl TransferContract {
     pub const fn verifier_data_execute(inputs: usize) -> &'static [u8] {
@@ -115,16 +115,16 @@ mod tests {
             "88afddca21d7285681173a1b3f529374cc98574347471d29b2ba7ee4ff624267",
         );
         test_circuit::<ExecuteCircuitOneTwo>(
-            "2253a0e4f0ad48a1829ebe2e5c65724969b18eb64ca02e1b06a0b3679c66e467",
+            "1b6c2bac3faa4a291a14b99ec769b8276e2bf558e4d790160d0d0673ff186b19",
         );
         test_circuit::<ExecuteCircuitTwoTwo>(
-            "610f9fe94d561bca6c0e6ae6497fbb16efbe741dd75caf12614b4b20227d8930",
+            "ed4e1cf742834b4e7ec62422bc1a26ee10f52d3a74a07f68115ae4bec0a314e5",
         );
         test_circuit::<ExecuteCircuitThreeTwo>(
-            "d954be1a252ade293eaa8067b626e6dbbf5e5b57513eaa10daa67fd098c9e21f",
+            "064fccb786800ce91d0ac5f7fd1b264e4951438fbb3e875ffe333ac2064838d0",
         );
         test_circuit::<ExecuteCircuitFourTwo>(
-            "9b9df193bb76ba1d8e2936a2f5c907dd36c91775b71a390b4b1356199ac22d30",
+            "408dae6c6ffbac2b5492958773da1f1c03c1912f6a1e6613214344132ab60c63",
         );
     }
 
