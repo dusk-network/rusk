@@ -7,24 +7,26 @@
 use crate::commons::{ConsensusError, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::frame::Frame;
-use crate::messages::Message;
+use crate::messages::{Message, MessageTrait, Status};
+use crate::queue::Queue;
 use crate::user::committee::Committee;
 use std::fmt::Debug;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::{trace};
+use tracing::trace;
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
-pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
+pub async fn event_loop<C: MsgHandler<Message>>(
     phase: &mut C,
-    rx: &mut mpsc::Receiver<T>,
+    rx: &mut mpsc::Receiver<Message>,
     ctx_recv: &mut oneshot::Receiver<Context>,
     ru: RoundUpdate,
     step: u8,
     committee: &Committee,
+    future_msgs: &mut Queue<Message>,
 ) -> Result<Frame, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
@@ -32,13 +34,19 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
         match select_multi(rx, ctx_recv, deadline.unwrap()).await {
             // A message has arrived.
             // Delegate message processing and verification to the Step itself.
-            Ok(msg) => match phase.handle(msg, ru, step, committee) {
+            Ok(msg) => match phase.handle(msg.clone(), ru, step, committee) {
                 // Fully valid state reached on this step. Return it as an output.
                 // Populate next step with it.
                 Ok(f) => break Ok(f),
                 // An error here means an invalid message has arrived.
                 // We need to continue waiting for either a valid message or timeout event.
-                Err(_e) => {
+                Err(e) => {
+                    if e == ConsensusError::FutureEvent {
+                        // This is a message from future round or step. We store
+                        // it in future_msgs to be process later on.
+                        future_msgs.put_event(ru.round, step, msg).await;
+                    }
+
                     continue;
                 }
             },
@@ -58,7 +66,7 @@ pub async fn event_loop<T: Default + Debug + Message, C: MsgHandler<T>>(
 }
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
-pub trait MsgHandler<T: Debug + Message> {
+pub trait MsgHandler<T: Debug + MessageTrait> {
     // handle is the handler to process a new message in the first place.
     // Only if it's valid to current round and step, it delegates it to the Phase::handler.
     fn handle(
@@ -71,16 +79,18 @@ pub trait MsgHandler<T: Debug + Message> {
         trace!("handle msg {:?}", msg);
 
         // this the equivalent of should_process.
-        if !msg.compare(ru.round, step) {
-            return Err(ConsensusError::InvalidRoundStep);
-        }
+        match msg.compare(ru.round, step) {
+            Status::Past => Err(ConsensusError::InvalidRoundStep),
+            Status::Present => {
+                // Ensure the message originates from a committee member.
+                if committee.is_member(msg.get_pubkey_bls()) {
+                    return Err(ConsensusError::NotCommitteeMember);
+                }
 
-        // Ensure the message originates from a committee member.
-        if committee.is_member(msg.get_pubkey_bls()) {
-            return Err(ConsensusError::NotCommitteeMember);
+                self.handle_internal(msg, ru, step)
+            }
+            Status::Future => Err(ConsensusError::FutureEvent),
         }
-
-        self.handle_internal(msg, ru, step)
     }
 
     // handle_internal should be implemented by each Phase.
