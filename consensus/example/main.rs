@@ -9,27 +9,27 @@ use tracing::trace;
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
-use consensus::messages::{MsgNewBlock, MsgReduction};
+use consensus::messages::Message;
 use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
 use tokio::task::JoinHandle;
 use tokio::time;
 
 // Message producer feeds Consensus steps with empty messages.
 fn spawn_message_producer(
-    tx: mpsc::Sender<MsgNewBlock>,
-    red1_tx: mpsc::Sender<MsgReduction>,
-    red2_tx: mpsc::Sender<MsgReduction>,
+    tx: mpsc::Sender<Message>,
+    red1_tx: mpsc::Sender<Message>,
+    red2_tx: mpsc::Sender<Message>,
 ) -> JoinHandle<u8> {
     tokio::spawn(async move {
         loop {
             trace!("sending new block message");
-            let _ = tx.send(MsgNewBlock::default()).await;
+            let _ = tx.send(Message::default()).await;
 
             trace!("sending first reduction message");
-            let _ = red1_tx.send(MsgReduction::default()).await;
+            let _ = red1_tx.send(Message::default()).await;
 
             trace!("sending second reduction message");
-            let _ = red2_tx.send(MsgReduction::default()).await;
+            let _ = red2_tx.send(Message::default()).await;
         }
     })
 }
@@ -78,9 +78,9 @@ async fn perform_basic_run() {
 
 fn spawn_node(pubkey_bls: PublicKey, p: Provisioners) {
     tokio::spawn(async move {
-        let (tx, rx) = mpsc::channel::<MsgNewBlock>(100);
-        let (red1_tx, first_red_rx) = mpsc::channel::<MsgReduction>(100);
-        let (red2_tx, sec_red_tx) = mpsc::channel::<MsgReduction>(100);
+        let (tx, rx) = mpsc::channel::<Message>(100);
+        let (red1_tx, first_red_rx) = mpsc::channel::<Message>(100);
+        let (red2_tx, sec_red_tx) = mpsc::channel::<Message>(100);
 
         let producer = spawn_message_producer(tx, red1_tx, red2_tx);
 

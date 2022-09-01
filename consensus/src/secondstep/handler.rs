@@ -6,14 +6,15 @@
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::event_loop::MsgHandler;
 use crate::frame::Frame;
-use crate::messages::MsgReduction;
+use crate::messages::Message;
+
 pub struct Reduction {}
 
-impl MsgHandler<MsgReduction> for Reduction {
+impl MsgHandler<Message> for Reduction {
     // Collect the reduction message.
     fn handle_internal(
         &mut self,
-        _msg: MsgReduction,
+        _msg: Message,
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<Frame, ConsensusError> {
@@ -22,5 +23,11 @@ impl MsgHandler<MsgReduction> for Reduction {
         //TODO: CollectVote
 
         Err(ConsensusError::NotImplemented)
+    }
+}
+
+impl Reduction {
+    fn verify_signature(&self) {
+        // TODO VerifySignature
     }
 }

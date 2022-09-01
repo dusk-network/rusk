@@ -29,7 +29,7 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Header {
     pub version: u8,
     pub height: u64,
@@ -42,9 +42,13 @@ pub struct Header {
     pub hash: [u8; 32],
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
+pub struct Transaction {}
+
+#[derive(Default, Debug, Clone)]
 pub struct Block {
     pub header: Header,
+    pub txs: Vec<Transaction>,
 }
 
 impl fmt::Display for Block {
@@ -60,12 +64,13 @@ pub enum SelectError {
     Timeout,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConsensusError {
     // TODO: Rename InvalidRoundStep
     InvalidRoundStep,
     InvalidBlock,
     InvalidSignature,
+    FutureEvent,
     NotCommitteeMember,
     NotImplemented,
 }

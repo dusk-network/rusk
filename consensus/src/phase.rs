@@ -5,8 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
-
 use crate::frame::Frame;
+use crate::messages::Message;
+use crate::queue::Queue;
 use crate::selection;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -60,6 +61,7 @@ impl Phase {
     pub async fn run(
         &mut self,
         provisioners: &mut Provisioners,
+        future_msgs: &mut Queue<Message>,
         ctx_recv: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
         step: u8,
@@ -83,7 +85,7 @@ impl Phase {
             sortition::Config(ru.seed, ru.round, step, size),
         );
 
-        await_phase!(self, run(ctx_recv, step_committee, ru, step))
+        await_phase!(self, run(ctx_recv, step_committee, future_msgs, ru, step))
     }
 
     fn name(&self) -> &'static str {

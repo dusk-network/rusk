@@ -4,22 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::messages::Message;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 use tokio::sync::Mutex;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Error {
     NotFound,
 }
 
-#[derive(Debug, Default)]
-pub struct Queue<T>(Mutex<(BTreeMap<u64, BTreeMap<u8, Vec<T>>>, usize)>)
-where
-    T: Debug + Message + Copy;
+type Map<T> = BTreeMap<u8, Vec<T>>;
 
-impl<T: Debug + Message + Copy> Queue<T> {
+/// Atomic message queue to store messages by round and step
+#[derive(Debug, Default)]
+pub struct Queue<T>(Mutex<(BTreeMap<u64, Map<T>>, usize)>)
+where
+    T: Debug + Clone;
+
+impl<T: Debug + Clone> Queue<T> {
     pub async fn put_event(&mut self, round: u64, step: u8, msg: T) {
         let mut queue = self.0.lock().await;
 
@@ -36,7 +38,7 @@ impl<T: Debug + Message + Copy> Queue<T> {
     }
 
     pub async fn get_events(&self, round: u64, step: u8) -> Result<Vec<T>, Error> {
-        let mut queue = self.0.lock().await;
+        let queue = self.0.lock().await;
 
         // TODO: here we should consider to consume the array of events instead of returning a deep copy.
 
@@ -64,26 +66,12 @@ impl<T: Debug + Message + Copy> Queue<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::messages::Message;
     use crate::queue::{Error, Queue};
-    use crate::user::provisioners::PublicKey;
-    use crate::user::sortition::{create_sortition_hash, generate_sortition_score};
-    use hex_literal::hex;
-    use num_bigint::BigInt;
 
     #[test]
     pub fn test_push_event() {
-        #[derive(Copy, Clone, Debug, Default, PartialEq)]
+        #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
         struct Item(i32);
-        impl Message for Item {
-            fn compare(&self, round: u64, step: u8) -> bool {
-                false
-            }
-
-            fn get_pubkey_bls(&self) -> PublicKey {
-                PublicKey::default()
-            }
-        }
 
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()

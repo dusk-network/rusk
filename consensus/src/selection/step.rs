@@ -6,26 +6,27 @@ use hex::ToHex;
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
-use crate::event_loop::event_loop;
+use crate::event_loop::{event_loop, MsgHandler};
 use crate::frame::Frame;
-use crate::messages::MsgNewBlock;
+use crate::messages::Message;
+use crate::queue::Queue;
 use crate::selection::handler;
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
 use sha3::{Digest, Sha3_256};
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
-use tracing::{info, trace};
+use tracing::{info};
 
 pub const COMMITTEE_SIZE: usize = 1;
 
 pub struct Selection {
-    msg_rx: Receiver<MsgNewBlock>,
+    msg_rx: Receiver<Message>,
     handler: handler::Selection,
 }
 
 impl Selection {
-    pub fn new(msg_rx: Receiver<MsgNewBlock>) -> Self {
+    pub fn new(msg_rx: Receiver<Message>) -> Self {
         Self {
             msg_rx,
             handler: handler::Selection {},
@@ -40,6 +41,7 @@ impl Selection {
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         committee: Committee,
+        future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
@@ -49,7 +51,14 @@ impl Selection {
             // TODO: Pass the NewBlock to this phase event loop
         }
 
-        // TODO: drain queued messages
+        // drain future messages for current round and step.
+        if let Ok(messages) = future_msgs.get_events(ru.round, step).await {
+            for msg in messages {
+                if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
+                    return Ok(f);
+                }
+            }
+        }
 
         event_loop(
             &mut self.handler,
@@ -58,6 +67,7 @@ impl Selection {
             ru,
             step,
             &committee,
+            future_msgs,
         )
         .await
     }
@@ -85,11 +95,5 @@ impl Selection {
             step,
             pubkey.encode_short_hex()
         );
-    }
-}
-
-impl Drop for Selection {
-    fn drop(&mut self) {
-        trace!("cleanup");
     }
 }

@@ -6,14 +6,15 @@
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::event_loop::MsgHandler;
 use crate::frame::Frame;
-use crate::messages::MsgNewBlock;
+use crate::messages::Message;
+
 pub struct Selection {}
 
-impl MsgHandler<MsgNewBlock> for Selection {
+impl MsgHandler<Message> for Selection {
     // Handle а new_block message.
     fn handle_internal(
         &mut self,
-        msg: MsgNewBlock,
+        msg: Message,
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<Frame, ConsensusError> {
@@ -25,13 +26,13 @@ impl MsgHandler<MsgNewBlock> for Selection {
 }
 
 impl Selection {
-    fn verify(&self, _msg: &MsgNewBlock) -> Result<(), ConsensusError> {
+    fn verify(&self, _msg: &Message) -> Result<(), ConsensusError> {
         // TODO: Verify newblock msg signature
         // TODO: Verify newblock candidate
         Err(ConsensusError::NotImplemented)
     }
 
-    fn on_valid_new_block(&mut self, _msg: &MsgNewBlock) -> Result<Frame, ConsensusError> {
+    fn on_valid_new_block(&mut self, _msg: &Message) -> Result<Frame, ConsensusError> {
         // TODO: store candidate block
         // TODO: republish new_block
         Ok(Frame::Empty)

@@ -6,7 +6,8 @@
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
-use crate::messages::MsgReduction;
+use crate::event_loop::MsgHandler;
+use crate::messages::Message;
 use crate::secondstep::handler;
 
 use crate::frame::{Frame, StepVotes};
@@ -15,19 +16,20 @@ use crate::user::provisioners::PublicKey;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot;
 
+use crate::queue::Queue;
 use tracing::debug;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
-    msg_rx: Receiver<MsgReduction>,
+    msg_rx: Receiver<Message>,
 
     handler: handler::Reduction,
 }
 
 impl Reduction {
-    pub fn new(msg_rx: Receiver<MsgReduction>) -> Self {
+    pub fn new(msg_rx: Receiver<Message>) -> Self {
         Self {
             msg_rx,
             handler: handler::Reduction {},
@@ -48,6 +50,7 @@ impl Reduction {
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         committee: Committee,
+        future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
@@ -56,7 +59,15 @@ impl Reduction {
             // TODO: Register my reduction locally
         }
 
-        // TODO: drain queued messages
+        // drain future queued messages
+        if let Ok(messages) = future_msgs.get_events(ru.round, step).await {
+            for msg in messages {
+                if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
+                    return Ok(f);
+                }
+            }
+        }
+
         event_loop(
             &mut self.handler,
             &mut self.msg_rx,
@@ -64,6 +75,7 @@ impl Reduction {
             ru,
             step,
             &committee,
+            future_msgs,
         )
         .await
     }
