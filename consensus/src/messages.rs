@@ -3,58 +3,97 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
-use crate::commons::Block;
 use crate::user::provisioners::PublicKey;
 
-#[derive(Default, Debug)]
-pub struct MsgHeader {
+pub enum Status {
+    Past,
+    Present,
+    Future,
+}
+
+pub trait MessageTrait {
+    fn compare(&self, round: u64, step: u8) -> Status;
+    fn get_pubkey_bls(&self) -> PublicKey;
+}
+
+/// Message is a data unit that consensus phase can process.
+#[derive(Debug, Default, Clone)]
+pub struct Message {
+    pub header: Header,
+    pub payload: Payload,
+}
+
+impl MessageTrait for Message {
+    fn compare(&self, round: u64, step: u8) -> Status {
+        self.header.compare(round, step)
+    }
+
+    fn get_pubkey_bls(&self) -> PublicKey {
+        self.header.pubkey_bls
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Header {
     pub pubkey_bls: PublicKey,
     pub round: u64,
     pub step: u8,
     pub block_hash: [u8; 32],
 }
 
-impl MsgHeader {
-    pub fn compare(&self, _round: u64, _step: u8) -> bool {
-        // TODO: implement header compare
-        true
+impl Header {
+    pub fn compare(&self, round: u64, step: u8) -> Status {
+        if self.round == round {
+            if self.step == step {
+                return Status::Present;
+            }
+
+            if self.step > step {
+                return Status::Past;
+            }
+
+            if self.step < step {
+                return Status::Future;
+            }
+        }
+
+        if self.round > round {
+            return Status::Past;
+        }
+
+        if self.round < round {
+            return Status::Future;
+        }
+
+        Status::Past
     }
 }
 
-pub trait Message {
-    fn compare(&self, round: u64, step: u8) -> bool;
-    fn get_pubkey_bls(&self) -> PublicKey;
+#[derive(Debug, Clone)]
+pub enum Payload {
+    Reduction(payload::Reduction),
+    NewBlock(Box<payload::NewBlock>),
+    Empty,
 }
 
-#[derive(Default, Debug)]
-pub struct MsgReduction {
-    pub header: MsgHeader,
-    pub signed_hash: [u8; 32],
-}
-
-impl Message for MsgReduction {
-    fn compare(&self, round: u64, step: u8) -> bool {
-        self.header.compare(round, step)
-    }
-    fn get_pubkey_bls(&self) -> PublicKey {
-        self.header.pubkey_bls
+impl Default for Payload {
+    fn default() -> Self {
+        Payload::Empty
     }
 }
 
-#[derive(Default, Debug)]
-pub struct MsgNewBlock {
-    pub header: MsgHeader,
-    pub prev_hash: [u8; 32],
-    pub candidate: Block,
-    pub signed_hash: [u8; 32],
-}
+pub mod payload {
+    use crate::commons::Block;
 
-impl Message for MsgNewBlock {
-    fn compare(&self, round: u64, step: u8) -> bool {
-        self.header.compare(round, step)
+    #[derive(Default, Debug, Clone)]
+    pub struct Reduction {
+        pub signed_hash: [u8; 32],
     }
-    fn get_pubkey_bls(&self) -> PublicKey {
-        self.header.pubkey_bls
+
+    #[derive(Default, Debug, Clone)]
+    pub struct NewBlock {
+        pub prev_hash: [u8; 32],
+        pub candidate: Block,
+        pub signed_hash: [u8; 32],
     }
 }
