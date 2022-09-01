@@ -10,7 +10,8 @@ use crate::phase::Phase;
 use crate::selection;
 use crate::{firststep, secondstep};
 
-use crate::messages::{MsgNewBlock, MsgReduction};
+use crate::messages::Message;
+use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use std::thread::sleep;
 use std::time::Duration;
@@ -31,13 +32,14 @@ impl Context {
 
 pub struct Consensus {
     phases: [Phase; 3],
+    future_msgs: Queue<Message>,
 }
 
 impl Consensus {
     pub fn new(
-        new_block_rx: Receiver<MsgNewBlock>,
-        first_red_rx: Receiver<MsgReduction>,
-        sec_red_rx: Receiver<MsgReduction>,
+        new_block_rx: Receiver<Message>,
+        first_red_rx: Receiver<Message>,
+        sec_red_rx: Receiver<Message>,
     ) -> Self {
         let selection = Phase::Selection(selection::step::Selection::new(new_block_rx));
         trace!("phase memory size {}", std::mem::size_of_val(&selection));
@@ -48,6 +50,7 @@ impl Consensus {
                 Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
                 Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
             ],
+            future_msgs: Queue::<Message>::default(),
         }
     }
 
@@ -96,7 +99,13 @@ impl Consensus {
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
                 match phase
-                    .run(&mut provisioners, &mut round_ctx_rx, ru, step)
+                    .run(
+                        &mut provisioners,
+                        &mut self.future_msgs,
+                        &mut round_ctx_rx,
+                        ru,
+                        step,
+                    )
                     .await
                 {
                     Ok(next_frame) => frame = next_frame,
@@ -110,7 +119,7 @@ impl Consensus {
         let winning_block = aggr_handle.await.unwrap();
         info!("Winning block: {}", winning_block);
 
-        self.teardown();
+        self.teardown(ru.round).await;
     }
 
     // TODO: Implement agreement loop.
@@ -141,9 +150,12 @@ impl Consensus {
                     height: ru.round,
                     ..Default::default()
                 },
+                txs: vec![],
             }
         })
     }
 
-    pub fn teardown(&mut self) {}
+    async fn teardown(&mut self, round: u64) {
+        let _ = self.future_msgs.clear(round).await;
+    }
 }
