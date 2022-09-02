@@ -46,6 +46,10 @@ struct Cli {
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
     verbose: usize,
+
+    /// Use prebuilt contracts when building the state from scratch.
+    #[clap(short = 'c', long = "contracts", env = "RUSK_PREBUILT_CONTRACTS")]
+    use_prebuilt_contracts: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -56,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 build: args.build,
                 force: args.force,
                 testnet: args.testnet,
+                use_prebuilt_contracts: args.use_prebuilt_contracts,
             })
         },
         args.profile,

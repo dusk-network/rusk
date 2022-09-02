@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use once_cell::sync::Lazy;
 use rustc_tools_util::*;
 
 #[inline]
@@ -22,9 +23,7 @@ pub fn version(info: &VersionInfo) -> String {
     }
 }
 
-lazy_static::lazy_static! {
-    pub static ref VERSION_BUILD: String = {
-        let info = rustc_tools_util::get_version_info!();
-        version(&info)
-    };
-}
+pub static VERSION_BUILD: Lazy<String> = Lazy::new(|| {
+    let info = rustc_tools_util::get_version_info!();
+    version(&info)
+});

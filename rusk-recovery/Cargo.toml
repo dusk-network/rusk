@@ -36,7 +36,7 @@ microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-vm = "0.12.0-rc"
 rusk-profile = { path = "../rusk-profile" }
 rusk-abi = { path = "../rusk-abi" }
-lazy_static = "1.4"
+once_cell = "1.13"
 canonical = "0.7"
 canonical_derive = "0.7"
 dusk-bytes = "0.1"

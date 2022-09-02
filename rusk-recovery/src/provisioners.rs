@@ -6,19 +6,37 @@
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
-lazy_static! {
-    pub static ref PROVISIONERS: [PublicKey; 5] = [
+static PROVISIONERS: Lazy<[PublicKey; 5]> = Lazy::new(|| {
+    [
         parse_key(include_bytes!("../provisioners/node_0.cpk")),
         parse_key(include_bytes!("../provisioners/node_1.cpk")),
         parse_key(include_bytes!("../provisioners/node_2.cpk")),
         parse_key(include_bytes!("../provisioners/node_3.cpk")),
         parse_key(include_bytes!("../provisioners/node_4.cpk")),
-    ];
-    pub static ref DUSK_KEY: PublicKey =
-        parse_key(include_bytes!("../dusk.cpk"));
+    ]
+});
+
+static TESTNET_PROVISIONERS: Lazy<[PublicKey; 5]> = Lazy::new(|| {
+    [
+        parse_key(include_bytes!("../provisioners/testnet/node_0.cpk")),
+        parse_key(include_bytes!("../provisioners/testnet/node_1.cpk")),
+        parse_key(include_bytes!("../provisioners/testnet/node_2.cpk")),
+        parse_key(include_bytes!("../provisioners/testnet/node_3.cpk")),
+        parse_key(include_bytes!("../provisioners/testnet/node_4.cpk")),
+    ]
+});
+
+pub fn keys(testnet: bool) -> &'static [PublicKey; 5] {
+    match testnet {
+        true => &TESTNET_PROVISIONERS,
+        false => &PROVISIONERS,
+    }
 }
+
+pub static DUSK_KEY: Lazy<PublicKey> =
+    Lazy::new(|| parse_key(include_bytes!("../dusk.cpk")));
 
 fn parse_key(key_bytes: &[u8]) -> PublicKey {
     PublicKey::from_slice(key_bytes).expect("Genesis consensus key to be valid")
