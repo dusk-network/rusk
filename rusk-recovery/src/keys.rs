@@ -120,8 +120,6 @@ pub fn run_circuit_keys_checks(
 }
 
 pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
-    Lazy::force(&PUB_PARAMS);
-
     run_circuit_keys_checks(
         keep_keys,
         vec![
