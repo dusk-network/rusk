@@ -16,20 +16,22 @@ use tokio::time;
 
 // Message producer feeds Consensus steps with empty messages.
 fn spawn_message_producer(
-    tx: mpsc::Sender<Message>,
-    red1_tx: mpsc::Sender<Message>,
-    red2_tx: mpsc::Sender<Message>,
+    inbound_msgs: mpsc::Sender<Message>,
 ) -> JoinHandle<u8> {
     tokio::spawn(async move {
         loop {
+            return 0;
+
             trace!("sending new block message");
-            let _ = tx.send(Message::default()).await;
+            let _ = inbound_msgs.send(Message::default()).await;
 
             trace!("sending first reduction message");
-            let _ = red1_tx.send(Message::default()).await;
+            let _ = inbound_msgs.send(Message::default()).await;
 
             trace!("sending second reduction message");
-            let _ = red2_tx.send(Message::default()).await;
+            let _ = inbound_msgs.send(Message::default()).await;
+
+            
         }
     })
 }
@@ -79,12 +81,10 @@ async fn perform_basic_run() {
 fn spawn_node(pubkey_bls: PublicKey, p: Provisioners) {
     tokio::spawn(async move {
         let (tx, rx) = mpsc::channel::<Message>(100);
-        let (red1_tx, first_red_rx) = mpsc::channel::<Message>(100);
-        let (red2_tx, sec_red_tx) = mpsc::channel::<Message>(100);
 
-        let producer = spawn_message_producer(tx, red1_tx, red2_tx);
+        let producer = spawn_message_producer(tx);
 
-        let mut c = Consensus::new(rx, first_red_rx, sec_red_tx);
+        let mut c = Consensus::new(rx);
         let n = 5;
         // Run consensus for N rounds
         for r in 0..n {
@@ -98,7 +98,7 @@ fn spawn_node(pubkey_bls: PublicKey, p: Provisioners) {
 
 fn main() {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("failed");
 

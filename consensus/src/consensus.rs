@@ -32,25 +32,26 @@ impl Context {
 
 pub struct Consensus {
     phases: [Phase; 3],
+
+    inbound_msgs: Receiver<Message>,
     future_msgs: Queue<Message>,
 }
 
 impl Consensus {
     pub fn new(
-        new_block_rx: Receiver<Message>,
-        first_red_rx: Receiver<Message>,
-        sec_red_rx: Receiver<Message>,
+        inbound_msgs: Receiver<Message>,
     ) -> Self {
-        let selection = Phase::Selection(selection::step::Selection::new(new_block_rx));
+        let selection = Phase::Selection(selection::step::Selection::new());
         trace!("phase memory size {}", std::mem::size_of_val(&selection));
 
         Self {
             phases: [
                 selection,
-                Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
-                Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
+                Phase::Reduction1(firststep::step::Reduction::new()),
+                Phase::Reduction2(secondstep::step::Reduction::new()),
             ],
             future_msgs: Queue::<Message>::default(),
+            inbound_msgs,
         }
     }
 
@@ -98,20 +99,20 @@ impl Consensus {
                 // An error returned here terminates consensus round.
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
-                match phase
+                if let Ok(next_frame) = phase
                     .run(
                         &mut provisioners,
                         &mut self.future_msgs,
                         &mut round_ctx_rx,
+                        &mut self.inbound_msgs,
                         ru,
                         step,
                     )
                     .await
                 {
-                    Ok(next_frame) => frame = next_frame,
-                    Err(_) => {
-                        break 'exit;
-                    }
+                    frame = next_frame;
+                } else {
+                    break 'exit;
                 }
             }
         }

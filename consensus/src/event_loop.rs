@@ -15,14 +15,14 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::trace;
+use tracing::{trace,info};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
 pub async fn event_loop<C: MsgHandler<Message>>(
     phase: &mut C,
-    rx: &mut mpsc::Receiver<Message>,
     ctx_recv: &mut oneshot::Receiver<Context>,
+    inbound_msgs: &mut mpsc::Receiver<Message>,
     ru: RoundUpdate,
     step: u8,
     committee: &Committee,
@@ -30,8 +30,10 @@ pub async fn event_loop<C: MsgHandler<Message>>(
 ) -> Result<Frame, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
-    loop {
-        match select_multi(rx, ctx_recv, deadline.unwrap()).await {
+    info!("{} start event_loop round: {}, step: {} deadline: {:?}",ru.pubkey_bls.encode_short_hex(),  ru.round, step, deadline);
+
+    let res = loop {
+        match select_multi(inbound_msgs, ctx_recv, deadline.unwrap()).await {
             // A message has arrived.
             // Delegate message processing and verification to the Step itself.
             Ok(msg) => match phase.handle(msg.clone(), ru, step, committee) {
@@ -62,7 +64,11 @@ pub async fn event_loop<C: MsgHandler<Message>>(
                 }
             },
         }
-    }
+    };
+
+    info!("{} end event_loop round: {}, step: {}",ru.pubkey_bls.encode_short_hex(),  ru.round, step);
+    res
+
 }
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
@@ -109,13 +115,7 @@ async fn select_multi<T: Default>(
     deadline: time::Instant,
 ) -> Result<T, SelectError> {
     select! {
-        // Handle message
-        val = (*msg_recv).recv() => {
-            match val {
-                Some(res) => Ok(res),
-                None => Err(SelectError::Continue),
-            }
-        },
+        biased;
         // Handle both timeout and cancel events
         result = time::timeout_at(deadline, ctx_recv) => {
             match result {
@@ -124,6 +124,14 @@ async fn select_multi<T: Default>(
                  Err(SelectError::Timeout)
                 }
             }
-         }
+         },
+        // Handle message
+        val = (*msg_recv).recv() => {
+            match val {
+                Some(res) => Ok(res),
+                None => Err(SelectError::Continue),
+            }
+        },
+        
     }
 }

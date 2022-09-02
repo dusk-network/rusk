@@ -13,8 +13,8 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep};
-use tokio::sync::oneshot;
-use tracing::{debug, trace};
+use tokio::sync::{mpsc,oneshot};
+use tracing::{debug, info};
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -48,7 +48,7 @@ pub enum Phase {
 
 impl Phase {
     pub fn initialize(&mut self, frame: &Frame, round: u64, step: u8) {
-        trace!(
+        info!(
             "init phase:{} with frame {:?} at round:{} step:{}",
             self.name(),
             frame,
@@ -63,10 +63,11 @@ impl Phase {
         provisioners: &mut Provisioners,
         future_msgs: &mut Queue<Message>,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut mpsc::Receiver<Message>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
-        debug!(
+        info!(
             "execute {} round={}, step={}, bls_key={}",
             self.name(),
             ru.round,
@@ -85,7 +86,7 @@ impl Phase {
             sortition::Config(ru.seed, ru.round, step, size),
         );
 
-        await_phase!(self, run(ctx_recv, step_committee, future_msgs, ru, step))
+        await_phase!(self, run(ctx_recv,inbound_msgs, step_committee, future_msgs, ru, step))
     }
 
     fn name(&self) -> &'static str {

@@ -21,16 +21,13 @@ pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
-    msg_rx: Receiver<Message>,
-
     pub timeout: u16,
     handler: handler::Reduction,
 }
 
 impl Reduction {
-    pub fn new(msg_rx: Receiver<Message>) -> Self {
+    pub fn new() -> Self {
         Self {
-            msg_rx,
             timeout: 0,
             handler: handler::Reduction {},
         }
@@ -49,6 +46,7 @@ impl Reduction {
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut Receiver<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
@@ -70,8 +68,8 @@ impl Reduction {
 
         event_loop(
             &mut self.handler,
-            &mut self.msg_rx,
             ctx_recv,
+            inbound_msgs,
             ru,
             step,
             &committee,

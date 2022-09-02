@@ -14,21 +14,18 @@ use crate::selection::handler;
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
 use sha3::{Digest, Sha3_256};
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot;
-use tracing::{info};
+use tokio::sync::{mpsc, oneshot};
+use tracing::info;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
 pub struct Selection {
-    msg_rx: Receiver<Message>,
     handler: handler::Selection,
 }
 
 impl Selection {
-    pub fn new(msg_rx: Receiver<Message>) -> Self {
+    pub fn new() -> Self {
         Self {
-            msg_rx,
             handler: handler::Selection {},
         }
     }
@@ -40,6 +37,7 @@ impl Selection {
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut mpsc::Receiver<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
@@ -62,8 +60,8 @@ impl Selection {
 
         event_loop(
             &mut self.handler,
-            &mut self.msg_rx,
             ctx_recv,
+            inbound_msgs,
             ru,
             step,
             &committee,
