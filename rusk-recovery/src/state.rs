@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::provisioners::PROVISIONERS;
+use crate::provisioners;
 use crate::theme::Theme;
 
 use dusk_bytes::Serializable;
@@ -95,7 +95,7 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
         .expect("Root to be updated after pushing genesis note");
 
     let stake_amount = stake_amount(testnet);
-    let stake_balance = stake_amount * PROVISIONERS.len() as u64;
+    let stake_balance = stake_amount * provisioners::keys(testnet).len() as u64;
 
     transfer
         .add_balance(rusk_abi::stake_contract(), stake_balance)
@@ -120,7 +120,7 @@ fn genesis_stake(testnet: bool) -> StakeContract {
 
     let stake_amount = stake_amount(testnet);
 
-    for provisioner in PROVISIONERS.iter() {
+    for provisioner in provisioners::keys(testnet).iter() {
         let stake = Stake::with_eligibility(stake_amount, 0, 0);
         stake_contract
             .insert_stake(*provisioner, stake)
@@ -129,7 +129,7 @@ fn genesis_stake(testnet: bool) -> StakeContract {
     info!(
         "{} Added {} provisioners",
         theme.action("Generating"),
-        PROVISIONERS.len()
+        provisioners::keys(testnet).len()
     );
 
     stake_contract
