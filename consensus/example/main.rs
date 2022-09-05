@@ -5,36 +5,14 @@ use std::io::{self, BufRead};
 use std::path::Path;
 use std::time::Duration;
 use tokio::sync::mpsc;
-use tracing::trace;
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::Message;
 use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
-use tokio::task::JoinHandle;
+use tokio::sync::mpsc::{Receiver, Sender};
+
 use tokio::time;
-
-// Message producer feeds Consensus steps with empty messages.
-fn spawn_message_producer(
-    inbound_msgs: mpsc::Sender<Message>,
-) -> JoinHandle<u8> {
-    tokio::spawn(async move {
-        loop {
-            return 0;
-
-            trace!("sending new block message");
-            let _ = inbound_msgs.send(Message::default()).await;
-
-            trace!("sending first reduction message");
-            let _ = inbound_msgs.send(Message::default()).await;
-
-            trace!("sending second reduction message");
-            let _ = inbound_msgs.send(Message::default()).await;
-
-            
-        }
-    })
-}
 
 fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
@@ -68,37 +46,67 @@ fn read_provisioners() -> Provisioners {
 }
 
 async fn perform_basic_run() {
+    let mut all_to_inbound = vec![];
+
+    let (sender_bridge, mut recv_bridge) = mpsc::channel::<Message>(1000);
+
     // Initialize message sources that feeds Consensus.
     let mocked = read_provisioners();
     let provisioners = mocked.clone();
     for p in mocked.into_iter() {
-        spawn_node(p.0, provisioners.clone());
+        let (to_inbound, inbound_msgs) = mpsc::channel::<Message>(10);
+        let (outbound_msgs, mut from_outbound) = mpsc::channel::<Message>(10);
+
+        // Spawn a node which simulates a provisioner running its own consensus instance.
+        spawn_node(p.0, provisioners.clone(), inbound_msgs, outbound_msgs);
+
+        // Bridge all so that provisioners can exchange messages in a single-process setup.
+        all_to_inbound.push(to_inbound.clone());
+
+        let bridge = sender_bridge.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Some(msg) = from_outbound.recv().await {
+                    let _ = bridge.send(msg.clone()).await;
+                }
+            }
+        });
     }
+
+    // clone bridge-ed messages to all provisioners.
+    tokio::spawn(async move {
+        loop {
+            if let Some(msg) = recv_bridge.recv().await {
+                for to_inbound in all_to_inbound.iter() {
+                    let _ = to_inbound.send(msg.clone()).await;
+                }
+            }
+        }
+    });
 
     time::sleep(Duration::from_secs(120)).await;
 }
 
-fn spawn_node(pubkey_bls: PublicKey, p: Provisioners) {
+fn spawn_node(
+    pubkey_bls: PublicKey,
+    p: Provisioners,
+    inbound_msgs: Receiver<Message>,
+    outbound_msgs: Sender<Message>,
+) {
     tokio::spawn(async move {
-        let (tx, rx) = mpsc::channel::<Message>(100);
-
-        let producer = spawn_message_producer(tx);
-
-        let mut c = Consensus::new(rx);
+        let mut c = Consensus::new(inbound_msgs, outbound_msgs);
         let n = 5;
         // Run consensus for N rounds
         for r in 0..n {
             c.reset_state_machine();
             c.spin(RoundUpdate::new(r, pubkey_bls), p.clone()).await;
         }
-
-        producer.abort();
     });
 }
 
 fn main() {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("failed");
 
