@@ -14,6 +14,7 @@ pub enum Status {
 pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
     fn get_pubkey_bls(&self) -> PublicKey;
+    fn get_block_hash(&self) -> [u8; 32];
 }
 
 /// Message is a data unit that consensus phase can process.
@@ -27,9 +28,20 @@ impl MessageTrait for Message {
     fn compare(&self, round: u64, step: u8) -> Status {
         self.header.compare(round, step)
     }
-
     fn get_pubkey_bls(&self) -> PublicKey {
         self.header.pubkey_bls
+    }
+    fn get_block_hash(&self) -> [u8; 32] {
+        self.header.block_hash
+    }
+}
+
+impl Message {
+    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
+        Message {
+            header,
+            payload: Payload::NewBlock(Box::new(p)),
+        }
     }
 }
 

@@ -15,7 +15,7 @@ use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use std::thread::sleep;
 use std::time::Duration;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info, trace};
@@ -34,13 +34,12 @@ pub struct Consensus {
     phases: [Phase; 3],
 
     inbound_msgs: Receiver<Message>,
+    outbound_msg: Sender<Message>,
     future_msgs: Queue<Message>,
 }
 
 impl Consensus {
-    pub fn new(
-        inbound_msgs: Receiver<Message>,
-    ) -> Self {
+    pub fn new(inbound_msgs: Receiver<Message>, outbound_msg: Sender<Message>) -> Self {
         let selection = Phase::Selection(selection::step::Selection::new());
         trace!("phase memory size {}", std::mem::size_of_val(&selection));
 
@@ -52,6 +51,7 @@ impl Consensus {
             ],
             future_msgs: Queue::<Message>::default(),
             inbound_msgs,
+            outbound_msg,
         }
     }
 
@@ -105,6 +105,7 @@ impl Consensus {
                         &mut self.future_msgs,
                         &mut round_ctx_rx,
                         &mut self.inbound_msgs,
+                        &mut self.outbound_msg,
                         ru,
                         step,
                     )

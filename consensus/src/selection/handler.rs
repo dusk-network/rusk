@@ -29,12 +29,13 @@ impl Selection {
     fn verify(&self, _msg: &Message) -> Result<(), ConsensusError> {
         // TODO: Verify newblock msg signature
         // TODO: Verify newblock candidate
-        Err(ConsensusError::NotImplemented)
+        Ok(())
     }
 
     fn on_valid_new_block(&mut self, _msg: &Message) -> Result<Frame, ConsensusError> {
         // TODO: store candidate block
         // TODO: republish new_block
+
         Ok(Frame::Empty)
     }
 }

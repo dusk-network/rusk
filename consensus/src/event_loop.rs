@@ -10,12 +10,13 @@ use crate::frame::Frame;
 use crate::messages::{Message, MessageTrait, Status};
 use crate::queue::Queue;
 use crate::user::committee::Committee;
+use hex::ToHex;
 use std::fmt::Debug;
 use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::{trace,info};
+use tracing::{debug, info, trace};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
@@ -30,7 +31,19 @@ pub async fn event_loop<C: MsgHandler<Message>>(
 ) -> Result<Frame, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
-    info!("{} start event_loop round: {}, step: {} deadline: {:?}",ru.pubkey_bls.encode_short_hex(),  ru.round, step, deadline);
+    // TODO: Since introducing inbound_msgs_queue, the tokio::runtime does not react accurately on timeout_at(deadline)
+    /*
+        [2mSep 02 14:07:06.00[0m[32m INF[0m consensus::event_loop: 2286d081884c7d65 start event_loop round: 0, step: 1 deadline: Some(Instant { tv_sec: 14832, tv_nsec: 797601650 })
+        [2mSep 02 14:07:23.01[0m[32m INF[0m consensus::event_loop: 2286d081884c7d65 end event_loop round: 0, step: 1
+    */
+
+    info!(
+        "{} start event_loop round: {}, step: {} deadline: {:?}",
+        ru.pubkey_bls.encode_short_hex(),
+        ru.round,
+        step,
+        deadline
+    );
 
     let res = loop {
         match select_multi(inbound_msgs, ctx_recv, deadline.unwrap()).await {
@@ -66,9 +79,13 @@ pub async fn event_loop<C: MsgHandler<Message>>(
         }
     };
 
-    info!("{} end event_loop round: {}, step: {}",ru.pubkey_bls.encode_short_hex(),  ru.round, step);
+    info!(
+        "{} end event_loop round: {}, step: {}",
+        ru.pubkey_bls.encode_short_hex(),
+        ru.round,
+        step
+    );
     res
-
 }
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
@@ -82,17 +99,21 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         step: u8,
         committee: &Committee,
     ) -> Result<Frame, ConsensusError> {
-        trace!("handle msg {:?}", msg);
+        debug!(
+            "received msg from {:?} with hash {}",
+            msg.get_pubkey_bls().encode_short_hex(),
+            msg.get_block_hash().encode_hex::<String>(),
+        );
 
-        // this the equivalent of should_process.
         match msg.compare(ru.round, step) {
             Status::Past => Err(ConsensusError::InvalidRoundStep),
             Status::Present => {
                 // Ensure the message originates from a committee member.
-                if committee.is_member(msg.get_pubkey_bls()) {
+                if !committee.is_member(msg.get_pubkey_bls()) {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 
+                // Delegate message handling to the phase implementation.
                 self.handle_internal(msg, ru, step)
             }
             Status::Future => Err(ConsensusError::FutureEvent),
@@ -108,9 +129,26 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     ) -> Result<Frame, ConsensusError>;
 }
 
-// select_multi extends time::timeout_at with another channel that brings the message payload.
+// select_simple wraps up time::timeout_at with need of ctx_recv.
+#[allow(unused)]
+async fn select_simple<T: Default>(
+    inbound_msgs: &mut mpsc::Receiver<T>,
+    ctx_recv: &mut oneshot::Receiver<Context>,
+    deadline: time::Instant,
+) -> Result<T, SelectError> {
+    // Handle both timeout and inbound events
+    if let Ok(val) = time::timeout_at(deadline, (*inbound_msgs).recv()).await {
+        match val {
+            Some(res) => Ok(res),
+            None => Err(SelectError::Continue),
+        }
+    } else {
+        Err(SelectError::Timeout)
+    }
+}
+
 async fn select_multi<T: Default>(
-    msg_recv: &mut mpsc::Receiver<T>,
+    inbound_msgs: &mut mpsc::Receiver<T>,
     ctx_recv: &mut oneshot::Receiver<Context>,
     deadline: time::Instant,
 ) -> Result<T, SelectError> {
@@ -126,12 +164,11 @@ async fn select_multi<T: Default>(
             }
          },
         // Handle message
-        val = (*msg_recv).recv() => {
+        val = (*inbound_msgs).recv() => {
             match val {
                 Some(res) => Ok(res),
                 None => Err(SelectError::Continue),
             }
         },
-        
     }
 }

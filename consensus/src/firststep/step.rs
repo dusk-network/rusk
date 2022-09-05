@@ -14,7 +14,7 @@ use crate::frame;
 use crate::frame::Frame;
 use crate::queue::Queue;
 use crate::user::committee::Committee;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
 pub const COMMITTEE_SIZE: usize = 64;
@@ -47,6 +47,7 @@ impl Reduction {
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         inbound_msgs: &mut Receiver<Message>,
+        outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,

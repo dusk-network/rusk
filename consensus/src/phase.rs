@@ -13,8 +13,9 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep};
-use tokio::sync::{mpsc,oneshot};
-use tracing::{debug, info};
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::oneshot;
+use tracing::info;
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -63,7 +64,8 @@ impl Phase {
         provisioners: &mut Provisioners,
         future_msgs: &mut Queue<Message>,
         ctx_recv: &mut oneshot::Receiver<Context>,
-        inbound_msgs: &mut mpsc::Receiver<Message>,
+        inbound_msgs: &mut Receiver<Message>,
+        outbound_msgs: &mut Sender<Message>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Frame, SelectError> {
@@ -86,7 +88,18 @@ impl Phase {
             sortition::Config(ru.seed, ru.round, step, size),
         );
 
-        await_phase!(self, run(ctx_recv,inbound_msgs, step_committee, future_msgs, ru, step))
+        await_phase!(
+            self,
+            run(
+                ctx_recv,
+                inbound_msgs,
+                outbound_msgs,
+                step_committee,
+                future_msgs,
+                ru,
+                step
+            )
+        )
     }
 
     fn name(&self) -> &'static str {
