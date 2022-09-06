@@ -38,9 +38,16 @@ impl MessageTrait for Message {
 
 impl Message {
     pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
-        Message {
+        Self {
             header,
             payload: Payload::NewBlock(Box::new(p)),
+        }
+    }
+
+    pub fn empty() -> Message {
+        Self {
+            header: Header::default(),
+            payload: Payload::Empty,
         }
     }
 }

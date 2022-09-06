@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::event_loop::MsgHandler;
-use crate::frame::Frame;
 use crate::messages::Message;
 
 pub struct Reduction {}
@@ -17,7 +16,7 @@ impl MsgHandler<Message> for Reduction {
         _msg: Message,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<Frame, ConsensusError> {
+    ) -> Result<Message, ConsensusError> {
         //TODO: VerifySignature
         //TODO: ??? Republish
         //TODO: CollectVote

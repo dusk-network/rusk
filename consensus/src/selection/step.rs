@@ -7,7 +7,6 @@ use hex::ToHex;
 use crate::commons::{Block, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
-use crate::frame::Frame;
 use crate::messages::{payload::NewBlock, Header, Message};
 use crate::queue::Queue;
 use crate::selection::handler;
@@ -30,7 +29,7 @@ impl Selection {
         }
     }
 
-    pub fn initialize(&mut self, _frame: &Frame) {
+    pub fn initialize(&mut self, _msg: &Message) {
         // TODO:
     }
 
@@ -43,7 +42,7 @@ impl Selection {
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
             let msg = self.generate_candidate(committee.get_my_pubkey(), ru, step);
 
@@ -52,7 +51,7 @@ impl Selection {
                 error!("could not send newblock msg due to {:?}", e);
             }
 
-            // re-handling my own candidate to ensure both verification and generate-block procedures are compatible
+            // register new candidate in local state
             match self.handler.handle(msg, ru, step, &committee) {
                 Ok(f) => return Ok(f),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),

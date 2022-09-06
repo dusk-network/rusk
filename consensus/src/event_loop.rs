@@ -6,7 +6,6 @@
 
 use crate::commons::{ConsensusError, RoundUpdate, SelectError};
 use crate::consensus::Context;
-use crate::frame::Frame;
 use crate::messages::{Message, MessageTrait, Status};
 use crate::queue::Queue;
 use crate::user::committee::Committee;
@@ -28,7 +27,7 @@ pub async fn event_loop<C: MsgHandler<Message>>(
     step: u8,
     committee: &Committee,
     future_msgs: &mut Queue<Message>,
-) -> Result<Frame, SelectError> {
+) -> Result<Message, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
     // TODO: Since introducing inbound_msgs_queue, the tokio::runtime does not react accurately on timeout_at(deadline)
@@ -70,7 +69,7 @@ pub async fn event_loop<C: MsgHandler<Message>>(
                 SelectError::Continue => continue,
                 SelectError::Timeout => {
                     // Timeout-ed step should proceed to next step with zero-ed.
-                    break Ok(Frame::Empty);
+                    break Ok(Message::empty());
                 }
                 SelectError::Canceled => {
                     break Err(e);
@@ -98,7 +97,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         ru: RoundUpdate,
         step: u8,
         committee: &Committee,
-    ) -> Result<Frame, ConsensusError> {
+    ) -> Result<Message, ConsensusError> {
         debug!(
             "received msg from {:?} with hash {}",
             msg.get_pubkey_bls().encode_short_hex(),
@@ -126,7 +125,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         msg: T,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, ConsensusError>;
+    ) -> Result<Message, ConsensusError>;
 }
 
 // select_simple wraps up time::timeout_at with need of ctx_recv.

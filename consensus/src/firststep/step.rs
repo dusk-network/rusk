@@ -4,14 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
-
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
 use crate::firststep::handler;
 use crate::messages::Message;
-
-use crate::frame;
-use crate::frame::Frame;
 use crate::queue::Queue;
 use crate::user::committee::Committee;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -33,7 +29,8 @@ impl Reduction {
         }
     }
 
-    pub fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, _msg: &Message) {
+        /*
         let empty = frame::NewBlock::default();
 
         let mut _new_block = match frame {
@@ -41,6 +38,8 @@ impl Reduction {
             Frame::StepVotes(_) => panic!("invalid frame"),
             Frame::Empty => &empty,
         };
+
+         */
     }
 
     pub async fn run(
@@ -52,7 +51,7 @@ impl Reduction {
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
             // TODO: SendReduction async
             // TODO: Register my reduction locally

@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::event_loop::MsgHandler;
-use crate::frame::Frame;
 use crate::messages::Message;
 
 pub struct Selection {}
@@ -17,7 +16,7 @@ impl MsgHandler<Message> for Selection {
         msg: Message,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<Frame, ConsensusError> {
+    ) -> Result<Message, ConsensusError> {
         match self.verify(&msg) {
             Ok(_) => self.on_valid_new_block(&msg),
             Err(err) => Err(err),
@@ -32,10 +31,8 @@ impl Selection {
         Ok(())
     }
 
-    fn on_valid_new_block(&mut self, _msg: &Message) -> Result<Frame, ConsensusError> {
+    fn on_valid_new_block(&mut self, msg: &Message) -> Result<Message, ConsensusError> {
         // TODO: store candidate block
-        // TODO: republish new_block
-
-        Ok(Frame::Empty)
+        Ok(msg.clone())
     }
 }

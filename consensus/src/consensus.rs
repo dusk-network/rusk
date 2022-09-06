@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{Block, Header, RoundUpdate};
-use crate::frame::Frame;
 use crate::phase::Phase;
 
 use crate::selection;
@@ -33,25 +32,28 @@ impl Context {
 pub struct Consensus {
     phases: [Phase; 3],
 
+    /// inbound_msgs is a queue of messages that comes from outside world
     inbound_msgs: Receiver<Message>,
-    outbound_msg: Sender<Message>,
+
+    /// future_msgs is a queue of messages read from inbound_msgs queue.
+    /// These msgs are pending to be handled in a future round/step.
     future_msgs: Queue<Message>,
+
+    /// outbound_msgs is a queue of messages, this consensus instance shares with the outside world.
+    outbound_msgs: Sender<Message>,
 }
 
 impl Consensus {
     pub fn new(inbound_msgs: Receiver<Message>, outbound_msg: Sender<Message>) -> Self {
-        let selection = Phase::Selection(selection::step::Selection::new());
-        trace!("phase memory size {}", std::mem::size_of_val(&selection));
-
         Self {
             phases: [
-                selection,
+                Phase::Selection(selection::step::Selection::new()),
                 Phase::Reduction1(firststep::step::Reduction::new()),
                 Phase::Reduction2(secondstep::step::Reduction::new()),
             ],
             future_msgs: Queue::<Message>::default(),
             inbound_msgs,
-            outbound_msg,
+            outbound_msgs: outbound_msg,
         }
     }
 
@@ -79,7 +81,7 @@ impl Consensus {
         // Consensus loop
         // Initialize and run consensus loop concurrently with agreement loop.
         let mut step: u8 = 0;
-        let mut frame = Frame::Empty;
+        let mut msg = Message::empty();
 
         'exit: loop {
             // Perform a single iteration.
@@ -92,26 +94,26 @@ impl Consensus {
                     break 'exit;
                 }
 
-                // Initialize new phase with frame created by previous phase.
-                phase.initialize(&frame, ru.round, step);
+                // Initialize new phase with message returned by previous phase.
+                phase.initialize(&msg, ru.round, step);
 
                 // Execute a phase.
                 // An error returned here terminates consensus round.
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
-                if let Ok(next_frame) = phase
+                if let Ok(next_msg) = phase
                     .run(
                         &mut provisioners,
                         &mut self.future_msgs,
                         &mut round_ctx_rx,
                         &mut self.inbound_msgs,
-                        &mut self.outbound_msg,
+                        &mut self.outbound_msgs,
                         ru,
                         step,
                     )
                     .await
                 {
-                    frame = next_frame;
+                    msg = next_msg;
                 } else {
                     break 'exit;
                 }

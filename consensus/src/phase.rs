@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
-use crate::frame::Frame;
 use crate::messages::Message;
 use crate::queue::Queue;
 use crate::selection;
@@ -48,15 +47,15 @@ pub enum Phase {
 }
 
 impl Phase {
-    pub fn initialize(&mut self, frame: &Frame, round: u64, step: u8) {
+    pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
         info!(
-            "init phase:{} with frame {:?} at round:{} step:{}",
+            "init phase:{} with msg {:?} at round:{} step:{}",
             self.name(),
-            frame,
+            msg,
             round,
             step
         );
-        call_phase!(self, initialize(frame))
+        call_phase!(self, initialize(msg))
     }
 
     pub async fn run(
@@ -68,7 +67,7 @@ impl Phase {
         outbound_msgs: &mut Sender<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         info!(
             "execute {} round={}, step={}, bls_key={}",
             self.name(),

@@ -7,10 +7,8 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::event_loop::MsgHandler;
-use crate::messages::Message;
+use crate::messages::{payload, Message};
 use crate::secondstep::handler;
-
-use crate::frame::{Frame, StepVotes};
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -33,14 +31,17 @@ impl Reduction {
         }
     }
 
-    pub fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, msg: &Message) {
+        /*
         let empty = StepVotes::default();
 
-        let _step_votes = match frame {
-            Frame::Empty => &empty,
+        let _step_votes = match msg.payload {
+            payload::NewBlock => panic!("invalid frame"),
             Frame::StepVotes(f) => f,
             Frame::NewBlock(_) => panic!("invalid frame"),
         };
+
+         */
     }
 
     pub async fn run(
@@ -52,7 +53,7 @@ impl Reduction {
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
             self.spawn_send_reduction(committee.get_my_pubkey(), ru.round, step);
             // TODO: Register my reduction locally
