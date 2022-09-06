@@ -4,51 +4,58 @@ use hex::ToHex;
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{RoundUpdate, SelectError};
+use crate::commons::{Block, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
-use crate::frame::Frame;
-use crate::messages::Message;
+use crate::messages::{payload::NewBlock, Header, Message};
 use crate::queue::Queue;
 use crate::selection::handler;
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
 use sha3::{Digest, Sha3_256};
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot;
-use tracing::{info};
+use tokio::sync::{mpsc, oneshot};
+use tracing::{error, info};
 
 pub const COMMITTEE_SIZE: usize = 1;
 
 pub struct Selection {
-    msg_rx: Receiver<Message>,
     handler: handler::Selection,
 }
 
 impl Selection {
-    pub fn new(msg_rx: Receiver<Message>) -> Self {
+    pub fn new() -> Self {
         Self {
-            msg_rx,
             handler: handler::Selection {},
         }
     }
 
-    pub fn initialize(&mut self, _frame: &Frame) {
+    pub fn initialize(&mut self, _msg: &Message) {
         // TODO:
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut mpsc::Receiver<Message>,
+        outbound_msgs: &mut mpsc::Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
-            self.generate_candidate(committee.get_my_pubkey(), ru, step);
-            // TODO: Publish NewBlock message
-            // TODO: Pass the NewBlock to this phase event loop
+            let msg = self.generate_candidate(committee.get_my_pubkey(), ru, step);
+
+            // Broadcast the candidate block for this round/iteration.
+            if let Err(e) = outbound_msgs.send(msg.clone()).await {
+                error!("could not send newblock msg due to {:?}", e);
+            }
+
+            // register new candidate in local state
+            match self.handler.handle(msg, ru, step, &committee) {
+                Ok(f) => return Ok(f),
+                Err(e) => error!("invalid candidate generated due to {:?}", e),
+            };
         }
 
         // drain future messages for current round and step.
@@ -62,8 +69,8 @@ impl Selection {
 
         event_loop(
             &mut self.handler,
-            &mut self.msg_rx,
             ctx_recv,
+            inbound_msgs,
             ru,
             step,
             &committee,
@@ -83,17 +90,35 @@ impl Selection {
 
 impl Selection {
     // generate_candidate generates a hash to propose.
-    fn generate_candidate(&self, pubkey: PublicKey, ru: RoundUpdate, step: u8) {
+    fn generate_candidate(&self, pubkey: PublicKey, ru: RoundUpdate, step: u8) -> Message {
         let mut hasher = Sha3_256::new();
         hasher.update(ru.round.to_le_bytes());
         hasher.update(step.to_le_bytes());
 
+        let hash = hasher.finalize();
+
         info!(
             "generate candidate block hash={} round={}, step={}, bls_key={}",
-            hasher.finalize().as_slice().encode_hex::<String>(),
+            hash.as_slice().encode_hex::<String>(),
             ru.round,
             step,
             pubkey.encode_short_hex()
         );
+
+        let a = NewBlock {
+            prev_hash: [0; 32],
+            candidate: Block::default(),
+            signed_hash: [0; 32],
+        };
+
+        Message::new_newblock(
+            Header {
+                pubkey_bls: ru.pubkey_bls,
+                round: ru.round,
+                block_hash: hash.into(),
+                step,
+            },
+            a,
+        )
     }
 }

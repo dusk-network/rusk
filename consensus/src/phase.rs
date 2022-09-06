@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
-use crate::frame::Frame;
 use crate::messages::Message;
 use crate::queue::Queue;
 use crate::selection;
@@ -13,8 +12,9 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep};
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use tracing::{debug, trace};
+use tracing::info;
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -47,15 +47,15 @@ pub enum Phase {
 }
 
 impl Phase {
-    pub fn initialize(&mut self, frame: &Frame, round: u64, step: u8) {
-        trace!(
-            "init phase:{} with frame {:?} at round:{} step:{}",
+    pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
+        info!(
+            "init phase:{} with msg {:?} at round:{} step:{}",
             self.name(),
-            frame,
+            msg,
             round,
             step
         );
-        call_phase!(self, initialize(frame))
+        call_phase!(self, initialize(msg))
     }
 
     pub async fn run(
@@ -63,10 +63,12 @@ impl Phase {
         provisioners: &mut Provisioners,
         future_msgs: &mut Queue<Message>,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut Receiver<Message>,
+        outbound_msgs: &mut Sender<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
-        debug!(
+    ) -> Result<Message, SelectError> {
+        info!(
             "execute {} round={}, step={}, bls_key={}",
             self.name(),
             ru.round,
@@ -85,7 +87,18 @@ impl Phase {
             sortition::Config(ru.seed, ru.round, step, size),
         );
 
-        await_phase!(self, run(ctx_recv, step_committee, future_msgs, ru, step))
+        await_phase!(
+            self,
+            run(
+                ctx_recv,
+                inbound_msgs,
+                outbound_msgs,
+                step_committee,
+                future_msgs,
+                ru,
+                step
+            )
+        )
     }
 
     fn name(&self) -> &'static str {

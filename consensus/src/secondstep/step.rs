@@ -7,13 +7,11 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::event_loop::MsgHandler;
-use crate::messages::Message;
+use crate::messages::{payload, Message};
 use crate::secondstep::handler;
-
-use crate::frame::{Frame, StepVotes};
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
 use crate::queue::Queue;
@@ -23,37 +21,39 @@ pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
-    msg_rx: Receiver<Message>,
-
     handler: handler::Reduction,
 }
 
 impl Reduction {
-    pub fn new(msg_rx: Receiver<Message>) -> Self {
+    pub fn new() -> Self {
         Self {
-            msg_rx,
             handler: handler::Reduction {},
         }
     }
 
-    pub fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, msg: &Message) {
+        /*
         let empty = StepVotes::default();
 
-        let _step_votes = match frame {
-            Frame::Empty => &empty,
+        let _step_votes = match msg.payload {
+            payload::NewBlock => panic!("invalid frame"),
             Frame::StepVotes(f) => f,
             Frame::NewBlock(_) => panic!("invalid frame"),
         };
+
+         */
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut Receiver<Message>,
+        outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
             self.spawn_send_reduction(committee.get_my_pubkey(), ru.round, step);
             // TODO: Register my reduction locally
@@ -70,8 +70,8 @@ impl Reduction {
 
         event_loop(
             &mut self.handler,
-            &mut self.msg_rx,
             ctx_recv,
+            inbound_msgs,
             ru,
             step,
             &committee,

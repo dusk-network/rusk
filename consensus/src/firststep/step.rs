@@ -4,39 +4,33 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
-
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
 use crate::firststep::handler;
 use crate::messages::Message;
-
-use crate::frame;
-use crate::frame::Frame;
 use crate::queue::Queue;
 use crate::user::committee::Committee;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
-    msg_rx: Receiver<Message>,
-
     pub timeout: u16,
     handler: handler::Reduction,
 }
 
 impl Reduction {
-    pub fn new(msg_rx: Receiver<Message>) -> Self {
+    pub fn new() -> Self {
         Self {
-            msg_rx,
             timeout: 0,
             handler: handler::Reduction {},
         }
     }
 
-    pub fn initialize(&mut self, frame: &Frame) {
+    pub fn initialize(&mut self, _msg: &Message) {
+        /*
         let empty = frame::NewBlock::default();
 
         let mut _new_block = match frame {
@@ -44,16 +38,20 @@ impl Reduction {
             Frame::StepVotes(_) => panic!("invalid frame"),
             Frame::Empty => &empty,
         };
+
+         */
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
+        inbound_msgs: &mut Receiver<Message>,
+        outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Frame, SelectError> {
+    ) -> Result<Message, SelectError> {
         if committee.am_member() {
             // TODO: SendReduction async
             // TODO: Register my reduction locally
@@ -70,8 +68,8 @@ impl Reduction {
 
         event_loop(
             &mut self.handler,
-            &mut self.msg_rx,
             ctx_recv,
+            inbound_msgs,
             ru,
             step,
             &committee,

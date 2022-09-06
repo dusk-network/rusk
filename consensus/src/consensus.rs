@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{Block, Header, RoundUpdate};
-use crate::frame::Frame;
 use crate::phase::Phase;
 
 use crate::selection;
@@ -15,7 +14,7 @@ use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use std::thread::sleep;
 use std::time::Duration;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use tracing::{error, info, trace};
@@ -32,25 +31,29 @@ impl Context {
 
 pub struct Consensus {
     phases: [Phase; 3],
+
+    /// inbound_msgs is a queue of messages that comes from outside world
+    inbound_msgs: Receiver<Message>,
+
+    /// future_msgs is a queue of messages read from inbound_msgs queue.
+    /// These msgs are pending to be handled in a future round/step.
     future_msgs: Queue<Message>,
+
+    /// outbound_msgs is a queue of messages, this consensus instance shares with the outside world.
+    outbound_msgs: Sender<Message>,
 }
 
 impl Consensus {
-    pub fn new(
-        new_block_rx: Receiver<Message>,
-        first_red_rx: Receiver<Message>,
-        sec_red_rx: Receiver<Message>,
-    ) -> Self {
-        let selection = Phase::Selection(selection::step::Selection::new(new_block_rx));
-        trace!("phase memory size {}", std::mem::size_of_val(&selection));
-
+    pub fn new(inbound_msgs: Receiver<Message>, outbound_msg: Sender<Message>) -> Self {
         Self {
             phases: [
-                selection,
-                Phase::Reduction1(firststep::step::Reduction::new(first_red_rx)),
-                Phase::Reduction2(secondstep::step::Reduction::new(sec_red_rx)),
+                Phase::Selection(selection::step::Selection::new()),
+                Phase::Reduction1(firststep::step::Reduction::new()),
+                Phase::Reduction2(secondstep::step::Reduction::new()),
             ],
             future_msgs: Queue::<Message>::default(),
+            inbound_msgs,
+            outbound_msgs: outbound_msg,
         }
     }
 
@@ -78,7 +81,7 @@ impl Consensus {
         // Consensus loop
         // Initialize and run consensus loop concurrently with agreement loop.
         let mut step: u8 = 0;
-        let mut frame = Frame::Empty;
+        let mut msg = Message::empty();
 
         'exit: loop {
             // Perform a single iteration.
@@ -91,27 +94,28 @@ impl Consensus {
                     break 'exit;
                 }
 
-                // Initialize new phase with frame created by previous phase.
-                phase.initialize(&frame, ru.round, step);
+                // Initialize new phase with message returned by previous phase.
+                phase.initialize(&msg, ru.round, step);
 
                 // Execute a phase.
                 // An error returned here terminates consensus round.
                 // This normally happens if consensus channel is cancelled
                 // by agreement loop on finding the winning block for this round.
-                match phase
+                if let Ok(next_msg) = phase
                     .run(
                         &mut provisioners,
                         &mut self.future_msgs,
                         &mut round_ctx_rx,
+                        &mut self.inbound_msgs,
+                        &mut self.outbound_msgs,
                         ru,
                         step,
                     )
                     .await
                 {
-                    Ok(next_frame) => frame = next_frame,
-                    Err(_) => {
-                        break 'exit;
-                    }
+                    msg = next_msg;
+                } else {
+                    break 'exit;
                 }
             }
         }

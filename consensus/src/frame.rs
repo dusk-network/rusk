@@ -14,7 +14,7 @@ pub struct NewBlock {}
 
 #[allow(unused)]
 #[derive(Debug)]
-pub enum Frame {
+pub enum Frame2 {
     StepVotes(StepVotes),
     NewBlock(NewBlock),
     Empty,
