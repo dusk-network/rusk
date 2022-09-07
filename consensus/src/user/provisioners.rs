@@ -153,10 +153,32 @@ impl Provisioners {
         }
     }
 
+    // get_eligible_size returns how many provisioners are active on the current round.
+    // This function is used to determine the correct committee size for
+    // sortition.
+    pub fn get_eligible_size(&self, max_size: usize) -> usize {
+        let mut size = 0;
+        for m in self.members.iter() {
+            for s in m.1.stakes.iter() {
+                if s.1 {
+                    size += 1;
+                    break;
+                }
+            }
+
+            if size >= max_size {
+                return max_size;
+            }
+        }
+
+        size
+    }
+
     // create_committee runs the deterministic sortition function, which determines
     // who will be in the committee for a given step and round
-    pub fn create_committee(&mut self, cfg: sortition::Config) -> Vec<PublicKey> {
+    pub fn create_committee(&mut self, cfg: &sortition::Config) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
+        let committee_size = self.get_eligible_size(cfg.3);
 
         // Restore intermediate value of all stakes.
         for m in self.members.iter_mut() {
@@ -167,7 +189,7 @@ impl Provisioners {
 
         let mut counter: i32 = 0;
         loop {
-            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == cfg.3 {
+            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == committee_size {
                 break;
             }
 
