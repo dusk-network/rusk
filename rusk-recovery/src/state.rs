@@ -125,12 +125,19 @@ fn genesis_stake(testnet: bool) -> StakeContract {
         stake_contract
             .insert_stake(*provisioner, stake)
             .expect("Genesis stake to be pushed to the stake");
+        stake_contract
+            .insert_allowlist(*provisioner)
+            .expect("Failed to allow genesis provisioner");
     }
     info!(
         "{} Added {} provisioners",
         theme.action("Generating"),
         provisioners::keys(testnet).len()
     );
+
+    stake_contract
+        .add_owner(provisioners::owner(testnet))
+        .expect("Failed to set stake contract owner");
 
     stake_contract
 }
