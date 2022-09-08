@@ -166,6 +166,12 @@ fn generate_stake(rusk_state: &mut RuskState) -> Result<()> {
         Stake::with_eligibility(MINIMUM_STAKE, MINIMUM_STAKE, 0),
     )?;
 
+    let sk3 = TestStore.retrieve_sk(2).expect("Should not fail in test");
+    let pk3 = PublicKey::from(&sk3);
+    stake.insert_allowlist(pk).expect("Cannot allow");
+    stake.insert_allowlist(rpk).expect("Cannot allow");
+    stake.insert_allowlist(pk3).expect("Cannot allow");
+
     info!("Updating the new stake contract state");
     unsafe {
         rusk_state.set_contract_state(&rusk_abi::stake_contract(), &stake)?;
