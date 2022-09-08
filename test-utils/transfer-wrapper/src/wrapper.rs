@@ -40,15 +40,22 @@ pub struct TransferWrapper {
     genesis_ssk: SecretSpendKey,
 }
 
+#[derive(Default)]
+pub struct StakeState<'a> {
+    pub stakes: &'a [(BlsPublicKey, Stake)],
+    pub owners: &'a [BlsPublicKey],
+    pub allowlist: &'a [BlsPublicKey],
+}
+
 impl TransferWrapper {
     pub fn new(seed: u64, initial_balance: u64) -> Self {
-        Self::with_stakes(seed, initial_balance, &[])
+        Self::with_stakes(seed, initial_balance, StakeState::default())
     }
 
     pub fn with_stakes(
         seed: u64,
         initial_balance: u64,
-        stakes: &[(BlsPublicKey, Stake)],
+        stakes: StakeState,
     ) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
         let mut network = NetworkState::new();
@@ -74,7 +81,13 @@ impl TransferWrapper {
 
         let stake = {
             let mut contract = StakeContract::default();
-            for (pk, stake) in stakes {
+            for owner in stakes.owners {
+                contract
+                    .insert_stake(*owner, stake_contract::Stake::default())
+                    .expect("Failed to insert stake");
+                contract.add_owner(*owner).expect("Failed to add owner");
+            }
+            for (pk, stake) in stakes.stakes {
                 contract
                     .insert_stake(*pk, stake.clone())
                     .expect("Failed to insert stake");
@@ -84,6 +97,12 @@ impl TransferWrapper {
                         .expect("Failed adding balance");
                 }
             }
+            for allow in stakes.allowlist {
+                contract
+                    .insert_allowlist(*allow)
+                    .expect("Failed to add to allowlist");
+            }
+
             contract
         };
 

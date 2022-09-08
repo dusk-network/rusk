@@ -35,4 +35,5 @@ lazy_static! {
 
 mod wrapper;
 
+pub use wrapper::StakeState;
 pub use wrapper::TransferWrapper;
