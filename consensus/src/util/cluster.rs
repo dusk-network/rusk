@@ -7,6 +7,7 @@
 use std::collections::BTreeMap;
 use tracing::trace;
 
+#[derive(Debug)]
 pub struct Cluster<T>(pub BTreeMap<T, usize>);
 
 impl<T> Cluster<T>
@@ -20,6 +21,7 @@ where
     pub fn contains_key(&self, key: &T) -> bool {
         self.0.contains_key(key)
     }
+
     pub fn total_occurrences(&self) -> usize {
         let mut total = 0;
         for elem in self.0.iter() {
@@ -29,10 +31,16 @@ where
         total
     }
 
-    pub fn update_count(&mut self, key: &T, count: usize) -> usize {
+    // set_weight can set weight only once.
+    pub fn set_weight(&mut self, key: &T, weight: usize) -> Option<usize> {
         let entry = self.0.entry(*key).or_insert(0);
-        *entry += count;
-        *entry
+        if *entry > 0 {
+            // already updated
+            return None;
+        }
+
+        *entry = weight;
+        Some(*entry)
     }
 
     pub fn trace(&self) -> () {
@@ -47,15 +55,14 @@ mod tests {
     use crate::util::cluster::Cluster;
 
     #[test]
-    pub fn test_update_count() {
+    pub fn test_set_weight() {
         let mut a = Cluster::<char>::new();
 
-        a.update_count(&'a', 3);
-        assert_eq!(a.update_count(&'a', 2), 5);
+        a.set_weight(&'a', 3);
+        a.set_weight(&'b', 11);
+        assert_eq!(a.total_occurrences(), 14);
 
-        a.update_count(&'b', 11);
-        assert_eq!(a.update_count(&'a', 1), 6);
-        assert_eq!(a.update_count(&'b', 1), 12);
-        assert_eq!(a.total_occurrences(), 18);
+        let res = a.set_weight(&'b', 1);
+        assert!(res == None);
     }
 }

@@ -178,7 +178,7 @@ impl Provisioners {
     // who will be in the committee for a given step and round
     pub fn create_committee(&mut self, cfg: &sortition::Config) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
-        let committee_size = self.get_eligible_size(cfg.3);
+        let committee_size = self.get_eligible_size(cfg.max_committee_size);
 
         // Restore intermediate value of all stakes.
         for m in self.members.iter_mut() {
@@ -194,7 +194,7 @@ impl Provisioners {
             }
 
             // 1. Compute n ← H(seed ∣∣ round ∣∣ step ∣∣ counter)
-            let hash = sortition::create_sortition_hash(cfg.0, cfg.1, cfg.2, counter);
+            let hash = sortition::create_sortition_hash(cfg, counter);
             counter += 1;
 
             // 2. Compute d ← n mod s

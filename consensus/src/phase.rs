@@ -84,8 +84,16 @@ impl Phase {
         let step_committee = Committee::new(
             ru.pubkey_bls,
             provisioners,
-            sortition::Config(ru.seed, ru.round, step, size),
+            sortition::Config::new(ru.seed, ru.round, step, size),
         );
+
+        // TOD: Move here
+        /*
+         if committee.am_member() {
+                call_phase!(self, on_am_member(ctx));
+            }
+        */
+        // TODO: Move here both future_msgs.get_events
 
         await_phase!(
             self,
@@ -97,7 +105,7 @@ impl Phase {
                 future_msgs,
                 ru,
                 step
-            )
+            ) //TODO:  event_loop with handler
         )
     }
 

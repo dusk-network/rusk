@@ -20,6 +20,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, trace};
 
 pub const CONSENSUS_MAX_STEP: u8 = 213;
+pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
 
 #[derive(Default)]
 pub struct Context {}

@@ -15,7 +15,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.

@@ -103,10 +103,11 @@ impl Default for Payload {
 
 pub mod payload {
     use crate::commons::Block;
+    use crate::commons::Signature;
 
     #[derive(Default, Debug, Clone)]
     pub struct Reduction {
-        pub signed_hash: [u8; 32],
+        pub signed_hash: Signature,
     }
 
     #[derive(Default, Debug, Clone)]

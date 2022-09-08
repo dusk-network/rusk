@@ -74,3 +74,39 @@ pub enum ConsensusError {
     NotCommitteeMember,
     NotImplemented,
 }
+
+// TODO: This to be replaced with bls::Signature
+
+#[derive(Debug, Copy, Clone)]
+pub struct Signature([u8; 48]);
+impl Signature {
+    pub fn is_zeroed(&self) -> bool {
+        self.0 == [0; 48]
+    }
+}
+
+impl Default for Signature {
+    fn default() -> Self {
+        Signature([0; 48])
+    }
+}
+
+// TODO: Apply Hash type instead of u8; 32
+pub type Hash = [u8; 32];
+
+// TODO: Encapsulate all run params in a single struct as they are used in another 9 functions/calls as input
+
+/*
+pub struct PhaseContext<'a> {
+    cancel_recv: &'a mut oneshot::Receiver<Context>,
+
+    inbound_msgs: &'a mut mpsc::Receiver<Message>,
+    future_msgs: &'a mut Queue<Message>,
+    outbound_msgs: &'a mut mpsc::Sender<Message>,
+
+    committee: Committee,
+
+    ru: RoundUpdate,
+    step: u8,
+}
+*/

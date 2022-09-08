@@ -9,20 +9,36 @@ use num_bigint::Sign::Plus;
 use sha3::{Digest, Sha3_256};
 
 #[derive(Debug, Clone, Default)]
-pub struct Config(pub [u8; 32], pub u64, pub u8, pub usize);
+pub struct Config {
+    pub seed: [u8; 32],
+    pub round: u64,
+    pub step: u8,
+    pub max_committee_size: usize,
+}
+
+impl Config {
+    pub fn new(seed: [u8; 32], round: u64, step: u8, max_committee_size: usize) -> Config {
+        Self {
+            seed,
+            round,
+            step,
+            max_committee_size,
+        }
+    }
+}
 
 // The deterministic procedure requires the set of active stakes,
 // ordered in ascending order from oldest to newest, the latest global seed,
 // current consensus round and current consensus step.
 
-pub fn create_sortition_hash(seed: [u8; 32], round: u64, step: u8, i: i32) -> [u8; 32] {
+pub fn create_sortition_hash(cfg: &Config, i: i32) -> [u8; 32] {
     let mut hasher = Sha3_256::new();
 
     // write input message
-    hasher.update(round.to_le_bytes());
+    hasher.update(cfg.round.to_le_bytes());
     hasher.update(i.to_le_bytes());
-    hasher.update(step.to_le_bytes());
-    hasher.update(seed.as_ref());
+    hasher.update(cfg.step.to_le_bytes());
+    hasher.update(cfg.seed.as_ref());
 
     // read hash digest
     let reader = hasher.finalize();
@@ -40,14 +56,14 @@ pub fn generate_sortition_score(hash: [u8; 32], total_weight: &BigInt) -> BigInt
 
 #[cfg(test)]
 mod tests {
-    use crate::user::sortition::{create_sortition_hash, generate_sortition_score};
+    use crate::user::sortition::{create_sortition_hash, generate_sortition_score, Config};
     use hex_literal::hex;
     use num_bigint::BigInt;
 
     #[test]
     pub fn test_sortition_hash() {
         assert_eq!(
-            create_sortition_hash([3; 32], 10, 3, 1)[..],
+            create_sortition_hash(&Config::new([3; 32], 10, 3, 0), 1)[..],
             hex!("670eea4ae10ef4cdbdb3a7b56e9b06a4aafdffaa2562923791ceaffda486d5c7")[..]
         );
     }
@@ -68,7 +84,7 @@ mod tests {
         ];
 
         for data in dataset {
-            let hash = create_sortition_hash(data.0, 10, 3, 1);
+            let hash = create_sortition_hash(&Config::new(data.0, 10, 3, 0), 1);
 
             let total_weight = BigInt::from(data.1);
             let res = generate_sortition_score(hash, &total_weight);

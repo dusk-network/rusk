@@ -11,7 +11,6 @@ use crate::util::cluster::Cluster;
 use math::round;
 use std::collections::BTreeMap;
 use std::mem;
-use tracing::error;
 
 #[allow(unused)]
 #[derive(Default, Debug, Clone)]
@@ -44,6 +43,8 @@ impl Committee {
             *committee.members.entry(*member_key).or_insert(0) += 1;
             committee.total += 1;
         }
+
+        debug_assert!(committee.total == provisioners.get_eligible_size(cfg.max_committee_size));
 
         committee
     }

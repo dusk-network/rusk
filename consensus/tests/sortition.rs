@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-
 use consensus::user::committee::Committee;
 use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
 use consensus::user::sortition::Config;
@@ -20,11 +19,11 @@ fn test_deterministic_sortition_1() {
     let mut p = read_provisioners();
 
     // Execute sortition with specific config
-    let cfg = Config([0; 32], 1, 1, 64);
-    p.update_eligibility_flag(cfg.1);
+    let cfg = Config::new([0; 32], 1, 1, 64);
+    p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![4, 13, 9, 16, 22],
+        vec![1, 2, 2],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -34,19 +33,58 @@ fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
     let mut p = read_provisioners();
 
-    let cfg = Config(
+    let cfg = Config::new(
         <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
             .unwrap_or([0; 32]),
         7777,
         8,
         45,
     );
-    p.update_eligibility_flag(cfg.1);
+    p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 5, 13, 11, 15],
+        vec![1, 2, 1, 1],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
+}
+
+#[test]
+fn test_quorum() {
+    // Create provisioners with bls keys read from an external file.
+    let mut p = read_provisioners();
+
+    let cfg = Config::new(
+        <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
+            .unwrap_or([0; 32]),
+        7777,
+        8,
+        64,
+    );
+    p.update_eligibility_flag(cfg.round);
+
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    assert_eq!(c.quorum(), 3);
+}
+
+#[test]
+fn test_quorum_max_size() {
+    // Create provisioners with bls keys read from an external file.
+    let mut p = read_provisioners();
+    let max_size = 3;
+
+    let cfg = Config::new(
+        <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
+            .unwrap_or([0; 32]),
+        7777,
+        8,
+        max_size,
+    );
+    p.update_eligibility_flag(cfg.round);
+
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    assert_eq!(c.quorum(), 2);
+
+    // TODO: c.bits()
 }
 
 fn read_provisioners() -> Provisioners {
