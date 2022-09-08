@@ -29,6 +29,10 @@ impl StakeContract {
             panic!("Can only be called from the transfer contract!");
         }
 
+        if !self.is_allowlisted(&pk).expect("Failed to query the state") {
+            panic!("The address is not allowed!");
+        }
+
         if value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
@@ -159,5 +163,46 @@ impl StakeContract {
 
         dusk_abi::transact_raw(self, &transfer, &transaction, 0)
             .expect("Failed to mint reward note");
+    }
+
+    pub fn allowlist(
+        &mut self,
+        pk: PublicKey,
+        signature: Signature,
+        owner: PublicKey,
+    ) {
+        if dusk_abi::caller() != rusk_abi::transfer_contract() {
+            panic!("Can only be called from the transfer contract!");
+        }
+
+        if self.is_allowlisted(&pk).expect("Failed to query the state") {
+            panic!("Address already allowed!");
+        }
+
+        if !self.is_owner(&owner).expect("Failed to query the state") {
+            panic!("Can only be called by a contract owner!");
+        }
+
+        // deplete the stake from a key and increment the signature counter
+        let mut owner_stake = self
+            .get_stake_mut(&owner)
+            .expect("Failed to query the state!")
+            .expect("The provided owner has no stake!");
+
+        let owner_counter = owner_stake.counter();
+
+        owner_stake.increment_counter();
+
+        drop(owner_stake);
+        // verify signature
+        let message = Self::allowlist_sign_message(owner_counter, &pk);
+        let valid_signature =
+            rusk_abi::verify_bls_sign(signature, owner, message);
+
+        if !valid_signature {
+            panic!("Invalid signature!");
+        }
+
+        self.insert_allowlist(pk).expect("Failed to allowlist");
     }
 }

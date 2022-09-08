@@ -112,4 +112,17 @@ impl StakeContract {
 
         (id, transaction)
     }
+
+    pub fn allowlist_transaction(
+        pk: PublicKey,
+        signature: Signature,
+        owner: PublicKey,
+    ) -> (ContractId, Transaction) {
+        let id = rusk_abi::stake_contract();
+
+        let transaction = (TX_ADD_ALLOWLIST, pk, owner, signature);
+        let transaction = Transaction::from_canon(&transaction);
+
+        (id, transaction)
+    }
 }
