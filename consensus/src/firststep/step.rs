@@ -46,7 +46,7 @@ impl Reduction {
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         inbound_msgs: &mut Receiver<Message>,
-        outbound_msgs: &mut Sender<Message>,
+        _outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,

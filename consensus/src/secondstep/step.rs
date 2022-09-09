@@ -7,7 +7,7 @@ use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::event_loop::MsgHandler;
-use crate::messages::{payload, Message};
+use crate::messages::Message;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
@@ -31,7 +31,7 @@ impl Reduction {
         }
     }
 
-    pub fn initialize(&mut self, msg: &Message) {
+    pub fn initialize(&mut self, _msg: &Message) {
         /*
         let empty = StepVotes::default();
 
@@ -48,7 +48,7 @@ impl Reduction {
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         inbound_msgs: &mut Receiver<Message>,
-        outbound_msgs: &mut Sender<Message>,
+        _outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,

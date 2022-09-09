@@ -24,9 +24,3 @@ impl MsgHandler<Message> for Reduction {
         Err(ConsensusError::NotImplemented)
     }
 }
-
-impl Reduction {
-    fn verify_signature(&self) {
-        // TODO VerifySignature
-    }
-}

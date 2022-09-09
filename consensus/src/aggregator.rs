@@ -11,7 +11,7 @@ use crate::user::provisioners::PublicKey;
 use crate::util::cluster::Cluster;
 use std::collections::BTreeMap;
 use std::fmt;
-use tracing::{debug, error, warn};
+use tracing::{error, warn};
 
 #[derive(Debug, Copy, Clone)]
 pub struct StepVotes {
@@ -51,11 +51,12 @@ impl Aggregator {
 
         // Aggregate Signatures
         if let Err(e) = entry.0.add(payload.signed_hash) {
-            panic!("{:?}", e);
+            error!("{:?}", e);
+            return None;
         }
 
         if let Some(weight) = committee.votes_for(header.pubkey_bls) {
-            // An eligible provisioner is allowed to vote only once per a single
+            // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
             let val = entry.1.set_weight(&header.pubkey_bls, *weight);
@@ -139,9 +140,9 @@ impl AggrSignature {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use crate::aggregator::Aggregator;
-    use crate::commons::Hash;
     use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, PublicKey, DUSK};
@@ -157,6 +158,15 @@ mod tests {
 
     #[test]
     fn test_collect_votes() {
+        let block_hash = <[u8; 32]>::from_hex(
+            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
+        )
+        .unwrap();
+
+        let empty_payload = messages::payload::Reduction {
+            signed_hash: Default::default(),
+        };
+
         // Create dummy provisioners
         let mut p = Provisioners::new();
         let mut headers = vec![];
@@ -168,7 +178,7 @@ mod tests {
                 pubkey_bls: simple_pubkey(i),
                 round: 0,
                 step: 0,
-                block_hash: [0; 32],
+                block_hash: block_hash,
             });
         }
 
@@ -177,42 +187,59 @@ mod tests {
         // Execute sortition with specific config
         let cfg = Config::new([0; 32], 1, 1, 64);
         let c = Committee::new(PublicKey::default(), &mut p, cfg);
+
         let mut a = Aggregator::default();
 
-        let payload = messages::payload::Reduction {
-            signed_hash: Default::default(),
-        };
-
         assert_eq!(
-            a.collect_vote(&c, headers.get(1).unwrap().clone(), payload.clone())
+            a.collect_vote(&c, headers.get(1).unwrap().clone(), empty_payload)
                 .is_none(),
             true
         );
 
-        // this provisioner has weight of 2. A single vote from it, should increase the total to 2
-        assert_eq!(a.get_total([0; 32]).unwrap(), 2);
+        // this provisioner has weight of 2. A single vote from it should increase the total to 2
+        assert_eq!(a.get_total(block_hash).unwrap(), 2);
 
         // Same bls key sending a vote, should be rejected
         assert_eq!(
-            a.collect_vote(&c, headers.get(1).unwrap().clone(), payload.clone())
+            a.collect_vote(&c, headers.get(1).unwrap().clone(), empty_payload)
                 .is_none(),
             true
         );
 
         // total unchanged after a duplicated vote
-        assert_eq!(a.get_total([0; 32]).unwrap(), 2);
+        assert_eq!(a.get_total(block_hash).unwrap(), 2);
 
-        // Simulate another provisioner is sending a vote. This one has a weight of 1.
+        // Simulate another provisioner sending a vote. This one has a weight of 1.
+        let sv = a
+            .collect_vote(&c, headers.get(2).unwrap().clone(), empty_payload)
+            .unwrap();
 
+        // Ensure returned step_votes is for the voted block hash
+        assert_eq!(sv.0, block_hash);
+        assert_eq!(sv.1.bitset, 6);
+
+        println!("{:#064b}", sv.1.bitset);
+        // 0b00000000000000000000000000000000000000000000000000000000000110
+
+        // Ensure total is updated with last vote weight
+        assert_eq!(a.get_total(block_hash).unwrap(), 3);
+        // Ensure should reach a quorum as total is 3 >= ceil(0.67*5)
+        assert!(a.get_total(block_hash).unwrap() >= c.quorum());
+
+        // msg header voting for an empty block hash
+        let header_with_empty_block_hash = messages::Header {
+            pubkey_bls: simple_pubkey(10),
+            round: 0,
+            step: 0,
+            block_hash: [0; 32],
+        };
+
+        // Vote for an empty block hash.
+        // Ensure this returns None as we don't have enough votes for an empty_block_hash yet.
         assert_eq!(
-            a.collect_vote(&c, headers.get(2).unwrap().clone(), payload.clone())
+            a.collect_vote(&c, header_with_empty_block_hash, empty_payload)
                 .is_none(),
-            false
+            true
         );
-
-        // total is updated with last vote weight
-        // Now we should reach a quorum as total is 3 >= ceil(0.67*5)
-        assert_eq!(a.get_total([0; 32]).unwrap(), 3);
-        assert!(a.get_total([0; 32]).unwrap() >= c.quorum());
     }
 }

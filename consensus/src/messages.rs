@@ -105,7 +105,7 @@ pub mod payload {
     use crate::commons::Block;
     use crate::commons::Signature;
 
-    #[derive(Default, Debug, Clone)]
+    #[derive(Default, Debug, Copy, Clone)]
     pub struct Reduction {
         pub signed_hash: Signature,
     }
