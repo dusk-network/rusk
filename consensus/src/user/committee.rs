@@ -8,7 +8,6 @@ use crate::consensus::CONSENSUS_QUORUM_THRESHOLD;
 use crate::user::provisioners::{Provisioners, PublicKey};
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
-use math::round;
 use std::collections::BTreeMap;
 use std::mem;
 
@@ -77,7 +76,7 @@ impl Committee {
 
     pub fn quorum(&self) -> usize {
         let size = self.total as f64;
-        round::ceil(size * CONSENSUS_QUORUM_THRESHOLD, 0) as usize
+        (size * CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {

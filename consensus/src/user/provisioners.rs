@@ -15,7 +15,7 @@ pub const RAW_PUBLIC_BLS_SIZE: usize = 193;
 pub const PUBLIC_BLS_SIZE: usize = 96;
 
 // TODO: We should use dusk_bls12_381_sign::PublicKey instead.
-#[derive(Eq, PartialEq, Clone, Copy, Debug, Ord, PartialOrd)]
+#[derive(Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
 pub struct PublicKey([u8; PUBLIC_BLS_SIZE]);
 
 impl PublicKey {
@@ -27,6 +27,21 @@ impl PublicKey {
         let mut hex = self.0.as_slice().encode_hex::<String>();
         hex.truncate(16);
         hex
+    }
+}
+
+impl std::fmt::Debug for PublicKey {
+    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
+        match *self {
+            PublicKey(ref v) => {
+                let mut hex = v.as_slice().encode_hex::<String>();
+                hex.truncate(16);
+
+                let debug_trait_builder = &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
+                let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
+                ::core::fmt::DebugTuple::finish(debug_trait_builder)
+            }
+        }
     }
 }
 

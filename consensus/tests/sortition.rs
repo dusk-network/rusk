@@ -63,28 +63,25 @@ fn test_quorum() {
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(c.quorum(), 3);
+    assert_eq!(c.quorum(), 4);
 }
 
 #[test]
 fn test_quorum_max_size() {
     // Create provisioners with bls keys read from an external file.
     let mut p = read_provisioners();
-    let max_size = 3;
 
     let cfg = Config::new(
         <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
             .unwrap_or([0; 32]),
         7777,
         8,
-        max_size,
+        4,
     );
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(c.quorum(), 2);
-
-    // TODO: c.bits()
+    assert_eq!(c.quorum(), 3);
 }
 
 fn read_provisioners() -> Provisioners {
