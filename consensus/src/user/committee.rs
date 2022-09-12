@@ -77,7 +77,7 @@ impl Committee {
 
     pub fn quorum(&self) -> usize {
         let size = self.total as f64;
-        round::ceil(size * CONSENSUS_QUORUM_THRESHOLD, 2) as usize
+        round::ceil(size * CONSENSUS_QUORUM_THRESHOLD, 0) as usize
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
@@ -89,11 +89,11 @@ impl Committee {
         for item in voters.0.iter() {
             pos = 0;
             for member in self.members.iter() {
-                pos += 1;
                 if member.0 == item.0 {
                     bits |= 1 << pos; // flip the i-th bit to 1
                     break;
                 }
+                pos += 1;
             }
         }
 
