@@ -31,31 +31,33 @@ impl Aggregator {
         header: Header,
         payload: payload::Reduction,
     ) -> Option<(Hash, StepVotes)> {
-        let hash: Hash = header.block_hash;
-
-        let entry = self
-            .0
-            .entry(hash)
-            .or_insert((AggrSignature::default(), Cluster::<PublicKey>::new()));
-
-        // Each committee has 64 slots. If a Provisioner is extracted into
-        // multiple slots, then he/she only needs to send one vote which can be
-        // taken account as a vote for all his/her slots. Otherwise, if a
-        // Provisioner is only extracted to one slot per committee, then a single
-        // vote is taken into account (if more votes for the same slot are
-        // propagated, those are discarded).
-        if entry.1.contains_key(&header.pubkey_bls) {
-            warn!("discarding duplicated votes from a provisioner");
-            return None;
-        }
-
-        // Aggregate Signatures
-        if let Err(e) = entry.0.add(payload.signed_hash) {
-            error!("{:?}", e);
-            return None;
-        }
-
+        // Get weight for this pubkey bls. If it is 0, it means the key is not a committee member,
+        // respectively we should not process a vote from it.
         if let Some(weight) = committee.votes_for(header.pubkey_bls) {
+            let hash: Hash = header.block_hash;
+
+            let entry = self
+                .0
+                .entry(hash)
+                .or_insert((AggrSignature::default(), Cluster::<PublicKey>::new()));
+
+            // Each committee has 64 slots. If a Provisioner is extracted into
+            // multiple slots, then he/she only needs to send one vote which can be
+            // taken account as a vote for all his/her slots. Otherwise, if a
+            // Provisioner is only extracted to one slot per committee, then a single
+            // vote is taken into account (if more votes for the same slot are
+            // propagated, those are discarded).
+            if entry.1.contains_key(&header.pubkey_bls) {
+                warn!("discarding duplicated votes from a provisioner");
+                return None;
+            }
+
+            // Aggregate Signatures
+            if let Err(e) = entry.0.add(payload.signed_hash) {
+                error!("{:?}", e);
+                return None;
+            }
+
             // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
@@ -75,11 +77,6 @@ impl Aggregator {
                     },
                 ));
             }
-        } else {
-            error!(
-                "pubkey: {} not a committee member",
-                header.pubkey_bls.encode_short_hex()
-            );
         }
 
         None
@@ -158,6 +155,9 @@ mod tests {
 
     #[test]
     fn test_collect_votes() {
+        let round = 1;
+        let step = 1;
+
         let block_hash = <[u8; 32]>::from_hex(
             "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
         )
@@ -176,8 +176,8 @@ mod tests {
             // headers of messages voting for an empty block_hash
             headers.push(messages::Header {
                 pubkey_bls: simple_pubkey(i),
-                round: 0,
-                step: 0,
+                round: round,
+                step: step,
                 block_hash: block_hash,
             });
         }
@@ -185,11 +185,23 @@ mod tests {
         p.update_eligibility_flag(1);
 
         // Execute sortition with specific config
-        let cfg = Config::new([0; 32], 1, 1, 64);
+        let cfg = Config::new([0; 32], round, step, 64);
         let c = Committee::new(PublicKey::default(), &mut p, cfg);
+
+        assert_eq!(c.quorum(), 4);
 
         let mut a = Aggregator::default();
 
+        // Ensure voting with a non-committee member, no change is applied.
+        assert_eq!(
+            a.collect_vote(&c, headers.get(0).unwrap().clone(), empty_payload)
+                .is_none(),
+            true
+        );
+
+        assert_eq!(a.get_total(block_hash).is_none(), true);
+
+        // Ensure voting with a committee member, total_occurrences for this hash is updated.
         assert_eq!(
             a.collect_vote(&c, headers.get(1).unwrap().clone(), empty_payload)
                 .is_none(),
@@ -210,20 +222,28 @@ mod tests {
         assert_eq!(a.get_total(block_hash).unwrap(), 2);
 
         // Simulate another provisioner sending a vote. This one has a weight of 1.
+        assert_eq!(
+            a.collect_vote(&c, headers.get(2).unwrap().clone(), empty_payload)
+                .is_none(),
+            true
+        );
+
+        // Ensure total is updated with last vote weight
+        assert_eq!(a.get_total(block_hash).unwrap(), 3);
+
         let sv = a
-            .collect_vote(&c, headers.get(2).unwrap().clone(), empty_payload)
+            .collect_vote(&c, headers.get(3).unwrap().clone(), empty_payload)
             .unwrap();
 
         // Ensure returned step_votes is for the voted block hash
         assert_eq!(sv.0, block_hash);
-        assert_eq!(sv.1.bitset, 6);
 
-        println!("{:#064b}", sv.1.bitset);
-        // 0b00000000000000000000000000000000000000000000000000000000000110
+        // println!("bitset: {:#064b}", sv.1.bitset);
+        // bitset: 0b00000000000000000000000000000000000000000000000000000000000111
 
-        // Ensure total is updated with last vote weight
-        assert_eq!(a.get_total(block_hash).unwrap(), 3);
-        // Ensure should reach a quorum as total is 3 >= ceil(0.67*5)
+        assert_eq!(sv.1.bitset, 7);
+
+        // Ensure should reach a quorum as total is 4 >= ceil(0.67*5)
         assert!(a.get_total(block_hash).unwrap() >= c.quorum());
 
         // msg header voting for an empty block hash
