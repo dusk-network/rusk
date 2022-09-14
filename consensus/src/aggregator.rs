@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{Hash, Signature};
+use crate::messages::payload::StepVotes;
 use crate::messages::{payload, Header};
 use crate::user::committee::Committee;
 use crate::user::provisioners::PublicKey;
@@ -12,12 +13,6 @@ use crate::util::cluster::Cluster;
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
-
-#[derive(Debug, Copy, Clone)]
-pub struct StepVotes {
-    pub bitset: u64,
-    pub signature: Signature,
-}
 
 /// Aggregator collects votes per a block hash by aggregating signatures of
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
@@ -176,9 +171,9 @@ mod tests {
             // headers of messages voting for an empty block_hash
             headers.push(messages::Header {
                 pubkey_bls: simple_pubkey(i),
-                round: round,
-                step: step,
-                block_hash: block_hash,
+                round,
+                step,
+                block_hash,
             });
         }
 

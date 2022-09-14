@@ -111,7 +111,7 @@ impl Selection {
             signed_hash: [0; 32],
         };
 
-        Message::new_newblock(
+        Message::from_newblock(
             Header {
                 pubkey_bls: ru.pubkey_bls,
                 round: ru.round,

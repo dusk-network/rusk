@@ -6,6 +6,7 @@
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::event_loop::MsgHandler;
 use crate::messages::Message;
+use crate::user::committee::Committee;
 
 pub struct Selection {}
 
@@ -14,6 +15,7 @@ impl MsgHandler<Message> for Selection {
     fn handle_internal(
         &mut self,
         msg: Message,
+        _committee: &Committee,
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<Message, ConsensusError> {

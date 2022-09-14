@@ -3,21 +3,18 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{Block, Header, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::phase::Phase;
 
-use crate::selection;
-use crate::{firststep, secondstep};
-
+use crate::agreement::step;
 use crate::messages::Message;
 use crate::queue::Queue;
+use crate::selection;
 use crate::user::provisioners::Provisioners;
-use std::thread::sleep;
-use std::time::Duration;
+use crate::{firststep, secondstep};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use tokio::task::JoinHandle;
-use tracing::{error, info, trace};
+use tracing::{error, info};
 
 pub const CONSENSUS_MAX_STEP: u8 = 213;
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
@@ -42,6 +39,9 @@ pub struct Consensus {
 
     /// outbound_msgs is a queue of messages, this consensus instance shares with the outside world.
     outbound_msgs: Sender<Message>,
+
+    /// agreement_layer implements Agreement message handler within the context of a separate task execution.
+    agreement_layer: step::Agreement,
 }
 
 impl Consensus {
@@ -55,6 +55,7 @@ impl Consensus {
             future_msgs: Queue::<Message>::default(),
             inbound_msgs,
             outbound_msgs: outbound_msg,
+            agreement_layer: step::Agreement::new(),
         }
     }
 
@@ -73,91 +74,84 @@ impl Consensus {
         provisioners.update_eligibility_flag(ru.round);
 
         // Round context channel.
-        let (round_ctx_tx, mut round_ctx_rx) = oneshot::channel::<Context>();
+        let (_, mut ctx) = oneshot::channel::<Context>();
 
         // Agreement loop
         // Executes agreement loop in a separate tokio::task to collect (aggr)Agreement messages.
-        let aggr_handle = self.spawn_agreement_loop(round_ctx_tx, ru);
+        let aggr_handle = self.agreement_layer.spawn(ru, provisioners.clone());
 
         // Consensus loop
         // Initialize and run consensus loop concurrently with agreement loop.
         let mut step: u8 = 0;
-        let mut msg = Message::empty();
 
-        'exit: loop {
+        loop {
             // Perform a single iteration.
             // An iteration runs all registered phases in a row.
-            for phase in self.phases.iter_mut() {
-                step += 1;
-                if step >= CONSENSUS_MAX_STEP {
-                    error!("max steps reached");
+            let iter_result = self
+                .run_iteration(&mut ctx, ru, &mut step, &mut provisioners)
+                .await;
+
+            match iter_result {
+                Ok(msg) => {
+                    // Delegate (agreement) message result to agreement loop for further processing.
+                    self.agreement_layer.send_msg(msg.clone()).await;
+                }
+                Err(err) => {
+                    error!("{:?}", err);
                     aggr_handle.abort();
-                    break 'exit;
+                    break;
                 }
-
-                // Initialize new phase with message returned by previous phase.
-                phase.initialize(&msg, ru.round, step);
-
-                // Execute a phase.
-                // An error returned here terminates consensus round.
-                // This normally happens if consensus channel is cancelled
-                // by agreement loop on finding the winning block for this round.
-                if let Ok(next_msg) = phase
-                    .run(
-                        &mut provisioners,
-                        &mut self.future_msgs,
-                        &mut round_ctx_rx,
-                        &mut self.inbound_msgs,
-                        &mut self.outbound_msgs,
-                        ru,
-                        step,
-                    )
-                    .await
-                {
-                    msg = next_msg;
-                } else {
-                    break 'exit;
-                }
-            }
+            };
         }
 
         let winning_block = aggr_handle.await.unwrap();
-        info!("Winning block: {}", winning_block);
+        info!("Winning block: {:?}", winning_block);
 
         self.teardown(ru.round).await;
     }
 
-    // TODO: Implement agreement loop.
-    pub fn spawn_agreement_loop(
+    async fn run_iteration(
         &mut self,
-        round_ctx_sender: oneshot::Sender<Context>,
+        ctx: &mut oneshot::Receiver<Context>,
         ru: RoundUpdate,
-    ) -> JoinHandle<Block> {
-        tokio::spawn(async move {
-            let mut counter: u8 = 0;
-            loop {
-                counter += 1;
-                trace!("run agreement loop at round:{} ", ru.round);
+        step: &mut u8,
+        provisioners: &mut Provisioners,
+    ) -> Result<Message, ConsensusError> {
+        let mut msg = Message::empty();
 
-                //TODO: Remove the delay
-                // Simulate time spent on agreements collecting
-                sleep(Duration::from_millis(1000));
-
-                if counter == 3 * 5 + 2 {
-                    let _ = round_ctx_sender.send(Context::new());
-                    break;
-                }
+        for phase in self.phases.iter_mut() {
+            *step += 1;
+            if *step >= CONSENSUS_MAX_STEP {
+                return Err(ConsensusError::MaxStepReached);
             }
 
-            // Return winning block to the parent loop
-            Block {
-                header: Header {
-                    height: ru.round,
-                    ..Default::default()
-                },
-                txs: vec![],
+            // Initialize new phase with message returned by previous phase.
+            phase.initialize(&msg, ru.round, *step);
+
+            // Execute a phase.
+            // An error returned here terminates consensus round.
+            // This normally happens if consensus channel is cancelled
+            // by agreement loop on finding the winning block for this round.
+            if let Ok(next_msg) = phase
+                .run(
+                    provisioners,
+                    &mut self.future_msgs,
+                    ctx,
+                    &mut self.inbound_msgs,
+                    &mut self.outbound_msgs,
+                    ru,
+                    *step,
+                )
+                .await
+            {
+                msg = next_msg;
+            } else {
+                // TODO: chain err from run call
+                return Err(ConsensusError::NotReady);
             }
-        })
+        }
+
+        Ok(msg)
     }
 
     async fn teardown(&mut self, round: u64) {

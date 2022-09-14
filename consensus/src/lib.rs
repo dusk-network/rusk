@@ -6,9 +6,9 @@ pub mod messages;
 pub mod user;
 
 pub mod aggregator;
+mod agreement;
 mod event_loop;
 mod firststep;
-mod frame;
 mod phase;
 mod queue;
 mod secondstep;

@@ -3,11 +3,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+use crate::aggregator::Aggregator;
 use crate::commons::{RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
 use crate::firststep::handler;
-use crate::messages::Message;
+use crate::messages::{payload, Message, Payload};
 use crate::queue::Queue;
 use crate::user::committee::Committee;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -19,27 +20,26 @@ pub const COMMITTEE_SIZE: usize = 64;
 pub struct Reduction {
     pub timeout: u16,
     handler: handler::Reduction,
+    selection_result: Box<payload::NewBlock>,
 }
 
 impl Reduction {
     pub fn new() -> Self {
         Self {
             timeout: 0,
-            handler: handler::Reduction {},
+            handler: handler::Reduction {
+                aggr: Aggregator::default(),
+            },
+            selection_result: Default::default(),
         }
     }
 
-    pub fn initialize(&mut self, _msg: &Message) {
-        /*
-        let empty = frame::NewBlock::default();
-
-        let mut _new_block = match frame {
-            Frame::NewBlock(f) => f,
-            Frame::StepVotes(_) => panic!("invalid frame"),
-            Frame::Empty => &empty,
+    pub fn initialize(&mut self, msg: &Message) {
+        // TODO move msg here instead of clone
+        self.selection_result = match msg.clone().payload {
+            Payload::NewBlock(p) => p,
+            _ => Box::new(payload::NewBlock::default()),
         };
-
-         */
     }
 
     pub async fn run(

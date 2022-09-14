@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::BTreeMap;
-use tracing::trace;
+
 
 #[derive(Debug)]
 pub struct Cluster<T>(pub BTreeMap<T, usize>);
@@ -31,7 +31,7 @@ where
         total
     }
 
-    // set_weight can set weight only once.
+    /// set_weight can set weight only once.
     pub fn set_weight(&mut self, key: &T, weight: usize) -> Option<usize> {
         let entry = self.0.entry(*key).or_insert(0);
         if *entry > 0 {
@@ -41,12 +41,6 @@ where
 
         *entry = weight;
         Some(*entry)
-    }
-
-    pub fn trace(&self) -> () {
-        for elem in self.0.iter() {
-            trace!("item: {:#?}, size: {:#?}", elem.0, elem.1);
-        }
     }
 }
 

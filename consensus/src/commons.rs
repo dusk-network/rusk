@@ -70,9 +70,12 @@ pub enum ConsensusError {
     InvalidRoundStep,
     InvalidBlock,
     InvalidSignature,
+    InvalidMsgType,
     FutureEvent,
     NotCommitteeMember,
     NotImplemented,
+    NotReady,
+    MaxStepReached,
 }
 
 // TODO: This to be replaced with bls::Signature

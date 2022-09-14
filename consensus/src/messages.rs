@@ -37,10 +37,17 @@ impl MessageTrait for Message {
 }
 
 impl Message {
-    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
+    pub fn from_newblock(header: Header, p: payload::NewBlock) -> Message {
         Self {
             header,
             payload: Payload::NewBlock(Box::new(p)),
+        }
+    }
+
+    pub fn from_stepvotes(p: payload::StepVotes) -> Message {
+        Self {
+            header: Header::default(),
+            payload: Payload::StepVotes(p),
         }
     }
 
@@ -92,6 +99,7 @@ impl Header {
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
+    StepVotes(payload::StepVotes),
     Empty,
 }
 
@@ -115,5 +123,17 @@ pub mod payload {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
         pub signed_hash: [u8; 32],
+    }
+
+    #[derive(Debug, Copy, Clone)]
+    pub struct StepVotes {
+        pub bitset: u64,
+        pub signature: Signature,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Agreement {
+        pub signature: Signature,
+        pub votes_per_step: Vec<StepVotes>,
     }
 }

@@ -113,7 +113,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
                 }
 
                 // Delegate message handling to the phase implementation.
-                self.handle_internal(msg, ru, step)
+                self.handle_internal(msg, committee, ru, step)
             }
             Status::Future => Err(ConsensusError::FutureEvent),
         }
@@ -123,6 +123,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     fn handle_internal(
         &mut self,
         msg: T,
+        committee: &Committee,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Message, ConsensusError>;

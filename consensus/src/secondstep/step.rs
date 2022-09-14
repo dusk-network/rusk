@@ -27,7 +27,9 @@ pub struct Reduction {
 impl Reduction {
     pub fn new() -> Self {
         Self {
-            handler: handler::Reduction {},
+            handler: handler::Reduction {
+                aggr: Default::default(),
+            },
         }
     }
 
@@ -68,7 +70,7 @@ impl Reduction {
             }
         }
 
-        event_loop(
+        match event_loop(
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
@@ -78,6 +80,15 @@ impl Reduction {
             future_msgs,
         )
         .await
+        {
+            Err(SelectError::Timeout) => {
+                //TODO create agreement with empty block
+                // self.handler.on_timeout();
+                Ok(Message::empty())
+            }
+            Err(err) => Err(err),
+            Ok(res) => Ok(res),
+        }
     }
 
     pub fn name(&self) -> &'static str {
