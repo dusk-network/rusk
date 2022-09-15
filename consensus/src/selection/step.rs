@@ -59,7 +59,7 @@ impl Selection {
         }
 
         // drain future messages for current round and step.
-        if let Ok(messages) = future_msgs.get_events(ru.round, step).await {
+        if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
                     return Ok(f);

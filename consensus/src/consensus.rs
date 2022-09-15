@@ -155,6 +155,6 @@ impl Consensus {
     }
 
     async fn teardown(&mut self, round: u64) {
-        let _ = self.future_msgs.clear(round).await;
+        let _ = self.future_msgs.clear(round);
     }
 }

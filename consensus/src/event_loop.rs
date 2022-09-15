@@ -58,7 +58,7 @@ pub async fn event_loop<C: MsgHandler<Message>>(
                     if e == ConsensusError::FutureEvent {
                         // This is a message from future round or step. We store
                         // it in future_msgs to be process later on.
-                        future_msgs.put_event(ru.round, step, msg).await;
+                        future_msgs.put_event(ru.round, step, msg);
                     }
 
                     continue;
