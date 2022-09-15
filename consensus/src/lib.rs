@@ -4,6 +4,7 @@ pub mod commons;
 pub mod consensus;
 pub mod messages;
 pub mod user;
+pub mod util;
 
 pub mod aggregator;
 mod agreement;
@@ -13,7 +14,6 @@ mod phase;
 mod queue;
 mod secondstep;
 mod selection;
-mod util;
 
 #[cfg(test)]
 mod tests {}

@@ -11,7 +11,7 @@ use crate::messages::{payload::NewBlock, Header, Message};
 use crate::queue::Queue;
 use crate::selection::handler;
 use crate::user::committee::Committee;
-use crate::user::provisioners::PublicKey;
+use crate::util::pubkey::PublicKey;
 use sha3::{Digest, Sha3_256};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info};

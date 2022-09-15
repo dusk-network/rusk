@@ -10,11 +10,11 @@ use crate::event_loop::MsgHandler;
 use crate::messages::Message;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
-use crate::user::provisioners::PublicKey;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
 use crate::queue::Queue;
+use crate::util::pubkey::PublicKey;
 use tracing::debug;
 
 pub const COMMITTEE_SIZE: usize = 64;

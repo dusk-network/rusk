@@ -22,12 +22,13 @@ impl Accumulator {
 
         Self { task: handle }
     }
-
+    /* TODO
     pub fn process(&mut self, _msg: Message) {}
 
     fn verify(_msg: Message) {
         // TODO: generate committee
     }
+     */
 }
 
 impl Drop for Accumulator {

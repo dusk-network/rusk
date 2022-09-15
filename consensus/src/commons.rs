@@ -6,8 +6,7 @@
 
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
-
-use crate::user::provisioners::PublicKey;
+use crate::util::pubkey::PublicKey;
 use std::fmt;
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -81,7 +80,7 @@ pub enum ConsensusError {
 // TODO: This to be replaced with bls::Signature
 
 #[derive(Debug, Copy, Clone)]
-pub struct Signature([u8; 48]);
+pub struct Signature(pub [u8; 48]);
 impl Signature {
     pub fn is_zeroed(&self) -> bool {
         self.0 == [0; 48]

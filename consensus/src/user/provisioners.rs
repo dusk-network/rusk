@@ -6,44 +6,13 @@
 
 use crate::user::sortition;
 use crate::user::stake::Stake;
-use hex::ToHex;
+use crate::util::pubkey::PublicKey;
+
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
 
 pub const DUSK: u64 = 100_000_000;
-pub const RAW_PUBLIC_BLS_SIZE: usize = 193;
-pub const PUBLIC_BLS_SIZE: usize = 96;
-
-// TODO: We should use dusk_bls12_381_sign::PublicKey instead.
-#[derive(Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
-pub struct PublicKey([u8; PUBLIC_BLS_SIZE]);
-
-impl PublicKey {
-    pub fn new(input: [u8; PUBLIC_BLS_SIZE]) -> Self {
-        Self(input)
-    }
-
-    pub fn encode_short_hex(&self) -> String {
-        let mut hex = self.0.as_slice().encode_hex::<String>();
-        hex.truncate(16);
-        hex
-    }
-}
-
-impl std::fmt::Debug for PublicKey {
-    fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-        match *self {
-            PublicKey(ref v) => {
-                let mut hex = v.as_slice().encode_hex::<String>();
-                hex.truncate(16);
-
-                let debug_trait_builder = &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
-                let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
-                ::core::fmt::DebugTuple::finish(debug_trait_builder)
-            }
-        }
-    }
-}
+const RAW_PUBLIC_BLS_SIZE: usize = 193;
 
 #[derive(Clone, Debug)]
 #[allow(unused)]
@@ -56,12 +25,10 @@ pub struct Member {
 
 impl Member {
     pub fn new(pubkey_bls: PublicKey) -> Self {
-        // TODO: let raw_pubkey_bls = pubkey_bls.0.to_raw_bytes();
-        let raw_pubkey_bls = [0; RAW_PUBLIC_BLS_SIZE];
         Self {
             stakes: vec![],
             pubkey_bls,
-            raw_pubkey_bls,
+            raw_pubkey_bls: pubkey_bls.to_raw_bytes(),
         }
     }
 
@@ -111,13 +78,6 @@ impl Member {
         }
 
         BigInt::from(total)
-    }
-}
-
-impl Default for PublicKey {
-    #[inline]
-    fn default() -> PublicKey {
-        PublicKey([0; PUBLIC_BLS_SIZE])
     }
 }
 

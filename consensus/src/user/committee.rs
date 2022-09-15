@@ -5,9 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::consensus::CONSENSUS_QUORUM_THRESHOLD;
-use crate::user::provisioners::{Provisioners, PublicKey};
+use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
+use crate::util::pubkey::PublicKey;
 use std::collections::BTreeMap;
 use std::mem;
 

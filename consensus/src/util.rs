@@ -4,3 +4,4 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 pub mod cluster;
+pub mod pubkey;

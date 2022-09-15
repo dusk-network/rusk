@@ -9,9 +9,8 @@ use crate::commons::{Block, RoundUpdate};
 use crate::messages::Message;
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
-use std::borrow::BorrowMut;
 use std::fmt::Error;
-use std::ops::Deref;
+
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -69,9 +68,12 @@ impl Agreement {
             (*is_running.lock().await) = true;
 
             // Run agreement life-cycle loop
-            let res = Executor { ru, provisioners }
-                .run(agreement_rx, future_msgs)
-                .await;
+            let res = Executor {
+                ru,
+                _provisioners: provisioners,
+            }
+            .run(agreement_rx, future_msgs)
+            .await;
 
             (*is_running.lock().await) = false;
             res
@@ -82,7 +84,7 @@ impl Agreement {
 /// Executor implements life-cycle loop of a single agreement instance. This should be started with each new round and dropped on round termination.
 struct Executor {
     ru: RoundUpdate,
-    provisioners: Provisioners,
+    _provisioners: Provisioners,
 }
 
 // Agreement non-pub methods
@@ -90,7 +92,7 @@ impl Executor {
     async fn run(
         &self,
         mut inbound_msg: Receiver<Message>,
-        mut future_msgs: Arc<Mutex<Queue<Message>>>,
+        future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, Error> {
         // Accumulator
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);

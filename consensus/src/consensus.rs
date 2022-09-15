@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{Block, ConsensusError, RoundUpdate};
 use crate::phase::Phase;
 
 use crate::agreement::step;
@@ -104,7 +104,7 @@ impl Consensus {
             };
         }
 
-        let winning_block = aggr_handle.await.unwrap();
+        let winning_block = aggr_handle.await.unwrap_or(Ok(Block::default()));
         info!("Winning block: {:?}", winning_block);
 
         self.teardown(ru.round).await;
@@ -155,6 +155,6 @@ impl Consensus {
     }
 
     async fn teardown(&mut self, round: u64) {
-        let _ = self.future_msgs.clear(round);
+        self.future_msgs.clear(round);
     }
 }

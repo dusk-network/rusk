@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::user::provisioners::PublicKey;
 
+use crate::util::pubkey::PublicKey;
 pub enum Status {
     Past,
     Present,
@@ -128,12 +128,12 @@ pub mod payload {
     #[derive(Debug, Copy, Clone)]
     pub struct StepVotes {
         pub bitset: u64,
-        pub signature: Signature,
+        pub signature: [u8; 48],
     }
 
     #[derive(Debug, Clone)]
     pub struct Agreement {
-        pub signature: Signature,
+        pub signature: [u8; 48],
         pub votes_per_step: Vec<StepVotes>,
     }
 }

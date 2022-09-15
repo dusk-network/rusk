@@ -4,26 +4,27 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use consensus::user::committee::Committee;
-use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
+use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::user::sortition::Config;
+use consensus::util::pubkey::PublicKey;
 
 use hex::FromHex;
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+
+
+
+
 
 #[test]
 fn test_deterministic_sortition_1() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = read_provisioners();
+    let mut p = generate_provisioners(5);
 
     // Execute sortition with specific config
     let cfg = Config::new([0; 32], 1, 1, 64);
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 2, 2],
+        vec![1, 1, 1, 1, 1],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -31,7 +32,7 @@ fn test_deterministic_sortition_1() {
 #[test]
 fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = read_provisioners();
+    let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
         <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
@@ -43,7 +44,7 @@ fn test_deterministic_sortition_2() {
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 2, 1, 1],
+        vec![1, 1, 1, 1, 1],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -51,7 +52,7 @@ fn test_deterministic_sortition_2() {
 #[test]
 fn test_quorum() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = read_provisioners();
+    let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
         <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
@@ -69,7 +70,7 @@ fn test_quorum() {
 #[test]
 fn test_quorum_max_size() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = read_provisioners();
+    let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
         <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
@@ -84,31 +85,11 @@ fn test_quorum_max_size() {
     assert_eq!(c.quorum(), 3);
 }
 
-fn read_provisioners() -> Provisioners {
-    let test_data = env::var("CARGO_MANIFEST_DIR").unwrap_or_default() + "/tests/provisioners.txt";
-
-    // Create provisioners with bls keys read from an external file.
+fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
-    if let Ok(lines) = read_lines(test_data) {
-        let mut i = 1;
-        for line in lines {
-            if let Ok(bls_key) = line {
-                // parse hex from file line
-                let key = <[u8; 96]>::from_hex(bls_key).unwrap_or([0; 96]);
-                let stake_value = 1000 * i * DUSK;
-
-                p.add_member_with_value(PublicKey::new(key), stake_value);
-
-                i += 1;
-            }
-        }
+    for i in 0..n {
+        let stake_value = 1000 * (i as u64) * DUSK;
+        p.add_member_with_value(PublicKey::from_sk_seed_u64(n as u64), stake_value);
     }
     p
-}
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
 }

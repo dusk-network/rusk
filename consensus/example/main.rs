@@ -1,46 +1,25 @@
-use hex::FromHex;
-use std::env;
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+
+
+
+
+
 use std::time::Duration;
 use tokio::sync::mpsc;
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::Message;
-use consensus::user::provisioners::{Provisioners, PublicKey, DUSK};
+use consensus::user::provisioners::{Provisioners, DUSK};
 use tokio::sync::mpsc::{Receiver, Sender};
 
+use consensus::util::pubkey::PublicKey;
 use tokio::time;
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
-
-fn read_provisioners() -> Provisioners {
-    // TODO: duplciated code
-    let test_data = env::var("CARGO_MANIFEST_DIR").unwrap_or_default() + "/tests/provisioners.txt";
-
-    // Create provisioners with bls keys read from an external file.
+fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
-    if let Ok(lines) = read_lines(test_data) {
-        let mut i = 1;
-        for line in lines {
-            if let Ok(bls_key) = line {
-                // parse hex from file line
-                let key = <[u8; 96]>::from_hex(bls_key).unwrap_or([0; 96]);
-                let stake_value = 1000 * i * DUSK;
-
-                p.add_member_with_value(PublicKey::new(key), stake_value);
-
-                i += 1;
-            }
-        }
+    for i in 0..n {
+        let stake_value = 1000 * (i as u64) * DUSK;
+        p.add_member_with_value(PublicKey::from_sk_seed_u64(n as u64), stake_value);
     }
     p
 }
@@ -50,8 +29,9 @@ async fn perform_basic_run() {
 
     let (sender_bridge, mut recv_bridge) = mpsc::channel::<Message>(1000);
 
-    // Initialize message sources that feeds Consensus.
-    let mocked = read_provisioners();
+    // Initialize N dummy provisioners
+    let mocked = generate_provisioners(5);
+
     let provisioners = mocked.clone();
     for p in mocked.into_iter() {
         let (to_inbound, inbound_msgs) = mpsc::channel::<Message>(10);

@@ -4,12 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Hash, Signature};
+use crate::commons::Hash;
 use crate::messages::payload::StepVotes;
 use crate::messages::{payload, Header};
 use crate::user::committee::Committee;
-use crate::user::provisioners::PublicKey;
 use crate::util::cluster::Cluster;
+use crate::util::pubkey::PublicKey;
+use dusk_bytes::Serializable;
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
@@ -17,6 +18,7 @@ use tracing::{error, warn};
 /// Aggregator collects votes per a block hash by aggregating signatures of
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
+#[derive(Default)]
 pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<PublicKey>)>);
 
 impl Aggregator {
@@ -48,7 +50,7 @@ impl Aggregator {
             }
 
             // Aggregate Signatures
-            if let Err(e) = entry.0.add(payload.signed_hash) {
+            if let Err(e) = entry.0.add(payload.signed_hash.0) {
                 error!("{:?}", e);
                 return None;
             }
@@ -85,12 +87,6 @@ impl Aggregator {
     }
 }
 
-impl Default for Aggregator {
-    fn default() -> Self {
-        Self(BTreeMap::default())
-    }
-}
-
 impl fmt::Display for Aggregator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (hash, value) in self.0.iter() {
@@ -101,51 +97,52 @@ impl fmt::Display for Aggregator {
 }
 
 #[derive(Debug)]
-pub enum AggrSigError {}
-
-struct AggrSignature {
-    signature: Signature,
+pub enum AggrSigError {
+    InvalidData,
 }
 
-impl Default for AggrSignature {
-    fn default() -> Self {
-        Self {
-            signature: Signature::default(),
-        }
-    }
+#[derive(Default)]
+struct AggrSignature {
+    data: Option<dusk_bls12_381_sign::Signature>,
 }
 
 impl AggrSignature {
-    pub fn add(&mut self, signature: Signature) -> Result<(), AggrSigError> {
-        if self.signature.is_zeroed() {
-            self.signature = signature;
-            return Ok(());
+    pub fn add(&mut self, data: [u8; 48]) -> Result<(), AggrSigError> {
+        match dusk_bls12_381_sign::Signature::from_bytes(&data) {
+            Ok(s) => {
+                if self.data.is_none() {
+                    self.data = Some(s);
+                } else {
+                    self.data = Some(self.data.unwrap().aggregate(&[s]));
+                }
+                Ok(())
+            }
+            // TODO: don't mask the real error
+            Err(_) => Err(AggrSigError::InvalidData),
         }
-
-        /* TODO: bls.AggregateSig(s.Signature, signature)
-         */
-        Ok(())
     }
 
-    pub fn get_aggregated(&self) -> Signature {
-        self.signature
+    pub fn get_aggregated(&self) -> [u8; 48] {
+        self.data.unwrap().to_bytes()
     }
 }
 
+/* TODO: Enable aggregator unit test with hard-coded seeds for both golang and rustlang implementations
 #[cfg(test)]
 mod tests {
     use crate::aggregator::Aggregator;
     use crate::messages;
     use crate::user::committee::Committee;
-    use crate::user::provisioners::{Provisioners, PublicKey, DUSK};
+    use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
+    use crate::util::bls_keys::PublicKey;
     use hex::FromHex;
 
     fn simple_pubkey(b: u8) -> PublicKey {
         let mut key: [u8; 96] = [0; 96];
         key[0] = b;
 
-        PublicKey::new(key)
+        PublicKey::from_array_unchecked(key)
     }
 
     #[test]
@@ -258,3 +255,6 @@ mod tests {
         );
     }
 }
+
+
+ */

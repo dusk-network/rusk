@@ -36,7 +36,7 @@ impl<T: Debug + Clone> Queue<T> {
     }
 
     pub fn get_events(&self, round: u64, step: u8) -> Result<Vec<T>, Error> {
-        let queue = &self.0;
+        let _queue = &self.0;
 
         // TODO: here we should consider to consume the array of events instead of returning a deep copy.
 
@@ -92,7 +92,7 @@ mod tests {
             vec![Item(5), Item(4), Item(3)],
         );
 
-        let _ = queue.clear(round);
+        queue.clear(round);
 
         assert_eq!(queue.get_events(round, 2).unwrap_err(), Error::NotFound,);
     }
