@@ -10,10 +10,6 @@ use consensus::util::pubkey::PublicKey;
 
 use hex::FromHex;
 
-
-
-
-
 #[test]
 fn test_deterministic_sortition_1() {
     // Create provisioners with bls keys read from an external file.
@@ -24,7 +20,7 @@ fn test_deterministic_sortition_1() {
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 1, 1, 1, 1],
+        vec![2, 1, 1],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -44,7 +40,7 @@ fn test_deterministic_sortition_2() {
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 1, 1, 1, 1],
+        vec![1, 3],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -64,7 +60,7 @@ fn test_quorum() {
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(c.quorum(), 4);
+    assert_eq!(c.quorum(), 3);
 }
 
 #[test]
@@ -85,11 +81,32 @@ fn test_quorum_max_size() {
     assert_eq!(c.quorum(), 3);
 }
 
+#[test]
+fn test_intersect() {
+    let mut p = generate_provisioners(10);
+
+    let cfg = Config::new([0; 32], 1, 3, 200);
+    p.update_eligibility_flag(cfg.round);
+    // println!("{:#?}", p);
+
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    // println!("{:#?}", c);
+
+    let max_bitset = (2_i32.pow((c.size()) as u32) - 1) as u64;
+    println!("max_bitset: {} / {:#064b} ", max_bitset, max_bitset);
+
+    for bitset in 0..max_bitset {
+        //println!("bitset: {:#064b}", bitset);
+        let result = c.intersect(bitset);
+        assert_eq!(c.bits(&result), bitset, "testing with  bitset:{}", bitset);
+    }
+}
+
 fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
-    for i in 0..n {
+    for i in 1..n {
         let stake_value = 1000 * (i as u64) * DUSK;
-        p.add_member_with_value(PublicKey::from_sk_seed_u64(n as u64), stake_value);
+        p.add_member_with_value(PublicKey::from_sk_seed_u64(i as u64), stake_value);
     }
     p
 }

@@ -6,11 +6,16 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{Block, RoundUpdate};
-use crate::messages::Message;
+use crate::messages::{payload, Message, Payload};
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use std::fmt::Error;
 
+use crate::messages;
+use crate::messages::payload::StepVotes;
+use crate::user::committee::Committee;
+use crate::user::sortition;
+use crate::util::pubkey::PublicKey;
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::mpsc::{Receiver, Sender};

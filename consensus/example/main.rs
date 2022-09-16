@@ -1,8 +1,3 @@
-
-
-
-
-
 use std::time::Duration;
 use tokio::sync::mpsc;
 
@@ -19,7 +14,7 @@ fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
     for i in 0..n {
         let stake_value = 1000 * (i as u64) * DUSK;
-        p.add_member_with_value(PublicKey::from_sk_seed_u64(n as u64), stake_value);
+        p.add_member_with_value(PublicKey::from_sk_seed_u64(i as u64), stake_value);
     }
     p
 }

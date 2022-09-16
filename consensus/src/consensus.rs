@@ -64,10 +64,10 @@ impl Consensus {
         // TODO:
     }
 
-    // Spin the consensus state machine. The consensus runs for the whole round
-    // until either a new round is produced or the node needs to re-sync. The
-    // Agreement loop (acting roundwise) runs concurrently with the generation-selection-reduction
-    // loop (acting step-wise).
+    /// Spin the consensus state machine. The consensus runs for the whole round
+    /// until either a new round is produced or the node needs to re-sync. The
+    /// Agreement loop (acting roundwise) runs concurrently with the generation-selection-reduction
+    /// loop (acting step-wise).
     pub async fn spin(&mut self, ru: RoundUpdate, mut provisioners: Provisioners) {
         // Enable/Disable all members stakes depending on the current round.
         // If a stake is not eligible for this round, it's disabled.

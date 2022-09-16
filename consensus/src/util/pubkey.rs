@@ -36,13 +36,16 @@ impl PublicKey {
 
 impl PartialOrd<PublicKey> for PublicKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.0.to_bytes().partial_cmp(&other.0.pk_t().to_bytes())
+        self.0
+            .pk_t()
+            .to_bytes()
+            .partial_cmp(&other.0.pk_t().to_bytes())
     }
 }
 
 impl Ord for PublicKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.0.to_bytes().cmp(&other.0.pk_t().to_bytes())
+        self.0.pk_t().to_bytes().cmp(&other.0.pk_t().to_bytes())
     }
 }
 

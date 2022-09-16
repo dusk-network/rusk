@@ -100,6 +100,7 @@ pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
     StepVotes(payload::StepVotes),
+    Agreement(payload::Agreement),
     Empty,
 }
 
@@ -134,6 +135,8 @@ pub mod payload {
     #[derive(Debug, Clone)]
     pub struct Agreement {
         pub signature: [u8; 48],
-        pub votes_per_step: Vec<StepVotes>,
+
+        /// StepVotes of both 1th and 2nd Reduction steps
+        pub votes_per_step: (StepVotes, StepVotes),
     }
 }

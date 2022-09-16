@@ -30,12 +30,6 @@ pub async fn event_loop<C: MsgHandler<Message>>(
 ) -> Result<Message, SelectError> {
     let deadline = Instant::now().checked_add(Duration::from_millis(5000));
 
-    // TODO: Since introducing inbound_msgs_queue, the tokio::runtime does not react accurately on timeout_at(deadline)
-    /*
-        [2mSep 02 14:07:06.00[0m[32m INF[0m consensus::event_loop: 2286d081884c7d65 start event_loop round: 0, step: 1 deadline: Some(Instant { tv_sec: 14832, tv_nsec: 797601650 })
-        [2mSep 02 14:07:23.01[0m[32m INF[0m consensus::event_loop: 2286d081884c7d65 end event_loop round: 0, step: 1
-    */
-
     info!(
         "{} start event_loop round: {}, step: {} deadline: {:?}",
         ru.pubkey_bls.encode_short_hex(),
