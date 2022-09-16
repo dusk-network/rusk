@@ -7,6 +7,7 @@
 use crate::consensus::CONSENSUS_QUORUM_THRESHOLD;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
+
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
 use std::collections::BTreeMap;
@@ -98,5 +99,37 @@ impl Committee {
         }
 
         bits
+    }
+
+    /// intersect the bit representation of a VotingCommittee subset with the whole VotingCommittee set.
+    pub fn intersect(&self, bitset: u64) -> Cluster<PublicKey> {
+        if bitset == 0 {
+            return Cluster::<PublicKey>::new();
+        }
+
+        let mut a = Cluster::<PublicKey>::new();
+        let mut pos = 0;
+
+        for member in self.members.iter() {
+            if ((bitset >> pos) & 1) != 0 {
+                a.set_weight(member.0, *member.1);
+            }
+            pos += 1;
+        }
+        a
+    }
+
+    pub fn total_occurrences(&self, voters: &Cluster<PublicKey>) -> usize {
+        let mut total = 0;
+        for item in voters.0.iter() {
+            match self.votes_for(*item.0) {
+                Some(weight) => {
+                    total += *weight;
+                }
+                None => {}
+            };
+        }
+
+        total
     }
 }
