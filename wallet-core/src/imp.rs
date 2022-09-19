@@ -147,6 +147,7 @@ impl<S, SC, PC> Wallet<S, SC, PC> {
 const TX_STAKE: u8 = 0x00;
 const TX_UNSTAKE: u8 = 0x01;
 const TX_WITHDRAW: u8 = 0x02;
+const TX_ADD_ALLOWLIST: u8 = 0x03;
 
 impl<S, SC, PC> Wallet<S, SC, PC>
 where
@@ -568,6 +569,76 @@ where
             .map_err(Error::from_prover_err)
     }
 
+    /// Allow a `staker` public key.
+    #[allow(clippy::too_many_arguments)]
+    pub fn allow<Rng: RngCore + CryptoRng>(
+        &self,
+        rng: &mut Rng,
+        sender_index: u64,
+        owner_index: u64,
+        refund: &PublicSpendKey,
+        staker: &PublicKey,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC, PC>> {
+        let sender = self
+            .store
+            .retrieve_ssk(sender_index)
+            .map_err(Error::from_store_err)?;
+
+        let sk = self
+            .store
+            .retrieve_sk(owner_index)
+            .map_err(Error::from_store_err)?;
+        let pk = PublicKey::from(&sk);
+
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
+
+        let stake =
+            self.state.fetch_stake(&pk).map_err(Error::from_state_err)?;
+
+        let signature = allow_sign(&sk, &pk, stake.counter, staker);
+
+        // Since we're not transferring value *to* the contract the crossover
+        // shouldn't contain a value. As such the note used to created it should
+        // be valueless as well.
+        let blinder = JubJubScalar::random(rng);
+        let note = Note::obfuscated(rng, refund, 0, blinder);
+        let (mut fee, crossover) = note
+            .try_into()
+            .expect("Obfuscated notes should always yield crossovers");
+
+        fee.gas_limit = gas_limit;
+        fee.gas_price = gas_price;
+
+        let call_data =
+            (TX_ADD_ALLOWLIST, *staker, pk, signature).encode_to_vec();
+
+        let contract_id = rusk_abi::stake_contract();
+        let call = (contract_id, call_data);
+
+        let utx = UnprovenTransaction::new(
+            rng,
+            &self.state,
+            &sender,
+            inputs,
+            outputs,
+            fee,
+            Some((crossover, 0, blinder)),
+            Some(call),
+        )
+        .map_err(Error::from_state_err)?;
+
+        self.prover
+            .compute_proof_and_propagate(&utx)
+            .map_err(Error::from_prover_err)
+    }
+
     /// Gets the balance of a key.
     pub fn get_balance(
         &self,
@@ -795,6 +866,25 @@ fn withdraw_sign(
     msg.extend(counter.to_bytes());
     msg.extend(address.to_bytes());
     msg.extend(nonce.to_bytes());
+
+    sk.sign(pk, &msg)
+}
+
+/// Creates a signature compatible with what the stake contract expects for a
+/// ADD_ALLOWLIST transaction.
+///
+/// The counter is the number of transactions that have been sent to the
+/// transfer contract by a given key, and is reported in `StakeInfo`.
+fn allow_sign(
+    sk: &SecretKey,
+    pk: &PublicKey,
+    counter: u64,
+    staker: &PublicKey,
+) -> Signature {
+    let mut msg = Vec::with_capacity(u64::SIZE + PublicKey::SIZE);
+
+    msg.extend(counter.to_bytes());
+    msg.extend(staker.to_bytes());
 
     sk.sign(pk, &msg)
 }
