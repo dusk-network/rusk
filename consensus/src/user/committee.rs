@@ -29,6 +29,7 @@ impl Committee {
         provisioners: &mut Provisioners,
         cfg: sortition::Config,
     ) -> Self {
+        provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
 

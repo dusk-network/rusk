@@ -36,6 +36,10 @@ impl Member {
         self.pubkey_bls
     }
 
+    pub fn get_raw_key(&self) -> [u8; RAW_PUBLIC_BLS_SIZE] {
+        self.raw_pubkey_bls
+    }
+
     // AddStake appends a stake to the stake set with eligible_flag=false.
     pub fn add_stake(&mut self, stake: Stake) {
         self.stakes.push((stake, false));
@@ -245,6 +249,10 @@ impl Provisioners {
                 score -= total_stake;
             }
         }
+    }
+
+    pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
+        self.members.get(key)
     }
 }
 

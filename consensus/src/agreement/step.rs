@@ -6,16 +6,10 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{Block, RoundUpdate};
-use crate::messages::{payload, Message, Payload};
+use crate::messages::Message;
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use std::fmt::Error;
-
-use crate::messages;
-use crate::messages::payload::StepVotes;
-use crate::user::committee::Committee;
-use crate::user::sortition;
-use crate::util::pubkey::PublicKey;
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::mpsc::{Receiver, Sender};
@@ -73,14 +67,12 @@ impl Agreement {
             (*is_running.lock().await) = true;
 
             // Run agreement life-cycle loop
-            let res = Executor {
-                ru,
-                _provisioners: provisioners,
-            }
-            .run(agreement_rx, future_msgs)
-            .await;
+            let res = Executor::new(ru, provisioners)
+                .run(agreement_rx, future_msgs)
+                .await;
 
             (*is_running.lock().await) = false;
+
             res
         })
     }
@@ -89,26 +81,34 @@ impl Agreement {
 /// Executor implements life-cycle loop of a single agreement instance. This should be started with each new round and dropped on round termination.
 struct Executor {
     ru: RoundUpdate,
-    _provisioners: Provisioners,
+    provisioners: Provisioners,
 }
 
 // Agreement non-pub methods
 impl Executor {
+    fn new(ru: RoundUpdate, provisioners: Provisioners) -> Self {
+        Self { ru, provisioners }
+    }
+
     async fn run(
-        &self,
+        &mut self,
         mut inbound_msg: Receiver<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, Error> {
         // Accumulator
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
-        // TODO verifyChan
-        // TODO: Pass committeee
-        let _acc = Accumulator::new(WORKERS_AMOUNT, collected_votes_tx);
+
+        let mut acc = Accumulator::new(
+            WORKERS_AMOUNT,
+            collected_votes_tx,
+            &mut self.provisioners,
+            self.ru,
+        );
 
         // drain future messages for current round and step.
         if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
             for msg in messages {
-                self.collect_agreement(Some(msg));
+                self.collect_agreement(&mut acc, Some(msg)).await;
             }
         }
 
@@ -119,9 +119,7 @@ impl Executor {
                  msg = inbound_msg.recv() => {
                     // TODO: should process
                     future_msgs.lock().await.put_event(self.ru.round, 0, msg.as_ref().unwrap().clone());
-
-                    // TODO: Add collect AggrAgreement message
-                    self.collect_agreement(msg);
+                    self.collect_agreement(&mut acc, msg).await;
                  },
                  // Process an output message from the Accumulator
                  msg = collected_votes_rx.recv() => {
@@ -136,12 +134,13 @@ impl Executor {
     }
 
     // TODO: committee
-    fn collect_agreement(&self, _msg: Option<Message>) {
+    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Option<Message>) {
+        if msg.is_none() {
+            error!("invalid message");
+            return;
+        }
         //TODO: is_member
-
-        // TODO: Impl Accumulator
-        //TODO: self.accumulator.Process(aggr)
-        // verifyChan.send(aggr)
+        acc.process(msg.unwrap()).await;
     }
 
     fn collect_votes(&self, _msg: Option<Message>) -> Option<Block> {
