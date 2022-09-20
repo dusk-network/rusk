@@ -51,6 +51,15 @@ where
     }
 }
 
+impl<T> IntoIterator for Cluster<T> {
+    type Item = (T, usize);
+    type IntoIter = std::collections::btree_map::IntoIter<T, usize>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::util::cluster::Cluster;

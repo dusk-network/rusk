@@ -27,6 +27,10 @@ impl PublicKey {
         self.0.to_raw_bytes()
     }
 
+    pub fn to_bls_pk(&self) -> dusk_bls12_381_sign::PublicKey {
+        self.0
+    }
+
     pub fn encode_short_hex(&self) -> String {
         let mut hex = self.0.to_bytes().encode_hex::<String>();
         hex.truncate(16);
