@@ -14,7 +14,7 @@ use rand::SeedableRng;
 use rusk_abi::dusk::*;
 use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 use transfer_circuits::SendToContractTransparentCircuit;
-use transfer_wrapper::TransferWrapper;
+use transfer_wrapper::{StakeState, TransferWrapper};
 
 fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
@@ -38,8 +38,13 @@ fn withdraw() {
     let gas_limit = dusk(1.0) / gas_price;
 
     let stake = Stake::new(0, reward_value, block_height);
+    let stake = StakeState {
+        stakes: &[(pk, stake)],
+        owners: &[],
+        allowlist: &[],
+    };
     let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, &[(pk, stake)]);
+        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
 
     let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
     let (_, refund_vk, _) = wrapper.identifier();
@@ -117,12 +122,17 @@ fn unstake() {
     let block_height = 1;
 
     let gas_price = 1;
-    let gas_limit = dusk(1.0) / gas_price;
+    let gas_limit = dusk(1.1) / gas_price;
 
     let stake = Stake::new(stake_value, 0, block_height);
-    let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, &[(pk, stake)]);
+    let stake = StakeState {
+        stakes: &[(pk, stake)],
+        owners: &[],
+        allowlist: &[],
+    };
 
+    let mut wrapper =
+        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
     let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
     let (_, refund_vk, refund_psk) = wrapper.identifier();
     let (_, _, remainder_psk) = wrapper.identifier();
@@ -188,8 +198,20 @@ fn stake() {
     Persistence::with_backend(&testbackend(), |_| Ok(()))
         .expect("Backend found");
 
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk = SecretKey::random(&mut rng);
+    let pk = PublicKey::from(&sk);
+
     let genesis_value = dusk(50_000.0);
-    let mut wrapper = TransferWrapper::new(0xbeef, genesis_value);
+    let stake = StakeState {
+        stakes: &[],
+        owners: &[],
+        allowlist: &[pk],
+    };
+
+    let mut wrapper =
+        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
 
     let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
     let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
@@ -198,11 +220,8 @@ fn stake() {
     let block_height = 2;
 
     let gas_price = 1;
-    let gas_limit = dusk(1.0) / gas_price;
+    let gas_limit = dusk(1.5) / gas_price;
     let stake_value = MINIMUM_STAKE;
-
-    let sk = SecretKey::random(wrapper.rng());
-    let pk = PublicKey::from(&sk);
 
     let stake_message = StakeContract::stake_sign_message(0, stake_value);
 
@@ -268,4 +287,90 @@ fn stake() {
         "Eligibility should be as expected"
     );
     assert_eq!(stake.counter(), 1, "Counter should be incremented");
+}
+
+#[test]
+fn allowlist() {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))
+        .expect("Backend found");
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk_owner = SecretKey::random(&mut rng);
+    let pk_owner = PublicKey::from(&sk_owner);
+
+    let genesis_value = dusk(50_000.0);
+    let stake = StakeState {
+        stakes: &[],
+        owners: &[pk_owner],
+        allowlist: &[],
+    };
+
+    let mut wrapper =
+        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
+
+    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
+    let (_, refund_vk, refund_psk) = wrapper.identifier();
+    let (_, _, remainder_psk) = wrapper.identifier();
+
+    let block_height = 2;
+
+    let gas_price = 1;
+    let gas_limit = dusk(1.5) / gas_price;
+    let stake_value = MINIMUM_STAKE;
+
+    let sk = SecretKey::random(&mut rng);
+    let pk = PublicKey::from(&sk);
+
+    let allowlist_message = StakeContract::allowlist_sign_message(0, &pk);
+
+    let allowlist_signature =
+        sk_owner.sign(&pk_owner, allowlist_message.as_slice());
+
+    let (fee, crossover) =
+        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
+
+    let transaction =
+        StakeContract::allowlist_transaction(pk, allowlist_signature, pk_owner);
+
+    wrapper
+        .execute(
+            block_height,
+            &[unspent_note],
+            &[genesis_ssk],
+            &refund_vk,
+            &remainder_psk,
+            true,
+            fee,
+            Some(crossover),
+            Some(transaction),
+        )
+        .expect("Failed to execute stake transaction");
+
+    let stake_contract = wrapper.stake_state();
+
+    let list = stake_contract
+        .stakers_allowlist()
+        .expect("Failed to query the original state");
+
+    assert!(list.contains(&pk));
+
+    let stake = stake_contract
+        .get_stake(&pk)
+        .expect("Failed querying the state");
+    assert!(
+        stake.is_none(),
+        "Adding to allowlist should not create the stake"
+    );
+
+    let stake_owner = stake_contract
+        .get_stake(&pk_owner)
+        .expect("Failed querying the state")
+        .expect("Owner stake should still exist after a allowlist");
+    assert_eq!(stake_owner.counter(), 1, "Counter should be incremented");
+
+    let allowlisted = stake_contract
+        .stakers_allowlist()
+        .expect("Failed querying the state");
+    assert!(allowlisted.contains(&pk), "provisioner should be allowed");
 }

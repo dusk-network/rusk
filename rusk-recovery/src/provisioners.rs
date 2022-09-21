@@ -35,6 +35,13 @@ pub fn keys(testnet: bool) -> &'static [PublicKey; 5] {
     }
 }
 
+pub fn owner(testnet: bool) -> PublicKey {
+    match testnet {
+        true => *DUSK_KEY,
+        false => PROVISIONERS[0],
+    }
+}
+
 pub static DUSK_KEY: Lazy<PublicKey> =
     Lazy::new(|| parse_key(include_bytes!("../dusk.cpk")));
 

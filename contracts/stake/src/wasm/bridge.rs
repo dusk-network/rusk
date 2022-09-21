@@ -80,6 +80,13 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
             contract.withdraw(pk, signature, address, nonce);
         }
 
+        TX_ADD_ALLOWLIST => {
+            let (pk, owner, signature): (PublicKey, PublicKey, Signature) =
+                Canon::decode(&mut source).expect("Failed to parse arguments");
+
+            contract.allowlist(pk, signature, owner);
+        }
+
         _ => panic!("Tx id not implemented"),
     }
 

@@ -32,6 +32,8 @@ mod transaction;
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
     pub(crate) stakes: Map<PublicKey, Stake>,
+    pub(crate) allowlist: Map<PublicKey, ()>,
+    pub(crate) owners: Map<PublicKey, ()>,
 }
 
 impl StakeContract {
@@ -119,6 +121,43 @@ impl StakeContract {
         Ok(stakes)
     }
 
+    /// Gets a vector of all allowlisted keys.
+    pub fn stakers_allowlist(&self) -> Result<Vec<PublicKey>, Error> {
+        let mut stakes = Vec::new();
+
+        if let Some(branch) = self.allowlist.first()? {
+            for leaf in branch {
+                let leaf = leaf?;
+                stakes.push(leaf.key);
+            }
+        }
+
+        Ok(stakes)
+    }
+
+    /// Gets a vector of all owner keys.
+    pub fn owners(&self) -> Result<Vec<PublicKey>, Error> {
+        let mut stakes = Vec::new();
+
+        if let Some(branch) = self.owners.first()? {
+            for leaf in branch {
+                let leaf = leaf?;
+                stakes.push(leaf.key);
+            }
+        }
+
+        Ok(stakes)
+    }
+
+    pub fn allowlist_sign_message(counter: u64, staker: &PublicKey) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(u64::SIZE + PublicKey::SIZE);
+
+        bytes.extend(counter.to_bytes());
+        bytes.extend(staker.to_bytes());
+
+        bytes
+    }
+
     pub fn stake_sign_message(counter: u64, value: u64) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(16);
 
@@ -151,5 +190,29 @@ impl StakeContract {
         bytes.extend(nonce.to_bytes());
 
         bytes
+    }
+
+    pub fn add_owner(&mut self, owner: PublicKey) -> Result<(), Error> {
+        if self.is_owner(&owner)? {
+            return Ok(());
+        }
+        self.owners.insert(owner, ())?;
+        Ok(())
+    }
+
+    pub fn is_owner(&self, owner: &PublicKey) -> Result<bool, Error> {
+        Ok(self.owners.get(owner)?.is_some())
+    }
+
+    pub fn insert_allowlist(&mut self, staker: PublicKey) -> Result<(), Error> {
+        if self.is_allowlisted(&staker)? {
+            return Ok(());
+        }
+        self.allowlist.insert(staker, ())?;
+        Ok(())
+    }
+
+    pub fn is_allowlisted(&self, staker: &PublicKey) -> Result<bool, Error> {
+        Ok(self.allowlist.get(staker)?.is_some())
     }
 }
