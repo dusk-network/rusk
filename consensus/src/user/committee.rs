@@ -10,7 +10,7 @@ use crate::user::sortition;
 
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::mem;
 
 #[allow(unused)]
@@ -37,7 +37,7 @@ impl Committee {
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
-            cfg: cfg.clone(),
+            cfg,
             total: 0,
         };
 
@@ -89,13 +89,11 @@ impl Committee {
 
         let mut pos = 0;
         for item in voters.0.iter() {
-            pos = 0;
-            for member in self.members.iter() {
+            for (pos, member) in self.members.iter().enumerate() {
                 if member.0 == item.0 {
                     bits |= 1 << pos; // flip the i-th bit to 1
                     break;
                 }
-                pos += 1;
             }
         }
 
@@ -109,13 +107,10 @@ impl Committee {
         }
 
         let mut a = Cluster::<PublicKey>::new();
-        let mut pos = 0;
-
-        for member in self.members.iter() {
+        for (pos, member) in self.members.iter().enumerate() {
             if ((bitset >> pos) & 1) != 0 {
                 a.set_weight(member.0, *member.1);
             }
-            pos += 1;
         }
         a
     }
@@ -132,5 +127,58 @@ impl Committee {
         }
 
         total
+    }
+}
+
+/// CommitteeSet implements a cache of generated committees so that they can be reused.
+/// This is useful in Agreement step where messages from different steps per a single round are processed.
+///  A committee is uniquely represented by sortition::Config.
+pub struct CommitteeSet {
+    committees: HashMap<sortition::Config, Committee>,
+    provisioners: Provisioners,
+    this_member_key: PublicKey,
+}
+
+impl CommitteeSet {
+    pub fn new(pubkey: PublicKey, provisioners: Provisioners) -> Self {
+        CommitteeSet {
+            provisioners,
+            committees: HashMap::new(),
+            this_member_key: pubkey,
+        }
+    }
+
+    pub fn is_member(&mut self, pubkey: PublicKey, cfg: sortition::Config) -> bool {
+        self.get_or_create(cfg).is_member(pubkey)
+    }
+
+    pub fn votes_for(&mut self, pubkey: PublicKey, cfg: sortition::Config) -> Option<&usize> {
+        self.get_or_create(cfg).votes_for(pubkey)
+    }
+
+    pub fn quorum(&mut self, cfg: sortition::Config) -> usize {
+        self.get_or_create(cfg).quorum()
+    }
+
+    pub fn intersect(&mut self, bitset: u64, cfg: sortition::Config) -> Cluster<PublicKey> {
+        self.get_or_create(cfg).intersect(bitset)
+    }
+
+    pub fn total_occurrences(
+        &mut self,
+        voters: &Cluster<PublicKey>,
+        cfg: sortition::Config,
+    ) -> usize {
+        self.get_or_create(cfg).total_occurrences(voters)
+    }
+
+    pub fn get_provisioners(&self) -> &Provisioners {
+        &self.provisioners
+    }
+
+    fn get_or_create(&mut self, cfg: sortition::Config) -> &Committee {
+        self.committees
+            .entry(cfg)
+            .or_insert_with(|| Committee::new(self.this_member_key, &mut self.provisioners, cfg))
     }
 }
