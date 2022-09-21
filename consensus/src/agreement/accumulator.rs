@@ -4,23 +4,28 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::agreement::verifiers;
+use crate::agreement::verifiers::verify_agreement;
 use crate::commons::{Hash, RoundUpdate};
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
-use crate::user::provisioners::Provisioners;
-use std::collections::BTreeMap;
+use crate::user::committee::CommitteeSet;
+use crate::user::sortition;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::error;
+use tracing::{error, info, warn};
 
-type Store = BTreeMap<u8, Vec<(payload::Agreement, usize)>>;
-type AtomicStorePerHash = Arc<Mutex<BTreeMap<Hash, Store>>>;
+/// AgreementsPerStep is a mapping of StepNum to Set of Agreements,
+/// where duplicated agreements per step are not allowed.
+type AgreementsPerStep = HashMap<u8, (HashSet<payload::Agreement>, usize)>;
+
+/// StorePerHash implements a mapping of a block hash to AgreementsPerStep,
+/// where AgreementsPerStep is a mapping of StepNum to Set of Agreements.
+type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
 pub(crate) struct Accumulator {
-    stores: AtomicStorePerHash,
     workers: Vec<JoinHandle<()>>,
     inbound: Sender<Message>,
 }
@@ -29,33 +34,31 @@ impl Accumulator {
     pub fn new(
         _workers_amount: usize,
         collected_votes_tx: Sender<Message>,
-        provisioners: &mut Provisioners,
+        committees_set: Arc<Mutex<CommitteeSet>>,
         ru: RoundUpdate,
     ) -> Self {
         let (tx, mut rx) = mpsc::channel::<Message>(100);
 
         let mut a = Self {
-            stores: Default::default(),
             workers: vec![],
             inbound: tx,
         };
 
-        let stores = a.stores.clone();
-        let mut provisioners = provisioners.clone();
-
         // Spawn a single worker to process all agreement message verifications
         // It does also accumulate results and exists by providing a final CollectVotes message back to Agreement loop.
         let handle = tokio::spawn(async move {
+            let mut stores = StorePerHash::default();
             // Process each request for verification
             while let Some(msg) = rx.recv().await {
-                if let Err(e) =
-                    verifiers::verify_agreement(msg.clone(), &mut provisioners, ru.seed).await
+                if let Err(e) = verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
                 {
                     error!("{:#?}", e);
                     continue;
                 }
 
-                if let Some(msg) = Self::accumulate(stores.clone(), msg).await {
+                if let Some(msg) =
+                    Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed).await
+                {
                     collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
                         error!("unable to send_msg collected_votes {:?}", err)
                     });
@@ -69,7 +72,6 @@ impl Accumulator {
     }
 
     pub async fn process(&mut self, msg: Message) {
-        // To follow strictly the initial design we need to delegate the task to a workers_pool.
         self.inbound
             .send(msg)
             .await
@@ -77,29 +79,54 @@ impl Accumulator {
     }
 
     async fn accumulate(
-        stores: AtomicStorePerHash,
+        stores: &mut StorePerHash,
+        committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
+        seed: [u8; 32],
     ) -> Option<messages::Message> {
         let hdr = msg.header;
 
-        match msg.payload {
-            Payload::Agreement(payload) => {
-                //TODO: let weight := a.handler.VotesFor(hdr.PubKeyBLS, hdr.Round, hdr.Step)
-                let weight = 0;
-                stores
-                    .lock()
-                    .await
-                    .entry(hdr.block_hash)
-                    .or_insert(Store::default())
-                    .entry(hdr.step)
-                    .or_insert(vec![(payload, weight)]);
+        let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
 
-                // TODO: 	if s.contains(idx, a) {
+        let (weight, target_quorum) = {
+            let mut guard = committees_set.lock().await;
 
-                // TODO: if count >= a.handler.Quorum(hdr.Round) {}
+            let weight = guard.votes_for(hdr.pubkey_bls, cfg)?;
+            if *weight == 0 {
+                warn!("Agreement was not accumulated since it is not from a committee member");
+                return None;
             }
-            _ => {}
-        };
+
+            Some((*weight, guard.quorum(cfg)))
+        }?;
+
+        if let Payload::Agreement(payload) = msg.payload {
+            let entry = stores
+                .entry(hdr.block_hash)
+                .or_insert_with(AgreementsPerStep::default)
+                .entry(hdr.step)
+                .or_insert((HashSet::new(), 0));
+
+            if entry.0.contains(&payload) {
+                warn!("Agreement was not accumulated since it is a duplicate");
+                return None;
+            }
+
+            // Save agreement to avoid duplicates
+            entry.0.insert(payload);
+
+            // Increase the cumulative weight
+            entry.1 += weight;
+
+            if entry.1 >= target_quorum {
+                info!(
+                    "event=quorum reached, round={}, step={}, target={}, aggr_count={} ",
+                    hdr.round, hdr.step, target_quorum, entry.1
+                );
+
+                return Some(Message::empty());
+            }
+        }
 
         None
     }

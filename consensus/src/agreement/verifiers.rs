@@ -6,14 +6,15 @@
 use crate::messages;
 use crate::messages::payload::StepVotes;
 use crate::messages::{Message, Payload};
-use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
+use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
 use bytes::{Buf, BufMut, BytesMut};
 use dusk_bls12_381_sign::APK;
 use dusk_bytes::Serializable;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tracing::error;
 
 #[derive(Debug)]
@@ -22,12 +23,13 @@ pub enum Error {
     VerificationFailed,
     EmptyApk,
     InvalidType,
+    NotCommitteeMember,
 }
 
 /// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
 pub async fn verify_agreement(
     msg: Message,
-    provisioners: &mut Provisioners,
+    committees_set: Arc<Mutex<CommitteeSet>>,
     seed: [u8; 32],
 ) -> Result<(), Error> {
     match msg.payload {
@@ -38,10 +40,26 @@ pub async fn verify_agreement(
             }
 
             // Verify 1th_reduction step_votes
-            verify_step_votes(payload.votes_per_step.0, provisioners, seed, &msg.header, 0).await?;
+            verify_step_votes(
+                payload.votes_per_step.0,
+                committees_set.clone(),
+                seed,
+                &msg.header,
+                0,
+                false,
+            )
+            .await?;
 
             // Verify 2th_reduction step_votes
-            verify_step_votes(payload.votes_per_step.1, provisioners, seed, &msg.header, 1).await?;
+            verify_step_votes(
+                payload.votes_per_step.1,
+                committees_set,
+                seed,
+                &msg.header,
+                1,
+                true,
+            )
+            .await?;
 
             // Verification done
             Ok(())
@@ -52,29 +70,38 @@ pub async fn verify_agreement(
 
 async fn verify_step_votes(
     sv: StepVotes,
-    provisioners: &mut Provisioners,
+    committees_set: Arc<Mutex<CommitteeSet>>,
     seed: [u8; 32],
     hdr: &messages::Header,
     step_offset: u8,
+    enable_membership_check: bool,
 ) -> Result<(), Error> {
     tokio::task::yield_now().await;
 
     let step = hdr.step - 1 + step_offset;
-    let c = Committee::new(
-        PublicKey::default(),
-        provisioners,
-        sortition::Config::new(seed, hdr.round, step, 64),
-    );
+    let cfg = sortition::Config::new(seed, hdr.round, step, 64);
 
-    let sub_committee = c.intersect(sv.bitset);
-
-    if c.total_occurrences(&sub_committee) < c.quorum() {
-        return Err(Error::VoteSetTooSmall);
+    if enable_membership_check && !committees_set.lock().await.is_member(hdr.pubkey_bls, cfg) {
+        return Err(Error::NotCommitteeMember);
     }
+
+    let sub_committee = {
+        // Scoped guard to fetch committee data quickly
+        let mut guard = committees_set.lock().await;
+
+        let sub_committee = guard.intersect(sv.bitset, cfg);
+        let target_quorum = guard.quorum(cfg);
+
+        if guard.total_occurrences(&sub_committee, cfg) < target_quorum {
+            return Err(Error::VoteSetTooSmall);
+        }
+
+        Ok(sub_committee)
+    }?;
 
     unsafe {
         // aggregate public keys
-        let apk = aggregate_pks(&provisioners, sub_committee)?;
+        let apk = aggregate_pks(committees_set.clone(), sub_committee).await?;
 
         tokio::task::yield_now().await;
 
@@ -89,21 +116,28 @@ async fn verify_step_votes(
     Ok(())
 }
 
-unsafe fn aggregate_pks(
-    provisioners: &Provisioners,
+async unsafe fn aggregate_pks(
+    committees_set: Arc<Mutex<CommitteeSet>>,
     subcomittee: Cluster<PublicKey>,
 ) -> Result<dusk_bls12_381_sign::APK, Error> {
-    let mut pks = vec![];
+    let pks = {
+        let mut pks = vec![];
 
-    let _ = subcomittee.into_iter().map(|member| {
-        if let Some(m) = provisioners.get_member(&member.0) {
-            pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
-                &m.get_raw_key(),
-            ));
-        } else {
-            debug_assert!(false, "raw public key not found");
-        }
-    });
+        let guard = committees_set.lock().await;
+        let provisioners = guard.get_provisioners();
+
+        let _ = subcomittee.into_iter().map(|member| {
+            if let Some(m) = provisioners.get_member(&member.0) {
+                pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
+                    &m.get_raw_key(),
+                ));
+            } else {
+                debug_assert!(false, "raw public key not found");
+            }
+        });
+
+        pks
+    };
 
     if pks.is_empty() {
         return Err(Error::EmptyApk);
