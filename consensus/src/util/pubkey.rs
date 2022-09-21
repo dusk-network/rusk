@@ -16,6 +16,10 @@ pub const PUBLIC_BLS_SIZE: usize = 96;
 pub struct PublicKey(dusk_bls12_381_sign::PublicKey);
 
 impl PublicKey {
+    pub fn new(pk: dusk_bls12_381_sign::PublicKey) -> Self {
+        Self(pk)
+    }
+
     /// from_sk_seed_u64 generates a sk from the specified seed and returns the associated public key
     pub fn from_sk_seed_u64(state: u64) -> Self {
         let rng = &mut StdRng::seed_from_u64(state);

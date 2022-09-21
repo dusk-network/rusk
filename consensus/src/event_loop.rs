@@ -15,7 +15,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
@@ -53,6 +53,8 @@ pub async fn event_loop<C: MsgHandler<Message>>(
                         // This is a message from future round or step. We store
                         // it in future_msgs to be process later on.
                         future_msgs.put_event(ru.round, step, msg);
+                    } else {
+                        warn!("error: {:?}", e);
                     }
 
                     continue;
@@ -92,10 +94,11 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         step: u8,
         committee: &Committee,
     ) -> Result<Message, ConsensusError> {
-        debug!(
-            "received msg from {:?} with hash {}",
+        info!(
+            "received msg from {:?} with hash {} msg: {:?}",
             msg.get_pubkey_bls().encode_short_hex(),
             msg.get_block_hash().encode_hex::<String>(),
+            msg,
         );
 
         match msg.compare(ru.round, step) {

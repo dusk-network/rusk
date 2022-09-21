@@ -152,6 +152,6 @@ impl Executor {
 
         // TODO: createWinningBlock
 
-        None
+        Some(Block::default())
     }
 }

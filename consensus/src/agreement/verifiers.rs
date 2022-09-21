@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+use crate::commons::marshal_signable_vote;
 use crate::messages;
 use crate::messages::payload::StepVotes;
 use crate::messages::{Message, Payload};
@@ -126,15 +127,15 @@ async unsafe fn aggregate_pks(
         let guard = committees_set.lock().await;
         let provisioners = guard.get_provisioners();
 
-        let _ = subcomittee.into_iter().map(|member| {
-            if let Some(m) = provisioners.get_member(&member.0) {
+        for m in subcomittee.into_iter() {
+            if let Some(m) = provisioners.get_member(&m.0) {
                 pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
                     &m.get_raw_key(),
                 ));
             } else {
                 debug_assert!(false, "raw public key not found");
             }
-        });
+        }
 
         pks
     };
@@ -174,13 +175,4 @@ fn verify_whole(
         &sig,
         marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
     )
-}
-
-fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> BytesMut {
-    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
-    msg.put_u64_le(round);
-    msg.put_u8(step);
-    msg.put(&block_hash[..]);
-
-    msg
 }

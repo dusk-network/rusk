@@ -6,7 +6,11 @@
 
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
+use crate::messages;
 use crate::util::pubkey::PublicKey;
+use bytes::{Buf, BufMut, BytesMut};
+use dusk_bls12_381_sign::SecretKey;
+use dusk_bytes::Serializable;
 use std::fmt;
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -16,13 +20,15 @@ pub struct RoundUpdate {
     pub(crate) seed: [u8; 32],
     pub(crate) hash: [u8; 32],
     pub(crate) pubkey_bls: PublicKey,
+    pub(crate) secret_key: SecretKey, // TODO: should be here?? SecretKey
 }
 
 impl RoundUpdate {
-    pub fn new(round: u64, pubkey_bls: PublicKey) -> Self {
+    pub fn new(round: u64, pubkey_bls: PublicKey, secret_key: SecretKey) -> Self {
         RoundUpdate {
             round,
             pubkey_bls,
+            secret_key,
             ..Default::default()
         }
     }
@@ -95,6 +101,40 @@ impl Default for Signature {
 
 // TODO: Apply Hash type instead of u8; 32
 pub type Hash = [u8; 32];
+
+pub fn sign(
+    sk: dusk_bls12_381_sign::SecretKey,
+    pk: dusk_bls12_381_sign::PublicKey,
+    hdr: messages::Header,
+) -> [u8; 48] {
+    let mut msg = BytesMut::with_capacity(hdr.block_hash.len() + 8 + 1);
+    msg.put_u64_le(hdr.round);
+    msg.put_u8(hdr.step);
+    msg.put(&hdr.block_hash[..]);
+
+    sk.sign(&pk, msg.bytes()).to_bytes().into()
+}
+
+pub fn verify_signature(
+    hdr: &messages::Header,
+    signature: [u8; 48],
+) -> Result<(), dusk_bls12_381_sign::Error> {
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature.into())?;
+
+    dusk_bls12_381_sign::APK::from(&hdr.pubkey_bls.to_bls_pk()).verify(
+        &sig,
+        marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
+    )
+}
+
+pub fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> BytesMut {
+    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
+    msg.put_u64_le(round);
+    msg.put_u8(step);
+    msg.put(&block_hash[..]);
+
+    msg
+}
 
 // TODO: Encapsulate all run params in a single struct as they are used in another 9 functions/calls as input
 

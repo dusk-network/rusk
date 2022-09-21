@@ -50,7 +50,7 @@ impl Aggregator {
             }
 
             // Aggregate Signatures
-            if let Err(e) = entry.0.add(payload.signed_hash.0) {
+            if let Err(e) = entry.0.add(payload.signed_hash) {
                 error!("{:?}", e);
                 return None;
             }
