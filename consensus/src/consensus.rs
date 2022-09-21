@@ -74,7 +74,7 @@ impl Consensus {
         provisioners.update_eligibility_flag(ru.round);
 
         // Round context channel.
-        let (_, mut ctx) = oneshot::channel::<Context>();
+        let (_ctx_tx, mut ctx_rx) = oneshot::channel::<Context>();
 
         // Agreement loop
         // Executes agreement loop in a separate tokio::task to collect (aggr)Agreement messages.
@@ -88,7 +88,7 @@ impl Consensus {
             // Perform a single iteration.
             // An iteration runs all registered phases in a row.
             let iter_result = self
-                .run_iteration(&mut ctx, ru, &mut step, &mut provisioners)
+                .run_iteration(&mut ctx_rx, ru, &mut step, &mut provisioners)
                 .await;
 
             match iter_result {
@@ -97,14 +97,14 @@ impl Consensus {
                     self.agreement_layer.send_msg(msg.clone()).await;
                 }
                 Err(err) => {
-                    error!("{:?}", err);
+                    error!("loop terminated with err: {:?}", err);
                     aggr_handle.abort();
                     break;
                 }
             };
         }
 
-        let winning_block = aggr_handle.await.unwrap_or(Ok(Block::default()));
+        let winning_block = aggr_handle.await.unwrap_or_else(|_| Ok(Block::default()));
         info!("Winning block: {:?}", winning_block);
 
         self.teardown(ru.round).await;
@@ -121,9 +121,6 @@ impl Consensus {
 
         for phase in self.phases.iter_mut() {
             *step += 1;
-            if *step >= CONSENSUS_MAX_STEP {
-                return Err(ConsensusError::MaxStepReached);
-            }
 
             // Initialize new phase with message returned by previous phase.
             phase.initialize(&msg, ru.round, *step);
@@ -132,7 +129,7 @@ impl Consensus {
             // An error returned here terminates consensus round.
             // This normally happens if consensus channel is cancelled
             // by agreement loop on finding the winning block for this round.
-            if let Ok(next_msg) = phase
+            match phase
                 .run(
                     provisioners,
                     &mut self.future_msgs,
@@ -144,10 +141,15 @@ impl Consensus {
                 )
                 .await
             {
-                msg = next_msg;
-            } else {
-                // TODO: chain err from run call
-                return Err(ConsensusError::NotReady);
+                Ok(next_msg) => msg = next_msg,
+                Err(e) => {
+                    error!("err={:#?}", e);
+                    return Err(ConsensusError::NotReady);
+                }
+            };
+
+            if *step >= CONSENSUS_MAX_STEP {
+                return Err(ConsensusError::MaxStepReached);
             }
         }
 

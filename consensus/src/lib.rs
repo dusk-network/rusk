@@ -7,7 +7,7 @@ pub mod user;
 pub mod util;
 
 pub mod aggregator;
-mod agreement;
+pub mod agreement;
 mod event_loop;
 mod firststep;
 mod phase;

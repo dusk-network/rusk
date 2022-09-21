@@ -44,10 +44,7 @@ where
 
     /// get weight value, if key exists.
     pub fn get_weight(&self, key: &T) -> Option<usize> {
-        match self.0.get_key_value(key) {
-            Some(item) => Some(*item.1),
-            None => None,
-        }
+        self.0.get_key_value(key).map(|item| *item.1)
     }
 }
 

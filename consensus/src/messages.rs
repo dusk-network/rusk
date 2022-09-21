@@ -126,13 +126,13 @@ pub mod payload {
         pub signed_hash: [u8; 32],
     }
 
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Debug, Copy, Clone, Eq, Hash, PartialEq)]
     pub struct StepVotes {
         pub bitset: u64,
         pub signature: [u8; 48],
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Eq, Hash, PartialEq)]
     pub struct Agreement {
         pub signature: [u8; 48],
 

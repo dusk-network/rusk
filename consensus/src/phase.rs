@@ -14,7 +14,7 @@ use crate::user::sortition;
 use crate::{firststep, secondstep};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use tracing::info;
+use tracing::{info, trace};
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -48,7 +48,7 @@ pub enum Phase {
 
 impl Phase {
     pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
-        info!(
+        trace!(
             "init phase:{} with msg {:?} at round:{} step:{}",
             self.name(),
             msg,

@@ -5,4 +5,4 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 mod accumulator;
 pub(crate) mod step;
-mod verifiers;
+pub mod verifiers;
