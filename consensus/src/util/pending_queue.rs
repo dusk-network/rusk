@@ -52,7 +52,7 @@ impl PendingQueue {
             }
         }
 
-        return false;
+        false
     }
 
     pub fn send(&mut self, msg: Message) -> async_channel::Send<'_, Message> {

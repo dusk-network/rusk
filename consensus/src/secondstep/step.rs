@@ -31,7 +31,7 @@ impl Reduction {
         Self {
             handler: handler::Reduction {
                 aggr: Default::default(),
-                firstStepVotes: payload::StepVotes {
+                first_step_votes: payload::StepVotes {
                     bitset: 0,
                     signature: [0; 48],
                 },
@@ -44,7 +44,7 @@ impl Reduction {
         self.msg = msg.clone();
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
-            self.handler.firstStepVotes = p.sv;
+            self.handler.first_step_votes = p.sv;
         }
     }
 
@@ -67,7 +67,7 @@ impl Reduction {
         if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f);
+                    return Ok(f.0);
                 }
             }
         }
@@ -76,6 +76,7 @@ impl Reduction {
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
+            outbound_msgs.clone(),
             ru,
             step,
             &committee,
@@ -123,7 +124,7 @@ impl Reduction {
                     p.candidate.header.hash.as_slice().encode_hex::<String>(),
                 );
 
-                let mut hdr = messages::Header {
+                let hdr = messages::Header {
                     pubkey_bls: pubkey,
                     round: ru.round,
                     step,

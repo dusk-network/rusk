@@ -1,9 +1,9 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// This Source Code Form is subject to the terms of the Mozilla Public License,
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{Block, ConsensusError, RoundUpdate};
+use crate::commons::{Block, ConsensusError, RoundUpdate, SelectError};
 use crate::phase::Phase;
 
 use crate::agreement::step;
@@ -11,10 +11,11 @@ use crate::messages::Message;
 use crate::queue::Queue;
 use crate::selection;
 use crate::user::provisioners::Provisioners;
+use crate::util::pending_queue::PendingQueue;
 use crate::{firststep, secondstep};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
 pub const CONSENSUS_MAX_STEP: u8 = 213;
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
@@ -33,19 +34,26 @@ pub struct Consensus {
     /// inbound_msgs is a queue of messages that comes from outside world
     inbound_msgs: Receiver<Message>,
 
-    /// future_msgs is a queue of messages read from inbound_msgs queue.
-    /// These msgs are pending to be handled in a future round/step.
+    /// future_msgs is a queue of messages read from inbound_msgs queue. These
+    /// msgs are pending to be handled in a future round/step.
     future_msgs: Queue<Message>,
 
-    /// outbound_msgs is a queue of messages, this consensus instance shares with the outside world.
+    /// outbound_msgs is a queue of messages, this consensus instance shares
+    /// with the outside world.
     outbound_msgs: Sender<Message>,
 
-    /// agreement_layer implements Agreement message handler within the context of a separate task execution.
+    /// agreement_layer implements Agreement message handler within the context
+    /// of a separate task execution.
     agreement_layer: step::Agreement,
 }
 
 impl Consensus {
-    pub fn new(inbound_msgs: Receiver<Message>, outbound_msg: Sender<Message>) -> Self {
+    pub fn new(
+        inbound_msgs: Receiver<Message>,
+        outbound_msg: Sender<Message>,
+        aggr_inbound_queue: PendingQueue,
+        aggr_outbound_queue: PendingQueue,
+    ) -> Self {
         Self {
             phases: [
                 Phase::Selection(selection::step::Selection::new()),
@@ -55,7 +63,7 @@ impl Consensus {
             future_msgs: Queue::<Message>::default(),
             inbound_msgs,
             outbound_msgs: outbound_msg,
-            agreement_layer: step::Agreement::new(),
+            agreement_layer: step::Agreement::new(aggr_inbound_queue, aggr_outbound_queue),
         }
     }
 
@@ -66,38 +74,38 @@ impl Consensus {
 
     /// Spin the consensus state machine. The consensus runs for the whole round
     /// until either a new round is produced or the node needs to re-sync. The
-    /// Agreement loop (acting roundwise) runs concurrently with the generation-selection-reduction
-    /// loop (acting step-wise).
+    /// Agreement loop (acting roundwise) runs concurrently with the
+    /// generation-selection-reduction loop (acting step-wise).
     pub async fn spin(&mut self, ru: RoundUpdate, mut provisioners: Provisioners) {
-        // Enable/Disable all members stakes depending on the current round.
-        // If a stake is not eligible for this round, it's disabled.
+        // Enable/Disable all members stakes depending on the current round. If
+        // a stake is not eligible for this round, it's disabled.
         provisioners.update_eligibility_flag(ru.round);
 
         // Round context channel.
-        let (_ctx_tx, mut ctx_rx) = oneshot::channel::<Context>();
+        let (ctx_tx, mut ctx_rx) = oneshot::channel::<Context>();
 
-        // Agreement loop
-        // Executes agreement loop in a separate tokio::task to collect (aggr)Agreement messages.
-        let aggr_handle = self.agreement_layer.spawn(ru, provisioners.clone());
+        // Agreement loop Executes agreement loop in a separate tokio::task to
+        // collect (aggr)Agreement messages.
+        let aggr_handle = self.agreement_layer.spawn(ctx_tx, ru, provisioners.clone());
 
-        // Consensus loop
-        // Initialize and run consensus loop concurrently with agreement loop.
+        // Consensus loop Initialize and run consensus loop concurrently with
+        // agreement loop.
         let mut step: u8 = 0;
 
         loop {
-            // Perform a single iteration.
-            // An iteration runs all registered phases in a row.
+            // Perform a single iteration. An iteration runs all registered
+            // phases in a row.
             let iter_result = self
                 .run_iteration(&mut ctx_rx, ru, &mut step, &mut provisioners)
                 .await;
 
             match iter_result {
                 Ok(msg) => {
-                    // Delegate (agreement) message result to agreement loop for further processing.
+                    // Delegate (agreement) message result to agreement loop for
+                    // further processing.
                     self.agreement_layer.send_msg(msg.clone()).await;
                 }
-                Err(err) => {
-                    error!("loop terminated with err: {:?}", err);
+                Err(_) => {
                     aggr_handle.abort();
                     break;
                 }
@@ -125,10 +133,9 @@ impl Consensus {
             // Initialize new phase with message returned by previous phase.
             phase.initialize(&msg, ru.round, *step);
 
-            // Execute a phase.
-            // An error returned here terminates consensus round.
-            // This normally happens if consensus channel is cancelled
-            // by agreement loop on finding the winning block for this round.
+            // Execute a phase. An error returned here terminates consensus
+            // round. This normally happens if consensus channel is cancelled by
+            // agreement loop on finding the winning block for this round.
             match phase
                 .run(
                     provisioners,
@@ -143,7 +150,13 @@ impl Consensus {
             {
                 Ok(next_msg) => msg = next_msg,
                 Err(e) => {
-                    error!("err={:#?}", e);
+                    match e {
+                        SelectError::Canceled => {
+                            trace!("canceled")
+                        }
+                        _ => error!("err={:#?}", e),
+                    }
+
                     return Err(ConsensusError::NotReady);
                 }
             };

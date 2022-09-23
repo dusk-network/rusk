@@ -73,7 +73,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Header {
     pub pubkey_bls: PublicKey,
     pub round: u64,

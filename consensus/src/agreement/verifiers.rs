@@ -47,7 +47,6 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 0,
-                false,
             )
             .await?;
 
@@ -58,7 +57,6 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 1,
-                true,
             )
             .await?;
 
@@ -75,16 +73,11 @@ async fn verify_step_votes(
     seed: [u8; 32],
     hdr: &messages::Header,
     step_offset: u8,
-    enable_membership_check: bool,
 ) -> Result<(), Error> {
     tokio::task::yield_now().await;
 
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, 64);
-
-    if enable_membership_check && !committees_set.lock().await.is_member(hdr.pubkey_bls, cfg) {
-        return Err(Error::NotCommitteeMember);
-    }
 
     let sub_committee = {
         // Scoped guard to fetch committee data quickly

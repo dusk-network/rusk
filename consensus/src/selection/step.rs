@@ -54,7 +54,7 @@ impl Selection {
 
             // register new candidate in local state
             match self.handler.handle(msg, ru, step, &committee) {
-                Ok(f) => return Ok(f),
+                Ok(f) => return Ok(f.0),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),
             };
         }
@@ -63,7 +63,7 @@ impl Selection {
         if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f);
+                    return Ok(f.0);
                 }
             }
         }
@@ -72,6 +72,7 @@ impl Selection {
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
+            outbound_msgs.clone(),
             ru,
             step,
             &committee,

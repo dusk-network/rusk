@@ -18,7 +18,7 @@ impl MsgHandler<Message> for Selection {
         _committee: &Committee,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Result<(Message, bool), ConsensusError> {
         match self.verify(&msg) {
             Ok(_) => self.on_valid_new_block(&msg),
             Err(err) => Err(err),
@@ -33,8 +33,8 @@ impl Selection {
         Ok(())
     }
 
-    fn on_valid_new_block(&mut self, msg: &Message) -> Result<Message, ConsensusError> {
+    fn on_valid_new_block(&mut self, msg: &Message) -> Result<(Message, bool), ConsensusError> {
         // TODO: store candidate block
-        Ok(msg.clone())
+        Ok((msg.clone(), true))
     }
 }

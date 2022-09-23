@@ -19,6 +19,7 @@ hex = { version= "0.4.3"}
 libmath = {version= "0.2.1"}
 dusk-bytes = "0.1"
 bytes = "0.6.0"
+async-channel = "1.7.1"
 
 [dev-dependencies]
 hex-literal = {version = "0.3.4"}

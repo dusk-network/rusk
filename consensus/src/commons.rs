@@ -83,8 +83,6 @@ pub enum ConsensusError {
     MaxStepReached,
 }
 
-// TODO: This to be replaced with bls::Signature
-
 #[derive(Debug, Copy, Clone)]
 pub struct Signature(pub [u8; 48]);
 impl Signature {

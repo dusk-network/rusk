@@ -76,7 +76,7 @@ impl Reduction {
         if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f);
+                    return Ok(f.0);
                 }
             }
         }
@@ -85,6 +85,7 @@ impl Reduction {
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
+            outbound_msgs.clone(),
             ru,
             step,
             &committee,
@@ -93,6 +94,7 @@ impl Reduction {
         .await
     }
 
+    // TODO: duplicated spawn_send_reduction
     fn spawn_send_reduction(
         &self,
         pubkey: PublicKey,
@@ -121,7 +123,7 @@ impl Reduction {
 
             // TODO: VerifyStateTransition call here
 
-            let mut hdr = messages::Header {
+            let hdr = messages::Header {
                 pubkey_bls: pubkey,
                 round: ru.round,
                 step,

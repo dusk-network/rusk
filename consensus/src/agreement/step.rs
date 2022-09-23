@@ -10,57 +10,61 @@ use crate::messages::Message;
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
+use crate::user::sortition;
+use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
+
+use crate::consensus::Context;
 use std::fmt::Error;
 use std::sync::Arc;
 use tokio::select;
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
 const WORKERS_AMOUNT: usize = 4;
 
 pub struct Agreement {
-    inbound_msgs: Option<Sender<Message>>,
+    inbound_queue: PendingQueue,
+    outbound_queue: PendingQueue,
+
     future_msgs: Arc<Mutex<Queue<Message>>>,
 }
 
 impl Agreement {
-    pub fn new() -> Self {
+    pub fn new(inbound_queue: PendingQueue, outbound_queue: PendingQueue) -> Self {
         Self {
-            inbound_msgs: None,
+            inbound_queue,
+            outbound_queue,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
         }
     }
 
     pub async fn send_msg(&mut self, msg: Message) {
-        match self.inbound_msgs.as_ref() {
-            Some(tx) => {
-                tx.send(msg)
-                    .await
-                    .unwrap_or_else(|err| error!("unable to send_msg {:?}", err));
-            }
-            None => error!("no inbound message queue set"),
-        };
+        self.inbound_queue
+            .send(msg)
+            .await
+            .unwrap_or_else(|err| error!("unable to send agreement msg {:?}", err));
     }
 
     /// Spawn a task to process agreement messages for a specified round
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn(
         &mut self,
+        ctx: oneshot::Sender<Context>,
         ru: RoundUpdate,
         provisioners: Provisioners,
     ) -> JoinHandle<Result<Block, Error>> {
-        let (agreement_tx, agreement_rx) = mpsc::channel::<Message>(10);
-        self.inbound_msgs = Some(agreement_tx);
-
         let future_msgs = self.future_msgs.clone();
+        let outbound = self.outbound_queue.clone();
+        let inbound = self.inbound_queue.clone();
 
         tokio::spawn(async move {
+            // Dropping this chan cancels the main consensus loop
+            let _ctx = ctx;
             // Run agreement life-cycle loop
-            let res = Executor::new(ru, provisioners)
-                .run(agreement_rx, future_msgs)
+            let res = Executor::new(ru, provisioners, inbound, outbound)
+                .run(future_msgs)
                 .await;
 
             res
@@ -71,14 +75,25 @@ impl Agreement {
 /// Executor implements life-cycle loop of a single agreement instance. This should be started with each new round and dropped on round termination.
 struct Executor {
     ru: RoundUpdate,
+
+    inbound_queue: PendingQueue,
+    outbound_queue: PendingQueue,
+
     // TODO: Consider sharing CommitteesSet between main Consensus loop and agreement step.
     committees_set: Arc<Mutex<CommitteeSet>>,
 }
 
 // Agreement non-pub methods
 impl Executor {
-    fn new(ru: RoundUpdate, provisioners: Provisioners) -> Self {
+    fn new(
+        ru: RoundUpdate,
+        provisioners: Provisioners,
+        inbound_queue: PendingQueue,
+        outbound_queue: PendingQueue,
+    ) -> Self {
         Self {
+            inbound_queue,
+            outbound_queue,
             ru,
             committees_set: Arc::new(Mutex::new(CommitteeSet::new(
                 PublicKey::default(),
@@ -87,11 +102,7 @@ impl Executor {
         }
     }
 
-    async fn run(
-        &mut self,
-        mut inbound_msg: Receiver<Message>,
-        future_msgs: Arc<Mutex<Queue<Message>>>,
-    ) -> Result<Block, Error> {
+    async fn run(&mut self, future_msgs: Arc<Mutex<Queue<Message>>>) -> Result<Block, Error> {
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
 
         // Accumulator
@@ -105,7 +116,7 @@ impl Executor {
         // drain future messages for current round and step.
         if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
             for msg in messages {
-                self.collect_agreement(&mut acc, Some(msg)).await;
+                self.collect_agreement(&mut acc, msg).await;
             }
         }
 
@@ -122,21 +133,38 @@ impl Executor {
                     }
                  },
                 // Process messages from outside world
-                 msg = inbound_msg.recv() => {
-                    // TODO: should process
-                    future_msgs.lock().await.put_event(self.ru.round, 0, msg.as_ref().unwrap().clone());
-                    self.collect_agreement(&mut acc, msg).await;
+                 msg = self.inbound_queue.recv() => {
+                    if let Ok(msg) = msg {
+                         // TODO: should process
+                         // future_msgs.lock().await.put_event(self.ru.round, 0, msg.as_ref().unwrap().clone());
+
+                        self.collect_agreement(&mut acc, msg).await;
+                    }
                  }
             };
         }
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Option<Message>) {
-        if msg.is_none() {
-            error!("invalid message");
+    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
+        let hdr = &msg.header;
+
+        if !self.committees_set.lock().await.is_member(
+            hdr.pubkey_bls,
+            sortition::Config::new(self.ru.seed, hdr.round, hdr.step, 64),
+        ) {
+            trace!(
+                "message is from non-committee member {:?} {:?}",
+                self.ru,
+                *hdr
+            );
             return;
         }
-        acc.process(msg.unwrap()).await;
+
+        // Publish the agreement
+        self.outbound_queue.send(msg.clone()).await;
+
+        // Accumulate the agreement
+        acc.process(msg.clone()).await;
     }
 
     fn collect_votes(&self, _msg: Option<Message>) -> Option<Block> {

@@ -63,7 +63,7 @@ impl Aggregator {
 
             let total = entry.1.total_occurrences();
             let quorum_target = committee.quorum();
-            println!("total votes: {}, quorum target: {} ", total, quorum_target);
+            tracing::trace!("total votes: {}, quorum target: {} ", total, quorum_target);
 
             if total >= committee.quorum() {
                 return Some((
