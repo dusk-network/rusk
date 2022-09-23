@@ -44,10 +44,24 @@ impl Message {
         }
     }
 
-    pub fn from_stepvotes(p: payload::StepVotes) -> Message {
+    pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
         Self {
             header: Header::default(),
-            payload: Payload::StepVotes(p),
+            payload: Payload::StepVotesWithCandidate(p),
+        }
+    }
+
+    pub fn new_reduction(header: Header, payload: payload::Reduction) -> Message {
+        Self {
+            header,
+            payload: Payload::Reduction(payload),
+        }
+    }
+
+    pub fn new_agreement(header: Header, payload: payload::Agreement) -> Message {
+        Self {
+            header,
+            payload: Payload::Agreement(payload),
         }
     }
 
@@ -59,7 +73,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct Header {
     pub pubkey_bls: PublicKey,
     pub round: u64,
@@ -100,6 +114,7 @@ pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
     StepVotes(payload::StepVotes),
+    StepVotesWithCandidate(payload::StepVotesWithCandidate),
     Agreement(payload::Agreement),
     Empty,
 }
@@ -114,9 +129,17 @@ pub mod payload {
     use crate::commons::Block;
     use crate::commons::Signature;
 
-    #[derive(Default, Debug, Copy, Clone)]
+    #[derive(Debug, Copy, Clone)]
     pub struct Reduction {
-        pub signed_hash: Signature,
+        pub signed_hash: [u8; 48],
+    }
+
+    impl Default for Reduction {
+        fn default() -> Self {
+            Self {
+                signed_hash: [0; 48],
+            }
+        }
     }
 
     #[derive(Default, Debug, Clone)]
@@ -130,6 +153,12 @@ pub mod payload {
     pub struct StepVotes {
         pub bitset: u64,
         pub signature: [u8; 48],
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct StepVotesWithCandidate {
+        pub sv: StepVotes,
+        pub candidate: Block,
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]

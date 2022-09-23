@@ -4,6 +4,7 @@ use hex::ToHex;
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+use crate::commons;
 use crate::commons::{Block, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::{event_loop, MsgHandler};
@@ -53,7 +54,7 @@ impl Selection {
 
             // register new candidate in local state
             match self.handler.handle(msg, ru, step, &committee) {
-                Ok(f) => return Ok(f),
+                Ok(f) => return Ok(f.0),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),
             };
         }
@@ -62,7 +63,7 @@ impl Selection {
         if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f);
+                    return Ok(f.0);
                 }
             }
         }
@@ -71,6 +72,7 @@ impl Selection {
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
+            outbound_msgs.clone(),
             ru,
             step,
             &committee,
@@ -94,6 +96,7 @@ impl Selection {
         let mut hasher = Sha3_256::new();
         hasher.update(ru.round.to_le_bytes());
         hasher.update(step.to_le_bytes());
+        hasher.update(123_i32.to_le_bytes());
 
         let hash = hasher.finalize();
 
@@ -105,9 +108,23 @@ impl Selection {
             pubkey.encode_short_hex()
         );
 
+        // TODO: refactor this
         let a = NewBlock {
             prev_hash: [0; 32],
-            candidate: Block::default(),
+            candidate: Block {
+                header: commons::Header {
+                    version: 0,
+                    height: 0,
+                    timestamp: 0,
+                    gas_limit: 0,
+                    prev_block_hash: [0; 32],
+                    seed: [0; 32],
+                    generator_bls_pubkey: [0; 32],
+                    state_hash: [0; 32],
+                    hash: hash.into(),
+                },
+                txs: vec![],
+            },
             signed_hash: [0; 32],
         };
 

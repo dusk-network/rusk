@@ -15,7 +15,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::Instant;
 use tokio::{select, time};
-use tracing::{debug, info};
+use tracing::{info, warn};
 
 // loop while waiting on multiple channels, a phase is interested in:
 // These are timeout, consensus_round and message channels.
@@ -23,6 +23,7 @@ pub async fn event_loop<C: MsgHandler<Message>>(
     phase: &mut C,
     ctx_recv: &mut oneshot::Receiver<Context>,
     inbound_msgs: &mut mpsc::Receiver<Message>,
+    outbound_msgs: mpsc::Sender<Message>,
     ru: RoundUpdate,
     step: u8,
     committee: &Committee,
@@ -42,10 +43,16 @@ pub async fn event_loop<C: MsgHandler<Message>>(
         match select_multi(inbound_msgs, ctx_recv, deadline.unwrap()).await {
             // A message has arrived.
             // Delegate message processing and verification to the Step itself.
+            // TODO: phase.is_valid { repropagate; handle }
             Ok(msg) => match phase.handle(msg.clone(), ru, step, committee) {
                 // Fully valid state reached on this step. Return it as an output.
                 // Populate next step with it.
-                Ok(f) => break Ok(f),
+                Ok(m) => {
+                    outbound_msgs.send(m.0.clone()).await;
+                    if m.1 {
+                        break Ok(m.0);
+                    }
+                }
                 // An error here means an invalid message has arrived.
                 // We need to continue waiting for either a valid message or timeout event.
                 Err(e) => {
@@ -53,6 +60,8 @@ pub async fn event_loop<C: MsgHandler<Message>>(
                         // This is a message from future round or step. We store
                         // it in future_msgs to be process later on.
                         future_msgs.put_event(ru.round, step, msg);
+                    } else {
+                        warn!("error: {:?}", e);
                     }
 
                     continue;
@@ -91,11 +100,12 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         ru: RoundUpdate,
         step: u8,
         committee: &Committee,
-    ) -> Result<Message, ConsensusError> {
-        debug!(
-            "received msg from {:?} with hash {}",
+    ) -> Result<(Message, bool), ConsensusError> {
+        tracing::trace!(
+            "received msg from {:?} with hash {} msg: {:?}",
             msg.get_pubkey_bls().encode_short_hex(),
             msg.get_block_hash().encode_hex::<String>(),
+            msg,
         );
 
         match msg.compare(ru.round, step) {
@@ -120,7 +130,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         committee: &Committee,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<Message, ConsensusError>;
+    ) -> Result<(Message, bool), ConsensusError>;
 }
 
 // select_simple wraps up time::timeout_at with need of ctx_recv.

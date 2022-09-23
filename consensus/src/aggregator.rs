@@ -50,7 +50,7 @@ impl Aggregator {
             }
 
             // Aggregate Signatures
-            if let Err(e) = entry.0.add(payload.signed_hash.0) {
+            if let Err(e) = entry.0.add(payload.signed_hash) {
                 error!("{:?}", e);
                 return None;
             }
@@ -63,7 +63,7 @@ impl Aggregator {
 
             let total = entry.1.total_occurrences();
             let quorum_target = committee.quorum();
-            println!("total votes: {}, quorum target: {} ", total, quorum_target);
+            tracing::trace!("total votes: {}, quorum target: {} ", total, quorum_target);
 
             if total >= committee.quorum() {
                 return Some((

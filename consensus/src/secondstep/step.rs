@@ -3,25 +3,27 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{RoundUpdate, SelectError};
+use crate::commons::{sign, RoundUpdate, SelectError};
 use crate::consensus::Context;
 use crate::event_loop::event_loop;
 use crate::event_loop::MsgHandler;
-use crate::messages::Message;
+use crate::messages::{payload, Message, Payload};
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
+use crate::messages;
 use crate::queue::Queue;
 use crate::util::pubkey::PublicKey;
-use tracing::debug;
+use tracing::{debug, info};
 
 pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
 pub struct Reduction {
     handler: handler::Reduction,
+    msg: Message,
 }
 
 impl Reduction {
@@ -29,35 +31,35 @@ impl Reduction {
         Self {
             handler: handler::Reduction {
                 aggr: Default::default(),
+                first_step_votes: payload::StepVotes {
+                    bitset: 0,
+                    signature: [0; 48],
+                },
             },
+            msg: Message::empty(),
         }
     }
 
-    pub fn initialize(&mut self, _msg: &Message) {
-        /*
-        let empty = StepVotes::default();
+    pub fn initialize(&mut self, msg: &Message) {
+        self.msg = msg.clone();
 
-        let _step_votes = match msg.payload {
-            payload::NewBlock => panic!("invalid frame"),
-            Frame::StepVotes(f) => f,
-            Frame::NewBlock(_) => panic!("invalid frame"),
-        };
-
-         */
+        if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
+            self.handler.first_step_votes = p.sv;
+        }
     }
 
     pub async fn run(
         &mut self,
         ctx_recv: &mut oneshot::Receiver<Context>,
         inbound_msgs: &mut Receiver<Message>,
-        _outbound_msgs: &mut Sender<Message>,
+        outbound_msgs: &mut Sender<Message>,
         committee: Committee,
         future_msgs: &mut Queue<Message>,
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Message, SelectError> {
         if committee.am_member() {
-            self.spawn_send_reduction(committee.get_my_pubkey(), ru.round, step);
+            self.spawn_send_reduction(committee.get_my_pubkey(), ru, step, outbound_msgs.clone());
             // TODO: Register my reduction locally
         }
 
@@ -65,7 +67,7 @@ impl Reduction {
         if let Ok(messages) = future_msgs.get_events(ru.round, step) {
             for msg in messages {
                 if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f);
+                    return Ok(f.0);
                 }
             }
         }
@@ -74,6 +76,7 @@ impl Reduction {
             &mut self.handler,
             ctx_recv,
             inbound_msgs,
+            outbound_msgs.clone(),
             ru,
             step,
             &committee,
@@ -99,16 +102,45 @@ impl Reduction {
         COMMITTEE_SIZE
     }
 
-    fn spawn_send_reduction(&self, pubkey: PublicKey, round: u64, step: u8) {
+    fn spawn_send_reduction(
+        &self,
+        pubkey: PublicKey,
+        ru: RoundUpdate,
+        step: u8,
+        outbound: Sender<Message>,
+    ) {
+        use hex::ToHex;
+
         let name = self.name();
+        let msg = self.msg.clone();
         tokio::spawn(async move {
-            debug!(
-                "send reduction at {} round={}, step={}, bls_key={}",
-                name,
-                round,
-                step,
-                pubkey.encode_short_hex()
-            );
+            if let Payload::StepVotesWithCandidate(p) = msg.payload {
+                info!(
+                    "send 2th reduction at {} round={}, step={}, bls_key={} hash={}",
+                    name,
+                    ru.round,
+                    step,
+                    pubkey.encode_short_hex(),
+                    p.candidate.header.hash.as_slice().encode_hex::<String>(),
+                );
+
+                let hdr = messages::Header {
+                    pubkey_bls: pubkey,
+                    round: ru.round,
+                    step,
+                    block_hash: p.candidate.header.hash,
+                };
+
+                // sign and publish
+                outbound
+                    .send(Message::new_reduction(
+                        hdr,
+                        messages::payload::Reduction {
+                            signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
+                        },
+                    ))
+                    .await;
+            }
         });
     }
 }

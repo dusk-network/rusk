@@ -68,7 +68,7 @@ impl Phase {
         ru: RoundUpdate,
         step: u8,
     ) -> Result<Message, SelectError> {
-        info!(
+        trace!(
             "execute {} round={}, step={}, bls_key={}",
             self.name(),
             ru.round,
@@ -87,14 +87,6 @@ impl Phase {
             sortition::Config::new(ru.seed, ru.round, step, size),
         );
 
-        // TOD: Move here
-        /*
-         if committee.am_member() {
-                call_phase!(self, on_am_member(ctx));
-            }
-        */
-        // TODO: Move here both future_msgs.get_events
-
         await_phase!(
             self,
             run(
@@ -105,7 +97,7 @@ impl Phase {
                 future_msgs,
                 ru,
                 step
-            ) //TODO:  event_loop with handler
+            )
         )
     }
 
