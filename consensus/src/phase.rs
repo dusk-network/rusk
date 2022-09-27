@@ -4,17 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{RoundUpdate, SelectError};
-use crate::consensus::Context;
+use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 use crate::queue::Queue;
-use crate::selection;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use crate::{firststep, secondstep};
+use crate::{firststep, secondstep, selection};
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
-use tracing::{info, trace};
+use tracing::trace;
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -58,23 +57,8 @@ impl Phase {
         call_phase!(self, initialize(msg))
     }
 
-    pub async fn run(
-        &mut self,
-        provisioners: &mut Provisioners,
-        future_msgs: &mut Queue<Message>,
-        ctx_recv: &mut oneshot::Receiver<Context>,
-        inbound_msgs: &mut Receiver<Message>,
-        outbound_msgs: &mut Sender<Message>,
-        ru: RoundUpdate,
-        step: u8,
-    ) -> Result<Message, SelectError> {
-        trace!(
-            "execute {} round={}, step={}, bls_key={}",
-            self.name(),
-            ru.round,
-            step,
-            ru.pubkey_bls.encode_short_hex()
-        );
+    pub async fn run(&mut self, ctx: ExecutionCtx<'_>) -> Result<Message, SelectError> {
+        ctx.trace("execute");
 
         let size = call_phase!(self, get_committee_size());
 
@@ -82,23 +66,12 @@ impl Phase {
         // The extracted members are the provisioners eligible to vote on this particular round and step.
         // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
         let step_committee = Committee::new(
-            ru.pubkey_bls,
-            provisioners,
-            sortition::Config::new(ru.seed, ru.round, step, size),
+            ctx.round_update.pubkey_bls,
+            ctx.provisioners,
+            ctx.get_sortition_config(size),
         );
 
-        await_phase!(
-            self,
-            run(
-                ctx_recv,
-                inbound_msgs,
-                outbound_msgs,
-                step_committee,
-                future_msgs,
-                ru,
-                step
-            )
-        )
+        await_phase!(self, run(ctx, step_committee))
     }
 
     fn name(&self) -> &'static str {

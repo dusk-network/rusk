@@ -9,7 +9,6 @@ use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::messages::Message;
 use consensus::user::provisioners::{Provisioners, DUSK};
-use tokio::sync::mpsc::{Receiver, Sender};
 
 use consensus::util::pending_queue::PendingQueue;
 use consensus::util::pubkey::PublicKey;
@@ -46,6 +45,7 @@ async fn perform_basic_run() {
     let mut all_to_inbound = vec![];
     let mut agr_to_inbound = vec![];
 
+    // TODO: Use here broadcast
     let (sender_bridge, mut recv_bridge) = mpsc::channel::<Message>(1000);
     let (aggr_sender_bridge, mut aggr_recv_bridge) = mpsc::channel::<Message>(1000);
 
@@ -55,8 +55,8 @@ async fn perform_basic_run() {
 
     // Spawn N virtual nodes
     for key in keys.into_iter() {
-        let (to_inbound, inbound_msgs) = mpsc::channel::<Message>(10);
-        let (outbound_msgs, mut from_outbound) = mpsc::channel::<Message>(10);
+        let inbound = PendingQueue::new("inbound_main_loop");
+        let outbound = PendingQueue::new("outbound_main_loop");
 
         let aggr_inbound = PendingQueue::new("inbound_agreement");
         let aggr_outbound = PendingQueue::new("outbound_agreement");
@@ -65,20 +65,20 @@ async fn perform_basic_run() {
         spawn_node(
             key,
             provisioners.clone(),
-            inbound_msgs,
-            outbound_msgs,
+            inbound.clone(),
+            outbound.clone(),
             aggr_inbound.clone(),
             aggr_outbound.clone(),
         );
 
         // Bridge all so that provisioners can exchange messages in a single-process setup.
-        all_to_inbound.push(to_inbound.clone());
+        all_to_inbound.push(inbound);
         agr_to_inbound.push(aggr_inbound);
 
         let bridge = sender_bridge.clone();
         tokio::spawn(async move {
             loop {
-                if let Some(msg) = from_outbound.recv().await {
+                if let Ok(msg) = outbound.recv().await {
                     let _ = bridge.send(msg.clone()).await;
                 }
             }
@@ -98,7 +98,11 @@ async fn perform_basic_run() {
     tokio::spawn(async move {
         loop {
             if let Some(msg) = recv_bridge.recv().await {
-                for to_inbound in all_to_inbound.iter() {
+                for to_inbound in all_to_inbound.iter_mut() {
+                    if to_inbound.is_duplicate(&msg) {
+                        continue;
+                    };
+
                     let _ = to_inbound.send(msg.clone()).await;
                 }
             }
@@ -126,8 +130,8 @@ async fn perform_basic_run() {
 fn spawn_node(
     keys: (SecretKey, PublicKey),
     p: Provisioners,
-    inbound_msgs: Receiver<Message>,
-    outbound_msgs: Sender<Message>,
+    inbound_msgs: PendingQueue,
+    outbound_msgs: PendingQueue,
     aggr_inbound_queue: PendingQueue,
     aggr_outbound_queue: PendingQueue,
 ) {
@@ -145,9 +149,11 @@ fn spawn_node(
                     aggr_outbound_queue,
                 );
 
-                // Run consensus for 1 round
-                c.reset_state_machine();
-                c.spin(RoundUpdate::new(0, keys.1, keys.0), p.clone()).await;
+                // Run consensus for N rounds
+                for i in 0..10 {
+                    c.reset_state_machine();
+                    c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
+                }
             });
     });
 }

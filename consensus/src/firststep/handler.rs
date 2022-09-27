@@ -1,7 +1,5 @@
 use crate::aggregator::Aggregator;
-use bytes::{Buf, BufMut, BytesMut};
-use dusk_bls12_381_sign::APK;
-use dusk_bytes::Serializable;
+
 use tracing::info;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,8 +7,7 @@ use tracing::info;
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{verify_signature, Block, ConsensusError, RoundUpdate};
-use crate::event_loop::MsgHandler;
-use crate::messages;
+use crate::msg_handler::MsgHandler;
 
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
@@ -35,14 +32,13 @@ impl MsgHandler<Message> for Reduction {
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
-        if let Err(_) = verify_signature(&msg.header, msg_payload.signed_hash) {
+        if verify_signature(&msg.header, msg_payload.signed_hash).is_err() {
             return Err(ConsensusError::InvalidSignature);
         }
 
         // Collect vote, if msg payload is reduction type
         if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
-            info!("reached quorum at 1st reduction");
             return Ok((
                 Message::from_stepvotes(payload::StepVotesWithCandidate {
                     sv: sv.1,

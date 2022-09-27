@@ -4,19 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{sign, RoundUpdate, SelectError};
-use crate::consensus::Context;
-use crate::event_loop::event_loop;
-use crate::event_loop::MsgHandler;
 use crate::messages::{payload, Message, Payload};
+use crate::msg_handler::MsgHandler;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
 
+use crate::execution_ctx::ExecutionCtx;
 use crate::messages;
 use crate::queue::Queue;
+use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
-use tracing::{debug, info};
+use tracing::info;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
@@ -50,48 +50,27 @@ impl Reduction {
 
     pub async fn run(
         &mut self,
-        ctx_recv: &mut oneshot::Receiver<Context>,
-        inbound_msgs: &mut Receiver<Message>,
-        outbound_msgs: &mut Sender<Message>,
+        mut ctx: ExecutionCtx<'_>,
         committee: Committee,
-        future_msgs: &mut Queue<Message>,
-        ru: RoundUpdate,
-        step: u8,
     ) -> Result<Message, SelectError> {
         if committee.am_member() {
-            self.spawn_send_reduction(committee.get_my_pubkey(), ru, step, outbound_msgs.clone());
-            // TODO: Register my reduction locally
+            self.spawn_send_reduction(
+                committee.get_my_pubkey(),
+                ctx.round_update,
+                ctx.step,
+                ctx.outbound.clone(),
+                ctx.inbound.clone(),
+            );
         }
 
-        // drain future queued messages
-        if let Ok(messages) = future_msgs.get_events(ru.round, step) {
-            for msg in messages {
-                if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f.0);
-                }
-            }
+        // handle queued messages for current round and step.
+        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler) {
+            return Ok(m);
         }
 
-        match event_loop(
-            &mut self.handler,
-            ctx_recv,
-            inbound_msgs,
-            outbound_msgs.clone(),
-            ru,
-            step,
-            &committee,
-            future_msgs,
-        )
-        .await
-        {
-            Err(SelectError::Timeout) => {
-                //TODO create agreement with empty block
-                // self.handler.on_timeout();
-                Ok(Message::empty())
-            }
-            Err(err) => Err(err),
-            Ok(res) => Ok(res),
-        }
+        // TODO: Handle  Err(SelectError::Timeout)
+        // TODO: create agreement with empty block self.handler.on_timeout()
+        ctx.event_loop(&committee, &mut self.handler).await
     }
 
     pub fn name(&self) -> &'static str {
@@ -107,7 +86,8 @@ impl Reduction {
         pubkey: PublicKey,
         ru: RoundUpdate,
         step: u8,
-        outbound: Sender<Message>,
+        mut outbound: PendingQueue,
+        mut inbound: PendingQueue,
     ) {
         use hex::ToHex;
 
@@ -131,15 +111,18 @@ impl Reduction {
                     block_hash: p.candidate.header.hash,
                 };
 
+                let msg = Message::new_reduction(
+                    hdr,
+                    messages::payload::Reduction {
+                        signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
+                    },
+                );
+
                 // sign and publish
-                outbound
-                    .send(Message::new_reduction(
-                        hdr,
-                        messages::payload::Reduction {
-                            signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
-                        },
-                    ))
-                    .await;
+                outbound.send(msg.clone()).await;
+
+                // Register my vote locally
+                inbound.send(msg).await;
             }
         });
     }

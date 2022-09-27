@@ -1,7 +1,5 @@
-use bytes::{Buf, BufMut, BytesMut};
-use dusk_bls12_381_sign::{SecretKey, APK};
-use dusk_bytes::Serializable;
 use std::ops::Deref;
+use std::time::Duration;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,17 +7,20 @@ use std::ops::Deref;
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::aggregator::Aggregator;
 use crate::commons::{sign, Block, RoundUpdate, SelectError};
-use crate::consensus::Context;
-use crate::event_loop::{event_loop, MsgHandler};
+
+use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
+use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
 use crate::user::committee::Committee;
+use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 use hex::ToHex;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::oneshot;
+use tokio::time::sleep;
 use tracing::info;
 
 pub const COMMITTEE_SIZE: usize = 64;
@@ -57,50 +58,38 @@ impl Reduction {
 
     pub async fn run(
         &mut self,
-        ctx_recv: &mut oneshot::Receiver<Context>,
-        inbound_msgs: &mut Receiver<Message>,
-        outbound_msgs: &mut Sender<Message>,
+        mut ctx: ExecutionCtx<'_>,
         committee: Committee,
-        future_msgs: &mut Queue<Message>,
-        ru: RoundUpdate,
-        step: u8,
     ) -> Result<Message, SelectError> {
+        let ru = ctx.round_update;
+        let step = ctx.step;
+
         if committee.am_member() {
-            //  : Send reduction async
-            self.spawn_send_reduction(committee.get_my_pubkey(), ru, step, outbound_msgs.clone());
-
-            // TODO: Register my reduction locally
+            //  Send reduction async
+            self.spawn_send_reduction(
+                committee.get_my_pubkey(),
+                ru,
+                step,
+                ctx.outbound.clone(),
+                ctx.inbound.clone(),
+            );
         }
 
-        // drain future messages for current round and step.
-        if let Ok(messages) = future_msgs.get_events(ru.round, step) {
-            for msg in messages {
-                if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f.0);
-                }
-            }
+        // handle queued messages for current round and step.
+        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler) {
+            return Ok(m);
         }
 
-        event_loop(
-            &mut self.handler,
-            ctx_recv,
-            inbound_msgs,
-            outbound_msgs.clone(),
-            ru,
-            step,
-            &committee,
-            future_msgs,
-        )
-        .await
+        ctx.event_loop(&committee, &mut self.handler).await
     }
 
-    // TODO: duplicated spawn_send_reduction
     fn spawn_send_reduction(
         &self,
         pubkey: PublicKey,
         ru: RoundUpdate,
         step: u8,
-        outbound: Sender<Message>,
+        mut outbound: PendingQueue,
+        mut inbound: PendingQueue,
     ) {
         let name = self.name();
         let selection_result = self.selection_result.clone().deref().clone();
@@ -122,6 +111,8 @@ impl Reduction {
             );
 
             // TODO: VerifyStateTransition call here
+            // Simulate VerifyStateTransition execution time
+            // tokio::time::sleep(Duration::from_secs(3)).await;
 
             let hdr = messages::Header {
                 pubkey_bls: pubkey,
@@ -130,15 +121,18 @@ impl Reduction {
                 block_hash: selection_result.candidate.header.hash,
             };
 
+            let msg = Message::new_reduction(
+                hdr,
+                messages::payload::Reduction {
+                    signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
+                },
+            );
+
             // sign and publish
-            outbound
-                .send(Message::new_reduction(
-                    hdr,
-                    messages::payload::Reduction {
-                        signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
-                    },
-                ))
-                .await;
+            outbound.send(msg.clone()).await;
+
+            // Register my vote locally
+            inbound.send(msg).await;
         });
     }
 

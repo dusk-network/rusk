@@ -6,7 +6,7 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{Block, RoundUpdate};
-use crate::messages::Message;
+use crate::messages::{Header, Message, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
@@ -14,7 +14,6 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 
-use crate::consensus::Context;
 use std::fmt::Error;
 use std::sync::Arc;
 use tokio::select;
@@ -23,6 +22,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, trace};
 
 const WORKERS_AMOUNT: usize = 4;
+const COMMITTEE_SIZE: usize = 64;
 
 pub struct Agreement {
     inbound_queue: PendingQueue,
@@ -51,7 +51,7 @@ impl Agreement {
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn(
         &mut self,
-        ctx: oneshot::Sender<Context>,
+        ctx: oneshot::Sender<bool>,
         ru: RoundUpdate,
         provisioners: Provisioners,
     ) -> JoinHandle<Result<Block, Error>> {
@@ -63,11 +63,9 @@ impl Agreement {
             // Dropping this chan cancels the main consensus loop
             let _ctx = ctx;
             // Run agreement life-cycle loop
-            let res = Executor::new(ru, provisioners, inbound, outbound)
+            Executor::new(ru, provisioners, inbound, outbound)
                 .run(future_msgs)
-                .await;
-
-            res
+                .await
         })
     }
 }
@@ -83,7 +81,6 @@ struct Executor {
     committees_set: Arc<Mutex<CommitteeSet>>,
 }
 
-// Agreement non-pub methods
 impl Executor {
     fn new(
         ru: RoundUpdate,
@@ -135,10 +132,16 @@ impl Executor {
                 // Process messages from outside world
                  msg = self.inbound_queue.recv() => {
                     if let Ok(msg) = msg {
-                         // TODO: should process
-                         // future_msgs.lock().await.put_event(self.ru.round, 0, msg.as_ref().unwrap().clone());
-
-                        self.collect_agreement(&mut acc, msg).await;
+                         match msg.header.compare_round(self.ru.round) {
+                            Status::Future => {
+                                future_msgs
+                                    .lock()
+                                    .await
+                                    .put_event(msg.header.round, 0, msg.clone());
+                            }
+                            Status::Present => { self.collect_agreement(&mut acc, msg).await;}
+                            _ => {}
+                        };
                     }
                  }
             };
@@ -148,10 +151,7 @@ impl Executor {
     async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
         let hdr = &msg.header;
 
-        if !self.committees_set.lock().await.is_member(
-            hdr.pubkey_bls,
-            sortition::Config::new(self.ru.seed, hdr.round, hdr.step, 64),
-        ) {
+        if !self.is_member(hdr).await {
             trace!(
                 "message is from non-committee member {:?} {:?}",
                 self.ru,
@@ -171,8 +171,6 @@ impl Executor {
         info!("consensus_achieved");
 
         // TODO: generate committee per round, step
-        // comm := handler.Committee(r.Round, evs[0].State().Step)
-        // 	pubs := new(sortedset.Set)
 
         // TODO: Republish
 
@@ -181,5 +179,12 @@ impl Executor {
         // TODO: createWinningBlock
 
         Some(Block::default())
+    }
+
+    async fn is_member(&self, hdr: &Header) -> bool {
+        self.committees_set.lock().await.is_member(
+            hdr.pubkey_bls,
+            sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
+        )
     }
 }

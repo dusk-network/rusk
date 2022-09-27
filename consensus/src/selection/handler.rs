@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::event_loop::MsgHandler;
 use crate::messages::Message;
+use crate::msg_handler::MsgHandler;
 use crate::user::committee::Committee;
 
 pub struct Selection {}

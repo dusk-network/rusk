@@ -71,12 +71,11 @@ pub enum SelectError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ConsensusError {
-    // TODO: Rename InvalidRoundStep
-    InvalidRoundStep,
     InvalidBlock,
     InvalidSignature,
     InvalidMsgType,
     FutureEvent,
+    PastEvent,
     NotCommitteeMember,
     NotImplemented,
     NotReady,
@@ -110,14 +109,14 @@ pub fn sign(
     msg.put_u8(hdr.step);
     msg.put(&hdr.block_hash[..]);
 
-    sk.sign(&pk, msg.bytes()).to_bytes().into()
+    sk.sign(&pk, msg.bytes()).to_bytes()
 }
 
 pub fn verify_signature(
     hdr: &messages::Header,
     signature: [u8; 48],
 ) -> Result<(), dusk_bls12_381_sign::Error> {
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature.into())?;
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
 
     dusk_bls12_381_sign::APK::from(&hdr.pubkey_bls.to_bls_pk()).verify(
         &sig,
@@ -133,20 +132,3 @@ pub fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> Byte
 
     msg
 }
-
-// TODO: Encapsulate all run params in a single struct as they are used in another 9 functions/calls as input
-
-/*
-pub struct PhaseContext<'a> {
-    cancel_recv: &'a mut oneshot::Receiver<Context>,
-
-    inbound_msgs: &'a mut mpsc::Receiver<Message>,
-    future_msgs: &'a mut Queue<Message>,
-    outbound_msgs: &'a mut mpsc::Sender<Message>,
-
-    committee: Committee,
-
-    ru: RoundUpdate,
-    step: u8,
-}
-*/

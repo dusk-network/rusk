@@ -1,11 +1,11 @@
-use tracing::{error, info};
+use tracing::error;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate};
-use crate::event_loop::MsgHandler;
+use crate::msg_handler::MsgHandler;
 
 use crate::aggregator::Aggregator;
 use crate::messages;
@@ -60,7 +60,7 @@ impl Reduction {
             pubkey_bls: ru.pubkey_bls,
             round: ru.round,
             step,
-            block_hash: sv.0.into(),
+            block_hash: sv.0,
         };
 
         let payload = payload::Agreement {

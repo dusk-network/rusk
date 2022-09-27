@@ -11,7 +11,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf};
 use dusk_bls12_381_sign::APK;
 use dusk_bytes::Serializable;
 use std::sync::Arc;
@@ -154,7 +154,7 @@ fn verify_signatures(
 ) -> Result<(), dusk_bls12_381_sign::Error> {
     // Compile message to verify
 
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature.into())?;
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
     apk.verify(&sig, marshal_signable_vote(round, step, block_hash).bytes())
 }
 
@@ -162,7 +162,7 @@ fn verify_whole(
     hdr: &messages::Header,
     signature: [u8; 48],
 ) -> Result<(), dusk_bls12_381_sign::Error> {
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature.into())?;
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
 
     APK::from(&hdr.pubkey_bls.to_bls_pk()).verify(
         &sig,

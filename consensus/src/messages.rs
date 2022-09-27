@@ -73,7 +73,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
     pub pubkey_bls: PublicKey,
     pub round: u64,
@@ -89,19 +89,31 @@ impl Header {
             }
 
             if self.step > step {
-                return Status::Past;
+                return Status::Future;
             }
 
             if self.step < step {
-                return Status::Future;
+                return Status::Past;
             }
         }
 
         if self.round > round {
-            return Status::Past;
+            return Status::Future;
         }
 
         if self.round < round {
+            return Status::Past;
+        }
+
+        Status::Past
+    }
+
+    pub fn compare_round(&self, round: u64) -> Status {
+        if self.round == round {
+            return Status::Present;
+        }
+
+        if self.round > round {
             return Status::Future;
         }
 
@@ -127,7 +139,6 @@ impl Default for Payload {
 
 pub mod payload {
     use crate::commons::Block;
-    use crate::commons::Signature;
 
     #[derive(Debug, Copy, Clone)]
     pub struct Reduction {
