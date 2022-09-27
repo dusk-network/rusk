@@ -166,6 +166,15 @@ pub mod payload {
         pub signature: [u8; 48],
     }
 
+    impl Default for StepVotes {
+        fn default() -> Self {
+            Self {
+                bitset: 0,
+                signature: [0; 48],
+            }
+        }
+    }
+
     #[derive(Debug, Clone)]
     pub struct StepVotesWithCandidate {
         pub sv: StepVotes,

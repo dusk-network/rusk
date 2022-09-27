@@ -88,7 +88,7 @@ impl Accumulator {
 
         let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
 
-        /// Mutex guard used here to fetch all data needed from CommitteeSet
+        // Mutex guard used here to fetch all data needed from CommitteeSet
         let (weight, target_quorum) = {
             let mut guard = committees_set.lock().await;
 

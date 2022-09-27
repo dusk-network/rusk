@@ -7,6 +7,9 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 use crate::messages;
+
+use crate::messages::Message;
+use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 use bytes::{Buf, BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
@@ -131,4 +134,46 @@ pub fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> Byte
     msg.put(&block_hash[..]);
 
     msg
+}
+
+pub fn spawn_send_reduction(
+    candidate: Block,
+    pubkey: PublicKey,
+    ru: RoundUpdate,
+    step: u8,
+    mut outbound: PendingQueue,
+    mut inbound: PendingQueue,
+) {
+    tokio::spawn(async move {
+        // TODO: VerifyStateTransition call here
+        // Simulate VerifyStateTransition execution time
+        // tokio::time::sleep(Duration::from_secs(3)).await;
+
+        let hdr = messages::Header {
+            pubkey_bls: pubkey,
+            round: ru.round,
+            step,
+            block_hash: candidate.header.hash,
+        };
+
+        // Sign and construct reduction message
+        let msg = Message::new_reduction(
+            hdr,
+            messages::payload::Reduction {
+                signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
+            },
+        );
+
+        //   publish
+        outbound
+            .send(msg.clone())
+            .await
+            .unwrap_or_else(|err| tracing::error!("unable to publish reduction msg {:?}", err));
+
+        // Register my vote locally
+        inbound
+            .send(msg)
+            .await
+            .unwrap_or_else(|err| tracing::error!("unable to register reduction msg {:?}", err));
+    });
 }

@@ -123,7 +123,7 @@ async fn perform_basic_run() {
         }
     });
 
-    time::sleep(Duration::from_secs(120)).await;
+    time::sleep(Duration::from_secs(12000)).await;
 }
 
 /// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
@@ -150,7 +150,7 @@ fn spawn_node(
                 );
 
                 // Run consensus for N rounds
-                for i in 0..10 {
+                for i in 0..100 {
                     c.reset_state_machine();
                     c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
                 }

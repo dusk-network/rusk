@@ -1,4 +1,3 @@
-use std::thread::sleep;
 use std::time::Duration;
 // This Source Code Form is subject to the terms of the Mozilla Public License,
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
@@ -16,7 +15,7 @@ use crate::selection;
 use crate::user::provisioners::Provisioners;
 use crate::util::pending_queue::PendingQueue;
 use crate::{firststep, secondstep};
-use tokio::sync::mpsc::{Receiver, Sender};
+
 use tokio::sync::oneshot;
 use tracing::{error, info, trace};
 
@@ -108,7 +107,7 @@ impl Consensus {
         }
 
         let winning_block = aggr_handle.await.unwrap_or_else(|_| Ok(Block::default()));
-        info!("Winning block: {:?}", winning_block);
+        trace!("winning block: {:?}", winning_block);
 
         self.teardown(ru.round).await;
     }

@@ -77,7 +77,6 @@ struct Executor {
     inbound_queue: PendingQueue,
     outbound_queue: PendingQueue,
 
-    // TODO: Consider sharing CommitteesSet between main Consensus loop and agreement step.
     committees_set: Arc<Mutex<CommitteeSet>>,
 }
 
@@ -161,7 +160,10 @@ impl Executor {
         }
 
         // Publish the agreement
-        self.outbound_queue.send(msg.clone()).await;
+        self.outbound_queue
+            .send(msg.clone())
+            .await
+            .unwrap_or_else(|err| error!("unable to publish a collected agreement msg {:?}", err));
 
         // Accumulate the agreement
         acc.process(msg.clone()).await;
@@ -170,13 +172,9 @@ impl Executor {
     fn collect_votes(&self, _msg: Option<Message>) -> Option<Block> {
         info!("consensus_achieved");
 
-        // TODO: generate committee per round, step
-
-        // TODO: Republish
-
-        // TODO: GenerateCertificate
-
-        // TODO: createWinningBlock
+        // TODO: Generate winning block. This should be feasible once append-only db is enabled.
+        // generate committee per round, step
+        //  republish, generate_certificate, createWinningBlock
 
         Some(Block::default())
     }

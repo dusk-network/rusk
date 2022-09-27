@@ -4,19 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate, SelectError};
-use crate::execution_ctx::ExecutionCtx;
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::messages::{Message, MessageTrait, Status};
-use crate::queue::Queue;
 use crate::user::committee::Committee;
-use crate::util::pending_queue::PendingQueue;
 use hex::ToHex;
 use std::fmt::Debug;
-use std::time::Duration;
-use tokio::sync::{mpsc, oneshot};
-use tokio::time::Instant;
-use tokio::{select, time};
-use tracing::{info, warn};
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {

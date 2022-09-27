@@ -57,7 +57,7 @@ impl<'a> ExecutionCtx<'a> {
     }
 
     pub fn trace(&self, event_name: &'static str) {
-        tracing::info!(
+        tracing::trace!(
             "event={} round={}, step={}, bls_key={}",
             event_name,
             self.round_update.round,
@@ -84,7 +84,7 @@ impl<'a> ExecutionCtx<'a> {
 
         if let Ok(messages) = self.future_msgs.get_events(ru.round, self.step) {
             for msg in messages {
-                if let Ok(f) = phase.handle(msg, *ru, self.step, &committee) {
+                if let Ok(f) = phase.handle(msg, *ru, self.step, committee) {
                     return Some(f.0);
                 }
             }
@@ -113,11 +113,13 @@ impl<'a> ExecutionCtx<'a> {
                 // Delegate message processing and verification to the Step itself.
                 // TODO: phase.is_valid { repropagate; handle }
                 Ok(msg) => match phase.handle(msg.clone(), ru, self.step, committee) {
-                    // Fully valid state reached  t5sxzxcZX on this step. Return it as an output.
+                    // Fully valid state reached on this step. Return it as an output.
                     // Populate next step with it.
                     Ok(result) => {
                         let msg = result.0;
-                        self.outbound.send(msg.clone()).await;
+                        self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
+                            tracing::error!("unable to re-publish a handled msg {:?}", err)
+                        });
 
                         if result.1 {
                             break Ok(msg);

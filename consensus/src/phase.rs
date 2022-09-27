@@ -3,16 +3,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{RoundUpdate, SelectError};
+use crate::commons::{SelectError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
-use crate::queue::Queue;
+
 use crate::user::committee::Committee;
-use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
+
+
 use crate::{firststep, secondstep, selection};
-use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot;
+
+
 use tracing::trace;
 
 macro_rules! await_phase {

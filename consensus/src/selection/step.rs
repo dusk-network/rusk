@@ -9,7 +9,7 @@ use crate::commons::{Block, RoundUpdate, SelectError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{payload::NewBlock, Header, Message};
 use crate::msg_handler::MsgHandler;
-use crate::queue::Queue;
+
 use crate::selection::handler;
 use crate::user::committee::Committee;
 use crate::util::pubkey::PublicKey;
@@ -36,11 +36,9 @@ impl Selection {
         mut ctx: ExecutionCtx<'_>,
         committee: Committee,
     ) -> Result<Message, SelectError> {
-        let ru = ctx.round_update;
-        let step = ctx.step;
-
         if committee.am_member() {
-            let msg = self.generate_candidate(committee.get_my_pubkey(), ru, step);
+            let msg =
+                self.generate_candidate(committee.get_my_pubkey(), ctx.round_update, ctx.step);
 
             // Broadcast the candidate block for this round/iteration.
             if let Err(e) = ctx.outbound.send(msg.clone()).await {
@@ -48,19 +46,18 @@ impl Selection {
             }
 
             // register new candidate in local state
-            match self.handler.handle(msg, ru, step, &committee) {
+            match self
+                .handler
+                .handle(msg, ctx.round_update, ctx.step, &committee)
+            {
                 Ok(f) => return Ok(f.0),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),
             };
         }
 
-        // drain future messages for current round and step.
-        if let Ok(messages) = ctx.future_msgs.get_events(ru.round, step) {
-            for msg in messages {
-                if let Ok(f) = self.handler.handle(msg, ru, step, &committee) {
-                    return Ok(f.0);
-                }
-            }
+        // handle queued messages for current round and step.
+        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler) {
+            return Ok(m);
         }
 
         ctx.event_loop(&committee, &mut self.handler).await
