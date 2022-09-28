@@ -1,0 +1,32 @@
+[acl.stake]
+owners = []
+allowlist = [
+    "21aLx16qNEyU14aCGzacr8efbwx7bEytxa2rT71XB24zGZrb6Y398ebg38My7aQikamhpdYzphUAMHfPhH3BWvwsG2G655Dr8gwmQLKH9nERiGmD79Jewkn4ZkMeptfYBMiS",
+    "z9Gbp4jW1rTJNQto4PHaJYxAUPS1EV5MW8SHvrgiS8XfVig5qEtdMN8PNoybBzMf115VTZ8opqVit93Pe9zRKP46NN94SGRQZtmDpokp7UiXcSNXUw6VsofJtFZj6fu2KMn",
+    "24gdSgib4nkYVWiZEKGauUpyhJJt6PLbnHwrqbcmhxZhfEQRcZqUe8GTkBcCG9p1VB7CwnR1ymFYSMFEC6bWCD81pTRYsFpQdUV2XfHjw1ieo57asYsy8vwRhQtB3R8qC2ta",
+]
+
+[[balance]]
+address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
+seed = 57005
+notes = [
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+]
+
+[[stake]]
+address = "21aLx16qNEyU14aCGzacr8efbwx7bEytxa2rT71XB24zGZrb6Y398ebg38My7aQikamhpdYzphUAMHfPhH3BWvwsG2G655Dr8gwmQLKH9nERiGmD79Jewkn4ZkMeptfYBMiS"
+amount = 1_000_000_000_000
+
+[[stake]]
+address = "z9Gbp4jW1rTJNQto4PHaJYxAUPS1EV5MW8SHvrgiS8XfVig5qEtdMN8PNoybBzMf115VTZ8opqVit93Pe9zRKP46NN94SGRQZtmDpokp7UiXcSNXUw6VsofJtFZj6fu2KMn"
+amount = 1_000_000_000_000
+reward = 1_000_000_000_000

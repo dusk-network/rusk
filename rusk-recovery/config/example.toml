@@ -1,0 +1,59 @@
+[acl.stake]
+
+# List of the stake contract owners
+#
+# Owners can allow other key to partecipate in the stake.
+# Each owner is identified by a BLS PublicKey in base58 format
+owners = [
+    't7QRJHMJgtGuqfcUbaFNj6QmWyf1MdsRhZMZRdnWdFxEboE849EDLRyw9A6WPjNGvFcVMsq9P3TDfBDrnBRcH3xnmZiaFspQBRRkvv9jmzdvtgyQ1kVVjReHkNXNi9bGqz3',
+    'zeegH4ZAzHUUjuR4upqMejtMTvL8wQtjAMFtaxEHuDMQr9hddaUpjfgYXonmuqYcKBavwLMZzK8sVwRMXEQhW6mGaacL6q4SkK7U1TzEdGzY1kqm5LdJQWwnuRGoGP2C2HP',
+]
+
+# List of the allowed stakers. 
+#
+# Stakers in this list can partecipate in the stake
+# Each allowed stake is identified by a BLS PublicKey in base58 format
+allowlist = [
+    '22p9MSeCwzrGtSff3TYPELufsGxU4oumgkHd4XqNTq5tuHmJ3aTPJErA7nF6ns4vqW295y3SXY9FdZd68bXP5q82AAEmCustZvD3mbb8K32Eawm3GNmUkzVLU7t24tCe5atj',
+    '25c35qHwAUGsRkFuM7xcwwQUFLeLaNE9baLFRJdLwWn5HXFzENF2Re2Lw94bxvQatFhFoS1mvkhQT6nkV3ZAbsNFKrwMtY1c6Q7EnjcN58MD1z654H7MH7K26ZtQtUpEiy9g',
+    'tXxJU6caTEWicM7A4cNcPGa7dfGTXvnLuc1gWSSUGgyezSJNMfWEuAsiJrvWQjTzYeJCG8yL46LvtrBS5LqnXMNuamYpYiN3dEW6PDywURF6G6ZjFGNy9juHMFsSMdYx8EH',
+]
+
+# Balances to be included in the genesis contract
+#
+# Each balance is identified by an address, 
+# a list of amounts in LUX (which is used to create each note), 
+# and an optional seed (used during notes creation)
+# 
+# If no `seed` is configured, a random one is used.
+[[balance]]
+address = 'dQgpVd2XwtXfVhDBdKX5rnXqyRkYsJgZ5wq826wdn6atfKnaNyptTogEko2u2ZWhW5sGADhR4YMKztqrFJphuMz'
+seed = 0xcafe
+notes = [
+    1_000_000_000_000, 
+    50_000_000, 
+    245_123_000_423
+]
+
+[[balance]]
+address = '5i9RZjT87TLa1BtWXRRoFy3FoMzFHiXT3GWasHdUaxuo3YapUKYeXXiY1yuAeKng2hmxxaYsGNhKhjyrE9KYTSE7'
+notes = [1_000_000_000_000]
+
+# Stakes to be included in the stake contract
+#
+# Each stake is identified by the address (a BLS PublicKey in base58 format)
+# and the staked amount (in LUX)
+# 
+# If no elegibility is configured, it defaults to 0. 
+# Meaning that the stake is active from the genesis block
+# 
+# A preset `reward` amount can be configured (in LUX)
+[[stake]]
+address = 'tXxJU6caTEWicM7A4cNcPGa7dfGTXvnLuc1gWSSUGgyezSJNMfWEuAsiJrvWQjTzYeJCG8yL46LvtrBS5LqnXMNuamYpYiN3dEW6PDywURF6G6ZjFGNy9juHMFsSMdYx8EH'
+amount = 1_000_000_000_000
+elegibility = 1000
+reward = 500_000
+
+[[stake]]
+address = 't7QRJHMJgtGuqfcUbaFNj6QmWyf1MdsRhZMZRdnWdFxEboE849EDLRyw9A6WPjNGvFcVMsq9P3TDfBDrnBRcH3xnmZiaFspQBRRkvv9jmzdvtgyQ1kVVjReHkNXNi9bGqz3'
+amount = 1_000_000_000_000

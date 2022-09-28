@@ -31,7 +31,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk, RuskState};
+use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -67,30 +67,22 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let snapshot =
+        toml::from_str(include_str!("../config/multi_transfer.toml"))
+            .expect("Cannot deserialize config");
+
+    let state_id =
+        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
     let mut state = rusk.state()?;
-    let transfer = state.transfer_contract()?;
-
-    assert!(
-        transfer.get_note(0)?.is_some(),
-        "Expect to have one note at the genesis state",
-    );
-
-    assert!(
-        transfer.get_note(1)?.is_none(),
-        "Expect to have ONLY one note at the genesis state",
-    );
-
-    generate_notes(&mut state)?;
 
     let transfer = state.transfer_contract()?;
 
-    assert!(transfer.get_note(1)?.is_some(), "Expect to have more notes",);
+    assert!(transfer.get_note(2)?.is_some(), "Expect to have more notes",);
     assert!(
-        transfer.get_note(4)?.is_none(),
+        transfer.get_note(3)?.is_none(),
         "Expect to have only 3 notes",
     );
 
@@ -118,36 +110,6 @@ static SSK_2: Lazy<SecretSpendKey> = Lazy::new(|| {
     info!("Generating SecretSpendKey #2");
     TestStore.retrieve_ssk(2).expect("Should not fail in test")
 });
-
-fn generate_notes(rusk_state: &mut RuskState) -> Result<()> {
-    info!("Generating a note");
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    let psk_0 = SSK_0.public_spend_key();
-    let psk_1 = SSK_1.public_spend_key();
-    let psk_2 = SSK_2.public_spend_key();
-
-    let note_0 = Note::transparent(&mut rng, &psk_0, INITIAL_BALANCE);
-    let note_1 = Note::transparent(&mut rng, &psk_1, INITIAL_BALANCE);
-    let note_2 = Note::transparent(&mut rng, &psk_2, INITIAL_BALANCE);
-
-    let mut transfer = rusk_state.transfer_contract()?;
-
-    transfer.push_note(BLOCK_HEIGHT, note_0)?;
-    transfer.push_note(BLOCK_HEIGHT, note_1)?;
-    transfer.push_note(BLOCK_HEIGHT, note_2)?;
-
-    transfer.update_root()?;
-
-    info!("Updating the new transfer contract state");
-    unsafe {
-        rusk_state
-            .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
-    }
-
-    rusk_state.finalize();
-    Ok(())
-}
 
 /// Executes three different transactions in the same block, expecting only two
 /// to be included due to exceeding th block gas limit

@@ -16,6 +16,7 @@ use rusk::services::state::{
     GetAnchorRequest, GetNotesOwnedByRequest, GetNotesRequest,
     GetOpeningRequest, GetStakeRequest,
 };
+use rusk_recovery_tools::state::Snapshot;
 use rusk_schema::state_client::StateClient;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
@@ -39,8 +40,11 @@ pub fn testbackend() -> BackendCtor<DiskBackend> {
 }
 
 static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())
-        .expect("Failed to deploy state");
+    let state_id = rusk_recovery_tools::state::deploy(
+        &Snapshot::default(),
+        &testbackend(),
+    )
+    .expect("Failed to deploy state");
 
     let rusk = Rusk::builder(testbackend)
         .id(state_id)

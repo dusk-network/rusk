@@ -54,14 +54,28 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
+
+    // This is a temporary solution until there will be possible to specify an
+    // preset configuration from file
+    let snapshot = if args.testnet {
+        include_str!("../../config/testnet.toml")
+    } else {
+        include_str!("../../config/localnet.toml")
+    };
+
+    let snapshot = toml::from_str(snapshot)?;
+
     task::run(
         || {
-            exec(ExecConfig {
-                build: args.build,
-                force: args.force,
-                testnet: args.testnet,
-                use_prebuilt_contracts: args.use_prebuilt_contracts,
-            })
+            exec(
+                ExecConfig {
+                    build: args.build,
+                    force: args.force,
+
+                    use_prebuilt_contracts: args.use_prebuilt_contracts,
+                },
+                &snapshot,
+            )
         },
         args.profile,
         args.verbose,
