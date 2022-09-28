@@ -133,6 +133,8 @@ impl Executor {
                     if let Ok(msg) = msg {
                          match msg.header.compare_round(self.ru.round) {
                             Status::Future => {
+                                // Future agreement message.
+                                // Keep it for processing when we reach this round.
                                 future_msgs
                                     .lock()
                                     .await

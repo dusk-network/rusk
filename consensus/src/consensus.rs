@@ -4,23 +4,20 @@ use std::time::Duration;
 // obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{Block, ConsensusError, RoundUpdate, SelectError};
+use crate::commons::{Block, ConsensusError, RoundUpdate};
 use crate::phase::Phase;
 
 use crate::agreement::step;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 use crate::queue::Queue;
-use crate::selection;
 use crate::user::provisioners::Provisioners;
 use crate::util::pending_queue::PendingQueue;
+use crate::{config, selection};
 use crate::{firststep, secondstep};
 
 use tokio::sync::oneshot;
-use tracing::{error, info, trace};
-
-pub const CONSENSUS_MAX_STEP: u8 = 213;
-pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
+use tracing::trace;
 
 pub struct Consensus {
     phases: [Phase; 3],
@@ -60,11 +57,6 @@ impl Consensus {
         }
     }
 
-    // reset_state_machine ...
-    pub fn reset_state_machine(&mut self) {
-        // TODO:
-    }
-
     /// Spin the consensus state machine. The consensus runs for the whole round
     /// until either a new round is produced or the node needs to re-sync. The
     /// Agreement loop (acting roundwise) runs concurrently with the
@@ -98,16 +90,17 @@ impl Consensus {
                 // further processing.
                 self.agreement_process.send_msg(msg.clone()).await;
 
-                // Delay next iteration execution so we avoid consensus-split situation
-                tokio::time::sleep(Duration::from_secs(1)).await;
+                // Delay next iteration execution so we avoid consensus-split situation.
+                // NB: This should be moved to Block Generator when mempool is integrated.
+                tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS)).await;
             } else {
                 aggr_handle.abort();
                 break;
             }
         }
 
-        let winning_block = aggr_handle.await.unwrap_or_else(|_| Ok(Block::default()));
-        trace!("winning block: {:?}", winning_block);
+        let winner = aggr_handle.await.unwrap_or_else(|_| Ok(Block::default()));
+        trace!("winning block: {:?}", winner);
 
         self.teardown(ru.round).await;
     }
@@ -138,24 +131,13 @@ impl Consensus {
                 *step,
             );
 
-            // Execute a phase. An error returned here terminates consensus
+            // Execute a phase.
+            // An error returned here terminates consensus
             // round. This normally happens if consensus channel is cancelled by
             // agreement loop on finding the winning block for this round.
-            match phase.run(ctx).await {
-                Ok(next_msg) => msg = next_msg,
-                Err(e) => {
-                    match e {
-                        SelectError::Canceled => {
-                            trace!("canceled")
-                        }
-                        _ => error!("err={:#?}", e),
-                    }
+            msg = phase.run(ctx).await?;
 
-                    return Err(ConsensusError::NotReady);
-                }
-            };
-
-            if *step >= CONSENSUS_MAX_STEP {
+            if *step >= config::CONSENSUS_MAX_STEP {
                 return Err(ConsensusError::MaxStepReached);
             }
         }

@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::consensus::CONSENSUS_QUORUM_THRESHOLD;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 
+use crate::config;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
 use std::collections::{BTreeMap, HashMap};
@@ -79,7 +79,7 @@ impl Committee {
 
     pub fn quorum(&self) -> usize {
         let size = self.total as f64;
-        (size * CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
+        (size * config::CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {

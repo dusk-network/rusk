@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::aggregator::Aggregator;
-use crate::commons::{spawn_send_reduction, Block, SelectError};
+use crate::commons::{spawn_send_reduction, Block, ConsensusError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
 use crate::messages::{Message, Payload};
@@ -40,7 +40,7 @@ impl Reduction {
         &mut self,
         mut ctx: ExecutionCtx<'_>,
         committee: Committee,
-    ) -> Result<Message, SelectError> {
+    ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
             // Send reduction async
             spawn_send_reduction(

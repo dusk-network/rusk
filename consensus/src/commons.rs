@@ -65,13 +65,6 @@ impl fmt::Display for Block {
     }
 }
 
-#[derive(Debug)]
-pub enum SelectError {
-    Continue,
-    Canceled,
-    Timeout,
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum ConsensusError {
     InvalidBlock,
@@ -83,6 +76,8 @@ pub enum ConsensusError {
     NotImplemented,
     NotReady,
     MaxStepReached,
+    Cancelled,
+    Timeout,
 }
 
 #[derive(Debug, Copy, Clone)]

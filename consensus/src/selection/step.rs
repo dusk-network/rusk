@@ -5,7 +5,7 @@ use hex::ToHex;
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons;
-use crate::commons::{Block, RoundUpdate, SelectError};
+use crate::commons::{Block, ConsensusError, RoundUpdate};
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{payload::NewBlock, Header, Message};
 use crate::msg_handler::MsgHandler;
@@ -35,7 +35,7 @@ impl Selection {
         &mut self,
         mut ctx: ExecutionCtx<'_>,
         committee: Committee,
-    ) -> Result<Message, SelectError> {
+    ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
             let msg =
                 self.generate_candidate(committee.get_my_pubkey(), ctx.round_update, ctx.step);

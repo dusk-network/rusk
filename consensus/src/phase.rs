@@ -3,15 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{SelectError};
+use crate::commons::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 
 use crate::user::committee::Committee;
 
-
 use crate::{firststep, secondstep, selection};
-
 
 use tracing::trace;
 
@@ -57,7 +55,7 @@ impl Phase {
         call_phase!(self, initialize(msg))
     }
 
-    pub async fn run(&mut self, ctx: ExecutionCtx<'_>) -> Result<Message, SelectError> {
+    pub async fn run(&mut self, ctx: ExecutionCtx<'_>) -> Result<Message, ConsensusError> {
         ctx.trace("execute");
 
         let size = call_phase!(self, get_committee_size());

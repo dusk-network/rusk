@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate, SelectError};
+use crate::commons::{ConsensusError, RoundUpdate};
+use crate::config;
 use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
@@ -16,7 +17,7 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::time;
 use tokio::time::Instant;
-use tracing::warn;
+use tracing::error;
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
 pub struct ExecutionCtx<'a> {
@@ -56,14 +57,104 @@ impl<'a> ExecutionCtx<'a> {
         }
     }
 
-    pub fn trace(&self, event_name: &'static str) {
-        tracing::trace!(
-            "event={} round={}, step={}, bls_key={}",
-            event_name,
-            self.round_update.round,
-            self.step,
-            self.round_update.pubkey_bls.encode_short_hex()
-        );
+    // event_loop collects multiple events - inbound messages, cancel event or timeout event.
+    pub async fn event_loop<C: MsgHandler<Message>>(
+        &mut self,
+        committee: &Committee,
+        phase: &mut C,
+    ) -> Result<Message, ConsensusError> {
+        self.trace("run event_loop");
+
+        // Calculate timeout
+        let deadline = Instant::now()
+            .checked_add(Duration::from_millis(config::CONSENSUS_TIMEOUT_MS))
+            .unwrap();
+
+        let inbound = self.inbound.clone();
+
+        loop {
+            tokio::select! {
+                biased;
+                // Handle both timeout and cancel events
+                result = time::timeout_at(deadline, &mut *self.cancel_chan) => {
+                    if result.is_ok() {
+                        // cancel chan triggered
+                        return Err(ConsensusError::Cancelled);
+                    } else {
+                        // Timeout-ed step should proceed to next step with zero-ed message.
+                          return self.process_timeout_event(committee, phase);
+                    }
+                 },
+                // Handle inbound message
+                res = inbound.recv() => {
+                    match res {
+                        Ok(msg) => {
+                            if let Some(step_result) = self.process_inbound_msg(committee, phase, msg).await {
+                                return Ok(step_result);
+                            }
+                        },
+                        Err(e) => {
+                            error!("recv inbound message error: {}",e);
+                        },
+                    }
+                },
+            }
+        }
+    }
+
+    /// process_inbound_msg delegates the message to the Phase handler for further processing.
+    async fn process_inbound_msg<C: MsgHandler<Message>>(
+        &mut self,
+        committee: &Committee,
+        phase: &mut C,
+        msg: Message,
+    ) -> Option<Message> {
+        match phase.handle(msg.clone(), self.round_update, self.step, committee) {
+            // Fully valid state reached on this step. Return it as an output.
+            // Populate next step with it.
+            Ok(result) => {
+                let (msg, is_final_msg) = result;
+
+                // Re-publish the returned message
+                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
+                    tracing::error!("unable to re-publish a handled msg {:?}", err)
+                });
+
+                if is_final_msg {
+                    return Some(msg);
+                }
+
+                None
+            }
+            // An error here means an phase considers this message as invalid.
+            // This could be due to failed verification, bad round/step.
+            Err(e) => {
+                match e {
+                    ConsensusError::FutureEvent => {
+                        // This is a message from future round or step.
+                        // Save it in future_msgs to be processed when we reach same round/step.
+                        self.future_msgs
+                            .put_event(msg.header.round, msg.header.step, msg);
+                    }
+                    ConsensusError::PastEvent => {
+                        tracing::trace!("past event");
+                    }
+                    _ => {
+                        self.error("phase handler", e);
+                    }
+                }
+
+                None
+            }
+        }
+    }
+
+    fn process_timeout_event<C: MsgHandler<Message>>(
+        &mut self,
+        _committee: &Committee,
+        _phase: &mut C,
+    ) -> Result<Message, ConsensusError> {
+        Err(ConsensusError::Timeout)
     }
 
     pub fn get_sortition_config(&self, size: usize) -> sortition::Config {
@@ -93,96 +184,24 @@ impl<'a> ExecutionCtx<'a> {
         None
     }
 
-    // loop while waiting on multiple channels, a phase is interested in:
-    // These are timeout, consensus_round and message channels.
-    pub(crate) async fn event_loop<C: MsgHandler<Message>>(
-        &mut self,
-        committee: &Committee,
-        phase: &mut C,
-    ) -> Result<Message, SelectError> {
-        let ru = self.round_update;
-        let step = self.step;
-
-        let deadline = Instant::now().checked_add(Duration::from_millis(5000));
-
-        self.trace("run event_loop");
-
-        loop {
-            match select_multi(self.inbound.clone(), self.cancel_chan, deadline.unwrap()).await {
-                // A message has arrived.
-                // Delegate message processing and verification to the Step itself.
-                // TODO: phase.is_valid { repropagate; handle }
-                Ok(msg) => match phase.handle(msg.clone(), ru, self.step, committee) {
-                    // Fully valid state reached on this step. Return it as an output.
-                    // Populate next step with it.
-                    Ok(result) => {
-                        let msg = result.0;
-                        self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-                            tracing::error!("unable to re-publish a handled msg {:?}", err)
-                        });
-
-                        if result.1 {
-                            break Ok(msg);
-                        }
-                    }
-                    // An error here means an invalid message has arrived.
-                    // We need to continue waiting for either a valid message or timeout event.
-                    Err(e) => {
-                        match e {
-                            ConsensusError::FutureEvent => {
-                                // This is a message from future round or step. We store
-                                // it in future_msgs to be process later on.
-                                self.future_msgs.put_event(ru.round, step, msg);
-                            }
-                            ConsensusError::PastEvent => {
-                                tracing::trace!("past event");
-                            }
-                            _ => {
-                                warn!("error: {:?}", e);
-                            }
-                        }
-
-                        continue;
-                    }
-                },
-                // Error from select_multi means an loop-exit event.
-                Err(e) => match e {
-                    SelectError::Continue => continue,
-                    SelectError::Timeout => {
-                        // Timeout-ed step should proceed to next step with zero-ed.
-                        break Ok(Message::empty());
-                    }
-                    SelectError::Canceled => {
-                        break Err(e);
-                    }
-                },
-            }
-        }
+    pub fn trace(&self, event_name: &'static str) {
+        tracing::trace!(
+            "event={} round={}, step={}, bls_key={}",
+            event_name,
+            self.round_update.round,
+            self.step,
+            self.round_update.pubkey_bls.encode_short_hex()
+        );
     }
-}
 
-async fn select_multi(
-    inbound: PendingQueue,
-    cancel_chan: &mut oneshot::Receiver<bool>,
-    deadline: time::Instant,
-) -> Result<Message, SelectError> {
-    tokio::select! {
-        biased;
-        // Handle both timeout and cancel events
-        result = time::timeout_at(deadline, cancel_chan) => {
-            match result {
-            Ok(_) =>  Err(SelectError::Canceled),
-            Err(_) => {
-                 Err(SelectError::Timeout)
-                }
-            }
-         },
-        // Handle message
-        msg = inbound.recv() => {
-            match msg {
-                Ok(m) => Ok(m),
-                Err(_) => Err(SelectError::Continue),
-            }
-        },
+    pub fn error(&self, event_name: &'static str, err: ConsensusError) {
+        tracing::trace!(
+            "event={} round={}, step={}, bls_key={} err={:#?}",
+            event_name,
+            self.round_update.round,
+            self.step,
+            self.round_update.pubkey_bls.encode_short_hex(),
+            err,
+        );
     }
 }

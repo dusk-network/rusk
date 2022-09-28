@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{spawn_send_reduction, Block, SelectError};
+use crate::commons::{spawn_send_reduction, Block, ConsensusError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
@@ -42,7 +42,7 @@ impl Reduction {
         &mut self,
         mut ctx: ExecutionCtx<'_>,
         committee: Committee,
-    ) -> Result<Message, SelectError> {
+    ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
             //  Send reduction in async way
             if let Some(b) = &self.candidate {

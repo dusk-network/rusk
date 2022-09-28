@@ -8,6 +8,7 @@ pub mod util;
 
 pub mod aggregator;
 pub mod agreement;
+mod config;
 mod execution_ctx;
 mod firststep;
 mod msg_handler;
