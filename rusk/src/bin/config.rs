@@ -29,8 +29,8 @@ const DEFAULT_LOG_LEVEL: &str = "info";
 /// Default log_type.
 const DEFAULT_LOG_TYPE: &str = "coloured";
 
-impl From<ArgMatches> for Config {
-    fn from(matches: ArgMatches) -> Self {
+impl From<&ArgMatches> for Config {
+    fn from(matches: &ArgMatches) -> Self {
         let mut rusk_config =
             matches
                 .value_of("config")
@@ -51,8 +51,8 @@ impl From<ArgMatches> for Config {
             rusk_config.log_type = Some(log_type.into());
         }
 
-        rusk_config.grpc.merge(&matches);
-        rusk_config.kadcast.merge(&matches);
+        rusk_config.grpc.merge(matches);
+        rusk_config.kadcast.merge(matches);
         rusk_config
     }
 }

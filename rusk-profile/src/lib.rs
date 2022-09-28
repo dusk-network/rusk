@@ -92,12 +92,26 @@ fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
         })
 }
 
-pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
-    Ok(get_rusk_profile_dir()?.join("state.id"))
+pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
+    env::var("RUSK_STATE_PATH")
+        .map_or_else(
+            |_| get_rusk_profile_dir().ok(),
+            |e| Some(PathBuf::from(e)),
+        )
+        .and_then(|mut p| {
+            p.push("state");
+            fs::create_dir_all(&p).map(|_| p).ok()
+        })
+        .ok_or_else(|| {
+            warn!("rusk-profile state dir not found and impossible to create");
+            io::Error::new(io::ErrorKind::NotFound, "State Dir not found")
+        })
 }
 
-pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
-    Ok(get_rusk_profile_dir()?.join("state"))
+pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
+    let mut state_dir = get_rusk_state_dir()?;
+    state_dir.set_file_name("state.id");
+    Ok(state_dir)
 }
 
 pub fn get_rusk_state_id() -> Result<Vec<u8>, io::Error> {
