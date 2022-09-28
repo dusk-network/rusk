@@ -125,10 +125,6 @@ impl Accumulator {
                     hdr.round, hdr.step, target_quorum, entry.1
                 );
 
-                if hdr.step > 3 {
-                    panic!("round={}, step={}", hdr.round, hdr.step);
-                }
-
                 // TODO: CollectedVotes Message
                 return Some(Message::empty());
             }
