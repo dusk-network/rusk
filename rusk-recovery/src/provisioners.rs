@@ -10,21 +10,21 @@ use once_cell::sync::Lazy;
 
 static PROVISIONERS: Lazy<[PublicKey; 5]> = Lazy::new(|| {
     [
-        parse_key(include_bytes!("../provisioners/node_0.cpk")),
-        parse_key(include_bytes!("../provisioners/node_1.cpk")),
-        parse_key(include_bytes!("../provisioners/node_2.cpk")),
-        parse_key(include_bytes!("../provisioners/node_3.cpk")),
-        parse_key(include_bytes!("../provisioners/node_4.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/node_0.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/node_1.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/node_2.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/node_3.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/node_4.cpk")),
     ]
 });
 
 static TESTNET_PROVISIONERS: Lazy<[PublicKey; 5]> = Lazy::new(|| {
     [
-        parse_key(include_bytes!("../provisioners/testnet/node_0.cpk")),
-        parse_key(include_bytes!("../provisioners/testnet/node_1.cpk")),
-        parse_key(include_bytes!("../provisioners/testnet/node_2.cpk")),
-        parse_key(include_bytes!("../provisioners/testnet/node_3.cpk")),
-        parse_key(include_bytes!("../provisioners/testnet/node_4.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/testnet/node_0.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/testnet/node_1.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/testnet/node_2.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/testnet/node_3.cpk")),
+        parse_key(include_bytes!("../assets/provisioners/testnet/node_4.cpk")),
     ]
 });
 
@@ -35,15 +35,8 @@ pub fn keys(testnet: bool) -> &'static [PublicKey; 5] {
     }
 }
 
-pub fn owner(testnet: bool) -> PublicKey {
-    match testnet {
-        true => *DUSK_KEY,
-        false => PROVISIONERS[0],
-    }
-}
-
 pub static DUSK_KEY: Lazy<PublicKey> =
-    Lazy::new(|| parse_key(include_bytes!("../dusk.cpk")));
+    Lazy::new(|| parse_key(include_bytes!("../assets/dusk.cpk")));
 
 fn parse_key(key_bytes: &[u8]) -> PublicKey {
     PublicKey::from_slice(key_bytes).expect("Genesis consensus key to be valid")

@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::provisioners;
 use crate::theme::Theme;
 
 use dusk_bytes::Serializable;
@@ -15,9 +14,8 @@ use once_cell::sync::Lazy;
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::dusk::*;
 use rusk_vm::{Contract, NetworkState, NetworkStateId};
-use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
+use stake_contract::{Stake, StakeContract};
 use std::error::Error;
 use std::fs::File;
 use std::io::{Cursor, Read};
@@ -28,19 +26,19 @@ use tracing::log::error;
 use transfer_contract::TransferContract;
 use zip::ZipArchive;
 
-/// Amount of the note inserted in the genesis state.
-const GENESIS_DUSK: Dusk = dusk(1_000.0);
+pub use snapshot::{Balance, GenesisStake, Snapshot};
 
-/// Faucet note value.
-const FAUCET_DUSK: Dusk = dusk(1_000_000_000.0);
+mod snapshot;
+
+const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
 pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
-    let bytes = include_bytes!("../dusk.psk");
+    let bytes = include_bytes!("../assets/dusk.psk");
     PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
 });
 
 pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
-    let bytes = include_bytes!("../faucet.psk");
+    let bytes = include_bytes!("../assets/faucet.psk");
     PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
 });
 
@@ -73,29 +71,31 @@ fn empty_diskbackend() -> BackendCtor<DiskBackend> {
 /// Creates a new transfer contract state with a single note in it - ownership
 /// of Dusk Network. If `testnet` is true an additional note - ownership of the
 /// faucet address - is added to the state.
-fn genesis_transfer(testnet: bool) -> TransferContract {
+fn transfer_state(snapshot: &Snapshot) -> TransferContract {
     let mut transfer = TransferContract::default();
-    let mut rng = StdRng::seed_from_u64(0xdead_beef);
 
-    let note = Note::transparent(&mut rng, &DUSK_KEY, GENESIS_DUSK);
+    snapshot.transfers().enumerate().for_each(|(idx, value)| {
+        let theme = Theme::default();
+        info!("{} Added {} transfer", theme.action("Generating"), idx);
 
-    transfer
-        .push_note(0, note)
-        .expect("Genesis note to be pushed to the state");
+        let mut rng = match value.seed {
+            Some(seed) => StdRng::seed_from_u64(seed),
+            None => StdRng::from_entropy(),
+        };
 
-    if testnet {
-        let note = Note::transparent(&mut rng, &FAUCET_KEY, FAUCET_DUSK);
-        transfer
-            .push_note(0, note)
-            .expect("Faucet note to be pushed in the state");
-    }
+        value.notes.iter().for_each(|&amount| {
+            let note = Note::transparent(&mut rng, value.address(), amount);
+            transfer
+                .push_note(GENESIS_BLOCK_HEIGHT, note)
+                .expect("Genesis note to be pushed to the state");
+        });
+    });
 
     transfer
         .update_root()
         .expect("Root to be updated after pushing genesis note");
 
-    let stake_amount = stake_amount(testnet);
-    let stake_balance = stake_amount * provisioners::keys(testnet).len() as u64;
+    let stake_balance = snapshot.stakes().map(|s| s.amount).sum();
 
     transfer
         .add_balance(rusk_abi::stake_contract(), stake_balance)
@@ -104,46 +104,43 @@ fn genesis_transfer(testnet: bool) -> TransferContract {
     transfer
 }
 
-const fn stake_amount(testnet: bool) -> Dusk {
-    match testnet {
-        true => dusk(2_000_000.0),
-        false => MINIMUM_STAKE,
-    }
-}
-
 /// Creates a new stake contract state with preset stakes added for the
 /// staking/consensus keys in the `keys/` folder. The stakes will all be the
 /// same and the minimum amount.
-fn genesis_stake(testnet: bool) -> StakeContract {
+fn stake_state(snapshot: &Snapshot) -> StakeContract {
     let theme = Theme::default();
     let mut stake_contract = StakeContract::default();
-
-    let stake_amount = stake_amount(testnet);
-
-    for provisioner in provisioners::keys(testnet).iter() {
-        let stake = Stake::with_eligibility(stake_amount, 0, 0);
+    snapshot.stakes().for_each(|staker| {
+        info!("{} Added provisioner", theme.action("Generating"),);
+        let stake = Stake::with_eligibility(
+            staker.amount,
+            staker.reward.unwrap_or_default(),
+            staker.eligibility.unwrap_or_default(),
+        );
         stake_contract
-            .insert_stake(*provisioner, stake)
+            .insert_stake(*staker.address(), stake)
             .expect("Genesis stake to be pushed to the stake");
         stake_contract
-            .insert_allowlist(*provisioner)
+            .insert_allowlist(*staker.address())
             .expect("Failed to allow genesis provisioner");
-    }
-    info!(
-        "{} Added {} provisioners",
-        theme.action("Generating"),
-        provisioners::keys(testnet).len()
-    );
+    });
+    snapshot.owners().for_each(|provisioner| {
+        stake_contract
+            .add_owner(*provisioner)
+            .expect("Failed to set stake contract owner");
+    });
 
-    stake_contract
-        .add_owner(provisioners::owner(testnet))
-        .expect("Failed to set stake contract owner");
+    snapshot.allowlist().for_each(|provisioner| {
+        stake_contract
+            .insert_allowlist(*provisioner)
+            .expect("Failed to allow");
+    });
 
     stake_contract
 }
 
 pub fn deploy_from_contracts<B>(
-    testnet: bool,
+    snapshot: &Snapshot,
     ctor: &BackendCtor<B>,
     contracts_folder: Option<&PathBuf>,
 ) -> Result<NetworkStateId, Box<dyn Error>>
@@ -181,8 +178,8 @@ where
         .to_vec(),
     };
 
-    let transfer = Contract::new(genesis_transfer(testnet), transfer_code);
-    let stake = Contract::new(genesis_stake(testnet), stake_code);
+    let transfer = Contract::new(transfer_state(snapshot), transfer_code);
+    let stake = Contract::new(stake_state(snapshot), stake_code);
 
     let mut network = NetworkState::default();
 
@@ -214,23 +211,25 @@ where
 }
 
 pub fn deploy<B>(
-    testnet: bool,
+    snapshot: &Snapshot,
     ctor: &BackendCtor<B>,
 ) -> Result<NetworkStateId, Box<dyn Error>>
 where
     B: 'static + Backend,
 {
-    deploy_from_contracts(testnet, ctor, None)
+    deploy_from_contracts(snapshot, ctor, None)
 }
 
 pub struct ExecConfig {
     pub build: bool,
     pub force: bool,
-    pub testnet: bool,
     pub use_prebuilt_contracts: bool,
 }
 
-pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
+pub fn exec(
+    config: ExecConfig,
+    snapshot: &Snapshot,
+) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
 
     info!("{} Network state", theme.action("Checking"));
@@ -261,7 +260,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
         };
 
         let state_id = deploy_from_contracts(
-            config.testnet,
+            snapshot,
             &empty_diskbackend(),
             contracts_folder.as_ref(),
         )
@@ -316,7 +315,7 @@ fn try_network_restore() -> Result<(), Box<dyn Error>> {
     Persistence::with_backend(&existing_diskbackend(), |_| Ok(()))?;
     let network = NetworkState::new();
     let id = NetworkStateId::read(rusk_profile::get_rusk_state_id_path()?)?;
-    let network = network.restore(id).expect("Failed to restore the state");
+    let network = network.restore(id)?;
     info!(
         "{} restored {}",
         theme.action("Root"),
