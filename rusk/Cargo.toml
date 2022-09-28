@@ -35,6 +35,8 @@ toml = "0.5"
 serde = "1.0"
 bs58 = "0.4"
 hex = "0.4"
+tempfile = "3.2"
+zip  = "0.5"
 
 dusk-schnorr = "0.10.0-rc"
 dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
@@ -65,7 +67,6 @@ rusk-schema = { path = "../rusk-schema" }
 [dev-dependencies]
 test-context = "0.1"
 async-trait = "0.1"
-tempfile = "3.2"
 hex = "0.4"
 
 [build-dependencies]

@@ -5,10 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod config;
+mod ephemeral;
 mod services;
 #[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
+
+use std::path::PathBuf;
 
 use clap::{Arg, Command};
 use rusk::services::network::KadcastDispatcher;
@@ -50,8 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .takes_value(true)
                 .required(false),
         );
+
+    let command = ephemeral::inject_args(command);
     let command = Config::inject_args(command);
-    let config = Config::from(command.get_matches());
+    let args = command.get_matches();
+    let config = Config::from(&args);
 
     let log = config.log_level();
 
@@ -77,6 +83,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tracing::subscriber::set_global_default(subscriber)?;
         }
         _ => unreachable!(),
+    };
+
+    let _tempdir = match args.get_one::<PathBuf>("state_zip_file") {
+        Some(state_zip) => ephemeral::configure(state_zip)?,
+        None => None,
     };
 
     let router = {
