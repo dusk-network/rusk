@@ -153,11 +153,11 @@ pub mod payload {
         }
     }
 
-    #[derive(Default, Debug, Clone)]
+    #[derive(Debug, Clone)]
     pub struct NewBlock {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
-        pub signed_hash: [u8; 32],
+        pub signed_hash: [u8; 48],
     }
 
     #[derive(Debug, Copy, Clone, Eq, Hash, PartialEq)]

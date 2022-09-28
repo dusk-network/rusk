@@ -10,6 +10,7 @@ use crate::messages;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
+use hex::ToHex;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -125,8 +126,8 @@ impl Accumulator {
 
             if entry.1 >= target_quorum {
                 info!(
-                    "event=quorum reached, msg_round={}, msg_step={}, target={}, aggr_count={} ",
-                    hdr.round, hdr.step, target_quorum, entry.1
+                    "event=quorum reached, hash={} msg_round={}, msg_step={}, target={}, aggr_count={} ",
+                    hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, entry.1
                 );
 
                 // TODO: CollectedVotes Message

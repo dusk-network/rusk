@@ -1,31 +1,30 @@
-use hex::ToHex;
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons;
-use crate::commons::{Block, ConsensusError, RoundUpdate};
+use crate::commons::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
-use crate::messages::{payload::NewBlock, Header, Message};
+use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
 
+use crate::selection::block_generator::Generator;
 use crate::selection::handler;
 use crate::user::committee::Committee;
-use crate::util::pubkey::PublicKey;
-use sha3::{Digest, Sha3_256};
-use tracing::{error, info};
+use tracing::error;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
 pub struct Selection {
     handler: handler::Selection,
+    bg: Generator,
 }
 
 impl Selection {
     pub fn new() -> Self {
         Self {
             handler: handler::Selection {},
+            bg: Generator {},
         }
     }
 
@@ -37,8 +36,9 @@ impl Selection {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
-            let msg =
-                self.generate_candidate(committee.get_my_pubkey(), ctx.round_update, ctx.step);
+            let msg = self
+                .bg
+                .generate_candidate_message(ctx.round_update, ctx.step);
 
             // Broadcast the candidate block for this round/iteration.
             if let Err(e) = ctx.outbound.send(msg.clone()).await {
@@ -69,52 +69,5 @@ impl Selection {
 
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
-    }
-}
-
-impl Selection {
-    // generate_candidate generates a hash to propose.
-    fn generate_candidate(&self, _pubkey: PublicKey, ru: RoundUpdate, step: u8) -> Message {
-        let mut hasher = Sha3_256::new();
-        hasher.update(ru.round.to_le_bytes());
-        hasher.update(step.to_le_bytes());
-        hasher.update(123_i32.to_le_bytes());
-
-        let hash = hasher.finalize();
-
-        info!(
-            "generate candidate block hash={}",
-            hash.as_slice().encode_hex::<String>(),
-        );
-
-        // TODO: refactor this
-        let a = NewBlock {
-            prev_hash: [0; 32],
-            candidate: Block {
-                header: commons::Header {
-                    version: 0,
-                    height: ru.round,
-                    timestamp: 0,
-                    gas_limit: 0,
-                    prev_block_hash: [0; 32],
-                    seed: [0; 32],
-                    generator_bls_pubkey: [0; 32],
-                    state_hash: [0; 32],
-                    hash: hash.into(),
-                },
-                txs: vec![],
-            },
-            signed_hash: [0; 32],
-        };
-
-        Message::from_newblock(
-            Header {
-                pubkey_bls: ru.pubkey_bls,
-                round: ru.round,
-                block_hash: hash.into(),
-                step,
-            },
-            a,
-        )
     }
 }

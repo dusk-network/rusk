@@ -14,6 +14,7 @@ use crate::util::pubkey::PublicKey;
 use bytes::{Buf, BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::Serializable;
+
 use std::fmt;
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -37,7 +38,7 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct Header {
     pub version: u8,
     pub height: u64,
@@ -45,9 +46,25 @@ pub struct Header {
     pub gas_limit: u64,
     pub prev_block_hash: [u8; 32],
     pub seed: [u8; 32],
-    pub generator_bls_pubkey: [u8; 32], // TODO: size should be 96
+    pub generator_bls_pubkey: [u8; 96],
     pub state_hash: [u8; 32],
     pub hash: [u8; 32],
+}
+
+impl Default for Header {
+    fn default() -> Self {
+        Header {
+            version: 0,
+            height: 0,
+            timestamp: 0,
+            gas_limit: 0,
+            prev_block_hash: Default::default(),
+            seed: Default::default(),
+            generator_bls_pubkey: [0; 96],
+            state_hash: Default::default(),
+            hash: Default::default(),
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone)]
@@ -62,6 +79,31 @@ pub struct Block {
 impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "block height: {}", self.header.height)
+    }
+}
+
+impl Block {
+    pub fn new(header: Header, txs: Vec<Transaction>) -> Self {
+        let mut b = Block { header, txs };
+        b.calculate_hash();
+        b
+    }
+
+    fn calculate_hash(&mut self) {
+        use sha3::Digest;
+        let hdr = self.header.clone();
+
+        let mut hasher = sha3::Sha3_256::new();
+        hasher.update(hdr.version.to_le_bytes());
+        hasher.update(hdr.height.to_le_bytes());
+        hasher.update(hdr.timestamp.to_le_bytes());
+        hasher.update(hdr.prev_block_hash);
+        hasher.update(hdr.seed);
+        hasher.update(hdr.state_hash);
+        hasher.update(hdr.generator_bls_pubkey);
+        hasher.update(hdr.gas_limit.to_le_bytes());
+
+        self.header.hash = hasher.finalize().into();
     }
 }
 
