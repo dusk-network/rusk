@@ -19,7 +19,7 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, Instrument};
 
 const WORKERS_AMOUNT: usize = 4;
 const COMMITTEE_SIZE: usize = 64;
@@ -65,6 +65,11 @@ impl Agreement {
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound)
                 .run(future_msgs)
+                .instrument(tracing::info_span!(
+                    "agr_task",
+                    round = ru.round,
+                    pubkey = ru.pubkey_bls.encode_short_hex(),
+                ))
                 .await
         })
     }

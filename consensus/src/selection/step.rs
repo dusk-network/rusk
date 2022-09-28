@@ -74,7 +74,7 @@ impl Selection {
 
 impl Selection {
     // generate_candidate generates a hash to propose.
-    fn generate_candidate(&self, pubkey: PublicKey, ru: RoundUpdate, step: u8) -> Message {
+    fn generate_candidate(&self, _pubkey: PublicKey, ru: RoundUpdate, step: u8) -> Message {
         let mut hasher = Sha3_256::new();
         hasher.update(ru.round.to_le_bytes());
         hasher.update(step.to_le_bytes());
@@ -83,11 +83,8 @@ impl Selection {
         let hash = hasher.finalize();
 
         info!(
-            "generate candidate block hash={} round={}, step={}, bls_key={}",
+            "generate candidate block hash={}",
             hash.as_slice().encode_hex::<String>(),
-            ru.round,
-            step,
-            pubkey.encode_short_hex()
         );
 
         // TODO: refactor this

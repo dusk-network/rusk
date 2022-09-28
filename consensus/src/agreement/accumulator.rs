@@ -15,7 +15,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info, warn};
+use tracing::{error, info, warn, Instrument};
 
 /// AgreementsPerStep is a mapping of StepNum to Set of Agreements,
 /// where duplicated agreements per step are not allowed.
@@ -46,26 +46,30 @@ impl Accumulator {
 
         // Spawn a single worker to process all agreement message verifications
         // It does also accumulate results and exists by providing a final CollectVotes message back to Agreement loop.
-        let handle = tokio::spawn(async move {
-            let mut stores = StorePerHash::default();
-            // Process each request for verification
-            while let Some(msg) = rx.recv().await {
-                if let Err(e) = verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
-                {
-                    error!("{:#?}", e);
-                    continue;
-                }
+        let handle = tokio::spawn(
+            async move {
+                let mut stores = StorePerHash::default();
+                // Process each request for verification
+                while let Some(msg) = rx.recv().await {
+                    if let Err(e) =
+                        verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
+                    {
+                        error!("{:#?}", e);
+                        continue;
+                    }
 
-                if let Some(msg) =
-                    Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed).await
-                {
-                    collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
-                        error!("unable to send_msg collected_votes {:?}", err)
-                    });
-                    break;
+                    if let Some(msg) =
+                        Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed).await
+                    {
+                        collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
+                            error!("unable to send_msg collected_votes {:?}", err)
+                        });
+                        break;
+                    }
                 }
             }
-        });
+            .instrument(tracing::info_span!("acc_task",)),
+        );
 
         a.workers.push(handle);
         a
@@ -121,7 +125,7 @@ impl Accumulator {
 
             if entry.1 >= target_quorum {
                 info!(
-                    "event=quorum reached, round={}, step={}, target={}, aggr_count={} ",
+                    "event=quorum reached, msg_round={}, msg_step={}, target={}, aggr_count={} ",
                     hdr.round, hdr.step, target_quorum, entry.1
                 );
 

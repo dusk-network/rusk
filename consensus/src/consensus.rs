@@ -15,6 +15,7 @@ use crate::user::provisioners::Provisioners;
 use crate::util::pending_queue::PendingQueue;
 use crate::{config, selection};
 use crate::{firststep, secondstep};
+use tracing::Instrument;
 
 use tokio::sync::oneshot;
 use tracing::trace;
@@ -117,6 +118,8 @@ impl Consensus {
         for phase in self.phases.iter_mut() {
             *step += 1;
 
+            // info_span!(round: ru.round, step: *step, bls_key: ru.blskey);
+
             // Initialize new phase with message returned by previous phase.
             phase.initialize(&msg, ru.round, *step);
 
@@ -135,7 +138,15 @@ impl Consensus {
             // An error returned here terminates consensus
             // round. This normally happens if consensus channel is cancelled by
             // agreement loop on finding the winning block for this round.
-            msg = phase.run(ctx).await?;
+            msg = phase
+                .run(ctx)
+                .instrument(tracing::info_span!(
+                    "main_task",
+                    round = ru.round,
+                    step = *step,
+                    pubkey = ru.pubkey_bls.encode_short_hex(),
+                ))
+                .await?;
 
             if *step >= config::CONSENSUS_MAX_STEP {
                 return Err(ConsensusError::MaxStepReached);
