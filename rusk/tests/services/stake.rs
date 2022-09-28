@@ -25,7 +25,7 @@ use rusk_schema::network_client::NetworkClient;
 use rusk_schema::prover_client::ProverClient;
 use rusk_schema::state_client::StateClient;
 use rusk_schema::{PropagateMessage, Transaction as TransactionProto};
-use stake_contract::{Stake, MINIMUM_STAKE};
+use stake_contract::MINIMUM_STAKE;
 
 use dusk_bytes::{DeserializableSlice, Serializable, Write};
 
@@ -33,7 +33,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk, RuskState};
+use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -55,12 +55,10 @@ use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_plonk::proof_system::Proof;
 
 use dusk_poseidon::tree::PoseidonBranch;
-use rusk_abi::dusk::*;
 use rusk_abi::POSEIDON_TREE_DEPTH;
 
 const BLOCK_HEIGHT: u64 = 1;
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
-const INITIAL_BALANCE: Dusk = dusk(10_000.0);
 const MAX_NOTES: u64 = 10;
 const GAS_LIMIT: u64 = 10_000_000_000;
 
@@ -71,31 +69,24 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let snapshot = toml::from_str(include_str!("../config/stake.toml"))
+        .expect("Cannot deserialize config");
+
+    let state_id =
+        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
     let mut state = rusk.state()?;
-    let transfer = state.transfer_contract()?;
-
-    assert!(
-        transfer.get_note(0)?.is_some(),
-        "Expect to have one note at the genesis state",
-    );
-
-    assert!(
-        transfer.get_note(1)?.is_none(),
-        "Expect to have ONLY one note at the genesis state",
-    );
-
-    generate_notes(&mut state)?;
-    generate_stake(&mut state)?;
 
     let transfer = state.transfer_contract()?;
 
-    assert!(transfer.get_note(1)?.is_some(), "Expect to have more notes",);
     assert!(
-        transfer.get_note(MAX_NOTES + 1)?.is_none(),
+        transfer.get_note(MAX_NOTES - 1)?.is_some(),
+        "Expect to have more notes",
+    );
+    assert!(
+        transfer.get_note(MAX_NOTES)?.is_none(),
         "Expect to have only {} notes",
         MAX_NOTES
     );
@@ -119,68 +110,6 @@ static SK: Lazy<SecretKey> = Lazy::new(|| {
     info!("Generating BLS SecretKey");
     TestStore.retrieve_sk(0).expect("Should not fail in test")
 });
-
-static RSK: Lazy<SecretKey> = Lazy::new(|| {
-    info!("Generating BLS SecretKey");
-    TestStore.retrieve_sk(1).expect("Should not fail in test")
-});
-
-fn generate_notes(rusk_state: &mut RuskState) -> Result<()> {
-    info!("Generating a note");
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    let psk = SSK.public_spend_key();
-
-    let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
-
-    let mut transfer = rusk_state.transfer_contract()?;
-
-    for _ in 0..MAX_NOTES {
-        transfer.push_note(BLOCK_HEIGHT, note)?;
-    }
-
-    transfer.update_root()?;
-
-    info!("Updating the new transfer contract state");
-    unsafe {
-        rusk_state
-            .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
-    }
-
-    rusk_state.finalize();
-
-    Ok(())
-}
-
-fn generate_stake(rusk_state: &mut RuskState) -> Result<()> {
-    info!("Generating a stake");
-
-    let pk = PublicKey::from(&*SK);
-    let rpk = PublicKey::from(&*RSK);
-
-    let mut stake = rusk_state.stake_contract()?;
-
-    stake.insert_stake(pk, Stake::with_eligibility(MINIMUM_STAKE, 0, 0))?;
-    stake.insert_stake(
-        rpk,
-        Stake::with_eligibility(MINIMUM_STAKE, MINIMUM_STAKE, 0),
-    )?;
-
-    let sk3 = TestStore.retrieve_sk(2).expect("Should not fail in test");
-    let pk3 = PublicKey::from(&sk3);
-    stake.insert_allowlist(pk).expect("Cannot allow");
-    stake.insert_allowlist(rpk).expect("Cannot allow");
-    stake.insert_allowlist(pk3).expect("Cannot allow");
-
-    info!("Updating the new stake contract state");
-    unsafe {
-        rusk_state.set_contract_state(&rusk_abi::stake_contract(), &stake)?;
-    }
-
-    rusk_state.finalize();
-
-    Ok(())
-}
 
 /// Stakes an amount Dusk and produces a block with this single transaction,
 /// checking the stake is set successfully. It then proceeds to withdraw the

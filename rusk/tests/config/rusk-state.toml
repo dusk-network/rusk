@@ -1,0 +1,7 @@
+[acl.stake]
+owners = []
+allowlist = []
+
+[[balance]]
+address = "29ENJqLtHJRSZdghZxiGuzQTe3F4t1bv35zM7mEMS142e5QdxkknokMALrBEFUnyav9NfeXLNvfjx4sfTtJN9WCB"
+notes = [10_000_000_000]

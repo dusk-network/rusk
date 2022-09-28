@@ -27,7 +27,11 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
+        .expect("Cannot deserialize config");
+
+    let state_id =
+        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
@@ -49,6 +53,7 @@ fn initial_state() -> Result<Rusk> {
 
     Ok(rusk)
 }
+
 fn push_note(rusk_state: &mut RuskState) -> Result<()> {
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);

@@ -35,7 +35,7 @@ use once_cell::sync::Lazy;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
-use rusk::{Result, Rusk, RuskState};
+use rusk::{Result, Rusk};
 
 use microkelvin::{BackendCtor, DiskBackend};
 
@@ -70,7 +70,11 @@ fn testbackend() -> BackendCtor<DiskBackend> {
 
 // Creates the Rusk initial state for the tests below
 fn initial_state() -> Result<Rusk> {
-    let state_id = rusk_recovery_tools::state::deploy(false, &testbackend())?;
+    let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
+        .expect("Cannot deserialize config");
+
+    let state_id =
+        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
 
     let rusk = Rusk::builder(testbackend).id(state_id).build()?;
 
@@ -78,22 +82,11 @@ fn initial_state() -> Result<Rusk> {
     let transfer = state.transfer_contract()?;
 
     assert!(
-        transfer.get_note(0)?.is_some(),
-        "Expect to have one note at the genesis state",
+        transfer.get_note(MAX_NOTES - 1)?.is_some(),
+        "Expect to have more notes",
     );
-
     assert!(
-        transfer.get_note(1)?.is_none(),
-        "Expect to have ONLY one note at the genesis state",
-    );
-
-    generate_notes(&mut state, 1)?;
-
-    let transfer = state.transfer_contract()?;
-
-    assert!(transfer.get_note(1)?.is_some(), "Expect to have more notes",);
-    assert!(
-        transfer.get_note(MAX_NOTES + 1)?.is_none(),
+        transfer.get_note(MAX_NOTES)?.is_none(),
         "Expect to have only {} notes",
         MAX_NOTES
     );
@@ -119,33 +112,6 @@ static EXECUTE_STATE_TRANSITION_RESPONSE: Lazy<
     info!("Setup the coinbase only for the first execute_state_transition");
     Mutex::new(None)
 });
-
-fn generate_notes(rusk_state: &mut RuskState, block_height: u64) -> Result<()> {
-    info!("Generating a note for block height {}", block_height);
-    let mut rng = StdRng::seed_from_u64(0xdead);
-
-    let psk = SSK.public_spend_key();
-
-    let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
-
-    let mut transfer = rusk_state.transfer_contract()?;
-
-    for _ in 0..MAX_NOTES {
-        transfer.push_note(block_height, note)?;
-    }
-
-    transfer.update_root()?;
-
-    info!("Updating the new transfer contract state");
-    unsafe {
-        rusk_state
-            .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
-    }
-
-    rusk_state.finalize();
-
-    Ok(())
-}
 
 /// Transacts between two accounts on the in the same wallet and produces a
 /// block with a single transaction, checking balances are transferred
