@@ -62,7 +62,11 @@ impl Consensus {
     /// until either a new round is produced or the node needs to re-sync. The
     /// Agreement loop (acting roundwise) runs concurrently with the
     /// generation-selection-reduction loop (acting step-wise).
-    pub async fn spin(&mut self, ru: RoundUpdate, mut provisioners: Provisioners) {
+    pub async fn spin(
+        &mut self,
+        ru: RoundUpdate,
+        mut provisioners: Provisioners,
+    ) -> Result<Block, ConsensusError> {
         // Enable/Disable all members stakes depending on the current round. If
         // a stake is not eligible for this round, it's disabled.
         provisioners.update_eligibility_flag(ru.round);
@@ -72,9 +76,9 @@ impl Consensus {
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.
-        let aggr_handle = self
-            .agreement_process
-            .spawn(cancel_chan_tx, ru, provisioners.clone());
+        let agreement_handle =
+            self.agreement_process
+                .spawn(cancel_chan_tx, ru, provisioners.clone());
 
         // Consensus loop Initialize and run consensus loop concurrently with
         // agreement loop.
@@ -95,15 +99,21 @@ impl Consensus {
                 // NB: This should be moved to Block Generator when mempool is integrated.
                 tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS)).await;
             } else {
-                aggr_handle.abort();
+                agreement_handle.abort();
                 break;
             }
         }
 
-        let winner = aggr_handle.await.unwrap_or_else(|_| Ok(Block::default()));
-        trace!("winning block: {:?}", winner);
+        // Clean up the future_msgs queue for the past round
+        self.future_msgs.clear(ru.round);
 
-        self.teardown(ru.round).await;
+        // Fetch agreement result
+        let block = agreement_handle
+            .await
+            .unwrap_or_else(|_| Ok(Block::default()));
+
+        tracing::trace!("consensus achieved on block {:?}", block);
+        block
     }
 
     async fn run_iteration(
@@ -154,9 +164,5 @@ impl Consensus {
         }
 
         Ok(msg)
-    }
-
-    async fn teardown(&mut self, round: u64) {
-        self.future_msgs.clear(round);
     }
 }

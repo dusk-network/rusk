@@ -20,11 +20,12 @@ use std::fmt;
 #[derive(Default, Debug, Copy, Clone)]
 #[allow(unused)]
 pub struct RoundUpdate {
-    pub(crate) round: u64,
-    pub(crate) seed: [u8; 32],
-    pub(crate) hash: [u8; 32],
-    pub(crate) pubkey_bls: PublicKey,
-    pub(crate) secret_key: SecretKey, // TODO: should be here?? SecretKey
+    pub round: u64,
+    pub seed: [u8; 32],
+    pub hash: [u8; 32],
+    pub timestamp: i64,
+    pub pubkey_bls: PublicKey,
+    pub secret_key: SecretKey, // TODO: should be here?? SecretKey
 }
 
 impl RoundUpdate {
@@ -118,8 +119,7 @@ pub enum ConsensusError {
     NotImplemented,
     NotReady,
     MaxStepReached,
-    Cancelled,
-    Timeout,
+    ChildTaskTerminated,
 }
 
 #[derive(Debug, Copy, Clone)]

@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
-use crate::commons::{ConsensusError, RoundUpdate};
-use crate::messages::Message;
+use crate::commons::{verify_signature, ConsensusError, RoundUpdate};
+use crate::messages::{payload, Message, Payload};
 use crate::msg_handler::MsgHandler;
 use crate::user::committee::Committee;
 
@@ -19,22 +19,27 @@ impl MsgHandler<Message> for Selection {
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<(Message, bool), ConsensusError> {
-        match self.verify(&msg) {
-            Ok(_) => self.on_valid_new_block(&msg),
-            Err(err) => Err(err),
-        }
+        let _new_block = self.verify(&msg)?;
+
+        // TODO: store candidate block
+
+        Ok((msg.clone(), true))
     }
 }
 
 impl Selection {
-    fn verify(&self, _msg: &Message) -> Result<(), ConsensusError> {
-        // TODO: Verify newblock msg signature
-        // TODO: Verify newblock candidate
-        Ok(())
-    }
+    fn verify(&self, msg: &Message) -> Result<payload::NewBlock, ConsensusError> {
+        //  Verify new_block msg signature
+        if let Payload::NewBlock(p) = msg.clone().payload {
+            if verify_signature(&msg.header, p.signed_hash).is_err() {
+                return Err(ConsensusError::InvalidSignature);
+            }
 
-    fn on_valid_new_block(&mut self, msg: &Message) -> Result<(Message, bool), ConsensusError> {
-        // TODO: store candidate block
-        Ok((msg.clone(), true))
+            // TODO: Verify newblock candidate
+
+            return Ok(*p);
+        }
+
+        Err(ConsensusError::InvalidMsgType)
     }
 }

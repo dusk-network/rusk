@@ -79,7 +79,7 @@ impl<'a> ExecutionCtx<'a> {
                 result = time::timeout_at(deadline, &mut *self.cancel_chan) => {
                     if result.is_ok() {
                         // cancel chan triggered
-                        return Err(ConsensusError::Cancelled);
+                        return Err(ConsensusError::ChildTaskTerminated);
                     } else {
                         // Timeout-ed step should proceed to next step with zero-ed message.
                           return self.process_timeout_event(committee, phase);
@@ -154,7 +154,7 @@ impl<'a> ExecutionCtx<'a> {
         _committee: &Committee,
         _phase: &mut C,
     ) -> Result<Message, ConsensusError> {
-        Err(ConsensusError::Timeout)
+        Ok(Message::empty())
     }
 
     pub fn get_sortition_config(&self, size: usize) -> sortition::Config {

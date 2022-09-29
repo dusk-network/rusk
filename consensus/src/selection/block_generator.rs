@@ -16,13 +16,13 @@ pub struct Generator {}
 
 impl Generator {
     pub fn generate_candidate_message(&self, ru: RoundUpdate, step: u8) -> Message {
-        // TODO: Pass here data from prev block once append-only db is integrated
-        let candidate = self.generate_block(ru.pubkey_bls, ru.round, [0; 32], [0; 32], 0);
+        let candidate =
+            self.generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp);
 
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls,
             round: ru.round,
-            block_hash: (&candidate.header).hash,
+            block_hash: candidate.header.hash,
             step,
         };
 
@@ -64,7 +64,7 @@ impl Generator {
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {
-        // TODO use config.MaxBlockTime
+        // TODO: use config.MaxBlockTime
         if let Ok(n) = SystemTime::now().duration_since(UNIX_EPOCH) {
             return n.as_secs();
         }

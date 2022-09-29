@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::accumulator::Accumulator;
-use crate::commons::{Block, RoundUpdate};
+use crate::commons::{Block, ConsensusError, RoundUpdate};
 use crate::messages::{Header, Message, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
@@ -54,13 +54,13 @@ impl Agreement {
         ctx: oneshot::Sender<bool>,
         ru: RoundUpdate,
         provisioners: Provisioners,
-    ) -> JoinHandle<Result<Block, Error>> {
+    ) -> JoinHandle<Result<Block, ConsensusError>> {
         let future_msgs = self.future_msgs.clone();
         let outbound = self.outbound_queue.clone();
         let inbound = self.inbound_queue.clone();
 
         tokio::spawn(async move {
-            // Dropping this chan cancels the main consensus loop
+            // On dropping this chan cancels the main consensus loop
             let _ctx = ctx;
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound)
@@ -103,7 +103,10 @@ impl Executor {
         }
     }
 
-    async fn run(&mut self, future_msgs: Arc<Mutex<Queue<Message>>>) -> Result<Block, Error> {
+    async fn run(
+        &mut self,
+        future_msgs: Arc<Mutex<Queue<Message>>>,
+    ) -> Result<Block, ConsensusError> {
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
 
         // Accumulator
