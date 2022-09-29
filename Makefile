@@ -12,9 +12,6 @@ allmacros: ## Build the workspace macro libs and test them
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
-state: wasm ## Create the network state
-	$(MAKE) -C ./rusk-recovery state
-
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./test-utils $@
@@ -26,11 +23,11 @@ circuits: ## Build and test circuit crates
 contracts: ## Execute the test for all contracts
 	$(MAKE) -j1 -C ./contracts test
 
-test: keys wasm abi circuits state allmacros contracts ## Run the tests
+test: keys wasm abi circuits allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils $@
 
 run: wasm ## Run the server
 	cargo run --release
 
-.PHONY: abi keys state wasm circuits contracts test run help
+.PHONY: abi keys wasm circuits contracts test run help
