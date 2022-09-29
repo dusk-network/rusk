@@ -8,7 +8,7 @@ mod task;
 mod version;
 
 use clap::Parser;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 use version::VERSION_BUILD;
 
 use rusk_recovery_tools::state::{exec, ExecConfig};
@@ -35,13 +35,9 @@ struct Cli {
     #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
     force: bool,
 
-    /// Builds a testnet state instead of a main. The state includes a
-    /// transparent note with a billion Dusk, assigned to a hardcoded faucet
-    /// address.
-    ///
-    /// If `build` is not set, this setting has no effect.
-    #[clap(short = 't', long, env = "RUSK_BUILD_TESTNET")]
-    testnet: bool,
+    /// Create a state applying the init config specified in this file.
+    #[clap(short, long, parse(from_os_str))]
+    init: PathBuf,
 
     /// Sets different levels of verbosity
     #[clap(short, long, parse(from_occurrences))]
@@ -51,6 +47,8 @@ struct Cli {
     #[clap(short = 'c', long = "contracts", env = "RUSK_PREBUILT_CONTRACTS")]
     use_prebuilt_contracts: bool,
 
+    /// If specified, the generated state is written on this file instead of
+    /// save the state in the profile path.
     #[clap(short, long, parse(from_os_str), takes_value(true))]
     output: Option<PathBuf>,
 }
@@ -58,15 +56,8 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
 
-    // This is a temporary solution until there will be possible to specify an
-    // preset configuration from file
-    let snapshot = if args.testnet {
-        include_str!("../../config/testnet.toml")
-    } else {
-        include_str!("../../config/localnet.toml")
-    };
-
-    let snapshot = toml::from_str(snapshot)?;
+    let snapshot = fs::read_to_string(args.init)?;
+    let snapshot = toml::from_str(&snapshot)?;
 
     task::run(
         || {
