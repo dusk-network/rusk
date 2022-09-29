@@ -30,19 +30,6 @@ jobs:
           profile: minimal
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
-
-      - name: Cache Cargo home
-        uses: actions/cache@v2
-        env:
-          cache-name: cache-cargo-home
-        with:
-          # See https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{env.cache-name}}-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-
       - run: >
           RUSK_PROFILE_PATH="/var/opt/build-cache"
           RUSK_KEEP_KEYS="1"
