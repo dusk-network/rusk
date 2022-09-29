@@ -18,7 +18,7 @@ use crate::{firststep, secondstep};
 use tracing::Instrument;
 
 use tokio::sync::oneshot;
-use tracing::trace;
+
 
 pub struct Consensus {
     phases: [Phase; 3],

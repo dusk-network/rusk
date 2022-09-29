@@ -23,7 +23,7 @@ impl MsgHandler<Message> for Selection {
 
         // TODO: store candidate block
 
-        Ok((msg.clone(), true))
+        Ok((msg, true))
     }
 }
 

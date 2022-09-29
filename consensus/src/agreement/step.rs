@@ -14,7 +14,7 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 
-use std::fmt::Error;
+
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, oneshot, Mutex};

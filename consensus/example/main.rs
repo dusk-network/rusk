@@ -151,7 +151,7 @@ fn spawn_node(
 
                 // Run consensus for N rounds
                 for i in 0..1000 {
-                    c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
+                    let _ = c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
                 }
             });
     });
