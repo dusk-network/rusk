@@ -18,17 +18,17 @@ use rusk_vm::{Contract, NetworkState, NetworkStateId};
 use stake_contract::{Stake, StakeContract};
 use std::error::Error;
 use std::fs::File;
-use std::io::{Cursor, Read};
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::{env, fs, io};
 use tracing::info;
 use tracing::log::error;
 use transfer_contract::TransferContract;
-use zip::ZipArchive;
 
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
 mod snapshot;
+mod zip;
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
@@ -224,6 +224,7 @@ pub struct ExecConfig {
     pub build: bool,
     pub force: bool,
     pub use_prebuilt_contracts: bool,
+    pub output_file: Option<PathBuf>,
 }
 
 pub fn exec(
@@ -233,6 +234,18 @@ pub fn exec(
     let theme = Theme::default();
 
     info!("{} Network state", theme.action("Checking"));
+
+    let _tmpdir = match config.output_file.clone() {
+        Some(output) if output.exists() => Err("Output already exists")?,
+        Some(_) if !config.build => Err("Output cannot be used when building")?,
+        Some(_) => {
+            let tmp_dir = tempfile::tempdir()?;
+            env::set_var("RUSK_STATE_PATH", tmp_dir.path());
+            Some(tmp_dir)
+        }
+        None => None,
+    };
+
     let state_path = rusk_profile::get_rusk_state_dir()?;
     let id_path = rusk_profile::get_rusk_state_id_path()?;
 
@@ -307,6 +320,13 @@ pub fn exec(
         id_path.display()
     );
 
+    if let Some(output) = config.output_file {
+        let state_folder = rusk_profile::get_rusk_state_dir()?;
+        let input = state_folder.parent().expect("A valid directory");
+        info!("{} state into the output file", theme.info("Zipping"),);
+        zip::zip(input, &output)?;
+    }
+
     Ok(())
 }
 
@@ -374,21 +394,7 @@ fn download_and_unzip(
 
     info!("{} {} archive into", theme.info("Unzipping"), description);
 
-    let reader = Cursor::new(buffer);
-    let mut zip = ZipArchive::new(reader)?;
-
-    for i in 0..zip.len() {
-        let mut entry = zip.by_index(i)?;
-        let entry_path = output.join(entry.name());
-
-        if entry.is_dir() {
-            let _ = fs::create_dir_all(entry_path);
-        } else {
-            let mut buffer = Vec::with_capacity(entry.size() as usize);
-            entry.read_to_end(&mut buffer)?;
-            fs::write(entry_path, buffer)?;
-        }
-    }
+    zip::unzip(&buffer, output)?;
 
     Ok(())
 }

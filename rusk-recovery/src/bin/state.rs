@@ -50,6 +50,9 @@ struct Cli {
     /// Use prebuilt contracts when building the state from scratch.
     #[clap(short = 'c', long = "contracts", env = "RUSK_PREBUILT_CONTRACTS")]
     use_prebuilt_contracts: bool,
+
+    #[clap(short, long, parse(from_os_str), takes_value(true))]
+    output: Option<PathBuf>,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -71,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ExecConfig {
                     build: args.build,
                     force: args.force,
-
+                    output_file: args.output.clone(),
                     use_prebuilt_contracts: args.use_prebuilt_contracts,
                 },
                 &snapshot,
