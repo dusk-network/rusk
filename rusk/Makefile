@@ -5,7 +5,6 @@ test: ## Run Rusk tests
 	@cargo test \
 		-vvv \
 		--release \
-		-- --nocapture \
-		--test-threads 1
+		-- --nocapture
 
-.PHONY: keys test help
+.PHONY: test help
