@@ -88,9 +88,9 @@ impl Committee {
         debug_assert!(self.members.len() <= mem::size_of_val(&bits) * 8);
 
         let mut pos = 0;
-        for item in voters.0.iter() {
-            for (pos, member) in self.members.iter().enumerate() {
-                if member.0 == item.0 {
+        for (pk, _) in voters.0.iter() {
+            for (pos, (member_pk, _)) in self.members.iter().enumerate() {
+                if member_pk.eq(pk) {
                     bits |= 1 << pos; // flip the i-th bit to 1
                     break;
                 }
@@ -107,9 +107,9 @@ impl Committee {
         }
 
         let mut a = Cluster::<PublicKey>::new();
-        for (pos, member) in self.members.iter().enumerate() {
+        for (pos, (member_pk, weight)) in self.members.iter().enumerate() {
             if ((bitset >> pos) & 1) != 0 {
-                a.set_weight(member.0, *member.1);
+                a.set_weight(member_pk, *weight);
             }
         }
         a
@@ -117,8 +117,8 @@ impl Committee {
 
     pub fn total_occurrences(&self, voters: &Cluster<PublicKey>) -> usize {
         let mut total = 0;
-        for item in voters.0.iter() {
-            match self.votes_for(*item.0) {
+        for (item_pk, _) in voters.0.iter() {
+            match self.votes_for(*item_pk) {
                 Some(weight) => {
                     total += *weight;
                 }

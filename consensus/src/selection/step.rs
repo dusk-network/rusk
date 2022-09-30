@@ -38,7 +38,8 @@ impl Selection {
         if committee.am_member() {
             let msg = self
                 .bg
-                .generate_candidate_message(ctx.round_update, ctx.step);
+                .generate_candidate_message(ctx.round_update, ctx.step)
+                .await;
 
             // Broadcast the candidate block for this round/iteration.
             if let Err(e) = ctx.outbound.send(msg.clone()).await {
@@ -56,7 +57,7 @@ impl Selection {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler) {
+        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler).await {
             return Ok(m);
         }
 

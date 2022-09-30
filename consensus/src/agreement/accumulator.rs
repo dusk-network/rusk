@@ -107,27 +107,27 @@ impl Accumulator {
         }?;
 
         if let Payload::Agreement(payload) = msg.payload {
-            let entry = stores
+            let (agr_set, agr_weight) = stores
                 .entry(hdr.block_hash)
                 .or_insert_with(AgreementsPerStep::default)
                 .entry(hdr.step)
                 .or_insert((HashSet::new(), 0));
 
-            if entry.0.contains(&payload) {
+            if agr_set.contains(&payload) {
                 warn!("Agreement was not accumulated since it is a duplicate");
                 return None;
             }
 
             // Save agreement to avoid duplicates
-            entry.0.insert(payload);
+            agr_set.insert(payload);
 
             // Increase the cumulative weight
-            entry.1 += weight;
+            *agr_weight += weight;
 
-            if entry.1 >= target_quorum {
+            if *agr_weight >= target_quorum {
                 info!(
                     "event=quorum reached, hash={} msg_round={}, msg_step={}, target={}, aggr_count={} ",
-                    hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, entry.1
+                    hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
                 );
 
                 // TODO: CollectedVotes Message

@@ -34,8 +34,8 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
 fn generate_provisioners_from_keys(keys: Vec<(SecretKey, PublicKey)>) -> Provisioners {
     let mut p = Provisioners::new();
 
-    for (pos, keys) in keys.into_iter().enumerate() {
-        p.add_member_with_value(keys.1, 1000 * (pos as u64) * DUSK);
+    for (pos, (_, pk)) in keys.into_iter().enumerate() {
+        p.add_member_with_value(pk, 1000 * (pos as u64) * DUSK);
     }
 
     p

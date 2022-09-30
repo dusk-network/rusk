@@ -46,20 +46,20 @@ impl Member {
     }
 
     pub fn update_eligibility_flag(&mut self, round: u64) {
-        for stake in self.stakes.iter_mut() {
-            stake.1 = stake.0.eligible_since <= round;
+        for (stake, eligible) in self.stakes.iter_mut() {
+            *eligible = stake.eligible_since <= round;
         }
     }
 
     pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
-        for stake in self.stakes.iter_mut() {
-            let stake_val = stake.0.intermediate_value;
+        for (stake, _) in self.stakes.iter_mut() {
+            let stake_val = stake.intermediate_value;
             if stake_val > 0 {
                 if stake_val < value {
-                    stake.0.intermediate_value = 0;
+                    stake.intermediate_value = 0;
                     return stake_val;
                 }
-                stake.0.intermediate_value -= value;
+                stake.intermediate_value -= value;
                 return value;
             }
         }
@@ -75,9 +75,9 @@ impl Member {
 
     fn get_total_eligible_stake(&self) -> BigInt {
         let mut total: u64 = 0;
-        for stake in self.stakes.iter() {
-            if stake.1 {
-                total += stake.0.intermediate_value;
+        for (stake, eligible) in self.stakes.iter() {
+            if *eligible {
+                total += stake.intermediate_value;
             }
         }
 
@@ -137,9 +137,9 @@ impl Provisioners {
     // sortition.
     pub fn get_eligible_size(&self, max_size: usize) -> usize {
         let mut size = 0;
-        for m in self.members.iter() {
-            for s in m.1.stakes.iter() {
-                if s.1 {
+        for (_, member) in self.members.iter() {
+            for (_, eligible) in member.stakes.iter() {
+                if *eligible {
                     size += 1;
                     break;
                 }
@@ -160,8 +160,8 @@ impl Provisioners {
         let committee_size = self.get_eligible_size(cfg.max_committee_size);
 
         // Restore intermediate value of all stakes.
-        for m in self.members.iter_mut() {
-            m.1.restore_intermediate_value();
+        for (_, member) in self.members.iter_mut() {
+            member.restore_intermediate_value();
         }
 
         let mut total_amount_stake = BigInt::from(self.calc_total_eligible_weight());
@@ -181,11 +181,11 @@ impl Provisioners {
 
             // NB: The public key can be extracted multiple times per committee.
             match self.extract_and_subtract_member(&score) {
-                Some(m) => {
+                Some((pk, value)) => {
                     // append the public key to the committee set.
-                    committee.push(m.0);
+                    committee.push(pk);
 
-                    let subtracted_stake = m.1;
+                    let subtracted_stake = value;
                     if total_amount_stake > subtracted_stake {
                         total_amount_stake -= subtracted_stake;
                     } else {
@@ -202,11 +202,10 @@ impl Provisioners {
     // calc_total_eligible_weight sums up the total weight of all **eligible** stakes
     fn calc_total_eligible_weight(&self) -> u64 {
         let mut total_weight = 0;
-        for m in self.members.iter() {
-            for s in m.1.stakes.iter() {
-                // Add stake value to total_weight only if it is eligible.
-                if s.1 {
-                    total_weight += s.0.intermediate_value;
+        for (_, member) in self.members.iter() {
+            for (stake, eligible) in member.stakes.iter() {
+                if *eligible {
+                    total_weight += stake.intermediate_value;
                 }
             }
         }
@@ -218,9 +217,9 @@ impl Provisioners {
     #[allow(unused)]
     fn get_active_stakes_num(&self) -> usize {
         let mut size: usize = 0;
-        for m in self.members.iter() {
-            for s in m.1.stakes.iter() {
-                if s.1 {
+        for (_, member) in self.members.iter() {
+            for (_, eligible) in member.stakes.iter() {
+                if *eligible {
                     size += 1;
                 }
             }
@@ -237,13 +236,13 @@ impl Provisioners {
         }
 
         loop {
-            for m in self.members.iter_mut() {
-                let total_stake = m.1.get_total_eligible_stake();
+            for (_, member) in self.members.iter_mut() {
+                let total_stake = member.get_total_eligible_stake();
                 if total_stake >= score {
                     // Subtract 1 DUSK from the value extracted and rebalance accordingly.
-                    let subtracted_stake = BigInt::from(m.1.subtract_from_stake(DUSK));
+                    let subtracted_stake = BigInt::from(member.subtract_from_stake(DUSK));
 
-                    return Some((m.1.get_public_key(), subtracted_stake));
+                    return Some((member.get_public_key(), subtracted_stake));
                 }
 
                 score -= total_stake;

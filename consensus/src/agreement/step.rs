@@ -14,10 +14,9 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 
-
 use std::sync::Arc;
 use tokio::select;
-use tokio::sync::{mpsc, oneshot, Mutex};
+use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
 use tracing::{error, info, trace, Instrument};
 
@@ -25,7 +24,7 @@ const WORKERS_AMOUNT: usize = 4;
 const COMMITTEE_SIZE: usize = 64;
 
 pub struct Agreement {
-    inbound_queue: PendingQueue,
+    pub inbound_queue: PendingQueue,
     outbound_queue: PendingQueue,
 
     future_msgs: Arc<Mutex<Queue<Message>>>,
@@ -40,18 +39,10 @@ impl Agreement {
         }
     }
 
-    pub async fn send_msg(&mut self, msg: Message) {
-        self.inbound_queue
-            .send(msg)
-            .await
-            .unwrap_or_else(|err| error!("unable to send agreement msg {:?}", err));
-    }
-
     /// Spawn a task to process agreement messages for a specified round
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn(
         &mut self,
-        ctx: oneshot::Sender<bool>,
         ru: RoundUpdate,
         provisioners: Provisioners,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
@@ -60,8 +51,6 @@ impl Agreement {
         let inbound = self.inbound_queue.clone();
 
         tokio::spawn(async move {
-            // On dropping this chan cancels the main consensus loop
-            let _ctx = ctx;
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound)
                 .run(future_msgs)
@@ -118,6 +107,7 @@ impl Executor {
         );
 
         // drain future messages for current round and step.
+        future_msgs.lock().await.clear(self.ru.round - 1);
         if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
             for msg in messages {
                 self.collect_agreement(&mut acc, msg).await;

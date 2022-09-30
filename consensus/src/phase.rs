@@ -56,7 +56,7 @@ impl Phase {
     }
 
     pub async fn run(&mut self, ctx: ExecutionCtx<'_>) -> Result<Message, ConsensusError> {
-        ctx.trace("execute");
+        ctx.info("execute");
 
         let size = call_phase!(self, get_committee_size());
 

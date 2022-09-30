@@ -13,20 +13,19 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
+
+use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::oneshot;
+use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
-use tracing::error;
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
 pub struct ExecutionCtx<'a> {
-    pub cancel_chan: &'a mut oneshot::Receiver<bool>,
-
     /// Messaging-related fields
     pub inbound: PendingQueue,
     pub outbound: PendingQueue,
-    pub future_msgs: &'a mut Queue<Message>,
+    pub future_msgs: Arc<Mutex<Queue<Message>>>,
 
     /// State-related fields
     pub provisioners: &'a mut Provisioners,
@@ -38,16 +37,14 @@ pub struct ExecutionCtx<'a> {
 
 impl<'a> ExecutionCtx<'a> {
     pub fn new(
-        cancel_chan: &'a mut oneshot::Receiver<bool>,
         inbound: PendingQueue,
         outbound: PendingQueue,
-        future_msgs: &'a mut Queue<Message>,
+        future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
         step: u8,
     ) -> Self {
         Self {
-            cancel_chan,
             inbound,
             outbound,
             future_msgs,
@@ -63,7 +60,7 @@ impl<'a> ExecutionCtx<'a> {
         committee: &Committee,
         phase: &mut C,
     ) -> Result<Message, ConsensusError> {
-        self.trace("run event_loop");
+        self.info("run event_loop");
 
         // Calculate timeout
         let deadline = Instant::now()
@@ -72,32 +69,22 @@ impl<'a> ExecutionCtx<'a> {
 
         let inbound = self.inbound.clone();
 
+        // Handle both timeout event and messages from inbound queue.
         loop {
-            tokio::select! {
-                biased;
-                // Handle both timeout and cancel events
-                result = time::timeout_at(deadline, &mut *self.cancel_chan) => {
-                    if result.is_ok() {
-                        // cancel chan triggered
-                        return Err(ConsensusError::ChildTaskTerminated);
-                    } else {
-                        // Timeout-ed step should proceed to next step with zero-ed message.
-                          return self.process_timeout_event(committee, phase);
+            match time::timeout_at(deadline, inbound.recv()).await {
+                Ok(result) => {
+                    if let Ok(msg) = result {
+                        if let Some(step_result) =
+                            self.process_inbound_msg(committee, phase, msg).await
+                        {
+                            return Ok(step_result);
+                        }
                     }
-                 },
-                // Handle inbound message
-                res = inbound.recv() => {
-                    match res {
-                        Ok(msg) => {
-                            if let Some(step_result) = self.process_inbound_msg(committee, phase, msg).await {
-                                return Ok(step_result);
-                            }
-                        },
-                        Err(e) => {
-                            error!("recv inbound message error: {}",e);
-                        },
-                    }
-                },
+                }
+                Err(_) => {
+                    self.info("timeout");
+                    return self.process_timeout_event(committee, phase);
+                }
             }
         }
     }
@@ -133,8 +120,11 @@ impl<'a> ExecutionCtx<'a> {
                     ConsensusError::FutureEvent => {
                         // This is a message from future round or step.
                         // Save it in future_msgs to be processed when we reach same round/step.
-                        self.future_msgs
-                            .put_event(msg.header.round, msg.header.step, msg);
+                        self.future_msgs.lock().await.put_event(
+                            msg.header.round,
+                            msg.header.step,
+                            msg,
+                        );
                     }
                     ConsensusError::PastEvent => {
                         tracing::trace!("past event");
@@ -166,14 +156,19 @@ impl<'a> ExecutionCtx<'a> {
         )
     }
 
-    pub fn handle_future_msgs<C: MsgHandler<Message>>(
+    pub async fn handle_future_msgs<C: MsgHandler<Message>>(
         &self,
         committee: &Committee,
         phase: &mut C,
     ) -> Option<Message> {
         let ru = &self.round_update;
 
-        if let Ok(messages) = self.future_msgs.get_events(ru.round, self.step) {
+        if let Ok(messages) = self
+            .future_msgs
+            .lock()
+            .await
+            .get_events(ru.round, self.step)
+        {
             for msg in messages {
                 if let Ok(f) = phase.handle(msg, *ru, self.step, committee) {
                     return Some(f.0);
@@ -184,8 +179,8 @@ impl<'a> ExecutionCtx<'a> {
         None
     }
 
-    pub fn trace(&self, event_name: &'static str) {
-        tracing::trace!(
+    pub fn info(&self, event_name: &'static str) {
+        tracing::info!(
             "event={} round={}, step={}, bls_key={}",
             event_name,
             self.round_update.round,

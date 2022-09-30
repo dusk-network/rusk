@@ -33,7 +33,7 @@ impl Aggregator {
         if let Some(weight) = committee.votes_for(header.pubkey_bls) {
             let hash: Hash = header.block_hash;
 
-            let entry = self
+            let (aggr_sign, cluster) = self
                 .0
                 .entry(hash)
                 .or_insert((AggrSignature::default(), Cluster::<PublicKey>::new()));
@@ -44,13 +44,13 @@ impl Aggregator {
             // Provisioner is only extracted to one slot per committee, then a single
             // vote is taken into account (if more votes for the same slot are
             // propagated, those are discarded).
-            if entry.1.contains_key(&header.pubkey_bls) {
+            if cluster.contains_key(&header.pubkey_bls) {
                 warn!("discarding duplicated votes from a provisioner");
                 return None;
             }
 
             // Aggregate Signatures
-            if let Err(e) = entry.0.add(payload.signed_hash) {
+            if let Err(e) = aggr_sign.add(payload.signed_hash) {
                 error!("{:?}", e);
                 return None;
             }
@@ -58,10 +58,10 @@ impl Aggregator {
             // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
-            let val = entry.1.set_weight(&header.pubkey_bls, *weight);
+            let val = cluster.set_weight(&header.pubkey_bls, *weight);
             debug_assert!(val != None);
 
-            let total = entry.1.total_occurrences();
+            let total = cluster.total_occurrences();
             let quorum_target = committee.quorum();
             tracing::trace!("total votes: {}, quorum target: {} ", total, quorum_target);
 
@@ -69,8 +69,8 @@ impl Aggregator {
                 return Some((
                     hash,
                     StepVotes {
-                        bitset: committee.bits(&entry.1),
-                        signature: entry.0.get_aggregated(),
+                        bitset: committee.bits(cluster),
+                        signature: aggr_sign.get_aggregated(),
                     },
                 ));
             }

@@ -4,20 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons;
 use crate::commons::{sign, Block, RoundUpdate};
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::PublicKey;
+use crate::{commons, config};
 use dusk_bytes::Serializable;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub struct Generator {}
 
 impl Generator {
-    pub fn generate_candidate_message(&self, ru: RoundUpdate, step: u8) -> Message {
-        let candidate =
-            self.generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp);
+    pub async fn generate_candidate_message(&self, ru: RoundUpdate, step: u8) -> Message {
+        let candidate = self
+            .generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
+            .await;
 
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls,
@@ -36,7 +37,7 @@ impl Generator {
         )
     }
 
-    fn generate_block(
+    async fn generate_block(
         &self,
         pubkey: PublicKey,
         round: u64,
@@ -45,6 +46,10 @@ impl Generator {
         prev_block_timestamp: i64,
     ) -> Block {
         // TODO: fetch mempool transactions
+
+        // Delay next iteration execution so we avoid consensus-split situation.
+        // NB: This should be moved to Block Generator when mempool is integrated.
+        tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS)).await;
 
         // TODO: execute state transition
 
