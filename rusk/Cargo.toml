@@ -71,4 +71,4 @@ hex = "0.4"
 
 [build-dependencies]
 tonic-build = "0.6"
-rustc_tools_util = "0.2"
+rustc_tools_util = "=0.2.0"
