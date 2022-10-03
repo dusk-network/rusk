@@ -20,7 +20,7 @@ path = "src/bin/state.rs"
 required-features = ["state"]
 
 [build-dependencies]
-rustc_tools_util = "0.2"
+rustc_tools_util = "=0.2.0"
 
 [dependencies]
 hex = "0.4"
