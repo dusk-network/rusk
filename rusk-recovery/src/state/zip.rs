@@ -37,7 +37,6 @@ pub(crate) fn unzip(
             fs::write(entry_path, buffer)?;
         }
     }
-    println!("done");
     Ok(())
 }
 
