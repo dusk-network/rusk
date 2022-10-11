@@ -120,6 +120,7 @@ pub enum ConsensusError {
     NotReady,
     MaxStepReached,
     ChildTaskTerminated,
+    Canceled,
 }
 
 #[derive(Debug, Copy, Clone)]
