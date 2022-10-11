@@ -51,7 +51,7 @@ impl Selection {
                 .handler
                 .handle(msg, ctx.round_update, ctx.step, &committee)
             {
-                Ok(f) => return Ok(f.0),
+                Ok(f) => return Ok(f.result),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),
             };
         }

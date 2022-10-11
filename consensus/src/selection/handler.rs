@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{verify_signature, ConsensusError, RoundUpdate};
 use crate::messages::{payload, Message, Payload};
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
 
 pub struct Selection {}
@@ -18,12 +18,15 @@ impl MsgHandler<Message> for Selection {
         _committee: &Committee,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<(Message, bool), ConsensusError> {
+    ) -> Result<HandleMsgOutput, ConsensusError> {
         let _new_block = self.verify(&msg)?;
 
         // TODO: store candidate block
 
-        Ok((msg, true))
+        Ok(HandleMsgOutput {
+            result: msg,
+            is_final_msg: true,
+        })
     }
 }
 

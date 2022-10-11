@@ -5,7 +5,7 @@ use tracing::error;
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate};
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
 use crate::messages;
@@ -26,7 +26,7 @@ impl MsgHandler<Message> for Reduction {
         committee: &Committee,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<(Message, bool), ConsensusError> {
+    ) -> Result<HandleMsgOutput, ConsensusError> {
         let msg_payload = match msg.payload {
             Payload::Reduction(p) => Ok(p),
             Payload::Empty => Ok(payload::Reduction::default()),
@@ -42,10 +42,16 @@ impl MsgHandler<Message> for Reduction {
         if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
             // At that point, we have reached a quorum for 2th_reduction on an empty on non-empty block.
             // Return an empty message as this iteration terminates here.
-            return Ok((self.build_agreement_msg(ru, step, sv), true));
+            return Ok(HandleMsgOutput {
+                result: self.build_agreement_msg(ru, step, sv),
+                is_final_msg: true,
+            });
         }
 
-        Ok((msg, false))
+        Ok(HandleMsgOutput {
+            result: msg,
+            is_final_msg: false,
+        })
     }
 }
 

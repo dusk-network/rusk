@@ -99,15 +99,16 @@ impl<'a> ExecutionCtx<'a> {
         match phase.handle(msg.clone(), self.round_update, self.step, committee) {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
-            Ok(result) => {
-                let (msg, is_final_msg) = result;
-
+            Ok(output) => {
                 // Re-publish the returned message
-                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-                    tracing::error!("unable to re-publish a handled msg {:?}", err)
-                });
+                self.outbound
+                    .send(output.result.clone())
+                    .await
+                    .unwrap_or_else(|err| {
+                        tracing::error!("unable to re-publish a handled msg {:?}", err)
+                    });
 
-                if is_final_msg {
+                if output.is_final_msg {
                     return Some(msg);
                 }
 
@@ -171,7 +172,7 @@ impl<'a> ExecutionCtx<'a> {
         {
             for msg in messages {
                 if let Ok(f) = phase.handle(msg, *ru, self.step, committee) {
-                    return Some(f.0);
+                    return Some(f.result);
                 }
             }
         }

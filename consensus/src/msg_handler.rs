@@ -10,6 +10,13 @@ use crate::user::committee::Committee;
 use hex::ToHex;
 use std::fmt::Debug;
 
+pub struct HandleMsgOutput {
+    pub result: Message,
+
+    // if true, it instructs the event loop to bubble up the message and terminate.
+    pub is_final_msg: bool,
+}
+
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {
     // handle is the handler to process a new message in the first place.
@@ -20,7 +27,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         ru: RoundUpdate,
         step: u8,
         committee: &Committee,
-    ) -> Result<(Message, bool), ConsensusError> {
+    ) -> Result<HandleMsgOutput, ConsensusError> {
         tracing::trace!(
             "received msg from {:?} with hash {} msg: {:?}",
             msg.get_pubkey_bls().encode_short_hex(),
@@ -50,5 +57,5 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         committee: &Committee,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<(Message, bool), ConsensusError>;
+    ) -> Result<HandleMsgOutput, ConsensusError>;
 }
