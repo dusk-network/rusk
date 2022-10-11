@@ -8,6 +8,8 @@ use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
@@ -15,16 +17,18 @@ pub const COMMITTEE_SIZE: usize = 64;
 pub struct Reduction {
     handler: handler::Reduction,
     candidate: Option<Block>,
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
 }
 
 impl Reduction {
-    pub fn new() -> Self {
+    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
             handler: handler::Reduction {
                 aggr: Default::default(),
                 first_step_votes: Default::default(),
             },
             candidate: None,
+            executor,
         }
     }
 
@@ -53,6 +57,7 @@ impl Reduction {
                     ctx.step,
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
+                    self.executor.clone(),
                 );
             }
         }

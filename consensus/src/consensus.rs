@@ -34,6 +34,9 @@ pub struct Consensus {
     /// agreement_layer implements Agreement message handler within the context
     /// of a separate task execution.
     agreement_process: step::Agreement,
+
+    /// Reference to the executor of any EST-related call
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
 }
 
 impl Consensus {
@@ -42,12 +45,14 @@ impl Consensus {
         outbound: PendingQueue,
         aggr_inbound_queue: PendingQueue,
         aggr_outbound_queue: PendingQueue,
+        executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
     ) -> Self {
         Self {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
             agreement_process: step::Agreement::new(aggr_inbound_queue, aggr_outbound_queue),
+            executor,
         }
     }
 
@@ -60,14 +65,15 @@ impl Consensus {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
+        let executor = self.executor.clone();
 
         tokio::spawn(async move {
             future_msgs.lock().await.clear(ru.round - 1);
 
             let mut phases = [
-                Phase::Selection(selection::step::Selection::new()),
-                Phase::Reduction1(firststep::step::Reduction::new()),
-                Phase::Reduction2(secondstep::step::Reduction::new()),
+                Phase::Selection(selection::step::Selection::new(executor.clone())),
+                Phase::Reduction1(firststep::step::Reduction::new(executor.clone())),
+                Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];
 
             // Consensus loop

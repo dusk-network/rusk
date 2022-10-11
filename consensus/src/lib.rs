@@ -9,6 +9,7 @@ pub mod util;
 pub mod aggregator;
 pub mod agreement;
 mod config;
+pub mod contract_state;
 mod execution_ctx;
 mod firststep;
 mod msg_handler;
