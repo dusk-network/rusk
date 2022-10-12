@@ -4,7 +4,7 @@ use rand_core::SeedableRng;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, oneshot, Mutex};
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
@@ -155,7 +155,10 @@ fn spawn_node(
 
                 // Run consensus for N rounds
                 for i in 0..1000 {
-                    let _ = c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
+                    let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
+                    let _ = c
+                        .spin(RoundUpdate::new(i, keys.1, keys.0), p.clone(), cancel_rx)
+                        .await;
                 }
             });
     });
