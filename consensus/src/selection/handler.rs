@@ -11,7 +11,7 @@ use crate::user::committee::Committee;
 pub struct Selection {}
 
 impl MsgHandler<Message> for Selection {
-    // Handle а new_block message.
+    /// Handle а new_block message.
     fn handle_internal(
         &mut self,
         msg: Message,
@@ -25,6 +25,18 @@ impl MsgHandler<Message> for Selection {
 
         Ok(HandleMsgOutput {
             result: msg,
+            is_final_msg: true,
+        })
+    }
+
+    /// Handle of an event of step execution timeout
+    fn handle_timeout(
+        &mut self,
+        _ru: RoundUpdate,
+        _step: u8,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        Ok(HandleMsgOutput {
+            result: Message::empty(),
             is_final_msg: true,
         })
     }

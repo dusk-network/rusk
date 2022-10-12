@@ -53,6 +53,18 @@ impl MsgHandler<Message> for Reduction {
             is_final_msg: false,
         })
     }
+
+    /// Handle of an event of step execution timeout
+    fn handle_timeout(
+        &mut self,
+        _ru: RoundUpdate,
+        _step: u8,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        Ok(HandleMsgOutput {
+            result: Message::empty(),
+            is_final_msg: true,
+        })
+    }
 }
 
 impl Reduction {
