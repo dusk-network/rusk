@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{spawn_send_reduction, Block, ConsensusError};
+use crate::config;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
@@ -15,6 +16,7 @@ pub const COMMITTEE_SIZE: usize = 64;
 pub struct Reduction {
     handler: handler::Reduction,
     candidate: Option<Block>,
+    timeout_millis: u64,
 }
 
 impl Reduction {
@@ -25,6 +27,7 @@ impl Reduction {
                 first_step_votes: Default::default(),
             },
             candidate: None,
+            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
         }
     }
 
@@ -62,14 +65,14 @@ impl Reduction {
             return Ok(m);
         }
 
-        // TODO: Handle  Err(SelectError::Timeout)
-        // TODO: create agreement with empty block self.handler.on_timeout()
-        ctx.event_loop(&committee, &mut self.handler).await
+
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis).await
     }
 
     pub fn name(&self) -> &'static str {
         "2nd_reduction"
     }
+    pub fn get_timeout(&self) -> u64 { self.timeout_millis }
 
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE

@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::cmp;
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::config;
 use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
@@ -19,6 +19,8 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
+use tracing::{error, trace};
+use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
 pub struct ExecutionCtx<'a> {
@@ -59,12 +61,13 @@ impl<'a> ExecutionCtx<'a> {
         &mut self,
         committee: &Committee,
         phase: &mut C,
+        timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
-        self.info("run event_loop");
+        tracing::info!("event: run event_loop");
 
         // Calculate timeout
         let deadline = Instant::now()
-            .checked_add(Duration::from_millis(config::CONSENSUS_TIMEOUT_MS))
+            .checked_add(Duration::from_millis(*timeout_millis))
             .unwrap();
 
         let inbound = self.inbound.clone();
@@ -72,6 +75,7 @@ impl<'a> ExecutionCtx<'a> {
         // Handle both timeout event and messages from inbound queue.
         loop {
             match time::timeout_at(deadline, inbound.recv()).await {
+                // Inbound message event
                 Ok(result) => {
                     if let Ok(msg) = result {
                         if let Some(step_result) =
@@ -81,9 +85,14 @@ impl<'a> ExecutionCtx<'a> {
                         }
                     }
                 }
+                // Timeout event
                 Err(_) => {
-                    self.info("timeout");
-                    return self.process_timeout_event(committee, phase);
+                    tracing::info!("event: timeout");
+
+                    // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
+                    *timeout_millis =  cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+
+                    return self.process_timeout_event(phase);
                 }
             }
         }
@@ -104,12 +113,10 @@ impl<'a> ExecutionCtx<'a> {
                 self.outbound
                     .send(output.result.clone())
                     .await
-                    .unwrap_or_else(|err| {
-                        tracing::error!("unable to re-publish a handled msg {:?}", err)
-                    });
+                    .unwrap_or_else(|err| error!("unable to re-publish a handled msg {:?}", err));
 
                 if output.is_final_msg {
-                    return Some(msg);
+                    return Some(output.result);
                 }
 
                 None
@@ -119,6 +126,7 @@ impl<'a> ExecutionCtx<'a> {
             Err(e) => {
                 match e {
                     ConsensusError::FutureEvent => {
+                        trace!("future msg {:?}", msg);
                         // This is a message from future round or step.
                         // Save it in future_msgs to be processed when we reach same round/step.
                         self.future_msgs.lock().await.put_event(
@@ -128,10 +136,10 @@ impl<'a> ExecutionCtx<'a> {
                         );
                     }
                     ConsensusError::PastEvent => {
-                        tracing::trace!("past event");
+                        trace!("discard message from past {:?}", msg);
                     }
                     _ => {
-                        self.error("phase handler", e);
+                        error!("phase handler err: {:?}", e);
                     }
                 }
 
@@ -142,9 +150,12 @@ impl<'a> ExecutionCtx<'a> {
 
     fn process_timeout_event<C: MsgHandler<Message>>(
         &mut self,
-        _committee: &Committee,
-        _phase: &mut C,
+        phase: &mut C,
     ) -> Result<Message, ConsensusError> {
+        if let Ok(output) = phase.handle_timeout(self.round_update, self.step) {
+            return Ok(output.result);
+        }
+
         Ok(Message::empty())
     }
 
@@ -178,26 +189,5 @@ impl<'a> ExecutionCtx<'a> {
         }
 
         None
-    }
-
-    pub fn info(&self, event_name: &'static str) {
-        tracing::info!(
-            "event={} round={}, step={}, bls_key={}",
-            event_name,
-            self.round_update.round,
-            self.step,
-            self.round_update.pubkey_bls.encode_short_hex()
-        );
-    }
-
-    pub fn error(&self, event_name: &'static str, err: ConsensusError) {
-        tracing::trace!(
-            "event={} round={}, step={}, bls_key={} err={:#?}",
-            event_name,
-            self.round_update.round,
-            self.step,
-            self.round_update.pubkey_bls.encode_short_hex(),
-            err,
-        );
     }
 }

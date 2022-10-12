@@ -12,17 +12,20 @@ use crate::selection::block_generator::Generator;
 use crate::selection::handler;
 use crate::user::committee::Committee;
 use tracing::error;
+use crate::config;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
 pub struct Selection {
     handler: handler::Selection,
     bg: Generator,
+    timeout_millis: u64,
 }
 
 impl Selection {
     pub fn new() -> Self {
         Self {
+            timeout_millis:  config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Selection {},
             bg: Generator {},
         }
@@ -61,13 +64,13 @@ impl Selection {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler).await
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis).await
     }
 
     pub fn name(&self) -> &'static str {
         "selection"
     }
-
+    pub fn get_timeout(&self) -> u64 { self.timeout_millis }
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
     }
