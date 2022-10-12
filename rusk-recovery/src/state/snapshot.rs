@@ -36,6 +36,7 @@ impl Balance {
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
+    base_state: Option<String>,
     acl: Acl,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
@@ -75,6 +76,10 @@ impl Snapshot {
     pub fn allowlist(&self) -> impl Iterator<Item = &PublicKey> {
         self.acl.stake.allowlist.iter().map(|pk| &**pk)
     }
+
+    pub fn base_state(&self) -> Option<&str> {
+        self.base_state.as_deref()
+    }
 }
 
 #[cfg(test)]
@@ -112,6 +117,7 @@ mod tests {
             .collect();
 
         Snapshot {
+            base_state: None,
             balance: vec![Balance {
                 address: (*state::DUSK_KEY).into(),
                 seed: Some(0xdead_beef),
@@ -140,6 +146,7 @@ mod tests {
             .collect();
 
         Snapshot {
+            base_state: Some("https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip".into()),
             balance: vec![
                 Balance {
                     address: (*state::DUSK_KEY).into(),

@@ -30,7 +30,7 @@ test: keys wasm abi circuits state allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils $@
 
-run: wasm ## Run the server
-	cargo run --release
+run: keys state ## Run the server
+	cargo run --release --bin rusk
 
 .PHONY: abi keys state wasm circuits contracts test run help

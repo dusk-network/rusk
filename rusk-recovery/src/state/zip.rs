@@ -18,10 +18,7 @@ use zip::ZipArchive;
 use crate::theme::Theme;
 
 /// Unzip binaries into a destination folder
-pub(crate) fn unzip(
-    buffer: &[u8],
-    output: &Path,
-) -> Result<(), Box<dyn Error>> {
+pub fn unzip(buffer: &[u8], output: &Path) -> Result<(), Box<dyn Error>> {
     let reader = Cursor::new(buffer);
     let mut zip = ZipArchive::new(reader)?;
 
@@ -41,10 +38,7 @@ pub(crate) fn unzip(
 }
 
 /// Zip a folder into a destination file.
-pub(crate) fn zip(
-    src_dir: &Path,
-    dst_file: &Path,
-) -> Result<(), Box<dyn Error>> {
+pub fn zip(src_dir: &Path, dst_file: &Path) -> Result<(), Box<dyn Error>> {
     if !Path::new(src_dir).is_dir() {
         Err(ZipError::FileNotFound)?;
     }
