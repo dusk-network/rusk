@@ -96,21 +96,21 @@ fn generate_stake_state(
         );
         stake_contract
             .insert_stake(*staker.address(), stake)
-            .expect("Genesis stake to be pushed to the stake");
+            .expect("stake to be inserted into the state");
         stake_contract
             .insert_allowlist(*staker.address())
-            .expect("Failed to allow genesis provisioner");
+            .expect("staker to be inserted into the allowlist");
     });
     snapshot.owners().for_each(|provisioner| {
         stake_contract
             .add_owner(*provisioner)
-            .expect("Failed to set stake contract owner");
+            .expect("owner to be added into the state");
     });
 
     snapshot.allowlist().for_each(|provisioner| {
         stake_contract
             .insert_allowlist(*provisioner)
-            .expect("Failed to allow");
+            .expect("provisioner to be inserted into the allowlist");
     });
 
     Ok(stake_contract)
@@ -134,10 +134,10 @@ fn generate_empty_state() -> Result<NetworkState, Box<dyn Error>> {
 
     transfer
         .add_balance(rusk_abi::stake_contract(), 0)
-        .expect("Stake contract balance to be set with provisioner stakes");
+        .expect("stake contract balance to be set with provisioner stakes");
     transfer
         .update_root()
-        .expect("Root to be updated after pushing genesis note");
+        .expect("root to be updated after pushing genesis note");
 
     let transfer = Contract::new(transfer, transfer_code);
     let stake = Contract::new(StakeContract::default(), stake_code);
@@ -220,7 +220,7 @@ where
         hex::encode(network.root())
     );
 
-    let state_id = network.persist(ctor).expect("Error in persistence");
+    let state_id = network.persist(ctor)?;
 
     Ok(state_id)
 }
@@ -271,7 +271,7 @@ fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
             buffer
         }
         "file" => fs::read(url.path())?,
-        _ => Err("Unsupported scheme")?,
+        _ => Err("Unsupported scheme for base state")?,
     };
 
     let state_dir = rusk_profile::get_rusk_state_dir()?;

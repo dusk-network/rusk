@@ -93,7 +93,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     };
 
     if config.force {
-        clean_state().expect("Failed to clean up Network State directory");
+        clean_state()?;
     }
 
     let state_path = rusk_profile::get_rusk_state_dir()?;
@@ -127,8 +127,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
     info!("{} new state", theme.info("Building"));
 
-    let state_id =
-        deploy(config.init, ctor).expect("Failed to deploy network state");
+    let state_id = deploy(config.init, ctor)?;
 
     info!("{} persisted id", theme.success("Storing"));
     state_id.write(&id_path)?;
@@ -153,7 +152,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
     if let Some(output) = config.output_file {
         let state_folder = rusk_profile::get_rusk_state_dir()?;
-        let input = state_folder.parent().expect("A valid directory");
+        let input = state_folder.parent().expect("state dir not equal to root");
         info!("{} state into the output file", theme.info("Zipping"),);
         zip::zip(input, &output)?;
     }
