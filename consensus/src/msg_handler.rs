@@ -19,8 +19,8 @@ pub struct HandleMsgOutput {
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {
-    // handle is the handler to process a new message in the first place.
-    // Only if it's valid to current round and step, it delegates it to the Phase::handler.
+    /// handle is the handler to process a new message in the first place.
+    /// Only if it's valid to current round and step, it delegates it to the Phase::handler.
     fn handle(
         &mut self,
         msg: T,
@@ -50,12 +50,19 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         }
     }
 
-    // handle_internal should be implemented by each Phase.
+    /// handle_internal allows each Phase to process an inbound message.
     fn handle_internal(
         &mut self,
         msg: T,
         committee: &Committee,
         ru: RoundUpdate,
         step: u8,
+    ) -> Result<HandleMsgOutput, ConsensusError>;
+
+    /// handle_timeout allows each Phase to handle a timeout event.
+    fn handle_timeout(
+        &mut self,
+        _ru: RoundUpdate,
+        _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 }
