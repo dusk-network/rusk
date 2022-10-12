@@ -17,7 +17,7 @@ use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
 pub struct Consensus {
@@ -131,6 +131,7 @@ impl Consensus {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
+        cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
         // Enable/Disable all members stakes depending on the current round. If
         // a stake is not eligible for this round, it's disabled.
@@ -157,8 +158,17 @@ impl Consensus {
             recv = &mut main_task_handle => {
                result = recv.expect("wrong main_task handle");
                 tracing::trace!("main_loop result: {:?}", result);
+            },
+            // Canceled from outside.
+            // This could be triggered by Synchronizer or on node termination.
+            _ = cancel_rx => {
+                result = Err(ConsensusError::Canceled);
+                 tracing::trace!("consensus canceled");
             }
         }
+
+        // Tear-down procedure
+        // TODO: Delete all candidates related to this round execution
 
         // Cancel all tasks
         agreement_task_handle.abort();
