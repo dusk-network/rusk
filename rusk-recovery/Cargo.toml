@@ -49,6 +49,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
 zip = "0.5"
+url = "2.3"
 
 serde_derive = { version = "1", optional = true }
 serde = { version = "1", optional = true }
