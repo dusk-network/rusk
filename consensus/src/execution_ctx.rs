@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::cmp;
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
@@ -13,14 +12,15 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
+use std::cmp;
 
+use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{error, trace};
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
 pub struct ExecutionCtx<'a> {
@@ -90,7 +90,7 @@ impl<'a> ExecutionCtx<'a> {
                     tracing::info!("event: timeout");
 
                     // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
-                    *timeout_millis =  cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+                    *timeout_millis = cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
 
                     return self.process_timeout_event(phase);
                 }
@@ -105,21 +105,14 @@ impl<'a> ExecutionCtx<'a> {
         phase: &mut C,
         msg: Message,
     ) -> Option<Message> {
-        match phase.handle(msg.clone(), self.round_update, self.step, committee) {
-            // Fully valid state reached on this step. Return it as an output.
-            // Populate next step with it.
-            Ok(output) => {
+        // Check if a message is fully valid. If so, then it can be broadcast.
+        match phase.is_valid(msg.clone(), self.round_update, self.step, committee) {
+            Ok(msg) => {
                 // Re-publish the returned message
                 self.outbound
-                    .send(output.result.clone())
+                    .send(msg)
                     .await
                     .unwrap_or_else(|err| error!("unable to re-publish a handled msg {:?}", err));
-
-                if output.is_final_msg {
-                    return Some(output.result);
-                }
-
-                None
             }
             // An error here means an phase considers this message as invalid.
             // This could be due to failed verification, bad round/step.
@@ -143,9 +136,24 @@ impl<'a> ExecutionCtx<'a> {
                     }
                 }
 
-                None
+                return None;
             }
         }
+
+        match phase.collect(msg.clone(), self.round_update, self.step, committee) {
+            // Fully valid state reached on this step. Return it as an output.
+            // Populate next step with it.
+            Ok(output) => {
+                if output.is_final_msg {
+                    return Some(output.result);
+                }
+            }
+            Err(e) => {
+                error!("phase collect return err: {:?}", e);
+            }
+        }
+
+        None
     }
 
     fn process_timeout_event<C: MsgHandler<Message>>(
@@ -182,8 +190,10 @@ impl<'a> ExecutionCtx<'a> {
             .get_events(ru.round, self.step)
         {
             for msg in messages {
-                if let Ok(f) = phase.handle(msg, *ru, self.step, committee) {
-                    return Some(f.result);
+                if let Ok(msg) = phase.is_valid(msg, *ru, self.step, committee) {
+                    if let Ok(f) = phase.collect(msg, *ru, self.step, committee) {
+                        return Some(f.result);
+                    }
                 }
             }
         }

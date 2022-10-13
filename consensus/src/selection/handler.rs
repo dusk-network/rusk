@@ -4,23 +4,33 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 use crate::commons::{verify_signature, ConsensusError, RoundUpdate};
-use crate::messages::{payload, Message, Payload};
+use crate::messages::{Message, Payload};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
 
 pub struct Selection {}
 
 impl MsgHandler<Message> for Selection {
-    /// Handle а new_block message.
-    fn handle_internal(
+    fn verify(
         &mut self,
         msg: Message,
-        _committee: &Committee,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
-        let _new_block = self.verify(&msg)?;
+        _committee: &Committee,
+    ) -> Result<Message, ConsensusError> {
+        self.verify_new_block(&msg)?;
 
+        Ok(msg)
+    }
+
+    /// collect а new_block message.
+    fn collect(
+        &mut self,
+        msg: Message,
+        _ru: RoundUpdate,
+        _step: u8,
+        _committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
         // TODO: store candidate block
 
         Ok(HandleMsgOutput {
@@ -43,7 +53,7 @@ impl MsgHandler<Message> for Selection {
 }
 
 impl Selection {
-    fn verify(&self, msg: &Message) -> Result<payload::NewBlock, ConsensusError> {
+    fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
         //  Verify new_block msg signature
         if let Payload::NewBlock(p) = msg.clone().payload {
             if verify_signature(&msg.header, p.signed_hash).is_err() {
@@ -51,8 +61,7 @@ impl Selection {
             }
 
             // TODO: Verify newblock candidate
-
-            return Ok(*p);
+            return Ok(());
         }
 
         Err(ConsensusError::InvalidMsgType)

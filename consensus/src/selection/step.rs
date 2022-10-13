@@ -8,11 +8,11 @@ use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
 
+use crate::config;
 use crate::selection::block_generator::Generator;
 use crate::selection::handler;
 use crate::user::committee::Committee;
 use tracing::error;
-use crate::config;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
@@ -25,7 +25,7 @@ pub struct Selection {
 impl Selection {
     pub fn new() -> Self {
         Self {
-            timeout_millis:  config::CONSENSUS_TIMEOUT_MS,
+            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Selection {},
             bg: Generator {},
         }
@@ -39,6 +39,7 @@ impl Selection {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
+            // This is when a I become a block generator.
             let msg = self
                 .bg
                 .generate_candidate_message(ctx.round_update, ctx.step)
@@ -52,7 +53,7 @@ impl Selection {
             // register new candidate in local state
             match self
                 .handler
-                .handle(msg, ctx.round_update, ctx.step, &committee)
+                .collect(msg, ctx.round_update, ctx.step, &committee)
             {
                 Ok(f) => return Ok(f.result),
                 Err(e) => error!("invalid candidate generated due to {:?}", e),
@@ -64,13 +65,16 @@ impl Selection {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis).await
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {
         "selection"
     }
-    pub fn get_timeout(&self) -> u64 { self.timeout_millis }
+    pub fn get_timeout(&self) -> u64 {
+        self.timeout_millis
+    }
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
     }

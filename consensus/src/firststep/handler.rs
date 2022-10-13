@@ -1,5 +1,3 @@
-use crate::aggregator::Aggregator;
-
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,6 +6,7 @@ use crate::aggregator::Aggregator;
 use crate::commons::{verify_signature, Block, ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
+use crate::aggregator::Aggregator;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
 
@@ -17,14 +16,13 @@ pub struct Reduction {
 }
 
 impl MsgHandler<Message> for Reduction {
-    // Collect the reduction message.
-    fn handle_internal(
+    fn verify(
         &mut self,
         msg: Message,
-        committee: &Committee,
         _ru: RoundUpdate,
         _step: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+        _committee: &Committee,
+    ) -> Result<Message, ConsensusError> {
         let msg_payload = match msg.payload {
             Payload::Reduction(p) => Ok(p),
             Payload::Empty => Ok(payload::Reduction::default()),
@@ -34,6 +32,23 @@ impl MsgHandler<Message> for Reduction {
         if verify_signature(&msg.header, msg_payload.signed_hash).is_err() {
             return Err(ConsensusError::InvalidSignature);
         }
+
+        Ok(msg)
+    }
+
+    // Collect the reduction message.
+    fn collect(
+        &mut self,
+        msg: Message,
+        _ru: RoundUpdate,
+        _step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        let msg_payload = match msg.payload {
+            Payload::Reduction(p) => Ok(p),
+            Payload::Empty => Ok(payload::Reduction::default()),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }?;
 
         // Collect vote, if msg payload is reduction type
         if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {

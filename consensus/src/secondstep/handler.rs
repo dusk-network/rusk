@@ -19,14 +19,13 @@ pub struct Reduction {
 }
 
 impl MsgHandler<Message> for Reduction {
-    // Collect the reduction message.
-    fn handle_internal(
+    fn verify(
         &mut self,
         msg: Message,
-        committee: &Committee,
-        ru: RoundUpdate,
-        step: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+        _ru: RoundUpdate,
+        _step: u8,
+        _committee: &Committee,
+    ) -> Result<Message, ConsensusError> {
         let msg_payload = match msg.payload {
             Payload::Reduction(p) => Ok(p),
             Payload::Empty => Ok(payload::Reduction::default()),
@@ -37,6 +36,23 @@ impl MsgHandler<Message> for Reduction {
             error!("verify_signature err: {}", e);
             return Err(ConsensusError::InvalidSignature);
         }
+
+        Ok(msg)
+    }
+
+    /// Collect the reduction message.
+    fn collect(
+        &mut self,
+        msg: Message,
+        ru: RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        let msg_payload = match msg.payload {
+            Payload::Reduction(p) => Ok(p),
+            Payload::Empty => Ok(payload::Reduction::default()),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }?;
 
         // Collect vote, if msg payload is of reduction type
         if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
