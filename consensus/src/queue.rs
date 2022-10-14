@@ -51,12 +51,8 @@ impl<T: Debug + Clone> Queue<T> {
 
     pub fn clear(&mut self, round: u64) {
         let queue = &mut self.0;
-
-        match queue.get_mut(&round) {
-            Some(r) => {
-                r.clear();
-            }
-            None => {}
+        if let Some(r) = queue.get_mut(&round) {
+            r.clear();
         };
 
         queue.remove(&round);
