@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use crate::messages::Message;
 
 /// PendingQueue is a thin wrapper around async_channel of Message.

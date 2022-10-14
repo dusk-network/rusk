@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use consensus::user::committee::Committee;
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::user::sortition::Config;

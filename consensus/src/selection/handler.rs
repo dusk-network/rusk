@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use crate::commons::{verify_signature, ConsensusError, RoundUpdate};
 use crate::messages::{Message, Payload};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
