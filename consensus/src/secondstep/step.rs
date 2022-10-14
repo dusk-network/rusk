@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use crate::commons::{spawn_send_reduction, Block, ConsensusError};
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
