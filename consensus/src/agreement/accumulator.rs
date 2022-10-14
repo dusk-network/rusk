@@ -28,51 +28,59 @@ type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
 pub(crate) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
-    inbound: Sender<Message>,
+    inbound: async_channel::Sender<Message>,
 }
 
 impl Accumulator {
     pub fn new(
-        _workers_amount: usize,
+        workers_amount: usize,
         collected_votes_tx: Sender<Message>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         ru: RoundUpdate,
     ) -> Self {
-        let (tx, mut rx) = mpsc::channel::<Message>(100);
+        let (tx, rx) = async_channel::unbounded();
 
         let mut a = Self {
             workers: vec![],
             inbound: tx,
         };
 
-        // Spawn a single worker to process all agreement message verifications
-        // It does also accumulate results and exists by providing a final CollectVotes message back to Agreement loop.
-        let handle = tokio::spawn(
-            async move {
-                let mut stores = StorePerHash::default();
-                // Process each request for verification
-                while let Some(msg) = rx.recv().await {
-                    if let Err(e) =
-                        verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
-                    {
-                        error!("{:#?}", e);
-                        continue;
-                    }
+        for _i in 0..workers_amount {
+            let rx = rx.clone();
+            let committees_set = committees_set.clone();
+            let collected_votes_tx = collected_votes_tx.clone();
 
-                    if let Some(msg) =
-                        Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed).await
-                    {
-                        collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
-                            error!("unable to send_msg collected_votes {:?}", err)
-                        });
-                        break;
+            // Spawn a single worker to process all agreement message verifications
+            // It does also accumulate results and exists by providing a final CollectVotes message back to Agreement loop.
+            let handle = tokio::spawn(
+                async move {
+                    let mut stores = StorePerHash::default();
+                    // Process each request for verification
+                    while let Ok(msg) = rx.recv().await {
+                        if let Err(e) =
+                            verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
+                        {
+                            error!("{:#?}", e);
+                            continue;
+                        }
+
+                        if let Some(msg) =
+                            Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed)
+                                .await
+                        {
+                            collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
+                                error!("unable to send_msg collected_votes {:?}", err)
+                            });
+                            break;
+                        }
                     }
                 }
-            }
-            .instrument(tracing::info_span!("acc_task",)),
-        );
+                .instrument(tracing::info_span!("acc_task",)),
+            );
 
-        a.workers.push(handle);
+            a.workers.push(handle);
+        }
+
         a
     }
 
