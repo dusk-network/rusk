@@ -12,7 +12,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::PublicKey;
-use bytes::{Buf};
+use bytes::Buf;
 use dusk_bls12_381_sign::APK;
 use dusk_bytes::Serializable;
 use std::sync::Arc;
