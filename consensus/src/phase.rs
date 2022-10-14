@@ -57,7 +57,7 @@ impl Phase {
     }
 
     pub async fn run(&mut self, ctx: ExecutionCtx<'_>) -> Result<Message, ConsensusError> {
-        ctx.info("execute");
+        tracing::info!("event: execute, timeout: {}", self.get_timeout());
 
         let size = call_phase!(self, get_committee_size());
 
@@ -75,5 +75,9 @@ impl Phase {
 
     fn name(&self) -> &'static str {
         call_phase!(self, name())
+    }
+
+    fn get_timeout(&self) -> u64 {
+        call_phase!(self, get_timeout())
     }
 }

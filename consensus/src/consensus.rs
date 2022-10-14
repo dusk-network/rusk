@@ -69,7 +69,9 @@ impl Consensus {
         let executor = self.executor.clone();
 
         tokio::spawn(async move {
-            future_msgs.lock().await.clear(ru.round - 1);
+            if ru.round > 0 {
+                future_msgs.lock().await.clear(ru.round - 1);
+            }
 
             let mut phases = [
                 Phase::Selection(selection::step::Selection::new(executor.clone())),

@@ -7,10 +7,11 @@
 use crate::commons::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::config;
 use crate::selection::block_generator::Generator;
 use crate::selection::handler;
 use crate::user::committee::Committee;
@@ -21,11 +22,13 @@ pub const COMMITTEE_SIZE: usize = 1;
 pub struct Selection {
     handler: handler::Selection,
     bg: Generator,
+    timeout_millis: u64,
 }
 
 impl Selection {
     pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
+            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Selection {},
             bg: Generator::new(executor),
         }
@@ -52,9 +55,13 @@ impl Selection {
                 // register new candidate in local state
                 match self
                     .handler
-                    .handle(msg, ctx.round_update, ctx.step, &committee)
+                    .collect(msg, ctx.round_update, ctx.step, &committee)
                 {
-                    Ok(f) => return Ok(f.0),
+                    Ok(f) => {
+                        if let HandleMsgOutput::FinalResult(msg) = f {
+                            return Ok(msg);
+                        }
+                    }
                     Err(e) => error!("invalid candidate generated due to {:?}", e),
                 };
             } else {
@@ -67,13 +74,16 @@ impl Selection {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler).await
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {
         "selection"
     }
-
+    pub fn get_timeout(&self) -> u64 {
+        self.timeout_millis
+    }
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
     }

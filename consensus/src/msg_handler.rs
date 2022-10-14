@@ -10,17 +10,22 @@ use crate::user::committee::Committee;
 use hex::ToHex;
 use std::fmt::Debug;
 
+pub enum HandleMsgOutput {
+    Result(Message),
+    FinalResult(Message),
+}
+
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {
-    // handle is the handler to process a new message in the first place.
-    // Only if it's valid to current round and step, it delegates it to the Phase::handler.
-    fn handle(
+    /// is_valid checks a new message is valid in the first place.
+    /// Only if the message has correct round and step and is signed by a committee member then we delegate it to Phase::verify.
+    fn is_valid(
         &mut self,
         msg: T,
         ru: RoundUpdate,
         step: u8,
         committee: &Committee,
-    ) -> Result<(Message, bool), ConsensusError> {
+    ) -> Result<T, ConsensusError> {
         tracing::trace!(
             "received msg from {:?} with hash {} msg: {:?}",
             msg.get_pubkey_bls().encode_short_hex(),
@@ -36,19 +41,36 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 
-                // Delegate message handling to the phase implementation.
-                self.handle_internal(msg, committee, ru, step)
+                // Delegate message final verification to the phase instance.
+                // It is the phase that knows what message type to expect and if it is valid or not.
+                self.verify(msg, ru, step, committee)
             }
             Status::Future => Err(ConsensusError::FutureEvent),
         }
     }
 
-    // handle_internal should be implemented by each Phase.
-    fn handle_internal(
+    /// verify allows each Phase to fully verify the message payload.
+    fn verify(
         &mut self,
         msg: T,
-        committee: &Committee,
         ru: RoundUpdate,
         step: u8,
-    ) -> Result<(Message, bool), ConsensusError>;
+        committee: &Committee,
+    ) -> Result<T, ConsensusError>;
+
+    /// collect allows each Phase to process a verified inbound message.
+    fn collect(
+        &mut self,
+        msg: T,
+        ru: RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError>;
+
+    /// handle_timeout allows each Phase to handle a timeout event.
+    fn handle_timeout(
+        &mut self,
+        _ru: RoundUpdate,
+        _step: u8,
+    ) -> Result<HandleMsgOutput, ConsensusError>;
 }
