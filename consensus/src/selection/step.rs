@@ -7,6 +7,8 @@ use crate::commons::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 use crate::msg_handler::MsgHandler;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::config;
 use crate::selection::block_generator::Generator;
@@ -23,11 +25,11 @@ pub struct Selection {
 }
 
 impl Selection {
-    pub fn new() -> Self {
+    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Selection {},
-            bg: Generator {},
+            bg: Generator::new(executor),
         }
     }
 
@@ -39,25 +41,28 @@ impl Selection {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
-            // This is when a I become a block generator.
-            let msg = self
+
+            if let Ok(msg) = self
                 .bg
                 .generate_candidate_message(ctx.round_update, ctx.step)
-                .await;
-
-            // Broadcast the candidate block for this round/iteration.
-            if let Err(e) = ctx.outbound.send(msg.clone()).await {
-                error!("could not send newblock msg due to {:?}", e);
-            }
-
-            // register new candidate in local state
-            match self
-                .handler
-                .collect(msg, ctx.round_update, ctx.step, &committee)
+                .await
             {
-                Ok(f) => return Ok(f.result),
-                Err(e) => error!("invalid candidate generated due to {:?}", e),
-            };
+                // Broadcast the candidate block for this round/iteration.
+                if let Err(e) = ctx.outbound.send(msg.clone()).await {
+                    error!("could not send newblock msg due to {:?}", e);
+                }
+
+                // register new candidate in local state
+                match self
+                    .handler
+                    .collect(msg, ctx.round_update, ctx.step, &committee)
+                {
+                    Ok(f) => return Ok(f.result),
+                    Err(e) => error!("invalid candidate generated due to {:?}", e),
+                };
+            } else {
+                error!("block generator couldn't create candidate block")
+            }
         }
 
         // handle queued messages for current round and step.

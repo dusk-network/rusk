@@ -1,9 +1,10 @@
 use dusk_bls12_381_sign::SecretKey;
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot, Mutex};
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
@@ -13,6 +14,8 @@ use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::util::pending_queue::PendingQueue;
 use consensus::util::pubkey::PublicKey;
 use tokio::time;
+
+mod mocks;
 
 const MOCKED_PROVISIONERS_NUM: u64 = 5;
 
@@ -147,11 +150,15 @@ fn spawn_node(
                     outbound_msgs,
                     aggr_inbound_queue,
                     aggr_outbound_queue,
+                    Arc::new(Mutex::new(mocks::Executor {})),
                 );
 
                 // Run consensus for N rounds
                 for i in 0..1000 {
-                    let _ = c.spin(RoundUpdate::new(i, keys.1, keys.0), p.clone()).await;
+                    let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
+                    let _ = c
+                        .spin(RoundUpdate::new(i, keys.1, keys.0), p.clone(), cancel_rx)
+                        .await;
                 }
             });
     });

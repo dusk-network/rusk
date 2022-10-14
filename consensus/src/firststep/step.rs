@@ -11,6 +11,8 @@ use crate::messages::{Message, Payload};
 use crate::user::committee::Committee;
 use std::ops::Deref;
 use crate::config;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub const COMMITTEE_SIZE: usize = 64;
 
@@ -18,16 +20,18 @@ pub const COMMITTEE_SIZE: usize = 64;
 pub struct Reduction {
     timeout_millis: u64,
     handler: handler::Reduction,
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
 }
 
 impl Reduction {
-    pub fn new() -> Self {
+    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
             timeout_millis:  config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Reduction {
                 aggr: Aggregator::default(),
                 candidate: Block::default(),
             },
+            executor,
         }
     }
 
@@ -51,6 +55,7 @@ impl Reduction {
                 ctx.step,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
+                self.executor.clone(),
             );
         }
 

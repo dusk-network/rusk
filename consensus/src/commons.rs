@@ -16,6 +16,8 @@ use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::Serializable;
 
 use std::fmt;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[derive(Default, Debug, Copy, Clone)]
 #[allow(unused)]
@@ -120,6 +122,7 @@ pub enum ConsensusError {
     NotReady,
     MaxStepReached,
     ChildTaskTerminated,
+    Canceled,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -180,11 +183,17 @@ pub fn spawn_send_reduction(
     step: u8,
     mut outbound: PendingQueue,
     mut inbound: PendingQueue,
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
 ) {
     tokio::spawn(async move {
-        // TODO: VerifyStateTransition call here
-        // Simulate VerifyStateTransition execution time
-        // tokio::time::sleep(Duration::from_secs(3)).await;
+        if let Err(e) = executor
+            .lock()
+            .await
+            .verify_state_transition(crate::contract_state::CallParams::default())
+        {
+            tracing::error!("verify state transition failed with err: {:?}", e);
+            return;
+        }
 
         let hdr = messages::Header {
             pubkey_bls: pubkey,

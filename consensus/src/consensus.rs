@@ -17,7 +17,7 @@ use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
 pub struct Consensus {
@@ -34,6 +34,9 @@ pub struct Consensus {
     /// agreement_layer implements Agreement message handler within the context
     /// of a separate task execution.
     agreement_process: step::Agreement,
+
+    /// Reference to the executor of any EST-related call
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
 }
 
 impl Consensus {
@@ -42,12 +45,14 @@ impl Consensus {
         outbound: PendingQueue,
         aggr_inbound_queue: PendingQueue,
         aggr_outbound_queue: PendingQueue,
+        executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
     ) -> Self {
         Self {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
             agreement_process: step::Agreement::new(aggr_inbound_queue, aggr_outbound_queue),
+            executor,
         }
     }
 
@@ -60,6 +65,7 @@ impl Consensus {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
+        let executor = self.executor.clone();
 
         tokio::spawn(async move {
             if ru.round > 0 {
@@ -67,9 +73,9 @@ impl Consensus {
             }
 
             let mut phases = [
-                Phase::Selection(selection::step::Selection::new()),
-                Phase::Reduction1(firststep::step::Reduction::new()),
-                Phase::Reduction2(secondstep::step::Reduction::new()),
+                Phase::Selection(selection::step::Selection::new(executor.clone())),
+                Phase::Reduction1(firststep::step::Reduction::new(executor.clone())),
+                Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];
 
             // Consensus loop
@@ -133,6 +139,7 @@ impl Consensus {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
+        cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
         // Enable/Disable all members stakes depending on the current round. If
         // a stake is not eligible for this round, it's disabled.
@@ -159,8 +166,17 @@ impl Consensus {
             recv = &mut main_task_handle => {
                result = recv.expect("wrong main_task handle");
                 tracing::trace!("main_loop result: {:?}", result);
+            },
+            // Canceled from outside.
+            // This could be triggered by Synchronizer or on node termination.
+            _ = cancel_rx => {
+                result = Err(ConsensusError::Canceled);
+                 tracing::trace!("consensus canceled");
             }
         }
+
+        // Tear-down procedure
+        // TODO: Delete all candidates related to this round execution
 
         // Cancel all tasks
         agreement_task_handle.abort();

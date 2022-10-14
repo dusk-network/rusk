@@ -10,15 +10,27 @@ use crate::messages::{Header, Message};
 use crate::util::pubkey::PublicKey;
 use crate::{commons, config};
 use dusk_bytes::Serializable;
+use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tokio::sync::Mutex;
 
-pub struct Generator {}
+pub struct Generator {
+    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+}
 
 impl Generator {
-    pub async fn generate_candidate_message(&self, ru: RoundUpdate, step: u8) -> Message {
+    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
+        Self { executor }
+    }
+
+    pub async fn generate_candidate_message(
+        &self,
+        ru: RoundUpdate,
+        step: u8,
+    ) -> Result<Message, crate::contract_state::Error> {
         let candidate = self
             .generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
-            .await;
+            .await?;
 
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls,
@@ -27,14 +39,14 @@ impl Generator {
             step,
         };
 
-        Message::from_newblock(
+        Ok(Message::from_newblock(
             msg_header,
             NewBlock {
                 prev_hash: [0; 32],
                 candidate,
                 signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), msg_header),
             },
-        )
+        ))
     }
 
     async fn generate_block(
@@ -44,14 +56,16 @@ impl Generator {
         seed: [u8; 32],
         prev_block_hash: [u8; 32],
         prev_block_timestamp: i64,
-    ) -> Block {
+    ) -> Result<Block, crate::contract_state::Error> {
         // TODO: fetch mempool transactions
 
         // Delay next iteration execution so we avoid consensus-split situation.
-        // NB: This should be moved to Block Generator when mempool is integrated.
         tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS)).await;
 
-        // TODO: execute state transition
+        self.executor
+            .lock()
+            .await
+            .execute_state_transition(crate::contract_state::CallParams::default())?;
 
         let blk_header = commons::Header {
             version: 0,
@@ -65,7 +79,7 @@ impl Generator {
             hash: [0; 32],
         };
 
-        Block::new(blk_header, vec![])
+        Ok(Block::new(blk_header, vec![]))
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {
