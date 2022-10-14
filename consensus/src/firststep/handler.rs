@@ -56,19 +56,15 @@ impl MsgHandler<Message> for Reduction {
             // TODO: if the votes converged for an empty hash we invoke halt and increase timeout
 
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
-            return Ok(HandleMsgOutput {
-                result: Message::from_stepvotes(payload::StepVotesWithCandidate {
+            return Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
+                payload::StepVotesWithCandidate {
                     sv: sv.1,
                     candidate: self.candidate.clone(),
-                }),
-                is_final_msg: true,
-            });
+                },
+            )));
         }
 
-        Ok(HandleMsgOutput {
-            result: msg,
-            is_final_msg: false,
-        })
+        Ok(HandleMsgOutput::Result(msg))
     }
 
     /// Handle of an event of step execution timeout
@@ -77,12 +73,11 @@ impl MsgHandler<Message> for Reduction {
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput {
-            result: Message::from_stepvotes(payload::StepVotesWithCandidate {
+        Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
+            payload::StepVotesWithCandidate {
                 sv: payload::StepVotes::default(),
                 candidate: self.candidate.clone(),
-            }),
-            is_final_msg: true,
-        })
+            },
+        )))
     }
 }

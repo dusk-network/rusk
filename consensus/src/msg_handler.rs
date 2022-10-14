@@ -10,17 +10,15 @@ use crate::user::committee::Committee;
 use hex::ToHex;
 use std::fmt::Debug;
 
-pub struct HandleMsgOutput {
-    pub result: Message,
-
-    // if true, it instructs the event loop to bubble up the message and terminate.
-    pub is_final_msg: bool,
+pub enum HandleMsgOutput {
+    Result(Message),
+    FinalResult(Message),
 }
 
 // MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {
-    /// is_valid is the handler to process a new message in the first place.
-    /// Only if it's valid to current round and step, it delegates it to the Phase::handler.
+    /// is_valid checks a new message is valid in the first place.
+    /// Only if the message has correct round and step and is signed by a committee member then we delegate it to Phase::verify.
     fn is_valid(
         &mut self,
         msg: T,

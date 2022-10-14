@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::messages::Message;
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::queue::Queue;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -144,8 +144,8 @@ impl<'a> ExecutionCtx<'a> {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
             Ok(output) => {
-                if output.is_final_msg {
-                    return Some(output.result);
+                if let HandleMsgOutput::FinalResult(msg) = output {
+                    return Some(msg);
                 }
             }
             Err(e) => {
@@ -160,8 +160,10 @@ impl<'a> ExecutionCtx<'a> {
         &mut self,
         phase: &mut C,
     ) -> Result<Message, ConsensusError> {
-        if let Ok(output) = phase.handle_timeout(self.round_update, self.step) {
-            return Ok(output.result);
+        if let Ok(HandleMsgOutput::FinalResult(msg)) =
+            phase.handle_timeout(self.round_update, self.step)
+        {
+            return Ok(msg);
         }
 
         Ok(Message::empty())
@@ -191,8 +193,10 @@ impl<'a> ExecutionCtx<'a> {
         {
             for msg in messages {
                 if let Ok(msg) = phase.is_valid(msg, *ru, self.step, committee) {
-                    if let Ok(f) = phase.collect(msg, *ru, self.step, committee) {
-                        return Some(f.result);
+                    if let Ok(HandleMsgOutput::FinalResult(msg)) =
+                        phase.collect(msg, *ru, self.step, committee)
+                    {
+                        return Some(msg);
                     }
                 }
             }

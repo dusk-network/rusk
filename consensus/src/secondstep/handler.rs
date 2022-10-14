@@ -59,16 +59,13 @@ impl MsgHandler<Message> for Reduction {
         if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
             // At that point, we have reached a quorum for 2th_reduction on an empty on non-empty block.
             // Return an empty message as this iteration terminates here.
-            return Ok(HandleMsgOutput {
-                result: self.build_agreement_msg(ru, step, sv),
-                is_final_msg: true,
-            });
+
+            return Ok(HandleMsgOutput::FinalResult(
+                self.build_agreement_msg(ru, step, sv),
+            ));
         }
 
-        Ok(HandleMsgOutput {
-            result: msg,
-            is_final_msg: false,
-        })
+        Ok(HandleMsgOutput::Result(msg))
     }
 
     /// Handle of an event of step execution timeout
@@ -77,10 +74,7 @@ impl MsgHandler<Message> for Reduction {
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput {
-            result: Message::empty(),
-            is_final_msg: true,
-        })
+        Ok(HandleMsgOutput::FinalResult(Message::empty()))
     }
 }
 

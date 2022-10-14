@@ -34,10 +34,7 @@ impl MsgHandler<Message> for Selection {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // TODO: store candidate block
 
-        Ok(HandleMsgOutput {
-            result: msg,
-            is_final_msg: true,
-        })
+        Ok(HandleMsgOutput::FinalResult(msg))
     }
 
     /// Handle of an event of step execution timeout
@@ -46,10 +43,7 @@ impl MsgHandler<Message> for Selection {
         _ru: RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput {
-            result: Message::empty(),
-            is_final_msg: true,
-        })
+        Ok(HandleMsgOutput::FinalResult(Message::empty()))
     }
 }
 

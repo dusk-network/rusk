@@ -7,7 +7,7 @@
 use crate::commons::ConsensusError;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -57,7 +57,11 @@ impl Selection {
                     .handler
                     .collect(msg, ctx.round_update, ctx.step, &committee)
                 {
-                    Ok(f) => return Ok(f.result),
+                    Ok(f) => {
+                        if let HandleMsgOutput::FinalResult(msg) = f {
+                            return Ok(msg);
+                        }
+                    }
                     Err(e) => error!("invalid candidate generated due to {:?}", e),
                 };
             } else {
