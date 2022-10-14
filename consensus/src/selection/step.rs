@@ -42,7 +42,6 @@ impl Selection {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
-
             if let Ok(msg) = self
                 .bg
                 .generate_candidate_message(ctx.round_update, ctx.step)

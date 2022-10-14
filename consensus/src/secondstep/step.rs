@@ -71,14 +71,16 @@ impl Reduction {
             return Ok(m);
         }
 
-
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis).await
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {
         "2nd_reduction"
     }
-    pub fn get_timeout(&self) -> u64 { self.timeout_millis }
+    pub fn get_timeout(&self) -> u64 {
+        self.timeout_millis
+    }
 
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE

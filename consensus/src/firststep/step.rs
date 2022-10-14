@@ -6,12 +6,12 @@
 
 use crate::aggregator::Aggregator;
 use crate::commons::{spawn_send_reduction, Block, ConsensusError};
+use crate::config;
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
 use crate::messages::{Message, Payload};
 use crate::user::committee::Committee;
 use std::ops::Deref;
-use crate::config;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -27,7 +27,7 @@ pub struct Reduction {
 impl Reduction {
     pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
-            timeout_millis:  config::CONSENSUS_TIMEOUT_MS,
+            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Reduction {
                 aggr: Aggregator::default(),
                 candidate: Block::default(),
@@ -65,13 +65,16 @@ impl Reduction {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis).await
+        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {
         "1th_reduction"
     }
-    pub fn get_timeout(&self) -> u64 { self.timeout_millis}
+    pub fn get_timeout(&self) -> u64 {
+        self.timeout_millis
+    }
     pub fn get_committee_size(&self) -> usize {
         COMMITTEE_SIZE
     }

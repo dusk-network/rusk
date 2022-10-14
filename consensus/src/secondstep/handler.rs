@@ -8,7 +8,6 @@ use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use tracing::error;
 
-
 use crate::aggregator::Aggregator;
 use crate::messages;
 use crate::messages::payload::StepVotes;
