@@ -18,7 +18,7 @@ pub struct PublicKey(dusk_bls12_381_sign::PublicKey, [u8; 96]);
 
 impl PublicKey {
     pub fn new(pk: dusk_bls12_381_sign::PublicKey) -> Self {
-        Self(pk, pk.pk_t().to_bytes().into())
+        Self(pk, pk.pk_t().to_bytes())
     }
 
     /// from_sk_seed_u64 generates a sk from the specified seed and returns the associated public key

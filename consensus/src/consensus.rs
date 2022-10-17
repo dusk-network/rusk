@@ -61,7 +61,7 @@ impl Consensus {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        mut agr_inbound_queue: PendingQueue,
+        agr_inbound_queue: PendingQueue,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();

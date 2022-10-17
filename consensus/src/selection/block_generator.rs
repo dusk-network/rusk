@@ -9,7 +9,6 @@ use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::PublicKey;
 use crate::{commons, config};
-use dusk_bytes::Serializable;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;

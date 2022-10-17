@@ -125,7 +125,7 @@ async unsafe fn aggregate_pks(
                     &m.get_raw_key(),
                 ));
             } else {
-                assert!(false, "raw public key not found");
+                panic!("raw public key not found");
             }
         }
 
