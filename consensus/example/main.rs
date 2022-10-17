@@ -23,7 +23,7 @@ use tokio::time;
 
 mod mocks;
 
-const MOCKED_PROVISIONERS_NUM: u64 = 5;
+const MOCKED_PROVISIONERS_NUM: u64 = 15;
 
 fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
     let mut keys = vec![];
@@ -146,7 +146,7 @@ fn spawn_node(
 ) {
     let _ = thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(3)
+            .worker_threads(2 + consensus::config::ACCUMULATOR_WORKERS_AMOUNT)
             .enable_all()
             .build()
             .unwrap()
