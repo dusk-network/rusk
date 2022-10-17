@@ -144,6 +144,8 @@ impl<'a> ExecutionCtx<'a> {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
             Ok(output) => {
+                trace!("message collected {:?}", msg);
+
                 if let HandleMsgOutput::FinalResult(msg) = output {
                     return Some(msg);
                 }

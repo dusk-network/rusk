@@ -121,15 +121,21 @@ impl Consensus {
                         return Err(ConsensusError::MaxStepReached);
                     }
                 }
-
+ 
+                
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
-                let _ = agr_inbound_queue
+
+                Self::send_agreement(agr_inbound_queue.clone(), msg.clone()).await;
+            }
+        })
+    }
+
+    async fn send_agreement(mut agr_inbound_queue: PendingQueue, msg: Message) {
+        let _ = agr_inbound_queue
                     .send(msg.clone())
                     .await
                     .map_err(|e| error!("send agreement failed with {:?}", e));
-            }
-        })
     }
 
     /// Spin the consensus state machine. The consensus runs for the whole round

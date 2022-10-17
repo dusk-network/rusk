@@ -74,7 +74,7 @@ impl Generator {
             gas_limit: 0,
             prev_block_hash,
             seed,
-            generator_bls_pubkey: pubkey.to_bls_pk().to_bytes(),
+            generator_bls_pubkey: pubkey.to_bytes(),
             state_hash: [0; 32],
             hash: [0; 32],
         };
