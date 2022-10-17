@@ -50,6 +50,7 @@ pub async fn verify_agreement(
                 0,
             )
             .await?;
+ 
 
             // Verify 2th_reduction step_votes
             verify_step_votes(
@@ -74,8 +75,7 @@ async fn verify_step_votes(
     seed: [u8; 32],
     hdr: &messages::Header,
     step_offset: u8,
-) -> Result<(), Error> {
-    tokio::task::yield_now().await;
+) -> Result<(), Error> { 
 
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, 64);
@@ -97,9 +97,7 @@ async fn verify_step_votes(
     unsafe {
         // aggregate public keys
         let apk = aggregate_pks(committees_set.clone(), sub_committee).await?;
-
-        tokio::task::yield_now().await;
-
+ 
         // verify signatures
         if let Err(e) = verify_signatures(hdr.round, step, hdr.block_hash, apk, sv.signature) {
             error!("verify signatures fails with err: {}", e);
@@ -127,7 +125,7 @@ async unsafe fn aggregate_pks(
                     &m.get_raw_key(),
                 ));
             } else {
-                debug_assert!(false, "raw public key not found");
+                assert!(false, "raw public key not found");
             }
         }
 

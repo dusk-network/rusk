@@ -14,7 +14,7 @@ use hex::ToHex;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn, Instrument};
 
@@ -28,35 +28,49 @@ type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
 pub(crate) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
-    inbound: async_channel::Sender<Message>,
+    tx: async_channel::Sender<Message>,
+    rx: async_channel::Receiver<Message>
 }
 
 impl Accumulator {
-    pub fn new(
+    pub fn new() -> Self {
+        let (tx, rx) = async_channel::unbounded();
+ 
+        Self {
+            workers: vec![],
+            tx,
+            rx,
+        }
+    }
+
+    pub fn spawn_workers_pool(&mut self,
         workers_amount: usize,
-        collected_votes_tx: Sender<Message>,
+        output_chan: Sender<Message>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         ru: RoundUpdate,
-    ) -> Self {
-        let (tx, rx) = async_channel::unbounded();
+    )  {
+        assert!(workers_amount > 0);
 
-        let mut a = Self {
-            workers: vec![],
-            inbound: tx,
-        };
+        let stores = Arc::new(Mutex::new(StorePerHash::default()));
 
+        // Spawn a set of workers to process all agreement message
+        // verifications and accumulate results.
+        // Final result is written to output_chan.
         for _i in 0..workers_amount {
-            let rx = rx.clone();
+            let rx = self.rx.clone();
             let committees_set = committees_set.clone();
-            let collected_votes_tx = collected_votes_tx.clone();
+            let output_chan = output_chan.clone();
+            let stores = stores.clone();
 
-            // Spawn a single worker to process all agreement message verifications
-            // It does also accumulate results and exists by providing a final CollectVotes message back to Agreement loop.
-            let handle = tokio::spawn(
+            self.workers.push(tokio::spawn(
                 async move {
-                    let mut stores = StorePerHash::default();
                     // Process each request for verification
                     while let Ok(msg) = rx.recv().await {
+                        if msg.header.block_hash == [0; 32] {
+                            // discard empty block hash
+                            continue
+                        }
+                        
                         if let Err(e) =
                             verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
                         {
@@ -65,10 +79,10 @@ impl Accumulator {
                         }
 
                         if let Some(msg) =
-                            Self::accumulate(&mut stores, committees_set.clone(), msg, ru.seed)
+                            Self::accumulate( stores.clone(), committees_set.clone(), msg, ru.seed)
                                 .await
                         {
-                            collected_votes_tx.send(msg).await.unwrap_or_else(|err| {
+                            output_chan.send(msg).await.unwrap_or_else(|err| {
                                 error!("unable to send_msg collected_votes {:?}", err)
                             });
                             break;
@@ -76,23 +90,21 @@ impl Accumulator {
                     }
                 }
                 .instrument(tracing::info_span!("acc_task",)),
-            );
-
-            a.workers.push(handle);
+            ));
         }
-
-        a
+ 
     }
 
+
     pub async fn process(&mut self, msg: Message) {
-        self.inbound
+        self.tx
             .send(msg)
             .await
             .unwrap_or_else(|err| error!("unable to queue agreement_msg {:?}", err));
     }
 
     async fn accumulate(
-        stores: &mut StorePerHash,
+        stores: Arc< Mutex< StorePerHash>>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
         seed: [u8; 32],
@@ -115,7 +127,9 @@ impl Accumulator {
         }?;
 
         if let Payload::Agreement(payload) = msg.payload {
-            let (agr_set, agr_weight) = stores
+            let mut guard = stores.lock().await;
+
+            let (agr_set, agr_weight) = guard
                 .entry(hdr.block_hash)
                 .or_insert_with(AgreementsPerStep::default)
                 .entry(hdr.step)

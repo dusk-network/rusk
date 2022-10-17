@@ -99,12 +99,12 @@ impl Executor {
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
 
         // Accumulator
-        let mut acc = Accumulator::new(
-            config::ACCUMULATOR_WORKERS_AMOUNT,
+        let mut acc = Accumulator::new();
+
+        acc.spawn_workers_pool(config::ACCUMULATOR_WORKERS_AMOUNT,
             collected_votes_tx,
             self.committees_set.clone(),
-            self.ru,
-        );
+            self.ru);
 
         // drain future messages for current round and step.
         if self.ru.round > 0 {
