@@ -38,6 +38,7 @@ pub struct ExecutionCtx<'a> {
 }
 
 impl<'a> ExecutionCtx<'a> {
+    /// Creates step execution context.
     pub fn new(
         inbound: PendingQueue,
         outbound: PendingQueue,
@@ -56,7 +57,14 @@ impl<'a> ExecutionCtx<'a> {
         }
     }
 
-    // event_loop collects multiple events - inbound messages, cancel event or timeout event.
+    /// Runs a loop that collects both inbound messages or timeout event.
+    ///
+    /// It accepts an instance of MsgHandler impl (phase var) and calls its
+    /// methods based on the occurred event.
+    ///
+    /// In an event of timeout, it also increases the step timeout value accordingly.
+    ///
+    /// By design, the loop is terminated by aborting the consensus task.
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
         committee: &Committee,
@@ -98,7 +106,9 @@ impl<'a> ExecutionCtx<'a> {
         }
     }
 
-    /// process_inbound_msg delegates the message to the Phase handler for further processing.
+    /// Delegates the received message to the Phase handler for further processing.
+    ///
+    /// Returning Option::Some here is interpreted as FinalMessage by event_loop.
     async fn process_inbound_msg<C: MsgHandler<Message>>(
         &mut self,
         committee: &Committee,
@@ -158,6 +168,7 @@ impl<'a> ExecutionCtx<'a> {
         None
     }
 
+    /// Delegates the received event of timeout to the Phase handler for further processing.
     fn process_timeout_event<C: MsgHandler<Message>>(
         &mut self,
         phase: &mut C,
@@ -171,15 +182,7 @@ impl<'a> ExecutionCtx<'a> {
         Ok(Message::empty())
     }
 
-    pub fn get_sortition_config(&self, size: usize) -> sortition::Config {
-        sortition::Config::new(
-            self.round_update.seed,
-            self.round_update.round,
-            self.step,
-            size,
-        )
-    }
-
+    /// Read, check is_valid and collect all messages for current round and step.
     pub async fn handle_future_msgs<C: MsgHandler<Message>>(
         &self,
         committee: &Committee,
@@ -205,5 +208,14 @@ impl<'a> ExecutionCtx<'a> {
         }
 
         None
+    }
+
+    pub fn get_sortition_config(&self, size: usize) -> sortition::Config {
+        sortition::Config::new(
+            self.round_update.seed,
+            self.round_update.round,
+            self.step,
+            size,
+        )
     }
 }

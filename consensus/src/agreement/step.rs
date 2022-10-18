@@ -101,10 +101,12 @@ impl Executor {
         // Accumulator
         let mut acc = Accumulator::new();
 
-        acc.spawn_workers_pool(config::ACCUMULATOR_WORKERS_AMOUNT,
+        acc.spawn_workers_pool(
+            config::ACCUMULATOR_WORKERS_AMOUNT,
             collected_votes_tx,
             self.committees_set.clone(),
-            self.ru);
+            self.ru,
+        );
 
         // drain future messages for current round and step.
         if self.ru.round > 0 {

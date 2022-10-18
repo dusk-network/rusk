@@ -52,7 +52,7 @@ impl PublicKey {
 
 impl Default for PublicKey {
     fn default() -> Self {
-        Self(Default::default(), [0;96])
+        Self(Default::default(), [0; 96])
     }
 }
 
@@ -63,7 +63,7 @@ impl PartialOrd<PublicKey> for PublicKey {
 }
 
 impl Ord for PublicKey {
-    fn cmp(&self, other: &Self) -> Ordering { 
+    fn cmp(&self, other: &Self) -> Ordering {
         self.to_bytes().cmp(&other.1)
     }
 }
