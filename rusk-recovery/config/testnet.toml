@@ -1,7 +1,9 @@
 base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip"
 
 [acl.stake]
-owners = ['ytfMYL5bFeZDZJAVDWX56PyoAoB4DBoNEdEFbdSrhjFYTatod7JgepeqZRN9wVLofau5j9xEo9H8HkKFUAbF9s7kd43VcGhsZkXDiZu2nS1B6pagXPZno6dy9yrigADUbE1']
+owners = [
+    '22uowXa4bAwa9uehMFoSZjGCDTUSLGhFjCWxrEGHng8kWsEJSQBZxcCa8PeGMdTXWt9XyYNEx4S85XrGwfE8G1iG5j1ptEU4sSu1Hq3QKHsnBEZwTDLNBQeesSfmUadSjfRh'
+]
 allowlist = [
     'rm6jwcM9xQChnVeHYw6W8HP7kW3E8nejgs4XhmKoYspQnrZL5dDcQjVR5e2UmbyNNF4DJDRdZGdYLgJfZ3qQXuhSCL6UTDkcQ2QEf6RW3aCtfqQMKCFMNaBsfNrZuzrP23Z',
     'uazLgN2HtLqaDZCxAtJtkkurQTXyZWXjQYJ3HdSVbpBjGRzMvKaqvpx3MRw8HTv7bTwyviLosEJAa56G66cdNjL4CJdqTUyFHdufzWWfLz9E7eF97tdc6jZsVTiGXGNGf2E',
