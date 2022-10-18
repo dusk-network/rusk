@@ -29,13 +29,13 @@ type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 pub(crate) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
     tx: async_channel::Sender<Message>,
-    rx: async_channel::Receiver<Message>
+    rx: async_channel::Receiver<Message>,
 }
 
 impl Accumulator {
     pub fn new() -> Self {
-        let (tx, rx) = async_channel::unbounded();
- 
+        let (tx, rx) = async_channel::bounded(100);
+
         Self {
             workers: vec![],
             tx,
@@ -43,12 +43,13 @@ impl Accumulator {
         }
     }
 
-    pub fn spawn_workers_pool(&mut self,
+    pub fn spawn_workers_pool(
+        &mut self,
         workers_amount: usize,
         output_chan: Sender<Message>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         ru: RoundUpdate,
-    )  {
+    ) {
         assert!(workers_amount > 0);
 
         let stores = Arc::new(Mutex::new(StorePerHash::default()));
@@ -66,11 +67,15 @@ impl Accumulator {
                 async move {
                     // Process each request for verification
                     while let Ok(msg) = rx.recv().await {
+                        if rx.is_closed() {
+                            break;
+                        }
+
                         if msg.header.block_hash == [0; 32] {
                             // discard empty block hash
-                            continue
+                            continue;
                         }
-                        
+
                         if let Err(e) =
                             verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
                         {
@@ -79,9 +84,10 @@ impl Accumulator {
                         }
 
                         if let Some(msg) =
-                            Self::accumulate( stores.clone(), committees_set.clone(), msg, ru.seed)
+                            Self::accumulate(stores.clone(), committees_set.clone(), msg, ru.seed)
                                 .await
                         {
+                            rx.close();
                             output_chan.send(msg).await.unwrap_or_else(|err| {
                                 error!("unable to send_msg collected_votes {:?}", err)
                             });
@@ -92,9 +98,7 @@ impl Accumulator {
                 .instrument(tracing::info_span!("acc_task",)),
             ));
         }
- 
     }
-
 
     pub async fn process(&mut self, msg: Message) {
         self.tx
@@ -104,7 +108,7 @@ impl Accumulator {
     }
 
     async fn accumulate(
-        stores: Arc< Mutex< StorePerHash>>,
+        stores: Arc<Mutex<StorePerHash>>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
         seed: [u8; 32],
