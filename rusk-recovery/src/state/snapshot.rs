@@ -146,7 +146,7 @@ mod tests {
             .collect();
 
         Snapshot {
-            base_state: Some("https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip".into()),
+            base_state: None,
             balance: vec![
                 Balance {
                     address: (*state::DUSK_KEY).into(),

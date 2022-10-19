@@ -1,0 +1,5 @@
+base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/testnet-state.zip"
+
+[acl.stake]
+owners = []
+allowlist = []

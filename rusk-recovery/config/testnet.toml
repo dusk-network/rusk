@@ -1,5 +1,3 @@
-base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip"
-
 [acl.stake]
 owners = [
     '22uowXa4bAwa9uehMFoSZjGCDTUSLGhFjCWxrEGHng8kWsEJSQBZxcCa8PeGMdTXWt9XyYNEx4S85XrGwfE8G1iG5j1ptEU4sSu1Hq3QKHsnBEZwTDLNBQeesSfmUadSjfRh'
