@@ -105,7 +105,7 @@ impl Executor {
             config::ACCUMULATOR_WORKERS_AMOUNT,
             collected_votes_tx,
             self.committees_set.clone(),
-            self.ru,
+            self.ru.seed,
         );
 
         // drain future messages for current round and step.

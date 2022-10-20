@@ -12,6 +12,7 @@ use crate::user::committee::Committee;
 pub struct Selection {}
 
 impl MsgHandler<Message> for Selection {
+    /// Verifies if msg is a valid new_block message.
     fn verify(
         &mut self,
         msg: Message,
@@ -24,7 +25,7 @@ impl MsgHandler<Message> for Selection {
         Ok(msg)
     }
 
-    /// collect а new_block message.
+    /// Collects а new_block message.
     fn collect(
         &mut self,
         msg: Message,
@@ -37,7 +38,7 @@ impl MsgHandler<Message> for Selection {
         Ok(HandleMsgOutput::FinalResult(msg))
     }
 
-    /// Handle of an event of step execution timeout
+    /// Handles of an event of step execution timeout
     fn handle_timeout(
         &mut self,
         _ru: RoundUpdate,

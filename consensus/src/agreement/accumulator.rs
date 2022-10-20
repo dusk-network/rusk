@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::verifiers::verify_agreement;
-use crate::commons::{Hash, RoundUpdate};
+use crate::commons::Hash;
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
@@ -43,12 +43,19 @@ impl Accumulator {
         }
     }
 
+    /// Spawns a set of tokio tasks that process agreement verifications concurrently.
+    ///
+    /// # Arguments
+    ///
+    /// * `workers_amount` - Number of workers to spawn. Must be > 0
+    ///
+    /// * `output_chan` - If successful, the final result of workers pool is written into output_chan
     pub fn spawn_workers_pool(
         &mut self,
         workers_amount: usize,
         output_chan: Sender<Message>,
         committees_set: Arc<Mutex<CommitteeSet>>,
-        ru: RoundUpdate,
+        seed: [u8; 32],
     ) {
         assert!(workers_amount > 0);
 
@@ -77,14 +84,14 @@ impl Accumulator {
                         }
 
                         if let Err(e) =
-                            verify_agreement(msg.clone(), committees_set.clone(), ru.seed).await
+                            verify_agreement(msg.clone(), committees_set.clone(), seed).await
                         {
                             error!("{:#?}", e);
                             continue;
                         }
 
                         if let Some(msg) =
-                            Self::accumulate(stores.clone(), committees_set.clone(), msg, ru.seed)
+                            Self::accumulate(stores.clone(), committees_set.clone(), msg, seed)
                                 .await
                         {
                             rx.close();
@@ -100,13 +107,23 @@ impl Accumulator {
         }
     }
 
+    /// Queues the message for processing by the workers.
+    ///
+    /// # Panics
+    ///
+    /// If workers pool is not spawned, this will panic.
     pub async fn process(&mut self, msg: Message) {
+        assert!(!self.workers.is_empty());
+
         self.tx
             .send(msg)
             .await
             .unwrap_or_else(|err| error!("unable to queue agreement_msg {:?}", err));
     }
 
+    /// Accumulates a verified agreement messages in a shared set of stores.
+    ///
+    /// Returns CollectedVotes Message if quorum is reached.
     async fn accumulate(
         stores: Arc<Mutex<StorePerHash>>,
         committees_set: Arc<Mutex<CommitteeSet>>,

@@ -7,7 +7,7 @@
 use crate::messages::Message;
 
 /// PendingQueue is a thin wrapper around async_channel of Message.
-///  It is used for supporting inbound and outbound message queues.
+/// It is used for supporting inbound and outbound message queues.
 #[derive(Clone)]
 pub struct PendingQueue {
     /// Queue name

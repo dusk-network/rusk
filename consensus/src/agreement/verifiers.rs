@@ -117,8 +117,8 @@ async unsafe fn aggregate_pks(
         let guard = committees_set.lock().await;
         let provisioners = guard.get_provisioners();
 
-        for m in subcomittee.into_iter() {
-            if let Some(m) = provisioners.get_member(&m.0) {
+        for (pubkey, _) in subcomittee.into_iter() {
+            if let Some(m) = provisioners.get_member(&pubkey) {
                 pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
                     &m.get_raw_key(),
                 ));

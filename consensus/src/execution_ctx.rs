@@ -57,7 +57,7 @@ impl<'a> ExecutionCtx<'a> {
         }
     }
 
-    /// Runs a loop that collects both inbound messages or timeout event.
+    /// Runs a loop that collects both inbound messages and timeout event.
     ///
     /// It accepts an instance of MsgHandler impl (phase var) and calls its
     /// methods based on the occurred event.
@@ -182,7 +182,9 @@ impl<'a> ExecutionCtx<'a> {
         Ok(Message::empty())
     }
 
-    /// Read, check is_valid and collect all messages for current round and step.
+    /// Handles all messages stored in future_msgs queue that belongs to the current round and step.
+    ///
+    /// Returns Some(msg) if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler<Message>>(
         &self,
         committee: &Committee,
