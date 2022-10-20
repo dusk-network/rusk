@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let config = match args.init {
         Some(path) => fs::read_to_string(path)?,
-        None => include_str!("../../config/testnet.toml").into(),
+        None => include_str!("../../config/testnet_remote.toml").into(),
     };
     let snapshot = toml::from_str(&config)?;
 
