@@ -11,8 +11,8 @@ use crate::{
 
 use alloc::vec::Vec;
 
-use canonical::CanonError;
 use canonical::EncodeToVec;
+use canonical::{Canon, CanonError};
 use dusk_bls12_381_sign::{PublicKey, SecretKey, Signature};
 use dusk_bytes::{Error as BytesError, Serializable};
 use dusk_jubjub::{BlsScalar, JubJubScalar};
@@ -25,6 +25,7 @@ use dusk_poseidon::sponge;
 use dusk_schnorr::Signature as SchnorrSignature;
 use phoenix_core::{Crossover, Error as PhoenixError, Fee, Note, NoteType};
 use rand_core::{CryptoRng, Error as RngError, RngCore};
+use rusk_abi::ContractId;
 
 const MAX_INPUT_NOTES: usize = 4;
 
@@ -262,6 +263,54 @@ where
         }
 
         Ok((inputs, outputs))
+    }
+
+    /// Execute a generic contract call
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute<Rng, C>(
+        &self,
+        rng: &mut Rng,
+        contract_id: ContractId,
+        call_data: C,
+        sender_index: u64,
+        refund: &PublicSpendKey,
+        gas_limit: u64,
+        gas_price: u64,
+    ) -> Result<Transaction, Error<S, SC, PC>>
+    where
+        Rng: RngCore + CryptoRng,
+        C: Canon,
+    {
+        let sender = self
+            .store
+            .retrieve_ssk(sender_index)
+            .map_err(Error::from_store_err)?;
+
+        let (inputs, outputs) = self.inputs_and_change_output(
+            rng,
+            &sender,
+            refund,
+            gas_limit * gas_price,
+        )?;
+
+        let fee = Fee::new(rng, gas_limit, gas_price, refund);
+        let call = (contract_id, call_data.encode_to_vec());
+
+        let utx = UnprovenTransaction::new(
+            rng,
+            &self.state,
+            &sender,
+            inputs,
+            outputs,
+            fee,
+            None,
+            Some(call),
+        )
+        .map_err(Error::from_state_err)?;
+
+        self.prover
+            .compute_proof_and_propagate(&utx)
+            .map_err(Error::from_prover_err)
     }
 
     /// Transfer Dusk from one key to another.

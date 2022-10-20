@@ -26,6 +26,7 @@ use rand_core::{
     impls::{next_u32_via_fill, next_u64_via_fill},
     CryptoRng, RngCore,
 };
+use rusk_abi::ContractId;
 
 use crate::tx::UnprovenTransaction;
 use crate::{
@@ -147,6 +148,43 @@ pub unsafe extern "C" fn public_spend_key(
     0
 }
 
+/// Execute a generic contract call
+#[no_mangle]
+pub unsafe extern "C" fn execute(
+    contract_id: *const [u8; 32],
+    call_data_ptr: *mut u8,
+    call_data_len: *const u32,
+    sender_index: *const u64,
+    refund: *const [u8; PublicSpendKey::SIZE],
+    gas_limit: *const u64,
+    gas_price: *const u64,
+) -> u8 {
+    let contract_id = ContractId::from(*contract_id);
+
+    // SAFETY: the buffer is expected to have been allocated with the
+    // correct size. If this is not the case problems with the allocator
+    // *may* happen.
+    let call_data = Vec::from_raw_parts(
+        call_data_ptr,
+        call_data_len as usize,
+        call_data_len as usize,
+    );
+
+    let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
+
+    unwrap_or_bail!(WALLET.execute(
+        &mut FfiRng,
+        contract_id,
+        call_data,
+        *sender_index,
+        &refund,
+        *gas_price,
+        *gas_limit
+    ));
+
+    0
+}
+
 /// Creates a transfer transaction.
 #[no_mangle]
 pub unsafe extern "C" fn transfer(
@@ -161,9 +199,8 @@ pub unsafe extern "C" fn transfer(
     let refund = unwrap_or_bail!(PublicSpendKey::from_bytes(&*refund));
     let receiver = unwrap_or_bail!(PublicSpendKey::from_bytes(&*receiver));
 
-    let ref_id = BlsScalar::from(
-        ref_id.copied().unwrap_or_else(|| (&mut FfiRng).next_u64()),
-    );
+    let ref_id =
+        BlsScalar::from(ref_id.copied().unwrap_or_else(|| FfiRng.next_u64()));
 
     unwrap_or_bail!(WALLET.transfer(
         &mut FfiRng,
