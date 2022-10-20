@@ -118,13 +118,12 @@ async unsafe fn aggregate_pks(
         let provisioners = guard.get_provisioners();
 
         for (pubkey, _) in subcomittee.into_iter() {
-            if let Some(m) = provisioners.get_member(&pubkey) {
-                pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
-                    &m.get_raw_key(),
-                ));
-            } else {
-                panic!("raw public key not found");
-            }
+            let m = provisioners
+                .get_member(&pubkey)
+                .expect("raw public key not found");
+            pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
+                &m.get_raw_key(),
+            ));
         }
 
         pks

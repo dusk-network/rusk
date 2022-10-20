@@ -129,7 +129,7 @@ impl Consensus {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        agr_inbound_queue: PendingQueue,
+        mut agr_inbound_queue: PendingQueue,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
@@ -193,12 +193,12 @@ impl Consensus {
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
 
-                Self::send_agreement(agr_inbound_queue.clone(), msg.clone()).await;
+                Self::send_agreement(&mut agr_inbound_queue, msg.clone()).await;
             }
         })
     }
 
-    async fn send_agreement(mut agr_inbound_queue: PendingQueue, msg: Message) {
+    async fn send_agreement(agr_inbound_queue: &mut PendingQueue, msg: Message) {
         let _ = agr_inbound_queue
             .send(msg.clone())
             .await

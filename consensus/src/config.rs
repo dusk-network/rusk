@@ -16,3 +16,4 @@ pub const CONSENSUS_MAX_TIMEOUT_MS: u64 = 60 * 1000;
 pub const CONSENSUS_DELAY_MS: u64 = 1000;
 /// Default number of workers to process agreements.
 pub const ACCUMULATOR_WORKERS_AMOUNT: usize = 6;
+pub const ACCUMULATOR_QUEUE_CAP: usize = 100;

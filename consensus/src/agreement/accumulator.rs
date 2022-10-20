@@ -33,8 +33,8 @@ pub(crate) struct Accumulator {
 }
 
 impl Accumulator {
-    pub fn new() -> Self {
-        let (tx, rx) = async_channel::bounded(100);
+    pub fn new(cap: usize) -> Self {
+        let (tx, rx) = async_channel::bounded(cap);
 
         Self {
             workers: vec![],
@@ -190,5 +190,8 @@ impl Drop for Accumulator {
         }
 
         self.workers.clear();
+
+        self.rx.close();
+        self.tx.close();
     }
 }

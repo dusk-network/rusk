@@ -99,7 +99,7 @@ impl Executor {
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
 
         // Accumulator
-        let mut acc = Accumulator::new();
+        let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
 
         acc.spawn_workers_pool(
             config::ACCUMULATOR_WORKERS_AMOUNT,
