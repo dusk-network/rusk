@@ -9,7 +9,7 @@ use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
 use consensus::commons::RoundUpdate;
@@ -23,7 +23,7 @@ use tokio::time;
 
 mod mocks;
 
-const MOCKED_PROVISIONERS_NUM: u64 = 5;
+const MOCKED_PROVISIONERS_NUM: u64 = 10;
 
 fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
     let mut keys = vec![];
@@ -146,7 +146,7 @@ fn spawn_node(
 ) {
     let _ = thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(3)
+            .worker_threads(2 + consensus::config::ACCUMULATOR_WORKERS_AMOUNT)
             .enable_all()
             .build()
             .unwrap()
@@ -159,12 +159,34 @@ fn spawn_node(
                     Arc::new(Mutex::new(mocks::Executor {})),
                 );
 
+                let mut cumulative_block_time = 0f64;
                 // Run consensus for N rounds
                 for i in 0..1000 {
                     let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
+
+                    let before = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+
                     let _ = c
                         .spin(RoundUpdate::new(i, keys.1, keys.0), p.clone(), cancel_rx)
                         .await;
+
+                    // Calc block time
+                    let block_time = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        - before;
+                    cumulative_block_time += block_time as f64;
+                    tracing::info!(
+                        "bls_key={}, round={}, block_time={} average_block_time={:.2}",
+                        keys.1.encode_short_hex(),
+                        i,
+                        block_time,
+                        cumulative_block_time / ((i + 1) as f64)
+                    );
                 }
             });
     });

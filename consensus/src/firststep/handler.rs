@@ -17,6 +17,7 @@ pub struct Reduction {
 }
 
 impl MsgHandler<Message> for Reduction {
+    /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
         msg: Message,
@@ -37,7 +38,7 @@ impl MsgHandler<Message> for Reduction {
         Ok(msg)
     }
 
-    // Collect the reduction message.
+    /// Collects the reduction message.
     fn collect(
         &mut self,
         msg: Message,
@@ -67,7 +68,7 @@ impl MsgHandler<Message> for Reduction {
         Ok(HandleMsgOutput::Result(msg))
     }
 
-    /// Handle of an event of step execution timeout
+    /// Handles of an event of step execution timeout
     fn handle_timeout(
         &mut self,
         _ru: RoundUpdate,

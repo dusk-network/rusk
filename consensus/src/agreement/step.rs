@@ -14,13 +14,13 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
 
+use crate::config;
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
 use tracing::{error, info, trace, Instrument};
 
-const WORKERS_AMOUNT: usize = 4;
 const COMMITTEE_SIZE: usize = 64;
 
 pub struct Agreement {
@@ -99,11 +99,13 @@ impl Executor {
         let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
 
         // Accumulator
-        let mut acc = Accumulator::new(
-            WORKERS_AMOUNT,
+        let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
+
+        acc.spawn_workers_pool(
+            config::ACCUMULATOR_WORKERS_AMOUNT,
             collected_votes_tx,
             self.committees_set.clone(),
-            self.ru,
+            self.ru.seed,
         );
 
         // drain future messages for current round and step.

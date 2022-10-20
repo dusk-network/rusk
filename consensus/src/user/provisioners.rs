@@ -17,7 +17,7 @@ const RAW_PUBLIC_BLS_SIZE: usize = 193;
 #[derive(Clone, Debug)]
 #[allow(unused)]
 pub struct Member {
-    // stake and eligibility flag
+    /// Vector of pairs (stake and eligibility flag)
     stakes: Vec<(Stake, bool)>,
     pubkey_bls: PublicKey,
     raw_pubkey_bls: [u8; RAW_PUBLIC_BLS_SIZE],
@@ -108,33 +108,31 @@ impl Provisioners {
         }
     }
 
-    pub fn add_member(
-        &mut self,
-        pubkey_bls: PublicKey,
-        value: u64,
-        reward: u64,
-        eligible_since: u64,
-    ) {
+    /// Adds a provisioner with stake.
+    ///
+    /// It appends the stake if the given provisioner already exists.
+    pub fn add_member_with_stake(&mut self, pubkey_bls: PublicKey, stake: Stake) {
         self.members
             .entry(pubkey_bls)
             .or_insert_with(|| Member::new(pubkey_bls))
-            .add_stake(Stake::new(value, reward, eligible_since));
+            .add_stake(stake);
     }
 
+    /// Adds a new member with reward=0 and elibile_since=0.
+    ///
+    /// Useful for implementing unit tests.
     pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
-        self.add_member(pubkey_bls, value, 0, 0)
+        self.add_member_with_stake(pubkey_bls, Stake::new(value, 0, 0));
     }
 
-    // update_eligibility_flag enables or disables stakes depending on specified round.
+    /// Turns on/off elibility flag of stakes for a given round.
     pub fn update_eligibility_flag(&mut self, round: u64) {
         for m in self.members.iter_mut() {
             m.1.update_eligibility_flag(round)
         }
     }
 
-    // get_eligible_size returns how many provisioners are active on the current round.
-    // This function is used to determine the correct committee size for
-    // sortition.
+    /// Returns number of provisioners that owns at least one eligibile stake.
     pub fn get_eligible_size(&self, max_size: usize) -> usize {
         let mut size = 0;
         for (_, member) in self.members.iter() {
@@ -153,8 +151,14 @@ impl Provisioners {
         size
     }
 
-    // create_committee runs the deterministic sortition function, which determines
-    // who will be in the committee for a given step and round
+    /// Returns a member of Provisioner list by public key.
+    pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
+        self.members.get(key)
+    }
+
+    /// Runs the deterministic sortition algorithm which determines the committee members for a given round, step and seed.
+    ///
+    /// Returns a vector of provisioners public keys.
     pub fn create_committee(&mut self, cfg: &sortition::Config) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
         let committee_size = self.get_eligible_size(cfg.max_committee_size);
@@ -199,7 +203,7 @@ impl Provisioners {
         committee
     }
 
-    // calc_total_eligible_weight sums up the total weight of all **eligible** stakes
+    /// Sums up the total weight of all **eligible** stakes
     fn calc_total_eligible_weight(&self) -> u64 {
         let mut total_weight = 0;
         for (_, member) in self.members.iter() {
@@ -211,21 +215,6 @@ impl Provisioners {
         }
 
         total_weight
-    }
-
-    // get_active_stakes_num returns the count of all enabled stakes.
-    #[allow(unused)]
-    fn get_active_stakes_num(&self) -> usize {
-        let mut size: usize = 0;
-        for (_, member) in self.members.iter() {
-            for (_, eligible) in member.stakes.iter() {
-                if *eligible {
-                    size += 1;
-                }
-            }
-        }
-
-        size
     }
 
     fn extract_and_subtract_member(&mut self, s: &BigInt) -> Option<(PublicKey, BigInt)> {
@@ -248,10 +237,6 @@ impl Provisioners {
                 score -= total_stake;
             }
         }
-    }
-
-    pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
-        self.members.get(key)
     }
 }
 

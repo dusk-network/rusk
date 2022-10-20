@@ -15,9 +15,11 @@ pub enum HandleMsgOutput {
     FinalResult(Message),
 }
 
-// MsgHandler must be implemented by any step that needs to handle an external message within event_loop life-cycle.
+/// MsgHandler must be implemented by any step that needs to handle an external
+/// message within event_loop life-cycle.
 pub trait MsgHandler<T: Debug + MessageTrait> {
     /// is_valid checks a new message is valid in the first place.
+    ///
     /// Only if the message has correct round and step and is signed by a committee member then we delegate it to Phase::verify.
     fn is_valid(
         &mut self,

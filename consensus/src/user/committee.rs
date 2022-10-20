@@ -24,6 +24,12 @@ pub struct Committee {
 
 #[allow(unused)]
 impl Committee {
+    /// Generates a new committee from the given provisioners state and sortition config.
+    ///
+    /// It executes deterministic sortition algorithm.
+    ///
+    /// # Arguments
+    /// * `pubkey_bls` - This is the BLS public key of the (this node) provisioner running the consensus. It is mainly used in `am_member` method.
     pub fn new(
         pubkey_bls: PublicKey,
         provisioners: &mut Provisioners,
@@ -51,15 +57,17 @@ impl Committee {
         committee
     }
 
+    /// Returns true if `pubkey_bls` is a member of the generated committee.
     pub fn is_member(&self, pubkey_bls: PublicKey) -> bool {
         self.members.contains_key(&pubkey_bls)
     }
 
+    /// Returns true if `my pubkey` is a member of the generated committee.
     pub fn am_member(&self) -> bool {
         self.is_member(self.this_member_key)
     }
 
-    // get_my_pubkey returns this provisioner BLS public key.
+    /// Returns this provisioner BLS public key.
     pub fn get_my_pubkey(&self) -> PublicKey {
         self.this_member_key
     }
@@ -73,10 +81,12 @@ impl Committee {
         self.members.clone().into_values().collect()
     }
 
+    /// Returns number of unique members of the generated committee.
     pub fn size(&self) -> usize {
         self.members.len()
     }
 
+    /// Returns target quorum for the generated committee.
     pub fn quorum(&self) -> usize {
         let size = self.total as f64;
         (size * config::CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
@@ -100,7 +110,7 @@ impl Committee {
         bits
     }
 
-    /// intersect the bit representation of a VotingCommittee subset with the whole VotingCommittee set.
+    /// Intersects the bit representation of a VotingCommittee subset with the whole VotingCommittee set.
     pub fn intersect(&self, bitset: u64) -> Cluster<PublicKey> {
         if bitset == 0 {
             return Cluster::<PublicKey>::new();
@@ -127,9 +137,10 @@ impl Committee {
     }
 }
 
-/// CommitteeSet implements a cache of generated committees so that they can be reused.
-/// This is useful in Agreement step where messages from different steps per a single round are processed.
-///  A committee is uniquely represented by sortition::Config.
+/// Implements a cache of generated committees so that they can be reused.
+///
+/// This is useful in Agreement step where messages from different steps per a single round are concurrently processed.
+/// A committee is uniquely represented by sortition::Config.
 pub struct CommitteeSet {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: Provisioners,
