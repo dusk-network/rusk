@@ -7,14 +7,11 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
-dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
-dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
-dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-dusk-abi = "0.11"
+dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
+dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-schnorr = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-canonical = "0.7"
-canonical_derive = "0.7"
 
 rusk-abi = { path = "../../../", features = ["module"] }

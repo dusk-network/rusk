@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![cfg_attr(target_arch = "wasm32", no_std)]
+#![no_std]
 #![feature(core_intrinsics, lang_items, alloc_error_handler)]
 #![deny(clippy::all)]
 
