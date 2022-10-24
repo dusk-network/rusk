@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::Canon;
-use canonical_derive::Canon;
+use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
+use rkyv::{Archive, Deserialize, Serialize};
 
 /// Enum that represents all possible types of public inputs
-#[derive(Debug, Canon, Clone)]
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
 pub enum PublicInput {
     /// A Public Input Point
     Point(JubJubAffine),
@@ -56,21 +57,5 @@ where
 {
     fn from(t: &T) -> PublicInput {
         t.clone().into()
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-mod host {
-    use super::PublicInput;
-    use dusk_plonk::prelude::*;
-
-    impl From<PublicInput> for PublicInputValue {
-        fn from(pi: PublicInput) -> PublicInputValue {
-            match pi {
-                PublicInput::BlsScalar(v) => PublicInputValue::from(v),
-                PublicInput::JubJubScalar(v) => PublicInputValue::from(v),
-                PublicInput::Point(v) => PublicInputValue::from(v),
-            }
-        }
     }
 }
