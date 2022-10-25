@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use clap::{App, Arg, ArgMatches};
 use consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;

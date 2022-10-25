@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::contract_state::{CallParams, Error, Operations, Output, StateRoot};
