@@ -1,17 +1,17 @@
 [workspace]
 members = [
     "circuits/transfer",
-    "contracts/stake",
-    "contracts/transfer",
+#    "contracts/stake",
+#    "contracts/transfer",
     "macros/code-hasher",
-    "rusk-recovery",
+#    "rusk-recovery",
     "rusk-profile",
     "rusk-abi",
     "rusk-schema",
-    "rusk",
-    "test-utils/transfer-wrapper",
-    "test-utils/contracts/alice",
-    "test-utils/contracts/bob",
+#    "rusk",
+#    "test-utils/transfer-wrapper",
+#    "test-utils/contracts/alice",
+#    "test-utils/contracts/bob",
 ]
 resolver = "2"
 
