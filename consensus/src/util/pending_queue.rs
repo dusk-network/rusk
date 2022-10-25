@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use async_channel::TrySendError;
+
 use crate::messages::Message;
 
 /// PendingQueue is a thin wrapper around async_channel of Message.
@@ -61,6 +63,10 @@ impl PendingQueue {
 
         tracing::trace!("sending {:?} by {}", msg, self.id);
         self.sender.send(msg)
+    }
+
+    pub fn try_send(&self, msg: Message) -> Result<(), TrySendError<Message>> {
+        self.sender.try_send(msg)
     }
 
     pub fn recv(&self) -> async_channel::Recv<'_, Message> {
