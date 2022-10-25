@@ -7,7 +7,10 @@ members = [
     "macros/code-hasher",
 #    "rusk-recovery",
     "rusk-profile",
+
     "rusk-abi",
+    "rusk-abi/tests/contracts/host_fn",
+
     "rusk-schema",
 #    "rusk",
 #    "node",

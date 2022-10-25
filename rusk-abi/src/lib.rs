@@ -20,7 +20,7 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
 
-pub use piecrust_uplink::ModuleId;
+use piecrust_uplink::ModuleId;
 use piecrust_uplink::MODULE_ID_BYTES;
 
 /// Constant depth of the merkle tree that provides the opening proofs.

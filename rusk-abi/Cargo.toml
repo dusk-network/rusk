@@ -12,21 +12,22 @@ exclude = [".github/workflows/ci.yml", ".gitignore"]
 blake2b_simd = { version = "1", default-features = false }
 cfg-if = "1"
 
-dusk-poseidon = { version = "0.27", default-features = false }
+dusk-poseidon = { version = "0.28", default-features = false }
 dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-bls12_381-sign = { version = "0.4", features = ["rkyv-impl"] }
-dusk-schnorr = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-schnorr = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 rkyv = { version = "0.7", default-features = false }
 bytecheck = { version = "0.6", default-features = false }
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", default-features = false }
-dusk-plonk = { path = "../../plonk", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
 dusk-bytes = "0.1"
-rand_core = { version = "0.6", features = ["std"] }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
+rand_core = { version = "0.6", default-features = false }
 lazy_static = "1.4"
 
 [features]
