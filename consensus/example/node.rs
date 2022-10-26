@@ -57,7 +57,7 @@ pub async fn main() {
         .parse::<usize>()
         .unwrap();
     let prov_num = matches
-        .value_of("prov-num")
+        .value_of("preloaded-num")
         .unwrap()
         .to_string()
         .parse::<usize>()
@@ -148,8 +148,8 @@ fn gen_matches(crate_info: VersionInfo) -> ArgMatches<'static> {
                .takes_value(true)
                .required(true),
        ).arg(
-           Arg::with_name("prov-num")
-               .long("count of hard-coded provisioners")
+           Arg::with_name("preloaded-num")
+               .long("preloaded-num")
                .takes_value(true)
                .default_value("3")
                .required(true),

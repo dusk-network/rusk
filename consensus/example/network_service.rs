@@ -35,12 +35,12 @@ pub async fn run_main_loop(
             biased;
             recv = agr_outbound.recv() => {
                 if let Ok(msg) = recv {
-                    peer.broadcast(&wire::Frame::encode(msg), None).await;
+                    broadcast(&peer, msg).await; 
                 }
             }
             recv = outbound.recv() => {
                 if let Ok(msg) = recv {
-                    peer.broadcast(&wire::Frame::encode(msg), None).await;
+                    broadcast(&peer, msg).await; 
                 }
             }
            
@@ -48,15 +48,28 @@ pub async fn run_main_loop(
     }
 }
 
+async fn broadcast( peer:&Peer, msg: Message) {
+    if msg.metadata.height == 0 {
+        return;
+    } 
+
+    let h = (msg.metadata.height-1) as usize;
+    peer.broadcast(&wire::Frame::encode(msg), Some(h)).await;
+}
+
+
 #[derive(Default)]
 struct Reader {
     pub msg_dispatcher: Dispatcher,
 }
 
 impl NetworkListen for Reader {
-    fn on_message(&self, message: Vec<u8>, _md: MessageInfo) {
+    fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
         let decoded = wire::Frame::decode(message.to_vec());
-        let msg = decoded.get_msg().clone();
+        let mut msg = decoded.get_msg().clone();
+
+        msg.metadata.height = md.height();
+        msg.metadata.src_addr = md.src().to_string();
 
         // Dispatch message to the proper queue for further processing    
         if let Err(e) = self.msg_dispatcher.dispatch(decoded.get_topic() as usize, msg) {
