@@ -13,7 +13,7 @@ pub enum Status {
     Present,
     Future,
 }
-/// 
+///
 pub trait Serializable {
     /// Serialize struct to Vec<u8>.
     fn to_bytes(&self) -> Vec<u8>;
@@ -32,7 +32,7 @@ pub trait MessageTrait {
 pub struct Message {
     pub header: Header,
     pub payload: Payload,
-    
+
     pub metadata: TransportData,
 }
 
@@ -47,7 +47,10 @@ pub struct TransportData {
 
 impl Default for TransportData {
     fn default() -> Self {
-        Self { height: 128, src_addr: Default::default() }
+        Self {
+            height: 128,
+            src_addr: Default::default(),
+        }
     }
 }
 
@@ -68,13 +71,13 @@ impl Serializable for Message {
     }
 
     // Support de-serialization  for messages that are received from the wire.
-    fn from_bytes(buf: &mut Bytes)-> Self {
+    fn from_bytes(buf: &mut Bytes) -> Self {
         let mut msg = Self {
             header: Header::from_bytes(buf),
             payload: Payload::Empty,
             metadata: Default::default(),
         };
- 
+
         msg.payload = match Topics::from(msg.header.topic) {
             Topics::NewBlock => Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf))),
             Topics::Reduction => Payload::Reduction(payload::Reduction::from_bytes(buf)),
@@ -150,7 +153,7 @@ pub struct Header {
     pub step: u8,
     pub block_hash: [u8; 32],
 
-    pub topic: u8, 
+    pub topic: u8,
 }
 
 impl Serializable for Header {
@@ -166,7 +169,12 @@ impl Serializable for Header {
     }
 
     fn from_bytes(buf: &mut Bytes) -> Self {
-        let mut header = Header{ topic: buf.get_u8(), step: buf.get_u8(), round: buf.get_u64_le(), ..Default::default() };
+        let mut header = Header {
+            topic: buf.get_u8(),
+            step: buf.get_u8(),
+            round: buf.get_u64_le(),
+            ..Default::default()
+        };
         buf.copy_to_slice(&mut header.block_hash[..]);
 
         let mut pubkey_bytes = [0u8; 96];
@@ -236,10 +244,10 @@ impl Default for Payload {
 }
 
 pub mod payload {
-    use std::mem;
+    use super::Serializable;
     use crate::commons::Block;
     use bytes::{Buf, BufMut, Bytes, BytesMut};
-    use super::Serializable;
+    use std::mem;
 
     #[derive(Debug, Copy, Clone)]
     pub struct Reduction {
@@ -353,7 +361,7 @@ pub mod payload {
         /// StepVotes of both 1th and 2nd Reduction steps
         pub votes_per_step: (StepVotes, StepVotes),
     }
- 
+
     impl Serializable for Agreement {
         fn to_bytes(&self) -> Vec<u8> {
             let mut buf = BytesMut::with_capacity(48);
@@ -363,7 +371,7 @@ pub mod payload {
             buf.to_vec()
         }
 
-        fn from_bytes( buf: &mut Bytes) -> Self {
+        fn from_bytes(buf: &mut Bytes) -> Self {
             let mut agr = Agreement::default();
 
             buf.copy_to_slice(&mut agr.signature);

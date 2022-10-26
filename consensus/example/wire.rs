@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use consensus::messages::{Serializable, Message};
+use consensus::messages::{Message, Serializable};
 use std::mem;
 
 /// Wire Frame definition.
@@ -36,7 +36,7 @@ impl Serializable for FrameHeader {
         buf.to_vec()
     }
 
-    fn from_bytes(buf: &mut Bytes)-> Self{
+    fn from_bytes(buf: &mut Bytes) -> Self {
         Self {
             version: buf.get_u64_le(),
             reserved: buf.get_u64_le(),
@@ -50,7 +50,7 @@ impl FramePayload {
         self.0.to_bytes()
     }
 
-    fn from_bytes(buf: &mut Bytes) -> Self{
+    fn from_bytes(buf: &mut Bytes) -> Self {
         Self(Message::from_bytes(buf))
     }
 }
@@ -90,7 +90,7 @@ impl Frame {
         .to_bytes()
     }
 
-    pub fn decode(bytes: Vec<u8>) -> Self { 
+    pub fn decode(bytes: Vec<u8>) -> Self {
         Frame::from_bytes(&mut Bytes::from(bytes))
     }
 

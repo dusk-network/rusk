@@ -5,10 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use consensus::commons::Topics;
+use consensus::messages::Message;
 use consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, NetworkListen, Peer};
-use consensus::messages::Message;
 
 use crate::wire;
 
@@ -21,13 +21,11 @@ pub async fn run_main_loop(
 ) {
     // Initialize reader and its dispatcher
     let mut r = Reader::default();
-    r.msg_dispatcher.add(Topics::Agreement as usize, agr_inbound);
+    r.msg_dispatcher
+        .add(Topics::Agreement as usize, agr_inbound);
     r.msg_dispatcher.add_default(inbound);
 
-    let peer = Peer::new(
-        conf,
-        r,
-    );
+    let peer = Peer::new(conf, r);
 
     // Broadcast outbound messages with a priority to the messages from agreement loop
     loop {
@@ -35,28 +33,27 @@ pub async fn run_main_loop(
             biased;
             recv = agr_outbound.recv() => {
                 if let Ok(msg) = recv {
-                    broadcast(&peer, msg).await; 
+                    broadcast(&peer, msg).await;
                 }
             }
             recv = outbound.recv() => {
                 if let Ok(msg) = recv {
-                    broadcast(&peer, msg).await; 
+                    broadcast(&peer, msg).await;
                 }
             }
-           
+
         }
     }
 }
 
-async fn broadcast( peer:&Peer, msg: Message) {
+async fn broadcast(peer: &Peer, msg: Message) {
     if msg.metadata.height == 0 {
         return;
-    } 
+    }
 
-    let h = (msg.metadata.height-1) as usize;
+    let h = (msg.metadata.height - 1) as usize;
     peer.broadcast(&wire::Frame::encode(msg), Some(h)).await;
 }
-
 
 #[derive(Default)]
 struct Reader {
@@ -71,13 +68,16 @@ impl NetworkListen for Reader {
         msg.metadata.height = md.height();
         msg.metadata.src_addr = md.src().to_string();
 
-        // Dispatch message to the proper queue for further processing    
-        if let Err(e) = self.msg_dispatcher.dispatch(decoded.get_topic() as usize, msg) {
-            tracing::error!("could not dispatch {:?}",e);
+        // Dispatch message to the proper queue for further processing
+        if let Err(e) = self
+            .msg_dispatcher
+            .dispatch(decoded.get_topic() as usize, msg)
+        {
+            tracing::error!("could not dispatch {:?}", e);
         }
     }
 }
- 
+
 /// Implements a simple message dispatcher that delegates a message to the
 /// associated queue depending on the topic value read from wire message.
 struct Dispatcher {
@@ -86,7 +86,7 @@ struct Dispatcher {
 }
 
 impl Dispatcher {
-    fn add(&mut self, topic: usize,queue: PendingQueue) {
+    fn add(&mut self, topic: usize, queue: PendingQueue) {
         self.queues[topic] = Some(queue);
     }
 
@@ -94,13 +94,17 @@ impl Dispatcher {
         self.default_queue = Some(queue);
     }
 
-    fn dispatch(&self, topic: usize, msg: Message) -> Result<(), async_channel::TrySendError<Message>> {
+    fn dispatch(
+        &self,
+        topic: usize,
+        msg: Message,
+    ) -> Result<(), async_channel::TrySendError<Message>> {
         if topic < self.queues.len() {
             if let Some(q) = &self.queues[topic] {
                 return q.try_send(msg);
             }
         }
-       
+
         if let Some(q) = &self.default_queue {
             return q.try_send(msg);
         }
@@ -109,8 +113,11 @@ impl Dispatcher {
     }
 }
 
-impl Default for Dispatcher{
+impl Default for Dispatcher {
     fn default() -> Self {
-        Self { queues: vec![None; 255], default_queue: None }
+        Self {
+            queues: vec![None; 255],
+            default_queue: None,
+        }
     }
 }

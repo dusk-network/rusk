@@ -278,7 +278,6 @@ pub enum Topics {
     Agreement = 18,
     AggrAgreement = 19,
 
-
     Unknown = 100,
 }
 
