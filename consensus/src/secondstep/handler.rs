@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate};
+use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate, Topics};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use tracing::error;
 
@@ -90,6 +90,7 @@ impl Reduction {
             round: ru.round,
             step,
             block_hash: sv.0,
+            topic: Topics::Agreement as u8,
         };
 
         let payload = payload::Agreement {

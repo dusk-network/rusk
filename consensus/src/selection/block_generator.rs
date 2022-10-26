@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{sign, Block, RoundUpdate};
+use crate::commons::{sign, Block, RoundUpdate, Topics};
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::PublicKey;
@@ -36,6 +36,7 @@ impl Generator {
             round: ru.round,
             block_hash: candidate.header.hash,
             step,
+            topic: Topics::NewBlock as u8,
         };
 
         Ok(Message::from_newblock(
