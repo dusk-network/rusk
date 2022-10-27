@@ -26,8 +26,9 @@ dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-imp
 
 [dev-dependencies]
 dusk-bytes = "0.1"
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
-rand_core = { version = "0.6", default-features = false }
+rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
 lazy_static = "1.4"
 
 [features]
