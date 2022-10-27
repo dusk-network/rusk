@@ -6,7 +6,7 @@ PROV_NUM=$1
 BOOTSTRAP_ADDR="127.0.0.1:7000"
 
 # Create a temporary directory.
-TEMPD=$(mktemp -d --suffix=TEST)
+TEMPD=$(mktemp -d -t TEST)
 
 # Exit if the temp directory wasn't created successfully.
 if [ ! -e "$TEMPD" ]; then
@@ -30,5 +30,5 @@ do
 done
 
 # monitor
-tail -F /tmp/*TEST/node_*.log  | grep -i block_time
+tail -F $TMPDIR/TEST*/node_*.log  | grep -i block_time
 
