@@ -9,27 +9,29 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{ParseHexStr, Serializable};
+use std::fs;
 
 #[test]
-fn hash() {
+fn hash_host() {
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
         "7e74220084d75e10c89e9435d47bb5b8075991b2e29be3b84421dac3b1ee6007",
         "5ce5481a4d78cca03498f72761da1b9f1d2aa8fb300be39f0e4fe2534f9d4308",
     ];
 
-    let mut hasher = rusk_abi::hash::Hasher::new();
-
-    test_inputs
+    let test_inputs: Vec<BlsScalar> = test_inputs
         .iter()
         .map(|input| BlsScalar::from_hex_str(input).unwrap())
-        .for_each(|scalar| hasher.update(&scalar.to_bytes()));
+        .collect();
 
-    hasher.update(b"dusk network rocks");
+    let mut input = Vec::with_capacity(3 * BlsScalar::SIZE);
+    for scalar in test_inputs {
+        input.extend(scalar.to_bytes());
+    }
 
     assert_eq!(
-        "0xe6a5e94d3715f54c5660dd16395fa869f859f0a5ae4b939fdf80739083fb980c",
-        format!("{:#x}", hasher.finalize())
+        "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
+        format!("{:#x}", Hasher::digest(input))
     );
 }
 
@@ -37,30 +39,57 @@ use piecrust::VM;
 
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-    APK as AggregatedBlsPublicKey,
+    Signature as BlsSignature, APK,
 };
-use dusk_pki::{PublicKey, PublicSpendKey, SecretKey};
+use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
+use once_cell::sync::OnceCell;
 use piecrust::Session;
 use piecrust_uplink::ModuleId;
-use rkyv::{Archive, Deserialize};
-use rusk_abi::PublicInput;
+use rand_core::OsRng;
+use rkyv::Deserialize;
+use rusk_abi::hash::Hasher;
+use rusk_abi::{CircuitType, PublicInput};
 
-lazy_static::lazy_static! {
-    static ref PUB_PARAMS: PublicParameters = {
-        let pp = include_bytes!("./pp_test.bin");
-        unsafe { PublicParameters::from_slice_unchecked(&pp[..]) }
-    };
+struct ProverVerifier {
+    prover: Prover<TestCircuit>,
+    verifier: Verifier<TestCircuit>,
+}
+
+fn get_prover_verifier() -> &'static ProverVerifier {
+    static PROVER_VERIFIER: OnceCell<ProverVerifier> = OnceCell::new();
+
+    let pp = include_bytes!("./pp_test.bin");
+    let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
+
+    let label = b"dusk-network";
+
+    PROVER_VERIFIER.get_or_init(|| {
+        let (prover, verifier) = Compiler::compile(&pp, label)
+            .expect("Compiling the circuit should succeed");
+        ProverVerifier { prover, verifier }
+    })
+}
+
+fn hash_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
+    let root =
+        unsafe { rkyv::archived_root::<Vec<u8>>(&buf[..arg_len as usize]) };
+    let bytes: Vec<u8> = root.deserialize(&mut rkyv::Infallible).unwrap();
+    let valid = rusk_abi::hash(bytes);
+
+    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
+
+    buf[..bytes.len()].copy_from_slice(&bytes);
+    bytes.len() as u32
 }
 
 fn poseidon_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
     let root = unsafe {
         rkyv::archived_root::<Vec<BlsScalar>>(&buf[..arg_len as usize])
     };
-    let scalars: Vec<BlsScalar> =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
-    let scalar = rusk_abi::poseidon_hash(&scalars);
+    let scalars = root.deserialize(&mut rkyv::Infallible).unwrap();
+    let scalar = rusk_abi::poseidon_hash(scalars);
 
     let bytes = rkyv::to_bytes::<_, 256>(&scalar).unwrap();
 
@@ -84,13 +113,57 @@ fn schnorr_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
     bytes.len() as u32
 }
 
+fn bls_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
+    let root = unsafe {
+        rkyv::archived_root::<(Vec<u8>, APK, BlsSignature)>(
+            &buf[..arg_len as usize],
+        )
+    };
+
+    let (msg, apk, sig): (Vec<u8>, APK, BlsSignature) =
+        root.deserialize(&mut rkyv::Infallible).unwrap();
+    let valid = rusk_abi::verify_bls(msg, apk, sig);
+
+    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
+
+    buf[..bytes.len()].copy_from_slice(&bytes);
+    bytes.len() as u32
+}
+
+fn plonk_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
+    let root = unsafe {
+        rkyv::archived_root::<(CircuitType, Proof, Vec<PublicInput>)>(
+            &buf[..arg_len as usize],
+        )
+    };
+
+    fs::write("host_query", &buf[..arg_len as usize]).unwrap();
+
+    // Ignore the circuit type here, since we're testing only the ability to
+    // prove.
+    let (_, proof, public_inputs): (CircuitType, Proof, Vec<PublicInput>) =
+        root.deserialize(&mut rkyv::Infallible).unwrap();
+
+    let verifier = &get_prover_verifier().verifier;
+    let valid = rusk_abi::verify_proof(verifier, proof, public_inputs);
+
+    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
+
+    buf[..bytes.len()].copy_from_slice(&bytes);
+    bytes.len() as u32
+}
+
 fn instantiate() -> (Session, ModuleId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
     let mut vm = VM::ephemeral().expect("Instantiating the VM should succeed");
+
+    vm.register_host_query("hash", hash_host_query);
     vm.register_host_query("poseidon_hash", poseidon_host_query);
+    vm.register_host_query("verify_proof", plonk_host_query);
+    vm.register_host_query("verify_bls", bls_host_query);
     vm.register_host_query("verify_schnorr", schnorr_host_query);
 
     let mut session = vm.session();
@@ -100,6 +173,36 @@ fn instantiate() -> (Session, ModuleId) {
         .expect("Deploying module should succeed");
 
     (session, module_id)
+}
+
+#[test]
+fn hash() {
+    let (mut session, module_id) = instantiate();
+
+    let test_inputs = [
+        "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
+        "7e74220084d75e10c89e9435d47bb5b8075991b2e29be3b84421dac3b1ee6007",
+        "5ce5481a4d78cca03498f72761da1b9f1d2aa8fb300be39f0e4fe2534f9d4308",
+    ];
+
+    let test_inputs: Vec<BlsScalar> = test_inputs
+        .iter()
+        .map(|input| BlsScalar::from_hex_str(input).unwrap())
+        .collect();
+
+    let mut input = Vec::with_capacity(3 * BlsScalar::SIZE);
+    for scalar in test_inputs {
+        input.extend(scalar.to_bytes())
+    }
+
+    let scalar: BlsScalar = session
+        .query(module_id, "hash", input)
+        .expect("Querying should succeed");
+
+    assert_eq!(
+        "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
+        format!("{:#x}", scalar)
+    );
 }
 
 #[test]
@@ -127,51 +230,6 @@ fn poseidon_hash() {
     );
 }
 
-// #[test]
-// fn hash() {
-//     let test_inputs = [
-//         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
-//         "7e74220084d75e10c89e9435d47bb5b8075991b2e29be3b84421dac3b1ee6007",
-//         "5ce5481a4d78cca03498f72761da1b9f1d2aa8fb300be39f0e4fe2534f9d4308",
-//     ];
-//
-//     let test_inputs: Vec<BlsScalar> = test_inputs
-//         .iter()
-//         .map(|input| BlsScalar::from_hex_str(input).unwrap())
-//         .collect();
-//
-//     let host = HostFnTest::new();
-//
-//     let code = include_bytes!(
-//         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
-//     );
-//
-//     let contract = Contract::new(host, code.to_vec());
-//
-//     let mut network = NetworkState::default();
-//     let rusk_mod = RuskModule::new(&PUB_PARAMS);
-//     NetworkState::register_host_module(rusk_mod);
-//
-//     let contract_id = network.deploy(contract).unwrap();
-//
-//     let mut gas = GasMeter::with_limit(1_000_000_000);
-//
-//     assert_eq!(
-//         "0xe6a5e94d3715f54c5660dd16395fa869f859f0a5ae4b939fdf80739083fb980c",
-//         format!(
-//             "{:#x}",
-//             network
-//                 .query::<_, BlsScalar>(
-//                     contract_id,
-//                     0,
-//                     (host_fn::HASH, test_inputs),
-//                     &mut gas
-//                 )
-//                 .unwrap()
-//         )
-//     );
-// }
-//
 #[test]
 fn schnorr_signature() {
     let (mut session, module_id) = instantiate();
@@ -199,225 +257,129 @@ fn schnorr_signature() {
 
     assert!(!valid, "Signature verification expected to fail");
 }
-//
-// #[test]
-// fn bls_signature() {
-//     let host = HostFnTest::new();
-//
-//     let code = include_bytes!(
-//         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
-//     );
-//
-//     let contract = Contract::new(host, code.to_vec());
-//
-//     let rusk_mod = RuskModule::new(&PUB_PARAMS);
-//     let mut network = NetworkState::default();
-//     NetworkState::register_host_module(rusk_mod);
-//
-//     let contract_id = network.deploy(contract).unwrap();
-//
-//     let mut gas = GasMeter::with_limit(1_000_000_000);
-//
-//     let message = b"some-message".to_vec();
-//
-//     let sk = BlsSecretKey::random(&mut rand_core::OsRng);
-//     let pk = BlsPublicKey::from(&sk);
-//     let apk = AggregatedBlsPublicKey::from(&pk);
-//
-//     let sign = sk.sign(&pk, message.as_slice());
-//
-//     apk.verify(&sign, message.as_slice())
-//         .expect("BLS signature should be valid");
-//
-//     let res = network
-//         .query::<_, bool>(
-//             contract_id,
-//             0,
-//             (host_fn::BLS_SIGNATURE, sign, pk, message.clone()),
-//             &mut gas,
-//         )
-//         .expect("State query failed");
-//
-//     assert!(res, "BLS Signature verification expected to succeed");
-//
-//     let wrong_sk = BlsSecretKey::random(&mut rand_core::OsRng);
-//     let apk = AggregatedBlsPublicKey::from(&wrong_sk);
-//
-//     let res = network
-//         .query::<_, bool>(
-//             contract_id,
-//             0,
-//             (host_fn::BLS_SIGNATURE, sign, apk, message),
-//             &mut gas,
-//         )
-//         .expect("State query failed");
-//
-//     assert!(!res, "BLS Signature verification expected to fail");
-// }
-//
-// #[derive(Debug)]
-// pub struct TestCircuit {
-//     pub a: BlsScalar,
-//     pub b: BlsScalar,
-//     pub c: BlsScalar,
-// }
-//
-// impl TestCircuit {
-//     pub fn new(a: u64, b: u64) -> Self {
-//         let a = a.into();
-//         let b = b.into();
-//         let c = a + b;
-//
-//         Self { a, b, c }
-//     }
-// }
-//
-// impl Circuit for TestCircuit {
-//     const CIRCUIT_ID: [u8; 32] = [0xff; 32];
-//
-//     fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
-//         let a = composer.append_witness(self.a);
-//         let b = composer.append_witness(self.b);
-//
-//         let constraint =
-//             Constraint::new().left(1).a(a).right(1).b(b).public(-self.c);
-//
-//         composer.append_gate(constraint);
-//         composer.append_dummy_gates();
-//
-//         Ok(())
-//     }
-//
-//     fn public_inputs(&self) -> Vec<PublicInputValue> {
-//         vec![self.c.into()]
-//     }
-//
-//     fn padded_gates(&self) -> usize {
-//         1 << 3
-//     }
-// }
-//
-// #[test]
-// fn verify_proof() {
-//     let mut circuit = TestCircuit::new(1, 2);
-//
-//     let label = b"dusk-network";
-//     let (pk, verifier_data) = circuit
-//         .compile(&PUB_PARAMS)
-//         .expect("Failed to compile the circuit!");
-//
-//     let proof = circuit
-//         .prove(&PUB_PARAMS, &pk, label)
-//         .expect("Failed to generate the proof!");
-//     let pi = vec![circuit.c.into()];
-//
-//     // Integrity check
-//     circuit::verify(&PUB_PARAMS, &verifier_data, &proof, pi.as_slice(),
-// label)         .expect("Failed to verify the proof!");
-//
-//     let host = HostFnTest::new();
-//
-//     let code = include_bytes!(
-//         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
-//     );
-//
-//     let contract = Contract::new(host, code.to_vec());
-//
-//     let rusk_mod = RuskModule::new(&PUB_PARAMS);
-//     let mut network = NetworkState::default();
-//     NetworkState::register_host_module(rusk_mod);
-//
-//     let contract_id = network.deploy(contract).unwrap();
-//
-//     let mut gas = GasMeter::with_limit(1_000_000_000);
-//
-//     let proof = proof.to_bytes().to_vec();
-//     let verifier_data = verifier_data.to_var_bytes();
-//     let pi: Vec<PublicInput> = vec![circuit.c.into()];
-//
-//     let proof = (host_fn::VERIFY, proof, verifier_data, pi);
-//
-//     let ret = network
-//         .query::<_, bool>(contract_id, 0, proof, &mut gas)
-//         .expect("Failed to verify the proof with rusk-abi!");
-//     assert!(ret);
-// }
-//
-// #[test]
-// fn verify_proof_should_fail() {
-//     let mut circuit = TestCircuit::new(1, 2);
-//
-//     let label = b"dusk-network";
-//     let (pk, verifier_data) = circuit
-//         .compile(&PUB_PARAMS)
-//         .expect("Failed to compile the circuit!");
-//
-//     let proof = circuit
-//         .prove(&PUB_PARAMS, &pk, label)
-//         .expect("Failed to generate the proof!");
-//
-//     let host = HostFnTest::new();
-//
-//     let code = include_bytes!(
-//         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
-//     );
-//
-//     let contract = Contract::new(host, code.to_vec());
-//
-//     let rusk_mod = RuskModule::new(&PUB_PARAMS);
-//     let mut network = NetworkState::default();
-//     NetworkState::register_host_module(rusk_mod);
-//
-//     let contract_id = network.deploy(contract).unwrap();
-//
-//     let mut gas = GasMeter::with_limit(1_000_000_000);
-//
-//     let proof = proof.to_bytes().to_vec();
-//     let verifier_data = verifier_data.to_var_bytes();
-//     let pi: Vec<PublicInput> = vec![BlsScalar::from(4).into()];
-//
-//     let proof = (host_fn::VERIFY, proof, verifier_data, pi);
-//
-//     let ret = network
-//         .query::<_, bool>(contract_id, 0, proof, &mut gas)
-//         .expect("Failed to verify the proof with rusk-abi!");
-//     assert!(!ret);
-// }
-//
-// #[test]
-// fn payment_info() {
-//     let host = HostFnTest::new();
-//
-//     let code = include_bytes!(
-//         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
-//     );
-//
-//     let contract = Contract::new(host, code.to_vec());
-//
-//     let rusk_mod = RuskModule::new(&PUB_PARAMS);
-//     let mut network = NetworkState::default();
-//     NetworkState::register_host_module(rusk_mod);
-//
-//     let contract_id = network.deploy(contract).unwrap();
-//
-//     let mut gas = GasMeter::with_limit(1_000_000_000);
-//
-//     let ret = network
-//         .query::<_, PaymentInfo>(
-//             contract_id,
-//             0,
-//             host_fn::GET_PAYMENT_INFO,
-//             &mut gas,
-//         )
-//         .unwrap();
-//
-//     let expected = PublicSpendKey::new(
-//         dusk_jubjub::JubJubExtended::default(),
-//         dusk_jubjub::JubJubExtended::default(),
-//     )
-//     .to_bytes();
-//
-//     assert!(
-//         matches!(ret, PaymentInfo::Any(Some(key)) if key.to_bytes() ==
-// expected)     );
-// }
+
+#[test]
+fn bls_signature() {
+    let (mut session, module_id) = instantiate();
+
+    let message = b"some-message".to_vec();
+
+    let sk = BlsSecretKey::random(&mut OsRng);
+    let pk = BlsPublicKey::from(&sk);
+    let apk = APK::from(&pk);
+
+    let sign = sk.sign(&pk, &message);
+
+    apk.verify(&sign, &message)
+        .expect("BLS signature should be valid");
+
+    let valid: bool = session
+        .query(module_id, "verify_bls", (message.clone(), apk, sign))
+        .expect("Query should succeed");
+
+    assert!(valid, "BLS Signature verification expected to succeed");
+
+    let wrong_sk = BlsSecretKey::random(&mut OsRng);
+    let wrong_pk = BlsPublicKey::from(&wrong_sk);
+    let wrong_apk = APK::from(&wrong_pk);
+
+    let valid: bool = session
+        .query(module_id, "verify_bls", (message, wrong_apk, sign))
+        .expect("Query should succeed");
+
+    assert!(!valid, "BLS Signature verification expected to fail");
+}
+
+#[derive(Debug, Default)]
+pub struct TestCircuit {
+    pub a: BlsScalar,
+    pub b: BlsScalar,
+    pub c: BlsScalar,
+}
+
+impl TestCircuit {
+    pub fn new(a: u64, b: u64) -> Self {
+        let a = a.into();
+        let b = b.into();
+        let c = a + b;
+
+        Self { a, b, c }
+    }
+}
+
+impl Circuit for TestCircuit {
+    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), Error> {
+        let a = composer.append_witness(self.a);
+        let b = composer.append_witness(self.b);
+
+        let constraint =
+            Constraint::new().left(1).a(a).right(1).b(b).public(-self.c);
+
+        composer.append_gate(constraint);
+        composer.append_dummy_gates();
+
+        Ok(())
+    }
+}
+
+#[test]
+fn plonk_proof() {
+    let (mut session, module_id) = instantiate();
+
+    let prover_verifier = get_prover_verifier();
+    let prover = &prover_verifier.prover;
+    let verifier = &prover_verifier.verifier;
+
+    let circuit = TestCircuit::new(1, 2);
+
+    let (proof, public_inputs) = prover
+        .prove(&mut OsRng, &circuit)
+        .expect("Proving circuit should succeed");
+
+    // Integrity check
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Proof should verify successfully");
+
+    let public_inputs: Vec<PublicInput> =
+        public_inputs.into_iter().map(From::from).collect();
+
+    let bytes =
+        rkyv::to_bytes::<_, 2000>(&(CircuitType::WFCT, proof, public_inputs))
+            .unwrap();
+
+    fs::write("query", &bytes).unwrap();
+
+    let root = unsafe {
+        rkyv::archived_root::<(CircuitType, Proof, Vec<PublicInput>)>(&bytes)
+    };
+
+    // Ignore the circuit type here, since we're testing only the ability to
+    // prove.
+    let (_, proof, public_inputs): (CircuitType, Proof, Vec<PublicInput>) =
+        root.deserialize(&mut rkyv::Infallible).unwrap();
+
+    let valid: bool = session
+        .query(
+            module_id,
+            "verify_proof",
+            (CircuitType::WFCT, proof.clone(), public_inputs),
+        )
+        .expect("Query should succeed");
+
+    assert!(valid, "The proof should be valid");
+
+    let wrong_public_inputs = vec![BlsScalar::from(0)];
+    let wrong_public_inputs: Vec<PublicInput> =
+        wrong_public_inputs.into_iter().map(From::from).collect();
+
+    let valid: bool = session
+        .query(
+            module_id,
+            "verify_proof",
+            (CircuitType::WFCT, proof, wrong_public_inputs),
+        )
+        .expect("Query should succeed");
+
+    assert!(!valid, "The proof should be invalid");
+}

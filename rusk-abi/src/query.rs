@@ -31,6 +31,8 @@ pub enum CircuitType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(not(feature = "host"), doc(hidden))]
 pub enum QueryType {
+    /// Perform a blake2b hash
+    Hash,
     /// Perform a poseidon hash
     PoseidonHash,
     /// Verify a plonk proof
@@ -45,6 +47,7 @@ impl QueryType {
     /// Returns the string representation of the query type
     pub const fn as_str(&self) -> &'static str {
         match self {
+            QueryType::Hash => "hash",
             QueryType::PoseidonHash => "poseidon_hash",
             QueryType::VerifyProof => "verify_proof",
             QueryType::VerifySchnorr => "verify_schnorr",

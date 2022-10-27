@@ -12,15 +12,12 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, Signature as BlsSignature,
-};
-use dusk_bytes::Serializable;
+use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
 use piecrust_uplink::{ModuleId, State};
-use rusk_abi::{hash::Hasher, CircuitType, PublicInput};
+use rusk_abi::{CircuitType, PublicInput};
 
 #[no_mangle]
 static SELF_ID: ModuleId = ModuleId::uninitialized();
@@ -31,13 +28,8 @@ static mut STATE: State<HostFnTest> = State::new(HostFnTest);
 pub struct HostFnTest;
 
 impl HostFnTest {
-    pub fn hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
-        let mut hasher = Hasher::new();
-        for scalar in scalars {
-            hasher.update(&scalar.to_bytes());
-        }
-        hasher.update(b"dusk network rocks");
-        hasher.finalize()
+    pub fn hash(&self, bytes: Vec<u8>) -> BlsScalar {
+        rusk_abi::hash(bytes)
     }
 
     pub fn poseidon_hash(&self, scalars: Vec<BlsScalar>) -> BlsScalar {
@@ -65,10 +57,10 @@ impl HostFnTest {
     pub fn verify_bls(
         &self,
         msg: Vec<u8>,
-        pk: BlsPublicKey,
+        apk: APK,
         sig: BlsSignature,
     ) -> bool {
-        rusk_abi::verify_bls(msg, pk, sig)
+        rusk_abi::verify_bls(msg, apk, sig)
     }
 }
 
