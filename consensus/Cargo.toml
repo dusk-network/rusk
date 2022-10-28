@@ -3,7 +3,6 @@ name = "consensus"
 version = "0.1.0"
 edition = "2021"
 
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -23,7 +22,13 @@ async-channel = "1.7.1"
 
 [dev-dependencies]
 hex-literal = {version = "0.3.4"}
+clap = "2.33.3"
+rustc_tools_util = "0.2"
+kadcast = "0.4.1"
 
+[[example]]
+name = "node"
+path = "example/node.rs"
 
 [[example]]
 name = "testbed"

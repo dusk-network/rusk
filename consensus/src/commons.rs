@@ -11,12 +11,12 @@ use crate::messages;
 use crate::messages::Message;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::PublicKey;
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::Serializable;
 
-use std::fmt;
 use std::sync::Arc;
+use std::{fmt, mem};
 use tokio::sync::Mutex;
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -52,6 +52,37 @@ pub struct Header {
     pub generator_bls_pubkey: [u8; 96],
     pub state_hash: [u8; 32],
     pub hash: [u8; 32],
+}
+
+impl Header {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
+        buf.put_u8(self.version);
+        buf.put_u64_le(self.height);
+        buf.put_i64_le(self.timestamp);
+        buf.put_u64_le(self.gas_limit);
+
+        buf.put(&self.prev_block_hash[..]);
+        buf.put(&self.seed[..]);
+        buf.put(&self.generator_bls_pubkey[..]);
+        buf.put(&self.state_hash[..]);
+        buf.put(&self.hash[..]);
+
+        buf.to_vec()
+    }
+
+    pub fn from_bytes(&mut self, buf: &mut Bytes) {
+        self.version = buf.get_u8();
+        self.height = buf.get_u64_le();
+        self.timestamp = buf.get_i64_le();
+        self.gas_limit = buf.get_u64_le();
+
+        buf.copy_to_slice(&mut self.prev_block_hash);
+        buf.copy_to_slice(&mut self.seed);
+        buf.copy_to_slice(&mut self.generator_bls_pubkey);
+        buf.copy_to_slice(&mut self.state_hash);
+        buf.copy_to_slice(&mut self.hash);
+    }
 }
 
 impl Default for Header {
@@ -90,6 +121,17 @@ impl Block {
         let mut b = Block { header, txs };
         b.calculate_hash();
         b
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
+        buf.put(&self.header.to_bytes()[..]);
+        buf.to_vec()
+    }
+
+    pub fn from_bytes(&mut self, buf: &mut Bytes) {
+        self.header.from_bytes(buf);
+        // TODO: Vec Tx
     }
 
     fn calculate_hash(&mut self) {
@@ -200,6 +242,7 @@ pub fn spawn_send_reduction(
             round: ru.round,
             step,
             block_hash: candidate.header.hash,
+            topic: Topics::Reduction as u8,
         };
 
         // Sign and construct reduction message
@@ -222,4 +265,46 @@ pub fn spawn_send_reduction(
             .await
             .unwrap_or_else(|err| tracing::error!("unable to register reduction msg {:?}", err));
     });
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Topics {
+    // Consensus main loop topics
+    Candidate = 15,
+    NewBlock = 16,
+    Reduction = 17,
+
+    // Consensus Agreement loop topics
+    Agreement = 18,
+    AggrAgreement = 19,
+
+    Unknown = 100,
+}
+
+impl Default for Topics {
+    fn default() -> Self {
+        Topics::Unknown
+    }
+}
+
+impl From<u8> for Topics {
+    fn from(v: u8) -> Self {
+        if v == Topics::NewBlock as u8 {
+            return Topics::NewBlock;
+        }
+
+        if v == Topics::Reduction as u8 {
+            return Topics::Reduction;
+        }
+
+        if v == Topics::Agreement as u8 {
+            return Topics::Agreement;
+        }
+
+        if v == Topics::AggrAgreement as u8 {
+            return Topics::AggrAgreement;
+        }
+
+        Topics::Unknown
+    }
 }
