@@ -8,8 +8,21 @@
 #![cfg(feature = "host")]
 
 use dusk_bls12_381::BlsScalar;
+use dusk_bls12_381_sign::{
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
+    Signature as BlsSignature, APK,
+};
 use dusk_bytes::{ParseHexStr, Serializable};
-use std::fs;
+use dusk_pki::{PublicKey, SecretKey};
+use dusk_plonk::prelude::*;
+use dusk_schnorr::Signature;
+use once_cell::sync::OnceCell;
+use piecrust::{Session, VM};
+use piecrust_uplink::ModuleId;
+use rand_core::OsRng;
+use rkyv::Deserialize;
+use rusk_abi::hash::Hasher;
+use rusk_abi::{CircuitType, PublicInput};
 
 #[test]
 fn hash_host() {
@@ -34,23 +47,6 @@ fn hash_host() {
         format!("{:#x}", Hasher::digest(input))
     );
 }
-
-use piecrust::VM;
-
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-    Signature as BlsSignature, APK,
-};
-use dusk_pki::{PublicKey, SecretKey};
-use dusk_plonk::prelude::*;
-use dusk_schnorr::Signature;
-use once_cell::sync::OnceCell;
-use piecrust::Session;
-use piecrust_uplink::ModuleId;
-use rand_core::OsRng;
-use rkyv::Deserialize;
-use rusk_abi::hash::Hasher;
-use rusk_abi::{CircuitType, PublicInput};
 
 struct ProverVerifier {
     prover: Prover<TestCircuit>,
@@ -136,8 +132,6 @@ fn plonk_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
             &buf[..arg_len as usize],
         )
     };
-
-    fs::write("host_query", &buf[..arg_len as usize]).unwrap();
 
     // Ignore the circuit type here, since we're testing only the ability to
     // prove.
@@ -343,21 +337,6 @@ fn plonk_proof() {
 
     let public_inputs: Vec<PublicInput> =
         public_inputs.into_iter().map(From::from).collect();
-
-    let bytes =
-        rkyv::to_bytes::<_, 2000>(&(CircuitType::WFCT, proof, public_inputs))
-            .unwrap();
-
-    fs::write("query", &bytes).unwrap();
-
-    let root = unsafe {
-        rkyv::archived_root::<(CircuitType, Proof, Vec<PublicInput>)>(&bytes)
-    };
-
-    // Ignore the circuit type here, since we're testing only the ability to
-    // prove.
-    let (_, proof, public_inputs): (CircuitType, Proof, Vec<PublicInput>) =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
 
     let valid: bool = session
         .query(
