@@ -15,9 +15,7 @@ use dusk_pki::PublicKey;
 use dusk_plonk::prelude::Proof;
 use dusk_schnorr::Signature;
 
-use crate::PublicInput;
-
-pub use crate::QueryType;
+use crate::{PublicInput, QueryType};
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
 /// The output of the hasher is truncated (last nibble) to fit onto a scalar.
@@ -39,7 +37,7 @@ pub fn verify_proof(
     public_inputs: Vec<PublicInput>,
 ) -> bool {
     let str = QueryType::VerifyProof.as_str();
-    piecrust_uplink::host_query(str, (ty, public_inputs, proof))
+    piecrust_uplink::host_query(str, (ty, proof, public_inputs))
 }
 
 /// Verify a schnorr signature is valid for the given public key and message
