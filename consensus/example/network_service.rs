@@ -47,12 +47,16 @@ pub async fn run_main_loop(
 }
 
 async fn broadcast(peer: &Peer, msg: Message) {
-    if msg.metadata.height == 0 {
-        return;
-    }
+    if let Some(height) = msg.metadata.height {
+        if height == 0 {
+            return;
+        }
 
-    let h = (msg.metadata.height - 1) as usize;
-    peer.broadcast(&wire::Frame::encode(msg), Some(h)).await;
+        let h = (height - 1) as usize;
+        peer.broadcast(&wire::Frame::encode(msg), Some(h)).await;
+    } else {
+        peer.broadcast(&wire::Frame::encode(msg), None).await;
+    }
 }
 
 #[derive(Default)]
@@ -65,7 +69,7 @@ impl NetworkListen for Reader {
         let decoded = wire::Frame::decode(message.to_vec());
         let mut msg = decoded.get_msg().clone();
 
-        msg.metadata.height = md.height();
+        msg.metadata.height = Some(md.height());
         msg.metadata.src_addr = md.src().to_string();
 
         // Dispatch message to the proper queue for further processing

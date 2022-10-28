@@ -39,19 +39,10 @@ pub struct Message {
 /// Defines a transport-related properties that determines how the message
 /// will be broadcast.
 /// TODO: This should be moved out of consensus message definition.
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TransportData {
-    pub height: u8,
+    pub height: Option<u8>,
     pub src_addr: String,
-}
-
-impl Default for TransportData {
-    fn default() -> Self {
-        Self {
-            height: 128,
-            src_addr: Default::default(),
-        }
-    }
 }
 
 impl Serializable for Message {
