@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use consensus::commons::Topics;
-use consensus::messages::Message;
+use consensus::messages::{Message, TransportData};
 use consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, NetworkListen, Peer};
@@ -47,16 +47,12 @@ pub async fn run_main_loop(
 }
 
 async fn broadcast(peer: &Peer, msg: Message) {
-    if let Some(height) = msg.metadata.height {
-        if height == 0 {
-            return;
-        }
-
-        let h = (height - 1) as usize;
-        peer.broadcast(&wire::Frame::encode(msg), Some(h)).await;
-    } else {
-        peer.broadcast(&wire::Frame::encode(msg), None).await;
-    }
+    let height = match msg.metadata {
+        Some(TransportData { height: 0, .. }) => return,
+        Some(TransportData { height, .. }) => Some((height as usize) - 1),
+        None => None,
+    };
+    peer.broadcast(&wire::Frame::encode(msg), height).await;
 }
 
 #[derive(Default)]
@@ -68,9 +64,10 @@ impl NetworkListen for Reader {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
         let decoded = wire::Frame::decode(message.to_vec());
         let mut msg = decoded.get_msg().clone();
-
-        msg.metadata.height = Some(md.height());
-        msg.metadata.src_addr = md.src().to_string();
+        msg.metadata = Some(TransportData {
+            height: md.height(),
+            src_addr: md.src().to_string(),
+        });
 
         // Dispatch message to the proper queue for further processing
         if let Err(e) = self
