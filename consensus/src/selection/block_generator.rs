@@ -7,7 +7,7 @@
 use crate::commons::{sign, Block, RoundUpdate, Topics};
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 use crate::{commons, config};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -44,14 +44,14 @@ impl Generator {
             NewBlock {
                 prev_hash: [0; 32],
                 candidate,
-                signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), msg_header),
+                signed_hash: sign(&ru.secret_key, ru.pubkey_bls.inner(), &msg_header),
             },
         ))
     }
 
     async fn generate_block(
         &self,
-        pubkey: PublicKey,
+        pubkey: ConsensusPublicKey,
         round: u64,
         seed: [u8; 32],
         prev_block_hash: [u8; 32],
@@ -74,7 +74,7 @@ impl Generator {
             gas_limit: 0,
             prev_block_hash,
             seed,
-            generator_bls_pubkey: pubkey.to_bytes(),
+            generator_bls_pubkey: *pubkey.bytes(),
             state_hash: [0; 32],
             hash: [0; 32],
         };

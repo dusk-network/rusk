@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::aggregator::Aggregator;
-use crate::commons::{spawn_send_reduction, Block, ConsensusError};
+use crate::commons::{spawn_send_reduction, ConsensusError};
 use crate::config;
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
@@ -28,10 +27,7 @@ impl Reduction {
     pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Reduction {
-                aggr: Aggregator::default(),
-                candidate: Block::default(),
-            },
+            handler: handler::Reduction::default(),
             executor,
         }
     }

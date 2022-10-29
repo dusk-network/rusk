@@ -11,6 +11,7 @@ use crate::aggregator::Aggregator;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
 
+#[derive(Default)]
 pub struct Reduction {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
@@ -31,7 +32,7 @@ impl MsgHandler<Message> for Reduction {
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
-        if verify_signature(&msg.header, msg_payload.signed_hash).is_err() {
+        if verify_signature(&msg.header, &msg_payload.signed_hash).is_err() {
             return Err(ConsensusError::InvalidSignature);
         }
 
@@ -53,13 +54,13 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
+        if let Some((_, sv)) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
             // TODO: if the votes converged for an empty hash we invoke halt and increase timeout
 
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
             return Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
                 payload::StepVotesWithCandidate {
-                    sv: sv.1,
+                    sv,
                     candidate: self.candidate.clone(),
                 },
             )));

@@ -9,7 +9,7 @@ use crate::messages::payload::StepVotes;
 use crate::messages::{payload, Header};
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -19,7 +19,7 @@ use tracing::{error, warn};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<PublicKey>)>);
+pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<ConsensusPublicKey>)>);
 
 impl Aggregator {
     pub fn collect_vote(
@@ -36,7 +36,7 @@ impl Aggregator {
             let (aggr_sign, cluster) = self
                 .0
                 .entry(hash)
-                .or_insert((AggrSignature::default(), Cluster::<PublicKey>::new()));
+                .or_insert((AggrSignature::default(), Cluster::new()));
 
             // Each committee has 64 slots. If a Provisioner is extracted into
             // multiple slots, then he/she only needs to send one vote which can be
@@ -66,23 +66,17 @@ impl Aggregator {
             tracing::trace!("total votes: {}, quorum target: {} ", total, quorum_target);
 
             if total >= committee.quorum() {
-                return Some((
-                    hash,
-                    StepVotes {
-                        bitset: committee.bits(cluster),
-                        signature: aggr_sign.get_aggregated(),
-                    },
-                ));
+                let signature = aggr_sign
+                    .aggregated_bytes()
+                    .expect("Signature to exist after quorum reached");
+                let bitset = committee.bits(cluster);
+
+                let step_votes = StepVotes { bitset, signature };
+
+                return Some((hash, step_votes));
             }
         }
 
-        None
-    }
-
-    pub fn get_total(&self, hash: Hash) -> Option<usize> {
-        if let Some(value) = self.0.get(&hash) {
-            return Some(value.1.total_occurrences());
-        }
         None
     }
 }
@@ -98,7 +92,13 @@ impl fmt::Display for Aggregator {
 
 #[derive(Debug)]
 pub enum AggrSigError {
-    InvalidData,
+    InvalidData(dusk_bls12_381_sign::Error),
+}
+
+impl From<dusk_bls12_381_sign::Error> for AggrSigError {
+    fn from(e: dusk_bls12_381_sign::Error) -> Self {
+        Self::InvalidData(e)
+    }
 }
 
 #[derive(Default)]
@@ -108,41 +108,48 @@ struct AggrSignature {
 
 impl AggrSignature {
     pub fn add(&mut self, data: [u8; 48]) -> Result<(), AggrSigError> {
-        match dusk_bls12_381_sign::Signature::from_bytes(&data) {
-            Ok(s) => {
-                if self.data.is_none() {
-                    self.data = Some(s);
-                } else {
-                    self.data = Some(self.data.unwrap().aggregate(&[s]));
-                }
-                Ok(())
-            }
-            // TODO: don't mask the real error
-            Err(_) => Err(AggrSigError::InvalidData),
-        }
+        let sig = dusk_bls12_381_sign::Signature::from_bytes(&data)?;
+
+        let aggr_sig = match self.data {
+            Some(data) => data.aggregate(&[sig]),
+            None => sig,
+        };
+
+        self.data = Some(aggr_sig);
+
+        Ok(())
     }
 
-    pub fn get_aggregated(&self) -> [u8; 48] {
-        self.data.unwrap().to_bytes()
+    pub fn aggregated_bytes(&self) -> Option<[u8; 48]> {
+        self.data.map(|sig| sig.to_bytes())
     }
 }
 
 /* TODO: Enable aggregator unit test with hard-coded seeds for both golang and rustlang implementations
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::aggregator::Aggregator;
     use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use crate::util::bls_keys::PublicKey;
+    use dusk_bls12_381_sign::PublicKey;
     use hex::FromHex;
+    impl Aggregator {
+        pub fn get_total(&self, hash: Hash) -> Option<usize> {
+            if let Some(value) = self.0.get(&hash) {
+                return Some(value.1.total_occurrences());
+            }
+            None
+        }
+    }
 
-    fn simple_pubkey(b: u8) -> PublicKey {
+    fn simple_pubkey(b: u8) -> CachedPublicKey {
         let mut key: [u8; 96] = [0; 96];
         key[0] = b;
 
-        PublicKey::from_array_unchecked(key)
+        unsafe { CachedPublicKey::new(PublicKey::from_slice_unchecked(&key)) }
     }
 
     #[test]
@@ -156,7 +163,7 @@ mod tests {
         .unwrap();
 
         let empty_payload = messages::payload::Reduction {
-            signed_hash: Default::default(),
+            signed_hash: [0; 48],
         };
 
         // Create dummy provisioners
@@ -178,7 +185,7 @@ mod tests {
 
         // Execute sortition with specific config
         let cfg = Config::new([0; 32], round, step, 64);
-        let c = Committee::new(PublicKey::default(), &mut p, cfg);
+        let c = Committee::new(CachedPublicKey::new(PublicKey::default()), &mut p, cfg);
 
         assert_eq!(c.quorum(), 4);
 

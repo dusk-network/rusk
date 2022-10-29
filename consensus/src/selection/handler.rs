@@ -52,7 +52,7 @@ impl Selection {
     fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
         //  Verify new_block msg signature
         if let Payload::NewBlock(p) = msg.clone().payload {
-            if verify_signature(&msg.header, p.signed_hash).is_err() {
+            if verify_signature(&msg.header, &p.signed_hash).is_err() {
                 return Err(ConsensusError::InvalidSignature);
             }
 

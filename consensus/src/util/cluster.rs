@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::btree_map::Iter;
 use std::collections::BTreeMap;
 
 #[derive(Debug)]
-pub struct Cluster<T>(pub BTreeMap<T, usize>);
+pub struct Cluster<T>(BTreeMap<T, usize>);
 
 impl<T> Cluster<T>
 where
@@ -17,43 +18,31 @@ where
         Self(Default::default())
     }
 
-    pub fn contains_key(&self, key: &T) -> bool {
-        self.0.contains_key(key)
-    }
-
+    /// total_occurrences return the sum of all the values.
     pub fn total_occurrences(&self) -> usize {
-        let mut total = 0;
-        for elem in self.0.iter() {
-            total += elem.1;
-        }
-
-        total
+        self.0.values().sum()
     }
 
     /// set_weight can set weight only once.
     pub fn set_weight(&mut self, key: &T, weight: usize) -> Option<usize> {
-        let entry = self.0.entry(*key).or_insert(0);
-        if *entry > 0 {
+        if weight == 0 {
+            return None;
+        }
+        if self.0.contains_key(key) {
             // already updated
             return None;
         }
 
-        *entry = weight;
-        Some(*entry)
+        self.0.insert(*key, weight);
+        Some(weight)
     }
 
-    /// get weight value, if key exists.
-    pub fn get_weight(&self, key: &T) -> Option<usize> {
-        self.0.get_key_value(key).map(|item| *item.1)
+    pub fn iter(&self) -> Iter<T, usize> {
+        self.0.iter()
     }
-}
 
-impl<T> IntoIterator for Cluster<T> {
-    type Item = (T, usize);
-    type IntoIter = std::collections::btree_map::IntoIter<T, usize>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+    pub fn contains_key(&self, key: &T) -> bool {
+        self.0.contains_key(key)
     }
 }
 
@@ -63,13 +52,15 @@ mod tests {
 
     #[test]
     pub fn test_set_weight() {
-        let mut a = Cluster::<char>::new();
+        let mut a = Cluster::new();
 
         a.set_weight(&'a', 3);
+        a.set_weight(&'b', 0);
         a.set_weight(&'b', 11);
         assert_eq!(a.total_occurrences(), 14);
 
         let res = a.set_weight(&'b', 1);
         assert!(res == None);
+        assert_eq!(a.total_occurrences(), 14);
     }
 }
