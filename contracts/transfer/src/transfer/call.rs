@@ -4,277 +4,74 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
-
 use alloc::vec::Vec;
-use canonical::Canon;
-use canonical_derive::Canon;
-use dusk_abi::{ContractId, Transaction};
+use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_pki::StealthAddress;
+use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Message, Note};
+use piecrust_uplink::ModuleId;
+use rkyv::{Archive, Deserialize, Serialize};
 
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Clone, Canon)]
-pub enum Call {
-    Execute {
-        anchor: BlsScalar,
-        nullifiers: Vec<BlsScalar>,
-        fee: Fee,
-        crossover: Option<Crossover>,
-        notes: Vec<Note>,
-        spend_proof: Vec<u8>,
-        call: Option<(ContractId, Transaction)>,
-    },
-
-    SendToContractTransparent {
-        address: ContractId,
-        value: u64,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromTransparent {
-        value: u64,
-        note: Note,
-        spend_proof: Vec<u8>,
-    },
-
-    SendToContractObfuscated {
-        address: ContractId,
-        message: Message,
-        message_address: StealthAddress,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromObfuscated {
-        message: Message,
-        message_address: StealthAddress,
-        change: Message,
-        change_address: StealthAddress,
-        output: Note,
-        spend_proof: Vec<u8>,
-    },
-
-    WithdrawFromTransparentToContract {
-        to: ContractId,
-        value: u64,
-    },
-
-    Mint {
-        address: StealthAddress,
-        value: u64,
-        nonce: BlsScalar,
-    },
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Execute {
+    anchor: BlsScalar,
+    nullifiers: Vec<BlsScalar>,
+    fee: Fee,
+    crossover: Option<Crossover>,
+    notes: Vec<Note>,
+    spend_proof: Proof,
+    call: Option<(ModuleId, Vec<u8>)>,
 }
 
-impl Call {
-    pub fn execute(
-        anchor: BlsScalar,
-        nullifiers: Vec<BlsScalar>,
-        fee: Fee,
-        crossover: Option<Crossover>,
-        notes: Vec<Note>,
-        spend_proof: Vec<u8>,
-        call: Option<(ContractId, Transaction)>,
-    ) -> Self {
-        Self::Execute {
-            anchor,
-            nullifiers,
-            fee,
-            crossover,
-            notes,
-            spend_proof,
-            call,
-        }
-    }
-
-    pub fn to_transaction(&self) -> Transaction {
-        Transaction::from_canon(self)
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn to_execute(
-        &self,
-        contract: ContractId,
-        anchor: BlsScalar,
-        nullifiers: Vec<BlsScalar>,
-        fee: Fee,
-        crossover: Option<Crossover>,
-        notes: Vec<Note>,
-        spend_proof: Vec<u8>,
-    ) -> Result<Self, Error> {
-        if let Self::Execute { .. } = self {
-            return Err(Error::ExecuteRecursion);
-        }
-
-        let tx = Transaction::from_canon(self);
-        let execute = Self::execute(
-            anchor,
-            nullifiers,
-            fee,
-            crossover,
-            notes,
-            spend_proof,
-            Some((contract, tx)),
-        );
-
-        Ok(execute)
-    }
-
-    pub fn send_to_contract_transparent(
-        address: ContractId,
-        value: u64,
-        spend_proof: Vec<u8>,
-    ) -> Self {
-        Self::SendToContractTransparent {
-            address,
-            value,
-            spend_proof,
-        }
-    }
-
-    pub fn withdraw_from_transparent(
-        value: u64,
-        note: Note,
-        spend_proof: Vec<u8>,
-    ) -> Self {
-        Self::WithdrawFromTransparent {
-            value,
-            note,
-            spend_proof,
-        }
-    }
-
-    pub fn send_to_contract_obfuscated(
-        address: ContractId,
-        message: Message,
-        message_address: StealthAddress,
-        spend_proof: Vec<u8>,
-    ) -> Self {
-        Self::SendToContractObfuscated {
-            address,
-            message,
-            message_address,
-            spend_proof,
-        }
-    }
-
-    pub fn withdraw_from_obfuscated(
-        message: Message,
-        message_address: StealthAddress,
-        change: Message,
-        change_address: StealthAddress,
-        output: Note,
-        spend_proof: Vec<u8>,
-    ) -> Self {
-        Self::WithdrawFromObfuscated {
-            message,
-            message_address,
-            change,
-            change_address,
-            output,
-            spend_proof,
-        }
-    }
-
-    pub fn withdraw_from_transparent_to_contract(
-        to: ContractId,
-        value: u64,
-    ) -> Self {
-        Self::WithdrawFromTransparentToContract { to, value }
-    }
-
-    pub fn mint(address: StealthAddress, value: u64, nonce: BlsScalar) -> Self {
-        Self::Mint {
-            address,
-            value,
-            nonce,
-        }
-    }
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct SendToContractTransparent {
+    module_id: ModuleId,
+    value: u64,
+    proof: Proof,
 }
 
-#[cfg(target_arch = "wasm32")]
-mod wasm {
-    use super::*;
-    use crate::TransferContract;
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawFromContractTransparent {
+    value: u64,
+    note: Note,
+    proof: Proof,
+}
 
-    impl Call {
-        pub fn transact(self, contract: &mut TransferContract) -> bool {
-            match self {
-                Call::Execute {
-                    anchor,
-                    nullifiers,
-                    fee,
-                    crossover,
-                    notes,
-                    spend_proof,
-                    call,
-                } => contract.execute(
-                    anchor,
-                    nullifiers,
-                    fee,
-                    crossover,
-                    notes,
-                    spend_proof,
-                    call,
-                ),
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct SendToContractObfuscated {
+    module_id: ModuleId,
+    message: Message,
+    message_address: StealthAddress,
+    proof: Proof,
+}
 
-                Call::SendToContractTransparent {
-                    address,
-                    value,
-                    spend_proof,
-                } => contract.send_to_contract_transparent(
-                    address,
-                    value,
-                    spend_proof,
-                ),
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawFromContractObfuscated {
+    message: Message,
+    message_address: StealthAddress,
+    change: Message,
+    change_address: StealthAddress,
+    output: Note,
+    proof: Proof,
+}
 
-                Call::WithdrawFromTransparent {
-                    value,
-                    note,
-                    spend_proof,
-                } => {
-                    contract.withdraw_from_transparent(value, note, spend_proof)
-                }
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WithdrawFromContractToContractTransparent {
+    to: ModuleId,
+    value: u64,
+}
 
-                Call::SendToContractObfuscated {
-                    address,
-                    message,
-                    message_address,
-                    spend_proof,
-                } => contract.send_to_contract_obfuscated(
-                    address,
-                    message,
-                    message_address,
-                    spend_proof,
-                ),
-
-                Call::WithdrawFromObfuscated {
-                    message,
-                    message_address,
-                    change,
-                    change_address,
-                    output,
-                    spend_proof,
-                } => contract.withdraw_from_obfuscated(
-                    message,
-                    message_address,
-                    change,
-                    change_address,
-                    output,
-                    spend_proof,
-                ),
-
-                Call::WithdrawFromTransparentToContract { to, value } => {
-                    contract.withdraw_from_transparent_to_contract(to, value)
-                }
-
-                Call::Mint {
-                    address,
-                    value,
-                    nonce,
-                } => contract.mint(address, value, nonce),
-            }
-        }
-    }
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Mint {
+    address: StealthAddress,
+    value: u64,
+    nonce: BlsScalar,
 }

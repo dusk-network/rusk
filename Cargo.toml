@@ -2,7 +2,7 @@
 members = [
     "circuits/transfer",
 #    "contracts/stake",
-#    "contracts/transfer",
+    "contracts/transfer",
     "macros/code-hasher",
     "rusk-recovery",
     "rusk-profile",

@@ -24,7 +24,7 @@ impl TransferContract {
         // Only the stake contract can mint notes to a particular stealth
         // address. This happens when the reward for staking and participating
         // in the consensus is withdrawn.
-        if dusk_abi::caller() != rusk_abi::stake_contract() {
+        if rusk_abi::caller() != rusk_abi::stake_contract() {
             panic!("Can only be called by the stake contract!")
         }
 
@@ -83,7 +83,7 @@ impl TransferContract {
         note: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = dusk_abi::caller();
+        let address = rusk_abi::caller();
         let mut pi = Vec::with_capacity(3);
 
         pi.push(value.into());
@@ -175,7 +175,7 @@ impl TransferContract {
         output: Note,
         spend_proof: Vec<u8>,
     ) -> bool {
-        let address = dusk_abi::caller();
+        let address = rusk_abi::caller();
 
         let (change_psk_a, change_psk_b) =
             match rusk_abi::payment_info(address) {
@@ -234,7 +234,7 @@ impl TransferContract {
         to: ContractId,
         value: u64,
     ) -> bool {
-        let from = dusk_abi::caller();
+        let from = rusk_abi::caller();
 
         //  1. from ∈ B↦
         //  2. B_from↦ ← B_from↦ − v

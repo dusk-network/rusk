@@ -6,12 +6,10 @@
 
 use canonical::CanonError;
 use core::fmt;
-use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Error as PhoenixError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Poseidon(PoseidonError),
     Phoenix(PhoenixError),
     Canon(CanonError),
     NoteNotFound,
@@ -22,12 +20,6 @@ pub enum Error {
     ProofVerificationError,
     PaymentTypeNotAccepted,
     ContractNotFound,
-}
-
-impl From<PoseidonError> for Error {
-    fn from(e: PoseidonError) -> Self {
-        Self::Poseidon(e)
-    }
 }
 
 impl From<PhoenixError> for Error {

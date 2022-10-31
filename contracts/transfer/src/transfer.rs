@@ -4,16 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, Map};
+use crate::Error;
 
+use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
-use canonical_derive::Canon;
+
 use core::convert::TryFrom;
-use dusk_abi::{ContractId, Transaction};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
+use piecrust_uplink::ModuleId;
 use rusk_abi::hash::Hasher;
 
 mod call;
@@ -26,21 +27,33 @@ use tree::Tree;
 pub use call::Call;
 pub use tree::Leaf;
 
-pub type PublicKeyBytes = [u8; PublicKey::SIZE];
-
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Default, Clone)]
 pub struct TransferContract {
     pub(crate) tree: Tree,
-    pub(crate) nullifiers: Map<BlsScalar, ()>,
-    pub(crate) roots: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<ContractId, u64>,
-    pub(crate) message_mapping: Map<ContractId, Map<PublicKeyBytes, Message>>,
-    pub(crate) message_mapping_set: Map<ContractId, StealthAddress>,
+    pub(crate) nullifiers: BTreeSet<BlsScalar>,
+    pub(crate) roots: BTreeSet<BlsScalar>,
+    pub(crate) balances: BTreeMap<ModuleId, u64>,
+    pub(crate) message_mapping:
+        BTreeMap<ModuleId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
+    pub(crate) message_mapping_set: BTreeMap<ModuleId, StealthAddress>,
     pub(crate) var_crossover: Option<Crossover>,
     pub(crate) var_crossover_pk: Option<PublicKey>,
 }
 
 impl TransferContract {
+    pub const fn new() -> TransferContract {
+        TransferContract {
+            tree: Tree::new(),
+            nullifiers: BTreeSet::new(),
+            roots: BTreeSet::new(),
+            balances: BTreeMap::new(),
+            message_mapping: BTreeMap::new(),
+            message_mapping_set: BTreeMap::new(),
+            var_crossover: None,
+            var_crossover_pk: None,
+        }
+    }
+
     pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
         self.tree.get(pos).map(|l| l.map(|l| l.into()))
     }
@@ -86,13 +99,13 @@ impl TransferContract {
         self.tree.leaves(block_height)
     }
 
-    pub fn balances(&self) -> &Map<ContractId, u64> {
+    pub fn balances(&self) -> &BTreeMap<ModuleId, u64> {
         &self.balances
     }
 
     pub fn add_balance(
         &mut self,
-        address: ContractId,
+        address: ModuleId,
         value: u64,
     ) -> Result<(), Error> {
         if let Some(mut balance) = self.balances.get_mut(&address)? {
@@ -108,7 +121,7 @@ impl TransferContract {
     pub fn update_root(&mut self) -> Result<(), Error> {
         let root = self.tree.root()?;
 
-        self.roots.insert(root, ())?;
+        self.roots.insert(root)?;
 
         Ok(())
     }
@@ -119,7 +132,7 @@ impl TransferContract {
         anchor: &BlsScalar,
         fee: &Fee,
         crossover: Option<&Crossover>,
-        call: Option<&(ContractId, Transaction)>,
+        call: Option<&(ModuleId, Vec<u8>)>,
     ) -> BlsScalar {
         let mut hasher = Hasher::new();
 

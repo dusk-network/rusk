@@ -7,11 +7,11 @@
 use crate::{Error, Map, PublicKeyBytes, TransferContract};
 
 use alloc::vec::Vec;
-use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
 use phoenix_core::{Crossover, Fee, Message, Note};
+use piecrust_uplink::ModuleId;
 use rusk_abi::dusk::*;
 use rusk_abi::PublicInput;
 

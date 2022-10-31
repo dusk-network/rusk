@@ -16,7 +16,3 @@ mod wasm;
 
 pub use error::Error;
 pub use transfer::{Call, Leaf, TransferContract};
-pub type Map<K, V> = dusk_hamt::Hamt<K, V, ()>;
-
-#[cfg(target_arch = "wasm32")]
-pub(crate) use transfer::PublicKeyBytes;
