@@ -10,16 +10,18 @@
 
 //! # Rusk ABI
 //!
-//! The ABI to develop Rusk's specific Contracts
+//! The ABI to develop Dusk Network smart contracts
 
-#![warn(missing_docs)]
 #![no_std]
+#![deny(missing_docs)]
 #![deny(clippy::all)]
 #![feature(const_fn_floating_point_arithmetic)]
 
-pub use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
+
+use piecrust_uplink::ModuleId;
+use piecrust_uplink::MODULE_ID_BYTES;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
@@ -28,34 +30,35 @@ pub const POSEIDON_TREE_DEPTH: usize = 17;
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
-/// Contract ID of the genesis transfer contract
-pub const fn transfer_contract() -> ContractId {
-    ContractId::reserved(0x1)
+/// Module ID of the genesis transfer contract
+pub const fn transfer_module() -> ModuleId {
+    reserved(0x1)
 }
 
-/// Contract ID of the genesis stake contract
-pub const fn stake_contract() -> ContractId {
-    ContractId::reserved(0x2)
+/// Module ID of the genesis stake contract
+pub const fn stake_module() -> ModuleId {
+    reserved(0x2)
 }
 
-/// Converts a `ContractId` to a `BlsScalar`
+#[inline]
+const fn reserved(b: u8) -> ModuleId {
+    let mut bytes = [0u8; MODULE_ID_BYTES];
+    bytes[0] = b;
+    ModuleId::from_bytes(bytes)
+}
+
+/// Converts a `ModuleId` to a `BlsScalar`
 ///
 /// This cannot fail since the contract id should be generated always using
-/// `rusk_abi::gen_contract_id` that ensures the bytes are inside the BLS field.
-pub fn contract_to_scalar(contract_id: &ContractId) -> BlsScalar {
-    BlsScalar::from_slice(contract_id.as_bytes()).expect(
-        "Something went REALLY wrong if a contract id cannot be a scalar",
-    )
+/// `rusk_abi::gen_module_id` that ensures the bytes are inside the BLS field.
+pub fn module_to_scalar(module_id: &ModuleId) -> BlsScalar {
+    BlsScalar::from_slice(module_id.as_bytes())
+        .expect("Something went REALLY wrong if a contract id is not a scalar")
 }
 
 pub mod dusk;
 #[doc(hidden)]
 pub mod hash;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "module")] {
-        #[doc(hidden)]
-        pub mod module;
-        pub use module::*;
-    }
-}
+mod query;
+pub use query::*;

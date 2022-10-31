@@ -4,34 +4,32 @@ version = "0.7.0"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
-description = "The ABI to develop dusk-network contracts for Rusk VM in Zero-Knowledge"
+description = "The ABI to develop Dusk Network smart contracts"
 license = "MPL-2.0"
 exclude = [".github/workflows/ci.yml", ".gitignore"]
 
 [dependencies]
-blake2b_simd = { version = "0.5", default-features = false }
-cfg-if = "0.1"
+blake2b_simd = { version = "1", default-features = false }
+cfg-if = "1"
 
-dusk-poseidon = { version = "0.25.0-rc", default-features = false }
-dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
-dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
-dusk-abi = "0.11"
-dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-dusk-pki = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
+dusk-poseidon = { version = "0.28", default-features = false }
+dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381-sign = { version = "0.4", features = ["rkyv-impl"] }
+dusk-schnorr = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-canonical = "0.7"
-canonical_derive = "0.7"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dusk-plonk = { version = "0.10", default-features = false, features = ["canon"] }
+rkyv = { version = "0.7", default-features = false }
+bytecheck = { version = "0.6", default-features = false }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", default-features = false }
+dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
-rusk-vm = "0.12.0-rc"
 dusk-bytes = "0.1"
-host_fn = { path = "tests/contracts/host_fn" }
-rand_core = { version = "0.6", features = ["std"] }
-lazy_static = "1.4"
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
+piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
+rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
+once_cell = "1.15"
 
 [features]
-module = []
+host = []
