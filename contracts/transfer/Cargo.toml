@@ -7,8 +7,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-canonical = "0.7"
-canonical_derive = "0.7"
 dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
@@ -21,6 +19,7 @@ piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", features =
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["alloc"] }
 bytecheck = { version = "0.6", default-features = false }
+transfer-contract-types = { path = "../transfer-types" }
 
 [dev-dependencies]
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }

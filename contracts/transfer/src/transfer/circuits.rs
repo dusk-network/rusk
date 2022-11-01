@@ -94,13 +94,13 @@ mod tests {
     use transfer_circuits::*;
     #[test]
     fn circuits_id() {
-        // This test is required to explicitly check that circuits ID are the
-        // one expected.
+        // This test is required to explicitly check that circuits IDs are the
+        // ones expected.
         //
-        // When a circuit id change, it should be noticed with a compiler error
-        // because the circuits key file are renamed. But this error is
-        // not raised if the `make keys` command is configured to preserve old
-        // keys (like the one launche by the CI)
+        // When a circuit id changes, it should be noticed with a compiler error
+        // because the circuits' key file is renamed. This error is not raised
+        // if the `make keys` command is configured to preserve old keys (like
+        // the one launched by the CI)
 
         test_circuit::<SendToContractTransparentCircuit>(
             "b1f318350b747200deaa17172a0552c460fe5997f1dcf87d72186f9952d5af79",
