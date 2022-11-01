@@ -34,8 +34,8 @@ impl ConsensusPublicKey {
         Self::new(PublicKey::from(&sk))
     }
 
-    /// to_bytes returns a copy of pk.pk_t().to_bytes() initialized on PublicKey::new call.
-    /// NB Frequent use of pk_t().to_bytes() creates a noticeable perf overhead.
+    /// `bytes` returns a reference to the pk.to_bytes() initialized on PublicKey::new call.
+    /// NB Frequent use of `to_bytes()` creates a noticeable perf overhead.
     pub fn bytes(&self) -> &[u8; PUBLIC_BLS_SIZE] {
         &self.data
     }

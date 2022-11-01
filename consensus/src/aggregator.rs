@@ -145,11 +145,11 @@ mod tests {
         }
     }
 
-    fn simple_pubkey(b: u8) -> CachedPublicKey {
+    fn simple_pubkey(b: u8) -> ConsensusPublicKey {
         let mut key: [u8; 96] = [0; 96];
         key[0] = b;
 
-        unsafe { CachedPublicKey::new(PublicKey::from_slice_unchecked(&key)) }
+        unsafe { ConsensusPublicKey::new(PublicKey::from_slice_unchecked(&key)) }
     }
 
     #[test]
@@ -185,7 +185,7 @@ mod tests {
 
         // Execute sortition with specific config
         let cfg = Config::new([0; 32], round, step, 64);
-        let c = Committee::new(CachedPublicKey::new(PublicKey::default()), &mut p, cfg);
+        let c = Committee::new(ConsensusPublicKey::new(PublicKey::default()), &mut p, cfg);
 
         assert_eq!(c.quorum(), 4);
 

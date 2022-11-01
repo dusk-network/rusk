@@ -119,8 +119,8 @@ impl Provisioners {
         self.members
             .iter()
             .filter(|(_, m)| m.stakes.iter().any(|(_, elegible)| *elegible))
+            .take(max_size)
             .count()
-            .min(max_size)
     }
 
     /// Returns a member of Provisioner list by public key.

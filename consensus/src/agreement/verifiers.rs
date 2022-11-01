@@ -13,7 +13,7 @@ use crate::user::sortition;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::ConsensusPublicKey;
 use bytes::Buf;
-use dusk_bls12_381_sign::APK;
+use dusk_bls12_381_sign::{PublicKey, APK};
 use dusk_bytes::Serializable;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -25,7 +25,6 @@ pub enum Error {
     VerificationFailed,
     EmptyApk,
     InvalidType,
-    NotCommitteeMember,
 }
 
 /// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
@@ -86,7 +85,7 @@ async fn verify_step_votes(
     }?;
 
     // aggregate public keys
-    let apk = aggregate_pks(committees_set.clone(), sub_committee).await?;
+    let apk = aggregate_pks(sub_committee).await?;
 
     // verify signatures
     if let Err(e) = verify_signatures(hdr.round, step, hdr.block_hash, apk, sv.signature) {
@@ -99,24 +98,12 @@ async fn verify_step_votes(
 }
 
 async fn aggregate_pks(
-    committees_set: Arc<Mutex<CommitteeSet>>,
     subcomittee: Cluster<ConsensusPublicKey>,
 ) -> Result<dusk_bls12_381_sign::APK, Error> {
-    let pks = {
-        let mut pks = vec![];
-
-        let guard = committees_set.lock().await;
-        let provisioners = guard.get_provisioners();
-
-        for (pubkey, _) in subcomittee.iter() {
-            provisioners
-                .get_member(pubkey)
-                .ok_or(Error::NotCommitteeMember)?;
-            pks.push(pubkey.inner());
-        }
-
-        pks
-    };
+    let pks: Vec<&PublicKey> = subcomittee
+        .iter()
+        .map(|(pubkey, _)| pubkey.inner())
+        .collect();
 
     match pks.split_first() {
         Some((&first, rest)) => {
