@@ -7,7 +7,7 @@
 use consensus::user::committee::Committee;
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::user::sortition::Config;
-use consensus::util::pubkey::PublicKey;
+use consensus::util::pubkey::ConsensusPublicKey;
 
 use hex::FromHex;
 
@@ -22,7 +22,7 @@ fn test_deterministic_sortition_1() {
 
     assert_eq!(
         vec![2, 1, 1],
-        Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
+        Committee::new(ConsensusPublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
 
@@ -42,7 +42,7 @@ fn test_deterministic_sortition_2() {
 
     assert_eq!(
         vec![1, 3],
-        Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
+        Committee::new(ConsensusPublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
 
@@ -60,7 +60,7 @@ fn test_quorum() {
     );
     p.update_eligibility_flag(cfg.round);
 
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
     assert_eq!(c.quorum(), 3);
 }
 
@@ -78,7 +78,7 @@ fn test_quorum_max_size() {
     );
     p.update_eligibility_flag(cfg.round);
 
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
     assert_eq!(c.quorum(), 3);
 }
 
@@ -90,7 +90,7 @@ fn test_intersect() {
     p.update_eligibility_flag(cfg.round);
     // println!("{:#?}", p);
 
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
     // println!("{:#?}", c);
 
     let max_bitset = (2_i32.pow((c.size()) as u32) - 1) as u64;
@@ -107,7 +107,7 @@ fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
     for i in 1..n {
         let stake_value = 1000 * (i as u64) * DUSK;
-        p.add_member_with_value(PublicKey::from_sk_seed_u64(i as u64), stake_value);
+        p.add_member_with_value(ConsensusPublicKey::from_sk_seed_u64(i as u64), stake_value);
     }
     p
 }

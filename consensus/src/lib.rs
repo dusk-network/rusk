@@ -12,8 +12,8 @@ pub mod messages;
 pub mod user;
 pub mod util;
 
-pub mod aggregator;
-pub mod agreement;
+mod aggregator;
+mod agreement;
 pub mod config;
 pub mod contract_state;
 mod execution_ctx;

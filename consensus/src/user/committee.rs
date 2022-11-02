@@ -9,15 +9,15 @@ use crate::user::sortition;
 
 use crate::config;
 use crate::util::cluster::Cluster;
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 use std::collections::{BTreeMap, HashMap};
 use std::mem;
 
 #[allow(unused)]
 #[derive(Default, Debug, Clone)]
 pub struct Committee {
-    members: BTreeMap<PublicKey, usize>,
-    this_member_key: PublicKey,
+    members: BTreeMap<ConsensusPublicKey, usize>,
+    this_member_key: ConsensusPublicKey,
     cfg: sortition::Config,
     total: usize,
 }
@@ -31,7 +31,7 @@ impl Committee {
     /// # Arguments
     /// * `pubkey_bls` - This is the BLS public key of the (this node) provisioner running the consensus. It is mainly used in `am_member` method.
     pub fn new(
-        pubkey_bls: PublicKey,
+        pubkey_bls: ConsensusPublicKey,
         provisioners: &mut Provisioners,
         cfg: sortition::Config,
     ) -> Self {
@@ -58,7 +58,7 @@ impl Committee {
     }
 
     /// Returns true if `pubkey_bls` is a member of the generated committee.
-    pub fn is_member(&self, pubkey_bls: PublicKey) -> bool {
+    pub fn is_member(&self, pubkey_bls: ConsensusPublicKey) -> bool {
         self.members.contains_key(&pubkey_bls)
     }
 
@@ -68,11 +68,11 @@ impl Committee {
     }
 
     /// Returns this provisioner BLS public key.
-    pub fn get_my_pubkey(&self) -> PublicKey {
+    pub fn get_my_pubkey(&self) -> ConsensusPublicKey {
         self.this_member_key
     }
 
-    pub fn votes_for(&self, pubkey_bls: PublicKey) -> Option<&usize> {
+    pub fn votes_for(&self, pubkey_bls: ConsensusPublicKey) -> Option<&usize> {
         self.members.get(&pubkey_bls)
     }
 
@@ -92,13 +92,13 @@ impl Committee {
         (size * config::CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
     }
 
-    pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
+    pub fn bits(&self, voters: &Cluster<ConsensusPublicKey>) -> u64 {
         let mut bits: u64 = 0;
 
         debug_assert!(self.members.len() <= mem::size_of_val(&bits) * 8);
 
         let mut pos = 0;
-        for (pk, _) in voters.0.iter() {
+        for (pk, _) in voters.iter() {
             for (pos, (member_pk, _)) in self.members.iter().enumerate() {
                 if member_pk.eq(pk) {
                     bits |= 1 << pos; // flip the i-th bit to 1
@@ -111,12 +111,12 @@ impl Committee {
     }
 
     /// Intersects the bit representation of a VotingCommittee subset with the whole VotingCommittee set.
-    pub fn intersect(&self, bitset: u64) -> Cluster<PublicKey> {
+    pub fn intersect(&self, bitset: u64) -> Cluster<ConsensusPublicKey> {
         if bitset == 0 {
-            return Cluster::<PublicKey>::new();
+            return Cluster::<ConsensusPublicKey>::new();
         }
 
-        let mut a = Cluster::<PublicKey>::new();
+        let mut a = Cluster::new();
         for (pos, (member_pk, weight)) in self.members.iter().enumerate() {
             if ((bitset >> pos) & 1) != 0 {
                 a.set_weight(member_pk, *weight);
@@ -125,9 +125,9 @@ impl Committee {
         a
     }
 
-    pub fn total_occurrences(&self, voters: &Cluster<PublicKey>) -> usize {
+    pub fn total_occurrences(&self, voters: &Cluster<ConsensusPublicKey>) -> usize {
         let mut total = 0;
-        for (item_pk, _) in voters.0.iter() {
+        for (item_pk, _) in voters.iter() {
             if let Some(weight) = self.votes_for(*item_pk) {
                 total += *weight;
             };
@@ -144,11 +144,11 @@ impl Committee {
 pub struct CommitteeSet {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: Provisioners,
-    this_member_key: PublicKey,
+    this_member_key: ConsensusPublicKey,
 }
 
 impl CommitteeSet {
-    pub fn new(pubkey: PublicKey, provisioners: Provisioners) -> Self {
+    pub fn new(pubkey: ConsensusPublicKey, provisioners: Provisioners) -> Self {
         CommitteeSet {
             provisioners,
             committees: HashMap::new(),
@@ -156,11 +156,15 @@ impl CommitteeSet {
         }
     }
 
-    pub fn is_member(&mut self, pubkey: PublicKey, cfg: sortition::Config) -> bool {
+    pub fn is_member(&mut self, pubkey: ConsensusPublicKey, cfg: sortition::Config) -> bool {
         self.get_or_create(cfg).is_member(pubkey)
     }
 
-    pub fn votes_for(&mut self, pubkey: PublicKey, cfg: sortition::Config) -> Option<&usize> {
+    pub fn votes_for(
+        &mut self,
+        pubkey: ConsensusPublicKey,
+        cfg: sortition::Config,
+    ) -> Option<&usize> {
         self.get_or_create(cfg).votes_for(pubkey)
     }
 
@@ -168,13 +172,17 @@ impl CommitteeSet {
         self.get_or_create(cfg).quorum()
     }
 
-    pub fn intersect(&mut self, bitset: u64, cfg: sortition::Config) -> Cluster<PublicKey> {
+    pub fn intersect(
+        &mut self,
+        bitset: u64,
+        cfg: sortition::Config,
+    ) -> Cluster<ConsensusPublicKey> {
         self.get_or_create(cfg).intersect(bitset)
     }
 
     pub fn total_occurrences(
         &mut self,
-        voters: &Cluster<PublicKey>,
+        voters: &Cluster<ConsensusPublicKey>,
         cfg: sortition::Config,
     ) -> usize {
         self.get_or_create(cfg).total_occurrences(voters)

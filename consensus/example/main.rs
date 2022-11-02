@@ -18,14 +18,14 @@ use consensus::messages::Message;
 use consensus::user::provisioners::{Provisioners, DUSK};
 
 use consensus::util::pending_queue::PendingQueue;
-use consensus::util::pubkey::PublicKey;
+use consensus::util::pubkey::ConsensusPublicKey;
 use tokio::time;
 
 mod mocks;
 
 const MOCKED_PROVISIONERS_NUM: u64 = 10;
 
-fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
+fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
     let mut keys = vec![];
 
     for i in 0..n {
@@ -33,14 +33,14 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
         let sk = dusk_bls12_381_sign::SecretKey::random(rng);
         keys.push((
             sk,
-            PublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
+            ConsensusPublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
         ));
     }
 
     keys
 }
 
-fn generate_provisioners_from_keys(keys: Vec<(SecretKey, PublicKey)>) -> Provisioners {
+fn generate_provisioners_from_keys(keys: Vec<(SecretKey, ConsensusPublicKey)>) -> Provisioners {
     let mut p = Provisioners::new();
 
     for (pos, (_, pk)) in keys.into_iter().enumerate() {
@@ -137,7 +137,7 @@ async fn perform_basic_run() {
 
 /// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
 fn spawn_node(
-    keys: (SecretKey, PublicKey),
+    keys: (SecretKey, ConsensusPublicKey),
     p: Provisioners,
     inbound_msgs: PendingQueue,
     outbound_msgs: PendingQueue,

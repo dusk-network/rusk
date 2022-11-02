@@ -9,7 +9,7 @@ use consensus::consensus::Consensus;
 use consensus::contract_state::{CallParams, Error, Operations, Output, StateRoot};
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::util::pending_queue::PendingQueue;
-use consensus::util::pubkey::PublicKey;
+use consensus::util::pubkey::ConsensusPublicKey;
 use dusk_bls12_381_sign::SecretKey;
 use rand::SeedableRng;
 use std::sync::Arc;
@@ -40,7 +40,7 @@ pub fn run_main_loop(
 
 /// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
 fn spawn_consensus_in_thread_pool(
-    keys: (SecretKey, PublicKey),
+    keys: (SecretKey, ConsensusPublicKey),
     p: Provisioners,
     inbound_msgs: PendingQueue,
     outbound_msgs: PendingQueue,
@@ -118,7 +118,7 @@ impl Operations for Executor {
     }
 }
 
-fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
+fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
     let mut keys = vec![];
 
     for i in 0..n {
@@ -126,14 +126,14 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
         let sk = dusk_bls12_381_sign::SecretKey::random(rng);
         keys.push((
             sk,
-            PublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
+            ConsensusPublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
         ));
     }
 
     keys
 }
 
-fn generate_provisioners_from_keys(keys: Vec<(SecretKey, PublicKey)>) -> Provisioners {
+fn generate_provisioners_from_keys(keys: Vec<(SecretKey, ConsensusPublicKey)>) -> Provisioners {
     let mut p = Provisioners::new();
 
     for (pos, (_, pk)) in keys.into_iter().enumerate() {

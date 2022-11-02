@@ -6,11 +6,10 @@
 
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
-use crate::messages;
+use crate::messages::{self, Message};
 
-use crate::messages::Message;
 use crate::util::pending_queue::PendingQueue;
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::Serializable;
@@ -26,12 +25,12 @@ pub struct RoundUpdate {
     pub seed: [u8; 32],
     pub hash: [u8; 32],
     pub timestamp: i64,
-    pub pubkey_bls: PublicKey,
+    pub pubkey_bls: ConsensusPublicKey,
     pub secret_key: SecretKey, // TODO: should be here?? SecretKey
 }
 
 impl RoundUpdate {
-    pub fn new(round: u64, pubkey_bls: PublicKey, secret_key: SecretKey) -> Self {
+    pub fn new(round: u64, pubkey_bls: ConsensusPublicKey, secret_key: SecretKey) -> Self {
         RoundUpdate {
             round,
             pubkey_bls,
@@ -185,25 +184,25 @@ impl Default for Signature {
 pub type Hash = [u8; 32];
 
 pub fn sign(
-    sk: dusk_bls12_381_sign::SecretKey,
-    pk: dusk_bls12_381_sign::PublicKey,
-    hdr: messages::Header,
+    sk: &dusk_bls12_381_sign::SecretKey,
+    pk: &dusk_bls12_381_sign::PublicKey,
+    hdr: &messages::Header,
 ) -> [u8; 48] {
     let mut msg = BytesMut::with_capacity(hdr.block_hash.len() + 8 + 1);
     msg.put_u64_le(hdr.round);
     msg.put_u8(hdr.step);
     msg.put(&hdr.block_hash[..]);
 
-    sk.sign(&pk, msg.bytes()).to_bytes()
+    sk.sign(pk, msg.bytes()).to_bytes()
 }
 
 pub fn verify_signature(
     hdr: &messages::Header,
-    signature: [u8; 48],
+    signature: &[u8; 48],
 ) -> Result<(), dusk_bls12_381_sign::Error> {
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
 
-    dusk_bls12_381_sign::APK::from(&hdr.pubkey_bls.to_bls_pk()).verify(
+    dusk_bls12_381_sign::APK::from(hdr.pubkey_bls.inner()).verify(
         &sig,
         marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
     )
@@ -220,7 +219,7 @@ pub fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> Byte
 
 pub fn spawn_send_reduction(
     candidate: Block,
-    pubkey: PublicKey,
+    pubkey: ConsensusPublicKey,
     ru: RoundUpdate,
     step: u8,
     mut outbound: PendingQueue,
@@ -249,7 +248,7 @@ pub fn spawn_send_reduction(
         let msg = Message::new_reduction(
             hdr,
             messages::payload::Reduction {
-                signed_hash: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
+                signed_hash: sign(&ru.secret_key, ru.pubkey_bls.inner(), &hdr),
             },
         );
 

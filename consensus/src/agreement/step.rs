@@ -12,7 +12,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 
 use crate::config;
 use std::sync::Arc;
@@ -86,7 +86,7 @@ impl Executor {
             outbound_queue,
             ru,
             committees_set: Arc::new(Mutex::new(CommitteeSet::new(
-                PublicKey::default(),
+                ConsensusPublicKey::default(),
                 provisioners,
             ))),
         }

@@ -11,9 +11,9 @@ use crate::messages::{Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
-use crate::util::pubkey::PublicKey;
+use crate::util::pubkey::ConsensusPublicKey;
 use bytes::Buf;
-use dusk_bls12_381_sign::APK;
+use dusk_bls12_381_sign::{PublicKey, APK};
 use dusk_bytes::Serializable;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -25,7 +25,6 @@ pub enum Error {
     VerificationFailed,
     EmptyApk,
     InvalidType,
-    NotCommitteeMember,
 }
 
 /// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
@@ -43,7 +42,7 @@ pub async fn verify_agreement(
 
             // Verify 1th_reduction step_votes
             verify_step_votes(
-                payload.votes_per_step.0,
+                payload.first_step,
                 committees_set.clone(),
                 seed,
                 &msg.header,
@@ -52,14 +51,7 @@ pub async fn verify_agreement(
             .await?;
 
             // Verify 2th_reduction step_votes
-            verify_step_votes(
-                payload.votes_per_step.1,
-                committees_set,
-                seed,
-                &msg.header,
-                1,
-            )
-            .await?;
+            verify_step_votes(payload.second_step, committees_set, seed, &msg.header, 1).await?;
 
             // Verification done
             Ok(())
@@ -92,53 +84,35 @@ async fn verify_step_votes(
         Ok(sub_committee)
     }?;
 
-    unsafe {
-        // aggregate public keys
-        let apk = aggregate_pks(committees_set.clone(), sub_committee).await?;
+    // aggregate public keys
+    let apk = aggregate_pks(sub_committee).await?;
 
-        // verify signatures
-        if let Err(e) = verify_signatures(hdr.round, step, hdr.block_hash, apk, sv.signature) {
-            error!("verify signatures fails with err: {}", e);
-            return Err(Error::VerificationFailed);
-        }
+    // verify signatures
+    if let Err(e) = verify_signatures(hdr.round, step, hdr.block_hash, apk, sv.signature) {
+        error!("verify signatures fails with err: {}", e);
+        return Err(Error::VerificationFailed);
     }
 
     // Verification done
     Ok(())
 }
 
-async unsafe fn aggregate_pks(
-    committees_set: Arc<Mutex<CommitteeSet>>,
-    subcomittee: Cluster<PublicKey>,
+async fn aggregate_pks(
+    subcomittee: Cluster<ConsensusPublicKey>,
 ) -> Result<dusk_bls12_381_sign::APK, Error> {
-    let pks = {
-        let mut pks = vec![];
+    let pks: Vec<&PublicKey> = subcomittee
+        .iter()
+        .map(|(pubkey, _)| pubkey.inner())
+        .collect();
 
-        let guard = committees_set.lock().await;
-        let provisioners = guard.get_provisioners();
-
-        for (pubkey, _) in subcomittee.into_iter() {
-            let m = provisioners
-                .get_member(&pubkey)
-                .expect("raw public key not found");
-            pks.push(dusk_bls12_381_sign::PublicKey::from_slice_unchecked(
-                &m.get_raw_key(),
-            ));
+    match pks.split_first() {
+        Some((&first, rest)) => {
+            let mut apk = APK::from(first);
+            rest.iter().for_each(|&&p| apk.aggregate(&[p]));
+            Ok(apk)
         }
-
-        pks
-    };
-
-    if pks.is_empty() {
-        return Err(Error::EmptyApk);
+        None => Err(Error::EmptyApk),
     }
-
-    let mut apk = APK::from(pks.get_unchecked(0));
-    if pks.len() > 1 {
-        apk.aggregate(&pks[1..]);
-    }
-
-    Ok(apk)
 }
 
 fn verify_signatures(
@@ -160,7 +134,7 @@ fn verify_whole(
 ) -> Result<(), dusk_bls12_381_sign::Error> {
     let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
 
-    APK::from(&hdr.pubkey_bls.to_bls_pk()).verify(
+    APK::from(hdr.pubkey_bls.inner()).verify(
         &sig,
         marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
     )

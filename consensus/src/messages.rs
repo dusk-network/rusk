@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{commons::Topics, util::pubkey::PublicKey};
+use crate::{commons::Topics, util::pubkey::ConsensusPublicKey};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bytes::DeserializableSlice;
 
@@ -23,7 +23,7 @@ pub trait Serializable {
 }
 pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
-    fn get_pubkey_bls(&self) -> PublicKey;
+    fn get_pubkey_bls(&self) -> ConsensusPublicKey;
     fn get_block_hash(&self) -> [u8; 32];
 }
 
@@ -33,15 +33,15 @@ pub struct Message {
     pub header: Header,
     pub payload: Payload,
 
-    pub metadata: TransportData,
+    pub metadata: Option<TransportData>,
 }
 
 /// Defines a transport-related properties that determines how the message
 /// will be broadcast.
 /// TODO: This should be moved out of consensus message definition.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct TransportData {
-    pub height: Option<u8>,
+    pub height: u8,
     pub src_addr: String,
 }
 
@@ -87,7 +87,7 @@ impl MessageTrait for Message {
     fn compare(&self, round: u64, step: u8) -> Status {
         self.header.compare(round, step)
     }
-    fn get_pubkey_bls(&self) -> PublicKey {
+    fn get_pubkey_bls(&self) -> ConsensusPublicKey {
         self.header.pubkey_bls
     }
     fn get_block_hash(&self) -> [u8; 32] {
@@ -139,7 +139,7 @@ impl Message {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Header {
-    pub pubkey_bls: PublicKey,
+    pub pubkey_bls: ConsensusPublicKey,
     pub round: u64,
     pub step: u8,
     pub block_hash: [u8; 32],
@@ -154,7 +154,7 @@ impl Serializable for Header {
         buf.put_u8(self.step);
         buf.put_u64_le(self.round);
         buf.put(&self.block_hash[..]);
-        buf.put(&self.pubkey_bls.to_bytes()[..]);
+        buf.put(&self.pubkey_bls.bytes()[..]);
 
         buf.to_vec()
     }
@@ -171,8 +171,9 @@ impl Serializable for Header {
         let mut pubkey_bytes = [0u8; 96];
         buf.copy_to_slice(&mut pubkey_bytes[..]);
 
-        header.pubkey_bls =
-            PublicKey::new(dusk_bls12_381_sign::PublicKey::from_slice(&pubkey_bytes).unwrap());
+        header.pubkey_bls = ConsensusPublicKey::new(
+            dusk_bls12_381_sign::PublicKey::from_slice(&pubkey_bytes).unwrap(),
+        );
 
         header
     }
@@ -350,15 +351,16 @@ pub mod payload {
         pub signature: [u8; 48],
 
         /// StepVotes of both 1th and 2nd Reduction steps
-        pub votes_per_step: (StepVotes, StepVotes),
+        pub first_step: StepVotes,
+        pub second_step: StepVotes,
     }
 
     impl Serializable for Agreement {
         fn to_bytes(&self) -> Vec<u8> {
             let mut buf = BytesMut::with_capacity(48);
             buf.put(&self.signature[..]);
-            buf.put(&self.votes_per_step.0.to_bytes()[..]);
-            buf.put(&self.votes_per_step.1.to_bytes()[..]);
+            buf.put(&self.first_step.to_bytes()[..]);
+            buf.put(&self.second_step.to_bytes()[..]);
             buf.to_vec()
         }
 
@@ -367,8 +369,8 @@ pub mod payload {
 
             buf.copy_to_slice(&mut agr.signature);
 
-            agr.votes_per_step.0.from_bytes(buf);
-            agr.votes_per_step.1.from_bytes(buf);
+            agr.first_step.from_bytes(buf);
+            agr.second_step.from_bytes(buf);
             agr
         }
     }
@@ -376,8 +378,9 @@ pub mod payload {
     impl Default for Agreement {
         fn default() -> Self {
             Self {
-                votes_per_step: Default::default(),
                 signature: [0; 48],
+                first_step: StepVotes::default(),
+                second_step: StepVotes::default(),
             }
         }
     }

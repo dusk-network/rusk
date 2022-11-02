@@ -33,7 +33,7 @@ impl MsgHandler<Message> for Reduction {
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
-        if let Err(e) = verify_signature(&msg.header, msg_payload.signed_hash) {
+        if let Err(e) = verify_signature(&msg.header, &msg_payload.signed_hash) {
             error!("verify_signature err: {}", e);
             return Err(ConsensusError::InvalidSignature);
         }
@@ -56,13 +56,17 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is of reduction type
-        if let Some(sv) = self.aggr.collect_vote(committee, msg.header, msg_payload) {
+        if let Some((block_hash, second_step_votes)) =
+            self.aggr.collect_vote(committee, msg.header, msg_payload)
+        {
             // At that point, we have reached a quorum for 2th_reduction on an empty on non-empty block.
             // Return an empty message as this iteration terminates here.
-
-            return Ok(HandleMsgOutput::FinalResult(
-                self.build_agreement_msg(ru, step, sv),
-            ));
+            return Ok(HandleMsgOutput::FinalResult(self.build_agreement_msg(
+                ru,
+                step,
+                block_hash,
+                second_step_votes,
+            )));
         }
 
         Ok(HandleMsgOutput::Result(msg))
@@ -83,19 +87,21 @@ impl Reduction {
         &self,
         ru: RoundUpdate,
         step: u8,
-        sv: (Hash, payload::StepVotes),
+        block_hash: Hash,
+        second_step_votes: payload::StepVotes,
     ) -> Message {
         let hdr = messages::Header {
             pubkey_bls: ru.pubkey_bls,
             round: ru.round,
             step,
-            block_hash: sv.0,
+            block_hash,
             topic: Topics::Agreement as u8,
         };
 
         let payload = payload::Agreement {
-            signature: sign(ru.secret_key, ru.pubkey_bls.to_bls_pk(), hdr),
-            votes_per_step: (self.first_step_votes, sv.1),
+            signature: sign(&ru.secret_key, ru.pubkey_bls.inner(), &hdr),
+            first_step: self.first_step_votes,
+            second_step: second_step_votes,
         };
 
         Message::new_agreement(hdr, payload)
