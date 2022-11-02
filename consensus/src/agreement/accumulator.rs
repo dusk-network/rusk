@@ -18,13 +18,34 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn, Instrument};
 
+#[derive(Debug, Clone, Eq)]
+struct AgreementMessage {
+    header: messages::Header,
+    payload: payload::Agreement,
+}
+
+impl std::hash::Hash for AgreementMessage {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.payload.hash(state);
+    }
+}
+
+impl PartialEq for AgreementMessage {
+    fn eq(&self, other: &Self) -> bool {
+        self.header == other.header && self.payload == other.payload
+    }
+}
+
 /// AgreementsPerStep is a mapping of StepNum to Set of Agreements,
 /// where duplicated agreements per step are not allowed.
-type AgreementsPerStep = HashMap<u8, (HashSet<payload::Agreement>, usize)>;
+type AgreementsPerStep = HashMap<u8, (HashSet<AgreementMessage>, usize)>;
 
 /// StorePerHash implements a mapping of a block hash to AgreementsPerStep,
 /// where AgreementsPerStep is a mapping of StepNum to Set of Agreements.
 type StorePerHash = HashMap<Hash, AgreementsPerStep>;
+
+/// Output from accumulation
+pub type Output = Vec<Message>;
 
 pub(crate) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
@@ -53,7 +74,7 @@ impl Accumulator {
     pub fn spawn_workers_pool(
         &mut self,
         workers_amount: usize,
-        output_chan: Sender<Message>,
+        output_chan: Sender<Output>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         seed: [u8; 32],
     ) {
@@ -129,7 +150,7 @@ impl Accumulator {
         committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
         seed: [u8; 32],
-    ) -> Option<messages::Message> {
+    ) -> Option<Output> {
         let hdr = msg.header;
 
         let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
@@ -156,13 +177,18 @@ impl Accumulator {
                 .entry(hdr.step)
                 .or_insert((HashSet::new(), 0));
 
-            if agr_set.contains(&payload) {
+            let key = AgreementMessage {
+                header: msg.header,
+                payload,
+            };
+
+            if agr_set.contains(&key) {
                 warn!("Agreement was not accumulated since it is a duplicate");
                 return None;
             }
 
             // Save agreement to avoid duplicates
-            agr_set.insert(payload);
+            agr_set.insert(key);
 
             // Increase the cumulative weight
             *agr_weight += weight;
@@ -173,8 +199,12 @@ impl Accumulator {
                     hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
                 );
 
-                // TODO: CollectedVotes Message
-                return Some(Message::empty());
+                let mut result = Output::new();
+                agr_set
+                    .iter()
+                    .for_each(|m| result.push(Message::new_agreement(m.header, m.payload.clone())));
+
+                return Some(result);
             }
         }
 
