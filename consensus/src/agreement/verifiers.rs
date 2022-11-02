@@ -25,6 +25,7 @@ pub enum Error {
     VerificationFailed,
     EmptyApk,
     InvalidType,
+    InvalidStepNum,
 }
 
 /// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
@@ -67,14 +68,28 @@ async fn verify_step_votes(
     hdr: &messages::Header,
     step_offset: u8,
 ) -> Result<(), Error> {
+    if hdr.step == 0 {
+        return Err(Error::InvalidStepNum);
+    }
+
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, 64);
 
+    verify_votes(hdr.block_hash, sv.bitset, sv.signature, committees_set, cfg).await
+}
+
+pub async fn verify_votes(
+    block_hash: [u8; 32],
+    bitset: u64,
+    signature: [u8; 48],
+    committees_set: Arc<Mutex<CommitteeSet>>,
+    cfg: sortition::Config,
+) -> Result<(), Error> {
     let sub_committee = {
         // Scoped guard to fetch committee data quickly
         let mut guard = committees_set.lock().await;
 
-        let sub_committee = guard.intersect(sv.bitset, cfg);
+        let sub_committee = guard.intersect(bitset, cfg);
         let target_quorum = guard.quorum(cfg);
 
         if guard.total_occurrences(&sub_committee, cfg) < target_quorum {
@@ -88,7 +103,7 @@ async fn verify_step_votes(
     let apk = aggregate_pks(sub_committee).await?;
 
     // verify signatures
-    if let Err(e) = verify_signatures(hdr.round, step, hdr.block_hash, apk, sv.signature) {
+    if let Err(e) = verify_signatures(cfg.round, cfg.step, block_hash, apk, signature) {
         error!("verify signatures fails with err: {}", e);
         return Err(Error::VerificationFailed);
     }
