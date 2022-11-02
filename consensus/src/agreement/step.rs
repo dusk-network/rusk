@@ -6,7 +6,7 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{Block, ConsensusError, RoundUpdate};
-use crate::messages::{Header, Message, Status};
+use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
@@ -115,7 +115,7 @@ impl Executor {
 
         if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
             for msg in messages {
-                self.collect_agreement(&mut acc, msg).await;
+                self.collect_inbound_msg(&mut acc, msg).await;
             }
         }
 
@@ -143,7 +143,7 @@ impl Executor {
                                     .await
                                     .put_event(msg.header.round, 0, msg.clone());
                             }
-                            Status::Present => { self.collect_agreement(&mut acc, msg).await;}
+                            Status::Present => { self.collect_inbound_msg(&mut acc, msg).await;}
                             _ => {}
                         };
                     }
@@ -152,18 +152,25 @@ impl Executor {
         }
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
-        let hdr = &msg.header;
-
-        if !self.is_member(hdr).await {
-            trace!(
-                "message is from non-committee member {:?} {:?}",
-                self.ru,
-                *hdr
-            );
+    async fn collect_inbound_msg(&mut self, acc: &mut Accumulator, msg: Message) {
+        if !self.is_member(&msg.header).await {
             return;
         }
 
+        match msg.payload {
+            Payload::AggrAgreement(_) => {
+                // process aggregated agreement
+                self.collect_aggr_agreement(msg).await;
+            }
+            Payload::Agreement(_) => {
+                // Accumulate the agreement
+                self.collect_agreement(acc, msg).await;
+            }
+            _ => todo!(),
+        }
+    }
+
+    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
         // Publish the agreement
         self.outbound_queue
             .send(msg.clone())
@@ -182,6 +189,28 @@ impl Executor {
         //  republish, generate_certificate, createWinningBlock
 
         Some(Block::default())
+    }
+
+    async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
+        if let Err(e) = self.verify_aggr_agreement(&msg).await {
+            error!("failed to verify aggr agreement err: {:?}", e);
+            return None;
+        }
+
+        //TODO:  Create winning block
+
+        // Re-publish the agreement message
+        self.outbound_queue
+            .send(msg)
+            .await
+            .unwrap_or_else(|err| error!("unable to publish a collected agreement msg {:?}", err));
+
+        Some(Block::default())
+    }
+
+    async fn verify_aggr_agreement(&self, _msg: &Message) -> Result<(), super::verifiers::Error> {
+        // TODO: Verify
+        Ok(())
     }
 
     async fn is_member(&self, hdr: &Header) -> bool {
