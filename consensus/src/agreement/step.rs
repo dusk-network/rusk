@@ -14,12 +14,15 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
 
+use crate::agreement::aggr_agreement;
 use crate::config;
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace, Instrument};
+use tracing::{error, info, Instrument};
+
+use super::accumulator;
 
 const COMMITTEE_SIZE: usize = 64;
 
@@ -96,7 +99,7 @@ impl Executor {
         &mut self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
-        let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
+        let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<accumulator::Output>(10);
 
         // Accumulator
         let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
@@ -124,8 +127,8 @@ impl Executor {
             select! {
                 biased;
                  // Process the output message from the Accumulator
-                 msg = collected_votes_rx.recv() => {
-                    if let Some(block) = self.collect_votes(msg) {
+                 result = collected_votes_rx.recv() => {
+                    if let Some(block) = self.collect_votes(result).await {
                         // Winning block of this round found.
                         future_msgs.lock().await.clear(self.ru.round);
                         break Ok(block)
@@ -143,7 +146,7 @@ impl Executor {
                                     .await
                                     .put_event(msg.header.round, 0, msg.clone());
                             }
-                            Status::Present => { self.collect_inbound_msg(&mut acc, msg).await;}
+                            Status::Present => { if let Some(block) = self.collect_inbound_msg(&mut acc, msg).await {break Ok(block)}}
                             _ => {}
                         };
                     }
@@ -152,22 +155,24 @@ impl Executor {
         }
     }
 
-    async fn collect_inbound_msg(&mut self, acc: &mut Accumulator, msg: Message) {
+    async fn collect_inbound_msg(&mut self, acc: &mut Accumulator, msg: Message) -> Option<Block> {
         if !self.is_member(&msg.header).await {
-            return;
+            return None;
         }
 
         match msg.payload {
             Payload::AggrAgreement(_) => {
                 // process aggregated agreement
-                self.collect_aggr_agreement(msg).await;
+                return self.collect_aggr_agreement(msg).await;
             }
             Payload::Agreement(_) => {
                 // Accumulate the agreement
                 self.collect_agreement(acc, msg).await;
             }
-            _ => todo!(),
-        }
+            _ => {}
+        };
+
+        None
     }
 
     async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
@@ -181,8 +186,21 @@ impl Executor {
         acc.process(msg.clone()).await;
     }
 
-    fn collect_votes(&self, _msg: Option<Message>) -> Option<Block> {
-        info!("consensus_achieved");
+    async fn collect_votes(&mut self, agreements: Option<accumulator::Output>) -> Option<Block> {
+        if let Some(agreements) = agreements {
+            if let Some(msg) =
+                aggr_agreement::aggregate(&self.ru, self.committees_set.clone(), &agreements).await
+            {
+                info!("broadcast aggr_agreement {:#?}", msg);
+
+                // Broadcast AggrAgreement message
+                self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
+                    error!("unable to publish a collected aggr agreement msg {:?}", err)
+                });
+            }
+
+            info!("consensus_achieved");
+        }
 
         // TODO: Generate winning block. This should be feasible once append-only db is enabled.
         // generate committee per round, step
@@ -192,7 +210,7 @@ impl Executor {
     }
 
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Err(e) = self.verify_aggr_agreement(&msg).await {
+        if let Err(e) = aggr_agreement::verify(&self.ru, self.committees_set.clone(), &msg).await {
             error!("failed to verify aggr agreement err: {:?}", e);
             return None;
         }
@@ -206,11 +224,6 @@ impl Executor {
             .unwrap_or_else(|err| error!("unable to publish a collected agreement msg {:?}", err));
 
         Some(Block::default())
-    }
-
-    async fn verify_aggr_agreement(&self, _msg: &Message) -> Result<(), super::verifiers::Error> {
-        // TODO: Verify
-        Ok(())
     }
 
     async fn is_member(&self, hdr: &Header) -> bool {
