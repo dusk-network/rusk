@@ -6,6 +6,7 @@
 
 use crate::commons::{spawn_send_reduction, Block, ConsensusError};
 use crate::config;
+use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
@@ -16,15 +17,15 @@ use tokio::sync::Mutex;
 pub const COMMITTEE_SIZE: usize = 64;
 
 #[allow(unused)]
-pub struct Reduction {
+pub struct Reduction<T> {
     handler: handler::Reduction,
     candidate: Option<Block>,
     timeout_millis: u64,
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+    executor: Arc<Mutex<T>>,
 }
 
-impl Reduction {
-    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
+impl<T: Operations + 'static> Reduction<T> {
+    pub fn new(executor: Arc<Mutex<T>>) -> Self {
         Self {
             handler: handler::Reduction {
                 aggr: Default::default(),

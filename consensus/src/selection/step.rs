@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::ConsensusError;
+use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
@@ -19,14 +20,17 @@ use tracing::error;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
-pub struct Selection {
+pub struct Selection<T>
+where
+    T: Operations,
+{
     handler: handler::Selection,
-    bg: Generator,
+    bg: Generator<T>,
     timeout_millis: u64,
 }
 
-impl Selection {
-    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
+impl<T: Operations> Selection<T> {
+    pub fn new(executor: Arc<Mutex<T>>) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler: handler::Selection {},

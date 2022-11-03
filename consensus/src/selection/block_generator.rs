@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{sign, Block, RoundUpdate, Topics};
+use crate::commons::{Block, RoundUpdate, Topics};
+use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
@@ -13,12 +14,12 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
-pub struct Generator {
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+pub struct Generator<T: Operations> {
+    executor: Arc<Mutex<T>>,
 }
 
-impl Generator {
-    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
+impl<T: Operations> Generator<T> {
+    pub fn new(executor: Arc<Mutex<T>>) -> Self {
         Self { executor }
     }
 

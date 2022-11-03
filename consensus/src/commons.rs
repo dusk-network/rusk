@@ -192,14 +192,14 @@ pub fn marshal_signable_vote(round: u64, step: u8, block_hash: &[u8; 32]) -> Byt
     msg
 }
 
-pub fn spawn_send_reduction(
+pub fn spawn_send_reduction<T: Operations + 'static>(
     candidate: Block,
     pubkey: ConsensusPublicKey,
     ru: RoundUpdate,
     step: u8,
     mut outbound: PendingQueue,
     mut inbound: PendingQueue,
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+    executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
         if let Err(e) = executor

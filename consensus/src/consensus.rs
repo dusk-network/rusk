@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{Block, ConsensusError, RoundUpdate};
+use crate::contract_state::Operations;
 use crate::phase::Phase;
 
 use crate::agreement::step;
@@ -21,7 +22,7 @@ use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
-pub struct Consensus {
+pub struct Consensus<T: Operations> {
     /// inbound is a queue of messages that comes from outside world
     inbound: PendingQueue,
     /// outbound_msgs is a queue of messages, this consensus instance shares
@@ -37,10 +38,10 @@ pub struct Consensus {
     agreement_process: step::Agreement,
 
     /// Reference to the executor of any EST-related call
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+    executor: Arc<Mutex<T>>,
 }
 
-impl Consensus {
+impl<T: Operations + 'static> Consensus<T> {
     /// Creates an instance of Consensus.
     ///
     /// # Arguments
@@ -55,7 +56,7 @@ impl Consensus {
         outbound: PendingQueue,
         agr_inbound_queue: PendingQueue,
         agr_outbound_queue: PendingQueue,
-        executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+        executor: Arc<Mutex<T>>,
     ) -> Self {
         Self {
             inbound,
