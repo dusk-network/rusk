@@ -32,7 +32,7 @@ impl Generator {
             .await?;
 
         let msg_header = Header {
-            pubkey_bls: ru.pubkey_bls,
+            pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             block_hash: candidate.header.hash,
             step,

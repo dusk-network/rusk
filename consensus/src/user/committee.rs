@@ -38,6 +38,7 @@ impl Committee {
         provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
+        let max_committee_size = cfg.max_committee_size;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
         let mut committee = Self {
@@ -52,7 +53,7 @@ impl Committee {
             committee.total += 1;
         }
 
-        debug_assert!(committee.total == provisioners.get_eligible_size(cfg.max_committee_size));
+        debug_assert!(committee.total == provisioners.get_eligible_size(max_committee_size));
 
         committee
     }
@@ -194,7 +195,7 @@ impl CommitteeSet {
 
     fn get_or_create(&mut self, cfg: sortition::Config) -> &Committee {
         self.committees
-            .entry(cfg)
             .or_insert_with(|| Committee::new(self.this_member_key, &mut self.provisioners, cfg))
+            .entry(cfg.clone())
     }
 }

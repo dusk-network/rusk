@@ -56,8 +56,8 @@ impl Reduction {
             if let Some(b) = &self.candidate {
                 spawn_send_reduction(
                     b.clone(),
-                    committee.get_my_pubkey(),
-                    ctx.round_update,
+                    committee.get_my_pubkey().clone(),
+                    ctx.round_update.clone(),
                     ctx.step,
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),

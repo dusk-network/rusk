@@ -87,7 +87,9 @@ impl Consensus {
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.
-        let mut agreement_task_handle = self.agreement_process.spawn(ru, provisioners.clone());
+        let mut agreement_task_handle = self
+            .agreement_process
+            .spawn(ru.clone(), provisioners.clone());
 
         // Consensus loop - generation-selection-reduction loop
         let mut main_task_handle = self.spawn_main_loop(
@@ -167,7 +169,7 @@ impl Consensus {
                         outbound.clone(),
                         future_msgs.clone(),
                         &mut provisioners,
-                        ru,
+                        ru.clone(),
                         step,
                     );
 

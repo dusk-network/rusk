@@ -137,7 +137,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Header {
     pub pubkey_bls: ConsensusPublicKey,
     pub round: u64,
@@ -241,7 +241,7 @@ pub mod payload {
     use bytes::{Buf, BufMut, Bytes, BytesMut};
     use std::mem;
 
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Debug, Clone)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
     }
@@ -311,7 +311,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Copy, Clone, Eq, Hash, PartialEq)]
+    #[derive(Debug, Clone, Eq, Hash, PartialEq)]
     pub struct StepVotes {
         pub bitset: u64,
         pub signature: [u8; 48],

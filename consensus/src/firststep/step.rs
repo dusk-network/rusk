@@ -47,8 +47,8 @@ impl Reduction {
             // Send reduction async
             spawn_send_reduction(
                 self.handler.candidate.clone(),
-                committee.get_my_pubkey(),
-                ctx.round_update,
+                committee.get_my_pubkey().clone(),
+                ctx.round_update.clone(),
                 ctx.step,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),

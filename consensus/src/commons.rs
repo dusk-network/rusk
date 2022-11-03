@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::{fmt, mem};
 use tokio::sync::Mutex;
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub round: u64,
@@ -166,7 +166,7 @@ pub enum ConsensusError {
     Canceled,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Signature(pub [u8; 48]);
 impl Signature {
     pub fn is_zeroed(&self) -> bool {
@@ -266,7 +266,7 @@ pub fn spawn_send_reduction(
     });
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Topics {
     // Consensus main loop topics
     Candidate = 15,

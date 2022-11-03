@@ -91,7 +91,7 @@ impl Reduction {
         second_step_votes: payload::StepVotes,
     ) -> Message {
         let hdr = messages::Header {
-            pubkey_bls: ru.pubkey_bls,
+            pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             step,
             block_hash,
@@ -100,7 +100,7 @@ impl Reduction {
 
         let payload = payload::Agreement {
             signature: sign(&ru.secret_key, ru.pubkey_bls.inner(), &hdr),
-            first_step: self.first_step_votes,
+            first_step: self.first_step_votes.clone(),
             second_step: second_step_votes,
         };
 

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct Stake {
     // Value should be initialized only at constructor.

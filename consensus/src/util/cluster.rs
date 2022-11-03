@@ -12,7 +12,7 @@ pub struct Cluster<T>(BTreeMap<T, usize>);
 
 impl<T> Cluster<T>
 where
-    T: Default + std::cmp::Ord + Copy + std::fmt::Debug,
+    T: Default + std::cmp::Ord + Clone + std::fmt::Debug,
 {
     pub(crate) fn new() -> Self {
         Self(Default::default())
@@ -33,7 +33,7 @@ where
             return None;
         }
 
-        self.0.insert(*key, weight);
+        self.0.insert(key.clone(), weight);
         Some(weight)
     }
 

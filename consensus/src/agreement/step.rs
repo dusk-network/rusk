@@ -51,14 +51,12 @@ impl Agreement {
         let inbound = self.inbound_queue.clone();
 
         tokio::spawn(async move {
+            let round = ru.round;
+            let pubkey = ru.pubkey_bls.encode_short_hex();
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound)
                 .run(future_msgs)
-                .instrument(tracing::info_span!(
-                    "agr_task",
-                    round = ru.round,
-                    pubkey = ru.pubkey_bls.encode_short_hex(),
-                ))
+                .instrument(tracing::info_span!("agr_task", round, pubkey))
                 .await
         })
     }

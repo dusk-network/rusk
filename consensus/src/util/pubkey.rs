@@ -14,7 +14,7 @@ use std::cmp::Ordering;
 pub const PUBLIC_BLS_SIZE: usize = PublicKey::SIZE;
 
 /// ConsensusPublicKey is a thin wrapper of dusk_bls12_381_sign::PublicKey
-#[derive(Eq, PartialEq, Clone, Copy)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct ConsensusPublicKey {
     inner: PublicKey,
     data: [u8; PUBLIC_BLS_SIZE],

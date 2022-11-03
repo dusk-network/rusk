@@ -9,7 +9,7 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-#[derive(Debug, Clone, Copy, Default, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
     pub seed: [u8; 32],
     pub round: u64,

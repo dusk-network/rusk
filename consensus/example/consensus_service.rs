@@ -29,7 +29,7 @@ pub fn run_main_loop(
     let provisioners = generate_provisioners_from_keys(keys.clone());
 
     spawn_consensus_in_thread_pool(
-        keys[prov_id],
+        keys[prov_id].clone(),
         provisioners,
         inbound,
         outbound,
@@ -73,7 +73,11 @@ fn spawn_consensus_in_thread_pool(
                         .as_secs();
 
                     let _ = c
-                        .spin(RoundUpdate::new(i, keys.1, keys.0), p.clone(), cancel_rx)
+                        .spin(
+                            RoundUpdate::new(i, keys.1.clone(), keys.0),
+                            p.clone(),
+                            cancel_rx,
+                        )
                         .await;
 
                     // Calc block time
