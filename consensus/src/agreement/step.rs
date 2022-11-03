@@ -108,10 +108,10 @@ impl Executor {
 
         // drain future messages for current round and step.
         if self.ru.round > 0 {
-            future_msgs.lock().await.clear(self.ru.round - 1);
+            future_msgs.lock().await.clear_round(self.ru.round - 1);
         }
 
-        if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
+        if let Some(messages) = future_msgs.lock().await.drain_events(self.ru.round, 0) {
             for msg in messages {
                 self.collect_agreement(&mut acc, msg).await;
             }
@@ -125,7 +125,7 @@ impl Executor {
                  msg = collected_votes_rx.recv() => {
                     if let Some(block) = self.collect_votes(msg) {
                         // Winning block of this round found.
-                        future_msgs.lock().await.clear(self.ru.round);
+                        future_msgs.lock().await.clear_round(self.ru.round);
                         break Ok(block)
                     }
                  },

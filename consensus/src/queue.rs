@@ -7,61 +7,46 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-#[derive(PartialEq, Eq, Debug)]
-pub enum Error {
-    NotFound,
-}
-
-type Map<T> = BTreeMap<u8, Vec<T>>;
+type StepMap<T> = BTreeMap<u8, Vec<T>>;
+type RoundMap<T> = BTreeMap<u64, StepMap<T>>;
 
 /// Atomic message queue to store messages by round and step
 #[derive(Debug, Default)]
-pub struct Queue<T: ?Sized>(BTreeMap<u64, Map<T>>, usize)
+pub struct Queue<T: ?Sized>(RoundMap<T>, usize)
 where
     T: Debug + Clone;
 
 impl<T: Debug + Clone> Queue<T> {
     pub fn put_event(&mut self, round: u64, step: u8, msg: T) {
-        let queue = &mut self.0;
-
         // insert entry [round] -> [u8 -> Vec<T>]
-        queue
+        self.0
             .entry(round)
-            .or_insert(BTreeMap::new())
+            .or_default()
             .entry(step)
-            .or_insert(vec![])
+            .or_default()
             .push(msg);
 
         self.1 += 1;
     }
 
-    pub fn get_events(&self, round: u64, step: u8) -> Result<Vec<T>, Error> {
-        let _queue = &self.0;
-
-        // TODO: here we should consider to consume the array of events instead of returning a deep copy.
-
-        match self.0.get(&round) {
-            Some(r) => match r.get(&step) {
-                None => Err(Error::NotFound),
-                Some(v) => Ok(v.clone()),
-            },
-            None => Err(Error::NotFound),
-        }
+    pub fn drain_events(&mut self, round: u64, step: u8) -> Option<Vec<T>> {
+        self.0
+            .get_mut(&round)
+            .and_then(|r| r.remove_entry(&step).map(|(_, v)| v))
     }
 
-    pub fn clear(&mut self, round: u64) {
-        let queue = &mut self.0;
-        if let Some(r) = queue.get_mut(&round) {
+    pub fn clear_round(&mut self, round: u64) {
+        if let Some(r) = self.0.get_mut(&round) {
             r.clear();
         };
 
-        queue.remove(&round);
+        self.0.remove(&round);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::queue::{Error, Queue};
+    use crate::queue::Queue;
 
     #[test]
     pub fn test_push_event() {
@@ -75,21 +60,21 @@ mod tests {
         queue.put_event(round, 2, Item(4));
         queue.put_event(round, 2, Item(3));
 
-        assert_eq!(queue.get_events(round, 3).unwrap_err(), Error::NotFound);
+        assert!(queue.drain_events(round, 3).is_none());
 
-        assert_eq!(queue.get_events(4444, 2).unwrap_err(), Error::NotFound);
+        assert!(queue.drain_events(4444, 2).is_none());
 
         for i in 1..100 {
             queue.put_event(4444, i as u8, Item(i));
         }
 
         assert_eq!(
-            queue.get_events(round, 2).unwrap(),
+            queue.drain_events(round, 2).unwrap(),
             vec![Item(5), Item(4), Item(3)],
         );
 
-        queue.clear(round);
+        queue.clear_round(round);
 
-        assert_eq!(queue.get_events(round, 2).unwrap_err(), Error::NotFound,);
+        assert!(queue.drain_events(round, 2).is_none());
     }
 }

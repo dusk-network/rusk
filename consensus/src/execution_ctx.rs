@@ -191,11 +191,11 @@ impl<'a> ExecutionCtx<'a> {
         phase: &mut C,
     ) -> Option<Message> {
 
-        if let Ok(messages) = self
+        if let Some(messages) = self
             .future_msgs
             .lock()
             .await
-            .get_events(ru.round, self.step)
+            .drain_events(self.round_update.round, self.step)
         {
             for msg in messages {
                 if let Ok(msg) = phase.is_valid(msg, &self.round_update, self.step, committee) {

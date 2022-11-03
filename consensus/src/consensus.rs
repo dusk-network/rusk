@@ -141,7 +141,7 @@ impl<T: Operations + 'static> Consensus<T> {
 
         tokio::spawn(async move {
             if ru.round > 0 {
-                future_msgs.lock().await.clear(ru.round - 1);
+                future_msgs.lock().await.clear_round(ru.round - 1);
             }
 
             let mut phases = [
