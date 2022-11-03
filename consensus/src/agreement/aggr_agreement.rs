@@ -5,14 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::aggregator::AggrSignature;
-use crate::commons::RoundUpdate;
-use crate::messages::{payload, Message, Payload};
+use crate::commons::{RoundUpdate, Topics};
+use crate::messages::{payload, Header, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::info;
+use tracing::debug;
 
 use super::{accumulator, verifiers};
 
@@ -24,7 +24,7 @@ pub async fn verify(
     if let Payload::AggrAgreement(p) = &msg.payload {
         let hdr = &msg.header;
 
-        info!("collected aggr agreement");
+        debug!("collected aggr agreement");
 
         verifiers::verify_votes(
             hdr.block_hash,
@@ -43,8 +43,7 @@ pub async fn verify(
         };
 
         verifiers::verify_agreement(m, committees_set.clone(), ru.seed).await?;
-
-        info!("verified aggr agreement");
+        tracing::debug!("valid aggr agreement");
 
         return Ok(());
     }
@@ -57,50 +56,45 @@ pub async fn aggregate(
     ru: &RoundUpdate,
     committees_set: Arc<Mutex<CommitteeSet>>,
     agreements: &accumulator::Output,
-) -> Option<Message> {
-    if agreements.is_empty() {
-        return None;
-    }
-
-    let hdr = &agreements[0].header;
+) -> Message {
+    let first_agreement = agreements.iter().next().expect("empty agreements");
 
     let (aggr_signature, bitset) = {
         let voters = &mut Cluster::new();
         let mut aggr_sign = AggrSignature::default();
 
-        agreements.iter().for_each(|msg| {
-            if let Payload::Agreement(agr) = &msg.payload {
-                voters.add(&msg.header.pubkey_bls);
+        agreements.iter().for_each(|m| {
+            voters.add(&m.header.pubkey_bls);
 
-                // Aggregate signatures
-                _ = aggr_sign.add(agr.signature);
-            }
+            // Aggregate signatures
+            aggr_sign
+                .add(m.payload.signature)
+                .expect("invalid signature");
         });
 
         (
-            aggr_sign.aggregated_bytes()?,
+            aggr_sign
+                .aggregated_bytes()
+                .expect("empty aggregated bytes"),
             committees_set.lock().await.bits(
                 voters,
-                sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
+                sortition::Config::new(ru.seed, ru.round, first_agreement.header.step, 64),
             ),
         )
     };
 
-    if let Payload::Agreement(agr) = &agreements[0].payload {
-        let payload = payload::AggrAgreement {
-            agreement: agr.clone(),
+    Message::new_aggr_agreement(
+        Header {
+            pubkey_bls: ru.pubkey_bls,
+            round: ru.round,
+            step: first_agreement.header.step,
+            block_hash: first_agreement.header.block_hash,
+            topic: Topics::AggrAgreement as u8,
+        },
+        payload::AggrAgreement {
+            agreement: first_agreement.payload.clone(),
             aggr_signature,
             bitset,
-        };
-
-        let mut hdr = agreements[0].header;
-        hdr.topic = crate::commons::Topics::AggrAgreement as u8;
-
-        return Some(Message::new_aggr_agreement(hdr, payload));
-    }
-
-    let x = true;
-    debug_assert!(x, "accumulator returns non-agreement messages");
-
-    None
+        },
+    )
 }

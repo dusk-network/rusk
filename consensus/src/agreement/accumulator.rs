@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::agreement::verifiers::verify_agreement;
+use crate::agreement::verifiers;
 use crate::commons::Hash;
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
@@ -19,9 +19,9 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, warn, Instrument};
 
 #[derive(Debug, Clone, Eq)]
-struct AgreementMessage {
-    header: messages::Header,
-    payload: payload::Agreement,
+pub struct AgreementMessage {
+    pub header: messages::Header,
+    pub payload: payload::Agreement,
 }
 
 impl std::hash::Hash for AgreementMessage {
@@ -45,7 +45,7 @@ type AgreementsPerStep = HashMap<u8, (HashSet<AgreementMessage>, usize)>;
 type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
 /// Output from accumulation
-pub type Output = Vec<Message>;
+pub type Output = HashSet<AgreementMessage>;
 
 pub(crate) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
@@ -105,7 +105,8 @@ impl Accumulator {
                         }
 
                         if let Err(e) =
-                            verify_agreement(msg.clone(), committees_set.clone(), seed).await
+                            verifiers::verify_agreement(msg.clone(), committees_set.clone(), seed)
+                                .await
                         {
                             error!("{:#?}", e);
                             continue;
@@ -199,12 +200,7 @@ impl Accumulator {
                     hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
                 );
 
-                let mut result = Output::new();
-                agr_set
-                    .iter()
-                    .for_each(|m| result.push(Message::new_agreement(m.header, m.payload.clone())));
-
-                return Some(result);
+                return Some(agr_set.clone());
             }
         }
 

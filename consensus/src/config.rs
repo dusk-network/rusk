@@ -17,3 +17,6 @@ pub const CONSENSUS_DELAY_MS: u64 = 1000;
 /// Default number of workers to process agreements.
 pub const ACCUMULATOR_WORKERS_AMOUNT: usize = 6;
 pub const ACCUMULATOR_QUEUE_CAP: usize = 100;
+
+/// Enables aggregated agreements messaging in Agreement loop.
+pub const ENABLE_AGGR_AGREEMENT: bool = true;

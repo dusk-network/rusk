@@ -128,10 +128,12 @@ impl Executor {
                 biased;
                  // Process the output message from the Accumulator
                  result = collected_votes_rx.recv() => {
-                    if let Some(block) = self.collect_votes(result).await {
-                        // Winning block of this round found.
-                        future_msgs.lock().await.clear(self.ru.round);
-                        break Ok(block)
+                    if let Some(aggrements) = result {
+                        if let Some(block) = self.collect_votes(aggrements).await {
+                            // Winning block of this round found.
+                            future_msgs.lock().await.clear(self.ru.round);
+                            break Ok(block)
+                        }
                     }
                  },
                 // Process messages from outside world
@@ -186,21 +188,20 @@ impl Executor {
         acc.process(msg.clone()).await;
     }
 
-    async fn collect_votes(&mut self, agreements: Option<accumulator::Output>) -> Option<Block> {
-        if let Some(agreements) = agreements {
-            if let Some(msg) =
-                aggr_agreement::aggregate(&self.ru, self.committees_set.clone(), &agreements).await
-            {
-                info!("broadcast aggr_agreement {:#?}", msg);
+    /// Collects accumulator output (a list of agreements) and publishes  AggrAgreement.
+    ///
+    /// Returns the winning block.
+    async fn collect_votes(&mut self, agreements: accumulator::Output) -> Option<Block> {
+        if config::ENABLE_AGGR_AGREEMENT {
+            let msg =
+                aggr_agreement::aggregate(&self.ru, self.committees_set.clone(), &agreements).await;
 
-                // Broadcast AggrAgreement message
-                self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
-                    error!("unable to publish a collected aggr agreement msg {:?}", err)
-                });
-            }
-
-            info!("consensus_achieved");
+            tracing::debug!("broadcast aggr_agreement {:#?}", msg);
+            // Broadcast AggrAgreement message
+            self.publish(msg).await;
         }
+
+        info!("consensus_achieved");
 
         // TODO: Generate winning block. This should be feasible once append-only db is enabled.
         // generate committee per round, step
@@ -218,10 +219,7 @@ impl Executor {
         //TODO:  Create winning block
 
         // Re-publish the agreement message
-        self.outbound_queue
-            .send(msg)
-            .await
-            .unwrap_or_else(|err| error!("unable to publish a collected agreement msg {:?}", err));
+        self.publish(msg.clone()).await;
 
         Some(Block::default())
     }
@@ -231,5 +229,14 @@ impl Executor {
             hdr.pubkey_bls,
             sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
         )
+    }
+
+    // Publishes a message
+    async fn publish(&mut self, msg: Message) {
+        let topic = msg.header.topic;
+        self.outbound_queue
+            .send(msg)
+            .await
+            .unwrap_or_else(|err| error!("unable to publish msg(id:{}) {:?}", topic, err));
     }
 }
