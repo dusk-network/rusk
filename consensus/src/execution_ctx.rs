@@ -116,7 +116,7 @@ impl<'a> ExecutionCtx<'a> {
         msg: Message,
     ) -> Option<Message> {
         // Check if a message is fully valid. If so, then it can be broadcast.
-        match phase.is_valid(msg.clone(), self.round_update, self.step, committee) {
+        match phase.is_valid(msg.clone(), &self.round_update, self.step, committee) {
             Ok(msg) => {
                 // Re-publish the returned message
                 self.outbound
@@ -150,7 +150,7 @@ impl<'a> ExecutionCtx<'a> {
             }
         }
 
-        match phase.collect(msg.clone(), self.round_update, self.step, committee) {
+        match phase.collect(msg.clone(), &self.round_update, self.step, committee) {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
             Ok(output) => {
@@ -174,7 +174,7 @@ impl<'a> ExecutionCtx<'a> {
         phase: &mut C,
     ) -> Result<Message, ConsensusError> {
         if let Ok(HandleMsgOutput::FinalResult(msg)) =
-            phase.handle_timeout(self.round_update, self.step)
+            phase.handle_timeout(&self.round_update, self.step)
         {
             return Ok(msg);
         }
@@ -190,7 +190,6 @@ impl<'a> ExecutionCtx<'a> {
         committee: &Committee,
         phase: &mut C,
     ) -> Option<Message> {
-        let ru = &self.round_update;
 
         if let Ok(messages) = self
             .future_msgs
@@ -199,9 +198,9 @@ impl<'a> ExecutionCtx<'a> {
             .get_events(ru.round, self.step)
         {
             for msg in messages {
-                if let Ok(msg) = phase.is_valid(msg, *ru, self.step, committee) {
+                if let Ok(msg) = phase.is_valid(msg, &self.round_update, self.step, committee) {
                     if let Ok(HandleMsgOutput::FinalResult(msg)) =
-                        phase.collect(msg, *ru, self.step, committee)
+                        phase.collect(msg, &self.round_update, self.step, committee)
                     {
                         return Some(msg);
                     }

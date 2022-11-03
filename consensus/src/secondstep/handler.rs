@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{sign, verify_signature, ConsensusError, Hash, RoundUpdate, Topics};
+use crate::commons::{ConsensusError, Hash, RoundUpdate, Signature, Topics};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use tracing::error;
 
@@ -23,17 +23,17 @@ impl MsgHandler<Message> for Reduction {
     fn verify(
         &mut self,
         msg: Message,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
-        let msg_payload = match msg.payload {
-            Payload::Reduction(p) => Ok(p),
-            Payload::Empty => Ok(payload::Reduction::default()),
+        let signed_hash = match &msg.payload {
+            Payload::Reduction(p) => Ok(p.signed_hash),
+            Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
-        if let Err(e) = verify_signature(&msg.header, &msg_payload.signed_hash) {
+        if let Err(e) = msg.header.verify_signature(&signed_hash) {
             error!("verify_signature err: {}", e);
             return Err(ConsensusError::InvalidSignature);
         }
@@ -45,19 +45,19 @@ impl MsgHandler<Message> for Reduction {
     fn collect(
         &mut self,
         msg: Message,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        let msg_payload = match msg.payload {
-            Payload::Reduction(p) => Ok(p),
-            Payload::Empty => Ok(payload::Reduction::default()),
+        let signed_hash = match &msg.payload {
+            Payload::Reduction(p) => Ok(p.signed_hash),
+            Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
         // Collect vote, if msg payload is of reduction type
         if let Some((block_hash, second_step_votes)) =
-            self.aggr.collect_vote(committee, msg.header, msg_payload)
+            self.aggr.collect_vote(committee, &msg.header, &signed_hash)
         {
             // At that point, we have reached a quorum for 2th_reduction on an empty on non-empty block.
             // Return an empty message as this iteration terminates here.
@@ -75,7 +75,7 @@ impl MsgHandler<Message> for Reduction {
     /// Handle of an event of step execution timeout
     fn handle_timeout(
         &mut self,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::FinalResult(Message::empty()))
@@ -85,7 +85,7 @@ impl MsgHandler<Message> for Reduction {
 impl Reduction {
     fn build_agreement_msg(
         &self,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
         block_hash: Hash,
         second_step_votes: payload::StepVotes,
@@ -98,8 +98,9 @@ impl Reduction {
             topic: Topics::Agreement as u8,
         };
 
+        let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
         let payload = payload::Agreement {
-            signature: sign(&ru.secret_key, ru.pubkey_bls.inner(), &hdr),
+            signature,
             first_step: self.first_step_votes.clone(),
             second_step: second_step_votes,
         };

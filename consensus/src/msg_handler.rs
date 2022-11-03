@@ -24,7 +24,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     fn is_valid(
         &mut self,
         msg: T,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
     ) -> Result<T, ConsensusError> {
@@ -55,7 +55,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     fn verify(
         &mut self,
         msg: T,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
     ) -> Result<T, ConsensusError>;
@@ -64,7 +64,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     fn collect(
         &mut self,
         msg: T,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
@@ -72,7 +72,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// handle_timeout allows each Phase to handle a timeout event.
     fn handle_timeout(
         &mut self,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 }

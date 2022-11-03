@@ -184,8 +184,8 @@ impl Executor {
 
     async fn is_member(&self, hdr: &Header) -> bool {
         self.committees_set.lock().await.is_member(
-            hdr.pubkey_bls,
-            sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
+            &hdr.pubkey_bls,
+            &sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
         )
     }
 }

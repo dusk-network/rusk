@@ -24,11 +24,11 @@ impl Generator {
 
     pub async fn generate_candidate_message(
         &self,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
         let candidate = self
-            .generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
+            .generate_block(&ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
             .await?;
 
         let msg_header = Header {
@@ -39,19 +39,21 @@ impl Generator {
             topic: Topics::NewBlock as u8,
         };
 
+        let signed_hash = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
         Ok(Message::from_newblock(
             msg_header,
             NewBlock {
                 prev_hash: [0; 32],
                 candidate,
-                signed_hash: sign(&ru.secret_key, ru.pubkey_bls.inner(), &msg_header),
+                signed_hash,
             },
         ))
     }
 
     async fn generate_block(
         &self,
-        pubkey: ConsensusPublicKey,
+        pubkey: &ConsensusPublicKey,
         round: u64,
         seed: [u8; 32],
         prev_block_hash: [u8; 32],

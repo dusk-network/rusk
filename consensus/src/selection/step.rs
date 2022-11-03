@@ -44,7 +44,7 @@ impl Selection {
         if committee.am_member() {
             if let Ok(msg) = self
                 .bg
-                .generate_candidate_message(ctx.round_update, ctx.step)
+                .generate_candidate_message(&ctx.round_update, ctx.step)
                 .await
             {
                 // Broadcast the candidate block for this round/iteration.
@@ -55,7 +55,7 @@ impl Selection {
                 // register new candidate in local state
                 match self
                     .handler
-                    .collect(msg, ctx.round_update, ctx.step, &committee)
+                    .collect(msg, &ctx.round_update, ctx.step, &committee)
                 {
                     Ok(f) => {
                         if let HandleMsgOutput::FinalResult(msg) = f {

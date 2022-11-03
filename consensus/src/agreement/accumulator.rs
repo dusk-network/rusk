@@ -138,13 +138,13 @@ impl Accumulator {
         let (weight, target_quorum) = {
             let mut guard = committees_set.lock().await;
 
-            let weight = guard.votes_for(hdr.pubkey_bls, cfg)?;
-            if *weight == 0 {
+            let weight = guard.votes_for(&hdr.pubkey_bls, &cfg)?;
+            if weight == 0 {
                 warn!("Agreement was not accumulated since it is not from a committee member");
                 return None;
             }
 
-            Some((*weight, guard.quorum(cfg)))
+            Some((weight, guard.quorum(&cfg)))
         }?;
 
         if let Payload::Agreement(payload) = msg.payload {

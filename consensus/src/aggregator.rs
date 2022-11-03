@@ -6,7 +6,7 @@
 
 use crate::commons::Hash;
 use crate::messages::payload::StepVotes;
-use crate::messages::{payload, Header};
+use crate::messages::Header;
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::ConsensusPublicKey;
@@ -25,12 +25,12 @@ impl Aggregator {
     pub fn collect_vote(
         &mut self,
         committee: &Committee,
-        header: Header,
-        payload: payload::Reduction,
+        header: &Header,
+        signed_hash: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
         // Get weight for this pubkey bls. If it is 0, it means the key is not a committee member,
         // respectively we should not process a vote from it.
-        if let Some(weight) = committee.votes_for(header.pubkey_bls) {
+        if let Some(weight) = committee.votes_for(&header.pubkey_bls) {
             let hash: Hash = header.block_hash;
 
             let (aggr_sign, cluster) = self
@@ -50,7 +50,7 @@ impl Aggregator {
             }
 
             // Aggregate Signatures
-            if let Err(e) = aggr_sign.add(payload.signed_hash) {
+            if let Err(e) = aggr_sign.add(signed_hash) {
                 error!("{:?}", e);
                 return None;
             }
@@ -58,7 +58,7 @@ impl Aggregator {
             // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
-            let val = cluster.set_weight(&header.pubkey_bls, *weight);
+            let val = cluster.set_weight(&header.pubkey_bls, weight);
             debug_assert!(val != None);
 
             let total = cluster.total_occurrences();
@@ -107,8 +107,8 @@ struct AggrSignature {
 }
 
 impl AggrSignature {
-    pub fn add(&mut self, data: [u8; 48]) -> Result<(), AggrSigError> {
-        let sig = dusk_bls12_381_sign::Signature::from_bytes(&data)?;
+    pub fn add(&mut self, data: &[u8; 48]) -> Result<(), AggrSigError> {
+        let sig = dusk_bls12_381_sign::Signature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),
