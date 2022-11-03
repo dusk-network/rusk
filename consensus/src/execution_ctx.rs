@@ -190,7 +190,6 @@ impl<'a> ExecutionCtx<'a> {
         committee: &Committee,
         phase: &mut C,
     ) -> Option<Message> {
-
         if let Some(messages) = self
             .future_msgs
             .lock()
