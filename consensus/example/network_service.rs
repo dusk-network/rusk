@@ -21,8 +21,7 @@ pub async fn run_main_loop(
 ) {
     // Initialize reader and its dispatcher
     let mut r = Reader::default();
-    r.msg_dispatcher
-        .add(Topics::Agreement as usize, agr_inbound);
+    r.msg_dispatcher.add(Topics::Agreement, agr_inbound);
     r.msg_dispatcher.add_default(inbound);
 
     let peer = Peer::new(conf, r);
@@ -70,10 +69,7 @@ impl NetworkListen for Reader {
         });
 
         // Dispatch message to the proper queue for further processing
-        if let Err(e) = self
-            .msg_dispatcher
-            .dispatch(decoded.get_topic() as usize, msg)
-        {
+        if let Err(e) = self.msg_dispatcher.dispatch(decoded.get_topic(), msg) {
             tracing::error!("could not dispatch {:?}", e);
         }
     }
@@ -87,8 +83,8 @@ struct Dispatcher {
 }
 
 impl Dispatcher {
-    fn add(&mut self, topic: usize, queue: PendingQueue) {
-        self.queues[topic] = Some(queue);
+    fn add(&mut self, topic: impl Into<u8>, queue: PendingQueue) {
+        self.queues[topic.into() as usize] = Some(queue);
     }
 
     fn add_default(&mut self, queue: PendingQueue) {
@@ -97,9 +93,10 @@ impl Dispatcher {
 
     fn dispatch(
         &self,
-        topic: usize,
+        topic: impl Into<u8>,
         msg: Message,
     ) -> Result<(), async_channel::TrySendError<Message>> {
+        let topic = topic.into() as usize;
         if topic < self.queues.len() {
             if let Some(q) = &self.queues[topic] {
                 return q.try_send(msg);
@@ -117,7 +114,7 @@ impl Dispatcher {
 impl Default for Dispatcher {
     fn default() -> Self {
         Self {
-            queues: vec![None; 255],
+            queues: vec![None; u8::MAX as usize],
             default_queue: None,
         }
     }

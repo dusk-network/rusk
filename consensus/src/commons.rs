@@ -258,6 +258,12 @@ impl Default for Topics {
     }
 }
 
+impl From<Topics> for u8 {
+    fn from(t: Topics) -> Self {
+        t as u8
+    }
+}
+
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
         if v == Topics::NewBlock as u8 {
