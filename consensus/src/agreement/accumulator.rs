@@ -169,8 +169,12 @@ impl Accumulator {
 
             if *agr_weight >= target_quorum {
                 info!(
-                    "event=quorum reached, hash={} msg_round={}, msg_step={}, target={}, aggr_count={} ",
-                    hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
+                    event = "quorum reached",
+                    hash = hdr.block_hash.encode_hex::<String>(),
+                    msg_round = hdr.round,
+                    msg_step = hdr.step,
+                    target = target_quorum,
+                    aggr_count = agr_weight
                 );
 
                 // TODO: CollectedVotes Message

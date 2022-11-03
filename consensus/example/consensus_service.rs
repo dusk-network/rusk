@@ -88,11 +88,10 @@ fn spawn_consensus_in_thread_pool(
                         - before;
                     cumulative_block_time += block_time as f64;
                     tracing::info!(
-                        "bls_key={}, round={}, block_time={} average_block_time={:.2}",
-                        keys.1.encode_short_hex(),
-                        i,
+                        bls_key = keys.1.encode_short_hex(),
+                        round = i,
                         block_time,
-                        cumulative_block_time / ((i + 1) as f64)
+                        average_block_time = cumulative_block_time / ((i + 1) as f64),
                     );
                 }
             });
