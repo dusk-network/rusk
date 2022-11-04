@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::{gadgets, DeriveKey};
+use dusk_bytes::ParseHexStr;
 
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_plonk::error::Error as PlonkError;
@@ -21,7 +22,7 @@ use dusk_plonk::prelude::*;
 /// Composed of 7 scalars and 2 ciphers.
 const MESSAGE_SIZE: usize = 7 + 2 * PoseidonCipher::cipher_size();
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct StcoMessage {
     pub r: JubJubScalar,
     pub blinder: JubJubScalar,
@@ -48,7 +49,7 @@ impl StcoMessage {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct StcoCrossover {
     pub blinder: JubJubScalar,
     crossover: Crossover,
@@ -83,7 +84,32 @@ pub struct SendToContractObfuscatedCircuit {
     fee_pk_r: JubJubExtended,
 }
 
+impl Default for SendToContractObfuscatedCircuit {
+    fn default() -> Self {
+        // This signature, while still being valid, is *totally bogus*. Since
+        // `Circuit` requires the `Default` trait we have to come up with a
+        // "default signature"
+        let signature =
+            Signature::from_hex_str("40c83c7f8125fbf66ef33d30b0906eff3c23486a3cae720e16508e1fc30a110133d5d74ddf0f80803d545ae0a7cfe3156c2705aab52c27e4cdd8766bf01d218e")
+                .unwrap();
+
+        Self {
+            signature,
+            value: u64::default(),
+            message: StcoMessage::default(),
+            crossover: StcoCrossover::default(),
+            address: BlsScalar::default(),
+            signature_message: BlsScalar::default(),
+            fee_pk_r: JubJubExtended::default(),
+        }
+    }
+}
+
 impl SendToContractObfuscatedCircuit {
+    pub const fn circuit_id() -> &'static [u8; 32] {
+        &Self::CIRCUIT_ID
+    }
+
     pub fn sign_message(
         crossover: &Crossover,
         message: &Message,
@@ -178,13 +204,10 @@ impl SendToContractObfuscatedCircuit {
     }
 }
 
-#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
 impl Circuit for SendToContractObfuscatedCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut TurboComposer,
-    ) -> Result<(), PlonkError> {
-        let zero = TurboComposer::constant_zero();
+    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+        let zero = C::ZERO;
 
         // Witnesses
 
@@ -207,15 +230,14 @@ impl Circuit for SendToContractObfuscatedCircuit {
 
         let crossover_commitment =
             composer.append_public_point(*self.crossover.commitment());
-        let crossover_nonce =
-            composer.append_public_witness(*self.crossover.nonce());
+        let crossover_nonce = composer.append_public(*self.crossover.nonce());
 
         let mut crossover_cipher = [zero; PoseidonCipher::cipher_size()];
         self.crossover
             .cipher()
             .iter()
             .zip(crossover_cipher.iter_mut())
-            .for_each(|(c, w)| *w = composer.append_public_witness(*c));
+            .for_each(|(c, w)| *w = composer.append_public(*c));
 
         let message_commitment =
             composer.append_public_point(*self.message.commitment());
@@ -224,19 +246,17 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_derive_key_public_b =
             composer.append_public_point(self.message.derive_key.public_b);
         let message_pk_r = composer.append_public_point(self.message.pk_r);
-        let message_nonce =
-            composer.append_public_witness(*self.message.nonce());
+        let message_nonce = composer.append_public(*self.message.nonce());
 
         let mut message_cipher = [zero; PoseidonCipher::cipher_size()];
         self.message
             .cipher()
             .iter()
             .zip(message_cipher.iter_mut())
-            .for_each(|(c, w)| *w = composer.append_public_witness(*c));
+            .for_each(|(c, w)| *w = composer.append_public(*c));
 
-        let address = composer.append_public_witness(self.address);
-        let signature_message =
-            composer.append_public_witness(self.signature_message);
+        let address = composer.append_public(self.address);
+        let signature_message = composer.append_public(self.signature_message);
 
         let fee_pk_r = composer.append_public_point(self.fee_pk_r);
 
@@ -249,7 +269,7 @@ impl Circuit for SendToContractObfuscatedCircuit {
             value,
             crossover_blinder,
             64,
-        );
+        )?;
 
         // 2. commitment(Mc,Mv,Mb,64)
         gadgets::commitment(
@@ -258,15 +278,13 @@ impl Circuit for SendToContractObfuscatedCircuit {
             value,
             message_blinder,
             64,
-        );
+        )?;
 
         // 3. (pa,pb) := selectPair(Mx,I,Mp,Ms)
-        let identity = composer.append_constant_identity();
-
         let message_derive_key_a = gadgets::identity_select_point(
             composer,
             message_derive_key_is_public,
-            identity,
+            C::IDENTITY,
             message_derive_key_public_a,
             message_derive_key_secret_a,
         );
@@ -274,7 +292,7 @@ impl Circuit for SendToContractObfuscatedCircuit {
         let message_derive_key_b = gadgets::identity_select_point(
             composer,
             message_derive_key_is_public,
-            identity,
+            C::IDENTITY,
             message_derive_key_public_b,
             message_derive_key_secret_b,
         );
@@ -285,7 +303,7 @@ impl Circuit for SendToContractObfuscatedCircuit {
             message_r,
             message_derive_key_a,
             message_derive_key_b,
-        );
+        )?;
 
         composer.assert_equal_point(message_pk_r, message_stealth_address);
 
@@ -332,45 +350,10 @@ impl Circuit for SendToContractObfuscatedCircuit {
         // 7. schnorr(σ,Fa,S)
         gadgets::schnorr_single_key_verify(
             composer, schnorr_u, schnorr_r, fee_pk_r, s,
-        );
+        )?;
 
         // 8. Cv − Mv == 0
 
         Ok(())
-    }
-
-    fn public_inputs(&self) -> Vec<PublicInputValue> {
-        let mut pi = Vec::with_capacity(20 + 2 * PoseidonCipher::cipher_size());
-
-        let commitment = *self.crossover.commitment();
-        let nonce = *self.crossover.nonce();
-
-        pi.push(commitment.into());
-        pi.push(nonce.into());
-
-        let cipher = self.crossover.cipher().iter().map(|c| (*c).into());
-        pi.extend(cipher);
-
-        let commitment = *self.message.commitment();
-        let nonce = *self.message.nonce();
-
-        pi.push(commitment.into());
-        pi.push(self.message.derive_key.public_a.into());
-        pi.push(self.message.derive_key.public_b.into());
-        pi.push(self.message.pk_r.into());
-        pi.push(nonce.into());
-
-        let cipher = self.message.cipher().iter().map(|c| (*c).into());
-        pi.extend(cipher);
-
-        pi.push(self.address.into());
-        pi.push(self.signature_message.into());
-        pi.push(self.fee_pk_r.into());
-
-        pi
-    }
-
-    fn padded_gates(&self) -> usize {
-        1 << 14
     }
 }

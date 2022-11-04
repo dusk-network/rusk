@@ -6,7 +6,6 @@
 
 use transfer_circuits::{
     DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
-    TRANSCRIPT_LABEL,
 };
 
 use dusk_pki::SecretSpendKey;
@@ -91,46 +90,38 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 fn withdraw_from_obfuscated_public() {
     let rng = &mut StdRng::seed_from_u64(8586);
 
-    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
-        .expect("Failed to generate circuit!");
+    let circuit_id = WithdrawFromObfuscatedCircuit::circuit_id();
 
-    let mut circuit = create_random_circuit(rng, true);
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
-    let pi = circuit.public_inputs();
+    let circuit = create_random_circuit(rng, true);
 
-    WithdrawFromObfuscatedCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
+
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }
 
 #[test]
 fn withdraw_from_obfuscated_private() {
     let rng = &mut StdRng::seed_from_u64(8586);
 
-    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromObfuscatedCircuit>()
-        .expect("Failed to generate circuit!");
+    let circuit_id = WithdrawFromObfuscatedCircuit::circuit_id();
 
-    let mut circuit = create_random_circuit(rng, false);
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
-    let pi = circuit.public_inputs();
+    let circuit = create_random_circuit(rng, false);
 
-    WithdrawFromObfuscatedCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
+
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }
