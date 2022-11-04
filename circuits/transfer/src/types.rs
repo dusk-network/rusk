@@ -8,7 +8,7 @@ use dusk_pki::PublicSpendKey;
 
 use dusk_plonk::prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct DeriveKey {
     pub(crate) is_public: bool,
     pub(crate) secret_a: JubJubExtended,

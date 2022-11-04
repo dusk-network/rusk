@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::ExecuteCircuit;
+use transfer_circuits::{
+    ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
+    ExecuteCircuitTwoTwo,
+};
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
@@ -12,31 +15,30 @@ use rand::SeedableRng;
 use dusk_plonk::prelude::*;
 
 macro_rules! execute {
-    ($test_name:ident, $inputs:expr, $outputs:expr) => {
+    ($test_name:ident, $ty:ty) => {
         #[test]
         fn $test_name() {
             let mut rng = StdRng::seed_from_u64(2324u64);
 
             let tx_hash = BlsScalar::random(&mut rng);
             for use_crossover in [true, false].iter() {
-                let (_, pp, _, vd, proof, pi) =
-                    ExecuteCircuit::create_dummy_proof(
+                let (_, _, verifier, proof, public_inputs) =
+                    <$ty>::create_dummy_proof(
                         &mut rng,
-                        $inputs,
-                        $outputs,
                         *use_crossover,
                         tx_hash,
                     )
-                    .expect("Failed to create the circuit!");
+                    .expect("Creating a proof should succeed");
 
-                ExecuteCircuit::verify(&pp, &vd, &proof, pi.as_slice())
-                    .expect("Failed to verify the proof!");
+                verifier
+                    .verify(&proof, &public_inputs)
+                    .expect("Proof verification should be successful");
             }
         }
     };
 }
 
-execute!(execute_1_2, 1, 2);
-execute!(execute_2_2, 2, 2);
-execute!(execute_3_2, 3, 2);
-execute!(execute_4_2, 4, 2);
+execute!(execute_1_2, ExecuteCircuitOneTwo);
+execute!(execute_2_2, ExecuteCircuitTwoTwo);
+execute!(execute_3_2, ExecuteCircuitThreeTwo);
+execute!(execute_4_2, ExecuteCircuitFourTwo);

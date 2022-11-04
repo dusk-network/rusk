@@ -6,7 +6,6 @@
 
 use transfer_circuits::{
     DeriveKey, SendToContractObfuscatedCircuit, StcoCrossover, StcoMessage,
-    TRANSCRIPT_LABEL,
 };
 
 use dusk_pki::SecretSpendKey;
@@ -74,48 +73,38 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 fn send_to_contract_obfuscated_public_key() {
     let rng = &mut StdRng::seed_from_u64(2322u64);
 
-    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
-        .expect("Failed to load keys!");
+    let circuit_id = SendToContractObfuscatedCircuit::circuit_id();
 
-    let mut circuit = create_random_circuit(rng, true);
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
+    let circuit = create_random_circuit(rng, true);
 
-    let pi = circuit.public_inputs();
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
 
-    SendToContractObfuscatedCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }
 
 #[test]
 fn send_to_contract_obfuscated_secret_key() {
     let rng = &mut StdRng::seed_from_u64(2322u64);
 
-    let (pp, pk, vd) = keys::circuit_keys::<SendToContractObfuscatedCircuit>()
-        .expect("Failed to load keys!");
+    let circuit_id = SendToContractObfuscatedCircuit::circuit_id();
 
-    let mut circuit = create_random_circuit(rng, false);
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
+    let circuit = create_random_circuit(rng, false);
 
-    let pi = circuit.public_inputs();
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
 
-    SendToContractObfuscatedCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }

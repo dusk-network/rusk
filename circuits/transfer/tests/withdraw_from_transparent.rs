@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::{WithdrawFromTransparentCircuit, TRANSCRIPT_LABEL};
+use transfer_circuits::WithdrawFromTransparentCircuit;
 
 use dusk_pki::SecretSpendKey;
 use phoenix_core::Note;
@@ -34,22 +34,18 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 fn withdraw_from_transparent() {
     let rng = &mut StdRng::seed_from_u64(8586);
 
-    let (pp, pk, vd) = keys::circuit_keys::<WithdrawFromTransparentCircuit>()
-        .expect("Failed to generate circuit!");
+    let circuit_id = WithdrawFromTransparentCircuit::circuit_id();
 
-    let mut circuit = create_random_circuit(rng);
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
-    let pi = circuit.public_inputs();
+    let circuit = create_random_circuit(rng);
 
-    WithdrawFromTransparentCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
+
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }
