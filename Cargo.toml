@@ -5,7 +5,7 @@ members = [
 #    "contracts/transfer",
 #    "contracts/governance",
     "macros/code-hasher",
-#    "rusk-recovery",
+    "rusk-recovery",
     "rusk-profile",
 
     "rusk-abi",
