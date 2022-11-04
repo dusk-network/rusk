@@ -7,56 +7,42 @@
 use dusk_plonk::prelude::*;
 
 #[derive(Debug, Default)]
-pub struct TestCircuit1 {}
+pub struct TestCircuit {}
 
-#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
-impl Circuit for TestCircuit1 {
-    fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
+#[code_hasher::hash(name = "CIRCUIT_ID")]
+impl Circuit for TestCircuit {
+    fn circuit<C: Composer>(&self, _composer: &mut C) -> Result<(), Error> {
         unimplemented!()
-    }
-
-    fn public_inputs(&self) -> Vec<PublicInputValue> {
-        unimplemented!()
-    }
-
-    fn padded_gates(&self) -> usize {
-        1 << 11
     }
 }
 
 #[derive(Debug, Default)]
-pub struct TestCircuit2 {}
+pub struct AnotherTestCircuit {}
 
-#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
-impl Circuit for TestCircuit2 {
-    fn gadget(&mut self, composer: &mut TurboComposer) -> Result<(), Error> {
+#[code_hasher::hash(name = "CIRCUIT_ID")]
+impl Circuit for AnotherTestCircuit {
+    fn circuit<C: Composer>(&self, _composer: &mut C) -> Result<(), Error> {
         unimplemented!()
     }
-
-    fn public_inputs(&self) -> Vec<PublicInputValue> {
-        unimplemented!()
-    }
-
-    fn padded_gates(&self) -> usize {
-        1 << 11
-    }
 }
 
-#[code_hasher::hash(SOME_CONST_NAME, version = "0.1.0")]
-pub mod testing_module {
+#[code_hasher::hash(name = "MAJOR_HASH_1", version = "1.0.1")]
+impl TestCircuit {}
 
-    pub fn this_does_something() -> [u8; 32] {
-        SOME_CONST_NAME
-    }
-}
+#[code_hasher::hash(name = "MAJOR_HASH_2", version = "1.1.1")]
+impl TestCircuit {}
 
-#[code_hasher::hash(SOME_CONST_NAME)]
-pub mod testing_module_without_version {
+#[code_hasher::hash(name = "MAJOR_HASH_3", version = "2.1.1")]
+impl TestCircuit {}
 
-    pub fn this_does_something() -> [u8; 32] {
-        SOME_CONST_NAME
-    }
-}
+#[code_hasher::hash(name = "MINOR_HASH_1", version = "0.1.0")]
+impl TestCircuit {}
+
+#[code_hasher::hash(name = "MINOR_HASH_2", version = "0.1.1")]
+impl TestCircuit {}
+
+#[code_hasher::hash(name = "MINOR_HASH_3", version = "0.0.0")]
+impl TestCircuit {}
 
 mod tests {
     use super::*;
@@ -64,26 +50,26 @@ mod tests {
     #[test]
     fn plonk_testcase_works() {
         assert_eq!(
-            &TestCircuit1::CIRCUIT_ID,
+            &TestCircuit::CIRCUIT_ID,
             &[
-                190, 82, 133, 140, 138, 47, 221, 177, 187, 245, 87, 56, 131,
-                70, 23, 67, 51, 238, 85, 73, 252, 10, 143, 126, 193, 0, 163, 6,
-                213, 177, 232, 202
+                204, 39, 45, 48, 124, 51, 199, 86, 58, 196, 113, 171, 253, 88,
+                69, 13, 175, 162, 92, 76, 240, 138, 151, 178, 212, 136, 233,
+                126, 161, 146, 54, 214
             ]
         );
     }
 
     #[test]
-    fn diff_version_is_diff_hash() {
-        assert_ne!(&TestCircuit1::CIRCUIT_ID, &TestCircuit2::CIRCUIT_ID,);
+    fn diff_struct_is_diff_hash() {
+        assert_ne!(&TestCircuit::CIRCUIT_ID, &AnotherTestCircuit::CIRCUIT_ID);
     }
 
     #[test]
-    fn custom_mods_and_names_work() {
-        assert_ne!(testing_module::this_does_something(), [0u8; 32]);
-        assert_ne!(
-            testing_module::this_does_something(),
-            testing_module_without_version::this_does_something()
-        );
+    fn version_changes_as_expected() {
+        assert_eq!(&TestCircuit::MAJOR_HASH_1, &TestCircuit::MAJOR_HASH_2);
+        assert_ne!(&TestCircuit::MAJOR_HASH_1, &TestCircuit::MAJOR_HASH_3);
+
+        assert_eq!(&TestCircuit::MINOR_HASH_1, &TestCircuit::MINOR_HASH_2);
+        assert_ne!(&TestCircuit::MINOR_HASH_1, &TestCircuit::MINOR_HASH_3);
     }
 }
