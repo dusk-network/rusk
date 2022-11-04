@@ -25,23 +25,20 @@ rustc_tools_util = "=0.2.0"
 [dependencies]
 hex = "0.4"
 rustc_tools_util = "0.2"
-dusk-plonk = { version = "0.10", features = ["canon", "std"] }
-dusk-pki ="0.10.0-rc"
-phoenix-core = "0.16.0-rc"
+dusk-plonk = { version = "0.13", features = ["rkyv-impl"] }
+dusk-pki ="0.11"
+phoenix-core = { version = "0.18", features = ["rkyv-impl"] }
 rand = "0.8"
 transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
-transfer-contract = { path = "../contracts/transfer", default-features = false }
-stake-contract = { path = "../contracts/stake", default-features = false }
-microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
-rusk-vm = "0.12.0-rc"
+#transfer-contract = { path = "../contracts/transfer", default-features = false }
+#stake-contract = { path = "../contracts/stake", default-features = false }
+microkelvin = "0.17"
 rusk-profile = { path = "../rusk-profile" }
-rusk-abi = { path = "../rusk-abi" }
+rusk-abi = { path = "../rusk-abi", features = ["host"] }
 once_cell = "1.13"
-canonical = "0.7"
-canonical_derive = "0.7"
 dusk-bytes = "0.1"
-dusk-bls12_381 = "0.9"
-dusk-bls12_381-sign = "0.3.0-rc"
+dusk-bls12_381 = "0.11"
+dusk-bls12_381-sign = "0.4"
 clap = { version = "3.1", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
 console = "0.12"

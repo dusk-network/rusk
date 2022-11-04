@@ -15,6 +15,10 @@ use rand::SeedableRng;
 
 use tracing::{info, warn};
 
+/// Label used for the ZK transcript initialization. Must be the same for prover
+/// and verifier.
+const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
+
 static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();
     info!("{} CRS from cache", theme.action("Fetching"));
@@ -125,8 +129,8 @@ pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
         vec![
             &StctCircuitLoader {},
             &StcoCircuitLoader {},
-            &WftCircuitLoader {},
-            &WfoCircuitLoader {},
+            &WfctCircuitLoader {},
+            &WfcoCircuitLoader {},
             &ExecuteOneTwoCircuitLoader {},
             &ExecuteTwoTwoCircuitLoader {},
             &ExecuteThreeTwoCircuitLoader {},
