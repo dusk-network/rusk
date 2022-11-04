@@ -20,29 +20,31 @@ pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
 /// range of `2^bits`.
 ///
 /// `commitment(p, v, b, s) → p == v · G + b · G′ ∧ v < 2^s`
-pub fn commitment(
-    composer: &mut TurboComposer,
+pub fn commitment<C: Composer>(
+    composer: &mut C,
     p: WitnessPoint,
     v: Witness,
     b: Witness,
     bits: usize,
-) {
+) -> Result<(), Error> {
     composer.component_range(v, bits);
 
-    let v = composer.component_mul_generator(v, GENERATOR_EXTENDED);
-    let b = composer.component_mul_generator(b, GENERATOR_NUMS_EXTENDED);
+    let v = composer.component_mul_generator(v, GENERATOR_EXTENDED)?;
+    let b = composer.component_mul_generator(b, GENERATOR_NUMS_EXTENDED)?;
 
     let p_p = composer.component_add_point(v, b);
 
     composer.assert_equal_point(p, p_p);
+
+    Ok(())
 }
 
 /// Prove the merkle opening of the branch and assert that anchor and leaf
 /// matches.
 ///
 /// `opening(b, r, l) → O(b) ∧ (b0, b|b|) == (l, r)`
-pub fn merkle_opening(
-    composer: &mut TurboComposer,
+pub fn merkle_opening<C: Composer>(
+    composer: &mut C,
     branch: &PoseidonBranch<POSEIDON_TREE_DEPTH>,
     anchor: Witness,
     leaf: Witness,
@@ -60,8 +62,8 @@ pub fn merkle_opening(
 /// b, if flag == 0 ^ a == identity
 ///
 /// Fail the circuit otherwise
-pub fn identity_select_point(
-    composer: &mut TurboComposer,
+pub fn identity_select_point<C: Composer>(
+    composer: &mut C,
     flag: Witness,
     identity: WitnessPoint,
     a: WitnessPoint,
@@ -69,8 +71,8 @@ pub fn identity_select_point(
 ) -> WitnessPoint {
     composer.component_boolean(flag);
 
-    let selected = composer.component_select_point(a, b, flag);
-    let discarded = composer.component_select_point(b, a, flag);
+    let selected = composer.component_select_point(flag, a, b);
+    let discarded = composer.component_select_point(flag, b, a);
 
     composer.assert_equal_point(discarded, identity);
 
@@ -80,21 +82,21 @@ pub fn identity_select_point(
 /// Derives a stealth address out of a public spend key
 ///
 /// S = H(r · A) · G + B
-pub fn stealth_address(
-    composer: &mut TurboComposer,
+pub fn stealth_address<C: Composer>(
+    composer: &mut C,
     r: Witness,
     a: WitnessPoint,
     b: WitnessPoint,
-) -> WitnessPoint {
+) -> Result<WitnessPoint, Error> {
     let a = composer.component_mul_point(r, a);
     let a = truncated::gadget(composer, &[*a.x(), *a.y()]);
-    let a = composer.component_mul_generator(a, GENERATOR_EXTENDED);
+    let a = composer.component_mul_generator(a, GENERATOR_EXTENDED)?;
 
-    composer.component_add_point(a, b)
+    Ok(composer.component_add_point(a, b))
 }
 
-pub fn encrypt(
-    composer: &mut TurboComposer,
+pub fn encrypt<C: Composer>(
+    composer: &mut C,
     secret: WitnessPoint,
     nonce: Witness,
     message: &[Witness],

@@ -12,14 +12,14 @@ use phoenix_core::Message;
 
 use dusk_plonk::prelude::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct WfoCommitment {
     pub value: u64,
     pub blinder: JubJubScalar,
     pub commitment: JubJubExtended,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct WfoChange {
     pub value: u64,
     pub message: Message,
@@ -47,20 +47,23 @@ impl WfoChange {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct WithdrawFromObfuscatedCircuit {
     pub input: WfoCommitment,
     pub change: WfoChange,
     pub output: WfoCommitment,
 }
 
-#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
+impl WithdrawFromObfuscatedCircuit {
+    pub const fn circuit_id() -> &'static [u8; 32] {
+        &Self::CIRCUIT_ID
+    }
+}
+
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
 impl Circuit for WithdrawFromObfuscatedCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut TurboComposer,
-    ) -> Result<(), PlonkError> {
-        let zero = TurboComposer::constant_zero();
+    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+        let zero = C::ZERO;
 
         // Witnesses
 
@@ -92,14 +95,14 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_derive_key_public_b =
             composer.append_public_point(self.change.derive_key.public_b);
         let change_pk_r = composer.append_public_point(self.change.pk_r);
-        let change_nonce = composer.append_public_witness(*self.change.nonce());
+        let change_nonce = composer.append_public(*self.change.nonce());
 
         let mut change_cipher = [zero; PoseidonCipher::cipher_size()];
         self.change
             .cipher()
             .iter()
             .zip(change_cipher.iter_mut())
-            .for_each(|(c, w)| *w = composer.append_public_witness(*c));
+            .for_each(|(c, w)| *w = composer.append_public(*c));
 
         let output_commitment =
             composer.append_public_point(self.output.commitment);
@@ -113,7 +116,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             input_value,
             input_blinder,
             64,
-        );
+        )?;
 
         // 2. commitment(Cc,Cv,Cb,64)
         gadgets::commitment(
@@ -122,7 +125,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             change_value,
             change_blinder,
             64,
-        );
+        )?;
 
         // 3. commitment(Oc,Ov,Ob,64)
         gadgets::commitment(
@@ -131,15 +134,13 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             output_value,
             output_blinder,
             64,
-        );
+        )?;
 
         // 4. (pa,pb) := selectPair(Cx,I,Cp,Cs)
-        let identity = composer.append_constant_identity();
-
         let change_derive_key_a = gadgets::identity_select_point(
             composer,
             change_derive_key_is_public,
-            identity,
+            C::IDENTITY,
             change_derive_key_public_a,
             change_derive_key_secret_a,
         );
@@ -147,7 +148,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_derive_key_b = gadgets::identity_select_point(
             composer,
             change_derive_key_is_public,
-            identity,
+            C::IDENTITY,
             change_derive_key_public_b,
             change_derive_key_secret_b,
         );
@@ -158,7 +159,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             change_r,
             change_derive_key_a,
             change_derive_key_b,
-        );
+        )?;
 
         composer.assert_equal_point(change_pk_r, change_stealth_address);
 
@@ -186,31 +187,5 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         composer.append_gate(constraint);
 
         Ok(())
-    }
-
-    fn public_inputs(&self) -> Vec<PublicInputValue> {
-        let mut pi = Vec::with_capacity(13 + PoseidonCipher::cipher_size());
-
-        pi.push(self.input.commitment.into());
-
-        let commitment = *self.change.commitment();
-        let nonce = *self.change.nonce();
-
-        pi.push(commitment.into());
-        pi.push(self.change.derive_key.public_a.into());
-        pi.push(self.change.derive_key.public_b.into());
-        pi.push(self.change.pk_r.into());
-        pi.push(nonce.into());
-
-        let cipher = self.change.cipher().iter().map(|c| (*c).into());
-        pi.extend(cipher);
-
-        pi.push(self.output.commitment.into());
-
-        pi
-    }
-
-    fn padded_gates(&self) -> usize {
-        1 << 14
     }
 }
