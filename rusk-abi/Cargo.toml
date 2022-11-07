@@ -32,6 +32,9 @@ once_cell = "1.15"
 
 [features]
 host = ["piecrust-uplink/default"]
+# re-export the features of `piecrust-uplink` to ensure this is the only crate
+# needed for writing contracts.
+wee_alloc = ["piecrust-uplink/wee_alloc"]
 
 [[test]]
 name = "test-rusk-abi"

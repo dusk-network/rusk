@@ -16,8 +16,7 @@ use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
-use piecrust_uplink::{ModuleId, State};
-use rusk_abi::{CircuitType, PublicInput};
+use rusk_abi::{CircuitType, ModuleId, PublicInput, State};
 
 #[no_mangle]
 static SELF_ID: ModuleId = ModuleId::uninitialized();
@@ -66,31 +65,31 @@ impl HostFnTest {
 
 #[no_mangle]
 unsafe fn hash(arg_len: u32) -> u32 {
-    piecrust_uplink::wrap_query(arg_len, |scalars| STATE.hash(scalars))
+    rusk_abi::wrap_query(arg_len, |scalars| STATE.hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn poseidon_hash(arg_len: u32) -> u32 {
-    piecrust_uplink::wrap_query(arg_len, |scalars| STATE.poseidon_hash(scalars))
+    rusk_abi::wrap_query(arg_len, |scalars| STATE.poseidon_hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn verify_proof(arg_len: u32) -> u32 {
-    piecrust_uplink::wrap_query(arg_len, |(ty, proof, public_inputs)| {
+    rusk_abi::wrap_query(arg_len, |(ty, proof, public_inputs)| {
         STATE.verify_proof(ty, proof, public_inputs)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_schnorr(arg_len: u32) -> u32 {
-    piecrust_uplink::wrap_query(arg_len, |(msg, pk, sig)| {
+    rusk_abi::wrap_query(arg_len, |(msg, pk, sig)| {
         STATE.verify_schnorr(msg, pk, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_bls(arg_len: u32) -> u32 {
-    piecrust_uplink::wrap_query(arg_len, |(msg, pk, sig)| {
+    rusk_abi::wrap_query(arg_len, |(msg, pk, sig)| {
         STATE.verify_bls(msg, pk, sig)
     })
 }

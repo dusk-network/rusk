@@ -17,11 +17,11 @@
 #![deny(clippy::all)]
 #![feature(const_fn_floating_point_arithmetic)]
 
+// re-export `piecrust-uplink` such that `rusk-abi` is the only crate
+pub use piecrust_uplink::*;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-
-use piecrust_uplink::ModuleId;
-use piecrust_uplink::MODULE_ID_BYTES;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
