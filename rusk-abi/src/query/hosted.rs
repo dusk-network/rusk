@@ -4,11 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-extern crate alloc;
+use alloc::vec::Vec;
 
 use crate::{CircuitType, MetadataType};
 
-use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;

@@ -17,6 +17,8 @@
 #![deny(clippy::all)]
 #![feature(const_fn_floating_point_arithmetic)]
 
+extern crate alloc;
+
 // re-export `piecrust-uplink` such that `rusk-abi` is the only crate
 pub use piecrust_uplink::*;
 

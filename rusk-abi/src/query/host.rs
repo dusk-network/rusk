@@ -4,18 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-extern crate alloc;
-
 use alloc::vec::Vec;
+
+use crate::hash::Hasher;
+use crate::PublicInput;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use piecrust_uplink::ModuleId;
-
-use crate::hash::Hasher;
-use crate::PublicInput;
 
 /// Generate a [`ModuleId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
