@@ -37,11 +37,17 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 }
 
 /// Verify a proof is valid for a given circuit type and public inputs
-pub fn verify_proof<C>(
-    verifier: &Verifier<C>,
+///
+/// # Panics
+/// This will panic if `verifier_data` is not valid.
+pub fn verify_proof(
+    verifier_data: Vec<u8>,
     proof: Proof,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
+    let verifier =
+        Verifier::<DummyCircuit>::try_from_bytes(verifier_data).expect("");
+
     let n_pi = public_inputs.iter().fold(0, |num, pi| {
         num + match pi {
             PublicInput::Point(_) => 2,
@@ -69,4 +75,18 @@ pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
 /// Verify a BLS signature is valid for the given public key and message
 pub fn verify_bls(msg: Vec<u8>, apk: APK, sig: BlsSignature) -> bool {
     apk.verify(&sig, &msg).is_ok()
+}
+
+#[derive(Default)]
+struct DummyCircuit;
+
+impl Circuit for DummyCircuit {
+    fn circuit<C>(&self, _: &mut C) -> Result<(), Error>
+    where
+        C: Composer,
+    {
+        unreachable!(
+            "This circuit should never be compiled or proven, only verified"
+        )
+    }
 }

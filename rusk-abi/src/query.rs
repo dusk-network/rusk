@@ -4,28 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytecheck::CheckBytes;
-use rkyv::{Archive, Deserialize, Serialize};
-
 mod public_input;
 pub use public_input::*;
-
-/// The type of the circuit to request a proof verification on.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-#[non_exhaustive]
-pub enum CircuitType {
-    /// Execute circuit with the given inputs and outputs
-    Execute(usize, usize),
-    /// Withdraw from contract transparent
-    WFCT,
-    /// Send to contract transparent
-    STCT,
-    /// Withdraw from contract obfuscated
-    WFCO,
-    /// Send to contract obfuscated
-    STCO,
-}
 
 /// Host query types offered by `rusk`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

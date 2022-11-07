@@ -16,7 +16,7 @@ use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
-use rusk_abi::{CircuitType, ModuleId, PublicInput, State};
+use rusk_abi::{ModuleId, PublicInput, State};
 
 #[no_mangle]
 static SELF_ID: ModuleId = ModuleId::uninitialized();
@@ -37,11 +37,11 @@ impl HostFnTest {
 
     pub fn verify_proof(
         &self,
-        ty: CircuitType,
+        verifier_data: Vec<u8>,
         proof: Proof,
         public_inputs: Vec<PublicInput>,
     ) -> bool {
-        rusk_abi::verify_proof(ty, proof, public_inputs)
+        rusk_abi::verify_proof(verifier_data, proof, public_inputs)
     }
 
     pub fn verify_schnorr(
@@ -79,8 +79,8 @@ unsafe fn poseidon_hash(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn verify_proof(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(ty, proof, public_inputs)| {
-        STATE.verify_proof(ty, proof, public_inputs)
+    rusk_abi::wrap_query(arg_len, |(verifier_data, proof, public_inputs)| {
+        STATE.verify_proof(verifier_data, proof, public_inputs)
     })
 }
 

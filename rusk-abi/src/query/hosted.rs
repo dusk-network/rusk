@@ -6,15 +6,13 @@
 
 use alloc::vec::Vec;
 
-use crate::{CircuitType, MetadataType};
+use crate::{MetadataType, PublicInput, QueryType};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::Proof;
 use dusk_schnorr::Signature;
-
-use crate::{PublicInput, QueryType};
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
 /// The output of the hasher is truncated (last nibble) to fit onto a scalar.
@@ -31,12 +29,12 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 
 /// Verify a proof is valid for a given circuit type and public inputs
 pub fn verify_proof(
-    ty: CircuitType,
+    verifier_data: Vec<u8>,
     proof: Proof,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
     let str = QueryType::VerifyProof.as_str();
-    piecrust_uplink::host_query(str, (ty, proof, public_inputs))
+    piecrust_uplink::host_query(str, (verifier_data, proof, public_inputs))
 }
 
 /// Verify a schnorr signature is valid for the given public key and message

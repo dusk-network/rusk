@@ -16,13 +16,12 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use once_cell::sync::OnceCell;
 use piecrust::{Session, VM};
 use piecrust_uplink::ModuleId;
 use rand_core::OsRng;
 use rkyv::Deserialize;
 use rusk_abi::hash::Hasher;
-use rusk_abi::{CircuitType, MetadataType, PublicInput, QueryType};
+use rusk_abi::{MetadataType, PublicInput, QueryType};
 
 #[test]
 fn hash_host() {
@@ -46,26 +45,6 @@ fn hash_host() {
         "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
         format!("{:#x}", Hasher::digest(input))
     );
-}
-
-struct ProverVerifier {
-    prover: Prover<TestCircuit>,
-    verifier: Verifier<TestCircuit>,
-}
-
-fn get_prover_verifier() -> &'static ProverVerifier {
-    static PROVER_VERIFIER: OnceCell<ProverVerifier> = OnceCell::new();
-
-    let pp = include_bytes!("./pp_test.bin");
-    let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
-
-    let label = b"dusk-network";
-
-    PROVER_VERIFIER.get_or_init(|| {
-        let (prover, verifier) = Compiler::compile(&pp, label)
-            .expect("Compiling the circuit should succeed");
-        ProverVerifier { prover, verifier }
-    })
 }
 
 fn hash_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
@@ -128,18 +107,18 @@ fn bls_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
 
 fn plonk_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
     let root = unsafe {
-        rkyv::archived_root::<(CircuitType, Proof, Vec<PublicInput>)>(
+        rkyv::archived_root::<(Vec<u8>, Proof, Vec<PublicInput>)>(
             &buf[..arg_len as usize],
         )
     };
 
-    // Ignore the circuit type here, since we're testing only the ability to
-    // prove.
-    let (_, proof, public_inputs): (CircuitType, Proof, Vec<PublicInput>) =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
+    let (verifier_data, proof, public_inputs): (
+        Vec<u8>,
+        Proof,
+        Vec<PublicInput>,
+    ) = root.deserialize(&mut rkyv::Infallible).unwrap();
 
-    let verifier = &get_prover_verifier().verifier;
-    let valid = rusk_abi::verify_proof(verifier, proof, public_inputs);
+    let valid = rusk_abi::verify_proof(verifier_data, proof, public_inputs);
 
     let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
 
@@ -167,6 +146,7 @@ fn instantiate() -> (Session, ModuleId) {
     );
 
     let mut session = vm.session();
+    session.set_point_limit(0x20000);
 
     let module_id = session
         .deploy(bytecode)
@@ -234,11 +214,11 @@ fn poseidon_hash() {
 fn schnorr_signature() {
     let (mut session, module_id) = instantiate();
 
-    let sk = SecretKey::random(&mut rand_core::OsRng);
-    let message = BlsScalar::random(&mut rand_core::OsRng);
+    let sk = SecretKey::random(&mut OsRng);
+    let message = BlsScalar::random(&mut OsRng);
     let pk = PublicKey::from(&sk);
 
-    let sign = Signature::new(&sk, &mut rand_core::OsRng, message);
+    let sign = Signature::new(&sk, &mut OsRng, message);
 
     assert!(sign.verify(&pk, message));
 
@@ -248,7 +228,7 @@ fn schnorr_signature() {
 
     assert!(valid, "Signature verification expected to succeed");
 
-    let wrong_sk = SecretKey::random(&mut rand_core::OsRng);
+    let wrong_sk = SecretKey::random(&mut OsRng);
     let pk = PublicKey::from(&wrong_sk);
 
     let valid: bool = session
@@ -326,9 +306,13 @@ impl Circuit for TestCircuit {
 fn plonk_proof() {
     let (mut session, module_id) = instantiate();
 
-    let prover_verifier = get_prover_verifier();
-    let prover = &prover_verifier.prover;
-    let verifier = &prover_verifier.verifier;
+    let pp = include_bytes!("./pp_test.bin");
+    let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
+
+    let label = b"dusk-network";
+
+    let (prover, verifier) = Compiler::compile(&pp, label)
+        .expect("Circuit should compile successfully");
 
     let circuit = TestCircuit::new(1, 2);
 
@@ -348,7 +332,7 @@ fn plonk_proof() {
         .query(
             module_id,
             "verify_proof",
-            (CircuitType::WFCT, proof.clone(), public_inputs),
+            (verifier.to_bytes(), proof.clone(), public_inputs),
         )
         .expect("Query should succeed");
 
@@ -362,7 +346,7 @@ fn plonk_proof() {
         .query(
             module_id,
             "verify_proof",
-            (CircuitType::WFCT, proof, wrong_public_inputs),
+            (verifier.to_bytes(), proof, wrong_public_inputs),
         )
         .expect("Query should succeed");
 
