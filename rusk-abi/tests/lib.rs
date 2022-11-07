@@ -22,7 +22,7 @@ use piecrust_uplink::ModuleId;
 use rand_core::OsRng;
 use rkyv::Deserialize;
 use rusk_abi::hash::Hasher;
-use rusk_abi::{CircuitType, PublicInput};
+use rusk_abi::{CircuitType, MetadataType, PublicInput, QueryType};
 
 #[test]
 fn hash_host() {
@@ -154,11 +154,17 @@ fn instantiate() -> (Session, ModuleId) {
 
     let mut vm = VM::ephemeral().expect("Instantiating the VM should succeed");
 
-    vm.register_host_query("hash", hash_host_query);
-    vm.register_host_query("poseidon_hash", poseidon_host_query);
-    vm.register_host_query("verify_proof", plonk_host_query);
-    vm.register_host_query("verify_bls", bls_host_query);
-    vm.register_host_query("verify_schnorr", schnorr_host_query);
+    vm.register_host_query(QueryType::Hash.as_str(), hash_host_query);
+    vm.register_host_query(
+        QueryType::PoseidonHash.as_str(),
+        poseidon_host_query,
+    );
+    vm.register_host_query(QueryType::VerifyProof.as_str(), plonk_host_query);
+    vm.register_host_query(QueryType::VerifyBls.as_str(), bls_host_query);
+    vm.register_host_query(
+        QueryType::VerifySchnorr.as_str(),
+        schnorr_host_query,
+    );
 
     let mut session = vm.session();
 
@@ -361,4 +367,19 @@ fn plonk_proof() {
         .expect("Query should succeed");
 
     assert!(!valid, "The proof should be invalid");
+}
+
+#[test]
+fn block_height() {
+    let (mut session, module_id) = instantiate();
+
+    const HEIGHT: u64 = 123;
+
+    session.set_meta(MetadataType::BlockHeight.as_str(), HEIGHT);
+
+    let height: u64 = session
+        .query(module_id, "block_height", ())
+        .expect("Query should succeed");
+
+    assert_eq!(height, HEIGHT);
 }

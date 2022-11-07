@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-use crate::CircuitType;
+use crate::{CircuitType, MetadataType};
 
 use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
@@ -50,4 +50,10 @@ pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
 pub fn verify_bls(msg: Vec<u8>, apk: APK, sig: BlsSignature) -> bool {
     let str = QueryType::VerifyBls.as_str();
     piecrust_uplink::host_query(str, (msg, apk, sig))
+}
+
+/// Get the current block height.
+pub fn block_height() -> u64 {
+    let str = MetadataType::BlockHeight.as_str();
+    piecrust_uplink::host_data(str)
 }

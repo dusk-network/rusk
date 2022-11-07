@@ -61,6 +61,10 @@ impl HostFnTest {
     ) -> bool {
         rusk_abi::verify_bls(msg, apk, sig)
     }
+
+    pub fn block_height(&self) -> u64 {
+        rusk_abi::block_height()
+    }
 }
 
 #[no_mangle]
@@ -92,4 +96,9 @@ unsafe fn verify_bls(arg_len: u32) -> u32 {
     rusk_abi::wrap_query(arg_len, |(msg, pk, sig)| {
         STATE.verify_bls(msg, pk, sig)
     })
+}
+
+#[no_mangle]
+unsafe fn block_height(arg_len: u32) -> u32 {
+    rusk_abi::wrap_query(arg_len, |_: ()| STATE.block_height())
 }

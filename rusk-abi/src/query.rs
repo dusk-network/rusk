@@ -56,12 +56,29 @@ impl QueryType {
     }
 }
 
+/// Metadata types offered by `rusk`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(not(feature = "host"), doc(hidden))]
+pub enum MetadataType {
+    /// Query for the current block height
+    BlockHeight,
+}
+
+impl MetadataType {
+    /// Returns the string representation of the query type
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            MetadataType::BlockHeight => "block_height",
+        }
+    }
+}
+
 cfg_if::cfg_if! {
-  if #[cfg(feature = "host")] {
-      mod host;
-      pub use host::*;
-  } else {
-      mod hosted;
-      pub use hosted::*;
-  }
+    if #[cfg(feature = "host")] {
+        mod host;
+        pub use host::*;
+    } else {
+        mod hosted;
+        pub use hosted::*;
+    }
 }
