@@ -16,7 +16,7 @@ use tracing::debug;
 
 use super::{accumulator, verifiers};
 
-pub async fn verify(
+pub(super) async fn verify(
     ru: &RoundUpdate,
     committees_set: Arc<Mutex<CommitteeSet>>,
     msg: &Message,
@@ -52,12 +52,15 @@ pub async fn verify(
 }
 
 /// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.
-pub async fn aggregate(
+pub(super) async fn aggregate(
     ru: &RoundUpdate,
     committees_set: Arc<Mutex<CommitteeSet>>,
     agreements: &accumulator::Output,
 ) -> Message {
-    let first_agreement = agreements.iter().next().expect("empty agreements");
+    let first_agreement = agreements
+        .iter()
+        .next()
+        .expect("agreements to not be empty");
 
     let (aggr_signature, bitset) = {
         let voters = &mut Cluster::new();
