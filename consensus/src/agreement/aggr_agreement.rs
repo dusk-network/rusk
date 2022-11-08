@@ -6,7 +6,7 @@
 
 use crate::aggregator::AggrSignature;
 use crate::commons::{RoundUpdate, Topics};
-use crate::messages::{payload, Header, Message, Payload};
+use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
@@ -43,7 +43,8 @@ pub(super) async fn verify(
         };
 
         verifiers::verify_agreement(m, committees_set.clone(), ru.seed).await?;
-        tracing::debug!("valid aggr agreement");
+
+        debug!("valid aggr agreement");
 
         return Ok(());
     }
@@ -86,14 +87,11 @@ pub(super) async fn aggregate(
         )
     };
 
+    let mut header = first_agreement.header;
+    header.topic = Topics::AggrAgreement as u8;
+
     Message::new_aggr_agreement(
-        Header {
-            pubkey_bls: ru.pubkey_bls,
-            round: ru.round,
-            step: first_agreement.header.step,
-            block_hash: first_agreement.header.block_hash,
-            topic: Topics::AggrAgreement as u8,
-        },
+        header,
         payload::AggrAgreement {
             agreement: first_agreement.payload.clone(),
             aggr_signature,
