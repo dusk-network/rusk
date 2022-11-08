@@ -27,7 +27,7 @@ pub async fn verify(
         debug!("collected aggr agreement");
 
         verifiers::verify_votes(
-            hdr.block_hash,
+            &hdr.block_hash,
             p.bitset,
             p.aggr_signature,
             committees_set.clone(),

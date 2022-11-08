@@ -21,6 +21,7 @@ pub trait Serializable {
     /// Deserialize struct from buf by consuming N bytes.
     fn from_bytes(buf: &mut Bytes) -> Self;
 }
+
 pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
     fn get_pubkey_bls(&self) -> ConsensusPublicKey;

@@ -75,11 +75,18 @@ async fn verify_step_votes(
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, 64);
 
-    verify_votes(hdr.block_hash, sv.bitset, sv.signature, committees_set, cfg).await
+    verify_votes(
+        &hdr.block_hash,
+        sv.bitset,
+        sv.signature,
+        committees_set,
+        cfg,
+    )
+    .await
 }
 
 pub async fn verify_votes(
-    block_hash: [u8; 32],
+    block_hash: &[u8; 32],
     bitset: u64,
     signature: [u8; 48],
     committees_set: Arc<Mutex<CommitteeSet>>,
@@ -133,7 +140,7 @@ async fn aggregate_pks(
 fn verify_signatures(
     round: u64,
     step: u8,
-    block_hash: [u8; 32],
+    block_hash: &[u8; 32],
     apk: dusk_bls12_381_sign::APK,
     signature: [u8; 48],
 ) -> Result<(), dusk_bls12_381_sign::Error> {
@@ -151,6 +158,6 @@ fn verify_whole(
 
     APK::from(hdr.pubkey_bls.inner()).verify(
         &sig,
-        marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
+        marshal_signable_vote(hdr.round, hdr.step, &hdr.block_hash).bytes(),
     )
 }

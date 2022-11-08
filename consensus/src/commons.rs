@@ -204,11 +204,11 @@ pub fn verify_signature(
 
     dusk_bls12_381_sign::APK::from(hdr.pubkey_bls.inner()).verify(
         &sig,
-        marshal_signable_vote(hdr.round, hdr.step, hdr.block_hash).bytes(),
+        marshal_signable_vote(hdr.round, hdr.step, &hdr.block_hash).bytes(),
     )
 }
 
-pub fn marshal_signable_vote(round: u64, step: u8, block_hash: [u8; 32]) -> BytesMut {
+pub fn marshal_signable_vote(round: u64, step: u8, block_hash: &[u8; 32]) -> BytesMut {
     let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
     msg.put_u64_le(round);
     msg.put_u8(step);
