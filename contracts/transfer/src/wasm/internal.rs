@@ -4,22 +4,23 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, Map, PublicKeyBytes, TransferContract};
-
+use crate::{Error, TransferContract};
+use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
+use dusk_plonk::prelude::Proof;
 use phoenix_core::{Crossover, Fee, Message, Note};
-use piecrust_uplink::ModuleId;
-use rusk_abi::dusk::*;
-use rusk_abi::PublicInput;
+
+use rusk_abi::{dusk::*, ModuleId, PublicInput};
 
 impl TransferContract {
     pub(crate) fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
-        let block_height = dusk_abi::block_height();
+        let block_height = rusk_abi::block_height();
 
-        let gas_left = dusk_abi::gas_left();
+        let gas_left = rusk_abi::limit() - rusk_abi::spent();
         let remainder = fee.gen_remainder(fee.gas_limit - gas_left);
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
@@ -40,32 +41,23 @@ impl TransferContract {
         LUX
     }
 
-    pub(crate) fn root_exists(&self, root: &BlsScalar) -> Result<bool, Error> {
-        let root = self.roots.get(root)?;
-
-        Ok(root.is_some())
+    pub(crate) fn root_exists(&self, root: &BlsScalar) -> bool {
+        self.roots.get(root).is_some()
     }
 
-    pub(crate) fn extend_nullifiers(
-        &mut self,
-        nullifiers: Vec<BlsScalar>,
-    ) -> Result<(), Error> {
-        for nullifier in nullifiers {
-            self.nullifiers.insert(nullifier, ())?;
-        }
-
-        Ok(())
+    pub(crate) fn extend_nullifiers(&mut self, nullifiers: Vec<BlsScalar>) {
+        self.nullifiers.extend(nullifiers);
     }
 
     pub(crate) fn take_message_from_address_key(
         &mut self,
-        address: &ContractId,
+        address: &ModuleId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
         self.message_mapping
-            .get_mut(address)?
+            .get_mut(address)
             .ok_or(Error::MessageNotFound)?
-            .remove(&pk.to_bytes())?
+            .remove(&pk.to_bytes())
             .ok_or(Error::MessageNotFound)
     }
 
@@ -73,7 +65,7 @@ impl TransferContract {
         &mut self,
         note: Note,
     ) -> Result<Note, Error> {
-        let block_height = dusk_abi::block_height();
+        let block_height = rusk_abi::block_height();
 
         self.push_note(block_height, note)
     }
@@ -82,7 +74,7 @@ impl TransferContract {
         &mut self,
         notes: Vec<Note>,
     ) -> Result<(), Error> {
-        let block_height = dusk_abi::block_height();
+        let block_height = rusk_abi::block_height();
 
         for note in notes {
             self.push_note(block_height, note)?;
@@ -93,22 +85,17 @@ impl TransferContract {
 
     pub(crate) fn sub_balance(
         &mut self,
-        address: &ContractId,
+        address: &ModuleId,
         value: u64,
     ) -> Result<(), Error> {
-        // TODO workaround until deref is implemented for microkelvin branch
-        // mapped mut
-        use core::ops::DerefMut;
-
-        match self.balances.get_mut(address)? {
-            Some(mut balance) => {
-                let bal_ref = balance.deref_mut();
-                let (bal, underflow) = bal_ref.overflowing_sub(value);
+        match self.balances.get_mut(address) {
+            Some(balance) => {
+                let (bal, underflow) = balance.overflowing_sub(value);
 
                 if underflow {
                     Err(Error::NotEnoughBalance)
                 } else {
-                    *bal_ref = bal;
+                    *balance = bal;
 
                     Ok(())
                 }
@@ -120,31 +107,31 @@ impl TransferContract {
 
     pub(crate) fn push_message(
         &mut self,
-        address: ContractId,
+        address: ModuleId,
         message_address: StealthAddress,
         message: Message,
-    ) -> Result<(), Error> {
-        let mut to_insert: Option<Map<PublicKeyBytes, Message>> = None;
+    ) {
+        let mut to_insert: Option<BTreeMap<[u8; PublicKey::SIZE], Message>> =
+            None;
 
-        match self.message_mapping.get_mut(&address)? {
-            Some(mut map) => {
-                map.insert(message_address.pk_r().to_bytes(), message)?;
+        match self.message_mapping.get_mut(&address) {
+            Some(map) => {
+                map.insert(message_address.pk_r().to_bytes(), message);
             }
 
             None => {
-                let mut map: Map<PublicKeyBytes, Message> = Map::default();
-                map.insert(message_address.pk_r().to_bytes(), message)?;
+                let mut map: BTreeMap<[u8; PublicKey::SIZE], Message> =
+                    BTreeMap::default();
+                map.insert(message_address.pk_r().to_bytes(), message);
                 to_insert.replace(map);
             }
         }
 
         if let Some(map) = to_insert {
-            self.message_mapping.insert(address, map)?;
+            self.message_mapping.insert(address, map);
         }
 
-        self.message_mapping_set.insert(address, message_address)?;
-
-        Ok(())
+        self.message_mapping_set.insert(address, message_address);
     }
 
     pub(crate) fn take_crossover(
@@ -162,11 +149,11 @@ impl TransferContract {
     }
 
     pub(crate) fn assert_proof(
-        proof: Vec<u8>,
-        vd: &[u8],
-        pi: Vec<PublicInput>,
+        verifier_data: &[u8],
+        proof: Proof,
+        public_inputs: Vec<PublicInput>,
     ) -> Result<(), Error> {
-        rusk_abi::verify_proof(proof, vd.to_vec(), pi)
+        rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then(|| ())
             .ok_or(Error::ProofVerificationError)
     }

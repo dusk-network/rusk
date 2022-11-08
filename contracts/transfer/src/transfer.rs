@@ -13,21 +13,16 @@ use core::convert::TryFrom;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, StealthAddress};
-use phoenix_core::{Crossover, Fee, Message, Note};
-use piecrust_uplink::ModuleId;
-use rusk_abi::hash::Hasher;
+use phoenix_core::{Crossover, Message, Note};
+use rusk_abi::ModuleId;
 
-mod call;
-#[cfg(feature = "circuits")]
 mod circuits;
 mod tree;
 
+pub use tree::Leaf;
 use tree::Tree;
 
-pub use call::Call;
-pub use tree::Leaf;
-
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct TransferContract {
     pub(crate) tree: Tree,
     pub(crate) nullifiers: BTreeSet<BlsScalar>,
@@ -54,8 +49,8 @@ impl TransferContract {
         }
     }
 
-    pub fn get_note(&self, pos: u64) -> Result<Option<Note>, Error> {
-        self.tree.get(pos).map(|l| l.map(|l| l.into()))
+    pub fn get_note(&self, pos: u64) -> Option<Note> {
+        self.tree.get(pos).map(|l| l.into())
     }
 
     /// Push a note to the contract's state with the given block height
@@ -67,8 +62,8 @@ impl TransferContract {
         block_height: u64,
         note: Note,
     ) -> Result<Note, Error> {
-        let pos = self.tree.push((block_height, note).into())?;
-        let note = self.get_note(pos)?.ok_or(Error::NoteNotFound)?;
+        let pos = self.tree.push((block_height, note).into());
+        let note = self.get_note(pos).ok_or(Error::NoteNotFound)?;
 
         Ok(note)
     }
@@ -79,15 +74,15 @@ impl TransferContract {
 
     pub fn message(
         &self,
-        contract: &ContractId,
+        contract: &ModuleId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
         let map = self
             .message_mapping
-            .get(contract)?
+            .get(contract)
             .ok_or(Error::ContractNotFound)?;
 
-        let message = map.get(&pk.to_bytes())?.ok_or(Error::MessageNotFound)?;
+        let message = map.get(&pk.to_bytes()).ok_or(Error::MessageNotFound)?;
 
         Ok(*message)
     }
@@ -95,7 +90,7 @@ impl TransferContract {
     pub fn leaves_from_height(
         &self,
         block_height: u64,
-    ) -> Result<impl Iterator<Item = Result<&Leaf, Error>>, Error> {
+    ) -> Option<impl Iterator<Item = &Leaf>> {
         self.tree.leaves(block_height)
     }
 
@@ -108,59 +103,26 @@ impl TransferContract {
         address: ModuleId,
         value: u64,
     ) -> Result<(), Error> {
-        if let Some(mut balance) = self.balances.get_mut(&address)? {
+        if let Some(balance) = self.balances.get_mut(&address) {
             *balance += value;
             return Ok(());
         }
 
-        self.balances.insert(address, value)?;
+        self.balances.insert(address, value);
 
         Ok(())
     }
 
     pub fn update_root(&mut self) -> Result<(), Error> {
-        let root = self.tree.root()?;
-
-        self.roots.insert(root)?;
-
+        let root = self.tree.root();
+        self.roots.insert(root);
         Ok(())
     }
 
-    pub fn tx_hash(
-        nullifiers: &[BlsScalar],
-        outputs: &[Note],
-        anchor: &BlsScalar,
-        fee: &Fee,
-        crossover: Option<&Crossover>,
-        call: Option<&(ModuleId, Vec<u8>)>,
-    ) -> BlsScalar {
-        let mut hasher = Hasher::new();
-
-        nullifiers.iter().for_each(|n| hasher.update(n.to_bytes()));
-        outputs.iter().for_each(|o| hasher.update(o.to_bytes()));
-
-        hasher.update(anchor.to_bytes());
-        hasher.update(fee.to_bytes());
-
-        if let Some(c) = crossover {
-            hasher.update(c.to_bytes());
-        };
-
-        if let Some((cid, txdata)) = call {
-            hasher.update(cid.as_bytes());
-            hasher.update(txdata.as_bytes());
-        };
-
-        hasher.finalize()
-    }
-
-    pub fn any_nullifier_exists(
-        &self,
-        nullifiers: &[BlsScalar],
-    ) -> Result<bool, Error> {
-        nullifiers.iter().try_fold(false, |t, n| {
-            Ok(t || self.nullifiers.get(n).map(|n| n.is_some())?)
-        })
+    pub fn any_nullifier_exists(&self, nullifiers: &[BlsScalar]) -> bool {
+        nullifiers
+            .iter()
+            .fold(false, |t, n| t || self.nullifiers.get(n).is_some())
     }
 
     /// Takes a slice of nullifiers and returns a vector containing the ones
@@ -168,17 +130,11 @@ impl TransferContract {
     pub fn find_existing_nullifiers(
         &self,
         nullifiers: &[BlsScalar],
-    ) -> Result<Vec<BlsScalar>, Error> {
+    ) -> Vec<BlsScalar> {
         nullifiers
             .iter()
             .copied()
-            .filter_map(|n| {
-                self.nullifiers
-                    .get(&n)
-                    .map(|v| v.and(Some(n)))
-                    .map_err(|e| e.into())
-                    .transpose()
-            })
+            .filter_map(|n| self.nullifiers.get(&n).map(|_| n))
             .collect()
     }
 }
@@ -191,7 +147,7 @@ impl TryFrom<Note> for TransferContract {
     ///
     /// To avoid abuse, the block_height will always be `0`
     fn try_from(note: Note) -> Result<Self, Self::Error> {
-        let mut transfer = Self::default();
+        let mut transfer = Self::new();
 
         let block_height = 0;
         transfer.push_note(block_height, note)?;
@@ -207,7 +163,7 @@ mod test_transfer {
 
     #[test]
     fn find_existing_nullifiers() -> Result<(), Error> {
-        let mut transfer = TransferContract::default();
+        let mut transfer = TransferContract::new();
 
         let (zero, one, two, three, ten, eleven) = (
             BlsScalar::from(0),
@@ -219,16 +175,16 @@ mod test_transfer {
         );
 
         let existing = transfer
-            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven]);
 
         assert_eq!(existing.len(), 0);
 
         for i in 1..10 {
-            transfer.nullifiers.insert(BlsScalar::from(i), ())?;
+            transfer.nullifiers.insert(BlsScalar::from(i));
         }
 
         let existing = transfer
-            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven])?;
+            .find_existing_nullifiers(&[zero, one, two, three, ten, eleven]);
 
         assert_eq!(existing.len(), 3);
 

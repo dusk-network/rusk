@@ -6,19 +6,19 @@
 
 use super::TransferContract;
 
-use dusk_abi::ContractId;
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
+use rusk_abi::ModuleId;
 
-const VD_STCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/b1f318350b747200deaa17172a0552c460fe5997f1dcf87d72186f9952d5af79.vd"));
-const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/3cefe190dd7d4ed0f2dfae8d95f7552e22fc7b073e3441b72269478e5c8d9924.vd"));
-const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/701e5ad43e8f4afce9e2d714ef0ee88d33fe9404ce0b88733be4d602eadf51e7.vd"));
-const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/88afddca21d7285681173a1b3f529374cc98574347471d29b2ba7ee4ff624267.vd"));
+const VD_STCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/d2efc2eb1caaa12ce0877ad248293dbffdbab41e659ca9911f032f344ab77263.vd"));
+const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/cad2cfab7ed15338ac22179c6b8e3351c7ce7320e3f87a559716e57bc2bdda47.vd"));
+const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47.vd"));
+const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e.vd"));
 
-const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/1b6c2bac3faa4a291a14b99ec769b8276e2bf558e4d790160d0d0673ff186b19.vd"));
-const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/ed4e1cf742834b4e7ec62422bc1a26ee10f52d3a74a07f68115ae4bec0a314e5.vd"));
-const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/064fccb786800ce91d0ac5f7fd1b264e4951438fbb3e875ffe333ac2064838d0.vd"));
-const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/408dae6c6ffbac2b5492958773da1f1c03c1912f6a1e6613214344132ab60c63.vd"));
+const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/19c9391f2f03a5206caac2618b8ab32847b6a1e19500fec27a3a96b9a84b200c.vd"));
+const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/ea59814e99b4c8789cff85d6623749f823c56383e300761537b3e248c537a033.vd"));
+const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/4e03eb1686949f9f17d13d285a4a9c5bc9596a84765f36a3491a981a29135987.vd"));
+const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/2a34871c45dd993c6217199c5c000aff24621f5953aca3a1755fe052a8e4e7b9.vd"));
 
 impl TransferContract {
     pub const fn verifier_data_execute(inputs: usize) -> &'static [u8] {
@@ -50,12 +50,12 @@ impl TransferContract {
     pub fn sign_message_stct(
         crossover: &Crossover,
         value: u64,
-        address: &ContractId,
+        address: &ModuleId,
     ) -> BlsScalar {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.push(value.into());
-        m.push(rusk_abi::contract_to_scalar(address));
+        m.push(rusk_abi::module_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());
@@ -69,12 +69,12 @@ impl TransferContract {
     pub fn sign_message_stco(
         crossover: &Crossover,
         message: &Message,
-        address: &ContractId,
+        address: &ModuleId,
     ) -> BlsScalar {
         let mut m = crossover.to_hash_inputs().to_vec();
 
         m.extend(&message.to_hash_inputs());
-        m.push(rusk_abi::contract_to_scalar(address));
+        m.push(rusk_abi::module_to_scalar(address));
 
         #[cfg(not(target_arch = "wasm32"))]
         let message = dusk_poseidon::sponge::hash(m.as_slice());
@@ -88,10 +88,15 @@ impl TransferContract {
 
 #[cfg(test)]
 mod tests {
-    extern crate std;
-
-    use dusk_plonk::prelude::Circuit;
     use transfer_circuits::*;
+
+    macro_rules! test_circuit {
+        ($circuit:ty, $id:literal,) => {
+            let id = hex::encode(<$circuit>::circuit_id());
+            assert_eq!(id, $id, "The circuit IDs should be as expected");
+        };
+    }
+
     #[test]
     fn circuits_id() {
         // This test is required to explicitly check that circuits IDs are the
@@ -101,43 +106,37 @@ mod tests {
         // because the circuits' key file is renamed. This error is not raised
         // if the `make keys` command is configured to preserve old keys (like
         // the one launched by the CI)
-
-        test_circuit::<SendToContractTransparentCircuit>(
-            "b1f318350b747200deaa17172a0552c460fe5997f1dcf87d72186f9952d5af79",
+        test_circuit!(
+            SendToContractTransparentCircuit,
+            "d2efc2eb1caaa12ce0877ad248293dbffdbab41e659ca9911f032f344ab77263",
         );
-        test_circuit::<SendToContractObfuscatedCircuit>(
-            "3cefe190dd7d4ed0f2dfae8d95f7552e22fc7b073e3441b72269478e5c8d9924",
+        test_circuit!(
+            SendToContractObfuscatedCircuit,
+            "cad2cfab7ed15338ac22179c6b8e3351c7ce7320e3f87a559716e57bc2bdda47",
         );
-        test_circuit::<WithdrawFromTransparentCircuit>(
-            "701e5ad43e8f4afce9e2d714ef0ee88d33fe9404ce0b88733be4d602eadf51e7",
+        test_circuit!(
+            WithdrawFromTransparentCircuit,
+            "dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47",
         );
-        test_circuit::<WithdrawFromObfuscatedCircuit>(
-            "88afddca21d7285681173a1b3f529374cc98574347471d29b2ba7ee4ff624267",
+        test_circuit!(
+            WithdrawFromObfuscatedCircuit,
+            "8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e",
         );
-        test_circuit::<ExecuteCircuitOneTwo>(
-            "1b6c2bac3faa4a291a14b99ec769b8276e2bf558e4d790160d0d0673ff186b19",
+        test_circuit!(
+            ExecuteCircuitOneTwo,
+            "19c9391f2f03a5206caac2618b8ab32847b6a1e19500fec27a3a96b9a84b200c",
         );
-        test_circuit::<ExecuteCircuitTwoTwo>(
-            "ed4e1cf742834b4e7ec62422bc1a26ee10f52d3a74a07f68115ae4bec0a314e5",
+        test_circuit!(
+            ExecuteCircuitTwoTwo,
+            "ea59814e99b4c8789cff85d6623749f823c56383e300761537b3e248c537a033",
         );
-        test_circuit::<ExecuteCircuitThreeTwo>(
-            "064fccb786800ce91d0ac5f7fd1b264e4951438fbb3e875ffe333ac2064838d0",
+        test_circuit!(
+            ExecuteCircuitThreeTwo,
+            "4e03eb1686949f9f17d13d285a4a9c5bc9596a84765f36a3491a981a29135987",
         );
-        test_circuit::<ExecuteCircuitFourTwo>(
-            "408dae6c6ffbac2b5492958773da1f1c03c1912f6a1e6613214344132ab60c63",
-        );
-    }
-
-    fn test_circuit<T>(expected_id: &str)
-    where
-        T: Circuit,
-    {
-        let expected_id = hex::decode(expected_id).expect("Cannot decode hex");
-        assert_eq!(
-            T::CIRCUIT_ID,
-            &expected_id[..],
-            "Check failed for {} circuit",
-            std::any::type_name::<T>()
+        test_circuit!(
+            ExecuteCircuitFourTwo,
+            "2a34871c45dd993c6217199c5c000aff24621f5953aca3a1755fe052a8e4e7b9",
         );
     }
 }

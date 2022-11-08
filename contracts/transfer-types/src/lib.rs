@@ -4,16 +4,22 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+//! Types used for transactions with Dusk's transfer contract.
+
 #![no_std]
+#![deny(missing_docs)]
+#![deny(clippy::pedantic)]
 
 extern crate alloc;
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
+use dusk_bytes::Serializable;
 use dusk_pki::StealthAddress;
 use dusk_plonk::proof_system::Proof;
 use phoenix_core::{Crossover, Fee, Message, Note};
-use piecrust_uplink::ModuleId;
+use rusk_abi::ModuleId;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -37,16 +43,47 @@ pub struct Transaction {
     /// A proof of the `Execute` circuit for this transaction.
     pub proof: Proof,
     /// A call to a contract. The `Vec<u8>` must be an `rkyv`ed representation
-    /// of the data the contract expects.
-    pub call: Option<(ModuleId, Vec<u8>)>,
+    /// of the data the contract expects, and the `String` the name of the
+    /// function to call.
+    pub call: Option<(ModuleId, String, Vec<u8>)>,
+}
+
+impl Transaction {
+    /// Collect the bytes that are imaged by the transaction hash.
+    #[must_use]
+    pub fn hash_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        for nullifier in &self.nullifiers {
+            bytes.extend(nullifier.to_bytes());
+        }
+        for note in &self.outputs {
+            bytes.extend(note.to_bytes());
+        }
+
+        bytes.extend(self.anchor.to_bytes());
+        bytes.extend(self.fee.to_bytes());
+
+        if let Some(crossover) = &self.crossover {
+            bytes.extend(crossover.to_bytes());
+        }
+
+        if let Some((module, fn_name, call_data)) = &self.call {
+            bytes.extend(module.as_bytes());
+            bytes.extend(fn_name.as_bytes());
+            bytes.extend(call_data);
+        }
+
+        bytes
+    }
 }
 
 /// Send value to a contract transparently.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct STCT {
+pub struct Stct {
     /// Module to send the value to.
-    pub module_id: ModuleId,
+    pub module: ModuleId,
     /// The value to send to the contract.
     pub value: u64,
     /// Proof of the `STCT` circuit.
@@ -56,7 +93,7 @@ pub struct STCT {
 /// Withdraw value from a contract transparently.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct WFCT {
+pub struct Wfct {
     /// The value to withdraw
     pub value: u64,
     /// The note to withdraw transparently to
@@ -68,9 +105,9 @@ pub struct WFCT {
 /// Send value to a contract anonymously.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct STCO {
+pub struct Stco {
     /// Module to send the value to.
-    pub module_id: ModuleId,
+    pub module: ModuleId,
     /// Message containing the value commitment.
     pub message: Message,
     /// The stealth address of the message.
@@ -82,7 +119,7 @@ pub struct STCO {
 /// Withdraw value from a contract anonymously.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct WFCO {
+pub struct Wfco {
     /// Message containing the value commitment.
     pub message: Message,
     /// The stealth address of the message.
@@ -100,9 +137,9 @@ pub struct WFCO {
 /// Withdraw value from the calling contract to another contract.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct WFCTC {
+pub struct Wfctc {
     /// The contract to transfer value to.
-    pub to: ModuleId,
+    pub module: ModuleId,
     /// The value to transfer.
     pub value: u64,
 }

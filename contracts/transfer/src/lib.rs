@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![no_std]
+#![feature(arbitrary_self_types)]
 
 extern crate alloc;
 
@@ -13,4 +14,4 @@ mod transfer;
 mod wasm;
 
 pub use error::Error;
-pub use transfer::{Call, Leaf, TransferContract};
+pub use transfer::{Leaf, TransferContract};

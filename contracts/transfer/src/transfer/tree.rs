@@ -4,113 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
 use core::borrow::Borrow;
 
-use canonical::Canon;
-use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::{
-    PoseidonAnnotation, PoseidonBranch, PoseidonLeaf, PoseidonTree,
-    PoseidonTreeAnnotation,
-};
-use microkelvin::{
-    AnnoIter, Annotation, Cardinality, Child, Combine, Compound, Keyed, MaxKey,
-    Step, Walk, Walker,
-};
+use dusk_poseidon::tree::{PoseidonBranch, PoseidonLeaf, PoseidonTree};
+use microkelvin::{Child, Compound, Step, Walk, Walker};
+use nstack::annotation::{Keyed, MaxKey};
 use phoenix_core::Note;
+use ranno::Annotation;
 
 pub const TRANSFER_TREE_DEPTH: usize = 17;
 
-/// Annotation to filter leafs of a tree in respect of the Expiration of them.
-#[derive(Clone, Debug, Default, Canon)]
-pub struct NotesAnnotation {
-    poseidon: PoseidonAnnotation,
-    block_height: MaxKey<BlockHeight>,
-}
-
-impl Borrow<MaxKey<BlockHeight>> for NotesAnnotation {
-    fn borrow(&self) -> &MaxKey<BlockHeight> {
-        &self.block_height
-    }
-}
-
-impl Borrow<Cardinality> for NotesAnnotation {
-    fn borrow(&self) -> &Cardinality {
-        self.poseidon.borrow()
-    }
-}
-
-impl Borrow<BlsScalar> for NotesAnnotation {
-    fn borrow(&self) -> &BlsScalar {
-        self.poseidon.borrow()
-    }
-}
-
-impl Borrow<PoseidonAnnotation> for NotesAnnotation {
-    fn borrow(&self) -> &PoseidonAnnotation {
-        &self.poseidon
-    }
-}
-
-impl<L> Annotation<L> for NotesAnnotation
-where
-    L: PoseidonLeaf,
-    L: Borrow<u64>,
-    L: Keyed<BlockHeight>,
-{
-    fn from_leaf(leaf: &L) -> Self {
-        let poseidon = PoseidonAnnotation::from_leaf(leaf);
-        let block_height = MaxKey::from_leaf(leaf);
-
-        Self {
-            poseidon,
-            block_height,
-        }
-    }
-}
-
-impl<A> Combine<A> for NotesAnnotation
-where
-    A: Borrow<Cardinality>
-        + Borrow<MaxKey<BlockHeight>>
-        + Borrow<PoseidonAnnotation>
-        + Borrow<BlsScalar>,
-{
-    fn combine<C: Compound<A>>(iter: AnnoIter<C, A>) -> Self
-    where
-        C: Compound<A>,
-        A: Annotation<C::Leaf>,
-    {
-        NotesAnnotation {
-            poseidon: PoseidonAnnotation::combine(iter.clone()),
-            block_height: MaxKey::combine(iter),
-        }
-    }
-}
-
-impl PoseidonTreeAnnotation<Leaf> for NotesAnnotation where Leaf: {}
-
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Canon,
-)]
-pub struct BlockHeight(u64);
-
-impl From<u64> for BlockHeight {
-    fn from(b: u64) -> Self {
-        Self(b)
-    }
-}
-
-impl From<BlockHeight> for u64 {
-    fn from(b: BlockHeight) -> u64 {
-        b.0
-    }
-}
-
-#[derive(Debug, Clone, Copy, Canon)]
+#[derive(Debug, Clone, Copy)]
 pub struct Leaf {
-    pub block_height: BlockHeight,
+    pub block_height: u64,
     pub note: Note,
 }
 
@@ -126,8 +33,8 @@ impl Borrow<u64> for Leaf {
     }
 }
 
-impl Keyed<BlockHeight> for Leaf {
-    fn key(&self) -> &BlockHeight {
+impl Keyed<u64> for Leaf {
+    fn key(&self) -> &u64 {
         &self.block_height
     }
 }
@@ -167,80 +74,82 @@ impl PoseidonLeaf for Leaf {
     }
 }
 
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Clone)]
 pub struct Tree {
-    tree: PoseidonTree<Leaf, NotesAnnotation, TRANSFER_TREE_DEPTH>,
+    tree: PoseidonTree<Leaf, u64, TRANSFER_TREE_DEPTH>,
 }
 
 impl Tree {
-    pub fn inner(
-        &self,
-    ) -> &PoseidonTree<Leaf, NotesAnnotation, TRANSFER_TREE_DEPTH> {
+    pub const fn new() -> Self {
+        Self {
+            tree: PoseidonTree::new(),
+        }
+    }
+
+    pub fn inner(&self) -> &PoseidonTree<Leaf, u64, TRANSFER_TREE_DEPTH> {
         &self.tree
     }
 
     pub fn inner_mut(
         &mut self,
-    ) -> &mut PoseidonTree<Leaf, NotesAnnotation, TRANSFER_TREE_DEPTH> {
+    ) -> &mut PoseidonTree<Leaf, u64, TRANSFER_TREE_DEPTH> {
         &mut self.tree
     }
 
-    pub fn get(&self, pos: u64) -> Result<Option<Leaf>, Error> {
-        Ok(self.tree.get(pos)?)
+    pub fn get(&self, pos: u64) -> Option<Leaf> {
+        self.tree.get(pos)
     }
 
-    pub fn push(&mut self, leaf: Leaf) -> Result<u64, Error> {
-        Ok(self.tree.push(leaf)?)
+    pub fn push(&mut self, leaf: Leaf) -> u64 {
+        self.tree.push(leaf)
     }
 
-    pub fn root(&mut self) -> Result<BlsScalar, Error> {
-        Ok(self.tree.root()?)
+    pub fn root(&mut self) -> BlsScalar {
+        self.tree.root()
     }
 
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
-        Ok(self.tree.branch(pos)?)
+    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
+        self.tree.branch(pos)
     }
 
     pub fn leaves(
         &self,
         block_height: u64,
-    ) -> Result<impl Iterator<Item = Result<&Leaf, Error>>, Error> {
-        Ok(self
-            .tree
-            .annotated_iter_walk(BlockHeightFilter(block_height))?
-            .into_iter()
-            .map(|result| result.map_err(|e| e.into())))
+    ) -> Option<impl Iterator<Item = &Leaf>> {
+        self.tree
+            .annotated_iter_walk(BlockHeightFilter(block_height))
+            .map(|v| v.into_iter())
     }
 }
 
-// Walker method to find the elements that are avobe a certain a block height.
+// Walker method to find the elements that are above a certain a block height.
 pub struct BlockHeightFilter(u64);
 
 impl<C, A> Walker<C, A> for BlockHeightFilter
 where
     C: Compound<A>,
-    C::Leaf: Keyed<BlockHeight>,
-    A: Combine<A> + Annotation<C::Leaf> + Borrow<MaxKey<BlockHeight>> + Canon,
+    C::Leaf: Keyed<u64>,
+    A: Annotation<C> + Borrow<MaxKey<u64>>,
 {
     fn walk(&mut self, walk: Walk<C, A>) -> Step {
         for i in 0.. {
             match walk.child(i) {
                 Child::Leaf(l) => {
-                    if l.key().0 >= self.0 {
+                    if l.key() >= &self.0 {
                         return Step::Found(i);
                     } else {
                         self.0 -= 1
                     }
                 }
                 Child::Node(n) => {
-                    let max_node_block_height: u64 =
-                        match *(*n.annotation()).borrow() {
-                            MaxKey::NegativeInfinity => return Step::Abort,
-                            MaxKey::Maximum(value) => value.0,
-                        };
+                    let max_node_block_height: u64 = match *(*n.anno()).borrow()
+                    {
+                        MaxKey::NegativeInfinity => return Step::Abort,
+                        MaxKey::Maximum(value) => value,
+                    };
                     if max_node_block_height >= self.0 {
                         return Step::Into(i);
                     } else {

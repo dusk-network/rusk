@@ -13,9 +13,10 @@ dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-im
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-poseidon = { version = "0.28", default-features = false, features = ["rkyv-impl", "alloc"] }
 microkelvin = { version = "0.17", default-features = false }
-phoenix-core = { version = "0.17", default-features = false, features = ["rkyv-impl"] }
-rusk-abi = { path = "../../rusk-abi" }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", features = ["wee_alloc"] }
+nstack = { version = "0.16", default-features = false }
+ranno = "0.1"
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
+rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["alloc"] }
 bytecheck = { version = "0.6", default-features = false }
@@ -24,3 +25,5 @@ transfer-contract-types = { path = "../transfer-types" }
 [dev-dependencies]
 piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
+hex = "0.4"
+transfer-circuits = { path = "../../circuits/transfer" }

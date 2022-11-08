@@ -4,14 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::CanonError;
 use core::fmt;
 use phoenix_core::Error as PhoenixError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
     Phoenix(PhoenixError),
-    Canon(CanonError),
     NoteNotFound,
     MessageNotFound,
     CrossoverNotFound,
@@ -25,12 +23,6 @@ pub enum Error {
 impl From<PhoenixError> for Error {
     fn from(e: PhoenixError) -> Self {
         Self::Phoenix(e)
-    }
-}
-
-impl From<CanonError> for Error {
-    fn from(e: CanonError) -> Self {
-        Self::Canon(e)
     }
 }
 
