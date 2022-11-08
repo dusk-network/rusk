@@ -61,7 +61,7 @@ pub async fn verify_agreement(
     }
 }
 
-async fn verify_step_votes(
+pub(super) async fn verify_step_votes(
     sv: StepVotes,
     committees_set: Arc<Mutex<CommitteeSet>>,
     seed: [u8; 32],

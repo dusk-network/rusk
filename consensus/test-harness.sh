@@ -31,5 +31,5 @@ do
 done
 
 # monitor
-tail -F $TEMPD/node_*.log  | grep -i block_time
+tail -F $TEMPD/node_*.log  | grep -e  "block_time\|ERROR"
 
