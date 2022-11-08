@@ -19,20 +19,20 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, warn, Instrument};
 
 #[derive(Debug, Clone, Eq)]
-pub struct AgreementMessage {
-    pub header: messages::Header,
-    pub payload: payload::Agreement,
+pub(super) struct AgreementMessage {
+    pub(super) header: messages::Header,
+    pub(super) payload: payload::Agreement,
 }
 
 impl std::hash::Hash for AgreementMessage {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.payload.hash(state);
+        self.payload.signature.hash(state)
     }
 }
 
 impl PartialEq for AgreementMessage {
     fn eq(&self, other: &Self) -> bool {
-        self.header == other.header && self.payload == other.payload
+        self.payload.signature == other.payload.signature
     }
 }
 
@@ -45,9 +45,9 @@ type AgreementsPerStep = HashMap<u8, (HashSet<AgreementMessage>, usize)>;
 type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
 /// Output from accumulation
-pub type Output = HashSet<AgreementMessage>;
+pub(super) type Output = HashSet<AgreementMessage>;
 
-pub(crate) struct Accumulator {
+pub(super) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
     tx: async_channel::Sender<Message>,
     rx: async_channel::Receiver<Message>,
