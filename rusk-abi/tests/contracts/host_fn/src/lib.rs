@@ -16,7 +16,9 @@ use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
-use rusk_abi::{ModuleId, PublicInput, State};
+use rusk_abi::{payment_info, ModuleId, PublicInput, State};
+
+payment_info!(PaymentInfo::Transparent(None));
 
 #[no_mangle]
 static SELF_ID: ModuleId = ModuleId::uninitialized();
