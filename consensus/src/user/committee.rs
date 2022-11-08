@@ -192,6 +192,10 @@ impl CommitteeSet {
         &self.provisioners
     }
 
+    pub fn bits(&mut self, voters: &Cluster<ConsensusPublicKey>, cfg: sortition::Config) -> u64 {
+        self.get_or_create(cfg).bits(voters)
+    }
+
     fn get_or_create(&mut self, cfg: sortition::Config) -> &Committee {
         self.committees
             .entry(cfg)

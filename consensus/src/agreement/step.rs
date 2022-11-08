@@ -6,7 +6,7 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{Block, ConsensusError, RoundUpdate};
-use crate::messages::{Header, Message, Status};
+use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
@@ -14,12 +14,15 @@ use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
 
+use crate::agreement::aggr_agreement;
 use crate::config;
 use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace, Instrument};
+use tracing::{error, info, Instrument};
+
+use super::accumulator;
 
 const COMMITTEE_SIZE: usize = 64;
 
@@ -96,7 +99,7 @@ impl Executor {
         &mut self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
-        let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<Message>(10);
+        let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<accumulator::Output>(10);
 
         // Accumulator
         let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
@@ -115,7 +118,7 @@ impl Executor {
 
         if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
             for msg in messages {
-                self.collect_agreement(&mut acc, msg).await;
+                self.collect_inbound_msg(&mut acc, msg).await;
             }
         }
 
@@ -124,11 +127,13 @@ impl Executor {
             select! {
                 biased;
                  // Process the output message from the Accumulator
-                 msg = collected_votes_rx.recv() => {
-                    if let Some(block) = self.collect_votes(msg) {
-                        // Winning block of this round found.
-                        future_msgs.lock().await.clear(self.ru.round);
-                        break Ok(block)
+                 result = collected_votes_rx.recv() => {
+                    if let Some(aggrements) = result {
+                        if let Some(block) = self.collect_votes(aggrements).await {
+                            // Winning block of this round found.
+                            future_msgs.lock().await.clear(self.ru.round);
+                            break Ok(block)
+                        }
                     }
                  },
                 // Process messages from outside world
@@ -143,7 +148,7 @@ impl Executor {
                                     .await
                                     .put_event(msg.header.round, 0, msg.clone());
                             }
-                            Status::Present => { self.collect_agreement(&mut acc, msg).await;}
+                            Status::Present => { if let Some(block) = self.collect_inbound_msg(&mut acc, msg).await {break Ok(block)}}
                             _ => {}
                         };
                     }
@@ -152,18 +157,27 @@ impl Executor {
         }
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
-        let hdr = &msg.header;
-
-        if !self.is_member(hdr).await {
-            trace!(
-                "message is from non-committee member {:?} {:?}",
-                self.ru,
-                *hdr
-            );
-            return;
+    async fn collect_inbound_msg(&mut self, acc: &mut Accumulator, msg: Message) -> Option<Block> {
+        if !self.is_member(&msg.header).await {
+            return None;
         }
 
+        match msg.payload {
+            Payload::AggrAgreement(_) => {
+                // process aggregated agreement
+                return self.collect_aggr_agreement(msg).await;
+            }
+            Payload::Agreement(_) => {
+                // Accumulate the agreement
+                self.collect_agreement(acc, msg).await;
+            }
+            _ => {}
+        };
+
+        None
+    }
+
+    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
         // Publish the agreement
         self.outbound_queue
             .send(msg.clone())
@@ -174,7 +188,19 @@ impl Executor {
         acc.process(msg.clone()).await;
     }
 
-    fn collect_votes(&self, _msg: Option<Message>) -> Option<Block> {
+    /// Collects accumulator output (a list of agreements) and publishes  AggrAgreement.
+    ///
+    /// Returns the winning block.
+    async fn collect_votes(&mut self, agreements: accumulator::Output) -> Option<Block> {
+        if config::ENABLE_AGGR_AGREEMENT {
+            let msg =
+                aggr_agreement::aggregate(&self.ru, self.committees_set.clone(), &agreements).await;
+
+            tracing::debug!("broadcast aggr_agreement {:#?}", msg);
+            // Broadcast AggrAgreement message
+            self.publish(msg).await;
+        }
+
         info!("consensus_achieved");
 
         // TODO: Generate winning block. This should be feasible once append-only db is enabled.
@@ -184,10 +210,33 @@ impl Executor {
         Some(Block::default())
     }
 
+    async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
+        if let Err(e) = aggr_agreement::verify(&self.ru, self.committees_set.clone(), &msg).await {
+            error!("failed to verify aggr agreement err: {:?}", e);
+            return None;
+        }
+
+        //TODO:  Create winning block
+
+        // Re-publish the agreement message
+        self.publish(msg.clone()).await;
+
+        Some(Block::default())
+    }
+
     async fn is_member(&self, hdr: &Header) -> bool {
         self.committees_set.lock().await.is_member(
             hdr.pubkey_bls,
             sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
         )
+    }
+
+    // Publishes a message
+    async fn publish(&mut self, msg: Message) {
+        let topic = msg.header.topic;
+        self.outbound_queue
+            .send(msg)
+            .await
+            .unwrap_or_else(|err| error!("unable to publish msg(id:{}) {:?}", topic, err));
     }
 }

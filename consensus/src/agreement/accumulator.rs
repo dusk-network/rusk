@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::agreement::verifiers::verify_agreement;
+use crate::agreement::verifiers;
 use crate::commons::Hash;
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
@@ -18,15 +18,36 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn, Instrument};
 
+#[derive(Debug, Clone, Eq)]
+pub(super) struct AgreementMessage {
+    pub(super) header: messages::Header,
+    pub(super) payload: payload::Agreement,
+}
+
+impl std::hash::Hash for AgreementMessage {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.payload.signature.hash(state)
+    }
+}
+
+impl PartialEq for AgreementMessage {
+    fn eq(&self, other: &Self) -> bool {
+        self.payload.signature == other.payload.signature
+    }
+}
+
 /// AgreementsPerStep is a mapping of StepNum to Set of Agreements,
 /// where duplicated agreements per step are not allowed.
-type AgreementsPerStep = HashMap<u8, (HashSet<payload::Agreement>, usize)>;
+type AgreementsPerStep = HashMap<u8, (HashSet<AgreementMessage>, usize)>;
 
 /// StorePerHash implements a mapping of a block hash to AgreementsPerStep,
 /// where AgreementsPerStep is a mapping of StepNum to Set of Agreements.
 type StorePerHash = HashMap<Hash, AgreementsPerStep>;
 
-pub(crate) struct Accumulator {
+/// Output from accumulation
+pub(super) type Output = HashSet<AgreementMessage>;
+
+pub(super) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
     tx: async_channel::Sender<Message>,
     rx: async_channel::Receiver<Message>,
@@ -53,7 +74,7 @@ impl Accumulator {
     pub fn spawn_workers_pool(
         &mut self,
         workers_amount: usize,
-        output_chan: Sender<Message>,
+        output_chan: Sender<Output>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         seed: [u8; 32],
     ) {
@@ -84,7 +105,8 @@ impl Accumulator {
                         }
 
                         if let Err(e) =
-                            verify_agreement(msg.clone(), committees_set.clone(), seed).await
+                            verifiers::verify_agreement(msg.clone(), committees_set.clone(), seed)
+                                .await
                         {
                             error!("{:#?}", e);
                             continue;
@@ -96,7 +118,7 @@ impl Accumulator {
                         {
                             rx.close();
                             output_chan.send(msg).await.unwrap_or_else(|err| {
-                                error!("unable to send_msg collected_votes {:?}", err)
+                                warn!("unable to send_msg collected_votes {:?}", err)
                             });
                             break;
                         }
@@ -129,7 +151,7 @@ impl Accumulator {
         committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
         seed: [u8; 32],
-    ) -> Option<messages::Message> {
+    ) -> Option<Output> {
         let hdr = msg.header;
 
         let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
@@ -156,13 +178,18 @@ impl Accumulator {
                 .entry(hdr.step)
                 .or_insert((HashSet::new(), 0));
 
-            if agr_set.contains(&payload) {
+            let key = AgreementMessage {
+                header: msg.header,
+                payload,
+            };
+
+            if agr_set.contains(&key) {
                 warn!("Agreement was not accumulated since it is a duplicate");
                 return None;
             }
 
             // Save agreement to avoid duplicates
-            agr_set.insert(payload);
+            agr_set.insert(key);
 
             // Increase the cumulative weight
             *agr_weight += weight;
@@ -173,8 +200,7 @@ impl Accumulator {
                     hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
                 );
 
-                // TODO: CollectedVotes Message
-                return Some(Message::empty());
+                return Some(agr_set.clone());
             }
         }
 
