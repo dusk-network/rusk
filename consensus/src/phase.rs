@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::ConsensusError;
+use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
 
@@ -38,13 +39,13 @@ macro_rules! call_phase {
     };
 }
 
-pub enum Phase {
-    Selection(selection::step::Selection),
-    Reduction1(firststep::step::Reduction),
-    Reduction2(secondstep::step::Reduction),
+pub enum Phase<T: Operations> {
+    Selection(selection::step::Selection<T>),
+    Reduction1(firststep::step::Reduction<T>),
+    Reduction2(secondstep::step::Reduction<T>),
 }
 
-impl Phase {
+impl<T: Operations + 'static> Phase<T> {
     pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
         trace!(
             "init phase:{} with msg {:?} at round:{} step:{}",
@@ -65,7 +66,7 @@ impl Phase {
         // The extracted members are the provisioners eligible to vote on this particular round and step.
         // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
         let step_committee = Committee::new(
-            ctx.round_update.pubkey_bls,
+            ctx.round_update.pubkey_bls.clone(),
             ctx.provisioners,
             ctx.get_sortition_config(size),
         );

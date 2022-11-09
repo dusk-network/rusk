@@ -29,7 +29,7 @@ pub fn run_main_loop(
     let provisioners = generate_provisioners_from_keys(keys.clone());
 
     spawn_consensus_in_thread_pool(
-        keys[prov_id],
+        keys[prov_id].clone(),
         provisioners,
         inbound,
         outbound,
@@ -73,7 +73,11 @@ fn spawn_consensus_in_thread_pool(
                         .as_secs();
 
                     let _ = c
-                        .spin(RoundUpdate::new(i, keys.1, keys.0), p.clone(), cancel_rx)
+                        .spin(
+                            RoundUpdate::new(i, keys.1.clone(), keys.0),
+                            p.clone(),
+                            cancel_rx,
+                        )
                         .await;
 
                     // Calc block time
@@ -83,12 +87,13 @@ fn spawn_consensus_in_thread_pool(
                         .as_secs()
                         - before;
                     cumulative_block_time += block_time as f64;
+                    let average_block_time = cumulative_block_time / ((i + 1) as f64);
+                    let average_block_time = (average_block_time * 100f64).round() / 100f64;
                     tracing::info!(
-                        "bls_key={}, round={}, block_time={} average_block_time={:.2}",
-                        keys.1.encode_short_hex(),
-                        i,
+                        bls_key = keys.1.encode_short_hex(),
+                        round = i,
                         block_time,
-                        cumulative_block_time / ((i + 1) as f64)
+                        average_block_time,
                     );
                 }
             });

@@ -22,22 +22,22 @@ pub(super) async fn verify(
     msg: &Message,
 ) -> Result<(), super::verifiers::Error> {
     if let Payload::AggrAgreement(p) = &msg.payload {
-        let hdr = &msg.header;
+        // let hdr = &msg.header;
 
         debug!("collected aggr agreement");
 
         verifiers::verify_votes(
-            &hdr.block_hash,
+            &msg.header.block_hash,
             p.bitset,
-            p.aggr_signature,
-            committees_set.clone(),
-            sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
+            &p.aggr_signature,
+            &committees_set,
+            &sortition::Config::new(ru.seed, ru.round, msg.header.step, 64),
         )
         .await?;
 
         // Verify agreement TODO:: new_agreement
         let m = Message {
-            header: msg.header,
+            header: msg.header.clone(),
             payload: Payload::Agreement(p.agreement.clone()),
             metadata: Default::default(),
         };
@@ -49,7 +49,9 @@ pub(super) async fn verify(
         return Ok(());
     }
 
-    Err(verifiers::Error::VerificationFailed)
+    Err(verifiers::Error::VerificationFailed(
+        dusk_bls12_381_sign::Error::InvalidSignature,
+    ))
 }
 
 /// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.
@@ -72,7 +74,7 @@ pub(super) async fn aggregate(
 
             // Aggregate signatures
             aggr_sign
-                .add(m.payload.signature)
+                .add(&m.payload.signature)
                 .expect("invalid signature");
         });
 
@@ -82,12 +84,12 @@ pub(super) async fn aggregate(
                 .expect("empty aggregated bytes"),
             committees_set.lock().await.bits(
                 voters,
-                sortition::Config::new(ru.seed, ru.round, first_agreement.header.step, 64),
+                &sortition::Config::new(ru.seed, ru.round, first_agreement.header.step, 64),
             ),
         )
     };
 
-    let mut header = first_agreement.header;
+    let mut header = first_agreement.header.clone();
     header.topic = Topics::AggrAgreement as u8;
 
     Message::new_aggr_agreement(

@@ -54,14 +54,12 @@ impl Agreement {
         let inbound = self.inbound_queue.clone();
 
         tokio::spawn(async move {
+            let round = ru.round;
+            let pubkey = ru.pubkey_bls.encode_short_hex();
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound)
                 .run(future_msgs)
-                .instrument(tracing::info_span!(
-                    "agr_task",
-                    round = ru.round,
-                    pubkey = ru.pubkey_bls.encode_short_hex(),
-                ))
+                .instrument(tracing::info_span!("agr_task", round, pubkey))
                 .await
         })
     }
@@ -113,10 +111,10 @@ impl Executor {
 
         // drain future messages for current round and step.
         if self.ru.round > 0 {
-            future_msgs.lock().await.clear(self.ru.round - 1);
+            future_msgs.lock().await.clear_round(self.ru.round - 1);
         }
 
-        if let Ok(messages) = future_msgs.lock().await.get_events(self.ru.round, 0) {
+        if let Some(messages) = future_msgs.lock().await.drain_events(self.ru.round, 0) {
             for msg in messages {
                 self.collect_inbound_msg(&mut acc, msg).await;
             }
@@ -131,7 +129,7 @@ impl Executor {
                     if let Some(aggrements) = result {
                         if let Some(block) = self.collect_votes(aggrements).await {
                             // Winning block of this round found.
-                            future_msgs.lock().await.clear(self.ru.round);
+                            future_msgs.lock().await.clear_round(self.ru.round);
                             break Ok(block)
                         }
                     }
@@ -226,8 +224,8 @@ impl Executor {
 
     async fn is_member(&self, hdr: &Header) -> bool {
         self.committees_set.lock().await.is_member(
-            hdr.pubkey_bls,
-            sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
+            &hdr.pubkey_bls,
+            &sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
         )
     }
 

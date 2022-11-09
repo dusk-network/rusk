@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{verify_signature, ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::messages::{Message, Payload};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -16,7 +16,7 @@ impl MsgHandler<Message> for Selection {
     fn verify(
         &mut self,
         msg: Message,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
@@ -29,7 +29,7 @@ impl MsgHandler<Message> for Selection {
     fn collect(
         &mut self,
         msg: Message,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
@@ -41,7 +41,7 @@ impl MsgHandler<Message> for Selection {
     /// Handles of an event of step execution timeout
     fn handle_timeout(
         &mut self,
-        _ru: RoundUpdate,
+        _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::FinalResult(Message::empty()))
@@ -52,7 +52,7 @@ impl Selection {
     fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
         //  Verify new_block msg signature
         if let Payload::NewBlock(p) = msg.clone().payload {
-            if verify_signature(&msg.header, &p.signed_hash).is_err() {
+            if msg.header.verify_signature(&p.signed_hash).is_err() {
                 return Err(ConsensusError::InvalidSignature);
             }
 

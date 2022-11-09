@@ -96,7 +96,7 @@ impl Provisioners {
     pub fn add_member_with_stake(&mut self, pubkey_bls: ConsensusPublicKey, stake: Stake) {
         self.members
             .entry(pubkey_bls)
-            .or_insert_with(|| Member::new(pubkey_bls))
+            .or_insert_with_key(|key| Member::new(key.clone()))
             .add_stake(stake);
     }
 
@@ -159,7 +159,7 @@ impl Provisioners {
             match self.extract_and_subtract_member(score) {
                 Some((pk, value)) => {
                     // append the public key to the committee set.
-                    committee.push(pk);
+                    committee.push(pk.clone());
 
                     let subtracted_stake = value;
                     if total_amount_stake > subtracted_stake {
@@ -199,7 +199,7 @@ impl Provisioners {
                     // Subtract 1 DUSK from the value extracted and rebalance accordingly.
                     let subtracted_stake = BigInt::from(member.subtract_from_stake(DUSK));
 
-                    return Some((*member.public_key(), subtracted_stake));
+                    return Some((member.public_key().clone(), subtracted_stake));
                 }
 
                 score -= total_stake;

@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::contract_state::Operations;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 use crate::messages::{self, Message};
@@ -12,13 +13,12 @@ use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
-use dusk_bytes::Serializable;
 
 use std::sync::Arc;
 use std::{fmt, mem};
 use tokio::sync::Mutex;
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub round: u64,
@@ -166,7 +166,7 @@ pub enum ConsensusError {
     Canceled,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Signature(pub [u8; 48]);
 impl Signature {
     pub fn is_zeroed(&self) -> bool {
@@ -183,31 +183,6 @@ impl Default for Signature {
 // TODO: Apply Hash type instead of u8; 32
 pub type Hash = [u8; 32];
 
-pub fn sign(
-    sk: &dusk_bls12_381_sign::SecretKey,
-    pk: &dusk_bls12_381_sign::PublicKey,
-    hdr: &messages::Header,
-) -> [u8; 48] {
-    let mut msg = BytesMut::with_capacity(hdr.block_hash.len() + 8 + 1);
-    msg.put_u64_le(hdr.round);
-    msg.put_u8(hdr.step);
-    msg.put(&hdr.block_hash[..]);
-
-    sk.sign(pk, msg.bytes()).to_bytes()
-}
-
-pub fn verify_signature(
-    hdr: &messages::Header,
-    signature: &[u8; 48],
-) -> Result<(), dusk_bls12_381_sign::Error> {
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
-
-    dusk_bls12_381_sign::APK::from(hdr.pubkey_bls.inner()).verify(
-        &sig,
-        marshal_signable_vote(hdr.round, hdr.step, &hdr.block_hash).bytes(),
-    )
-}
-
 pub fn marshal_signable_vote(round: u64, step: u8, block_hash: &[u8; 32]) -> BytesMut {
     let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
     msg.put_u64_le(round);
@@ -217,14 +192,14 @@ pub fn marshal_signable_vote(round: u64, step: u8, block_hash: &[u8; 32]) -> Byt
     msg
 }
 
-pub fn spawn_send_reduction(
+pub fn spawn_send_reduction<T: Operations + 'static>(
     candidate: Block,
     pubkey: ConsensusPublicKey,
     ru: RoundUpdate,
     step: u8,
     mut outbound: PendingQueue,
     mut inbound: PendingQueue,
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+    executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
         if let Err(e) = executor
@@ -244,13 +219,10 @@ pub fn spawn_send_reduction(
             topic: Topics::Reduction as u8,
         };
 
+        let signed_hash = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
         // Sign and construct reduction message
-        let msg = Message::new_reduction(
-            hdr,
-            messages::payload::Reduction {
-                signed_hash: sign(&ru.secret_key, ru.pubkey_bls.inner(), &hdr),
-            },
-        );
+        let msg = Message::new_reduction(hdr, messages::payload::Reduction { signed_hash });
 
         //   publish
         outbound
@@ -266,7 +238,7 @@ pub fn spawn_send_reduction(
     });
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Topics {
     // Consensus main loop topics
     Candidate = 15,
@@ -283,6 +255,12 @@ pub enum Topics {
 impl Default for Topics {
     fn default() -> Self {
         Topics::Unknown
+    }
+}
+
+impl From<Topics> for u8 {
+    fn from(t: Topics) -> Self {
+        t as u8
     }
 }
 

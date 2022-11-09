@@ -4,9 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{commons::Topics, util::pubkey::ConsensusPublicKey};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bytes::DeserializableSlice;
+use dusk_bytes::Serializable as DuskSerializable;
+
+use crate::commons::{marshal_signable_vote, Topics};
+use crate::util::pubkey::ConsensusPublicKey;
 
 pub enum Status {
     Past,
@@ -24,7 +27,7 @@ pub trait Serializable {
 
 pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
-    fn get_pubkey_bls(&self) -> ConsensusPublicKey;
+    fn get_pubkey_bls(&self) -> &ConsensusPublicKey;
     fn get_block_hash(&self) -> [u8; 32];
 }
 
@@ -92,8 +95,8 @@ impl MessageTrait for Message {
     fn compare(&self, round: u64, step: u8) -> Status {
         self.header.compare(round, step)
     }
-    fn get_pubkey_bls(&self) -> ConsensusPublicKey {
-        self.header.pubkey_bls
+    fn get_pubkey_bls(&self) -> &ConsensusPublicKey {
+        &self.header.pubkey_bls
     }
     fn get_block_hash(&self) -> [u8; 32] {
         self.header.block_hash
@@ -150,7 +153,7 @@ impl Message {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Header {
     pub pubkey_bls: ConsensusPublicKey,
     pub round: u64,
@@ -229,6 +232,28 @@ impl Header {
         }
 
         Status::Past
+    }
+
+    pub fn verify_signature(&self, signature: &[u8; 48]) -> Result<(), dusk_bls12_381_sign::Error> {
+        let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
+
+        dusk_bls12_381_sign::APK::from(self.pubkey_bls.inner()).verify(
+            &sig,
+            marshal_signable_vote(self.round, self.step, &self.block_hash).bytes(),
+        )
+    }
+
+    pub fn sign(
+        &self,
+        sk: &dusk_bls12_381_sign::SecretKey,
+        pk: &dusk_bls12_381_sign::PublicKey,
+    ) -> [u8; 48] {
+        let mut msg = BytesMut::with_capacity(self.block_hash.len() + 8 + 1);
+        msg.put_u64_le(self.round);
+        msg.put_u8(self.step);
+        msg.put(&self.block_hash[..]);
+
+        sk.sign(pk, msg.bytes()).to_bytes()
     }
 }
 
@@ -325,7 +350,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Copy, Clone, Eq, Hash, PartialEq)]
+    #[derive(Debug, Clone, Eq, Hash, PartialEq)]
     pub struct StepVotes {
         pub bitset: u64,
         pub signature: [u8; 48],

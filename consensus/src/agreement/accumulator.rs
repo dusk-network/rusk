@@ -152,7 +152,7 @@ impl Accumulator {
         msg: messages::Message,
         seed: [u8; 32],
     ) -> Option<Output> {
-        let hdr = msg.header;
+        let hdr = msg.header.clone();
 
         let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
 
@@ -160,13 +160,13 @@ impl Accumulator {
         let (weight, target_quorum) = {
             let mut guard = committees_set.lock().await;
 
-            let weight = guard.votes_for(hdr.pubkey_bls, cfg)?;
-            if *weight == 0 {
+            let weight = guard.votes_for(&hdr.pubkey_bls, &cfg)?;
+            if weight == 0 {
                 warn!("Agreement was not accumulated since it is not from a committee member");
                 return None;
             }
 
-            Some((*weight, guard.quorum(cfg)))
+            Some((weight, guard.quorum(&cfg)))
         }?;
 
         if let Payload::Agreement(payload) = msg.payload {
@@ -196,8 +196,12 @@ impl Accumulator {
 
             if *agr_weight >= target_quorum {
                 info!(
-                    "event=quorum reached, hash={} msg_round={}, msg_step={}, target={}, aggr_count={} ",
-                    hdr.block_hash.encode_hex::<String>(),hdr.round, hdr.step, target_quorum, agr_weight
+                    event = "quorum reached",
+                    hash = hdr.block_hash.encode_hex::<String>(),
+                    msg_round = hdr.round,
+                    msg_step = hdr.step,
+                    target = target_quorum,
+                    aggr_count = agr_weight
                 );
 
                 return Some(agr_set.clone());

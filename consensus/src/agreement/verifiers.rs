@@ -17,15 +17,20 @@ use dusk_bls12_381_sign::{PublicKey, APK};
 use dusk_bytes::Serializable;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::error;
 
 #[derive(Debug)]
 pub enum Error {
     VoteSetTooSmall,
-    VerificationFailed,
+    VerificationFailed(dusk_bls12_381_sign::Error),
     EmptyApk,
     InvalidType,
     InvalidStepNum,
+}
+
+impl From<dusk_bls12_381_sign::Error> for Error {
+    fn from(inner: dusk_bls12_381_sign::Error) -> Self {
+        Self::VerificationFailed(inner)
+    }
 }
 
 /// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
@@ -36,23 +41,13 @@ pub async fn verify_agreement(
 ) -> Result<(), Error> {
     match msg.payload {
         Payload::Agreement(payload) => {
-            if let Err(e) = verify_whole(&msg.header, payload.signature) {
-                error!("{}", e);
-                return Err(Error::VerificationFailed);
-            }
+            msg.header.verify_signature(&payload.signature)?;
 
             // Verify 1th_reduction step_votes
-            verify_step_votes(
-                payload.first_step,
-                committees_set.clone(),
-                seed,
-                &msg.header,
-                0,
-            )
-            .await?;
+            verify_step_votes(&payload.first_step, &committees_set, seed, &msg.header, 0).await?;
 
             // Verify 2th_reduction step_votes
-            verify_step_votes(payload.second_step, committees_set, seed, &msg.header, 1).await?;
+            verify_step_votes(&payload.second_step, &committees_set, seed, &msg.header, 1).await?;
 
             // Verification done
             Ok(())
@@ -62,8 +57,8 @@ pub async fn verify_agreement(
 }
 
 pub(super) async fn verify_step_votes(
-    sv: StepVotes,
-    committees_set: Arc<Mutex<CommitteeSet>>,
+    sv: &StepVotes,
+    committees_set: &Arc<Mutex<CommitteeSet>>,
     seed: [u8; 32],
     hdr: &messages::Header,
     step_offset: u8,
@@ -78,9 +73,9 @@ pub(super) async fn verify_step_votes(
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
-        sv.signature,
+        &sv.signature,
         committees_set,
-        cfg,
+        &cfg,
     )
     .await
 }
@@ -88,9 +83,9 @@ pub(super) async fn verify_step_votes(
 pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
-    signature: [u8; 48],
-    committees_set: Arc<Mutex<CommitteeSet>>,
-    cfg: sortition::Config,
+    signature: &[u8; 48],
+    committees_set: &Arc<Mutex<CommitteeSet>>,
+    cfg: &sortition::Config,
 ) -> Result<(), Error> {
     let sub_committee = {
         // Scoped guard to fetch committee data quickly
@@ -100,64 +95,46 @@ pub async fn verify_votes(
         let target_quorum = guard.quorum(cfg);
 
         if guard.total_occurrences(&sub_committee, cfg) < target_quorum {
-            return Err(Error::VoteSetTooSmall);
+            Err(Error::VoteSetTooSmall)
+        } else {
+            Ok(sub_committee)
         }
-
-        Ok(sub_committee)
     }?;
 
     // aggregate public keys
-    let apk = aggregate_pks(sub_committee).await?;
+    let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures
-    if let Err(e) = verify_signatures(cfg.round, cfg.step, block_hash, apk, signature) {
-        error!("verify signatures fails with err: {}", e);
-        return Err(Error::VerificationFailed);
-    }
+    verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
 
     // Verification done
     Ok(())
 }
 
-async fn aggregate_pks(
-    subcomittee: Cluster<ConsensusPublicKey>,
-) -> Result<dusk_bls12_381_sign::APK, Error> {
-    let pks: Vec<&PublicKey> = subcomittee
-        .iter()
-        .map(|(pubkey, _)| pubkey.inner())
-        .collect();
+impl Cluster<ConsensusPublicKey> {
+    fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
+        let pks: Vec<&PublicKey> = self.iter().map(|(pubkey, _)| pubkey.inner()).collect();
 
-    match pks.split_first() {
-        Some((&first, rest)) => {
-            let mut apk = APK::from(first);
-            rest.iter().for_each(|&&p| apk.aggregate(&[p]));
-            Ok(apk)
+        match pks.split_first() {
+            Some((&first, rest)) => {
+                let mut apk = APK::from(first);
+                rest.iter().for_each(|&&p| apk.aggregate(&[p]));
+                Ok(apk)
+            }
+            None => Err(Error::EmptyApk),
         }
-        None => Err(Error::EmptyApk),
     }
 }
 
-fn verify_signatures(
+fn verify_step_signature(
     round: u64,
     step: u8,
     block_hash: &[u8; 32],
     apk: dusk_bls12_381_sign::APK,
-    signature: [u8; 48],
+    signature: &[u8; 48],
 ) -> Result<(), dusk_bls12_381_sign::Error> {
     // Compile message to verify
 
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
+    let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
     apk.verify(&sig, marshal_signable_vote(round, step, block_hash).bytes())
-}
-
-fn verify_whole(
-    hdr: &messages::Header,
-    signature: [u8; 48],
-) -> Result<(), dusk_bls12_381_sign::Error> {
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(&signature)?;
-
-    APK::from(hdr.pubkey_bls.inner()).verify(
-        &sig,
-        marshal_signable_vote(hdr.round, hdr.step, &hdr.block_hash).bytes(),
-    )
 }

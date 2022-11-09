@@ -9,7 +9,7 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-#[derive(Debug, Clone, Copy, Default, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
     pub seed: [u8; 32],
     pub round: u64,
@@ -39,7 +39,7 @@ pub fn create_sortition_hash(cfg: &Config, i: i32) -> [u8; 32] {
     hasher.update(cfg.round.to_le_bytes());
     hasher.update(i.to_le_bytes());
     hasher.update(cfg.step.to_le_bytes());
-    hasher.update(cfg.seed.as_ref());
+    hasher.update(cfg.seed);
 
     // read hash digest
     let reader = hasher.finalize();

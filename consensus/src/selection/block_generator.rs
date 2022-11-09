@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{sign, Block, RoundUpdate, Topics};
+use crate::commons::{Block, RoundUpdate, Topics};
+use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
@@ -13,45 +14,47 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
-pub struct Generator {
-    executor: Arc<Mutex<dyn crate::contract_state::Operations>>,
+pub struct Generator<T: Operations> {
+    executor: Arc<Mutex<T>>,
 }
 
-impl Generator {
-    pub fn new(executor: Arc<Mutex<dyn crate::contract_state::Operations>>) -> Self {
+impl<T: Operations> Generator<T> {
+    pub fn new(executor: Arc<Mutex<T>>) -> Self {
         Self { executor }
     }
 
     pub async fn generate_candidate_message(
         &self,
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
         let candidate = self
-            .generate_block(ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
+            .generate_block(&ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
             .await?;
 
         let msg_header = Header {
-            pubkey_bls: ru.pubkey_bls,
+            pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             block_hash: candidate.header.hash,
             step,
             topic: Topics::NewBlock as u8,
         };
 
+        let signed_hash = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
         Ok(Message::from_newblock(
             msg_header,
             NewBlock {
                 prev_hash: [0; 32],
                 candidate,
-                signed_hash: sign(&ru.secret_key, ru.pubkey_bls.inner(), &msg_header),
+                signed_hash,
             },
         ))
     }
 
     async fn generate_block(
         &self,
-        pubkey: ConsensusPublicKey,
+        pubkey: &ConsensusPublicKey,
         round: u64,
         seed: [u8; 32],
         prev_block_hash: [u8; 32],

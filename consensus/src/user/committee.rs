@@ -38,6 +38,7 @@ impl Committee {
         provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
+        let max_committee_size = cfg.max_committee_size;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
         let mut committee = Self {
@@ -47,33 +48,33 @@ impl Committee {
             total: 0,
         };
 
-        for member_key in res.as_slice() {
-            *committee.members.entry(*member_key).or_insert(0) += 1;
+        for member_key in res {
+            *committee.members.entry(member_key).or_insert(0) += 1;
             committee.total += 1;
         }
 
-        debug_assert!(committee.total == provisioners.get_eligible_size(cfg.max_committee_size));
+        debug_assert!(committee.total == provisioners.get_eligible_size(max_committee_size));
 
         committee
     }
 
     /// Returns true if `pubkey_bls` is a member of the generated committee.
-    pub fn is_member(&self, pubkey_bls: ConsensusPublicKey) -> bool {
-        self.members.contains_key(&pubkey_bls)
+    pub fn is_member(&self, pubkey_bls: &ConsensusPublicKey) -> bool {
+        self.members.contains_key(pubkey_bls)
     }
 
     /// Returns true if `my pubkey` is a member of the generated committee.
     pub fn am_member(&self) -> bool {
-        self.is_member(self.this_member_key)
+        self.is_member(&self.this_member_key)
     }
 
     /// Returns this provisioner BLS public key.
-    pub fn get_my_pubkey(&self) -> ConsensusPublicKey {
-        self.this_member_key
+    pub fn get_my_pubkey(&self) -> &ConsensusPublicKey {
+        &self.this_member_key
     }
 
-    pub fn votes_for(&self, pubkey_bls: ConsensusPublicKey) -> Option<&usize> {
-        self.members.get(&pubkey_bls)
+    pub fn votes_for(&self, pubkey_bls: &ConsensusPublicKey) -> Option<usize> {
+        self.members.get(pubkey_bls).copied()
     }
 
     // get_occurrences returns values in a vec
@@ -128,8 +129,8 @@ impl Committee {
     pub fn total_occurrences(&self, voters: &Cluster<ConsensusPublicKey>) -> usize {
         let mut total = 0;
         for (item_pk, _) in voters.iter() {
-            if let Some(weight) = self.votes_for(*item_pk) {
-                total += *weight;
+            if let Some(weight) = self.votes_for(item_pk) {
+                total += weight;
             };
         }
 
@@ -156,26 +157,26 @@ impl CommitteeSet {
         }
     }
 
-    pub fn is_member(&mut self, pubkey: ConsensusPublicKey, cfg: sortition::Config) -> bool {
+    pub fn is_member(&mut self, pubkey: &ConsensusPublicKey, cfg: &sortition::Config) -> bool {
         self.get_or_create(cfg).is_member(pubkey)
     }
 
     pub fn votes_for(
         &mut self,
-        pubkey: ConsensusPublicKey,
-        cfg: sortition::Config,
-    ) -> Option<&usize> {
+        pubkey: &ConsensusPublicKey,
+        cfg: &sortition::Config,
+    ) -> Option<usize> {
         self.get_or_create(cfg).votes_for(pubkey)
     }
 
-    pub fn quorum(&mut self, cfg: sortition::Config) -> usize {
+    pub fn quorum(&mut self, cfg: &sortition::Config) -> usize {
         self.get_or_create(cfg).quorum()
     }
 
     pub fn intersect(
         &mut self,
         bitset: u64,
-        cfg: sortition::Config,
+        cfg: &sortition::Config,
     ) -> Cluster<ConsensusPublicKey> {
         self.get_or_create(cfg).intersect(bitset)
     }
@@ -183,7 +184,7 @@ impl CommitteeSet {
     pub fn total_occurrences(
         &mut self,
         voters: &Cluster<ConsensusPublicKey>,
-        cfg: sortition::Config,
+        cfg: &sortition::Config,
     ) -> usize {
         self.get_or_create(cfg).total_occurrences(voters)
     }
@@ -192,13 +193,19 @@ impl CommitteeSet {
         &self.provisioners
     }
 
-    pub fn bits(&mut self, voters: &Cluster<ConsensusPublicKey>, cfg: sortition::Config) -> u64 {
+    pub fn bits(&mut self, voters: &Cluster<ConsensusPublicKey>, cfg: &sortition::Config) -> u64 {
         self.get_or_create(cfg).bits(voters)
     }
 
-    fn get_or_create(&mut self, cfg: sortition::Config) -> &Committee {
+    fn get_or_create(&mut self, cfg: &sortition::Config) -> &Committee {
         self.committees
-            .entry(cfg)
-            .or_insert_with(|| Committee::new(self.this_member_key, &mut self.provisioners, cfg))
+            .entry(cfg.clone())
+            .or_insert_with_key(|config| {
+                Committee::new(
+                    self.this_member_key.clone(),
+                    &mut self.provisioners,
+                    config.clone(),
+                )
+            })
     }
 }
