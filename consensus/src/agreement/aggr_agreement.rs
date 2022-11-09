@@ -84,7 +84,12 @@ pub(super) async fn aggregate(
                 .expect("empty aggregated bytes"),
             committees_set.lock().await.bits(
                 voters,
-                &sortition::Config::new(ru.seed, ru.round, first_agreement.header.step, 64),
+                &sortition::Config::new(
+                    ru.seed,
+                    ru.round,
+                    first_agreement.header.step,
+                    64,
+                ),
             ),
         )
     };

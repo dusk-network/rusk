@@ -6,7 +6,9 @@
 
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
-use consensus::contract_state::{CallParams, Error, Operations, Output, StateRoot};
+use consensus::contract_state::{
+    CallParams, Error, Operations, Output, StateRoot,
+};
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::util::pending_queue::PendingQueue;
 use consensus::util::pubkey::ConsensusPublicKey;
@@ -87,8 +89,10 @@ fn spawn_consensus_in_thread_pool(
                         .as_secs()
                         - before;
                     cumulative_block_time += block_time as f64;
-                    let average_block_time = cumulative_block_time / ((i + 1) as f64);
-                    let average_block_time = (average_block_time * 100f64).round() / 100f64;
+                    let average_block_time =
+                        cumulative_block_time / ((i + 1) as f64);
+                    let average_block_time =
+                        (average_block_time * 100f64).round() / 100f64;
                     tracing::info!(
                         bls_key = keys.1.encode_short_hex(),
                         round = i,
@@ -102,11 +106,17 @@ fn spawn_consensus_in_thread_pool(
 
 pub struct Executor {}
 impl Operations for Executor {
-    fn verify_state_transition(&self, _params: CallParams) -> Result<StateRoot, Error> {
+    fn verify_state_transition(
+        &self,
+        _params: CallParams,
+    ) -> Result<StateRoot, Error> {
         Ok([0; 32])
     }
 
-    fn execute_state_transition(&self, _params: CallParams) -> Result<Output, Error> {
+    fn execute_state_transition(
+        &self,
+        _params: CallParams,
+    ) -> Result<Output, Error> {
         Ok(Output::default())
     }
 
@@ -138,7 +148,9 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
     keys
 }
 
-fn generate_provisioners_from_keys(keys: Vec<(SecretKey, ConsensusPublicKey)>) -> Provisioners {
+fn generate_provisioners_from_keys(
+    keys: Vec<(SecretKey, ConsensusPublicKey)>,
+) -> Provisioners {
     let mut p = Provisioners::new();
 
     for (pos, (_, pk)) in keys.into_iter().enumerate() {

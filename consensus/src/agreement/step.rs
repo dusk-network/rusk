@@ -34,7 +34,10 @@ pub struct Agreement {
 }
 
 impl Agreement {
-    pub fn new(inbound_queue: PendingQueue, outbound_queue: PendingQueue) -> Self {
+    pub fn new(
+        inbound_queue: PendingQueue,
+        outbound_queue: PendingQueue,
+    ) -> Self {
         Self {
             inbound_queue,
             outbound_queue,
@@ -97,7 +100,8 @@ impl Executor {
         &mut self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
-        let (collected_votes_tx, mut collected_votes_rx) = mpsc::channel::<accumulator::Output>(10);
+        let (collected_votes_tx, mut collected_votes_rx) =
+            mpsc::channel::<accumulator::Output>(10);
 
         // Accumulator
         let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
@@ -114,7 +118,9 @@ impl Executor {
             future_msgs.lock().await.clear_round(self.ru.round - 1);
         }
 
-        if let Some(messages) = future_msgs.lock().await.drain_events(self.ru.round, 0) {
+        if let Some(messages) =
+            future_msgs.lock().await.drain_events(self.ru.round, 0)
+        {
             for msg in messages {
                 self.collect_inbound_msg(&mut acc, msg).await;
             }
@@ -155,7 +161,11 @@ impl Executor {
         }
     }
 
-    async fn collect_inbound_msg(&mut self, acc: &mut Accumulator, msg: Message) -> Option<Block> {
+    async fn collect_inbound_msg(
+        &mut self,
+        acc: &mut Accumulator,
+        msg: Message,
+    ) -> Option<Block> {
         if !self.is_member(&msg.header).await {
             return None;
         }
@@ -180,7 +190,9 @@ impl Executor {
         self.outbound_queue
             .send(msg.clone())
             .await
-            .unwrap_or_else(|err| error!("unable to publish a collected agreement msg {:?}", err));
+            .unwrap_or_else(|err| {
+                error!("unable to publish a collected agreement msg {:?}", err)
+            });
 
         // Accumulate the agreement
         acc.process(msg.clone()).await;
@@ -189,10 +201,17 @@ impl Executor {
     /// Collects accumulator output (a list of agreements) and publishes  AggrAgreement.
     ///
     /// Returns the winning block.
-    async fn collect_votes(&mut self, agreements: accumulator::Output) -> Option<Block> {
+    async fn collect_votes(
+        &mut self,
+        agreements: accumulator::Output,
+    ) -> Option<Block> {
         if config::ENABLE_AGGR_AGREEMENT {
-            let msg =
-                aggr_agreement::aggregate(&self.ru, self.committees_set.clone(), &agreements).await;
+            let msg = aggr_agreement::aggregate(
+                &self.ru,
+                self.committees_set.clone(),
+                &agreements,
+            )
+            .await;
 
             tracing::debug!("broadcast aggr_agreement {:#?}", msg);
             // Broadcast AggrAgreement message
@@ -209,7 +228,10 @@ impl Executor {
     }
 
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Err(e) = aggr_agreement::verify(&self.ru, self.committees_set.clone(), &msg).await {
+        if let Err(e) =
+            aggr_agreement::verify(&self.ru, self.committees_set.clone(), &msg)
+                .await
+        {
             error!("failed to verify aggr agreement err: {:?}", e);
             return None;
         }
@@ -225,16 +247,20 @@ impl Executor {
     async fn is_member(&self, hdr: &Header) -> bool {
         self.committees_set.lock().await.is_member(
             &hdr.pubkey_bls,
-            &sortition::Config::new(self.ru.seed, hdr.round, hdr.step, COMMITTEE_SIZE),
+            &sortition::Config::new(
+                self.ru.seed,
+                hdr.round,
+                hdr.step,
+                COMMITTEE_SIZE,
+            ),
         )
     }
 
     // Publishes a message
     async fn publish(&mut self, msg: Message) {
         let topic = msg.header.topic;
-        self.outbound_queue
-            .send(msg)
-            .await
-            .unwrap_or_else(|err| error!("unable to publish msg(id:{}) {:?}", topic, err));
+        self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
+            error!("unable to publish msg(id:{}) {:?}", topic, err)
+        });
     }
 }

@@ -57,16 +57,20 @@ impl<T: Operations> Selection<T> {
                 }
 
                 // register new candidate in local state
-                match self
-                    .handler
-                    .collect(msg, &ctx.round_update, ctx.step, &committee)
-                {
+                match self.handler.collect(
+                    msg,
+                    &ctx.round_update,
+                    ctx.step,
+                    &committee,
+                ) {
                     Ok(f) => {
                         if let HandleMsgOutput::FinalResult(msg) = f {
                             return Ok(msg);
                         }
                     }
-                    Err(e) => error!("invalid candidate generated due to {:?}", e),
+                    Err(e) => {
+                        error!("invalid candidate generated due to {:?}", e)
+                    }
                 };
             } else {
                 error!("block generator couldn't create candidate block")
@@ -74,7 +78,9 @@ impl<T: Operations> Selection<T> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler).await {
+        if let Some(m) =
+            ctx.handle_future_msgs(&committee, &mut self.handler).await
+        {
             return Ok(m);
         }
 

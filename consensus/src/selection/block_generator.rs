@@ -29,7 +29,13 @@ impl<T: Operations> Generator<T> {
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
         let candidate = self
-            .generate_block(&ru.pubkey_bls, ru.round, ru.seed, ru.hash, ru.timestamp)
+            .generate_block(
+                &ru.pubkey_bls,
+                ru.round,
+                ru.seed,
+                ru.hash,
+                ru.timestamp,
+            )
             .await?;
 
         let msg_header = Header {
@@ -40,7 +46,8 @@ impl<T: Operations> Generator<T> {
             topic: Topics::NewBlock as u8,
         };
 
-        let signed_hash = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        let signed_hash =
+            msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         Ok(Message::from_newblock(
             msg_header,
@@ -63,12 +70,12 @@ impl<T: Operations> Generator<T> {
         // TODO: fetch mempool transactions
 
         // Delay next iteration execution so we avoid consensus-split situation.
-        tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS)).await;
+        tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS))
+            .await;
 
-        self.executor
-            .lock()
-            .await
-            .execute_state_transition(crate::contract_state::CallParams::default())?;
+        self.executor.lock().await.execute_state_transition(
+            crate::contract_state::CallParams::default(),
+        )?;
 
         let blk_header = commons::Header {
             version: 0,

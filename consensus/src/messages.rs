@@ -75,9 +75,15 @@ impl Serializable for Message {
         };
 
         msg.payload = match Topics::from(msg.header.topic) {
-            Topics::NewBlock => Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf))),
-            Topics::Reduction => Payload::Reduction(payload::Reduction::from_bytes(buf)),
-            Topics::Agreement => Payload::Agreement(payload::Agreement::from_bytes(buf)),
+            Topics::NewBlock => {
+                Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf)))
+            }
+            Topics::Reduction => {
+                Payload::Reduction(payload::Reduction::from_bytes(buf))
+            }
+            Topics::Agreement => {
+                Payload::Agreement(payload::Agreement::from_bytes(buf))
+            }
             Topics::AggrAgreement => {
                 Payload::AggrAgreement(payload::AggrAgreement::from_bytes(buf))
             }
@@ -120,7 +126,10 @@ impl Message {
         }
     }
 
-    pub fn new_reduction(header: Header, payload: payload::Reduction) -> Message {
+    pub fn new_reduction(
+        header: Header,
+        payload: payload::Reduction,
+    ) -> Message {
         Self {
             header,
             payload: Payload::Reduction(payload),
@@ -128,7 +137,10 @@ impl Message {
         }
     }
 
-    pub fn new_agreement(header: Header, payload: payload::Agreement) -> Message {
+    pub fn new_agreement(
+        header: Header,
+        payload: payload::Agreement,
+    ) -> Message {
         Self {
             header,
             payload: Payload::Agreement(payload),
@@ -136,7 +148,10 @@ impl Message {
         }
     }
 
-    pub fn new_aggr_agreement(header: Header, payload: payload::AggrAgreement) -> Message {
+    pub fn new_aggr_agreement(
+        header: Header,
+        payload: payload::AggrAgreement,
+    ) -> Message {
         Self {
             header,
             payload: Payload::AggrAgreement(payload),
@@ -234,12 +249,16 @@ impl Header {
         Status::Past
     }
 
-    pub fn verify_signature(&self, signature: &[u8; 48]) -> Result<(), dusk_bls12_381_sign::Error> {
+    pub fn verify_signature(
+        &self,
+        signature: &[u8; 48],
+    ) -> Result<(), dusk_bls12_381_sign::Error> {
         let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
 
         dusk_bls12_381_sign::APK::from(self.pubkey_bls.inner()).verify(
             &sig,
-            marshal_signable_vote(self.round, self.step, &self.block_hash).bytes(),
+            marshal_signable_vote(self.round, self.step, &self.block_hash)
+                .bytes(),
         )
     }
 
@@ -331,7 +350,8 @@ pub mod payload {
         fn to_bytes(&self) -> Vec<u8> {
             let candidate_as_bytes = self.candidate.to_bytes();
 
-            let mut buf = BytesMut::with_capacity(candidate_as_bytes.len() + 80);
+            let mut buf =
+                BytesMut::with_capacity(candidate_as_bytes.len() + 80);
             buf.put(&self.prev_hash[..]);
             buf.put(&self.signed_hash[..]);
             buf.put(&candidate_as_bytes[..]);

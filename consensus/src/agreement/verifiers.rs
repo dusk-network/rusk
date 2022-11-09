@@ -44,10 +44,24 @@ pub async fn verify_agreement(
             msg.header.verify_signature(&payload.signature)?;
 
             // Verify 1th_reduction step_votes
-            verify_step_votes(&payload.first_step, &committees_set, seed, &msg.header, 0).await?;
+            verify_step_votes(
+                &payload.first_step,
+                &committees_set,
+                seed,
+                &msg.header,
+                0,
+            )
+            .await?;
 
             // Verify 2th_reduction step_votes
-            verify_step_votes(&payload.second_step, &committees_set, seed, &msg.header, 1).await?;
+            verify_step_votes(
+                &payload.second_step,
+                &committees_set,
+                seed,
+                &msg.header,
+                1,
+            )
+            .await?;
 
             // Verification done
             Ok(())
@@ -113,7 +127,8 @@ pub async fn verify_votes(
 
 impl Cluster<ConsensusPublicKey> {
     fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
-        let pks: Vec<&PublicKey> = self.iter().map(|(pubkey, _)| pubkey.inner()).collect();
+        let pks: Vec<&PublicKey> =
+            self.iter().map(|(pubkey, _)| pubkey.inner()).collect();
 
         match pks.split_first() {
             Some((&first, rest)) => {

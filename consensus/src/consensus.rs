@@ -62,7 +62,10 @@ impl<T: Operations + 'static> Consensus<T> {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
-            agreement_process: step::Agreement::new(agr_inbound_queue, agr_outbound_queue),
+            agreement_process: step::Agreement::new(
+                agr_inbound_queue,
+                agr_outbound_queue,
+            ),
             executor,
         }
     }
@@ -145,8 +148,12 @@ impl<T: Operations + 'static> Consensus<T> {
             }
 
             let mut phases = [
-                Phase::Selection(selection::step::Selection::new(executor.clone())),
-                Phase::Reduction1(firststep::step::Reduction::new(executor.clone())),
+                Phase::Selection(selection::step::Selection::new(
+                    executor.clone(),
+                )),
+                Phase::Reduction1(firststep::step::Reduction::new(
+                    executor.clone(),
+                )),
                 Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];
 
@@ -201,7 +208,10 @@ impl<T: Operations + 'static> Consensus<T> {
         })
     }
 
-    async fn send_agreement(agr_inbound_queue: &mut PendingQueue, msg: Message) {
+    async fn send_agreement(
+        agr_inbound_queue: &mut PendingQueue,
+        msg: Message,
+    ) {
         let _ = agr_inbound_queue
             .send(msg.clone())
             .await
