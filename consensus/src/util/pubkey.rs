@@ -77,7 +77,8 @@ impl std::fmt::Debug for ConsensusPublicKey {
         let mut hex = self.data.encode_hex::<String>();
         hex.truncate(16);
 
-        let debug_trait_builder = &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
+        let debug_trait_builder =
+            &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
         let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
         ::core::fmt::DebugTuple::finish(debug_trait_builder)
     }

@@ -40,7 +40,9 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
     keys
 }
 
-fn generate_provisioners_from_keys(keys: Vec<(SecretKey, ConsensusPublicKey)>) -> Provisioners {
+fn generate_provisioners_from_keys(
+    keys: Vec<(SecretKey, ConsensusPublicKey)>,
+) -> Provisioners {
     let mut p = Provisioners::new();
 
     for (pos, (_, pk)) in keys.into_iter().enumerate() {
@@ -56,7 +58,8 @@ async fn perform_basic_run() {
 
     // TODO: Use here broadcast
     let (sender_bridge, mut recv_bridge) = mpsc::channel::<Message>(1000);
-    let (aggr_sender_bridge, mut aggr_recv_bridge) = mpsc::channel::<Message>(1000);
+    let (aggr_sender_bridge, mut aggr_recv_bridge) =
+        mpsc::channel::<Message>(1000);
 
     // Initialize N dummy provisioners
     let keys = generate_keys(MOCKED_PROVISIONERS_NUM);
@@ -184,8 +187,10 @@ fn spawn_node(
                         .as_secs()
                         - before;
                     cumulative_block_time += block_time as f64;
-                    let average_block_time = cumulative_block_time / ((i + 1) as f64);
-                    let average_block_time = (average_block_time * 100f64).round() / 100f64;
+                    let average_block_time =
+                        cumulative_block_time / ((i + 1) as f64);
+                    let average_block_time =
+                        (average_block_time * 100f64).round() / 100f64;
                     tracing::info!(
                         bls_key = keys.1.encode_short_hex(),
                         round = i,

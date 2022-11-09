@@ -32,9 +32,15 @@ pub struct Output {
 }
 
 pub trait Operations: Send + Sync {
-    fn verify_state_transition(&self, params: CallParams) -> Result<StateRoot, Error>;
+    fn verify_state_transition(
+        &self,
+        params: CallParams,
+    ) -> Result<StateRoot, Error>;
 
-    fn execute_state_transition(&self, params: CallParams) -> Result<Output, Error>;
+    fn execute_state_transition(
+        &self,
+        params: CallParams,
+    ) -> Result<Output, Error>;
     fn accept(&self, params: CallParams) -> Result<Output, Error>;
     fn finalize(&self, params: CallParams) -> Result<Output, Error>;
 

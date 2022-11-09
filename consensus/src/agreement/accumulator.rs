@@ -104,21 +104,31 @@ impl Accumulator {
                             continue;
                         }
 
-                        if let Err(e) =
-                            verifiers::verify_agreement(msg.clone(), committees_set.clone(), seed)
-                                .await
+                        if let Err(e) = verifiers::verify_agreement(
+                            msg.clone(),
+                            committees_set.clone(),
+                            seed,
+                        )
+                        .await
                         {
                             error!("{:#?}", e);
                             continue;
                         }
 
-                        if let Some(msg) =
-                            Self::accumulate(stores.clone(), committees_set.clone(), msg, seed)
-                                .await
+                        if let Some(msg) = Self::accumulate(
+                            stores.clone(),
+                            committees_set.clone(),
+                            msg,
+                            seed,
+                        )
+                        .await
                         {
                             rx.close();
                             output_chan.send(msg).await.unwrap_or_else(|err| {
-                                warn!("unable to send_msg collected_votes {:?}", err)
+                                warn!(
+                                    "unable to send_msg collected_votes {:?}",
+                                    err
+                                )
                             });
                             break;
                         }
@@ -137,10 +147,9 @@ impl Accumulator {
     pub async fn process(&mut self, msg: Message) {
         assert!(!self.workers.is_empty());
 
-        self.tx
-            .send(msg)
-            .await
-            .unwrap_or_else(|err| error!("unable to queue agreement_msg {:?}", err));
+        self.tx.send(msg).await.unwrap_or_else(|err| {
+            error!("unable to queue agreement_msg {:?}", err)
+        });
     }
 
     /// Accumulates a verified agreement messages in a shared set of stores.

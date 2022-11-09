@@ -86,8 +86,9 @@ impl<'a> ExecutionCtx<'a> {
                 // Inbound message event
                 Ok(result) => {
                     if let Ok(msg) = result {
-                        if let Some(step_result) =
-                            self.process_inbound_msg(committee, phase, msg).await
+                        if let Some(step_result) = self
+                            .process_inbound_msg(committee, phase, msg)
+                            .await
                         {
                             return Ok(step_result);
                         }
@@ -98,7 +99,8 @@ impl<'a> ExecutionCtx<'a> {
                     tracing::info!("event: timeout");
 
                     // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
-                    *timeout_millis = cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+                    *timeout_millis =
+                        cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
 
                     return self.process_timeout_event(phase);
                 }
@@ -116,13 +118,17 @@ impl<'a> ExecutionCtx<'a> {
         msg: Message,
     ) -> Option<Message> {
         // Check if a message is fully valid. If so, then it can be broadcast.
-        match phase.is_valid(msg.clone(), &self.round_update, self.step, committee) {
+        match phase.is_valid(
+            msg.clone(),
+            &self.round_update,
+            self.step,
+            committee,
+        ) {
             Ok(msg) => {
                 // Re-publish the returned message
-                self.outbound
-                    .send(msg)
-                    .await
-                    .unwrap_or_else(|err| error!("unable to re-publish a handled msg {:?}", err));
+                self.outbound.send(msg).await.unwrap_or_else(|err| {
+                    error!("unable to re-publish a handled msg {:?}", err)
+                });
             }
             // An error here means an phase considers this message as invalid.
             // This could be due to failed verification, bad round/step.
@@ -150,7 +156,12 @@ impl<'a> ExecutionCtx<'a> {
             }
         }
 
-        match phase.collect(msg.clone(), &self.round_update, self.step, committee) {
+        match phase.collect(
+            msg.clone(),
+            &self.round_update,
+            self.step,
+            committee,
+        ) {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
             Ok(output) => {
@@ -197,9 +208,14 @@ impl<'a> ExecutionCtx<'a> {
             .drain_events(self.round_update.round, self.step)
         {
             for msg in messages {
-                if let Ok(msg) = phase.is_valid(msg, &self.round_update, self.step, committee) {
-                    if let Ok(HandleMsgOutput::FinalResult(msg)) =
-                        phase.collect(msg, &self.round_update, self.step, committee)
+                if let Ok(msg) = phase.is_valid(
+                    msg,
+                    &self.round_update,
+                    self.step,
+                    committee,
+                ) {
+                    if let Ok(HandleMsgOutput::FinalResult(msg)) = phase
+                        .collect(msg, &self.round_update, self.step, committee)
                     {
                         return Some(msg);
                     }

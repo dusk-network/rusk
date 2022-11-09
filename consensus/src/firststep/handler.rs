@@ -54,7 +54,9 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((_, sv)) = self.aggr.collect_vote(committee, &msg.header, &signed_hash) {
+        if let Some((_, sv)) =
+            self.aggr.collect_vote(committee, &msg.header, &signed_hash)
+        {
             // TODO: if the votes converged for an empty hash we invoke halt and increase timeout
 
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block

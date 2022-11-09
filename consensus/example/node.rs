@@ -39,11 +39,14 @@ pub async fn main() {
     // so this subscriber will be used as the default in all threads for the
     // remainder of the duration of the program, similar to how `loggers`
     // work in the `log` crate.
-    tracing::subscriber::set_global_default(subscriber).expect("Failed on subscribe tracing");
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed on subscribe tracing");
 
     let mut conf = Config::default();
-    conf.public_address = matches.value_of("public_address").unwrap().to_string();
-    conf.listen_address = matches.value_of("listen_address").map(|a| a.to_string());
+    conf.public_address =
+        matches.value_of("public_address").unwrap().to_string();
+    conf.listen_address =
+        matches.value_of("listen_address").map(|a| a.to_string());
     conf.bootstrapping_nodes = matches
         .values_of("bootstrap")
         .unwrap_or_default()
@@ -67,7 +70,11 @@ pub async fn main() {
 }
 
 /// Spawns all node layers.
-async fn run_main_loop(conf: Config, provisioners_num: usize, provisioner_id: usize) {
+async fn run_main_loop(
+    conf: Config,
+    provisioners_num: usize,
+    provisioner_id: usize,
+) {
     let inbound = PendingQueue::new("inbound_main_loop");
     let outbound = PendingQueue::new("outbound_main_loop");
 
@@ -85,7 +92,14 @@ async fn run_main_loop(conf: Config, provisioners_num: usize, provisioner_id: us
     );
 
     // Spawn network layer
-    network_service::run_main_loop(conf, inbound, outbound, agr_inbound, agr_outbound).await;
+    network_service::run_main_loop(
+        conf,
+        inbound,
+        outbound,
+        agr_inbound,
+        agr_outbound,
+    )
+    .await;
 }
 
 fn show_version(info: VersionInfo) -> String {

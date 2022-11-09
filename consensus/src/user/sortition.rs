@@ -18,7 +18,12 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(seed: [u8; 32], round: u64, step: u8, max_committee_size: usize) -> Config {
+    pub fn new(
+        seed: [u8; 32],
+        round: u64,
+        step: u8,
+        max_committee_size: usize,
+    ) -> Config {
         Self {
             seed,
             round,
@@ -47,7 +52,10 @@ pub fn create_sortition_hash(cfg: &Config, i: i32) -> [u8; 32] {
 }
 
 // Generate a score from the given hash and total stake weight
-pub fn generate_sortition_score(hash: [u8; 32], total_weight: &BigInt) -> BigInt {
+pub fn generate_sortition_score(
+    hash: [u8; 32],
+    total_weight: &BigInt,
+) -> BigInt {
     let num = BigInt::from_bytes_be(Plus, hash.as_slice());
     num % total_weight
 }
@@ -57,7 +65,9 @@ pub fn generate_sortition_score(hash: [u8; 32], total_weight: &BigInt) -> BigInt
 
 #[cfg(test)]
 mod tests {
-    use crate::user::sortition::{create_sortition_hash, generate_sortition_score, Config};
+    use crate::user::sortition::{
+        create_sortition_hash, generate_sortition_score, Config,
+    };
     use hex_literal::hex;
     use num_bigint::BigInt;
 

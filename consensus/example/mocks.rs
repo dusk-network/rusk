@@ -4,15 +4,23 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use consensus::contract_state::{CallParams, Error, Operations, Output, StateRoot};
+use consensus::contract_state::{
+    CallParams, Error, Operations, Output, StateRoot,
+};
 
 pub struct Executor {}
 impl Operations for Executor {
-    fn verify_state_transition(&self, _params: CallParams) -> Result<StateRoot, Error> {
+    fn verify_state_transition(
+        &self,
+        _params: CallParams,
+    ) -> Result<StateRoot, Error> {
         Ok([0; 32])
     }
 
-    fn execute_state_transition(&self, _params: CallParams) -> Result<Output, Error> {
+    fn execute_state_transition(
+        &self,
+        _params: CallParams,
+    ) -> Result<Output, Error> {
         Ok(Output::default())
     }
 

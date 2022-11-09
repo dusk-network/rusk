@@ -53,7 +53,10 @@ impl Committee {
             committee.total += 1;
         }
 
-        debug_assert!(committee.total == provisioners.get_eligible_size(max_committee_size));
+        debug_assert!(
+            committee.total
+                == provisioners.get_eligible_size(max_committee_size)
+        );
 
         committee
     }
@@ -126,7 +129,10 @@ impl Committee {
         a
     }
 
-    pub fn total_occurrences(&self, voters: &Cluster<ConsensusPublicKey>) -> usize {
+    pub fn total_occurrences(
+        &self,
+        voters: &Cluster<ConsensusPublicKey>,
+    ) -> usize {
         let mut total = 0;
         for (item_pk, _) in voters.iter() {
             if let Some(weight) = self.votes_for(item_pk) {
@@ -157,7 +163,11 @@ impl CommitteeSet {
         }
     }
 
-    pub fn is_member(&mut self, pubkey: &ConsensusPublicKey, cfg: &sortition::Config) -> bool {
+    pub fn is_member(
+        &mut self,
+        pubkey: &ConsensusPublicKey,
+        cfg: &sortition::Config,
+    ) -> bool {
         self.get_or_create(cfg).is_member(pubkey)
     }
 
@@ -193,7 +203,11 @@ impl CommitteeSet {
         &self.provisioners
     }
 
-    pub fn bits(&mut self, voters: &Cluster<ConsensusPublicKey>, cfg: &sortition::Config) -> u64 {
+    pub fn bits(
+        &mut self,
+        voters: &Cluster<ConsensusPublicKey>,
+        cfg: &sortition::Config,
+    ) -> u64 {
         self.get_or_create(cfg).bits(voters)
     }
 

@@ -58,7 +58,9 @@ impl<T: Operations + 'static> Reduction<T> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx.handle_future_msgs(&committee, &mut self.handler).await {
+        if let Some(m) =
+            ctx.handle_future_msgs(&committee, &mut self.handler).await
+        {
             return Ok(m);
         }
 

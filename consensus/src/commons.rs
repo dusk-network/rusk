@@ -30,7 +30,11 @@ pub struct RoundUpdate {
 }
 
 impl RoundUpdate {
-    pub fn new(round: u64, pubkey_bls: ConsensusPublicKey, secret_key: SecretKey) -> Self {
+    pub fn new(
+        round: u64,
+        pubkey_bls: ConsensusPublicKey,
+        secret_key: SecretKey,
+    ) -> Self {
         RoundUpdate {
             round,
             pubkey_bls,
@@ -183,7 +187,11 @@ impl Default for Signature {
 // TODO: Apply Hash type instead of u8; 32
 pub type Hash = [u8; 32];
 
-pub fn marshal_signable_vote(round: u64, step: u8, block_hash: &[u8; 32]) -> BytesMut {
+pub fn marshal_signable_vote(
+    round: u64,
+    step: u8,
+    block_hash: &[u8; 32],
+) -> BytesMut {
     let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
     msg.put_u64_le(round);
     msg.put_u8(step);
@@ -202,11 +210,9 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
-        if let Err(e) = executor
-            .lock()
-            .await
-            .verify_state_transition(crate::contract_state::CallParams::default())
-        {
+        if let Err(e) = executor.lock().await.verify_state_transition(
+            crate::contract_state::CallParams::default(),
+        ) {
             tracing::error!("verify state transition failed with err: {:?}", e);
             return;
         }
@@ -222,19 +228,20 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
         let signed_hash = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         // Sign and construct reduction message
-        let msg = Message::new_reduction(hdr, messages::payload::Reduction { signed_hash });
+        let msg = Message::new_reduction(
+            hdr,
+            messages::payload::Reduction { signed_hash },
+        );
 
         //   publish
-        outbound
-            .send(msg.clone())
-            .await
-            .unwrap_or_else(|err| tracing::error!("unable to publish reduction msg {:?}", err));
+        outbound.send(msg.clone()).await.unwrap_or_else(|err| {
+            tracing::error!("unable to publish reduction msg {:?}", err)
+        });
 
         // Register my vote locally
-        inbound
-            .send(msg)
-            .await
-            .unwrap_or_else(|err| tracing::error!("unable to register reduction msg {:?}", err));
+        inbound.send(msg).await.unwrap_or_else(|err| {
+            tracing::error!("unable to register reduction msg {:?}", err)
+        });
     });
 }
 

@@ -19,7 +19,9 @@ use tracing::{error, warn};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<ConsensusPublicKey>)>);
+pub struct Aggregator(
+    BTreeMap<Hash, (AggrSignature, Cluster<ConsensusPublicKey>)>,
+);
 
 impl Aggregator {
     pub fn collect_vote(
@@ -63,7 +65,11 @@ impl Aggregator {
 
             let total = cluster.total_occurrences();
             let quorum_target = committee.quorum();
-            tracing::trace!("total votes: {}, quorum target: {} ", total, quorum_target);
+            tracing::trace!(
+                "total votes: {}, quorum target: {} ",
+                total,
+                quorum_target
+            );
 
             if total >= committee.quorum() {
                 let signature = aggr_sign
@@ -84,7 +90,12 @@ impl Aggregator {
 impl fmt::Display for Aggregator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for (hash, value) in self.0.iter() {
-            writeln!(f, "hash: {:?} total: {}", hash, value.1.total_occurrences())?;
+            writeln!(
+                f,
+                "hash: {:?} total: {}",
+                hash,
+                value.1.total_occurrences()
+            )?;
         }
         Ok(())
     }

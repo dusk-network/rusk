@@ -22,7 +22,8 @@ fn test_deterministic_sortition_1() {
 
     assert_eq!(
         vec![2, 1, 1],
-        Committee::new(ConsensusPublicKey::default(), &mut p, cfg).get_occurrences()
+        Committee::new(ConsensusPublicKey::default(), &mut p, cfg)
+            .get_occurrences()
     );
 }
 
@@ -32,8 +33,10 @@ fn test_deterministic_sortition_2() {
     let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
-        <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
-            .unwrap_or([0; 32]),
+        <[u8; 32]>::from_hex(
+            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
+        )
+        .unwrap_or([0; 32]),
         7777,
         8,
         45,
@@ -42,7 +45,8 @@ fn test_deterministic_sortition_2() {
 
     assert_eq!(
         vec![1, 3],
-        Committee::new(ConsensusPublicKey::default(), &mut p, cfg).get_occurrences()
+        Committee::new(ConsensusPublicKey::default(), &mut p, cfg)
+            .get_occurrences()
     );
 }
 
@@ -52,8 +56,10 @@ fn test_quorum() {
     let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
-        <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
-            .unwrap_or([0; 32]),
+        <[u8; 32]>::from_hex(
+            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
+        )
+        .unwrap_or([0; 32]),
         7777,
         8,
         64,
@@ -70,8 +76,10 @@ fn test_quorum_max_size() {
     let mut p = generate_provisioners(5);
 
     let cfg = Config::new(
-        <[u8; 32]>::from_hex("b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5")
-            .unwrap_or([0; 32]),
+        <[u8; 32]>::from_hex(
+            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
+        )
+        .unwrap_or([0; 32]),
         7777,
         8,
         4,
@@ -107,7 +115,10 @@ fn generate_provisioners(n: usize) -> Provisioners {
     let mut p = Provisioners::new();
     for i in 1..n {
         let stake_value = 1000 * (i as u64) * DUSK;
-        p.add_member_with_value(ConsensusPublicKey::from_sk_seed_u64(i as u64), stake_value);
+        p.add_member_with_value(
+            ConsensusPublicKey::from_sk_seed_u64(i as u64),
+            stake_value,
+        );
     }
     p
 }

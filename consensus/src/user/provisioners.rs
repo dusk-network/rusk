@@ -93,7 +93,11 @@ impl Provisioners {
     /// Adds a provisioner with stake.
     ///
     /// It appends the stake if the given provisioner already exists.
-    pub fn add_member_with_stake(&mut self, pubkey_bls: ConsensusPublicKey, stake: Stake) {
+    pub fn add_member_with_stake(
+        &mut self,
+        pubkey_bls: ConsensusPublicKey,
+        stake: Stake,
+    ) {
         self.members
             .entry(pubkey_bls)
             .or_insert_with_key(|key| Member::new(key.clone()))
@@ -103,7 +107,11 @@ impl Provisioners {
     /// Adds a new member with reward=0 and elibile_since=0.
     ///
     /// Useful for implementing unit tests.
-    pub fn add_member_with_value(&mut self, pubkey_bls: ConsensusPublicKey, value: u64) {
+    pub fn add_member_with_value(
+        &mut self,
+        pubkey_bls: ConsensusPublicKey,
+        value: u64,
+    ) {
         self.add_member_with_stake(pubkey_bls, Stake::new(value, 0, 0));
     }
 
@@ -131,7 +139,10 @@ impl Provisioners {
     /// Runs the deterministic sortition algorithm which determines the committee members for a given round, step and seed.
     ///
     /// Returns a vector of provisioners public keys.
-    pub fn create_committee(&mut self, cfg: &sortition::Config) -> Vec<ConsensusPublicKey> {
+    pub fn create_committee(
+        &mut self,
+        cfg: &sortition::Config,
+    ) -> Vec<ConsensusPublicKey> {
         let mut committee: Vec<ConsensusPublicKey> = vec![];
         let committee_size = self.get_eligible_size(cfg.max_committee_size);
 
@@ -140,11 +151,14 @@ impl Provisioners {
             member.restore_intermediate_value();
         }
 
-        let mut total_amount_stake = BigInt::from(self.calc_total_eligible_weight());
+        let mut total_amount_stake =
+            BigInt::from(self.calc_total_eligible_weight());
 
         let mut counter: i32 = 0;
         loop {
-            if total_amount_stake.eq(&BigInt::from(0)) || committee.len() == committee_size {
+            if total_amount_stake.eq(&BigInt::from(0))
+                || committee.len() == committee_size
+            {
                 break;
             }
 
@@ -153,7 +167,8 @@ impl Provisioners {
             counter += 1;
 
             // 2. Compute d ← n mod s
-            let score = sortition::generate_sortition_score(hash, &total_amount_stake);
+            let score =
+                sortition::generate_sortition_score(hash, &total_amount_stake);
 
             // NB: The public key can be extracted multiple times per committee.
             match self.extract_and_subtract_member(score) {
@@ -180,7 +195,9 @@ impl Provisioners {
         self.members
             .values()
             .flat_map(|m| &m.stakes)
-            .filter_map(|(stake, eligible)| eligible.then(|| stake.intermediate_value))
+            .filter_map(|(stake, eligible)| {
+                eligible.then(|| stake.intermediate_value)
+            })
             .sum()
     }
 
@@ -197,9 +214,13 @@ impl Provisioners {
                 let total_stake = member.get_total_eligible_stake();
                 if total_stake >= score {
                     // Subtract 1 DUSK from the value extracted and rebalance accordingly.
-                    let subtracted_stake = BigInt::from(member.subtract_from_stake(DUSK));
+                    let subtracted_stake =
+                        BigInt::from(member.subtract_from_stake(DUSK));
 
-                    return Some((member.public_key().clone(), subtracted_stake));
+                    return Some((
+                        member.public_key().clone(),
+                        subtracted_stake,
+                    ));
                 }
 
                 score -= total_stake;
