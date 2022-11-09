@@ -280,7 +280,7 @@ pub mod payload {
     use bytes::{Buf, BufMut, Bytes, BytesMut};
     use std::mem;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Copy, Clone)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
     }
