@@ -23,7 +23,7 @@ where
         self.0.values().sum()
     }
 
-    /// set_weight can set weight only once.
+    /// Adds key with specified weight. Weight per key can be set only once.
     pub fn set_weight(&mut self, key: &T, weight: usize) -> Option<usize> {
         if weight == 0 {
             return None;
@@ -35,6 +35,17 @@ where
 
         self.0.insert(key.clone(), weight);
         Some(weight)
+    }
+
+    /// Adds key with zero weight.
+    pub fn add(&mut self, key: &T) -> Option<usize> {
+        if self.0.contains_key(key) {
+            // already updated
+            return None;
+        }
+
+        self.0.insert(key.clone(), 0);
+        Some(0)
     }
 
     pub fn iter(&self) -> Iter<T, usize> {

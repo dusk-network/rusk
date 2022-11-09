@@ -24,6 +24,7 @@ pub enum Error {
     VerificationFailed(dusk_bls12_381_sign::Error),
     EmptyApk,
     InvalidType,
+    InvalidStepNum,
 }
 
 impl From<dusk_bls12_381_sign::Error> for Error {
@@ -55,21 +56,42 @@ pub async fn verify_agreement(
     }
 }
 
-async fn verify_step_votes(
+pub(super) async fn verify_step_votes(
     sv: &StepVotes,
     committees_set: &Arc<Mutex<CommitteeSet>>,
     seed: [u8; 32],
     hdr: &messages::Header,
     step_offset: u8,
 ) -> Result<(), Error> {
+    if hdr.step == 0 {
+        return Err(Error::InvalidStepNum);
+    }
+
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, 64);
 
+    verify_votes(
+        &hdr.block_hash,
+        sv.bitset,
+        sv.signature,
+        committees_set,
+        cfg,
+    )
+    .await
+}
+
+pub async fn verify_votes(
+    block_hash: &[u8; 32],
+    bitset: u64,
+    signature: [u8; 48],
+    committees_set: &Arc<Mutex<CommitteeSet>>,
+    cfg: sortition::Config,
+) -> Result<(), Error> {
     let sub_committee = {
         // Scoped guard to fetch committee data quickly
         let mut guard = committees_set.lock().await;
 
-        let sub_committee = guard.intersect(sv.bitset, &cfg);
+        let sub_committee = guard.intersect(bitset, &cfg);
         let target_quorum = guard.quorum(&cfg);
 
         if guard.total_occurrences(&sub_committee, &cfg) < target_quorum {
@@ -83,7 +105,7 @@ async fn verify_step_votes(
     let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures
-    verify_step_signature(hdr.round, step, &hdr.block_hash, apk, &sv.signature)?;
+    verify_step_signature(cfg.round, cfg.step, &block_hash, apk, &signature)?;
 
     // Verification done
     Ok(())

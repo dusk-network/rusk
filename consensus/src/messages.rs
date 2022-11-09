@@ -24,6 +24,7 @@ pub trait Serializable {
     /// Deserialize struct from buf by consuming N bytes.
     fn from_bytes(buf: &mut Bytes) -> Self;
 }
+
 pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
     fn get_pubkey_bls(&self) -> &ConsensusPublicKey;
@@ -55,6 +56,7 @@ impl Serializable for Message {
             Payload::NewBlock(p) => p.to_bytes(),
             Payload::Reduction(p) => p.to_bytes(),
             Payload::Agreement(p) => p.to_bytes(),
+            Payload::AggrAgreement(p) => p.to_bytes(),
             _ => vec![], // non-serialziable messages are those which are not sent on the wire.
         };
 
@@ -76,6 +78,9 @@ impl Serializable for Message {
             Topics::NewBlock => Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf))),
             Topics::Reduction => Payload::Reduction(payload::Reduction::from_bytes(buf)),
             Topics::Agreement => Payload::Agreement(payload::Agreement::from_bytes(buf)),
+            Topics::AggrAgreement => {
+                Payload::AggrAgreement(payload::AggrAgreement::from_bytes(buf))
+            }
             _ => {
                 debug_assert!(false, "unhandled topic {}", msg.header.topic);
                 Payload::Empty
@@ -127,6 +132,14 @@ impl Message {
         Self {
             header,
             payload: Payload::Agreement(payload),
+            ..Default::default()
+        }
+    }
+
+    pub fn new_aggr_agreement(header: Header, payload: payload::AggrAgreement) -> Message {
+        Self {
+            header,
+            payload: Payload::AggrAgreement(payload),
             ..Default::default()
         }
     }
@@ -251,6 +264,7 @@ pub enum Payload {
     StepVotes(payload::StepVotes),
     StepVotesWithCandidate(payload::StepVotesWithCandidate),
     Agreement(payload::Agreement),
+    AggrAgreement(payload::AggrAgreement),
     Empty,
 }
 
@@ -406,6 +420,43 @@ pub mod payload {
                 signature: [0; 48],
                 first_step: StepVotes::default(),
                 second_step: StepVotes::default(),
+            }
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct AggrAgreement {
+        pub agreement: Agreement,
+        pub bitset: u64,
+        pub aggr_signature: [u8; 48],
+    }
+
+    impl Serializable for AggrAgreement {
+        fn to_bytes(&self) -> Vec<u8> {
+            let mut buf = BytesMut::with_capacity(100);
+            buf.put(&self.aggr_signature[..]);
+            buf.put_u64_le(self.bitset);
+            buf.put(&self.agreement.to_bytes()[..]);
+            buf.to_vec()
+        }
+
+        fn from_bytes(buf: &mut Bytes) -> Self {
+            let mut a = AggrAgreement::default();
+
+            buf.copy_to_slice(&mut a.aggr_signature);
+            a.bitset = buf.get_u64_le();
+            a.agreement = Agreement::from_bytes(buf);
+
+            a
+        }
+    }
+
+    impl Default for AggrAgreement {
+        fn default() -> Self {
+            Self {
+                aggr_signature: [0; 48],
+                agreement: Default::default(),
+                bitset: 0,
             }
         }
     }

@@ -102,7 +102,7 @@ impl From<dusk_bls12_381_sign::Error> for AggrSigError {
 }
 
 #[derive(Default)]
-struct AggrSignature {
+pub(super) struct AggrSignature {
     data: Option<dusk_bls12_381_sign::Signature>,
 }
 
