@@ -73,9 +73,9 @@ pub(super) async fn verify_step_votes(
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
-        sv.signature,
+        &sv.signature,
         committees_set,
-        cfg,
+        &cfg,
     )
     .await
 }
@@ -83,18 +83,18 @@ pub(super) async fn verify_step_votes(
 pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
-    signature: [u8; 48],
+    signature: &[u8; 48],
     committees_set: &Arc<Mutex<CommitteeSet>>,
-    cfg: sortition::Config,
+    cfg: &sortition::Config,
 ) -> Result<(), Error> {
     let sub_committee = {
         // Scoped guard to fetch committee data quickly
         let mut guard = committees_set.lock().await;
 
-        let sub_committee = guard.intersect(bitset, &cfg);
-        let target_quorum = guard.quorum(&cfg);
+        let sub_committee = guard.intersect(bitset, cfg);
+        let target_quorum = guard.quorum(cfg);
 
-        if guard.total_occurrences(&sub_committee, &cfg) < target_quorum {
+        if guard.total_occurrences(&sub_committee, cfg) < target_quorum {
             Err(Error::VoteSetTooSmall)
         } else {
             Ok(sub_committee)
@@ -105,7 +105,7 @@ pub async fn verify_votes(
     let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures
-    verify_step_signature(cfg.round, cfg.step, &block_hash, apk, &signature)?;
+    verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
 
     // Verification done
     Ok(())

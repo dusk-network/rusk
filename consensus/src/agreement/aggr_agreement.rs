@@ -29,9 +29,9 @@ pub(super) async fn verify(
         verifiers::verify_votes(
             &msg.header.block_hash,
             p.bitset,
-            p.aggr_signature,
+            &p.aggr_signature,
             &committees_set,
-            sortition::Config::new(ru.seed, ru.round, msg.header.step, 64),
+            &sortition::Config::new(ru.seed, ru.round, msg.header.step, 64),
         )
         .await?;
 
