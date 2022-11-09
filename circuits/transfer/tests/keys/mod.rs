@@ -8,21 +8,18 @@ use transfer_circuits::Error;
 
 use dusk_plonk::prelude::*;
 
-pub fn circuit_keys<C>(
-) -> Result<(PublicParameters, ProverKey, VerifierData), Error>
+pub fn circuit_keys<C: Circuit>(
+    id: &[u8; 32],
+) -> Result<(Prover<C>, Verifier<C>), Error>
 where
     C: Circuit,
 {
-    let pp = rusk_profile::get_common_reference_string().map(|pp| unsafe {
-        PublicParameters::from_slice_unchecked(pp.as_slice())
-    })?;
-
-    let keys = rusk_profile::keys_for(&C::CIRCUIT_ID)?;
+    let keys = rusk_profile::keys_for(id)?;
     let pk = keys.get_prover()?;
     let vd = keys.get_verifier()?;
 
-    let pk = ProverKey::from_slice(pk.as_slice())?;
-    let vd = VerifierData::from_slice(vd.as_slice())?;
+    let prover = Prover::try_from_bytes(&pk)?;
+    let verifier = Verifier::try_from_bytes(&vd)?;
 
-    Ok((pp, pk, vd))
+    Ok((prover, verifier))
 }

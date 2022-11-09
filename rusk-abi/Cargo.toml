@@ -27,9 +27,13 @@ dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-imp
 [dev-dependencies]
 dusk-bytes = "0.1"
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
 rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
 once_cell = "1.15"
 
 [features]
-host = []
+host = ["piecrust-uplink/default"]
+
+[[test]]
+name = "test-rusk-abi"
+path = "tests/lib.rs"
+required-features = ["host"]
