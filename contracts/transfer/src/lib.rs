@@ -13,5 +13,4 @@ mod error;
 mod transfer;
 mod wasm;
 
-pub use error::Error;
-pub use transfer::{Leaf, TransferContract};
+pub use transfer::TransferState;

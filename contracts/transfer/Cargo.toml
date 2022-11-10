@@ -18,12 +18,11 @@ ranno = "0.1"
 phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
 rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
-rkyv = { version = "0.7", default-features = false, features = ["alloc"] }
-bytecheck = { version = "0.6", default-features = false }
-transfer-contract-types = { path = "../transfer-types" }
+transfer-contract-types = { path = "../transfer-types", default-features = false }
 
 [dev-dependencies]
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust" }
+transfer-circuits = { path = "../../circuits/transfer" }
+rusk-profile = { path = "../../rusk-profile" }
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
 hex = "0.4"
-transfer-circuits = { path = "../../circuits/transfer" }
+rand = "0.8"

@@ -5,9 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use transfer_circuits::*;
-use transfer_contract::TransferContract;
-
-use dusk_plonk::prelude::*;
+use transfer_contract::TransferState;
 
 fn verifier_data_bytes(id: &[u8; 32]) -> Vec<u8> {
     rusk_profile::keys_for(id)
@@ -17,34 +15,36 @@ fn verifier_data_bytes(id: &[u8; 32]) -> Vec<u8> {
 
 #[test]
 fn verifier_data_stct() {
-    let contract = TransferContract::verifier_data_stct().to_vec();
+    let contract = TransferState::verifier_data_stct().to_vec();
     let rusk =
-        verifier_data_bytes(&SendToContractTransparentCircuit::CIRCUIT_ID);
+        verifier_data_bytes(&SendToContractTransparentCircuit::circuit_id());
 
     assert_eq!(rusk, contract);
 }
 
 #[test]
 fn verifier_data_stco() {
-    let contract = TransferContract::verifier_data_stco().to_vec();
+    let contract = TransferState::verifier_data_stco().to_vec();
     let rusk =
-        verifier_data_bytes(&SendToContractObfuscatedCircuit::CIRCUIT_ID);
+        verifier_data_bytes(&SendToContractObfuscatedCircuit::circuit_id());
 
     assert_eq!(rusk, contract);
 }
 
 #[test]
 fn verifier_data_wdft() {
-    let contract = TransferContract::verifier_data_wdft().to_vec();
-    let rusk = verifier_data_bytes(&WithdrawFromTransparentCircuit::CIRCUIT_ID);
+    let contract = TransferState::verifier_data_wdft().to_vec();
+    let rusk =
+        verifier_data_bytes(&WithdrawFromTransparentCircuit::circuit_id());
 
     assert_eq!(rusk, contract);
 }
 
 #[test]
 fn verifier_data_wdfo() {
-    let contract = TransferContract::verifier_data_wdfo().to_vec();
-    let rusk = verifier_data_bytes(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID);
+    let contract = TransferState::verifier_data_wdfo().to_vec();
+    let rusk =
+        verifier_data_bytes(&WithdrawFromObfuscatedCircuit::circuit_id());
 
     assert_eq!(rusk, contract);
 }
@@ -52,14 +52,14 @@ fn verifier_data_wdfo() {
 #[test]
 fn verifier_data_execute() {
     let variants = vec![
-        (ExecuteCircuitOneTwo::CIRCUIT_ID, 1),
-        (ExecuteCircuitTwoTwo::CIRCUIT_ID, 2),
-        (ExecuteCircuitThreeTwo::CIRCUIT_ID, 3),
-        (ExecuteCircuitFourTwo::CIRCUIT_ID, 4),
+        (ExecuteCircuitOneTwo::circuit_id(), 1),
+        (ExecuteCircuitTwoTwo::circuit_id(), 2),
+        (ExecuteCircuitThreeTwo::circuit_id(), 3),
+        (ExecuteCircuitFourTwo::circuit_id(), 4),
     ];
 
     for (id, inputs) in variants {
-        let contract = TransferContract::verifier_data_execute(inputs).to_vec();
+        let contract = TransferState::verifier_data_execute(inputs).to_vec();
         let rusk = verifier_data_bytes(&id);
 
         assert_eq!(rusk, contract);

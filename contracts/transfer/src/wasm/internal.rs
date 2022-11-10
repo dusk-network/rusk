@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{Error, TransferContract};
+use crate::error::Error;
+use crate::transfer::TransferState;
+
 use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
@@ -16,7 +18,7 @@ use phoenix_core::{Crossover, Fee, Message, Note};
 
 use rusk_abi::{dusk::*, ModuleId, PublicInput};
 
-impl TransferContract {
+impl TransferState {
     pub(crate) fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
         let block_height = rusk_abi::block_height();
 
@@ -25,12 +27,12 @@ impl TransferContract {
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
         if remainder_value > 0 {
-            self.push_note(block_height, remainder)?;
+            self.push_note(block_height, remainder);
         }
 
         if let Some(crossover) = self.var_crossover {
             let note = Note::from((fee, crossover));
-            self.push_note(block_height, note)?;
+            self.push_note(block_height, note);
         }
 
         Ok(())
@@ -61,26 +63,17 @@ impl TransferContract {
             .ok_or(Error::MessageNotFound)
     }
 
-    pub(crate) fn push_note_current_height(
-        &mut self,
-        note: Note,
-    ) -> Result<Note, Error> {
+    pub(crate) fn push_note_current_height(&mut self, note: Note) -> Note {
         let block_height = rusk_abi::block_height();
-
         self.push_note(block_height, note)
     }
 
-    pub(crate) fn extend_notes(
-        &mut self,
-        notes: Vec<Note>,
-    ) -> Result<(), Error> {
+    pub(crate) fn extend_notes(&mut self, notes: Vec<Note>) {
         let block_height = rusk_abi::block_height();
 
         for note in notes {
-            self.push_note(block_height, note)?;
+            self.push_note(block_height, note);
         }
-
-        Ok(())
     }
 
     pub(crate) fn sub_balance(

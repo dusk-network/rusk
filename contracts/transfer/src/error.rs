@@ -10,14 +10,10 @@ use phoenix_core::Error as PhoenixError;
 #[derive(Debug, Clone)]
 pub enum Error {
     Phoenix(PhoenixError),
-    NoteNotFound,
     MessageNotFound,
     CrossoverNotFound,
-    ExecuteRecursion,
     NotEnoughBalance,
     ProofVerificationError,
-    PaymentTypeNotAccepted,
-    ContractNotFound,
 }
 
 impl From<PhoenixError> for Error {

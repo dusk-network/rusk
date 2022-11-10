@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::TransferContract;
+use super::TransferState;
 
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
@@ -20,7 +20,7 @@ const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.
 const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/4e03eb1686949f9f17d13d285a4a9c5bc9596a84765f36a3491a981a29135987.vd"));
 const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/2a34871c45dd993c6217199c5c000aff24621f5953aca3a1755fe052a8e4e7b9.vd"));
 
-impl TransferContract {
+impl TransferState {
     pub const fn verifier_data_execute(inputs: usize) -> &'static [u8] {
         match inputs {
             1 => VD_EXEC_1_2,

@@ -6,7 +6,7 @@
 
 use alloc::vec::Vec;
 
-use crate::TransferContract;
+use crate::transfer::TransferState;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
@@ -15,7 +15,7 @@ use phoenix_core::Note;
 use rusk_abi::{PaymentInfo, RawResult, RawTransaction, State};
 use transfer_contract_types::*;
 
-impl TransferContract {
+impl TransferState {
     pub fn mint(&mut self, mint: Mint) -> bool {
         // Only the stake contract can mint notes to a particular stealth
         // address. This happens when the reward for staking and participating
@@ -27,8 +27,7 @@ impl TransferContract {
         let note =
             Note::transparent_stealth(mint.address, mint.value, mint.nonce);
 
-        self.push_note_current_height(note)
-            .expect("Failed to append note to the state!");
+        self.push_note_current_height(note);
 
         true
     }
@@ -50,8 +49,7 @@ impl TransferContract {
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
-        self.add_balance(stct.module, stct.value)
-            .expect("Failed to add the balance to the provided address!");
+        self.add_balance(stct.module, stct.value);
 
         //  3. if a.isPayable() ↦ true then continue
         match rusk_abi::payment_info(stct.module) {
@@ -70,7 +68,7 @@ impl TransferContract {
         true
     }
 
-    pub fn withdraw_from_transparent(&mut self, wfct: Wfct) -> bool {
+    pub fn withdraw_from_contract_transparent(&mut self, wfct: Wfct) -> bool {
         let address = rusk_abi::caller();
         let mut pi = Vec::with_capacity(3);
 
@@ -85,8 +83,7 @@ impl TransferContract {
         //  3. N↦.append(N_p^t)
         //  4. N_p^* ← encode(N_p^t)
         //  5. N.append(N_p^*)
-        self.push_note_current_height(wfct.note)
-            .expect("Failed to append the provided note to the state!");
+        self.push_note_current_height(wfct.note);
 
         //  6. verify(C.c, M, pk, π)
         let vd = Self::verifier_data_wdft();
@@ -147,7 +144,7 @@ impl TransferContract {
         true
     }
 
-    pub fn withdraw_from_obfuscated(&mut self, wfco: Wfco) -> bool {
+    pub fn withdraw_from_contract_obfuscated(&mut self, wfco: Wfco) -> bool {
         let address = rusk_abi::caller();
 
         let (change_psk_a, change_psk_b) =
@@ -192,8 +189,7 @@ impl TransferContract {
             _ => panic!("This contract accepts only obfuscated notes!"),
         }
 
-        self.push_note_current_height(wfco.output)
-            .expect("Failed to append the provided note to the state!");
+        self.push_note_current_height(wfco.output);
 
         //  7. verify(c, M_c, No.c, π)
         let vd = Self::verifier_data_wdfo();
@@ -203,7 +199,7 @@ impl TransferContract {
         true
     }
 
-    pub fn withdraw_from_transparent_to_contract(
+    pub fn withdraw_from_contract_transparent_to_contract(
         &mut self,
         wfctc: Wfctc,
     ) -> bool {
@@ -216,8 +212,7 @@ impl TransferContract {
         );
 
         //  3. B_to↦ = B_to↦ + v
-        self.add_balance(wfctc.module, wfctc.value)
-            .expect("Failed to add the balance to the provided address!");
+        self.add_balance(wfctc.module, wfctc.value);
 
         true
     }
@@ -279,8 +274,7 @@ impl TransferContract {
 
         //  5. N↦.append((No.R[], No.pk[])
         //  6. Notes.append(No[])
-        self.extend_notes(tx.outputs)
-            .expect("Failed to append the notes to the state!");
+        self.extend_notes(tx.outputs);
 
         //  7. g_l < 2^64
         //  8. g_pmin < g_p
@@ -318,8 +312,7 @@ impl TransferContract {
         self.push_fee_crossover(tx.fee)
             .expect("Failed to append the fee and the crossover to the state!");
 
-        self.update_root()
-            .expect("Failed to update the state of the tree!");
+        self.update_root();
 
         res
     }

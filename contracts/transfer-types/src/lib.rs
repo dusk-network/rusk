@@ -14,15 +14,67 @@ extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use core::borrow::Borrow;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::StealthAddress;
 use dusk_plonk::proof_system::Proof;
+use dusk_poseidon::tree::PoseidonLeaf;
+use nstack::annotation::Keyed;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::ModuleId;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
+
+/// A leaf of the transfer tree.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TreeLeaf {
+    /// The height of the block when the note was inserted in the tree.
+    pub block_height: u64,
+    /// The note inserted in the tree.
+    pub note: Note,
+}
+
+impl PoseidonLeaf for TreeLeaf {
+    #[cfg(feature = "host")]
+    fn poseidon_hash(&self) -> BlsScalar {
+        self.note.hash()
+    }
+
+    #[cfg(not(feature = "host"))]
+    fn poseidon_hash(&self) -> BlsScalar {
+        rusk_abi::poseidon_hash(self.note.hash_inputs().into())
+    }
+
+    fn pos(&self) -> &u64 {
+        self.note.pos()
+    }
+
+    fn set_pos(&mut self, pos: u64) {
+        self.note.set_pos(pos);
+    }
+}
+
+impl Keyed<u64> for TreeLeaf {
+    fn key(&self) -> &u64 {
+        &self.block_height
+    }
+}
+
+impl AsRef<Note> for TreeLeaf {
+    fn as_ref(&self) -> &Note {
+        &self.note
+    }
+}
+
+impl Borrow<u64> for TreeLeaf {
+    fn borrow(&self) -> &u64 {
+        self.note.pos()
+    }
+}
 
 /// A phoenix transaction.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]

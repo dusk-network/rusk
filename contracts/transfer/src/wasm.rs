@@ -5,4 +5,5 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod callable;
+mod exports;
 mod internal;
