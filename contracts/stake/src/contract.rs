@@ -31,9 +31,8 @@ mod transaction;
 /// valid stake.
 #[derive(Debug, Default, Clone, Canon)]
 pub struct StakeContract {
-    pub(crate) stakes: Map<PublicKey, Stake>,
-    pub(crate) allowlist: Map<PublicKey, ()>,
-    pub(crate) owners: Map<PublicKey, ()>,
+    stakes: Map<PublicKey, Stake>,
+    owners: Vec<PublicKey>,
 }
 
 impl StakeContract {
@@ -66,7 +65,7 @@ impl StakeContract {
     /// Gets a mutable reference to the stake of a given key. If said stake
     /// doesn't exist, a default one is inserted and a mutable reference
     /// returned.
-    pub(crate) fn load_mut_stake(
+    pub(crate) fn load_or_create_mut_stake(
         &mut self,
         pk: &PublicKey,
     ) -> Result<impl DerefMut<Target = Stake> + '_, Error> {
@@ -81,6 +80,16 @@ impl StakeContract {
         Ok(self.stakes.get_mut(pk)?.unwrap())
     }
 
+    /// Gets a mutable reference to the stake of a given key.
+    #[allow(unused)]
+    pub(crate) fn load_mut_stake(
+        &mut self,
+        pk: &PublicKey,
+    ) -> Result<Option<impl DerefMut<Target = Stake> + '_>, Error> {
+        let stake = self.stakes.get_mut(pk)?;
+        Ok(stake)
+    }
+
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(
@@ -88,7 +97,7 @@ impl StakeContract {
         public_key: &PublicKey,
         value: u64,
     ) -> Result<(), Error> {
-        let mut stake = self.load_mut_stake(public_key)?;
+        let mut stake = self.load_or_create_mut_stake(public_key)?;
         stake.increase_reward(value);
         Ok(())
     }
@@ -125,7 +134,7 @@ impl StakeContract {
     pub fn stakers_allowlist(&self) -> Result<Vec<PublicKey>, Error> {
         let mut stakes = Vec::new();
 
-        if let Some(branch) = self.allowlist.first()? {
+        if let Some(branch) = self.stakes.first()? {
             for leaf in branch {
                 let leaf = leaf?;
                 stakes.push(leaf.key);
@@ -136,17 +145,8 @@ impl StakeContract {
     }
 
     /// Gets a vector of all owner keys.
-    pub fn owners(&self) -> Result<Vec<PublicKey>, Error> {
-        let mut stakes = Vec::new();
-
-        if let Some(branch) = self.owners.first()? {
-            for leaf in branch {
-                let leaf = leaf?;
-                stakes.push(leaf.key);
-            }
-        }
-
-        Ok(stakes)
+    pub fn owners(&self) -> &Vec<PublicKey> {
+        &self.owners
     }
 
     pub fn allowlist_sign_message(counter: u64, staker: &PublicKey) -> Vec<u8> {
@@ -193,26 +193,25 @@ impl StakeContract {
     }
 
     pub fn add_owner(&mut self, owner: PublicKey) -> Result<(), Error> {
-        if self.is_owner(&owner)? {
-            return Ok(());
+        if !self.owners.contains(&owner) {
+            self.owners.push(owner);
         }
-        self.owners.insert(owner, ())?;
         Ok(())
     }
 
     pub fn is_owner(&self, owner: &PublicKey) -> Result<bool, Error> {
-        Ok(self.owners.get(owner)?.is_some())
+        Ok(self.owners.contains(owner))
     }
 
     pub fn insert_allowlist(&mut self, staker: PublicKey) -> Result<(), Error> {
-        if self.is_allowlisted(&staker)? {
-            return Ok(());
+        if !self.is_allowlisted(&staker)? {
+            let stake = Stake::default();
+            self.stakes.insert(staker, stake)?;
         }
-        self.allowlist.insert(staker, ())?;
         Ok(())
     }
 
     pub fn is_allowlisted(&self, staker: &PublicKey) -> Result<bool, Error> {
-        Ok(self.allowlist.get(staker)?.is_some())
+        Ok(self.stakes.get(staker)?.is_some())
     }
 }
