@@ -4,26 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_jubjub::JubJubScalar;
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::{Message, Note};
+use phoenix_core::Note;
 use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use transfer_circuits::{
-    DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
-    WithdrawFromTransparentCircuit,
-};
-use transfer_contract::TransferState;
 
 const GENESIS_VALUE: u64 = 1_000;
 
-fn instantiate() -> (SecretSpendKey, PublicSpendKey, Session) {
+fn instantiate(vm: &mut VM) -> (SecretSpendKey, PublicSpendKey, Session) {
     let bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     );
 
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
     let mut session = vm.session();
 
     let transfer_id = rusk_abi::transfer_module();
@@ -49,8 +42,10 @@ fn instantiate() -> (SecretSpendKey, PublicSpendKey, Session) {
 
 #[test]
 fn transfer_between() {
-    let transfer_id = rusk_abi::transfer_module();
-    let (ssk, psk, mut session) = instantiate();
+    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+
+    let _transfer_id = rusk_abi::transfer_module();
+    let (_ssk, _psk, mut _session) = instantiate(&mut vm);
 }
 
 // #[test]

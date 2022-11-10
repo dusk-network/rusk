@@ -12,7 +12,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::Ownable;
 use phoenix_core::Note;
-use rusk_abi::{PaymentInfo, RawResult, RawTransaction, State};
+use rusk_abi::{ModuleError, PaymentInfo, RawResult, RawTransaction, State};
 use transfer_contract_types::*;
 
 impl TransferState {
@@ -52,7 +52,9 @@ impl TransferState {
         self.add_balance(stct.module, stct.value);
 
         //  3. if a.isPayable() ↦ true then continue
-        match rusk_abi::payment_info(stct.module) {
+        match rusk_abi::payment_info(stct.module)
+            .expect("Querying the payment info should succeed")
+        {
             PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
             _ => panic!("The caller doesn't accept transparent notes"),
         }
@@ -102,7 +104,9 @@ impl TransferState {
             Self::sign_message_stco(&crossover, &stco.message, &stco.module);
 
         let (message_psk_a, message_psk_b) =
-            match rusk_abi::payment_info(stco.module) {
+            match rusk_abi::payment_info(stco.module)
+                .expect("Querying the payment info should succeed")
+            {
                 PaymentInfo::Obfuscated(Some(k))
                 | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
 
@@ -147,17 +151,19 @@ impl TransferState {
     pub fn withdraw_from_contract_obfuscated(&mut self, wfco: Wfco) -> bool {
         let address = rusk_abi::caller();
 
-        let (change_psk_a, change_psk_b) =
-            match rusk_abi::payment_info(address) {
-                PaymentInfo::Obfuscated(Some(k))
-                | PaymentInfo::Any(Some(k)) => (*k.A(), *k.B()),
+        let (change_psk_a, change_psk_b) = match rusk_abi::payment_info(address)
+            .expect("Querying the payment info should succeed")
+        {
+            PaymentInfo::Obfuscated(Some(k)) | PaymentInfo::Any(Some(k)) => {
+                (*k.A(), *k.B())
+            }
 
-                PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
-                    (JubJubExtended::identity(), JubJubExtended::identity())
-                }
+            PaymentInfo::Obfuscated(None) | PaymentInfo::Any(None) => {
+                (JubJubExtended::identity(), JubJubExtended::identity())
+            }
 
-                _ => panic!("The caller doesn't accept obfuscated notes"),
-            };
+            _ => panic!("The caller doesn't accept obfuscated notes"),
+        };
 
         let mut pi = Vec::with_capacity(4);
 
@@ -184,7 +190,9 @@ impl TransferState {
         self.push_message(address, wfco.change_address, wfco.change);
 
         //  6. if a.isPayable() → true, obf, psk_a? then continue
-        match rusk_abi::payment_info(address) {
+        match rusk_abi::payment_info(address)
+            .expect("Querying the payment info should succeed")
+        {
             PaymentInfo::Obfuscated(_) | PaymentInfo::Any(_) => (),
             _ => panic!("This contract accepts only obfuscated notes!"),
         }
@@ -220,7 +228,7 @@ impl TransferState {
     pub fn execute(
         self: &mut State<Self>,
         tx: Transaction,
-    ) -> Option<RawResult> {
+    ) -> Option<Result<RawResult, ModuleError>> {
         // Constant for a pedersen commitment with zero value.
         //
         // Calculated as `G^0 · G'^0`
