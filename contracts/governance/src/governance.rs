@@ -4,24 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(not(feature = "map"))]
+use crate::collection::Collection;
+
 use core::iter;
 
 use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_hamt::Map;
 use dusk_jubjub::GENERATOR_EXTENDED;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
 use crate::*;
 
+#[cfg(feature = "map")]
+type Collection<K, V> = dusk_hamt::Map<K, V>;
+
 #[derive(Debug, Default, Clone, Canon)]
 pub struct GovernanceContract {
-    pub(crate) seeds: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) whitelist: Map<PublicKey, ()>,
+    pub(crate) seeds: Collection<BlsScalar, ()>,
+    pub(crate) balances: Collection<PublicKey, u64>,
+    pub(crate) whitelist: Collection<PublicKey, ()>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
 }
