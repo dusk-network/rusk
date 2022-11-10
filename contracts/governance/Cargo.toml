@@ -22,4 +22,3 @@ rusk-abi = { path = "../../rusk-abi", features = ["module"] }
 [features]
 no-bridge = []
 map = ["dusk-hamt"]
-default = ["map"]
