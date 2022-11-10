@@ -126,12 +126,10 @@ fn plonk_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
     bytes.len() as u32
 }
 
-fn instantiate() -> (Session, ModuleId) {
+fn instantiate<'a>(vm: &mut VM) -> (Session, ModuleId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
-
-    let mut vm = VM::ephemeral().expect("Instantiating the VM should succeed");
 
     vm.register_host_query(QueryType::Hash.as_str(), hash_host_query);
     vm.register_host_query(
@@ -157,7 +155,8 @@ fn instantiate() -> (Session, ModuleId) {
 
 #[test]
 fn hash() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -187,7 +186,8 @@ fn hash() {
 
 #[test]
 fn poseidon_hash() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -212,7 +212,8 @@ fn poseidon_hash() {
 
 #[test]
 fn schnorr_signature() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let sk = SecretKey::random(&mut OsRng);
     let message = BlsScalar::random(&mut OsRng);
@@ -240,7 +241,8 @@ fn schnorr_signature() {
 
 #[test]
 fn bls_signature() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let message = b"some-message".to_vec();
 
@@ -304,7 +306,8 @@ impl Circuit for TestCircuit {
 
 #[test]
 fn plonk_proof() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let pp = include_bytes!("./pp_test.bin");
     let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
@@ -355,7 +358,8 @@ fn plonk_proof() {
 
 #[test]
 fn block_height() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     const HEIGHT: u64 = 123;
 
