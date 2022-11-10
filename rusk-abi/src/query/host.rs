@@ -14,15 +14,6 @@ use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust_uplink::ModuleId;
-
-/// Generate a [`ModuleId`] address from the given slice of bytes, that is
-/// also a valid [`BlsScalar`]
-pub fn gen_module_id(bytes: &[u8]) -> ModuleId {
-    let mut hasher = Hasher::new();
-    hasher.update(bytes);
-    ModuleId::from_bytes(hasher.output())
-}
 
 /// Compute the blake2b hash of the given scalars, returning the resulting
 /// scalar. The output of the hasher is truncated (last nibble) to fit onto a
