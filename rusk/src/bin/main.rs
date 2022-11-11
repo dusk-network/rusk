@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let kadcast = KadcastDispatcher::new(
             config.kadcast.clone().into(),
             config.kadcast_test,
-        );
+        )?;
 
         let network =
             NetworkServer::with_interceptor(kadcast, CompatibilityInterceptor);

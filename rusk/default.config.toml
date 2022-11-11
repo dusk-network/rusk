@@ -26,6 +26,7 @@ udp_recv_buffer_size = 5000000
 # udp_send_backoff_timeout = '50us'
 udp_send_retry_interval = '5ms'
 udp_send_retry_count = 3
+blocklist_refresh_interval = '10s'
 
 [kadcast.fec.encoder]
 min_repair_packets_per_block = 5
