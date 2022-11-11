@@ -4,18 +4,55 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::vec::Vec;
+use crate::error::Error;
+use crate::tree::Tree;
 
-use crate::transfer::TransferState;
+use alloc::collections::btree_map::Entry;
+use alloc::collections::{BTreeMap, BTreeSet};
+use alloc::vec;
+use alloc::vec::Vec;
+use core::ops::Range;
 
 use dusk_bls12_381::BlsScalar;
+use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
-use dusk_pki::Ownable;
-use phoenix_core::Note;
-use rusk_abi::{ModuleError, PaymentInfo, RawResult, RawTransaction, State};
+use dusk_pki::{Ownable, PublicKey, StealthAddress};
+use dusk_plonk::prelude::Proof;
+use phoenix_core::{Crossover, Fee, Message, Note};
+use rusk_abi::dusk::{Dusk, LUX};
+use rusk_abi::{
+    ModuleError, ModuleId, PaymentInfo, PublicInput, RawResult, RawTransaction,
+    State,
+};
 use transfer_contract_types::*;
 
+#[derive(Debug, Clone)]
+pub struct TransferState {
+    tree: Tree,
+    nullifiers: BTreeSet<BlsScalar>,
+    roots: BTreeSet<BlsScalar>,
+    balances: BTreeMap<ModuleId, u64>,
+    message_mapping:
+        BTreeMap<ModuleId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
+    message_mapping_set: BTreeMap<ModuleId, StealthAddress>,
+    var_crossover: Option<Crossover>,
+    var_crossover_pk: Option<PublicKey>,
+}
+
 impl TransferState {
+    pub const fn new() -> TransferState {
+        TransferState {
+            tree: Tree::new(),
+            nullifiers: BTreeSet::new(),
+            roots: BTreeSet::new(),
+            balances: BTreeMap::new(),
+            message_mapping: BTreeMap::new(),
+            message_mapping_set: BTreeMap::new(),
+            var_crossover: None,
+            var_crossover_pk: None,
+        }
+    }
+
     pub fn mint(&mut self, mint: Mint) -> bool {
         // Only the stake contract can mint notes to a particular stealth
         // address. This happens when the reward for staking and participating
@@ -37,8 +74,7 @@ impl TransferState {
             .take_crossover()
             .expect("The crossover is mandatory for STCT!");
 
-        let message =
-            Self::sign_message_stct(&crossover, stct.value, &stct.module);
+        let message = sign_message_stct(&crossover, stct.value, &stct.module);
 
         let mut pi = Vec::with_capacity(6);
 
@@ -60,7 +96,7 @@ impl TransferState {
         }
 
         //  4. verify(C.c, v, π)
-        let vd = Self::verifier_data_stct();
+        let vd = verifier_data_stct();
         Self::assert_proof(vd, stct.proof, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -88,7 +124,7 @@ impl TransferState {
         self.push_note_current_height(wfct.note);
 
         //  6. verify(C.c, M, pk, π)
-        let vd = Self::verifier_data_wdft();
+        let vd = verifier_data_wfct();
         Self::assert_proof(vd, wfct.proof, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -101,7 +137,7 @@ impl TransferState {
             .expect("The crossover is mandatory for STCO!");
 
         let sign_message =
-            Self::sign_message_stco(&crossover, &stco.message, &stco.module);
+            sign_message_stco(&crossover, &stco.message, &stco.module);
 
         let (message_psk_a, message_psk_b) =
             match rusk_abi::payment_info(stco.module)
@@ -138,7 +174,7 @@ impl TransferState {
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
         //  4. verify(C.c, M, pk, π)
-        let vd = Self::verifier_data_stco();
+        let vd = verifier_data_stco();
         Self::assert_proof(vd, stco.proof, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -200,7 +236,7 @@ impl TransferState {
         self.push_note_current_height(wfco.output);
 
         //  7. verify(c, M_c, No.c, π)
-        let vd = Self::verifier_data_wdfo();
+        let vd = verifier_data_wfco();
         Self::assert_proof(vd, wfco.proof, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -245,8 +281,7 @@ impl TransferState {
         let inputs = tx.nullifiers.len();
         let outputs = tx.outputs.len();
 
-        let hash_bytes = tx.hash_bytes();
-        let tx_hash = rusk_abi::hash(hash_bytes);
+        let tx_hash = tx.hash();
 
         let mut pi = Vec::with_capacity(5 + inputs + 2 * outputs);
 
@@ -296,7 +331,8 @@ impl TransferState {
         }
 
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        let vd = Self::verifier_data_execute(inputs);
+        let vd = verifier_data_execute(inputs)
+            .expect("No circuit available for given number of inputs!");
         Self::assert_proof(vd, tx.proof, pi)
             .expect("Failed to verify the provided proof!");
 
@@ -323,5 +359,237 @@ impl TransferState {
         self.update_root();
 
         res
+    }
+
+    /// Push a note to the contract's state with the given block height
+    ///
+    /// Note: the method `update_root` needs to be called after the last note is
+    /// pushed.
+    pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
+        let pos = self.tree.push(TreeLeaf { block_height, note });
+        self.get_note(pos)
+            .expect("There should be a note that was just inserted")
+    }
+
+    /// Return the leaves in a given block height range.
+    pub fn leaves_in_range(&self, range: Range<u64>) -> Vec<TreeLeaf> {
+        match self.tree.leaves(range) {
+            Some(leaves) => leaves.cloned().collect(),
+            None => vec![],
+        }
+    }
+
+    /// Update the root for of the tree.
+    pub fn update_root(&mut self) -> BlsScalar {
+        let root = self.tree.root();
+        self.roots.insert(root);
+        root
+    }
+
+    /// Get the root of the tree.
+    pub fn root(&self) -> BlsScalar {
+        self.tree.root()
+    }
+
+    /// Takes some nullifiers and returns a vector containing the ones that
+    /// already exists in the contract
+    pub fn existing_nullifiers(
+        &self,
+        nullifiers: Vec<BlsScalar>,
+    ) -> Vec<BlsScalar> {
+        nullifiers
+            .into_iter()
+            .filter_map(|n| self.nullifiers.get(&n).map(|_| n))
+            .collect()
+    }
+
+    /// Add balance to the given contract
+    pub fn add_balance(&mut self, module: ModuleId, value: u64) {
+        match self.balances.entry(module) {
+            Entry::Vacant(ve) => {
+                ve.insert(value);
+            }
+            Entry::Occupied(mut oe) => {
+                let v = oe.get_mut();
+                *v += value
+            }
+        }
+    }
+
+    fn get_note(&self, pos: u64) -> Option<Note> {
+        self.tree.get(pos).map(|l| l.note)
+    }
+
+    fn any_nullifier_exists(&self, nullifiers: &[BlsScalar]) -> bool {
+        nullifiers
+            .iter()
+            .fold(false, |t, n| t || self.nullifiers.get(n).is_some())
+    }
+
+    fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
+        let block_height = rusk_abi::block_height();
+
+        let gas_left = rusk_abi::limit() - rusk_abi::spent();
+        let remainder = fee.gen_remainder(fee.gas_limit - gas_left);
+        let remainder = Note::from(remainder);
+        let remainder_value = remainder.value(None)?;
+        if remainder_value > 0 {
+            self.push_note(block_height, remainder);
+        }
+
+        if let Some(crossover) = self.var_crossover {
+            let note = Note::from((fee, crossover));
+            self.push_note(block_height, note);
+        }
+
+        Ok(())
+    }
+
+    /// Minimum accepted price per unit of gas.
+    const fn minimum_gas_price() -> Dusk {
+        LUX
+    }
+
+    fn root_exists(&self, root: &BlsScalar) -> bool {
+        self.roots.get(root).is_some()
+    }
+
+    fn extend_nullifiers(&mut self, nullifiers: Vec<BlsScalar>) {
+        self.nullifiers.extend(nullifiers);
+    }
+
+    fn take_message_from_address_key(
+        &mut self,
+        address: &ModuleId,
+        pk: &PublicKey,
+    ) -> Result<Message, Error> {
+        self.message_mapping
+            .get_mut(address)
+            .ok_or(Error::MessageNotFound)?
+            .remove(&pk.to_bytes())
+            .ok_or(Error::MessageNotFound)
+    }
+
+    fn push_note_current_height(&mut self, note: Note) -> Note {
+        let block_height = rusk_abi::block_height();
+        self.push_note(block_height, note)
+    }
+
+    fn extend_notes(&mut self, notes: Vec<Note>) {
+        let block_height = rusk_abi::block_height();
+
+        for note in notes {
+            self.push_note(block_height, note);
+        }
+    }
+
+    fn sub_balance(
+        &mut self,
+        address: &ModuleId,
+        value: u64,
+    ) -> Result<(), Error> {
+        match self.balances.get_mut(address) {
+            Some(balance) => {
+                let (bal, underflow) = balance.overflowing_sub(value);
+
+                if underflow {
+                    Err(Error::NotEnoughBalance)
+                } else {
+                    *balance = bal;
+
+                    Ok(())
+                }
+            }
+
+            _ => Err(Error::NotEnoughBalance),
+        }
+    }
+
+    fn push_message(
+        &mut self,
+        address: ModuleId,
+        message_address: StealthAddress,
+        message: Message,
+    ) {
+        let mut to_insert: Option<BTreeMap<[u8; PublicKey::SIZE], Message>> =
+            None;
+
+        match self.message_mapping.get_mut(&address) {
+            Some(map) => {
+                map.insert(message_address.pk_r().to_bytes(), message);
+            }
+
+            None => {
+                let mut map: BTreeMap<[u8; PublicKey::SIZE], Message> =
+                    BTreeMap::default();
+                map.insert(message_address.pk_r().to_bytes(), message);
+                to_insert.replace(map);
+            }
+        }
+
+        if let Some(map) = to_insert {
+            self.message_mapping.insert(address, map);
+        }
+
+        self.message_mapping_set.insert(address, message_address);
+    }
+
+    fn take_crossover(&mut self) -> Result<(Crossover, PublicKey), Error> {
+        let crossover =
+            self.var_crossover.take().ok_or(Error::CrossoverNotFound)?;
+
+        let pk = self
+            .var_crossover_pk
+            .take()
+            .ok_or(Error::CrossoverNotFound)?;
+
+        Ok((crossover, pk))
+    }
+
+    fn assert_proof(
+        verifier_data: &[u8],
+        proof: Proof,
+        public_inputs: Vec<PublicInput>,
+    ) -> Result<(), Error> {
+        rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
+            .then(|| ())
+            .ok_or(Error::ProofVerificationError)
+    }
+}
+
+#[cfg(test)]
+mod test_transfer {
+    use super::*;
+
+    #[test]
+    fn find_existing_nullifiers() {
+        let mut transfer = TransferState::new();
+
+        let (zero, one, two, three, ten, eleven) = (
+            BlsScalar::from(0),
+            BlsScalar::from(1),
+            BlsScalar::from(2),
+            BlsScalar::from(3),
+            BlsScalar::from(10),
+            BlsScalar::from(11),
+        );
+
+        let existing = transfer
+            .existing_nullifiers(vec![zero, one, two, three, ten, eleven]);
+
+        assert_eq!(existing.len(), 0);
+
+        for i in 1..10 {
+            transfer.nullifiers.insert(BlsScalar::from(i));
+        }
+
+        let existing = transfer
+            .existing_nullifiers(vec![zero, one, two, three, ten, eleven]);
+
+        assert_eq!(existing.len(), 3);
+
+        assert!(existing.contains(&one));
+        assert!(existing.contains(&two));
+        assert!(existing.contains(&three));
     }
 }

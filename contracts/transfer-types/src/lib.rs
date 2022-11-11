@@ -10,6 +10,9 @@
 #![deny(missing_docs)]
 #![deny(clippy::pedantic)]
 
+mod circuits;
+pub use circuits::*;
+
 extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
@@ -90,7 +93,7 @@ pub struct Transaction {
     /// Describes the fee to be paid for this transaction.
     pub fee: Fee,
     /// A crossover is used to transferring funds to a contract - i.e. in
-    /// [`STCT`] and [`STCO`].
+    /// [`Stct`] and [`Stco`].
     pub crossover: Option<Crossover>,
     /// A proof of the `Execute` circuit for this transaction.
     pub proof: Proof,
@@ -103,7 +106,7 @@ pub struct Transaction {
 impl Transaction {
     /// Collect the bytes that are imaged by the transaction hash.
     #[must_use]
-    pub fn hash_bytes(&self) -> Vec<u8> {
+    pub fn hash(&self) -> BlsScalar {
         let mut bytes = Vec::new();
 
         for nullifier in &self.nullifiers {
@@ -126,7 +129,7 @@ impl Transaction {
             bytes.extend(call_data);
         }
 
-        bytes
+        rusk_abi::hash(bytes)
     }
 }
 

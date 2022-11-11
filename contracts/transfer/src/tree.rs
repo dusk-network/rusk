@@ -36,7 +36,7 @@ impl Tree {
         self.tree.push(leaf)
     }
 
-    pub fn root(&mut self) -> BlsScalar {
+    pub fn root(&self) -> BlsScalar {
         self.tree.root()
     }
 

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::TransferState;
+//! Verifier data for the transfer circuits
 
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::{Crossover, Message};
@@ -12,78 +12,75 @@ use rusk_abi::ModuleId;
 
 const VD_STCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/d2efc2eb1caaa12ce0877ad248293dbffdbab41e659ca9911f032f344ab77263.vd"));
 const VD_STCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/cad2cfab7ed15338ac22179c6b8e3351c7ce7320e3f87a559716e57bc2bdda47.vd"));
-const VD_WDFT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47.vd"));
-const VD_WDFO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e.vd"));
+const VD_WFCT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47.vd"));
+const VD_WFCO: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e.vd"));
 
 const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/19c9391f2f03a5206caac2618b8ab32847b6a1e19500fec27a3a96b9a84b200c.vd"));
 const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/ea59814e99b4c8789cff85d6623749f823c56383e300761537b3e248c537a033.vd"));
 const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/4e03eb1686949f9f17d13d285a4a9c5bc9596a84765f36a3491a981a29135987.vd"));
 const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/2a34871c45dd993c6217199c5c000aff24621f5953aca3a1755fe052a8e4e7b9.vd"));
 
-impl TransferState {
-    pub const fn verifier_data_execute(inputs: usize) -> &'static [u8] {
-        match inputs {
-            1 => VD_EXEC_1_2,
-            2 => VD_EXEC_2_2,
-            3 => VD_EXEC_3_2,
-            4 => VD_EXEC_4_2,
-            _ => &[],
-        }
-    }
+/// Verifier data for the execute circuits.
+pub const fn verifier_data_execute(inputs: usize) -> Option<&'static [u8]> {
+    let vd = match inputs {
+        1 => VD_EXEC_1_2,
+        2 => VD_EXEC_2_2,
+        3 => VD_EXEC_3_2,
+        4 => VD_EXEC_4_2,
+        _ => return None,
+    };
 
-    pub const fn verifier_data_stco() -> &'static [u8] {
-        VD_STCO
-    }
+    Some(vd)
+}
 
-    pub const fn verifier_data_stct() -> &'static [u8] {
-        VD_STCT
-    }
+/// Verifier data for the `STCO` circuit.
+pub const fn verifier_data_stco() -> &'static [u8] {
+    VD_STCO
+}
 
-    pub const fn verifier_data_wdft() -> &'static [u8] {
-        VD_WDFT
-    }
+/// Verifier data for the `STCT` circuit.
+pub const fn verifier_data_stct() -> &'static [u8] {
+    VD_STCT
+}
 
-    pub const fn verifier_data_wdfo() -> &'static [u8] {
-        VD_WDFO
-    }
+/// Verifier data for the `WFCT` circuit.
+pub const fn verifier_data_wfct() -> &'static [u8] {
+    VD_WFCT
+}
 
-    pub fn sign_message_stct(
-        crossover: &Crossover,
-        value: u64,
-        address: &ModuleId,
-    ) -> BlsScalar {
-        let mut m = crossover.to_hash_inputs().to_vec();
+/// Verifier data for the `WFCO` circuit.
+pub const fn verifier_data_wfco() -> &'static [u8] {
+    VD_WFCO
+}
 
-        m.push(value.into());
-        m.push(rusk_abi::module_to_scalar(address));
+/// Signature message used for [`Stct`].
+#[must_use]
+pub fn sign_message_stct(
+    crossover: &Crossover,
+    value: u64,
+    address: &ModuleId,
+) -> BlsScalar {
+    let mut m = crossover.to_hash_inputs().to_vec();
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let message = dusk_poseidon::sponge::hash(m.as_slice());
+    m.push(value.into());
+    m.push(rusk_abi::module_to_scalar(address));
 
-        #[cfg(target_arch = "wasm32")]
-        let message = rusk_abi::poseidon_hash(m);
+    rusk_abi::poseidon_hash(m)
+}
 
-        message
-    }
+/// Signature message used for [`Stco`].
+#[must_use]
+pub fn sign_message_stco(
+    crossover: &Crossover,
+    message: &Message,
+    address: &ModuleId,
+) -> BlsScalar {
+    let mut m = crossover.to_hash_inputs().to_vec();
 
-    pub fn sign_message_stco(
-        crossover: &Crossover,
-        message: &Message,
-        address: &ModuleId,
-    ) -> BlsScalar {
-        let mut m = crossover.to_hash_inputs().to_vec();
+    m.extend(message.to_hash_inputs());
+    m.push(rusk_abi::module_to_scalar(address));
 
-        m.extend(&message.to_hash_inputs());
-        m.push(rusk_abi::module_to_scalar(address));
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let message = dusk_poseidon::sponge::hash(m.as_slice());
-
-        #[cfg(target_arch = "wasm32")]
-        let message = rusk_abi::poseidon_hash(m);
-
-        message
-    }
+    rusk_abi::poseidon_hash(m)
 }
 
 #[cfg(test)]

@@ -39,6 +39,8 @@ fn instantiate(vm: &mut VM) -> (SecretSpendKey, PublicSpendKey, Session) {
         .transact(transfer_id, "push_note", (0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
+    println!("points spent: {}", session.spent());
+
     (ssk, psk, session)
 }
 
@@ -48,8 +50,6 @@ fn transfer_between() {
 
     let _transfer_id = rusk_abi::transfer_module();
     let (_ssk, _psk, mut _session) = instantiate(&mut vm);
-
-    println!("points spent: {}", _session.spent());
 }
 
 // #[test]

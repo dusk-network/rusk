@@ -21,8 +21,6 @@ dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-imp
 transfer-contract-types = { path = "../transfer-types", default-features = false }
 
 [dev-dependencies]
-transfer-circuits = { path = "../../circuits/transfer" }
-rusk-profile = { path = "../../rusk-profile" }
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
 hex = "0.4"
 rand = "0.8"

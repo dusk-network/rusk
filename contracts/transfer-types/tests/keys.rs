@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use transfer_circuits::*;
-use transfer_contract::TransferState;
+use transfer_contract_types::*;
 
 fn verifier_data_bytes(id: &[u8; 32]) -> Vec<u8> {
     rusk_profile::keys_for(id)
@@ -14,43 +14,43 @@ fn verifier_data_bytes(id: &[u8; 32]) -> Vec<u8> {
 }
 
 #[test]
-fn verifier_data_stct() {
-    let contract = TransferState::verifier_data_stct().to_vec();
-    let rusk =
+fn vd_stct() {
+    let vd = verifier_data_stct();
+    let rusk_vd =
         verifier_data_bytes(&SendToContractTransparentCircuit::circuit_id());
 
-    assert_eq!(rusk, contract);
+    assert_eq!(&rusk_vd, vd);
 }
 
 #[test]
-fn verifier_data_stco() {
-    let contract = TransferState::verifier_data_stco().to_vec();
-    let rusk =
+fn vd_stco() {
+    let vd = verifier_data_stco();
+    let rusk_vd =
         verifier_data_bytes(&SendToContractObfuscatedCircuit::circuit_id());
 
-    assert_eq!(rusk, contract);
+    assert_eq!(&rusk_vd, vd);
 }
 
 #[test]
-fn verifier_data_wdft() {
-    let contract = TransferState::verifier_data_wdft().to_vec();
-    let rusk =
+fn vd_wfct() {
+    let vd = verifier_data_wfct();
+    let rusk_vd =
         verifier_data_bytes(&WithdrawFromTransparentCircuit::circuit_id());
 
-    assert_eq!(rusk, contract);
+    assert_eq!(&rusk_vd, vd);
 }
 
 #[test]
-fn verifier_data_wdfo() {
-    let contract = TransferState::verifier_data_wdfo().to_vec();
-    let rusk =
+fn vd_wfco() {
+    let vd = verifier_data_wfco();
+    let rusk_vd =
         verifier_data_bytes(&WithdrawFromObfuscatedCircuit::circuit_id());
 
-    assert_eq!(rusk, contract);
+    assert_eq!(&rusk_vd, vd);
 }
 
 #[test]
-fn verifier_data_execute() {
+fn vd_execute() {
     let variants = vec![
         (ExecuteCircuitOneTwo::circuit_id(), 1),
         (ExecuteCircuitTwoTwo::circuit_id(), 2),
@@ -59,7 +59,9 @@ fn verifier_data_execute() {
     ];
 
     for (id, inputs) in variants {
-        let contract = TransferState::verifier_data_execute(inputs).to_vec();
+        let contract = verifier_data_execute(inputs)
+            .expect("Specified number of inputs should exist")
+            .to_vec();
         let rusk = verifier_data_bytes(&id);
 
         assert_eq!(rusk, contract);

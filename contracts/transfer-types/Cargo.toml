@@ -16,6 +16,13 @@ rusk-abi = { path = "../../rusk-abi" }
 rkyv = { version = "0.7", default-features = false, features = ["alloc"] }
 bytecheck = { version = "0.6", default-features = false }
 
+[dev-dependencies]
+transfer-circuits = { path = "../../circuits/transfer" }
+rusk-profile = { path = "../../rusk-profile" }
+dusk-jubjub = { version = "0.12", default-features = false }
+hex = { version = "0.4", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+
 [features]
 default = ["host"]
 host = ["rusk-abi/host"]

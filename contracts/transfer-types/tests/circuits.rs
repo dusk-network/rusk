@@ -4,21 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_contract::TransferState;
-
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::SecretSpendKey;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
 use rand::{RngCore, SeedableRng};
+use std::convert::TryInto;
 use transfer_circuits::{
     SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
 };
-
-use std::convert::TryInto;
+use transfer_contract_types::*;
 
 #[test]
-fn sign_message_stct() {
+fn stct_sign() {
     let mut rng = StdRng::seed_from_u64(2819u64);
 
     let ssk = SecretSpendKey::random(&mut rng);
@@ -39,13 +37,13 @@ fn sign_message_stct() {
         &rusk_abi::module_to_scalar(&address),
     );
 
-    let m_p = TransferState::sign_message_stct(&crossover, value, &address);
+    let m_p = sign_message_stct(&crossover, value, &address);
 
     assert_eq!(m, m_p);
 }
 
 #[test]
-fn sign_message_stco() {
+fn stco_sign() {
     let mut rng = StdRng::seed_from_u64(2819u64);
 
     let ssk = SecretSpendKey::random(&mut rng);
@@ -68,7 +66,7 @@ fn sign_message_stco() {
         &rusk_abi::module_to_scalar(&address),
     );
 
-    let m_p = TransferState::sign_message_stco(&crossover, &message, &address);
+    let m_p = sign_message_stco(&crossover, &message, &address);
 
     assert_eq!(m, m_p);
 }
