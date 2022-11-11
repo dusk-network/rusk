@@ -11,6 +11,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 const GENESIS_VALUE: u64 = 1_000;
+const POINT_LIMIT: u64 = 0x700000;
 
 fn instantiate(vm: &mut VM) -> (SecretSpendKey, PublicSpendKey, Session) {
     let bytecode = include_bytes!(
@@ -18,6 +19,7 @@ fn instantiate(vm: &mut VM) -> (SecretSpendKey, PublicSpendKey, Session) {
     );
 
     let mut session = vm.session();
+    session.set_point_limit(POINT_LIMIT);
 
     let transfer_id = rusk_abi::transfer_module();
 
@@ -34,7 +36,7 @@ fn instantiate(vm: &mut VM) -> (SecretSpendKey, PublicSpendKey, Session) {
 
     // push genesis note to the contract
     let _: Note = session
-        .transact(transfer_id, "push_note", genesis_note)
+        .transact(transfer_id, "push_note", (0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
     (ssk, psk, session)
@@ -46,6 +48,8 @@ fn transfer_between() {
 
     let _transfer_id = rusk_abi::transfer_module();
     let (_ssk, _psk, mut _session) = instantiate(&mut vm);
+
+    println!("points spent: {}", _session.spent());
 }
 
 // #[test]

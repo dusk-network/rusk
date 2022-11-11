@@ -113,7 +113,7 @@ unsafe fn add_module_balance(arg_len: u32) -> u32 {
 /// # Panics
 /// When the `caller` is not "uninitialized".
 fn assert_external_caller() {
-    if rusk_abi::caller().is_uninitialized() {
+    if !rusk_abi::caller().is_uninitialized() {
         panic!("Can only be called from the outside the VM");
     }
 }
