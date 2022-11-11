@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
-use consensus::messages::{Message, Serializable};
-use std::mem;
+use bytes::Bytes;
+use consensus::messages::{Message, Serializable2};
+use std::io::{self, Read, Write};
 
 /// Wire Frame definition.
 #[derive(Debug, Default)]
@@ -27,71 +27,83 @@ struct FrameHeader {
 #[derive(Debug, Default)]
 struct FramePayload(Message);
 
-impl Serializable for FrameHeader {
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(mem::size_of::<FrameHeader>());
-        buf.put_u64_le(self.version);
-        buf.put_u64_le(self.reserved);
-        buf.put_u32_le(self.checksum);
-        buf.to_vec()
+impl Serializable2 for FrameHeader {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&self.version.to_le_bytes())?;
+        w.write_all(&self.reserved.to_le_bytes())?;
+        w.write_all(&self.checksum.to_le_bytes())?;
+        Ok(())
     }
 
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        Self {
-            version: buf.get_u64_le(),
-            reserved: buf.get_u64_le(),
-            checksum: buf.get_u32_le(),
-        }
+    /// Deserialize struct from buf by consuming N bytes.
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        let version = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        let reserved = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 4];
+        r.read_exact(&mut buf)?;
+        let checksum = u32::from_le_bytes(buf);
+
+        Ok(FrameHeader {
+            version,
+            reserved,
+            checksum,
+        })
     }
 }
 
-impl FramePayload {
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes()
+impl Serializable2 for Frame {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        let mut buf = vec![];
+        self.header.write(&mut buf)?;
+        self.payload.0.write(&mut buf)?;
+
+        let frame_size = buf.len() as u64;
+
+        w.write_all(&frame_size.to_le_bytes())?;
+        w.write_all(&buf[..])?;
+
+        Ok(())
     }
 
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        Self(Message::from_bytes(buf))
-    }
-}
+    /// Deserialize struct from buf by consuming N bytes.
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 8];
+        _ = r.read_exact(&mut buf)?;
 
-impl Serializable for Frame {
-    fn to_bytes(&self) -> Vec<u8> {
-        let header_as_vec = self.header.to_bytes();
-        let payload_as_vec = self.payload.to_bytes();
+        let header = FrameHeader::read(r)?;
+        let payload = FramePayload(Message::read(r)?);
 
-        let frame_size = header_as_vec.len() + payload_as_vec.len();
-
-        let mut buf = BytesMut::with_capacity(8 + frame_size);
-
-        buf.put_u64_le(frame_size as u64);
-        buf.put(&header_as_vec[..]);
-        buf.put(&payload_as_vec[..]);
-
-        buf.to_vec()
-    }
-
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        _ = buf.get_u64_le();
-
-        Self {
-            header: FrameHeader::from_bytes(buf),
-            payload: FramePayload::from_bytes(buf),
-        }
+        Ok(Frame { header, payload })
     }
 }
 
 impl Frame {
-    pub fn encode(msg: Message) -> Vec<u8> {
+    pub fn encode(msg: Message) -> io::Result<Vec<u8>> {
+        let mut buf = vec![];
+
         Self {
             header: FrameHeader::default(),
             payload: FramePayload(msg),
         }
-        .to_bytes()
+        .write(&mut buf)?;
+
+        Ok(buf)
     }
 
-    pub fn decode(bytes: Vec<u8>) -> Self {
-        Frame::from_bytes(&mut Bytes::from(bytes))
+    pub fn decode(bytes: Vec<u8>) -> io::Result<Self> {
+        Frame::read(&mut &bytes[..])
     }
 
     pub fn get_topic(&self) -> u8 {

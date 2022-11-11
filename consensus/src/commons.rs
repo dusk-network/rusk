@@ -7,12 +7,13 @@
 use crate::contract_state::Operations;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
-use crate::messages::{self, Message};
+use crate::messages::{self, Message, Serializable2};
 
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
+use std::io::{self, Read, Write};
 
 use std::sync::Arc;
 use std::{fmt, mem};
@@ -44,7 +45,7 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Header {
     pub version: u8,
     pub height: u64,
@@ -55,6 +56,44 @@ pub struct Header {
     pub generator_bls_pubkey: [u8; 96],
     pub state_hash: [u8; 32],
     pub hash: [u8; 32],
+}
+
+// TODO: Add Certificate to Header, impl Serializable2 for Certificate
+// TODO: Reorder header fields
+// TODO: Unit test
+
+impl Serializable2 for Header {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&self.version.to_le_bytes())?;
+        w.write_all(&self.height.to_le_bytes())?;
+        w.write_all(&self.timestamp.to_le_bytes())?;
+        w.write_all(&self.gas_limit.to_le_bytes())?;
+        w.write_all(&self.prev_block_hash[..])?;
+        w.write_all(&self.seed[..])?;
+        w.write_all(&self.generator_bls_pubkey[..])?;
+        w.write_all(&self.state_hash[..])?;
+        w.write_all(&self.hash[..])?;
+
+        Ok(())
+    }
+
+    /// Deserialize struct from buf by consuming N bytes.
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Header {
+            version: todo!(),
+            height: todo!(),
+            timestamp: todo!(),
+            gas_limit: todo!(),
+            prev_block_hash: todo!(),
+            seed: todo!(),
+            generator_bls_pubkey: todo!(),
+            state_hash: todo!(),
+            hash: todo!(),
+        })
+    }
 }
 
 impl Header {
@@ -104,10 +143,10 @@ impl Default for Header {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Transaction {}
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Block {
     pub header: Header,
     pub txs: Vec<Transaction>,
@@ -119,22 +158,41 @@ impl fmt::Display for Block {
     }
 }
 
+impl Serializable2 for Block {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.header.write(w)?;
+
+        let txs_num = self.txs.len() as u64;
+        w.write_all(&txs_num.to_le_bytes())?;
+
+        // TODO: write transactions
+
+        Ok(())
+    }
+
+    /// Deserialize struct from buf by consuming N bytes.
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let header = Header::read(r)?;
+
+        // Read txs num
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf);
+
+        Ok(Block {
+            header,
+            txs: vec![],
+        })
+    }
+}
+
 impl Block {
     pub fn new(header: Header, txs: Vec<Transaction>) -> Self {
         let mut b = Block { header, txs };
         b.calculate_hash();
         b
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
-        buf.put(&self.header.to_bytes()[..]);
-        buf.to_vec()
-    }
-
-    pub fn from_bytes(&mut self, buf: &mut Bytes) {
-        self.header.from_bytes(buf);
-        // TODO: Vec Tx
     }
 
     fn calculate_hash(&mut self) {
