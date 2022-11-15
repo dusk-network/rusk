@@ -13,6 +13,7 @@ use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
 use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
+use sha3::Digest;
 use std::io::{self, Read, Write};
 
 use std::fmt;
@@ -203,27 +204,19 @@ impl Serializable for Block {
 }
 
 impl Block {
-    pub fn new(header: Header, txs: Vec<Transaction>) -> Self {
+    pub fn new(header: Header, txs: Vec<Transaction>) -> io::Result<Self> {
         let mut b = Block { header, txs };
-        b.calculate_hash();
-        b
+        b.calculate_hash()?;
+        Ok(b)
     }
 
-    fn calculate_hash(&mut self) {
-        use sha3::Digest;
-        let hdr = self.header.clone();
-
+    fn calculate_hash(&mut self) -> io::Result<()> {
         let mut hasher = sha3::Sha3_256::new();
-        hasher.update(hdr.version.to_le_bytes());
-        hasher.update(hdr.height.to_le_bytes());
-        hasher.update(hdr.timestamp.to_le_bytes());
-        hasher.update(hdr.prev_block_hash);
-        hasher.update(hdr.seed);
-        hasher.update(hdr.state_hash);
-        hasher.update(hdr.generator_bls_pubkey);
-        hasher.update(hdr.gas_limit.to_le_bytes());
+        self.header.marshal_hashable(&mut hasher)?;
 
         self.header.hash = hasher.finalize().into();
+
+        Ok(())
     }
 }
 

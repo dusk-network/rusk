@@ -89,7 +89,7 @@ impl<T: Operations> Generator<T> {
             hash: [0; 32],
         };
 
-        Ok(Block::new(blk_header, vec![]))
+        Ok(Block::new(blk_header, vec![]).expect("block should be valid"))
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {
