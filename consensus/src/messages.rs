@@ -17,14 +17,7 @@ pub enum Status {
     Present,
     Future,
 }
-///
-pub trait Serializable {
-    /// Serialize struct to Vec<u8>.
-    fn to_bytes(&self) -> Vec<u8>;
 
-    /// Deserialize struct from buf by consuming N bytes.
-    fn from_bytes(buf: &mut Bytes) -> Self;
-}
 // TODO: Once Serializable2 is implemented for all messages, get rid of Serializable
 pub trait Serializable2 {
     /// Serialize struct to Vec<u8>.
@@ -79,52 +72,6 @@ pub struct Message {
 pub struct TransportData {
     pub height: u8,
     pub src_addr: String,
-}
-
-impl Serializable for Message {
-    /// Support serialization for messages that are sent on the wire.
-    fn to_bytes(&self) -> Vec<u8> {
-        let payload_as_vec = match &self.payload {
-            Payload::NewBlock(p) => vec![],
-            Payload::Reduction(p) => p.to_bytes(),
-            Payload::Agreement(p) => p.to_bytes(),
-            Payload::AggrAgreement(p) => p.to_bytes(),
-            _ => vec![], // non-serialziable messages are those which are not sent on the wire.
-        };
-
-        let mut buf = BytesMut::with_capacity(payload_as_vec.len());
-        buf.put(&self.header.to_bytes()[..]);
-        buf.put(&payload_as_vec[..]);
-        buf.to_vec()
-    }
-
-    // Support de-serialization  for messages that are received from the wire.
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        let mut msg = Self {
-            header: Header::from_bytes(buf),
-            payload: Payload::Empty,
-            metadata: Default::default(),
-        };
-
-        msg.payload = match Topics::from(msg.header.topic) {
-            Topics::NewBlock => Payload::Empty,
-            Topics::Reduction => {
-                Payload::Reduction(payload::Reduction::from_bytes(buf))
-            }
-            Topics::Agreement => {
-                Payload::Agreement(payload::Agreement::from_bytes(buf))
-            }
-            Topics::AggrAgreement => {
-                Payload::AggrAgreement(payload::AggrAgreement::from_bytes(buf))
-            }
-            _ => {
-                debug_assert!(false, "unhandled topic {}", msg.header.topic);
-                Payload::Empty
-            }
-        };
-
-        msg
-    }
 }
 
 impl Serializable2 for Message {
@@ -330,38 +277,6 @@ impl Serializable2 for Header {
     }
 }
 
-impl Serializable for Header {
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(300);
-        buf.put_u8(self.topic);
-        buf.put_u8(self.step);
-        buf.put_u64_le(self.round);
-        buf.put(&self.block_hash[..]);
-        buf.put(&self.pubkey_bls.bytes()[..]);
-
-        buf.to_vec()
-    }
-
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        let mut header = Header {
-            topic: buf.get_u8(),
-            step: buf.get_u8(),
-            round: buf.get_u64_le(),
-            ..Default::default()
-        };
-        buf.copy_to_slice(&mut header.block_hash[..]);
-
-        let mut pubkey_bytes = [0u8; 96];
-        buf.copy_to_slice(&mut pubkey_bytes[..]);
-
-        header.pubkey_bls = ConsensusPublicKey::new(
-            dusk_bls12_381_sign::PublicKey::from_slice(&pubkey_bytes).unwrap(),
-        );
-
-        header
-    }
-}
-
 impl Header {
     pub fn compare(&self, round: u64, step: u8) -> Status {
         if self.round == round {
@@ -446,7 +361,7 @@ impl Default for Payload {
 }
 
 pub mod payload {
-    use super::{Serializable, Serializable2};
+    use super::Serializable2;
     use crate::commons::Block;
     use bytes::{Buf, BufMut, Bytes, BytesMut};
     use std::io::{self, Read, Write};
@@ -455,23 +370,6 @@ pub mod payload {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
-    }
-
-    impl Serializable for Reduction {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(48);
-            buf.put(&self.signed_hash[..]);
-            buf.to_vec()
-        }
-
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut r = Self {
-                signed_hash: [0; 48],
-            };
-
-            buf.copy_to_slice(&mut r.signed_hash);
-            r
-        }
     }
 
     impl Serializable2 for Reduction {
@@ -641,26 +539,6 @@ pub mod payload {
         }
     }
 
-    impl Serializable for Agreement {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(48);
-            buf.put(&self.signature[..]);
-            buf.put(&self.first_step.to_bytes()[..]);
-            buf.put(&self.second_step.to_bytes()[..]);
-            buf.to_vec()
-        }
-
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut agr = Agreement::default();
-
-            buf.copy_to_slice(&mut agr.signature);
-
-            agr.first_step.from_bytes(buf);
-            agr.second_step.from_bytes(buf);
-            agr
-        }
-    }
-
     impl Default for Agreement {
         fn default() -> Self {
             Self {
@@ -676,26 +554,6 @@ pub mod payload {
         pub agreement: Agreement,
         pub bitset: u64,
         pub aggr_signature: [u8; 48],
-    }
-
-    impl Serializable for AggrAgreement {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(100);
-            buf.put(&self.aggr_signature[..]);
-            buf.put_u64_le(self.bitset);
-            buf.put(&self.agreement.to_bytes()[..]);
-            buf.to_vec()
-        }
-
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut a = AggrAgreement::default();
-
-            buf.copy_to_slice(&mut a.aggr_signature);
-            a.bitset = buf.get_u64_le();
-            a.agreement = Agreement::from_bytes(buf);
-
-            a
-        }
     }
 
     impl Serializable2 for AggrAgreement {
