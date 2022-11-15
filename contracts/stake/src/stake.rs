@@ -6,8 +6,6 @@
 
 use crate::*;
 
-use canonical_derive::Canon;
-
 /// The representation of a public key's stake.
 ///
 /// A user can stake for a particular `amount` larger in value than the
@@ -19,7 +17,7 @@ use canonical_derive::Canon;
 /// contract a `counter` is used to prevent repeat attacks - where the same
 /// signature could be used to prove ownership of the secret key in two
 /// different transactions.
-#[derive(Debug, Default, Clone, Canon, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Stake {
     amount: Option<(u64, BlockHeight)>,
     reward: u64,

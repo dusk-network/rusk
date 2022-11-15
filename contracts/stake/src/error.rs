@@ -4,19 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::CanonError;
 use core::fmt;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Canon(CanonError),
+    DuskBytes,
     PlonkKeys,
     PlonkProver,
 }
 
-impl From<CanonError> for Error {
-    fn from(e: CanonError) -> Self {
-        Self::Canon(e)
+impl From<dusk_bytes::Error> for Error {
+    fn from(_: dusk_bytes::Error) -> Self {
+        Self::DuskBytes
     }
 }
 

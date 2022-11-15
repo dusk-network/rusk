@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "circuits/transfer",
-#    "contracts/stake",
+    "contracts/stake",
     "contracts/transfer",
     "contracts/transfer-types",
     "macros/code-hasher",

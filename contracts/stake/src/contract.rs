@@ -6,20 +6,20 @@
 
 use crate::*;
 
-use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
-use dusk_hamt::Map;
 use dusk_pki::StealthAddress;
-use microkelvin::First;
 use phoenix_core::Note;
 
 use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
 use core::ops::{Deref, DerefMut};
 
 #[cfg(feature = "transaction")]
 mod transaction;
+use super::stake::Stake;
+use super::error::Error;
 
 /// Contract keeping track of each public key's stake.
 ///
@@ -29,28 +29,36 @@ mod transaction;
 ///
 /// Rewards may be received by a public key regardless of whether they have a
 /// valid stake.
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Default, Clone)]
 pub struct StakeContract {
-    pub(crate) stakes: Map<PublicKey, Stake>,
-    pub(crate) allowlist: Map<PublicKey, ()>,
-    pub(crate) owners: Map<PublicKey, ()>,
+    pub(crate) stakes: BTreeMap<[u8; PublicKey::SIZE], Stake>,
+    pub(crate) allowlist: BTreeMap<[u8; PublicKey::SIZE], ()>,
+    pub(crate) owners: BTreeMap<[u8; PublicKey::SIZE], ()>,
 }
 
 impl StakeContract {
+    pub const fn new() -> Self {
+        Self {
+            stakes: BTreeMap::new(),
+            allowlist: BTreeMap::new(),
+            owners: BTreeMap::new(),
+        }
+    }
+
     /// Gets a reference to a stake.
     pub fn get_stake(
         &self,
         key: &PublicKey,
-    ) -> Result<Option<impl Deref<Target = Stake> + '_>, Error> {
-        Ok(self.stakes.get(key)?)
+    ) -> Option<impl Deref<Target = Stake> + '_> {
+        self.stakes.get(&key.to_bytes())
     }
 
     /// Gets a mutable reference to a stake.
     pub fn get_stake_mut(
         &mut self,
         key: &PublicKey,
-    ) -> Result<Option<impl DerefMut<Target = Stake> + '_>, Error> {
-        Ok(self.stakes.get_mut(key)?)
+    ) -> Option<impl DerefMut<Target = Stake> + '_> {
+        self.stakes.get_mut(&key.to_bytes())
     }
 
     /// Pushes the given `stake` onto the state for a given `public_key`. If a
@@ -59,8 +67,8 @@ impl StakeContract {
         &mut self,
         public_key: PublicKey,
         stake: Stake,
-    ) -> Result<Option<Stake>, Error> {
-        Ok(self.stakes.insert(public_key, stake)?)
+    ) -> Option<Stake> {
+        self.stakes.insert(public_key.to_bytes(), stake)
     }
 
     /// Gets a mutable reference to the stake of a given key. If said stake
@@ -69,16 +77,16 @@ impl StakeContract {
     pub(crate) fn load_mut_stake(
         &mut self,
         pk: &PublicKey,
-    ) -> Result<impl DerefMut<Target = Stake> + '_, Error> {
-        let is_missing = self.stakes.get(pk)?.is_none();
+    ) -> Option<impl DerefMut<Target = Stake> + '_> {
+        let is_missing = self.stakes.get(&pk.to_bytes()).is_none();
 
         if is_missing {
             let stake = Stake::default();
-            self.stakes.insert(*pk, stake)?;
+            self.stakes.insert(pk.to_bytes(), stake);
         }
 
         // SAFETY: unwrap is ok since we're sure we inserted an element
-        Ok(self.stakes.get_mut(pk)?.unwrap())
+        self.stakes.get_mut(&pk.to_bytes())
     }
 
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
@@ -87,35 +95,38 @@ impl StakeContract {
         &mut self,
         public_key: &PublicKey,
         value: u64,
-    ) -> Result<(), Error> {
-        let mut stake = self.load_mut_stake(public_key)?;
+    ) {
+        let mut stake = self.load_mut_stake(public_key).expect("stake for any key exists");
         stake.increase_reward(value);
-        Ok(())
     }
 
     pub fn is_staked(
         &self,
         block_height: u64,
         key: &PublicKey,
-    ) -> Result<bool, Error> {
+    ) -> bool {
         let is_staked = self
             .stakes
-            .get(key)?
+            .get(&key.to_bytes())
             .filter(|s| s.is_valid(block_height))
             .is_some();
-
-        Ok(is_staked)
+        is_staked
     }
 
     /// Gets a vector of all public keys and stakes.
     pub fn stakes(&self) -> Result<Vec<(PublicKey, Stake)>, Error> {
-        let mut stakes = Vec::new();
+        let mut stakes: Vec<(PublicKey, Stake)> = Vec::new();
 
-        if let Some(branch) = self.stakes.first()? {
-            for leaf in branch {
-                let leaf = leaf?;
-                stakes.push((leaf.key, leaf.val.clone()));
-            }
+        // if let Some(branch) = self.stakes.first()? {
+        //     for leaf in branch {
+        //         let leaf = leaf?;
+        //         stakes.push((leaf.key, leaf.val.clone()));
+        //     }
+        // }
+
+        // todo: not sure if this is a correct translation of the above
+        for entry in self.stakes.iter() {
+            stakes.push((PublicKey::from_bytes(entry.0)?, entry.1.clone()));
         }
 
         Ok(stakes)
@@ -125,11 +136,16 @@ impl StakeContract {
     pub fn stakers_allowlist(&self) -> Result<Vec<PublicKey>, Error> {
         let mut stakes = Vec::new();
 
-        if let Some(branch) = self.allowlist.first()? {
-            for leaf in branch {
-                let leaf = leaf?;
-                stakes.push(leaf.key);
-            }
+        // if let Some(branch) = self.allowlist.first()? {
+        //     for leaf in branch {
+        //         let leaf = leaf?;
+        //         stakes.push(leaf.key);
+        //     }
+        // }
+
+        // todo: not sure if this is a correct translation of the above
+        for pk_bytes in self.allowlist.keys() {
+            stakes.push(PublicKey::from_bytes(pk_bytes)?);
         }
 
         Ok(stakes)
@@ -139,11 +155,16 @@ impl StakeContract {
     pub fn owners(&self) -> Result<Vec<PublicKey>, Error> {
         let mut stakes = Vec::new();
 
-        if let Some(branch) = self.owners.first()? {
-            for leaf in branch {
-                let leaf = leaf?;
-                stakes.push(leaf.key);
-            }
+        // if let Some(branch) = self.owners.first()? {
+        //     for leaf in branch {
+        //         let leaf = leaf?;
+        //         stakes.push(leaf.key);
+        //     }
+        // }
+
+        // todo: not sure if this is a correct translation of the above
+        for pk_bytes in self.owners.keys() {
+            stakes.push(PublicKey::from_bytes(pk_bytes)?);
         }
 
         Ok(stakes)
@@ -192,27 +213,23 @@ impl StakeContract {
         bytes
     }
 
-    pub fn add_owner(&mut self, owner: PublicKey) -> Result<(), Error> {
-        if self.is_owner(&owner)? {
-            return Ok(());
+    pub fn add_owner(&mut self, owner: PublicKey) {
+        if !self.is_owner(&owner) {
+            self.owners.insert(owner.to_bytes(), ());
         }
-        self.owners.insert(owner, ())?;
-        Ok(())
     }
 
-    pub fn is_owner(&self, owner: &PublicKey) -> Result<bool, Error> {
-        Ok(self.owners.get(owner)?.is_some())
+    pub fn is_owner(&self, owner: &PublicKey) -> bool {
+        self.owners.get(&owner.to_bytes()).is_some()
     }
 
-    pub fn insert_allowlist(&mut self, staker: PublicKey) -> Result<(), Error> {
-        if self.is_allowlisted(&staker)? {
-            return Ok(());
+    pub fn insert_allowlist(&mut self, staker: PublicKey) {
+        if !self.is_allowlisted(&staker) {
+            self.allowlist.insert(staker.to_bytes(), ());
         }
-        self.allowlist.insert(staker, ())?;
-        Ok(())
     }
 
-    pub fn is_allowlisted(&self, staker: &PublicKey) -> Result<bool, Error> {
-        Ok(self.allowlist.get(staker)?.is_some())
+    pub fn is_allowlisted(&self, staker: &PublicKey) -> bool {
+        self.allowlist.get(&staker.to_bytes()).is_some()
     }
 }
