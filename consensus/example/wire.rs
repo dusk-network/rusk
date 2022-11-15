@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytes::Bytes;
-use consensus::messages::{Message, Serializable2};
+use consensus::messages::{Message, Serializable};
 use std::io::{self, Read, Write};
 
 /// Wire Frame definition.
@@ -27,7 +26,7 @@ struct FrameHeader {
 #[derive(Debug, Default)]
 struct FramePayload(Message);
 
-impl Serializable2 for FrameHeader {
+impl Serializable for FrameHeader {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.version.to_le_bytes())?;
         w.write_all(&self.reserved.to_le_bytes())?;
@@ -60,7 +59,7 @@ impl Serializable2 for FrameHeader {
     }
 }
 
-impl Serializable2 for Frame {
+impl Serializable for Frame {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         let mut buf = vec![];
         self.header.write(&mut buf)?;

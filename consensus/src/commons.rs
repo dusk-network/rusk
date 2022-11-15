@@ -7,16 +7,16 @@
 use crate::contract_state::Operations;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
-use crate::messages::{self, Message, Serializable2};
+use crate::messages::{self, Message, Serializable};
 
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use std::io::{self, Read, Write};
 
+use std::fmt;
 use std::sync::Arc;
-use std::{fmt, mem};
 use tokio::sync::Mutex;
 
 #[derive(Clone, Default, Debug)]
@@ -115,7 +115,7 @@ impl Header {
     }
 }
 
-impl Serializable2 for Header {
+impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.marshal_hashable(w)?;
 
@@ -138,37 +138,6 @@ impl Serializable2 for Header {
         r.read_exact(&mut header.hash[..])?;
 
         Ok(header)
-    }
-}
-
-impl Header {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
-        buf.put_u8(self.version);
-        buf.put_u64_le(self.height);
-        buf.put_i64_le(self.timestamp);
-        buf.put_u64_le(self.gas_limit);
-
-        buf.put(&self.prev_block_hash[..]);
-        buf.put(&self.seed[..]);
-        buf.put(&self.generator_bls_pubkey[..]);
-        buf.put(&self.state_hash[..]);
-        buf.put(&self.hash[..]);
-
-        buf.to_vec()
-    }
-
-    pub fn from_bytes(&mut self, buf: &mut Bytes) {
-        self.version = buf.get_u8();
-        self.height = buf.get_u64_le();
-        self.timestamp = buf.get_i64_le();
-        self.gas_limit = buf.get_u64_le();
-
-        buf.copy_to_slice(&mut self.prev_block_hash);
-        buf.copy_to_slice(&mut self.seed);
-        buf.copy_to_slice(&mut self.generator_bls_pubkey);
-        buf.copy_to_slice(&mut self.state_hash);
-        buf.copy_to_slice(&mut self.hash);
     }
 }
 
@@ -203,7 +172,7 @@ impl fmt::Display for Block {
     }
 }
 
-impl Serializable2 for Block {
+impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header.write(w)?;
 

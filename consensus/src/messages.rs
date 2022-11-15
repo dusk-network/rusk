@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
@@ -18,8 +18,7 @@ pub enum Status {
     Future,
 }
 
-// TODO: Once Serializable2 is implemented for all messages, get rid of Serializable
-pub trait Serializable2 {
+pub trait Serializable {
     /// Serialize struct to Vec<u8>.
     fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
 
@@ -74,7 +73,7 @@ pub struct TransportData {
     pub src_addr: String,
 }
 
-impl Serializable2 for Message {
+impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header.write(w)?;
 
@@ -83,7 +82,7 @@ impl Serializable2 for Message {
             Payload::Reduction(p) => p.write(w),
             Payload::Agreement(p) => p.write(w),
             Payload::AggrAgreement(p) => p.write(w),
-            _ => return Ok(()), // non-serialziable messages are those which are not sent on the wire.
+            _ => Ok(()), // non-serialziable messages are those which are not sent on the wire.
         }
     }
 
@@ -201,7 +200,7 @@ pub struct Header {
     pub topic: u8,
 }
 
-impl Serializable2 for Header {
+impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&[self.topic])?;
         Self::write_var_le_bytes(w, &self.pubkey_bls.bytes()[..])?;
@@ -361,18 +360,16 @@ impl Default for Payload {
 }
 
 pub mod payload {
-    use super::Serializable2;
+    use super::Serializable;
     use crate::commons::Block;
-    use bytes::{Buf, BufMut, Bytes, BytesMut};
     use std::io::{self, Read, Write};
-    use std::mem;
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
     }
 
-    impl Serializable2 for Reduction {
+    impl Serializable for Reduction {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_le_bytes(w, &self.signed_hash[..])?;
             Ok(())
@@ -413,7 +410,7 @@ pub mod payload {
         }
     }
 
-    impl Serializable2 for NewBlock {
+    impl Serializable for NewBlock {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             w.write_all(&self.prev_hash[..])?;
             self.candidate.write(w)?;
@@ -452,7 +449,7 @@ pub mod payload {
         }
     }
 
-    impl Serializable2 for StepVotes {
+    impl Serializable for StepVotes {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             w.write_all(&self.bitset.to_le_bytes())?;
             Self::write_var_le_bytes(w, &self.signature[..])?;
@@ -476,20 +473,6 @@ pub mod payload {
         }
     }
 
-    impl StepVotes {
-        pub fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(mem::size_of::<StepVotes>());
-            buf.put_u64(self.bitset);
-            buf.put(&self.signature[..]);
-            buf.to_vec()
-        }
-
-        pub fn from_bytes(&mut self, buf: &mut Bytes) {
-            self.bitset = buf.get_u64();
-            buf.copy_to_slice(&mut self.signature);
-        }
-    }
-
     #[derive(Debug, Clone)]
     pub struct StepVotesWithCandidate {
         pub sv: StepVotes,
@@ -505,7 +488,7 @@ pub mod payload {
         pub second_step: StepVotes,
     }
 
-    impl Serializable2 for Agreement {
+    impl Serializable for Agreement {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_le_bytes(w, &self.signature[..])?;
 
@@ -556,7 +539,7 @@ pub mod payload {
         pub aggr_signature: [u8; 48],
     }
 
-    impl Serializable2 for AggrAgreement {
+    impl Serializable for AggrAgreement {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.agreement.write(w)?;
             w.write_all(&self.bitset.to_le_bytes())?;
@@ -601,7 +584,7 @@ pub mod payload {
 mod tests {
     use crate::commons::Block;
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
-    use crate::messages::{Header, Serializable2};
+    use crate::messages::{Header, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
 
     use super::payload::AggrAgreement;
@@ -675,7 +658,7 @@ mod tests {
         });
     }
 
-    fn assert_serialize<S: Serializable2 + PartialEq + core::fmt::Debug>(v: S) {
+    fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {
         let mut buf = vec![];
         assert!(v.write(&mut buf).is_ok());
         let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
