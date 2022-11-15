@@ -582,7 +582,7 @@ pub mod payload {
 
 #[cfg(test)]
 mod tests {
-    use crate::commons::Block;
+    use crate::commons::{Block, Certificate};
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
     use crate::messages::{Header, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
@@ -610,6 +610,11 @@ mod tests {
                 generator_bls_pubkey: [3; 96],
                 state_hash: [4; 32],
                 hash: [5; 32],
+                cert: Certificate {
+                    first_reduction: ([6; 48], 22222222),
+                    second_reduction: ([7; 48], 3333333),
+                    step: 234,
+                },
             },
             txs: vec![],
         };

@@ -47,16 +47,78 @@ impl RoundUpdate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Certificate {
+    pub first_reduction: ([u8; 48], u64),
+    pub second_reduction: ([u8; 48], u64),
+    pub step: u8,
+}
+
+impl Default for Certificate {
+    fn default() -> Self {
+        Self {
+            first_reduction: ([0u8; 48], 0),
+            second_reduction: ([0u8; 48], 0),
+            step: 0,
+        }
+    }
+}
+
+impl Serializable for Certificate {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        Self::write_var_le_bytes(w, &self.first_reduction.0[..])?;
+        Self::write_var_le_bytes(w, &self.second_reduction.0[..])?;
+        w.write_all(&self.step.to_le_bytes())?;
+        w.write_all(&self.first_reduction.1.to_le_bytes())?;
+        w.write_all(&self.second_reduction.1.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    /// Deserialize struct from buf by consuming N bytes.
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut first_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+        let mut second_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+        let step = buf[0];
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        first_reduction.1 = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        second_reduction.1 = u64::from_le_bytes(buf);
+
+        Ok(Certificate {
+            first_reduction,
+            second_reduction,
+            step,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Header {
+    // Hashable fields
     pub version: u8,
     pub height: u64,
     pub timestamp: i64,
-    pub gas_limit: u64,
     pub prev_block_hash: [u8; 32],
     pub seed: [u8; 32],
-    pub generator_bls_pubkey: [u8; 96],
     pub state_hash: [u8; 32],
+    pub generator_bls_pubkey: [u8; 96],
+    pub gas_limit: u64,
+
+    // Block hash
     pub hash: [u8; 32],
+
+    // Non-hashable fields
+    pub cert: Certificate,
 }
 
 impl Header {
@@ -112,6 +174,7 @@ impl Header {
             generator_bls_pubkey,
             state_hash,
             hash: [0; 32],
+            cert: Default::default(),
         })
     }
 }
@@ -120,7 +183,7 @@ impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.marshal_hashable(w)?;
 
-        // TODO: marshal certificate
+        self.cert.write(w)?;
 
         w.write_all(&self.hash[..])?;
 
@@ -134,7 +197,7 @@ impl Serializable for Header {
     {
         let mut header = Self::unmarshal_hashable(r)?;
 
-        // TODO: read certificate
+        header.cert = Certificate::read(r)?;
 
         r.read_exact(&mut header.hash[..])?;
 
@@ -154,6 +217,7 @@ impl Default for Header {
             generator_bls_pubkey: [0; 96],
             state_hash: Default::default(),
             hash: Default::default(),
+            cert: Default::default(),
         }
     }
 }
