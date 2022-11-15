@@ -45,7 +45,7 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Header {
     pub version: u8,
     pub height: u64,
@@ -58,20 +58,69 @@ pub struct Header {
     pub hash: [u8; 32],
 }
 
-// TODO: Add Certificate to Header, impl Serializable2 for Certificate
-// TODO: Reorder header fields
-// TODO: Unit test
+impl Header {
+    fn marshal_hashable<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&self.version.to_le_bytes())?;
+        w.write_all(&self.height.to_le_bytes())?;
+        w.write_all(&(self.timestamp as u64).to_le_bytes())?;
+        w.write_all(&self.prev_block_hash[..])?;
+        w.write_all(&self.seed[..])?;
+        w.write_all(&self.state_hash[..])?;
+        w.write_all(&self.generator_bls_pubkey[..])?;
+        w.write_all(&self.gas_limit.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    fn unmarshal_hashable<R: Read>(r: &mut R) -> io::Result<Self> {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+        let version = buf[0];
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let height = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let timestamp = u64::from_le_bytes(buf) as i64;
+
+        let mut prev_block_hash = [0u8; 32];
+        r.read_exact(&mut prev_block_hash[..])?;
+
+        let mut seed = [0u8; 32];
+        r.read_exact(&mut seed[..])?;
+
+        let mut state_hash = [0u8; 32];
+        r.read_exact(&mut state_hash[..])?;
+
+        let mut generator_bls_pubkey = [0u8; 96];
+        r.read_exact(&mut generator_bls_pubkey[..])?;
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let gas_limit = u64::from_le_bytes(buf);
+
+        Ok(Header {
+            version,
+            height,
+            timestamp,
+            gas_limit,
+            prev_block_hash,
+            seed,
+            generator_bls_pubkey,
+            state_hash,
+            hash: [0; 32],
+        })
+    }
+}
 
 impl Serializable2 for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&self.version.to_le_bytes())?;
-        w.write_all(&self.height.to_le_bytes())?;
-        w.write_all(&self.timestamp.to_le_bytes())?;
-        w.write_all(&self.gas_limit.to_le_bytes())?;
-        w.write_all(&self.prev_block_hash[..])?;
-        w.write_all(&self.seed[..])?;
-        w.write_all(&self.generator_bls_pubkey[..])?;
-        w.write_all(&self.state_hash[..])?;
+        self.marshal_hashable(w)?;
+
+        // TODO: marshal certificate
+
         w.write_all(&self.hash[..])?;
 
         Ok(())
@@ -82,17 +131,13 @@ impl Serializable2 for Header {
     where
         Self: Sized,
     {
-        Ok(Header {
-            version: todo!(),
-            height: todo!(),
-            timestamp: todo!(),
-            gas_limit: todo!(),
-            prev_block_hash: todo!(),
-            seed: todo!(),
-            generator_bls_pubkey: todo!(),
-            state_hash: todo!(),
-            hash: todo!(),
-        })
+        let mut header = Self::unmarshal_hashable(r)?;
+
+        // TODO: read certificate
+
+        r.read_exact(&mut header.hash[..])?;
+
+        Ok(header)
     }
 }
 
@@ -143,10 +188,10 @@ impl Default for Header {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {}
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Block {
     pub header: Header,
     pub txs: Vec<Transaction>,
@@ -179,7 +224,7 @@ impl Serializable2 for Block {
 
         // Read txs num
         let mut buf = [0u8; 8];
-        r.read_exact(&mut buf);
+        r.read_exact(&mut buf)?;
 
         Ok(Block {
             header,

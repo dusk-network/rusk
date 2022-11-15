@@ -85,7 +85,7 @@ impl Serializable for Message {
     /// Support serialization for messages that are sent on the wire.
     fn to_bytes(&self) -> Vec<u8> {
         let payload_as_vec = match &self.payload {
-            Payload::NewBlock(p) => p.to_bytes(),
+            Payload::NewBlock(p) => vec![],
             Payload::Reduction(p) => p.to_bytes(),
             Payload::Agreement(p) => p.to_bytes(),
             Payload::AggrAgreement(p) => p.to_bytes(),
@@ -107,9 +107,7 @@ impl Serializable for Message {
         };
 
         msg.payload = match Topics::from(msg.header.topic) {
-            Topics::NewBlock => {
-                Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf)))
-            }
+            Topics::NewBlock => Payload::Empty,
             Topics::Reduction => {
                 Payload::Reduction(payload::Reduction::from_bytes(buf))
             }
@@ -454,7 +452,7 @@ pub mod payload {
     use std::io::{self, Read, Write};
     use std::mem;
 
-    #[derive(Debug, Copy, Clone, PartialEq)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
     }
@@ -500,7 +498,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NewBlock {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
@@ -538,30 +536,6 @@ pub mod payload {
             result.signed_hash = Self::read_var_le_bytes(r)?;
 
             Ok(result)
-        }
-    }
-
-    impl Serializable for NewBlock {
-        fn to_bytes(&self) -> Vec<u8> {
-            let candidate_as_bytes = self.candidate.to_bytes();
-
-            let mut buf =
-                BytesMut::with_capacity(candidate_as_bytes.len() + 80);
-            buf.put(&self.prev_hash[..]);
-            buf.put(&self.signed_hash[..]);
-            buf.put(&candidate_as_bytes[..]);
-
-            buf.to_vec()
-        }
-
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut nb = NewBlock::default();
-
-            buf.copy_to_slice(&mut nb.prev_hash);
-            buf.copy_to_slice(&mut nb.signed_hash);
-
-            nb.candidate.from_bytes(buf);
-            nb
         }
     }
 
@@ -697,7 +671,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct AggrAgreement {
         pub agreement: Agreement,
         pub bitset: u64,
@@ -784,9 +758,24 @@ mod tests {
             topic: 3,
         });
 
+        let sample_block = Block {
+            header: crate::commons::Header {
+                version: 3,
+                height: 1888881,
+                timestamp: 123456789,
+                gas_limit: 111111111,
+                prev_block_hash: [1; 32],
+                seed: [2; 32],
+                generator_bls_pubkey: [3; 96],
+                state_hash: [4; 32],
+                hash: [5; 32],
+            },
+            txs: vec![],
+        };
+
         assert_serialize(NewBlock {
             prev_hash: [3; 32],
-            candidate: Block::default(),
+            candidate: sample_block,
             signed_hash: [4; 48],
         });
 
