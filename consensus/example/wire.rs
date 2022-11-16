@@ -17,9 +17,9 @@ pub struct Frame {
 /// Frame Header definition.
 #[derive(Debug, Default)]
 struct FrameHeader {
-    version: u64,
+    version: [u8; 8],
     reserved: u64,
-    checksum: u32,
+    checksum: [u8; 4],
 }
 
 /// Frame Payload definition.
@@ -28,9 +28,9 @@ struct FramePayload(Message);
 
 impl Serializable for FrameHeader {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&self.version.to_le_bytes())?;
+        w.write_all(&self.version[..])?;
         w.write_all(&self.reserved.to_le_bytes())?;
-        w.write_all(&self.checksum.to_le_bytes())?;
+        w.write_all(&self.checksum[..])?;
         Ok(())
     }
 
@@ -39,17 +39,15 @@ impl Serializable for FrameHeader {
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let version = u64::from_le_bytes(buf);
+        let mut version = [0u8; 8];
+        r.read_exact(&mut version)?;
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
         let reserved = u64::from_le_bytes(buf);
 
-        let mut buf = [0u8; 4];
-        r.read_exact(&mut buf)?;
-        let checksum = u32::from_le_bytes(buf);
+        let mut checksum = [0u8; 4];
+        r.read_exact(&mut checksum)?;
 
         Ok(FrameHeader {
             version,
@@ -59,22 +57,39 @@ impl Serializable for FrameHeader {
     }
 }
 
-impl Serializable for Frame {
-    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        let mut buf = vec![];
-        self.header.write(&mut buf)?;
-        self.payload.0.write(&mut buf)?;
+fn calc_checksum(buf: &[u8]) -> [u8; 4] {
+    use blake2::{digest::consts::U32, Blake2b, Digest};
 
-        let frame_size = buf.len() as u64;
+    let mut h = Blake2b::<U32>::new();
+    h.update(buf);
+    let res = h.finalize();
 
-        w.write_all(&frame_size.to_le_bytes())?;
-        w.write_all(&buf[..])?;
+    let mut v = [0u8; 4];
+    v.clone_from_slice(&res[0..4]);
+    v
+}
 
-        Ok(())
+impl Frame {
+    pub fn encode(msg: Message) -> io::Result<Vec<u8>> {
+        let mut payload_buf = vec![];
+        msg.write(&mut payload_buf)?;
+
+        let mut header = FrameHeader::default();
+        header.checksum = calc_checksum(&payload_buf[..]);
+        header.version = [0, 0, 0, 0, 1, 0, 0, 0];
+
+        let mut header_buf = vec![];
+        header.write(&mut header_buf)?;
+
+        let frame_size = (header_buf.len() + payload_buf.len()) as u64;
+
+        Ok(
+            [Vec::from(frame_size.to_le_bytes()), header_buf, payload_buf]
+                .concat(),
+        )
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
-    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    pub fn decode<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
     {
@@ -86,24 +101,6 @@ impl Serializable for Frame {
 
         Ok(Frame { header, payload })
     }
-}
-
-impl Frame {
-    pub fn encode(msg: Message) -> io::Result<Vec<u8>> {
-        let mut buf = vec![];
-
-        Self {
-            header: FrameHeader::default(),
-            payload: FramePayload(msg),
-        }
-        .write(&mut buf)?;
-
-        Ok(buf)
-    }
-
-    pub fn decode(bytes: Vec<u8>) -> io::Result<Self> {
-        Frame::read(&mut &bytes[..])
-    }
 
     pub fn get_topic(&self) -> u8 {
         self.payload.0.header.topic
@@ -111,5 +108,113 @@ impl Frame {
 
     pub fn get_msg(&self) -> &Message {
         &self.payload.0
+    }
+}
+
+mod tests {
+    use consensus::commons::{Block, Certificate, Topics};
+    use consensus::messages::payload::{
+        Agreement, NewBlock, Reduction, StepVotes,
+    };
+    use consensus::messages::{self, Header, Message, Serializable};
+    use consensus::util::pubkey::ConsensusPublicKey;
+
+    use crate::wire::Frame;
+
+    #[test]
+    fn test_wire_protocol() {
+        let buf: Vec<u8> = vec![
+            94, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 218, 45, 189, 21, 16, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 63, 66, 15,
+            0, 0, 0, 0, 0, 255, 105, 202, 186, 101, 26, 74, 160, 61, 42, 33,
+            92, 232, 251, 35, 67, 147, 73, 198, 100, 5, 115, 67, 61, 212, 81,
+            61, 185, 60, 118, 99, 152, 143, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+            14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+            14, 14, 14, 14, 14, 14, 0, 200, 0, 0, 0, 0, 0, 0, 0, 30, 143, 169,
+            0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+            10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+            10, 10, 32, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+            11, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13,
+            13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+            12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 64, 226, 1, 0, 0, 0, 0, 0,
+            48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 105, 202, 186, 101, 26, 74, 160, 61, 42, 33, 92,
+            232, 251, 35, 67, 147, 73, 198, 100, 5, 115, 67, 61, 212, 81, 61,
+            185, 60, 118, 99, 152, 143, 0, 48, 15, 15, 15, 15, 15, 15, 15, 15,
+            15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+            15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+            15, 15, 15, 15, 15, 15,
+        ];
+
+        let hash: [u8; 32] = [
+            105, 202, 186, 101, 26, 74, 160, 61, 42, 33, 92, 232, 251, 35, 67,
+            147, 73, 198, 100, 5, 115, 67, 61, 212, 81, 61, 185, 60, 118, 99,
+            152, 143,
+        ];
+
+        let blk_header = consensus::commons::Header {
+            version: 0,
+            height: 200,
+            timestamp: 11112222,
+            gas_limit: 123456,
+            prev_block_hash: [10; 32],
+            seed: [11; 32],
+            generator_bls_pubkey: [12; 96],
+            state_hash: [13; 32],
+            hash,
+            cert: Certificate {
+                first_reduction: ([0; 48], 0),
+                second_reduction: ([0; 48], 0),
+                step: 0,
+            },
+        };
+
+        let candidate = Block::new(blk_header.clone(), vec![])
+            .expect("should be valid hash");
+
+        // Check if calculate hash is correct
+        assert_eq!(candidate.header.hash, hash);
+
+        // Ensure that the dumped message is properly encoded
+        assert_eq!(
+            Frame::encode(Message::from_newblock(
+                messages::Header {
+                    pubkey_bls: ConsensusPublicKey::default(),
+                    round: 999999,
+                    step: 255,
+                    block_hash: candidate.header.hash,
+                    topic: Topics::NewBlock as u8,
+                },
+                NewBlock {
+                    prev_hash: [14; 32],
+                    candidate,
+                    signed_hash: [15; 48],
+                },
+            ))
+            .expect("should be valid encoding"),
+            buf
+        );
+    }
+
+    fn assert_with_binary<S: Serializable + PartialEq + core::fmt::Debug>(
+        v: S,
+        buf: &mut Vec<u8>,
+    ) {
+        let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
+        assert_eq!(v, dup, "not equal {}", std::any::type_name::<S>());
     }
 }

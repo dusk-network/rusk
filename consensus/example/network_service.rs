@@ -66,7 +66,7 @@ struct Reader {
 
 impl NetworkListen for Reader {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
-        let decoded = wire::Frame::decode(message.to_vec())
+        let decoded = wire::Frame::decode(&mut &message.to_vec()[..])
             .expect("message should be decodable");
         let mut msg = decoded.get_msg().clone();
         msg.metadata = Some(TransportData {
