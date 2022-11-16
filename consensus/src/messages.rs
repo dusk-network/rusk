@@ -143,7 +143,7 @@ impl Message {
     pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
         Self {
             header: Header::default(),
-            payload: Payload::StepVotesWithCandidate(p),
+            payload: Payload::StepVotesWithCandidate(Box::new(p)),
             ..Default::default()
         }
     }
@@ -330,7 +330,7 @@ pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
     StepVotes(payload::StepVotes),
-    StepVotesWithCandidate(payload::StepVotesWithCandidate),
+    StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
     Empty,
@@ -564,6 +564,7 @@ pub mod payload {
 }
 
 #[cfg(test)]
+#[allow(unused)]
 mod tests {
     use crate::commons::{Block, Certificate, Topics};
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
