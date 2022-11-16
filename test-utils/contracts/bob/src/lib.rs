@@ -5,84 +5,63 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![no_std]
+#![feature(arbitrary_self_types)]
 
-use canonical_derive::Canon;
-use dusk_abi::ContractId;
+extern crate alloc;
 
-#[derive(Debug, Clone, Canon)]
+use dusk_pki::StealthAddress;
+use rusk_abi::dusk::*;
+use rusk_abi::ModuleId;
+use rusk_abi::RawTransaction;
+use transfer_contract_types::{Wfco2, Wfct2, Wfctc};
+
+#[derive(Debug, Clone)]
 pub struct Bob {
-    transfer: ContractId,
+    transfer: ModuleId,
 }
 
 impl Bob {
-    pub const fn new(transfer: ContractId) -> Self {
+    pub const fn new(transfer: ModuleId) -> Self {
         Self { transfer }
+    }
+    pub fn identifier() -> &'static [u8; 3] {
+        b"bob"
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-mod hosted {
+#[cfg(target_family = "wasm")]
+#[path = ""]
+mod wasm {
     use super::*;
 
-    use canonical::{Canon, CanonError, Sink, Source};
-    use dusk_abi::ReturnValue;
-    use rusk_abi::PaymentInfo;
+    use alloc::vec::Vec;
+    use phoenix_core::{Message, Note};
+    use rusk_abi::{ModuleId, PaymentInfo, State};
 
     const PAGE_SIZE: usize = 1024 * 4;
 
+    #[no_mangle]
+    static SELF_ID: ModuleId = ModuleId::uninitialized();
+
+    static mut STATE: State<Bob> = State::new(Bob::new(SELF_ID));
+
+    #[no_mangle]
+    unsafe fn ping(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |()| STATE.ping())
+    }
+
+    #[no_mangle]
+    unsafe fn payment_info(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |()| STATE.payment_info())
+    }
+
     impl Bob {
-        pub fn identifier() -> &'static [u8; 3] {
-            b"bob"
+        pub fn ping(&mut self) {
+            rusk_abi::debug!("Bob ping");
         }
-    }
 
-    fn query(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
-        let mut source = Source::new(&bytes[..]);
-
-        let _contract = Bob::decode(&mut source)?;
-        let qid = u8::decode(&mut source)?;
-
-        match qid {
-            rusk_abi::PAYMENT_INFO => {
-                let ret = PaymentInfo::Any(None);
-
-                let r = {
-                    // return value
-                    let wrapped_return = ReturnValue::from_canon(&ret);
-
-                    let mut sink = Sink::new(&mut bytes[..]);
-
-                    wrapped_return.encode(&mut sink)
-                };
-
-                Ok(r)
-            }
-
-            _ => panic!(""),
+        pub fn payment_info(self: &mut State<Self>) {
+            rusk_abi::debug!("Bob payment_info");
         }
-    }
-
-    #[no_mangle]
-    fn q(bytes: &mut [u8; PAGE_SIZE]) {
-        // todo, handle errors here
-        let _ = query(bytes);
-    }
-
-    fn transaction(bytes: &mut [u8; PAGE_SIZE]) -> Result<(), CanonError> {
-        let mut source = Source::new(bytes);
-
-        // decode self.
-        let mut _slf = Bob::decode(&mut source)?;
-        // decode transaction id
-        let tid = u8::decode(&mut source)?;
-        match tid {
-            _ => panic!(""),
-        }
-    }
-
-    #[no_mangle]
-    fn t(bytes: &mut [u8; PAGE_SIZE]) {
-        // todo, handle errors here
-        transaction(bytes).unwrap()
     }
 }

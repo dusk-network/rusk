@@ -8,7 +8,11 @@ resolver = "2"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-abi = "0.11"
-canonical = "0.7"
-canonical_derive = "0.7"
-rusk-abi = { path = "../../../rusk-abi" }
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
+rusk-abi = { path = "../../../rusk-abi", features = ["wee_alloc"] }
+transfer-contract = { path = "../../../contracts/transfer", default-features = false }
+transfer-contract-types = { path = "../../../contracts/transfer-types", default-features = false }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+
+[dev-dependencies]
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
