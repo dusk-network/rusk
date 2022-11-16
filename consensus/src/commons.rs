@@ -122,12 +122,27 @@ pub struct Header {
 }
 
 impl Header {
-    fn marshal_hashable<W: Write>(&self, w: &mut W) -> io::Result<()> {
+    /// Marshal hashable fields.
+    ///
+    /// Param `fixed_size_seed` changes the way seed is marshaled.
+    /// In block hashing, header seed is fixed-size field while in wire
+    /// message marshaling it is variable-length field.
+    fn marshal_hashable<W: Write>(
+        &self,
+        w: &mut W,
+        fixed_size_seed: bool,
+    ) -> io::Result<()> {
         w.write_all(&self.version.to_le_bytes())?;
         w.write_all(&self.height.to_le_bytes())?;
         w.write_all(&(self.timestamp as u64).to_le_bytes())?;
         w.write_all(&self.prev_block_hash[..])?;
-        w.write_all(&self.seed[..])?;
+
+        if fixed_size_seed {
+            w.write_all(&self.seed[..])?;
+        } else {
+            Self::write_var_le_bytes(w, &self.seed[..])?;
+        }
+
         w.write_all(&self.state_hash[..])?;
         w.write_all(&self.generator_bls_pubkey[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
@@ -151,8 +166,7 @@ impl Header {
         let mut prev_block_hash = [0u8; 32];
         r.read_exact(&mut prev_block_hash[..])?;
 
-        let mut seed = [0u8; 32];
-        r.read_exact(&mut seed[..])?;
+        let seed = Self::read_var_le_bytes(r)?;
 
         let mut state_hash = [0u8; 32];
         r.read_exact(&mut state_hash[..])?;
@@ -181,7 +195,7 @@ impl Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        self.marshal_hashable(w)?;
+        self.marshal_hashable(w, false)?;
 
         self.cert.write(w)?;
 
@@ -241,7 +255,7 @@ impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header.write(w)?;
 
-        let txs_num = self.txs.len() as u64;
+        let txs_num = self.txs.len() as u8;
         w.write_all(&txs_num.to_le_bytes())?;
 
         // TODO: write transactions
@@ -257,7 +271,7 @@ impl Serializable for Block {
         let header = Header::read(r)?;
 
         // Read txs num
-        let mut buf = [0u8; 8];
+        let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
 
         Ok(Block {
@@ -274,9 +288,9 @@ impl Block {
         Ok(b)
     }
 
-    fn calculate_hash(&mut self) -> io::Result<()> {
+    pub fn calculate_hash(&mut self) -> io::Result<()> {
         let mut hasher = sha3::Sha3_256::new();
-        self.header.marshal_hashable(&mut hasher)?;
+        self.header.marshal_hashable(&mut hasher, true)?;
 
         self.header.hash = hasher.finalize().into();
 

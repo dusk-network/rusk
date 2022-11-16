@@ -28,7 +28,7 @@ pub trait Serializable {
         Self: Sized;
 
     fn write_var_le_bytes<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
-        let len = buf.len() as u64;
+        let len = buf.len() as u8;
 
         w.write_all(&len.to_le_bytes())?;
         w.write_all(buf)?;
@@ -39,8 +39,8 @@ pub trait Serializable {
     fn read_var_le_bytes<R: Read, const N: usize>(
         r: &mut R,
     ) -> io::Result<[u8; N]> {
-        let mut len = [0u8; 8];
-        r.read_exact(&mut len)?;
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
 
         let mut buf = [0u8; N];
         r.read_exact(&mut buf)?;
@@ -56,7 +56,7 @@ pub trait MessageTrait {
 }
 
 /// Message is a data unit that consensus phase can process.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Message {
     pub header: Header,
     pub payload: Payload,
@@ -67,7 +67,7 @@ pub struct Message {
 /// Defines a transport-related properties that determines how the message
 /// will be broadcast.
 /// TODO: This should be moved out of consensus message definition.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransportData {
     pub height: u8,
     pub src_addr: String,
@@ -223,13 +223,17 @@ impl Serializable for Header {
 
         // Read bls pubkey
         let buf: [u8; 96] = Self::read_var_le_bytes(r)?;
-        let pubkey_bls = match dusk_bls12_381_sign::PublicKey::from_slice(&buf)
-        {
-            Ok(pk) => ConsensusPublicKey::new(pk),
-            Err(_) => {
-                return Ok(Header::default()); // TODO: This should be an error
+
+        let mut pubkey_bls = ConsensusPublicKey::default();
+        if buf != [0u8; 96] {
+            pubkey_bls = match dusk_bls12_381_sign::PublicKey::from_slice(&buf)
+            {
+                Ok(pk) => ConsensusPublicKey::new(pk),
+                Err(_) => {
+                    return Ok(Header::default()); // TODO: This should be an error
+                }
             }
-        };
+        }
 
         // Read round
         let mut buf = [0u8; 8];
@@ -252,27 +256,6 @@ impl Serializable for Header {
             block_hash,
             topic,
         })
-    }
-
-    fn write_var_le_bytes<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
-        let len = buf.len() as u64;
-
-        w.write_all(&len.to_le_bytes())?;
-        w.write_all(buf)?;
-
-        Ok(())
-    }
-
-    fn read_var_le_bytes<R: Read, const N: usize>(
-        r: &mut R,
-    ) -> io::Result<[u8; N]> {
-        let mut len = [0u8; 8];
-        r.read_exact(&mut len)?;
-
-        let mut buf = [0u8; N];
-        r.read_exact(&mut buf)?;
-
-        Ok(buf)
     }
 }
 
@@ -342,7 +325,7 @@ impl Header {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
@@ -473,7 +456,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct StepVotesWithCandidate {
         pub sv: StepVotes,
         pub candidate: Block,
@@ -582,9 +565,9 @@ pub mod payload {
 
 #[cfg(test)]
 mod tests {
-    use crate::commons::{Block, Certificate};
+    use crate::commons::{Block, Certificate, Topics};
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
-    use crate::messages::{Header, Serializable};
+    use crate::messages::{self, Header, Message, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
 
     use super::payload::AggrAgreement;
