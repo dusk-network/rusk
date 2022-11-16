@@ -22,10 +22,6 @@ pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 extern crate alloc;
 
-// TODO: This is to allow the tests to run, since this library
-// is supposed to be compiled (and working) only for WASM
-// However, we should move the test outside this crate
-// most likely in one of the ancestors.
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {

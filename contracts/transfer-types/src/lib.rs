@@ -213,6 +213,24 @@ pub struct Wfco {
     pub proof: Proof,
 }
 
+/// Withdraw value from a contract anonymously.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Wfco2 {
+    /// Message containing the value commitment.
+    pub message: Message,
+    /// The stealth address of the message.
+    pub message_address: StealthAddress,
+    /// Message containing commitment on the change value.
+    pub change: Message,
+    /// The stealth address of the change message.
+    pub change_address: StealthAddress,
+    /// The note to withdraw to.
+    pub output: Note,
+    /// Proof of the `WFCO` circuit.
+    pub proof: Vec<u8>,
+}
+
 /// Withdraw value from the calling contract to another contract.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
