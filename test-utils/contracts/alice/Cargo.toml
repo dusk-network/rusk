@@ -12,6 +12,6 @@ canonical = "0.7"
 canonical_derive = "0.7"
 dusk-abi = "0.11"
 dusk-pki = { version = "0.10.0-rc", default-features = false }
-phoenix-core = { version = "0.16.0-rc", default-features = false, features = ["canon"] }
-rusk-abi = { path = "../../../rusk-abi", features = ["module"] }
-transfer-contract = { path = "../../../contracts/transfer", features = ["no-bridge"] }
+phoenix-core = { version = "0.16.0-rc", default-features = false }
+rusk-abi = { path = "../../../rusk-abi" }
+transfer-contract = { path = "../../../contracts/transfer" }

@@ -30,16 +30,15 @@ extern crate alloc;
 #[path = ""]
 mod wasm {
     pub mod contract;
-    pub mod stake;
     pub mod error;
+    pub mod stake;
     pub mod wasm;
 
-    use rusk_abi::{ModuleId, State};
     use contract::StakeContract;
-    pub use stake::Stake;
     pub use error::Error;
+    use rusk_abi::{ModuleId, State};
+    pub use stake::Stake;
     pub use wasm::*;
-
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();
@@ -50,21 +49,38 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn stake(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |(pk, signature, value, spend_proof)| STATE.stake(pk, signature, value, spend_proof))
+        rusk_abi::wrap_transaction(
+            arg_len,
+            |(pk, signature, value, spend_proof)| {
+                STATE.stake(pk, signature, value, spend_proof)
+            },
+        )
     }
 
     #[no_mangle]
     unsafe fn unstake(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |(pk, signature, note, withdraw_proof)| STATE.unstake(pk, signature, note, withdraw_proof))
+        rusk_abi::wrap_transaction(
+            arg_len,
+            |(pk, signature, note, withdraw_proof)| {
+                STATE.unstake(pk, signature, note, withdraw_proof)
+            },
+        )
     }
 
     #[no_mangle]
     unsafe fn withdraw(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |(pk, signature, address, nonce)| STATE.withdraw(pk, signature, address, nonce))
+        rusk_abi::wrap_transaction(
+            arg_len,
+            |(pk, signature, address, nonce)| {
+                STATE.withdraw(pk, signature, address, nonce)
+            },
+        )
     }
 
     #[no_mangle]
     unsafe fn allowlist(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |(pk, signature, owner)| STATE.allowlist(pk, signature, owner))
+        rusk_abi::wrap_transaction(arg_len, |(pk, signature, owner)| {
+            STATE.allowlist(pk, signature, owner)
+        })
     }
 }

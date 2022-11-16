@@ -12,14 +12,14 @@ use dusk_bytes::Serializable;
 use dusk_pki::StealthAddress;
 use phoenix_core::Note;
 
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut};
 
 #[cfg(feature = "transaction")]
 mod transaction;
-use super::stake::Stake;
 use super::error::Error;
+use super::stake::Stake;
 
 /// Contract keeping track of each public key's stake.
 ///
@@ -91,20 +91,14 @@ impl StakeContract {
 
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
-    pub fn reward(
-        &mut self,
-        public_key: &PublicKey,
-        value: u64,
-    ) {
-        let mut stake = self.load_mut_stake(public_key).expect("stake for any key exists");
+    pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
+        let mut stake = self
+            .load_mut_stake(public_key)
+            .expect("stake for any key exists");
         stake.increase_reward(value);
     }
 
-    pub fn is_staked(
-        &self,
-        block_height: u64,
-        key: &PublicKey,
-    ) -> bool {
+    pub fn is_staked(&self, block_height: u64, key: &PublicKey) -> bool {
         let is_staked = self
             .stakes
             .get(&key.to_bytes())

@@ -25,6 +25,7 @@ bytecheck = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
+transfer-wrapper = { path = "../../test-utils/transfer-wrapper", default-features = false }
 hex = "0.4"
 rand = "0.8"
 
