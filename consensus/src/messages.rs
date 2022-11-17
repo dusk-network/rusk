@@ -132,7 +132,7 @@ impl MessageTrait for Message {
 }
 
 impl Message {
-    pub fn from_newblock(header: Header, p: payload::NewBlock) -> Message {
+    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
         Self {
             header,
             payload: Payload::NewBlock(Box::new(p)),
@@ -475,7 +475,8 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_le_bytes(w, &self.signature[..])?;
 
-            let step_votes_len = 2u64;
+            // Read this field for backward compatibility
+            let step_votes_len = 2u8;
             w.write_all(&step_votes_len.to_le_bytes())?;
 
             self.first_step.write(w)?;
@@ -491,7 +492,7 @@ pub mod payload {
         {
             let signature = Self::read_var_le_bytes(r)?;
 
-            let mut step_votes_len = [0u8; 8];
+            let mut step_votes_len = [0u8; 1];
             r.read_exact(&mut step_votes_len)?;
 
             let first_step = StepVotes::read(r)?;

@@ -49,7 +49,7 @@ impl<T: Operations> Generator<T> {
         let signed_hash =
             msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        Ok(Message::from_newblock(
+        Ok(Message::new_newblock(
             msg_header,
             NewBlock {
                 prev_hash: [0; 32],
