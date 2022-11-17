@@ -22,19 +22,21 @@ pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 extern crate alloc;
 
+pub mod contract;
+pub mod stake;
+pub mod error;
+
+pub use contract::StakeContract;
+pub use stake::Stake;
+pub use error::Error;
+
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {
-    pub mod contract;
-    pub mod error;
-    pub mod stake;
     pub mod wasm;
-
-    use contract::StakeContract;
-    pub use error::Error;
-    use rusk_abi::{ModuleId, State};
-    pub use stake::Stake;
     pub use wasm::*;
+    use rusk_abi::{ModuleId, State};
+    use super::*;
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();

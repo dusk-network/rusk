@@ -15,9 +15,7 @@ use phoenix_core::Note;
 use rusk_abi::RawTransaction;
 use rusk_abi::State;
 
-use crate::wasm::StakeContract;
-use bytecheck::CheckBytes;
-use rkyv::{Archive, Deserialize, Serialize};
+use crate::contract::StakeContract;
 use transfer_contract_types::{Mint, Stct2, Wfct2};
 
 impl StakeContract {

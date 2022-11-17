@@ -20,7 +20,6 @@ use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::RuskModule;
 use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
 use stake_contract::{Stake, StakeContract};
 use transfer_circuits::{
