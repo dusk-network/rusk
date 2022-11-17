@@ -9,6 +9,11 @@
 
 extern crate alloc;
 
+pub mod error;
+pub mod tree;
+pub mod state;
+pub use state::TransferState;
+
 // TODO: This is to allow the tests to run, since this library
 // is supposed to be compiled (and working) only for WASM
 // However, we should move the test outside this crate
@@ -16,12 +21,8 @@ extern crate alloc;
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {
-    pub mod error;
-    mod state;
-    pub mod tree;
-
     use rusk_abi::{ModuleId, State};
-    use state::TransferState;
+    use super::*;
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();

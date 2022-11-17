@@ -25,3 +25,5 @@ transfer-contract = { path = "../../contracts/transfer", default-features = fals
 rusk-profile = { path = "../../rusk-profile" }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
+transfer-contract-types = { path = "../../contracts/transfer-types", default-features = false }
+

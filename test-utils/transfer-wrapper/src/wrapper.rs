@@ -8,8 +8,7 @@ use crate::*;
 
 use alice::Alice;
 use bob::Bob;
-use canonical::Canon;
-use dusk_abi::{ContractId, Transaction};
+use rusk_abi::ModuleId;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
@@ -20,22 +19,22 @@ use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
+// use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
+use piecrust::{Session, VM};
 use stake_contract::{Stake, StakeContract};
-use transfer_circuits::{
-    CircuitInput, DeriveKey, ExecuteCircuit, SendToContractObfuscatedCircuit,
-    SendToContractTransparentCircuit, StcoCrossover, StcoMessage,
-};
-use transfer_contract::{Call, Error as TransferError, TransferContract};
+use transfer_circuits::{CircuitInput, DeriveKey, ExecuteCircuitOneTwo, SendToContractObfuscatedCircuit, SendToContractTransparentCircuit, StcoCrossover, StcoMessage};
+// use transfer_contract::{Call, Error as TransferError, TransferContract};
+use transfer_contract::TransferState;
+use transfer_contract_types::Transaction;
 
 pub struct TransferWrapper {
     rng: StdRng,
     network: NetworkState,
-    transfer_id: ContractId,
-    stake_id: ContractId,
-    alice: ContractId,
-    bob: ContractId,
-    gas: GasMeter,
+    transfer_id: ModuleId,
+    stake_id: ModuleId,
+    alice: ModuleId,
+    bob: ModuleId,
+    gas: u64,
     genesis_ssk: SecretSpendKey,
 }
 
@@ -57,10 +56,12 @@ impl TransferWrapper {
         stakes: StakeState,
     ) -> Self {
         let mut rng = StdRng::seed_from_u64(seed);
-        let mut network = NetworkState::new();
+        // let mut network = NetworkState::new();
+        let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+        let mut session = vm.session();
 
-        let rusk_mod = RuskModule::new(&PP);
-        NetworkState::register_host_module(rusk_mod);
+        // let rusk_mod = RuskModule::new(&PP);
+        // NetworkState::register_host_module(rusk_mod);
 
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
@@ -71,11 +72,11 @@ impl TransferWrapper {
         let mut transfer = if initial_balance > 0 {
             let genesis =
                 Note::transparent(&mut rng, &genesis_psk, initial_balance);
-            TransferContract::try_from(genesis).expect(
+            TransferState::try_from(genesis).expect(
                 "Failed to create a transfer instance from a genesis note",
             )
         } else {
-            TransferContract::default()
+            TransferState::default()
         };
 
         let stake = {
@@ -105,23 +106,20 @@ impl TransferWrapper {
             contract
         };
 
-        let transfer_contract = Contract::new(transfer, TRANSFER.to_vec());
-        let stake_contract = Contract::new(stake, STAKE.to_vec());
-
-        network
-            .deploy_with_id(stake_id, stake_contract)
+        session
+            .deploy_with_id(stake_id, STAKE)
             .expect("Failed to deploy contract");
-        network
-            .deploy_with_id(transfer_id, transfer_contract)
+        session
+            .deploy_with_id(transfer_id, TRANSFER)
             .expect("Failed to deploy contract");
 
         let alice = Alice::new(transfer_id);
-        let alice = Self::_deploy(&mut network, alice, ALICE);
+        let alice = Self::_deploy(&mut session, alice, ALICE);
 
         let bob = Bob::new(transfer_id);
         let bob = Self::_deploy(&mut network, bob, BOB);
 
-        let gas = GasMeter::with_limit(1);
+        let gas = 1u64;
 
         Self {
             rng,
@@ -139,34 +137,29 @@ impl TransferWrapper {
         &mut self.rng
     }
 
-    pub fn deploy<C>(&mut self, contract: C, bytecode: &[u8]) -> ContractId
-    where
-        C: Canon,
+    pub fn deploy<C>(&mut self, bytecode: &[u8]) -> ModuleId
     {
-        Self::_deploy(&mut self.network, contract, bytecode)
+        Self::_deploy(&mut self.network, bytecode)
     }
 
-    fn _deploy<C>(
-        network: &mut NetworkState,
-        contract: C,
+    fn _deploy(
+        session: &mut Session,
         bytecode: &[u8],
-    ) -> ContractId
-    where
-        C: Canon,
+    ) -> ModuleId
     {
-        let contract = Contract::new(contract, bytecode.to_vec());
-        let contract_id = rusk_abi::gen_contract_id(bytecode);
-        network
-            .deploy_with_id(contract_id, contract)
-            .expect("Failed to deploy contract")
+        let module_id = rusk_abi::gen_contract_id(bytecode);
+        session
+            .deploy_with_id(contract_id, bytecode)
+            .expect("Failed to deploy contract");
+        module_id
     }
 
-    pub fn state<C>(&self, contract: &ContractId) -> C
+    pub fn state<C>(&self, module: &ModuleId) -> C
     where
         C: Canon,
     {
         self.network
-            .get_contract_cast_state(contract)
+            .get_contract_cast_state(module)
             .expect("Failed to fetch the state of the contract")
     }
 
@@ -199,44 +192,44 @@ impl TransferWrapper {
         (ssk, vk, psk)
     }
 
-    pub fn alice(&self) -> &ContractId {
+    pub fn alice(&self) -> &ModuleId {
         &self.alice
     }
 
-    pub fn bob(&self) -> &ContractId {
+    pub fn bob(&self) -> &ModuleId {
         &self.bob
     }
 
-    pub fn tx_ping() -> Transaction {
-        Transaction::from_canon(&TX_PING)
-    }
-
-    pub fn tx_withdraw(value: u64, note: Note, proof: Vec<u8>) -> Transaction {
-        Transaction::from_canon(&(TX_WITHDRAW, value, note, proof))
-    }
-
-    pub fn tx_withdraw_obfuscated(
-        message: Message,
-        message_address: StealthAddress,
-        change: Message,
-        change_address: StealthAddress,
-        note: Note,
-        proof: Vec<u8>,
-    ) -> Transaction {
-        Transaction::from_canon(&(
-            TX_WITHDRAW_OBFUSCATED,
-            message,
-            message_address,
-            change,
-            change_address,
-            note,
-            proof,
-        ))
-    }
-
-    pub fn tx_withdraw_to_contract(to: ContractId, value: u64) -> Transaction {
-        Transaction::from_canon(&(TX_WITHDRAW_TO_CONTRACT, to, value))
-    }
+    // pub fn tx_ping() -> Transaction {
+    //     Transaction::from_canon(&TX_PING)
+    // }
+    //
+    // pub fn tx_withdraw(value: u64, note: Note, proof: Vec<u8>) -> Transaction {
+    //     Transaction::from_canon(&(TX_WITHDRAW, value, note, proof))
+    // }
+    //
+    // pub fn tx_withdraw_obfuscated(
+    //     message: Message,
+    //     message_address: StealthAddress,
+    //     change: Message,
+    //     change_address: StealthAddress,
+    //     note: Note,
+    //     proof: Vec<u8>,
+    // ) -> Transaction {
+    //     Transaction::from_canon(&(
+    //         TX_WITHDRAW_OBFUSCATED,
+    //         message,
+    //         message_address,
+    //         change,
+    //         change_address,
+    //         note,
+    //         proof,
+    //     ))
+    // }
+    //
+    // pub fn tx_withdraw_to_contract(to: ModuleId, value: u64) -> Transaction {
+    //     Transaction::from_canon(&(TX_WITHDRAW_TO_CONTRACT, to, value))
+    // }
 
     pub fn decrypt_blinder(
         fee: &Fee,
@@ -339,7 +332,7 @@ impl TransferWrapper {
             .collect()
     }
 
-    pub fn balance(&mut self, address: &ContractId) -> u64 {
+    pub fn balance(&mut self, address: &ModuleId) -> u64 {
         *self
             .transfer_state()
             .balances()
@@ -351,10 +344,10 @@ impl TransferWrapper {
 
     pub fn message(
         &self,
-        contract: &ContractId,
+        module: &ModuleId,
         pk: &PublicKey,
     ) -> Result<Message, TransferError> {
-        self.transfer_state().message(contract, pk)
+        self.transfer_state().message(module, pk)
     }
 
     pub fn anchor(&mut self) -> BlsScalar {
@@ -377,14 +370,19 @@ impl TransferWrapper {
             })
     }
 
-    fn circuit_keys(circuit_id: &[u8; 32]) -> (ProverKey, VerifierData) {
+    // todo: almost identical function exists in circuits/transfer/tests/keys/mod.rs
+    // remove this duplication
+    fn circuit_keys<C>(circuit_id: &[u8; 32]) -> (Prover<C>, Verifier<C>)
+    where
+        C: Circuit,
+    {
         let keys = rusk_profile::keys_for(circuit_id).unwrap();
 
         let pk = keys.get_prover().unwrap();
         let vd = keys.get_verifier().unwrap();
 
-        let pk = ProverKey::from_slice(pk.as_slice()).unwrap();
-        let vd = VerifierData::from_slice(vd.as_slice()).unwrap();
+        let pk = Prover::try_from_bytes(&pk).unwrap();
+        let vd = Verifier::try_from_bytes(&vd).unwrap();
 
         (pk, vd)
     }
@@ -399,9 +397,9 @@ impl TransferWrapper {
         output_transparent: bool,
         fee: Fee,
         crossover: Option<Crossover>,
-        call: Option<&(ContractId, Transaction)>,
+        call: Option<&(ModuleId, Transaction)>,
     ) -> (BlsScalar, Vec<BlsScalar>, Vec<Note>, Vec<u8>) {
-        self.gas = GasMeter::with_limit(fee.gas_limit);
+        self.gas = fee.gas_limit;
         let anchor = self.anchor();
 
         let (crossover_value, crossover_blinder) = match (refund_vk, crossover)
@@ -419,7 +417,7 @@ impl TransferWrapper {
             _ => (0, JubJubScalar::zero()),
         };
 
-        let mut execute_proof = ExecuteCircuit::default();
+        let mut execute_proof = ExecuteCircuitOneTwo();// todo: was ExecuteCircuit::default(), is this correct now?
         let mut input = 0;
 
         let nullifiers: Vec<BlsScalar> = inputs
@@ -481,14 +479,15 @@ impl TransferWrapper {
             }
         }
 
-        let tx_hash = TransferContract::tx_hash(
-            nullifiers.as_slice(),
-            outputs.as_slice(),
-            &anchor,
-            &fee,
-            crossover.as_ref(),
+        let tx = Transaction {
+            nullifiers,
+            outputs,
+            anchor,
+            fee,
+            crossover,
             call,
-        );
+        };
+        let tx_hash = tx.hash();
 
         execute_proof.set_tx_hash(tx_hash);
 
@@ -507,7 +506,7 @@ impl TransferWrapper {
                 let sk_r = ssk.sk_r(note.stealth_address());
                 let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
 
-                let input_signature = ExecuteCircuit::input_signature(
+                let input_signature = ExecuteCircuitOneTwo::input_signature(
                     &mut self.rng,
                     ssk,
                     note,
@@ -536,7 +535,8 @@ impl TransferWrapper {
         let pi = execute_proof.public_inputs();
 
         // Sanity check
-        ExecuteCircuit::verify(&PP, &vd, &proof, pi.as_slice()).unwrap();
+        // ExecuteCircuitOneTwo::verify(&PP, &vd, &proof, pi.as_slice()).unwrap();
+        ExecuteCircuitOneTwo::verify(&vd, &proof, pi.as_slice()).unwrap();// todo: why is PP gone?
 
         let proof = proof.to_bytes().to_vec();
 
@@ -554,7 +554,7 @@ impl TransferWrapper {
         output_transparent: bool,
         fee: Fee,
         crossover: Option<Crossover>,
-        call: Option<(ContractId, Transaction)>,
+        call: Option<(ModuleId, String, Vec<u8>)>,
     ) -> Result<(), VMError> {
         let (anchor, nullifiers, outputs, spend_proof_execute) = self
             .prepare_execute(
@@ -568,22 +568,26 @@ impl TransferWrapper {
                 call.as_ref(),
             );
 
-        let execute = Call::execute(
+        let transfer_state = TransferState::new();
+        let transaction = Transaction {
             anchor,
             nullifiers,
             fee,
             crossover,
             outputs,
-            spend_proof_execute,
+            proof: spend_proof_execute,
             call,
-        );
+        };
 
-        self.network.transact::<_, ()>(
-            self.transfer_id,
-            block_height,
-            execute,
-            &mut self.gas,
-        )
+        transfer_state.execute(transaction);
+        Ok(()) // todo: this impl is temporary and needs to be changed before reviewing
+
+        // self.network.transact::<_, ()>(
+        //     self.transfer_id,
+        //     block_height,
+        //     execute,
+        //     &mut self.gas,
+        // )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -597,10 +601,10 @@ impl TransferWrapper {
         output_transparent: bool,
         gas_limit: u64,
         gas_price: u64,
-        contract: ContractId,
+        module: ModuleId,
         value: u64,
     ) -> Result<(), VMError> {
-        let address = rusk_abi::contract_to_scalar(&contract);
+        let address = rusk_abi::contract_to_scalar(&module);
         let refund_vk = refund_ssk.view_key();
         let refund_psk = refund_ssk.public_spend_key();
 
@@ -644,7 +648,7 @@ impl TransferWrapper {
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
         let call_stct = Call::send_to_contract_transparent(
-            contract,
+            module,
             value,
             spend_proof_stct,
         );
@@ -695,11 +699,11 @@ impl TransferWrapper {
         output_transparent: bool,
         gas_limit: u64,
         gas_price: u64,
-        contract: ContractId,
+        module: ModuleId,
         message_psk: &PublicSpendKey,
         value: u64,
     ) -> Result<JubJubScalar, VMError> {
-        let address = rusk_abi::contract_to_scalar(&contract);
+        let address = rusk_abi::contract_to_scalar(&module);
         let refund_vk = refund_ssk.view_key();
         let refund_psk = refund_ssk.public_spend_key();
 
@@ -764,7 +768,7 @@ impl TransferWrapper {
 
         let message_address = message_psk.gen_stealth_address(&message_r);
         let call_stco = Call::send_to_contract_obfuscated(
-            contract,
+            module,
             message,
             message_address,
             spend_proof_stco,
