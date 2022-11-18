@@ -195,6 +195,20 @@ pub struct Stco {
     pub proof: Proof,
 }
 
+/// Send value to a contract anonymously.
+#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Stco2 {
+    /// Module to send the value to.
+    pub module: ModuleId,
+    /// Message containing the value commitment.
+    pub message: Message,
+    /// The stealth address of the message.
+    pub message_address: StealthAddress,
+    /// Proof of the `STCO` circuit.
+    pub proof: Vec<u8>,
+}
+
 /// Withdraw value from a contract anonymously.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]

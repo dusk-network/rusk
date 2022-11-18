@@ -9,11 +9,7 @@
 
 extern crate alloc;
 
-use dusk_pki::StealthAddress;
-use rusk_abi::dusk::*;
 use rusk_abi::ModuleId;
-use rusk_abi::RawTransaction;
-use transfer_contract_types::{Wfco2, Wfct2, Wfctc};
 
 #[derive(Debug, Clone)]
 pub struct Alice {
@@ -36,8 +32,12 @@ mod wasm {
     use super::*;
 
     use alloc::vec::Vec;
+    use dusk_pki::StealthAddress;
     use phoenix_core::{Message, Note};
+    use rusk_abi::dusk::*;
+    use rusk_abi::RawTransaction;
     use rusk_abi::{ModuleId, PaymentInfo, State};
+    use transfer_contract_types::{Wfco2, Wfct2, Wfctc};
 
     const PAGE_SIZE: usize = 1024 * 4;
 

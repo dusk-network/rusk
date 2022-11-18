@@ -8,7 +8,6 @@ use crate::*;
 
 use alice::Alice;
 use bob::Bob;
-use rusk_abi::ModuleId;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
@@ -19,17 +18,22 @@ use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rusk_abi::ModuleId;
 // use rusk_vm::{Contract, GasMeter, NetworkState, VMError};
 use piecrust::{Session, VM};
 use stake_contract::{Stake, StakeContract};
-use transfer_circuits::{CircuitInput, DeriveKey, ExecuteCircuitOneTwo, SendToContractObfuscatedCircuit, SendToContractTransparentCircuit, StcoCrossover, StcoMessage};
+use transfer_circuits::{
+    CircuitInput, DeriveKey, ExecuteCircuitOneTwo,
+    SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
+    StcoCrossover, StcoMessage,
+};
 // use transfer_contract::{Call, Error as TransferError, TransferContract};
 use transfer_contract::TransferState;
-use transfer_contract_types::Transaction;
+use transfer_contract_types::{Stco2, Stct2, Transaction};
 
-pub struct TransferWrapper {
+pub struct TransferWrapper<'a> {
     rng: StdRng,
-    network: NetworkState,
+    session: Session<'a>,
     transfer_id: ModuleId,
     stake_id: ModuleId,
     alice: ModuleId,
@@ -45,7 +49,7 @@ pub struct StakeState<'a> {
     pub allowlist: &'a [BlsPublicKey],
 }
 
-impl TransferWrapper {
+impl<'a> TransferWrapper<'a> {
     pub fn new(seed: u64, initial_balance: u64) -> Self {
         Self::with_stakes(seed, initial_balance, StakeState::default())
     }
@@ -66,8 +70,8 @@ impl TransferWrapper {
         let genesis_ssk = SecretSpendKey::random(&mut rng);
         let genesis_psk = genesis_ssk.public_spend_key();
 
-        let transfer_id = rusk_abi::transfer_contract();
-        let stake_id = rusk_abi::stake_contract();
+        let transfer_id = rusk_abi::transfer_module();
+        let stake_id = rusk_abi::stake_module();
 
         let mut transfer = if initial_balance > 0 {
             let genesis =
@@ -117,13 +121,13 @@ impl TransferWrapper {
         let alice = Self::_deploy(&mut session, alice, ALICE);
 
         let bob = Bob::new(transfer_id);
-        let bob = Self::_deploy(&mut network, bob, BOB);
+        let bob = Self::_deploy(&mut session, bob, BOB);
 
         let gas = 1u64;
 
         Self {
             rng,
-            network,
+            session,
             transfer_id,
             stake_id,
             alice,
@@ -137,28 +141,19 @@ impl TransferWrapper {
         &mut self.rng
     }
 
-    pub fn deploy<C>(&mut self, bytecode: &[u8]) -> ModuleId
-    {
+    pub fn deploy<C>(&mut self, bytecode: &[u8]) -> ModuleId {
         Self::_deploy(&mut self.network, bytecode)
     }
 
-    fn _deploy(
-        session: &mut Session,
-        bytecode: &[u8],
-    ) -> ModuleId
-    {
-        let module_id = rusk_abi::gen_contract_id(bytecode);
-        session
-            .deploy_with_id(contract_id, bytecode)
-            .expect("Failed to deploy contract");
-        module_id
+    fn _deploy(session: &mut Session, bytecode: &[u8]) -> ModuleId {
+        session.deploy(bytecode).expect("Failed to deploy contract")
     }
 
     pub fn state<C>(&self, module: &ModuleId) -> C
     where
         C: Canon,
     {
-        self.network
+        self.session
             .get_contract_cast_state(module)
             .expect("Failed to fetch the state of the contract")
     }
@@ -204,8 +199,8 @@ impl TransferWrapper {
     //     Transaction::from_canon(&TX_PING)
     // }
     //
-    // pub fn tx_withdraw(value: u64, note: Note, proof: Vec<u8>) -> Transaction {
-    //     Transaction::from_canon(&(TX_WITHDRAW, value, note, proof))
+    // pub fn tx_withdraw(value: u64, note: Note, proof: Vec<u8>) -> Transaction
+    // {     Transaction::from_canon(&(TX_WITHDRAW, value, note, proof))
     // }
     //
     // pub fn tx_withdraw_obfuscated(
@@ -370,8 +365,8 @@ impl TransferWrapper {
             })
     }
 
-    // todo: almost identical function exists in circuits/transfer/tests/keys/mod.rs
-    // remove this duplication
+    // todo: almost identical function exists in
+    // circuits/transfer/tests/keys/mod.rs remove this duplication
     fn circuit_keys<C>(circuit_id: &[u8; 32]) -> (Prover<C>, Verifier<C>)
     where
         C: Circuit,
@@ -417,7 +412,7 @@ impl TransferWrapper {
             _ => (0, JubJubScalar::zero()),
         };
 
-        let mut execute_proof = ExecuteCircuitOneTwo();// todo: was ExecuteCircuit::default(), is this correct now?
+        let mut execute_proof = ExecuteCircuitOneTwo(); // todo: was ExecuteCircuit::default(), is this correct now?
         let mut input = 0;
 
         let nullifiers: Vec<BlsScalar> = inputs
@@ -535,8 +530,9 @@ impl TransferWrapper {
         let pi = execute_proof.public_inputs();
 
         // Sanity check
-        // ExecuteCircuitOneTwo::verify(&PP, &vd, &proof, pi.as_slice()).unwrap();
-        ExecuteCircuitOneTwo::verify(&vd, &proof, pi.as_slice()).unwrap();// todo: why is PP gone?
+        // ExecuteCircuitOneTwo::verify(&PP, &vd, &proof,
+        // pi.as_slice()).unwrap();
+        ExecuteCircuitOneTwo::verify(&vd, &proof, pi.as_slice()).unwrap(); // todo: why is PP gone?
 
         let proof = proof.to_bytes().to_vec();
 
@@ -580,7 +576,8 @@ impl TransferWrapper {
         };
 
         transfer_state.execute(transaction);
-        Ok(()) // todo: this impl is temporary and needs to be changed before reviewing
+        Ok(()) // todo: this impl is temporary and needs to be changed before
+               // reviewing
 
         // self.network.transact::<_, ()>(
         //     self.transfer_id,
@@ -647,11 +644,11 @@ impl TransferWrapper {
             stct_proof.prove(&PP, &pk, b"dusk-network").unwrap();
         let spend_proof_stct = spend_proof_stct.to_bytes().to_vec();
 
-        let call_stct = Call::send_to_contract_transparent(
-            module,
+        let call_stct = Stct2 {
+            address: module,
             value,
-            spend_proof_stct,
-        );
+            proof: spend_proof_stct,
+        };
 
         let transaction = call_stct.to_transaction();
         let call = (self.transfer_id, transaction);
@@ -767,12 +764,12 @@ impl TransferWrapper {
         let spend_proof_stco = spend_proof_stco.to_bytes().to_vec();
 
         let message_address = message_psk.gen_stealth_address(&message_r);
-        let call_stco = Call::send_to_contract_obfuscated(
+        let call_stco = Stco2 {
             module,
             message,
             message_address,
-            spend_proof_stco,
-        );
+            proof: spend_proof_stco,
+        };
 
         let transaction = call_stco.to_transaction();
         let call = (self.transfer_id, transaction);
