@@ -11,9 +11,9 @@ use phoenix_core::{Fee, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::*;
-use stake_contract::MINIMUM_STAKE;
+use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
 // use transfer_circuits::SendToContractTransparentCircuit;
-// use transfer_wrapper::{StakeState, TransferWrapper};
+use transfer_wrapper::{StakeState, TransferWrapper};
 
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use piecrust::{Session, VM};

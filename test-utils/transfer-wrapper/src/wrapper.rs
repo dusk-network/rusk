@@ -12,7 +12,7 @@ use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_jubjub::GENERATOR_NUMS_EXTENDED;
 use dusk_pki::{
-    Ownable, PublicKey, PublicSpendKey, SecretSpendKey, StealthAddress, ViewKey,
+    Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey,
 };
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Message, Note};
@@ -28,7 +28,7 @@ use transfer_circuits::{
     StcoCrossover, StcoMessage,
 };
 // use transfer_contract::{Call, Error as TransferError, TransferContract};
-use transfer_contract::TransferState;
+use transfer_contract::{Error as TransferError, TransferState};
 use transfer_contract_types::{Stco2, Stct2, Transaction};
 
 pub struct TransferWrapper<'a> {
@@ -80,7 +80,7 @@ impl<'a> TransferWrapper<'a> {
                 "Failed to create a transfer instance from a genesis note",
             )
         } else {
-            TransferState::default()
+            TransferState::new()
         };
 
         let stake = {
@@ -89,7 +89,7 @@ impl<'a> TransferWrapper<'a> {
                 contract
                     .insert_stake(*owner, stake_contract::Stake::default())
                     .expect("Failed to insert stake");
-                contract.add_owner(*owner).expect("Failed to add owner");
+                contract.add_owner(*owner);
             }
             for (pk, stake) in stakes.stakes {
                 contract
@@ -97,14 +97,12 @@ impl<'a> TransferWrapper<'a> {
                     .expect("Failed to insert stake");
                 if let Some((value, _)) = stake.amount() {
                     transfer
-                        .add_balance(stake_id, *value)
-                        .expect("Failed adding balance");
+                        .add_balance(stake_id, *value);
                 }
             }
             for allow in stakes.allowlist {
                 contract
-                    .insert_allowlist(*allow)
-                    .expect("Failed to add to allowlist");
+                    .insert_allowlist(*allow);
             }
 
             contract
@@ -117,11 +115,8 @@ impl<'a> TransferWrapper<'a> {
             .deploy_with_id(transfer_id, TRANSFER)
             .expect("Failed to deploy contract");
 
-        let alice = Alice::new(transfer_id);
-        let alice = Self::_deploy(&mut session, alice, ALICE);
-
-        let bob = Bob::new(transfer_id);
-        let bob = Self::_deploy(&mut session, bob, BOB);
+        let alice = Self::_deploy(&mut session, ALICE);
+        let bob = Self::_deploy(&mut session, BOB);
 
         let gas = 1u64;
 
@@ -142,28 +137,31 @@ impl<'a> TransferWrapper<'a> {
     }
 
     pub fn deploy<C>(&mut self, bytecode: &[u8]) -> ModuleId {
-        Self::_deploy(&mut self.network, bytecode)
+        Self::_deploy(&mut self.session, bytecode)
     }
 
     fn _deploy(session: &mut Session, bytecode: &[u8]) -> ModuleId {
         session.deploy(bytecode).expect("Failed to deploy contract")
     }
 
-    pub fn state<C>(&self, module: &ModuleId) -> C
-    where
-        C: Canon,
-    {
-        self.session
-            .get_contract_cast_state(module)
-            .expect("Failed to fetch the state of the contract")
-    }
+    // pub fn state<C>(&self, module: &ModuleId) -> C
+    // where
+    //     C: Deserialize,
+    // {
+    //     self.session
+    //         .get_contract_cast_state(module)
+    //         .expect("Failed to fetch the state of the contract")
+    // }
 
+    // todo: mock it properly or extend piecrust
     pub fn stake_state(&self) -> StakeContract {
-        self.state(&self.stake_id)
+        // self.state(&self.stake_id)
+        StakeContract::new()
     }
 
-    pub fn transfer_state(&self) -> TransferContract {
-        self.state(&self.transfer_id)
+    // todo: mock it properly or extend piecrust
+    pub fn transfer_state(&self) -> TransferState {
+        TransferState::new()
     }
 
     pub fn genesis_identifier(&self) -> (SecretSpendKey, Note) {
@@ -297,24 +295,22 @@ impl<'a> TransferWrapper<'a> {
         (ssk, note)
     }
 
-    pub fn generate_proof<C>(&mut self, mut circuit: C) -> Vec<u8>
-    where
-        C: Circuit,
-    {
-        let (pk, _) = Self::circuit_keys(&C::CIRCUIT_ID);
-
-        circuit
-            .prove(&PP, &pk, b"dusk-network")
-            .expect("Failed to generate proof")
-            .to_bytes()
-            .to_vec()
-    }
+    // pub fn generate_proof<C>(&mut self, mut circuit: C) -> Vec<u8>
+    // where
+    //     C: Circuit,
+    // {
+    //     let (pk, _) = Self::circuit_keys(&C::CIRCUIT_ID);
+    //
+    //     circuit
+    //         .prove(&PP, &pk, b"dusk-network")
+    //         .expect("Failed to generate proof")
+    //         .to_bytes()
+    //         .to_vec()
+    // }
 
     pub fn notes(&self, block_height: u64) -> Vec<Note> {
         self.transfer_state()
-            .leaves_from_height(block_height)
-            .expect("Failed to fetch notes iterator from state")
-            .map(|leaf| *leaf.expect("Failed to fetch note from canonical"))
+            .leaves_in_range(block_height..(block_height+1)).iter() // todo: doublecheck if range is correct
             .map(|leaf| leaf.note)
             .collect()
     }
@@ -333,8 +329,6 @@ impl<'a> TransferWrapper<'a> {
             .balances()
             .get(address)
             .unwrap()
-            .as_deref()
-            .unwrap_or(&0)
     }
 
     pub fn message(
@@ -342,20 +336,16 @@ impl<'a> TransferWrapper<'a> {
         module: &ModuleId,
         pk: &PublicKey,
     ) -> Result<Message, TransferError> {
-        self.transfer_state().message(module, pk)
+        self.transfer_state().take_message_from_address_key(module, pk)
     }
 
     pub fn anchor(&mut self) -> BlsScalar {
         self.transfer_state()
-            .tree()
-            .inner()
-            .root()
-            .unwrap_or_default()
+            .root() // todo: make sure this implementation is correct
     }
 
     pub fn opening(&mut self, pos: u64) -> PoseidonBranch<TRANSFER_TREE_DEPTH> {
         self.transfer_state()
-            .tree()
             .opening(pos)
             .unwrap_or_else(|_| {
                 panic!("Failed to fetch note of position {:?} for opening", pos)
@@ -392,7 +382,7 @@ impl<'a> TransferWrapper<'a> {
         output_transparent: bool,
         fee: Fee,
         crossover: Option<Crossover>,
-        call: Option<&(ModuleId, Transaction)>,
+        call: Option<(ModuleId, String, Vec<u8>)>,
     ) -> (BlsScalar, Vec<BlsScalar>, Vec<Note>, Vec<u8>) {
         self.gas = fee.gas_limit;
         let anchor = self.anchor();
@@ -412,7 +402,7 @@ impl<'a> TransferWrapper<'a> {
             _ => (0, JubJubScalar::zero()),
         };
 
-        let mut execute_proof = ExecuteCircuitOneTwo(); // todo: was ExecuteCircuit::default(), is this correct now?
+        let mut execute_proof = ExecuteCircuitOneTwo::default(); // todo: was ExecuteCircuit::default(), is this correct now?
         let mut input = 0;
 
         let nullifiers: Vec<BlsScalar> = inputs
@@ -439,8 +429,7 @@ impl<'a> TransferWrapper<'a> {
             let blinding_factor = note.blinding_factor(None).unwrap();
 
             execute_proof
-                .add_output_with_data(note, output_value, blinding_factor)
-                .unwrap();
+                .add_output_with_data(note, output_value, blinding_factor);
 
             outputs.push(note);
         } else {
@@ -453,8 +442,7 @@ impl<'a> TransferWrapper<'a> {
             );
 
             execute_proof
-                .add_output_with_data(note, output_value, blinding_factor)
-                .unwrap();
+                .add_output_with_data(note, output_value, blinding_factor);
 
             outputs.push(note);
         }
@@ -474,15 +462,15 @@ impl<'a> TransferWrapper<'a> {
             }
         }
 
-        let tx = Transaction {
-            nullifiers,
-            outputs,
-            anchor,
-            fee,
-            crossover,
-            call,
-        };
-        let tx_hash = tx.hash();
+        let tx_hash = TransferState::tx_hash(
+            nullifiers.as_slice(),
+            outputs.as_slice(),
+            &anchor,
+            &fee,
+            crossover.as_ref(),
+            call.map(|c|c.0),
+            call.map(|c|c.2),
+        );
 
         execute_proof.set_tx_hash(tx_hash);
 
@@ -519,20 +507,19 @@ impl<'a> TransferWrapper<'a> {
                 );
 
                 execute_proof
-                    .add_input(circuit_input)
-                    .expect("Failed to append input");
+                    .add_input(circuit_input);
             });
 
-        let id = execute_proof.circuit_id();
-        let (pk, vd) = Self::circuit_keys(id);
-
-        let proof = execute_proof.prove(&PP, &pk).unwrap();
-        let pi = execute_proof.public_inputs();
+        let id = ExecuteCircuitOneTwo::circuit_id();
+        // let (pk, vd) = Self::circuit_keys(id);
+        let (pk, vd) = execute_proof.compile(id, &PP)?;
+        let (proof, pi) = execute_proof.prove(, &pk).unwrap();
+        // let pi = execute_proof.public_inputs();
 
         // Sanity check
         // ExecuteCircuitOneTwo::verify(&PP, &vd, &proof,
         // pi.as_slice()).unwrap();
-        ExecuteCircuitOneTwo::verify(&vd, &proof, pi.as_slice()).unwrap(); // todo: why is PP gone?
+        ExecuteCircuitOneTwo::verify(&vd, &proof, pi.as_slice()).unwrap();
 
         let proof = proof.to_bytes().to_vec();
 
@@ -551,7 +538,7 @@ impl<'a> TransferWrapper<'a> {
         fee: Fee,
         crossover: Option<Crossover>,
         call: Option<(ModuleId, String, Vec<u8>)>,
-    ) -> Result<(), VMError> {
+    ) -> Result<(), Error> {
         let (anchor, nullifiers, outputs, spend_proof_execute) = self
             .prepare_execute(
                 inputs,
@@ -600,8 +587,8 @@ impl<'a> TransferWrapper<'a> {
         gas_price: u64,
         module: ModuleId,
         value: u64,
-    ) -> Result<(), VMError> {
-        let address = rusk_abi::contract_to_scalar(&module);
+    ) -> Result<(), Error> {
+        let address = rusk_abi::module_to_scalar(&module);
         let refund_vk = refund_ssk.view_key();
         let refund_psk = refund_ssk.public_spend_key();
 
@@ -699,8 +686,8 @@ impl<'a> TransferWrapper<'a> {
         module: ModuleId,
         message_psk: &PublicSpendKey,
         value: u64,
-    ) -> Result<JubJubScalar, VMError> {
-        let address = rusk_abi::contract_to_scalar(&module);
+    ) -> Result<JubJubScalar, Error> {
+        let address = rusk_abi::module_to_scalar(&module);
         let refund_vk = refund_ssk.view_key();
         let refund_psk = refund_ssk.public_spend_key();
 

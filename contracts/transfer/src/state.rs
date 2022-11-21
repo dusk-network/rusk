@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::tree::Tree;
+use crate::tree::{Tree, TRANSFER_TREE_DEPTH};
 
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
@@ -18,8 +18,10 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use dusk_plonk::prelude::Proof;
+use dusk_poseidon::tree::{PoseidonBranch, PoseidonTree};
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::dusk::{Dusk, LUX};
+use rusk_abi::hash::Hasher;
 use rusk_abi::{
     ModuleError, ModuleId, PaymentInfo, PublicInput, RawResult, RawTransaction,
     State,
@@ -37,6 +39,24 @@ pub struct TransferState {
     message_mapping_set: BTreeMap<ModuleId, StealthAddress>,
     var_crossover: Option<Crossover>,
     var_crossover_pk: Option<PublicKey>,
+}
+
+impl TryFrom<Note> for TransferState {
+    type Error = Error;
+
+    /// This implementation is intended for test purposes to initialize the
+    /// state with the provided note
+    ///
+    /// To avoid abuse, the block_height will always be `0`
+    fn try_from(note: Note) -> Result<Self, Self::Error> {
+        let mut transfer = Self::new();
+
+        let block_height = 0;
+        transfer.push_note(block_height, note);
+        transfer.update_root();
+
+        Ok(transfer)
+    }
 }
 
 impl TransferState {
@@ -379,6 +399,12 @@ impl TransferState {
         }
     }
 
+    /// Return the modules' balances map
+    /// todo: check if this method can be eliminated
+    pub fn balances(&self) -> &BTreeMap<ModuleId, u64> {
+        &self.balances
+    }
+
     /// Update the root for of the tree.
     pub fn update_root(&mut self) -> BlsScalar {
         let root = self.tree.root();
@@ -389,6 +415,14 @@ impl TransferState {
     /// Get the root of the tree.
     pub fn root(&self) -> BlsScalar {
         self.tree.root()
+    }
+
+    /// Get the opening
+    pub fn opening(
+        &self,
+        pos: u64,
+    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
+        Ok(self.tree.opening(pos)?)
     }
 
     /// Takes some nullifiers and returns a vector containing the ones that
@@ -458,7 +492,8 @@ impl TransferState {
         self.nullifiers.extend(nullifiers);
     }
 
-    fn take_message_from_address_key(
+    // todo: consider making this method private, made pub only for tests
+    pub fn take_message_from_address_key(
         &mut self,
         address: &ModuleId,
         pk: &PublicKey,
@@ -554,6 +589,37 @@ impl TransferState {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then(|| ())
             .ok_or(Error::ProofVerificationError)
+    }
+
+    pub fn tx_hash(
+        nullifiers: &[BlsScalar],
+        outputs: &[Note],
+        anchor: &BlsScalar,
+        fee: &Fee,
+        crossover: Option<&Crossover>,
+        module_id_opt: Option<ModuleId>,
+        tx_data_opt: Option<Vec<u8>>,
+    ) -> BlsScalar {
+        let mut hasher = Hasher::new();
+
+        nullifiers.iter().for_each(|n| hasher.update(n.to_bytes()));
+        outputs.iter().for_each(|o| hasher.update(o.to_bytes()));
+
+        hasher.update(anchor.to_bytes());
+        hasher.update(fee.to_bytes());
+
+        if let Some(c) = crossover {
+            hasher.update(c.to_bytes());
+        };
+
+        if let Some(module_id) = module_id_opt {
+            hasher.update(module_id.as_bytes());
+        }
+        if let Some(tx_data) = tx_data_opt {
+            hasher.update(tx_data.as_slice());
+        }
+
+        hasher.finalize()
     }
 }
 

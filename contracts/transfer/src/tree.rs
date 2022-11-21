@@ -7,8 +7,9 @@
 use core::borrow::Borrow;
 use core::ops::Range;
 
+use crate::Error;
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::PoseidonTree;
+use dusk_poseidon::tree::{PoseidonBranch, PoseidonTree};
 use microkelvin::{Child, Compound, Step, Walk, Walker};
 use nstack::annotation::{Keyed, MaxKey};
 use ranno::Annotation;
@@ -47,6 +48,13 @@ impl Tree {
         self.tree
             .annotated_iter_walk(HeightRangeWalker(range))
             .map(|v| v.into_iter())
+    }
+
+    pub fn opening(
+        &self,
+        pos: u64,
+    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
+        Ok(self.tree.branch(pos))
     }
 }
 

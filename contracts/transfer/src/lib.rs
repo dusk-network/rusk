@@ -12,6 +12,7 @@ extern crate alloc;
 pub mod error;
 pub mod state;
 pub mod tree;
+pub use error::Error;
 pub use state::TransferState;
 
 // TODO: This is to allow the tests to run, since this library
