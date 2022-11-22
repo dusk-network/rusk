@@ -11,7 +11,7 @@ use phoenix_core::{Fee, Note};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::*;
-use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
+use stake_contract::{Stake, StakeState, MINIMUM_STAKE};
 // use transfer_circuits::SendToContractTransparentCircuit;
 use transfer_wrapper::{StakeState, TransferWrapper};
 
@@ -261,7 +261,7 @@ fn stake() {
     let gas_limit = dusk(1.5) / gas_price;
     let stake_value = MINIMUM_STAKE;
 
-    let stake_message = StakeContract::stake_sign_message(0, stake_value);
+    let stake_message = StakeState::stake_sign_message(0, stake_value);
 
     let stake_signature = sk.sign(&pk, stake_message.as_slice());
 
@@ -281,7 +281,7 @@ fn stake() {
         &address,
     );
 
-    let transaction = StakeContract::stake_transaction(
+    let transaction = StakeState::stake_transaction(
         &fee,
         &crossover,
         blinder,

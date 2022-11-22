@@ -7,78 +7,112 @@
 #![cfg_attr(target_family = "wasm", no_std)]
 #![feature(arbitrary_self_types)]
 
+extern crate alloc;
+
 use rusk_abi::dusk::*;
 
-pub type BlockHeight = u64;
-
-/// Epoch used for stake operations
-pub const EPOCH: u64 = 2160;
-
-/// Maturity of the stake
-pub const MATURITY: u64 = 2 * EPOCH;
+mod state;
+use state::StakeState;
 
 /// The minimum amount of Dusk one can stake.
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
-extern crate alloc;
-
-pub mod contract;
-pub mod error;
-pub mod stake;
-
-pub use contract::StakeContract;
-pub use error::Error;
-pub use stake::Stake;
-
 #[cfg(target_family = "wasm")]
 #[path = ""]
 mod wasm {
-    pub mod wasm;
     use super::*;
+
+    use dusk_bls12_381_sign::APK;
     use rusk_abi::{ModuleId, State};
-    pub use wasm::*;
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();
 
-    static mut STATE: State<StakeContract> = State::new(StakeContract::new());
+    static mut STATE: State<StakeState> = State::new(StakeState::new());
 
     // Transactions
 
     #[no_mangle]
     unsafe fn stake(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(
-            arg_len,
-            |(pk, signature, value, spend_proof)| {
-                STATE.stake(pk, signature, value, spend_proof)
-            },
-        )
+        rusk_abi::wrap_transaction(arg_len, |arg| STATE.stake(arg))
     }
 
     #[no_mangle]
     unsafe fn unstake(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(
-            arg_len,
-            |(pk, signature, note, withdraw_proof)| {
-                STATE.unstake(pk, signature, note, withdraw_proof)
-            },
-        )
+        rusk_abi::wrap_transaction(arg_len, |arg| STATE.unstake(arg))
     }
 
     #[no_mangle]
     unsafe fn withdraw(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(
-            arg_len,
-            |(pk, signature, address, nonce)| {
-                STATE.withdraw(pk, signature, address, nonce)
-            },
-        )
+        rusk_abi::wrap_transaction(arg_len, |arg| STATE.withdraw(arg))
+    }
+
+    #[no_mangle]
+    unsafe fn allow(arg_len: u32) -> u32 {
+        rusk_abi::wrap_transaction(arg_len, |arg| STATE.allow(arg))
+    }
+
+    // Queries
+
+    #[no_mangle]
+    unsafe fn get_stake(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |apk: APK| {
+            STATE.get_stake(&apk).map(|data| data.clone())
+        })
+    }
+
+    #[no_mangle]
+    unsafe fn stakes(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |_: ()| STATE.stakes())
     }
 
     #[no_mangle]
     unsafe fn allowlist(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |(pk, signature, owner)| {
-            STATE.allowlist(pk, signature, owner)
+        rusk_abi::wrap_query(arg_len, |_: ()| STATE.stakers_allowlist())
+    }
+
+    #[no_mangle]
+    unsafe fn owners(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |_: ()| STATE.owners())
+    }
+
+    // "Management" transaction
+
+    #[no_mangle]
+    unsafe fn insert_stake(arg_len: u32) -> u32 {
+        assert_external_caller();
+
+        rusk_abi::wrap_transaction(arg_len, |(apk, stake_data)| {
+            STATE.insert_stake(apk, stake_data);
         })
+    }
+
+    #[no_mangle]
+    unsafe fn reward(arg_len: u32) -> u32 {
+        assert_external_caller();
+
+        rusk_abi::wrap_transaction(arg_len, |(apk, value): (APK, u64)| {
+            STATE.reward(&apk, value);
+        })
+    }
+
+    #[no_mangle]
+    unsafe fn add_owner(arg_len: u32) -> u32 {
+        assert_external_caller();
+
+        rusk_abi::wrap_transaction(arg_len, |apk| {
+            STATE.add_owner(apk);
+        })
+    }
+
+    /// Asserts the call is made "from the outside", meaning that it's not an
+    /// inter-contract call.
+    ///
+    /// # Panics
+    /// When the `caller` is not "uninitialized".
+    fn assert_external_caller() {
+        if !rusk_abi::caller().is_uninitialized() {
+            panic!("Can only be called from the outside the VM");
+        }
     }
 }

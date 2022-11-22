@@ -7,25 +7,14 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
-dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = { version = "0.28", default-features = false, features = ["rkyv-impl", "alloc"] }
-microkelvin = { version = "0.17", default-features = false }
-nstack = { version = "0.16", default-features = false }
-ranno = "0.1"
-phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
 rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
-dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 transfer-contract-types = { path = "../transfer-types", default-features = false }
-rkyv = { version = "0.7", default-features = false, features = ["alloc"] }
-bytecheck = { version = "0.6", default-features = false }
+stake-contract-types = { path = "../stake-types", default-features = false }
 
 [dev-dependencies]
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
 transfer-wrapper = { path = "../../test-utils/transfer-wrapper", default-features = false }
 hex = "0.4"
 rand = "0.8"
-

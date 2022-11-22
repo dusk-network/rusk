@@ -145,18 +145,6 @@ pub struct Stct {
     pub proof: Proof,
 }
 
-/// Send value to a contract transparently.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Stct2 {
-    /// Module to send the value to.
-    pub address: ModuleId,
-    /// The value to send to the contract.
-    pub value: u64,
-    /// Proof of the `STCT` circuit.
-    pub proof: Vec<u8>,
-}
-
 /// Withdraw value from a contract transparently.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
@@ -167,18 +155,6 @@ pub struct Wfct {
     pub note: Note,
     /// A proof of the `WFCT` circuit.
     pub proof: Proof,
-}
-
-/// Withdraw value from a contract transparently.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Wfct2 {
-    /// The value to withdraw
-    pub value: u64,
-    /// The note to withdraw transparently to
-    pub note: Note,
-    /// A proof of the `WFCT` circuit.
-    pub proof: Vec<u8>,
 }
 
 /// Send value to a contract anonymously.
@@ -193,20 +169,6 @@ pub struct Stco {
     pub message_address: StealthAddress,
     /// Proof of the `STCO` circuit.
     pub proof: Proof,
-}
-
-/// Send value to a contract anonymously.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Stco2 {
-    /// Module to send the value to.
-    pub module: ModuleId,
-    /// Message containing the value commitment.
-    pub message: Message,
-    /// The stealth address of the message.
-    pub message_address: StealthAddress,
-    /// Proof of the `STCO` circuit.
-    pub proof: Vec<u8>,
 }
 
 /// Withdraw value from a contract anonymously.
@@ -225,24 +187,6 @@ pub struct Wfco {
     pub output: Note,
     /// Proof of the `WFCO` circuit.
     pub proof: Proof,
-}
-
-/// Withdraw value from a contract anonymously.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Wfco2 {
-    /// Message containing the value commitment.
-    pub message: Message,
-    /// The stealth address of the message.
-    pub message_address: StealthAddress,
-    /// Message containing commitment on the change value.
-    pub change: Message,
-    /// The stealth address of the change message.
-    pub change_address: StealthAddress,
-    /// The note to withdraw to.
-    pub output: Note,
-    /// Proof of the `WFCO` circuit.
-    pub proof: Vec<u8>,
 }
 
 /// Withdraw value from the calling contract to another contract.

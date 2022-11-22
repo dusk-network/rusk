@@ -2,6 +2,7 @@
 members = [
     "circuits/transfer",
     "contracts/stake",
+    "contracts/stake-types",
     "contracts/transfer",
     "contracts/transfer-types",
     "macros/code-hasher",
