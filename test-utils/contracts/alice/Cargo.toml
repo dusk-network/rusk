@@ -10,9 +10,9 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
 rusk-abi = { path = "../../../rusk-abi", features = ["wee_alloc"] }
-transfer-contract = { path = "../../../contracts/transfer", default-features = false }
-transfer-contract-types = { path = "../../../contracts/transfer-types", default-features = false }
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+transfer-contract-types = { path = "../../../contracts/transfer-types", default-features = false }
+alice-contract-types = { path = "../alice-types", default-features = false }
 
 [dev-dependencies]
 piecrust = { git = "https://github.com/dusk-network/piecrust" }

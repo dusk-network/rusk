@@ -323,14 +323,6 @@ impl<'a> TransferWrapper<'a> {
             .collect()
     }
 
-    pub fn balance(&mut self, address: &ModuleId) -> u64 {
-        *self
-            .transfer_state()
-            .balances()
-            .get(address)
-            .unwrap()
-    }
-
     pub fn message(
         &self,
         module: &ModuleId,
@@ -462,15 +454,16 @@ impl<'a> TransferWrapper<'a> {
             }
         }
 
-        let tx_hash = TransferState::tx_hash(
-            nullifiers.as_slice(),
-            outputs.as_slice(),
-            &anchor,
-            &fee,
-            crossover.as_ref(),
-            call.map(|c|c.0),
-            call.map(|c|c.2),
-        );
+        let transaction = Transaction {
+            anchor,
+            nullifiers,
+            outputs,
+            fee,
+            crossover,
+            proof: Proof::default(),
+            call
+        };
+        let tx_hash = transaction.hash();
 
         execute_proof.set_tx_hash(tx_hash);
 

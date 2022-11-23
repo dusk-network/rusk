@@ -18,10 +18,9 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use dusk_plonk::prelude::Proof;
-use dusk_poseidon::tree::{PoseidonBranch, PoseidonTree};
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::dusk::{Dusk, LUX};
-use rusk_abi::hash::Hasher;
 use rusk_abi::{
     ModuleError, ModuleId, PaymentInfo, PublicInput, RawResult, RawTransaction,
     State,
@@ -399,12 +398,6 @@ impl TransferState {
         }
     }
 
-    /// Return the modules' balances map
-    /// todo: check if this method can be eliminated
-    pub fn balances(&self) -> &BTreeMap<ModuleId, u64> {
-        &self.balances
-    }
-
     /// Update the root for of the tree.
     pub fn update_root(&mut self) -> BlsScalar {
         let root = self.tree.root();
@@ -589,37 +582,6 @@ impl TransferState {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then(|| ())
             .ok_or(Error::ProofVerificationError)
-    }
-
-    pub fn tx_hash(
-        nullifiers: &[BlsScalar],
-        outputs: &[Note],
-        anchor: &BlsScalar,
-        fee: &Fee,
-        crossover: Option<&Crossover>,
-        module_id_opt: Option<ModuleId>,
-        tx_data_opt: Option<Vec<u8>>,
-    ) -> BlsScalar {
-        let mut hasher = Hasher::new();
-
-        nullifiers.iter().for_each(|n| hasher.update(n.to_bytes()));
-        outputs.iter().for_each(|o| hasher.update(o.to_bytes()));
-
-        hasher.update(anchor.to_bytes());
-        hasher.update(fee.to_bytes());
-
-        if let Some(c) = crossover {
-            hasher.update(c.to_bytes());
-        };
-
-        if let Some(module_id) = module_id_opt {
-            hasher.update(module_id.as_bytes());
-        }
-        if let Some(tx_data) = tx_data_opt {
-            hasher.update(tx_data.as_slice());
-        }
-
-        hasher.finalize()
     }
 }
 

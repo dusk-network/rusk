@@ -1,6 +1,6 @@
 [package]
 name = "stake-contract"
-version = "0.10.1"
+version = "0.7.0"
 edition = "2021"
 
 [lib]
