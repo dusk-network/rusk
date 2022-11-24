@@ -31,6 +31,9 @@ use rusk_abi::ModuleId;
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
 
+/// The depth of the transfer tree.
+pub const TRANSFER_TREE_DEPTH: usize = 17;
+
 /// A leaf of the transfer tree.
 #[derive(Debug, Clone, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]

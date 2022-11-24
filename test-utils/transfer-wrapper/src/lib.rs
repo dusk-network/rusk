@@ -4,15 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use lazy_static::lazy_static;
-
 use dusk_plonk::prelude::*;
-
-pub const TX_PING: u8 = 0x01;
-pub const TX_WITHDRAW: u8 = 0x02;
-pub const TX_WITHDRAW_OBFUSCATED: u8 = 0x03;
-pub const TX_WITHDRAW_TO_CONTRACT: u8 = 0x04;
-pub const TRANSFER_TREE_DEPTH: usize = 17;
+use lazy_static::lazy_static;
 
 const TRANSFER: &[u8] = include_bytes!(
     "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
@@ -34,6 +27,3 @@ lazy_static! {
 }
 
 mod wrapper;
-
-pub use wrapper::StakeState;
-pub use wrapper::TransferWrapper;

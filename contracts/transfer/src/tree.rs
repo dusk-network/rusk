@@ -13,9 +13,7 @@ use dusk_poseidon::tree::{PoseidonBranch, PoseidonTree};
 use microkelvin::{Child, Compound, Step, Walk, Walker};
 use nstack::annotation::{Keyed, MaxKey};
 use ranno::Annotation;
-use transfer_contract_types::TreeLeaf;
-
-pub const TRANSFER_TREE_DEPTH: usize = 17;
+use transfer_contract_types::{TreeLeaf, TRANSFER_TREE_DEPTH};
 
 #[derive(Debug, Clone)]
 pub struct Tree {
@@ -53,8 +51,8 @@ impl Tree {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
-        Ok(self.tree.branch(pos))
+    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
+        self.tree.branch(pos)
     }
 }
 

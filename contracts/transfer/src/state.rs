@@ -414,8 +414,8 @@ impl TransferState {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>, Error> {
-        Ok(self.tree.opening(pos)?)
+    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
+        self.tree.opening(pos)
     }
 
     /// Takes some nullifiers and returns a vector containing the ones that
@@ -483,19 +483,6 @@ impl TransferState {
 
     fn extend_nullifiers(&mut self, nullifiers: Vec<BlsScalar>) {
         self.nullifiers.extend(nullifiers);
-    }
-
-    // todo: consider making this method private, made pub only for tests
-    pub fn take_message_from_address_key(
-        &mut self,
-        address: &ModuleId,
-        pk: &PublicKey,
-    ) -> Result<Message, Error> {
-        self.message_mapping
-            .get_mut(address)
-            .ok_or(Error::MessageNotFound)?
-            .remove(&pk.to_bytes())
-            .ok_or(Error::MessageNotFound)
     }
 
     fn push_note_current_height(&mut self, note: Note) -> Note {

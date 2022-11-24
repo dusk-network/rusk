@@ -28,6 +28,110 @@ pub use output::{CircuitOutput, WitnessOutput};
 #[cfg(feature = "builder")]
 pub mod builder;
 
+pub enum ExecuteCircuit {
+    OneTwo(ExecuteCircuitOneTwo),
+    TwoTwo(ExecuteCircuitTwoTwo),
+    ThreeTwo(ExecuteCircuitThreeTwo),
+    FourTwo(ExecuteCircuitFourTwo),
+}
+
+impl ExecuteCircuit {
+    /// Create a new circuit with the given number of inputs.
+    ///
+    /// # Panics
+    /// If the number of inputs is not in the 1..=4 range.
+    pub fn new(inputs: usize) -> Self {
+        match inputs {
+            1 => Self::OneTwo(ExecuteCircuitOneTwo::default()),
+            2 => Self::TwoTwo(ExecuteCircuitTwoTwo::default()),
+            3 => Self::ThreeTwo(ExecuteCircuitThreeTwo::default()),
+            4 => Self::FourTwo(ExecuteCircuitFourTwo::default()),
+            _ => panic!("Number of inputs not supported"),
+        }
+    }
+
+    pub fn circuit_id(&self) -> &'static [u8; 32] {
+        match self {
+            ExecuteCircuit::OneTwo(_) => ExecuteCircuitOneTwo::circuit_id(),
+            ExecuteCircuit::TwoTwo(_) => ExecuteCircuitTwoTwo::circuit_id(),
+            ExecuteCircuit::ThreeTwo(_) => ExecuteCircuitThreeTwo::circuit_id(),
+            ExecuteCircuit::FourTwo(_) => ExecuteCircuitFourTwo::circuit_id(),
+        }
+    }
+
+    pub fn add_output_with_data(
+        &mut self,
+        note: Note,
+        value: u64,
+        blinding_factor: JubJubScalar,
+    ) {
+        match self {
+            ExecuteCircuit::OneTwo(c) => {
+                c.add_output_with_data(note, value, blinding_factor)
+            }
+            ExecuteCircuit::TwoTwo(c) => {
+                c.add_output_with_data(note, value, blinding_factor)
+            }
+            ExecuteCircuit::ThreeTwo(c) => {
+                c.add_output_with_data(note, value, blinding_factor)
+            }
+            ExecuteCircuit::FourTwo(c) => {
+                c.add_output_with_data(note, value, blinding_factor)
+            }
+        }
+    }
+
+    pub fn set_fee_crossover(
+        &mut self,
+        fee: &Fee,
+        crossover: &Crossover,
+        value: u64,
+        blinder: JubJubScalar,
+    ) {
+        match self {
+            ExecuteCircuit::OneTwo(c) => {
+                c.set_fee_crossover(fee, crossover, value, blinder)
+            }
+            ExecuteCircuit::TwoTwo(c) => {
+                c.set_fee_crossover(fee, crossover, value, blinder)
+            }
+            ExecuteCircuit::ThreeTwo(c) => {
+                c.set_fee_crossover(fee, crossover, value, blinder)
+            }
+            ExecuteCircuit::FourTwo(c) => {
+                c.set_fee_crossover(fee, crossover, value, blinder)
+            }
+        }
+    }
+
+    pub fn set_fee(&mut self, fee: &Fee) {
+        match self {
+            ExecuteCircuit::OneTwo(c) => c.set_fee(fee),
+            ExecuteCircuit::TwoTwo(c) => c.set_fee(fee),
+            ExecuteCircuit::ThreeTwo(c) => c.set_fee(fee),
+            ExecuteCircuit::FourTwo(c) => c.set_fee(fee),
+        }
+    }
+
+    pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
+        match self {
+            ExecuteCircuit::OneTwo(c) => c.set_tx_hash(tx_hash),
+            ExecuteCircuit::TwoTwo(c) => c.set_tx_hash(tx_hash),
+            ExecuteCircuit::ThreeTwo(c) => c.set_tx_hash(tx_hash),
+            ExecuteCircuit::FourTwo(c) => c.set_tx_hash(tx_hash),
+        }
+    }
+
+    pub fn add_input(&mut self, input: CircuitInput) {
+        match self {
+            ExecuteCircuit::OneTwo(c) => c.add_input(input),
+            ExecuteCircuit::TwoTwo(c) => c.add_input(input),
+            ExecuteCircuit::ThreeTwo(c) => c.add_input(input),
+            ExecuteCircuit::FourTwo(c) => c.add_input(input),
+        }
+    }
+}
+
 macro_rules! execute_circuit_variant {
     ($ty:ident) => {
         /// The circuit responsible for creating a zero-knowledge proof
@@ -37,6 +141,61 @@ macro_rules! execute_circuit_variant {
             crossover: CircuitCrossover,
             outputs: Vec<CircuitOutput>,
             tx_hash: BlsScalar,
+        }
+
+        impl $ty {
+            pub fn add_output_with_data(
+                &mut self,
+                note: Note,
+                value: u64,
+                blinding_factor: JubJubScalar,
+            ) {
+                let output = CircuitOutput::new(note, value, blinding_factor);
+
+                self.outputs.push(output);
+            }
+
+            pub fn set_fee_crossover(
+                &mut self,
+                fee: &Fee,
+                crossover: &Crossover,
+                value: u64,
+                blinder: JubJubScalar,
+            ) {
+                let value_commitment = *crossover.value_commitment();
+                let fee = fee.gas_limit * fee.gas_price;
+
+                self.crossover = CircuitCrossover::new(
+                    value_commitment,
+                    value,
+                    blinder,
+                    fee,
+                );
+            }
+
+            pub fn set_fee(&mut self, fee: &Fee) {
+                let value = 0;
+                let blinding_factor = JubJubScalar::zero();
+                let value_commitment = (GENERATOR_EXTENDED
+                    * JubJubScalar::zero())
+                    + (GENERATOR_NUMS_EXTENDED * blinding_factor);
+
+                let fee = fee.gas_limit * fee.gas_price;
+                self.crossover = CircuitCrossover::new(
+                    value_commitment,
+                    value,
+                    blinding_factor,
+                    fee,
+                );
+            }
+
+            pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
+                self.tx_hash = tx_hash;
+            }
+
+            pub fn add_input(&mut self, input: CircuitInput) {
+                self.inputs.push(input);
+            }
         }
 
         impl $ty {
@@ -70,63 +229,8 @@ macro_rules! execute_circuit_variant {
                 (inputs, crossover, outputs, tx_hash)
             }
 
-            pub fn add_input(&mut self, input: CircuitInput) {
-                self.inputs.push(input);
-            }
-
             pub const fn tx_hash(&self) -> &BlsScalar {
                 &self.tx_hash
-            }
-
-            pub fn set_tx_hash(&mut self, tx_hash: BlsScalar) {
-                self.tx_hash = tx_hash;
-            }
-
-            pub fn set_fee(&mut self, fee: &Fee) -> Result<(), Error> {
-                let value = 0;
-                let blinding_factor = JubJubScalar::zero();
-                let value_commitment = (GENERATOR_EXTENDED
-                    * JubJubScalar::zero())
-                    + (GENERATOR_NUMS_EXTENDED * blinding_factor);
-
-                let fee = fee.gas_limit * fee.gas_price;
-                self.crossover = CircuitCrossover::new(
-                    value_commitment,
-                    value,
-                    blinding_factor,
-                    fee,
-                );
-
-                Ok(())
-            }
-
-            pub fn set_fee_crossover(
-                &mut self,
-                fee: &Fee,
-                crossover: &Crossover,
-                value: u64,
-                blinder: JubJubScalar,
-            ) {
-                let value_commitment = *crossover.value_commitment();
-                let fee = fee.gas_limit * fee.gas_price;
-
-                self.crossover = CircuitCrossover::new(
-                    value_commitment,
-                    value,
-                    blinder,
-                    fee,
-                );
-            }
-
-            pub fn add_output_with_data(
-                &mut self,
-                note: Note,
-                value: u64,
-                blinding_factor: JubJubScalar,
-            ) {
-                let output = CircuitOutput::new(note, value, blinding_factor);
-
-                self.outputs.push(output);
             }
 
             /// Return the anchor root of the inputs.

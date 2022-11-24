@@ -76,7 +76,7 @@ mod wasm {
         rusk_abi::wrap_query(arg_len, |_: ()| STATE.owners())
     }
 
-    // "Management" transaction
+    // "Management" transactions
 
     #[no_mangle]
     unsafe fn insert_stake(arg_len: u32) -> u32 {
@@ -84,6 +84,15 @@ mod wasm {
 
         rusk_abi::wrap_transaction(arg_len, |(apk, stake_data)| {
             STATE.insert_stake(apk, stake_data);
+        })
+    }
+
+    #[no_mangle]
+    unsafe fn insert_allowlist(arg_len: u32) -> u32 {
+        assert_external_caller();
+
+        rusk_abi::wrap_transaction(arg_len, |apk| {
+            STATE.insert_allowlist(apk);
         })
     }
 

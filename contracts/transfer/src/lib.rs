@@ -92,6 +92,11 @@ mod wasm {
     }
 
     #[no_mangle]
+    unsafe fn opening(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |pos| STATE.opening(pos))
+    }
+
+    #[no_mangle]
     unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
         rusk_abi::wrap_query(arg_len, |nullifiers| {
             STATE.existing_nullifiers(nullifiers)

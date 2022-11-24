@@ -170,7 +170,7 @@ macro_rules! execute_circuit_variant {
                     );
                 } else {
                     fee.gas_limit = 5 + value;
-                    circuit.set_fee(&fee)?;
+                    circuit.set_fee(&fee);
                 }
 
                 Ok(circuit)
