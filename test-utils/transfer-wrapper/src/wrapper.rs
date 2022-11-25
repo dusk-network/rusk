@@ -47,12 +47,12 @@ pub struct StakeState<'a> {
 }
 
 impl<'a> TransferWrapper<'a> {
-    pub fn new(vm: &mut VM, seed: u64, initial_balance: u64) -> Self {
+    pub fn new(vm: &'a mut VM, seed: u64, initial_balance: u64) -> Self {
         Self::with_stakes(vm, seed, initial_balance, StakeState::default())
     }
 
     pub fn with_stakes(
-        vm: &mut VM,
+        vm: &'a mut VM,
         seed: u64,
         initial_balance: u64,
         stakes: StakeState,
@@ -158,12 +158,20 @@ impl<'a> TransferWrapper<'a> {
         (ssk, vk, psk)
     }
 
-    pub fn alice(&self) -> &ModuleId {
-        &self.alice
+    pub fn transfer(&self) -> ModuleId {
+        self.transfer_id
     }
 
-    pub fn bob(&self) -> &ModuleId {
-        &self.bob
+    pub fn stake(&self) -> ModuleId {
+        self.stake_id
+    }
+
+    pub fn alice(&self) -> ModuleId {
+        self.alice
+    }
+
+    pub fn bob(&self) -> ModuleId {
+        self.bob
     }
 
     pub fn decrypt_blinder(
@@ -420,7 +428,7 @@ impl<'a> TransferWrapper<'a> {
 
         let transaction = Transaction {
             anchor,
-            nullifiers,
+            nullifiers: nullifiers.clone(),
             outputs,
             fee,
             crossover,
@@ -534,7 +542,7 @@ impl<'a> TransferWrapper<'a> {
         let (fee, crossover) =
             self.fee_crossover(gas_limit, gas_price, &refund_psk, value);
 
-        let mut stct_circuit = {
+        let stct_circuit = {
             let signature = SendToContractTransparentCircuit::sign(
                 &mut self.rng,
                 refund_ssk,
@@ -662,7 +670,7 @@ impl<'a> TransferWrapper<'a> {
             }
         };
 
-        let mut stco_circuit = {
+        let stco_circuit = {
             let crossover_note = Note::from((fee, crossover));
 
             let crossover_blinder = crossover_note

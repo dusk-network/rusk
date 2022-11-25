@@ -27,3 +27,4 @@ lazy_static! {
 }
 
 mod wrapper;
+pub use wrapper::*;
