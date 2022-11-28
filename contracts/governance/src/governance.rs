@@ -75,6 +75,8 @@ impl GovernanceContract {
         (!self.paused).then_some(()).ok_or(Error::ContractIsPaused)
     }
 
+    // to keep code consistent with other collections, we supress deref warnings
+    // as its not implemented for other when we switch features.
     fn is_allowed(&self, address: &PublicKey) -> Result<(), Error> {
         #[allow(clippy::needless_option_as_deref)]
         self.whitelist
