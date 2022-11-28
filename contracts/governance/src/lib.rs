@@ -11,6 +11,7 @@ extern crate alloc;
 #[cfg(target_arch = "wasm32")]
 mod wasm;
 
+mod collection;
 mod error;
 mod governance;
 
