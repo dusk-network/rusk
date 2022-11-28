@@ -238,14 +238,18 @@ impl GovernanceContract {
         {
             self.is_allowed(&from)?;
 
-            let base = self
-                .balances
-                .get(&from)?
-                .as_deref()
-                .copied()
-                .unwrap_or(0)
-                .checked_sub(amount)
-                .ok_or(Error::InsufficientBalance)?;
+            let mut base =
+                self.balances.get(&from)?.as_deref().copied().unwrap_or(0);
+
+            if base < amount {
+                let remaining = amount - base;
+
+                self.mint(seed, signature, from, remaining)?;
+
+                base = 0;
+            } else {
+                base = base - amount;
+            }
 
             let target = self
                 .balances
