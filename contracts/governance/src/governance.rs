@@ -10,18 +10,23 @@ use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_hamt::Map;
 use dusk_jubjub::GENERATOR_EXTENDED;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
+#[cfg(not(feature = "map"))]
+use crate::collection::Collection;
+
 use crate::*;
+
+#[cfg(feature = "map")]
+type Collection<K, V> = dusk_hamt::Map<K, V>;
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct GovernanceContract {
-    pub(crate) seeds: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) whitelist: Map<PublicKey, ()>,
+    pub(crate) seeds: Collection<BlsScalar, ()>,
+    pub(crate) balances: Collection<PublicKey, u64>,
+    pub(crate) whitelist: Collection<PublicKey, ()>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
 }
@@ -71,6 +76,7 @@ impl GovernanceContract {
     }
 
     fn is_allowed(&self, address: &PublicKey) -> Result<(), Error> {
+        #[allow(clippy::needless_option_as_deref)]
         self.whitelist
             .get(address)?
             .as_deref()
@@ -166,6 +172,7 @@ impl GovernanceContract {
             .checked_add(value)
             .ok_or(Error::BalanceOverflow)?;
 
+        #[allow(clippy::needless_option_as_deref)]
         let value = self
             .balances
             .get(&address)?
@@ -199,6 +206,7 @@ impl GovernanceContract {
 
         self.total_supply = self.total_supply.saturating_sub(value);
 
+        #[allow(clippy::needless_option_as_deref)]
         let value = self
             .balances
             .get(&address)?
@@ -217,6 +225,7 @@ impl GovernanceContract {
         Ok(())
     }
 
+    #[allow(clippy::needless_option_as_deref)]
     pub fn transfer(
         &mut self,
         seed: BlsScalar,
@@ -248,7 +257,7 @@ impl GovernanceContract {
 
                 base = 0;
             } else {
-                base = base - amount;
+                base -= amount;
             }
 
             let target = self
