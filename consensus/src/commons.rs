@@ -74,7 +74,6 @@ impl Serializable for Certificate {
         Ok(())
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -204,7 +203,6 @@ impl Serializable for Header {
         Ok(())
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -263,7 +261,6 @@ impl Serializable for Block {
         Ok(())
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,

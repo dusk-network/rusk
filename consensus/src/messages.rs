@@ -22,7 +22,6 @@ pub trait Serializable {
     /// Serialize struct to Vec<u8>.
     fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(reader: &mut R) -> io::Result<Self>
     where
         Self: Sized;
@@ -86,7 +85,6 @@ impl Serializable for Message {
         }
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -211,7 +209,6 @@ impl Serializable for Header {
         Ok(())
     }
 
-    /// Deserialize struct from buf by consuming N bytes.
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
@@ -358,7 +355,6 @@ pub mod payload {
             Ok(())
         }
 
-        /// Deserialize struct from buf by consuming N bytes.
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
@@ -402,7 +398,6 @@ pub mod payload {
             Ok(())
         }
 
-        /// Deserialize struct from buf by consuming N bytes.
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
@@ -440,7 +435,6 @@ pub mod payload {
             Ok(())
         }
 
-        /// Deserialize struct from buf by consuming N bytes.
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
@@ -485,7 +479,6 @@ pub mod payload {
             Ok(())
         }
 
-        /// Deserialize struct from buf by consuming N bytes.
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
@@ -532,7 +525,6 @@ pub mod payload {
             Ok(())
         }
 
-        /// Deserialize struct from buf by consuming N bytes.
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
