@@ -11,6 +11,7 @@ use core::fmt;
 pub enum Error {
     AddressIsNotWhitelisted,
     BalanceOverflow,
+    InvalidPublicKey,
     Canon(CanonError),
     ContractIsPaused,
     InsufficientBalance,

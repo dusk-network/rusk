@@ -16,7 +16,7 @@ pub struct Collection<K, V> {
 impl<K: PartialEq, V: PartialEq> Collection<K, V> {
     // Methods return a result to keep things consistent with the map methods
     pub fn get(&self, key: &K) -> Result<Option<&V>, CanonError> {
-        Ok(self.data.iter().find(|(x, _)| x == key).map(|(_, y)| y))
+        Ok(self.data.iter().find_map(|(k, v)| (k == key).then_some(v)))
     }
 
     pub fn insert(&mut self, key: K, value: V) -> Result<(), CanonError> {
@@ -30,7 +30,7 @@ impl<K: PartialEq, V: PartialEq> Collection<K, V> {
     }
 
     pub fn remove(&mut self, key: &K) -> Result<(), CanonError> {
-        self.data.retain(|(k, _)| k == key);
+        self.data.retain(|(k, _)| k != key);
 
         Ok(())
     }

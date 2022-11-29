@@ -17,4 +17,4 @@ dusk-bytes = "0.1"
 canonical = "0.7"
 canonical_derive = "0.7"
 
-rusk-abi = { path = "../../../", features = ["module"] }
+rusk-abi = { path = "../../../", version = "0.7", features = ["module"] }

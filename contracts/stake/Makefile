@@ -3,6 +3,9 @@ help: ## Display this help screen
 		-E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+all: ## Build the stake contract
+	@cargo build --release
+
 check: wasm ## Run the Rust check on the project features
 	@cargo check --target wasm32-unknown-unknown
 	@cargo check
@@ -17,4 +20,4 @@ wasm: ## Build the WASM files
 		--target wasm32-unknown-unknown \
 		-- -C link-args=-s
 
-.PHONY: check test wasm help
+.PHONY: all check test wasm help

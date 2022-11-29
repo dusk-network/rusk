@@ -10,17 +10,12 @@ use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::GENERATOR_EXTENDED;
+use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
+use dusk_bytes::Serializable;
 use dusk_pki::PublicKey;
-use dusk_schnorr::Signature;
 
-#[cfg(not(feature = "map"))]
 use crate::collection::Collection;
-
 use crate::*;
-
-#[cfg(feature = "map")]
-type Collection<K, V> = dusk_hamt::Map<K, V>;
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct GovernanceContract {
@@ -36,14 +31,21 @@ impl GovernanceContract {
     ///
     /// Will have to be defined in the constant space so the bytecode of the
     /// contract will be changed as the authority does
-    pub const AUTHORITY: PublicKey =
-        PublicKey::from_raw_unchecked(GENERATOR_EXTENDED);
+    pub const AUTHORITY: &[u8; 96] = include_bytes!(concat!(
+        env!("RUSK_PROFILE_PATH"),
+        "/governance_authority.cpk"
+    ));
 
     fn validate_seed(
         &mut self,
         arguments: Vec<BlsScalar>,
         signature: Signature,
     ) -> Result<(), Error> {
+        // Cannot construct BlsPublicKey in a const context that's why we
+        // construct it in the function body.
+        let authority = BlsPublicKey::from_bytes(Self::AUTHORITY)
+            .map_err(|_| Error::InvalidPublicKey)?;
+
         let seed = arguments[0];
 
         if self.seeds.get(&seed)?.is_some() {
@@ -51,17 +53,21 @@ impl GovernanceContract {
         }
 
         #[cfg(target_arch = "wasm32")]
-        if !rusk_abi::verify_schnorr_sign(
+        if !rusk_abi::verify_bls_sign(
             signature,
-            Self::AUTHORITY,
-            rusk_abi::poseidon_hash(arguments),
+            authority,
+            rusk_abi::poseidon_hash(arguments).to_bytes().to_vec(),
         ) {
             return Err(Error::InvalidSignature);
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if !signature
-            .verify(&Self::AUTHORITY, dusk_poseidon::sponge::hash(&arguments))
+        if authority
+            .verify(
+                &signature,
+                &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
+            )
+            .is_ok()
         {
             return Err(Error::InvalidSignature);
         }
@@ -78,10 +84,8 @@ impl GovernanceContract {
     // to keep code consistent with other collections, we supress deref warnings
     // as its not implemented for other when we switch features.
     fn is_allowed(&self, address: &PublicKey) -> Result<(), Error> {
-        #[allow(clippy::needless_option_as_deref)]
         self.whitelist
             .get(address)?
-            .as_deref()
             .copied()
             .ok_or(Error::AddressIsNotWhitelisted)
     }
@@ -174,11 +178,9 @@ impl GovernanceContract {
             .checked_add(value)
             .ok_or(Error::BalanceOverflow)?;
 
-        #[allow(clippy::needless_option_as_deref)]
         let value = self
             .balances
             .get(&address)?
-            .as_deref()
             .copied()
             .unwrap_or(0)
             .checked_add(value)
@@ -208,11 +210,9 @@ impl GovernanceContract {
 
         self.total_supply = self.total_supply.saturating_sub(value);
 
-        #[allow(clippy::needless_option_as_deref)]
         let value = self
             .balances
             .get(&address)?
-            .as_deref()
             .copied()
             .unwrap_or(0)
             .checked_sub(value)
@@ -227,7 +227,6 @@ impl GovernanceContract {
         Ok(())
     }
 
-    #[allow(clippy::needless_option_as_deref)]
     pub fn transfer(
         &mut self,
         seed: BlsScalar,
@@ -249,8 +248,7 @@ impl GovernanceContract {
         {
             self.is_allowed(&from)?;
 
-            let mut base =
-                self.balances.get(&from)?.as_deref().copied().unwrap_or(0);
+            let mut base = self.balances.get(&from)?.copied().unwrap_or(0);
 
             if base < amount {
                 let remaining = amount - base;
@@ -265,7 +263,6 @@ impl GovernanceContract {
             let target = self
                 .balances
                 .get(&to)?
-                .as_deref()
                 .copied()
                 .unwrap_or(0)
                 .checked_add(amount)
