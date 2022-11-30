@@ -61,7 +61,7 @@ impl Aggregator {
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
             let val = cluster.set_weight(&header.pubkey_bls, weight);
-            debug_assert!(val != None);
+            debug_assert!(val.is_some());
 
             let total = cluster.total_occurrences();
             let quorum_target = committee.quorum();
