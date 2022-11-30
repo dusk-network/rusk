@@ -66,18 +66,33 @@ struct Reader {
 
 impl NetworkListen for Reader {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
-        let decoded = wire::Frame::decode(&mut &message.to_vec()[..])
-            .expect("message should be decodable");
-        let mut msg = decoded.get_msg().clone();
-        msg.metadata = Some(TransportData {
-            height: md.height(),
-            src_addr: md.src().to_string(),
-        });
+        match wire::Frame::decode(&mut &message.to_vec()[..]) {
+            Ok(decoded) => {
+                let mut msg = decoded.get_msg().clone();
+                msg.metadata = Some(TransportData {
+                    height: md.height(),
+                    src_addr: md.src().to_string(),
+                });
 
-        // Dispatch message to the proper queue for further processing
-        if let Err(e) = self.msg_dispatcher.dispatch(decoded.get_topic(), msg) {
-            tracing::error!("could not dispatch {:?}", e);
-        }
+                // Dispatch message to the proper queue for further processing
+                if let Err(e) =
+                    self.msg_dispatcher.dispatch(decoded.get_topic(), msg)
+                {
+                    tracing::error!("could not dispatch {:?}", e);
+                }
+            }
+            Err(err) => {
+                // Dump message blob and topic number
+                let topic_pos = 8 + 8 + 8 + 4;
+
+                tracing::error!(
+                    "err: {:?}, msg_topic: {:?} msg_blob: {:?}",
+                    err,
+                    message.get(topic_pos),
+                    message
+                );
+            }
+        };
     }
 }
 
