@@ -4,25 +4,48 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::commons::{marshal_signable_vote, Topics};
 use crate::util::pubkey::ConsensusPublicKey;
+use std::io::{self, Read, Write};
 
 pub enum Status {
     Past,
     Present,
     Future,
 }
-///
+
 pub trait Serializable {
     /// Serialize struct to Vec<u8>.
-    fn to_bytes(&self) -> Vec<u8>;
+    fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
 
-    /// Deserialize struct from buf by consuming N bytes.
-    fn from_bytes(buf: &mut Bytes) -> Self;
+    fn read<R: Read>(reader: &mut R) -> io::Result<Self>
+    where
+        Self: Sized;
+
+    fn write_var_le_bytes<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
+        let len = buf.len() as u8;
+
+        w.write_all(&len.to_le_bytes())?;
+        w.write_all(buf)?;
+
+        Ok(())
+    }
+
+    fn read_var_le_bytes<R: Read, const N: usize>(
+        r: &mut R,
+    ) -> io::Result<[u8; N]> {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+
+        let mut buf = [0u8; N];
+        r.read_exact(&mut buf)?;
+
+        Ok(buf)
+    }
 }
 
 pub trait MessageTrait {
@@ -32,7 +55,7 @@ pub trait MessageTrait {
 }
 
 /// Message is a data unit that consensus phase can process.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Message {
     pub header: Header,
     pub payload: Payload,
@@ -43,57 +66,54 @@ pub struct Message {
 /// Defines a transport-related properties that determines how the message
 /// will be broadcast.
 /// TODO: This should be moved out of consensus message definition.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransportData {
     pub height: u8,
     pub src_addr: String,
 }
 
 impl Serializable for Message {
-    /// Support serialization for messages that are sent on the wire.
-    fn to_bytes(&self) -> Vec<u8> {
-        let payload_as_vec = match &self.payload {
-            Payload::NewBlock(p) => p.to_bytes(),
-            Payload::Reduction(p) => p.to_bytes(),
-            Payload::Agreement(p) => p.to_bytes(),
-            Payload::AggrAgreement(p) => p.to_bytes(),
-            _ => vec![], // non-serialziable messages are those which are not sent on the wire.
-        };
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.header.write(w)?;
 
-        let mut buf = BytesMut::with_capacity(payload_as_vec.len());
-        buf.put(&self.header.to_bytes()[..]);
-        buf.put(&payload_as_vec[..]);
-        buf.to_vec()
+        match &self.payload {
+            Payload::NewBlock(p) => p.write(w),
+            Payload::Reduction(p) => p.write(w),
+            Payload::Agreement(p) => p.write(w),
+            Payload::AggrAgreement(p) => p.write(w),
+            _ => Ok(()), // non-serialziable messages are those which are not sent on the wire.
+        }
     }
 
-    // Support de-serialization  for messages that are received from the wire.
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        let mut msg = Self {
-            header: Header::from_bytes(buf),
-            payload: Payload::Empty,
-            metadata: Default::default(),
-        };
-
-        msg.payload = match Topics::from(msg.header.topic) {
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let header = Header::read(r)?;
+        let payload = match Topics::from(header.topic) {
             Topics::NewBlock => {
-                Payload::NewBlock(Box::new(payload::NewBlock::from_bytes(buf)))
+                Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
             Topics::Reduction => {
-                Payload::Reduction(payload::Reduction::from_bytes(buf))
+                Payload::Reduction(payload::Reduction::read(r)?)
             }
             Topics::Agreement => {
-                Payload::Agreement(payload::Agreement::from_bytes(buf))
+                Payload::Agreement(payload::Agreement::read(r)?)
             }
             Topics::AggrAgreement => {
-                Payload::AggrAgreement(payload::AggrAgreement::from_bytes(buf))
+                Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
             _ => {
-                debug_assert!(false, "unhandled topic {}", msg.header.topic);
+                debug_assert!(false, "unhandled topic {}", header.topic);
                 Payload::Empty
             }
         };
 
-        msg
+        Ok(Message {
+            header,
+            payload,
+            metadata: Default::default(),
+        })
     }
 }
 
@@ -110,7 +130,7 @@ impl MessageTrait for Message {
 }
 
 impl Message {
-    pub fn from_newblock(header: Header, p: payload::NewBlock) -> Message {
+    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
         Self {
             header,
             payload: Payload::NewBlock(Box::new(p)),
@@ -121,7 +141,7 @@ impl Message {
     pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
         Self {
             header: Header::default(),
-            payload: Payload::StepVotesWithCandidate(p),
+            payload: Payload::StepVotesWithCandidate(Box::new(p)),
             ..Default::default()
         }
     }
@@ -179,34 +199,60 @@ pub struct Header {
 }
 
 impl Serializable for Header {
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(300);
-        buf.put_u8(self.topic);
-        buf.put_u8(self.step);
-        buf.put_u64_le(self.round);
-        buf.put(&self.block_hash[..]);
-        buf.put(&self.pubkey_bls.bytes()[..]);
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&[self.topic])?;
+        Self::write_var_le_bytes(w, &self.pubkey_bls.bytes()[..])?;
+        w.write_all(&self.round.to_le_bytes())?;
+        w.write_all(&[self.step])?;
+        w.write_all(&self.block_hash[..])?;
 
-        buf.to_vec()
+        Ok(())
     }
 
-    fn from_bytes(buf: &mut Bytes) -> Self {
-        let mut header = Header {
-            topic: buf.get_u8(),
-            step: buf.get_u8(),
-            round: buf.get_u64_le(),
-            ..Default::default()
-        };
-        buf.copy_to_slice(&mut header.block_hash[..]);
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        // Read topic
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+        let topic = buf[0];
 
-        let mut pubkey_bytes = [0u8; 96];
-        buf.copy_to_slice(&mut pubkey_bytes[..]);
+        // Read bls pubkey
+        let buf: [u8; 96] = Self::read_var_le_bytes(r)?;
 
-        header.pubkey_bls = ConsensusPublicKey::new(
-            dusk_bls12_381_sign::PublicKey::from_slice(&pubkey_bytes).unwrap(),
-        );
+        let mut pubkey_bls = ConsensusPublicKey::default();
+        if buf != [0u8; 96] {
+            pubkey_bls = match dusk_bls12_381_sign::PublicKey::from_slice(&buf)
+            {
+                Ok(pk) => ConsensusPublicKey::new(pk),
+                Err(_) => {
+                    return Ok(Header::default()); // TODO: This should be an error
+                }
+            }
+        }
 
-        header
+        // Read round
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        let round = u64::from_le_bytes(buf);
+
+        // Read step
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+        let step = buf[0];
+
+        // Read block_hash
+        let mut block_hash = [0u8; 32];
+        r.read_exact(&mut block_hash[..])?;
+
+        Ok(Header {
+            pubkey_bls,
+            round,
+            step,
+            block_hash,
+            topic,
+        })
     }
 }
 
@@ -276,12 +322,12 @@ impl Header {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
     StepVotes(payload::StepVotes),
-    StepVotesWithCandidate(payload::StepVotesWithCandidate),
+    StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
     Empty,
@@ -296,28 +342,25 @@ impl Default for Payload {
 pub mod payload {
     use super::Serializable;
     use crate::commons::Block;
-    use bytes::{Buf, BufMut, Bytes, BytesMut};
-    use std::mem;
+    use std::io::{self, Read, Write};
 
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Reduction {
         pub signed_hash: [u8; 48],
     }
 
     impl Serializable for Reduction {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(48);
-            buf.put(&self.signed_hash[..]);
-            buf.to_vec()
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            Self::write_var_le_bytes(w, &self.signed_hash[..])?;
+            Ok(())
         }
 
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut r = Self {
-                signed_hash: [0; 48],
-            };
-
-            buf.copy_to_slice(&mut r.signed_hash);
-            r
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let signed_hash = Self::read_var_le_bytes(r)?;
+            Ok(Reduction { signed_hash })
         }
     }
 
@@ -329,7 +372,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct NewBlock {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
@@ -347,26 +390,25 @@ pub mod payload {
     }
 
     impl Serializable for NewBlock {
-        fn to_bytes(&self) -> Vec<u8> {
-            let candidate_as_bytes = self.candidate.to_bytes();
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.prev_hash[..])?;
+            self.candidate.write(w)?;
+            Self::write_var_le_bytes(w, &self.signed_hash[..])?;
 
-            let mut buf =
-                BytesMut::with_capacity(candidate_as_bytes.len() + 80);
-            buf.put(&self.prev_hash[..]);
-            buf.put(&self.signed_hash[..]);
-            buf.put(&candidate_as_bytes[..]);
-
-            buf.to_vec()
+            Ok(())
         }
 
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut nb = NewBlock::default();
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut result = NewBlock::default();
 
-            buf.copy_to_slice(&mut nb.prev_hash);
-            buf.copy_to_slice(&mut nb.signed_hash);
+            r.read_exact(&mut result.prev_hash[..])?;
+            result.candidate = Block::read(r)?;
+            result.signed_hash = Self::read_var_le_bytes(r)?;
 
-            nb.candidate.from_bytes(buf);
-            nb
+            Ok(result)
         }
     }
 
@@ -385,21 +427,30 @@ pub mod payload {
         }
     }
 
-    impl StepVotes {
-        pub fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(mem::size_of::<StepVotes>());
-            buf.put_u64(self.bitset);
-            buf.put(&self.signature[..]);
-            buf.to_vec()
+    impl Serializable for StepVotes {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.bitset.to_le_bytes())?;
+            Self::write_var_le_bytes(w, &self.signature[..])?;
+
+            Ok(())
         }
 
-        pub fn from_bytes(&mut self, buf: &mut Bytes) {
-            self.bitset = buf.get_u64();
-            buf.copy_to_slice(&mut self.signature);
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut buf = [0u8; 8];
+            r.read_exact(&mut buf[..])?;
+            let signature = Self::read_var_le_bytes(r)?;
+
+            Ok(StepVotes {
+                bitset: u64::from_le_bytes(buf),
+                signature,
+            })
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct StepVotesWithCandidate {
         pub sv: StepVotes,
         pub candidate: Block,
@@ -415,22 +466,36 @@ pub mod payload {
     }
 
     impl Serializable for Agreement {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(48);
-            buf.put(&self.signature[..]);
-            buf.put(&self.first_step.to_bytes()[..]);
-            buf.put(&self.second_step.to_bytes()[..]);
-            buf.to_vec()
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            Self::write_var_le_bytes(w, &self.signature[..])?;
+
+            // Read this field for backward compatibility
+            let step_votes_len = 2u8;
+            w.write_all(&step_votes_len.to_le_bytes())?;
+
+            self.first_step.write(w)?;
+            self.second_step.write(w)?;
+
+            Ok(())
         }
 
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut agr = Agreement::default();
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let signature = Self::read_var_le_bytes(r)?;
 
-            buf.copy_to_slice(&mut agr.signature);
+            let mut step_votes_len = [0u8; 1];
+            r.read_exact(&mut step_votes_len)?;
 
-            agr.first_step.from_bytes(buf);
-            agr.second_step.from_bytes(buf);
-            agr
+            let first_step = StepVotes::read(r)?;
+            let second_step = StepVotes::read(r)?;
+
+            Ok(Agreement {
+                signature,
+                first_step,
+                second_step,
+            })
         }
     }
 
@@ -444,7 +509,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct AggrAgreement {
         pub agreement: Agreement,
         pub bitset: u64,
@@ -452,22 +517,31 @@ pub mod payload {
     }
 
     impl Serializable for AggrAgreement {
-        fn to_bytes(&self) -> Vec<u8> {
-            let mut buf = BytesMut::with_capacity(100);
-            buf.put(&self.aggr_signature[..]);
-            buf.put_u64_le(self.bitset);
-            buf.put(&self.agreement.to_bytes()[..]);
-            buf.to_vec()
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            self.agreement.write(w)?;
+            w.write_all(&self.bitset.to_le_bytes())?;
+            Self::write_var_le_bytes(w, &self.aggr_signature[..])?;
+
+            Ok(())
         }
 
-        fn from_bytes(buf: &mut Bytes) -> Self {
-            let mut a = AggrAgreement::default();
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let agreement = Agreement::read(r)?;
 
-            buf.copy_to_slice(&mut a.aggr_signature);
-            a.bitset = buf.get_u64_le();
-            a.agreement = Agreement::from_bytes(buf);
+            let mut buf = [0u8; 8];
+            r.read_exact(&mut buf)?;
+            let bitset = u64::from_le_bytes(buf);
 
-            a
+            let aggr_signature = Self::read_var_le_bytes(r)?;
+
+            Ok(AggrAgreement {
+                agreement,
+                bitset,
+                aggr_signature,
+            })
         }
     }
 
@@ -479,5 +553,102 @@ pub mod payload {
                 bitset: 0,
             }
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(unused)]
+mod tests {
+    use crate::commons::{Block, Certificate, Topics};
+    use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
+    use crate::messages::{self, Header, Message, Serializable};
+    use crate::util::pubkey::ConsensusPublicKey;
+
+    use super::payload::AggrAgreement;
+
+    #[test]
+    fn test_serialize() {
+        assert_serialize(Header {
+            pubkey_bls: ConsensusPublicKey::from_sk_seed_u64(1),
+            round: 8,
+            step: 7,
+            block_hash: [3; 32],
+            topic: 3,
+        });
+
+        let sample_block = Block {
+            header: crate::commons::Header {
+                version: 3,
+                height: 1888881,
+                timestamp: 123456789,
+                gas_limit: 111111111,
+                prev_block_hash: [1; 32],
+                seed: [2; 32],
+                generator_bls_pubkey: [3; 96],
+                state_hash: [4; 32],
+                hash: [5; 32],
+                cert: Certificate {
+                    first_reduction: ([6; 48], 22222222),
+                    second_reduction: ([7; 48], 3333333),
+                    step: 234,
+                },
+            },
+            txs: vec![],
+        };
+
+        assert_serialize(NewBlock {
+            prev_hash: [3; 32],
+            candidate: sample_block,
+            signed_hash: [4; 48],
+        });
+
+        assert_serialize(StepVotes {
+            bitset: 12345,
+            signature: [4; 48],
+        });
+
+        assert_serialize(Agreement {
+            first_step: StepVotes {
+                bitset: 12345,
+                signature: [1; 48],
+            },
+            second_step: StepVotes {
+                bitset: 98765,
+                signature: [2; 48],
+            },
+            signature: [3; 48],
+        });
+
+        assert_serialize(AggrAgreement {
+            agreement: Agreement {
+                first_step: StepVotes {
+                    bitset: 12345,
+                    signature: [1; 48],
+                },
+                second_step: StepVotes {
+                    bitset: 98765,
+                    signature: [2; 48],
+                },
+                signature: [3; 48],
+            },
+            aggr_signature: [8; 48],
+            bitset: 10,
+        });
+
+        assert_serialize(Reduction {
+            signed_hash: [4; 48],
+        });
+    }
+
+    fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {
+        let mut buf = vec![];
+        assert!(v.write(&mut buf).is_ok());
+        let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
+        assert_eq!(
+            v,
+            dup,
+            "failed to (de)serialize {}",
+            std::any::type_name::<S>()
+        );
     }
 }

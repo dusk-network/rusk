@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, RoundUpdate, Topics};
+use crate::commons::{Block, Certificate, RoundUpdate, Topics};
 use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
@@ -49,7 +49,7 @@ impl<T: Operations> Generator<T> {
         let signed_hash =
             msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        Ok(Message::from_newblock(
+        Ok(Message::new_newblock(
             msg_header,
             NewBlock {
                 prev_hash: [0; 32],
@@ -87,9 +87,10 @@ impl<T: Operations> Generator<T> {
             generator_bls_pubkey: *pubkey.bytes(),
             state_hash: [0; 32],
             hash: [0; 32],
+            cert: Certificate::default(),
         };
 
-        Ok(Block::new(blk_header, vec![]))
+        Ok(Block::new(blk_header, vec![]).expect("block should be valid"))
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {

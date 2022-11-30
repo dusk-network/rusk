@@ -52,7 +52,11 @@ async fn broadcast(peer: &Peer, msg: Message) {
         Some(TransportData { height, .. }) => Some((height as usize) - 1),
         None => None,
     };
-    peer.broadcast(&wire::Frame::encode(msg), height).await;
+    peer.broadcast(
+        &wire::Frame::encode(msg).expect("message should be encodable"),
+        height,
+    )
+    .await;
 }
 
 #[derive(Default)]
@@ -62,7 +66,8 @@ struct Reader {
 
 impl NetworkListen for Reader {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
-        let decoded = wire::Frame::decode(message.to_vec());
+        let decoded = wire::Frame::decode(&mut &message.to_vec()[..])
+            .expect("message should be decodable");
         let mut msg = decoded.get_msg().clone();
         msg.metadata = Some(TransportData {
             height: md.height(),

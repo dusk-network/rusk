@@ -7,15 +7,17 @@
 use crate::contract_state::Operations;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
-use crate::messages::{self, Message};
+use crate::messages::{self, Message, Serializable};
 
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
+use sha3::Digest;
+use std::io::{self, Read, Write};
 
+use std::fmt;
 use std::sync::Arc;
-use std::{fmt, mem};
 use tokio::sync::Mutex;
 
 #[derive(Clone, Default, Debug)]
@@ -44,47 +46,174 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Certificate {
+    pub first_reduction: ([u8; 48], u64),
+    pub second_reduction: ([u8; 48], u64),
+    pub step: u8,
+}
+
+impl Default for Certificate {
+    fn default() -> Self {
+        Self {
+            first_reduction: ([0u8; 48], 0),
+            second_reduction: ([0u8; 48], 0),
+            step: 0,
+        }
+    }
+}
+
+impl Serializable for Certificate {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        Self::write_var_le_bytes(w, &self.first_reduction.0[..])?;
+        Self::write_var_le_bytes(w, &self.second_reduction.0[..])?;
+        w.write_all(&self.step.to_le_bytes())?;
+        w.write_all(&self.first_reduction.1.to_le_bytes())?;
+        w.write_all(&self.second_reduction.1.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut first_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+        let mut second_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+        let step = buf[0];
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        first_reduction.1 = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        second_reduction.1 = u64::from_le_bytes(buf);
+
+        Ok(Certificate {
+            first_reduction,
+            second_reduction,
+            step,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Header {
+    // Hashable fields
     pub version: u8,
     pub height: u64,
     pub timestamp: i64,
-    pub gas_limit: u64,
     pub prev_block_hash: [u8; 32],
     pub seed: [u8; 32],
-    pub generator_bls_pubkey: [u8; 96],
     pub state_hash: [u8; 32],
+    pub generator_bls_pubkey: [u8; 96],
+    pub gas_limit: u64,
+
+    // Block hash
     pub hash: [u8; 32],
+
+    // Non-hashable fields
+    pub cert: Certificate,
 }
 
 impl Header {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
-        buf.put_u8(self.version);
-        buf.put_u64_le(self.height);
-        buf.put_i64_le(self.timestamp);
-        buf.put_u64_le(self.gas_limit);
+    /// Marshal hashable fields.
+    ///
+    /// Param `fixed_size_seed` changes the way seed is marshaled.
+    /// In block hashing, header seed is fixed-size field while in wire
+    /// message marshaling it is variable-length field.
+    fn marshal_hashable<W: Write>(
+        &self,
+        w: &mut W,
+        fixed_size_seed: bool,
+    ) -> io::Result<()> {
+        w.write_all(&self.version.to_le_bytes())?;
+        w.write_all(&self.height.to_le_bytes())?;
+        w.write_all(&(self.timestamp as u64).to_le_bytes())?;
+        w.write_all(&self.prev_block_hash[..])?;
 
-        buf.put(&self.prev_block_hash[..]);
-        buf.put(&self.seed[..]);
-        buf.put(&self.generator_bls_pubkey[..]);
-        buf.put(&self.state_hash[..]);
-        buf.put(&self.hash[..]);
+        if fixed_size_seed {
+            w.write_all(&self.seed[..])?;
+        } else {
+            Self::write_var_le_bytes(w, &self.seed[..])?;
+        }
 
-        buf.to_vec()
+        w.write_all(&self.state_hash[..])?;
+        w.write_all(&self.generator_bls_pubkey[..])?;
+        w.write_all(&self.gas_limit.to_le_bytes())?;
+
+        Ok(())
     }
 
-    pub fn from_bytes(&mut self, buf: &mut Bytes) {
-        self.version = buf.get_u8();
-        self.height = buf.get_u64_le();
-        self.timestamp = buf.get_i64_le();
-        self.gas_limit = buf.get_u64_le();
+    fn unmarshal_hashable<R: Read>(r: &mut R) -> io::Result<Self> {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+        let version = buf[0];
 
-        buf.copy_to_slice(&mut self.prev_block_hash);
-        buf.copy_to_slice(&mut self.seed);
-        buf.copy_to_slice(&mut self.generator_bls_pubkey);
-        buf.copy_to_slice(&mut self.state_hash);
-        buf.copy_to_slice(&mut self.hash);
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let height = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let timestamp = u64::from_le_bytes(buf) as i64;
+
+        let mut prev_block_hash = [0u8; 32];
+        r.read_exact(&mut prev_block_hash[..])?;
+
+        let seed = Self::read_var_le_bytes(r)?;
+
+        let mut state_hash = [0u8; 32];
+        r.read_exact(&mut state_hash[..])?;
+
+        let mut generator_bls_pubkey = [0u8; 96];
+        r.read_exact(&mut generator_bls_pubkey[..])?;
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf[..])?;
+        let gas_limit = u64::from_le_bytes(buf);
+
+        Ok(Header {
+            version,
+            height,
+            timestamp,
+            gas_limit,
+            prev_block_hash,
+            seed,
+            generator_bls_pubkey,
+            state_hash,
+            hash: [0; 32],
+            cert: Default::default(),
+        })
+    }
+}
+
+impl Serializable for Header {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.marshal_hashable(w, false)?;
+
+        self.cert.write(w)?;
+
+        w.write_all(&self.hash[..])?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut header = Self::unmarshal_hashable(r)?;
+
+        header.cert = Certificate::read(r)?;
+
+        r.read_exact(&mut header.hash[..])?;
+
+        Ok(header)
     }
 }
 
@@ -100,14 +229,15 @@ impl Default for Header {
             generator_bls_pubkey: [0; 96],
             state_hash: Default::default(),
             hash: Default::default(),
+            cert: Default::default(),
         }
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Transaction {}
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Block {
     pub header: Header,
     pub txs: Vec<Transaction>,
@@ -119,39 +249,49 @@ impl fmt::Display for Block {
     }
 }
 
+impl Serializable for Block {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.header.write(w)?;
+
+        let txs_num = self.txs.len() as u8;
+        w.write_all(&txs_num.to_le_bytes())?;
+
+        // TODO: write transactions
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let header = Header::read(r)?;
+
+        // Read txs num
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+
+        Ok(Block {
+            header,
+            txs: vec![],
+        })
+    }
+}
+
 impl Block {
-    pub fn new(header: Header, txs: Vec<Transaction>) -> Self {
+    pub fn new(header: Header, txs: Vec<Transaction>) -> io::Result<Self> {
         let mut b = Block { header, txs };
-        b.calculate_hash();
-        b
+        b.calculate_hash()?;
+        Ok(b)
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = BytesMut::with_capacity(mem::size_of::<Header>());
-        buf.put(&self.header.to_bytes()[..]);
-        buf.to_vec()
-    }
-
-    pub fn from_bytes(&mut self, buf: &mut Bytes) {
-        self.header.from_bytes(buf);
-        // TODO: Vec Tx
-    }
-
-    fn calculate_hash(&mut self) {
-        use sha3::Digest;
-        let hdr = self.header.clone();
-
+    pub fn calculate_hash(&mut self) -> io::Result<()> {
         let mut hasher = sha3::Sha3_256::new();
-        hasher.update(hdr.version.to_le_bytes());
-        hasher.update(hdr.height.to_le_bytes());
-        hasher.update(hdr.timestamp.to_le_bytes());
-        hasher.update(hdr.prev_block_hash);
-        hasher.update(hdr.seed);
-        hasher.update(hdr.state_hash);
-        hasher.update(hdr.generator_bls_pubkey);
-        hasher.update(hdr.gas_limit.to_le_bytes());
+        self.header.marshal_hashable(&mut hasher, true)?;
 
         self.header.hash = hasher.finalize().into();
+
+        Ok(())
     }
 }
 
