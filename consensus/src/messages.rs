@@ -559,7 +559,7 @@ pub mod payload {
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
-    use crate::commons::{Block, Certificate, Topics};
+    use crate::commons::{Block, Certificate, Seed, Topics};
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
     use crate::messages::{self, Header, Message, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
@@ -583,7 +583,7 @@ mod tests {
                 timestamp: 123456789,
                 gas_limit: 111111111,
                 prev_block_hash: [1; 32],
-                seed: [2; 32],
+                seed: Seed::new([2; 48]),
                 generator_bls_pubkey: [3; 96],
                 state_hash: [4; 32],
                 hash: [5; 32],

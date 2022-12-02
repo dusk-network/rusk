@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, Certificate, RoundUpdate, Topics};
+use crate::commons::{Block, Certificate, RoundUpdate, Seed, Topics};
 use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
@@ -63,7 +63,7 @@ impl<T: Operations> Generator<T> {
         &self,
         pubkey: &ConsensusPublicKey,
         round: u64,
-        seed: [u8; 32],
+        seed: Seed,
         prev_block_hash: [u8; 32],
         prev_block_timestamp: i64,
     ) -> Result<Block, crate::contract_state::Error> {

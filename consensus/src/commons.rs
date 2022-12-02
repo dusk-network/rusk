@@ -20,11 +20,14 @@ use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+pub type Seed = Signature;
+pub type Hash = [u8; 32];
+
 #[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub round: u64,
-    pub seed: [u8; 32],
+    pub seed: Seed,
     pub hash: [u8; 32],
     pub timestamp: i64,
     pub pubkey_bls: ConsensusPublicKey,
@@ -108,7 +111,7 @@ pub struct Header {
     pub height: u64,
     pub timestamp: i64,
     pub prev_block_hash: [u8; 32],
-    pub seed: [u8; 32],
+    pub seed: Seed,
     pub state_hash: [u8; 32],
     pub generator_bls_pubkey: [u8; 96],
     pub gas_limit: u64,
@@ -137,9 +140,9 @@ impl Header {
         w.write_all(&self.prev_block_hash[..])?;
 
         if fixed_size_seed {
-            w.write_all(&self.seed[..])?;
+            w.write_all(&self.seed.inner()[..])?;
         } else {
-            Self::write_var_le_bytes(w, &self.seed[..])?;
+            Self::write_var_le_bytes(w, &self.seed.inner()[..])?;
         }
 
         w.write_all(&self.state_hash[..])?;
@@ -183,7 +186,7 @@ impl Header {
             timestamp,
             gas_limit,
             prev_block_hash,
-            seed,
+            seed: Seed::new(seed),
             generator_bls_pubkey,
             state_hash,
             hash: [0; 32],
@@ -310,11 +313,19 @@ pub enum ConsensusError {
     Canceled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Signature(pub [u8; 48]);
 impl Signature {
     pub fn is_zeroed(&self) -> bool {
         self.0 == [0; 48]
+    }
+
+    pub fn inner(&self) -> [u8; 48] {
+        self.0
+    }
+
+    pub fn new(value: [u8; 48]) -> Signature {
+        Signature(value)
     }
 }
 
@@ -323,9 +334,6 @@ impl Default for Signature {
         Signature([0; 48])
     }
 }
-
-// TODO: Apply Hash type instead of u8; 32
-pub type Hash = [u8; 32];
 
 pub fn marshal_signable_vote(
     round: u64,

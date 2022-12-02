@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use consensus::commons::Seed;
 use consensus::user::committee::Committee;
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::user::sortition::Config;
@@ -17,7 +18,7 @@ fn test_deterministic_sortition_1() {
     let mut p = generate_provisioners(5);
 
     // Execute sortition with specific config
-    let cfg = Config::new([0; 32], 1, 1, 64);
+    let cfg = Config::new(Seed::default(), 1, 1, 64);
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(

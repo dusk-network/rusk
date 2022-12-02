@@ -154,7 +154,7 @@ impl Provisioners {
         let mut total_amount_stake =
             BigInt::from(self.calc_total_eligible_weight());
 
-        let mut counter: i32 = 0;
+        let mut counter: u32 = 0;
         loop {
             if total_amount_stake.eq(&BigInt::from(0))
                 || committee.len() == committee_size
