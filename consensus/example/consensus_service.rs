@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use aes::Aes256;
+use blake3::Hash;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Cbc};
 use consensus::commons::RoundUpdate;
 use consensus::consensus::Consensus;
 use consensus::contract_state::{
@@ -13,7 +17,9 @@ use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::util::pending_queue::PendingQueue;
 use consensus::util::pubkey::ConsensusPublicKey;
 use dusk_bls12_381_sign::SecretKey;
-use rand::SeedableRng;
+use dusk_bytes::DeserializableSlice;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{oneshot, Mutex};
@@ -27,7 +33,7 @@ pub fn run_main_loop(
     agr_outbound: PendingQueue,
 ) {
     // Initialize N hard-coded provisioners
-    let keys = generate_keys(provisioners_num as u64);
+    let keys = load_provisioners_keys(provisioners_num);
     let provisioners = generate_provisioners_from_keys(keys.clone());
 
     spawn_consensus_in_thread_pool(
@@ -133,16 +139,74 @@ impl Operations for Executor {
     }
 }
 
-fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
+/// Fetches BLS public and secret keys from an encrypted consensus keys file.
+///
+/// Panics on any error.
+pub fn fetch_blskeys_from_file(
+    path: PathBuf,
+    pwd: Hash,
+) -> Option<(
+    dusk_bls12_381_sign::PublicKey,
+    dusk_bls12_381_sign::SecretKey,
+)> {
+    use serde::Deserialize;
+    type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+
+    /// Bls key pair helper structure
+    #[derive(Deserialize)]
+    struct BlsKeyPair {
+        secret_key_bls: String,
+        public_key_bls: String,
+    }
+
+    // attempt to load and decode wallet
+    let ciphertext =
+        fs::read(&path).expect("path should be valid consensus keys file");
+
+    // Decrypt
+    let iv = &ciphertext[..16];
+    let enc = &ciphertext[16..];
+
+    let cipher =
+        Aes256Cbc::new_from_slices(pwd.as_bytes(), iv).expect("valid data");
+    let bytes = cipher.decrypt_vec(enc).expect("pwd should be valid");
+
+    let keys: BlsKeyPair =
+        serde_json::from_slice(&bytes).expect("keys files should contain json");
+
+    let sk = dusk_bls12_381_sign::SecretKey::from_slice(
+        &base64::decode(keys.secret_key_bls).expect("sk should be base64")[..],
+    )
+    .expect("sk should be valid");
+
+    let pk = dusk_bls12_381_sign::PublicKey::from_slice(
+        &base64::decode(keys.public_key_bls).expect("pk should be base64")[..],
+    )
+    .expect("pk should be valid");
+
+    Some((pk, sk))
+}
+
+/// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded consensus keys.
+///
+/// It reads RUSK_WALLET_PWD var to unlock wallet files.
+fn load_provisioners_keys(n: usize) -> Vec<(SecretKey, ConsensusPublicKey)> {
     let mut keys = vec![];
 
+    let dir = std::env::var("DUSK_WALLET_DIR").unwrap();
+    let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS").unwrap();
+
+    let pwd = blake3::hash(pwd.as_bytes());
+
     for i in 0..n {
-        let rng = &mut rand::rngs::StdRng::seed_from_u64(i);
-        let sk = dusk_bls12_381_sign::SecretKey::random(rng);
-        keys.push((
-            sk,
-            ConsensusPublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
-        ));
+        let mut path = dir.clone();
+        path.push_str(&format!("node_{}.keys", i));
+        let path_buf = PathBuf::from(path);
+
+        let (pk, sk) = fetch_blskeys_from_file(path_buf, pwd)
+            .expect("should be valid file");
+
+        keys.push((sk, ConsensusPublicKey::new(pk)));
     }
 
     keys
@@ -151,10 +215,12 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
 fn generate_provisioners_from_keys(
     keys: Vec<(SecretKey, ConsensusPublicKey)>,
 ) -> Provisioners {
+    let minimum_stake = 1000 * DUSK;
+
     let mut p = Provisioners::new();
 
-    for (pos, (_, pk)) in keys.into_iter().enumerate() {
-        p.add_member_with_value(pk, 1000 * (pos as u64) * DUSK);
+    for (_, (_, pk)) in keys.into_iter().enumerate() {
+        p.add_member_with_value(pk, minimum_stake);
     }
 
     p
