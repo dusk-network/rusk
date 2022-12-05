@@ -89,8 +89,20 @@ impl Serializable for Message {
     where
         Self: Sized,
     {
-        let header = Header::read(r)?;
-        let payload = match Topics::from(header.topic) {
+        // Read topic
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+
+        let topic = Topics::from(buf[0]);
+        if topic == Topics::Unknown {
+            return Ok(Message::default());
+        }
+
+        // Decode message header only if the topic is supported
+        let mut header = Header::read(r)?;
+        header.topic = buf[0];
+
+        let payload = match topic {
             Topics::NewBlock => {
                 Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
@@ -103,10 +115,7 @@ impl Serializable for Message {
             Topics::AggrAgreement => {
                 Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
-            _ => {
-                debug_assert!(false, "unhandled topic {}", header.topic);
-                Payload::Empty
-            }
+            _ => Payload::Empty,
         };
 
         Ok(Message {
@@ -213,11 +222,6 @@ impl Serializable for Header {
     where
         Self: Sized,
     {
-        // Read topic
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-        let topic = buf[0];
-
         // Read bls pubkey
         let buf: [u8; 96] = Self::read_var_le_bytes(r)?;
 
@@ -251,7 +255,7 @@ impl Serializable for Header {
             round,
             step,
             block_hash,
-            topic,
+            topic: 0,
         })
     }
 }
