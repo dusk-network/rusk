@@ -8,7 +8,7 @@ use aes::Aes256;
 use blake3::Hash;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
-use consensus::commons::RoundUpdate;
+use consensus::commons::{RoundUpdate, Seed};
 use consensus::consensus::Consensus;
 use consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
@@ -71,8 +71,9 @@ fn spawn_consensus_in_thread_pool(
                 );
 
                 let mut cumulative_block_time = 0f64;
+                let mut prevSeed = Seed::new([0u8; 48]);
                 // Run consensus for N rounds
-                for i in 0..1000 {
+                for i in 1..1000 {
                     let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
 
                     let before = SystemTime::now()
@@ -82,7 +83,12 @@ fn spawn_consensus_in_thread_pool(
 
                     let _ = c
                         .spin(
-                            RoundUpdate::new(i, keys.1.clone(), keys.0),
+                            RoundUpdate::new(
+                                i,
+                                keys.1.clone(),
+                                keys.0,
+                                prevSeed,
+                            ),
                             p.clone(),
                             cancel_rx,
                         )
@@ -215,7 +221,7 @@ fn load_provisioners_keys(n: usize) -> Vec<(SecretKey, ConsensusPublicKey)> {
 fn generate_provisioners_from_keys(
     keys: Vec<(SecretKey, ConsensusPublicKey)>,
 ) -> Provisioners {
-    let minimum_stake = 1000 * DUSK;
+    let minimum_stake = 1000 * DUSK * 10; // TODO: file issues
 
     let mut p = Provisioners::new();
 
