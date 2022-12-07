@@ -35,11 +35,14 @@ pub trait Serializable {
         Ok(())
     }
 
+    // read_var_le_bytes reads length-prefixed fields
     fn read_var_le_bytes<R: Read, const N: usize>(
         r: &mut R,
     ) -> io::Result<[u8; N]> {
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
+
+        debug_assert_eq!(buf[0] as usize, N);
 
         let mut buf = [0u8; N];
         r.read_exact(&mut buf)?;

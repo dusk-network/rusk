@@ -35,16 +35,21 @@ impl Committee {
         provisioners: &mut Provisioners,
         cfg: sortition::Config,
     ) -> Self {
-        provisioners.update_eligibility_flag(cfg.round);
+        // TODO: GetCandidateBlock service is not implemented/supported yet. As per that, in order to
+        // be able to join golang test-harness, both nodes should use empty seed.
+        let mut cfg_with_empty_seed = cfg;
+        cfg_with_empty_seed.seed = crate::commons::Seed::default();
+
+        provisioners.update_eligibility_flag(cfg_with_empty_seed.round);
         // Generate committee using deterministic sortition.
-        let res = provisioners.create_committee(&cfg);
-        let max_committee_size = cfg.max_committee_size;
+        let res = provisioners.create_committee(&cfg_with_empty_seed);
+        let max_committee_size = cfg_with_empty_seed.max_committee_size;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
-            cfg,
+            cfg: cfg_with_empty_seed,
             total: 0,
         };
 

@@ -42,18 +42,11 @@ impl Config {
 pub fn create_sortition_hash(cfg: &Config, counter: u32) -> [u8; 32] {
     let mut hasher = Sha3_256::new();
 
-    let mut seed = &cfg.seed.inner()[..];
-    if cfg.round == 1 {
-        // Dirty patch to address that genesis block has an empty 33 bytes seed
-        // This will be deleted once the genesis is updated
-        seed = &[0u8; 33]
-    }
-
     // write input message
     hasher.update(cfg.round.to_le_bytes());
     hasher.update(counter.to_le_bytes());
     hasher.update(cfg.step.to_le_bytes());
-    hasher.update(seed);
+    hasher.update(&cfg.seed.inner()[..]);
 
     // read hash digest
     let reader = hasher.finalize();

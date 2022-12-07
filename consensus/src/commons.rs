@@ -39,12 +39,15 @@ impl RoundUpdate {
         round: u64,
         pubkey_bls: ConsensusPublicKey,
         secret_key: SecretKey,
+        seed: Seed,
     ) -> Self {
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            ..Default::default()
+            seed,
+            hash: [0u8; 32],
+            timestamp: 0,
         }
     }
 }

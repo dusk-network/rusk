@@ -6,8 +6,8 @@ PROV_NUM=$1
 BOOTSTRAP_ADDR="127.0.0.1:7000"
 
 # Create a temporary directory.
-TEMPD=$(mktemp -d)
-
+TEMPD=/tmp/rust-harness/
+mkdir $TEMPD
 
 # Exit if the temp directory wasn't created successfully.
 if [ ! -e "$TEMPD" ]; then
