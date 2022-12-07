@@ -10,8 +10,6 @@ use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::user::sortition::Config;
 use consensus::util::pubkey::ConsensusPublicKey;
 
-use hex::FromHex;
-
 #[test]
 fn test_deterministic_sortition_1() {
     // Create provisioners with bls keys read from an external file.
@@ -22,7 +20,7 @@ fn test_deterministic_sortition_1() {
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![2, 1, 1],
+        vec![1, 3],
         Committee::new(ConsensusPublicKey::default(), &mut p, cfg)
             .get_occurrences()
     );
@@ -33,22 +31,10 @@ fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(
-        <[u8; 32]>::from_hex(
-            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
-        )
-        .unwrap_or([0; 32]),
-        7777,
-        8,
-        45,
-    );
-    p.update_eligibility_flag(cfg.round);
+    let cfg = Config::new(Seed::default(), 7777, 8, 45);
 
-    assert_eq!(
-        vec![1, 3],
-        Committee::new(ConsensusPublicKey::default(), &mut p, cfg)
-            .get_occurrences()
-    );
+    let committee = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
+    assert_eq!(vec![4], committee.get_occurrences());
 }
 
 #[test]
@@ -56,15 +42,7 @@ fn test_quorum() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(
-        <[u8; 32]>::from_hex(
-            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
-        )
-        .unwrap_or([0; 32]),
-        7777,
-        8,
-        64,
-    );
+    let cfg = Config::new(Seed::default(), 7777, 8, 64);
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
@@ -76,15 +54,7 @@ fn test_quorum_max_size() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(
-        <[u8; 32]>::from_hex(
-            "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
-        )
-        .unwrap_or([0; 32]),
-        7777,
-        8,
-        4,
-    );
+    let cfg = Config::new(Seed::default(), 7777, 8, 4);
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
@@ -95,7 +65,7 @@ fn test_quorum_max_size() {
 fn test_intersect() {
     let mut p = generate_provisioners(10);
 
-    let cfg = Config::new([0; 32], 1, 3, 200);
+    let cfg = Config::new(Seed::default(), 1, 3, 200);
     p.update_eligibility_flag(cfg.round);
     // println!("{:#?}", p);
 

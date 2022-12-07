@@ -67,38 +67,35 @@ pub fn generate_sortition_score(
 
 #[cfg(test)]
 mod tests {
+    use num_bigint::BigInt;
+
     use crate::{
         commons::Seed,
         user::sortition::{
             create_sortition_hash, generate_sortition_score, Config,
         },
     };
-    use hex_literal::hex;
-    use num_bigint::BigInt;
 
     #[test]
     pub fn test_sortition_hash() {
+        let hash = [
+            56, 81, 125, 39, 109, 105, 243, 20, 138, 196, 236, 197, 7, 155, 41,
+            26, 217, 150, 9, 226, 76, 174, 67, 1, 230, 187, 81, 107, 192, 5,
+            13, 73,
+        ];
         assert_eq!(
-            create_sortition_hash(&Config::new(Seed::new([3; 48]), 10, 3, 0), 1)[..],
-            hex!("670eea4ae10ef4cdbdb3a7b56e9b06a4aafdffaa2562923791ceaffda486d5c7")[..]
+            create_sortition_hash(
+                &Config::new(Seed::new([3; 48]), 10, 3, 0),
+                1
+            )[..],
+            hash[..],
         );
     }
 
     #[test]
     pub fn test_generate_sortition_score() {
-        /* TODO: Regenerate results
-        let dataset = vec![
-            (
-                hex!("670eea4ae10ef4cdbdb3a7b56e9b06a4aafdffaa2562923791ceaffda486d5c7"),
-                123342342,
-                30711969,
-            ),
-            (
-                hex!("2e99758548972a8e8822ad47fa1017ff72f06f3ff6a016851f45c398732bc50c"),
-                44443333,
-                11567776,
-            ),
-        ];
+        let dataset =
+            vec![([3; 48], 123342342, 78899961), ([4; 48], 44443333, 5505832)];
 
         for data in dataset {
             let hash = create_sortition_hash(
@@ -111,6 +108,5 @@ mod tests {
 
             assert_eq!(res, BigInt::from(data.2));
         }
-        */
     }
 }

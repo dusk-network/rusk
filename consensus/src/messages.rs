@@ -77,6 +77,7 @@ pub struct TransportData {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&[self.header.topic])?;
         self.header.write(w)?;
 
         match &self.payload {
@@ -212,7 +213,6 @@ pub struct Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&[self.topic])?;
         Self::write_var_le_bytes(w, &self.pubkey_bls.bytes()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.step])?;
@@ -580,7 +580,7 @@ mod tests {
             round: 8,
             step: 7,
             block_hash: [3; 32],
-            topic: 3,
+            topic: 0,
         });
 
         let sample_block = Block {
@@ -591,7 +591,7 @@ mod tests {
                 gas_limit: 111111111,
                 prev_block_hash: [1; 32],
                 seed: Seed::new([2; 48]),
-                generator_bls_pubkey: [3; 96],
+                generator_bls_pubkey: [5; 96],
                 state_hash: [4; 32],
                 hash: [5; 32],
                 cert: Certificate {

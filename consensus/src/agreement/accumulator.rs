@@ -126,7 +126,7 @@ impl Accumulator {
                             rx.close();
                             output_chan.send(msg).await.unwrap_or_else(|err| {
                                 warn!(
-                                    "unable to send_msg collected_votes {:?}",
+                                    "unable to send_msg collected_votes {}",
                                     err
                                 )
                             });

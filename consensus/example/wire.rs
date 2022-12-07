@@ -111,6 +111,8 @@ impl Frame {
     }
 }
 
+#[cfg(test)]
+#[allow(unused)]
 mod tests {
     use consensus::commons::{Block, Certificate, Topics};
     use consensus::messages::payload::{
@@ -121,7 +123,7 @@ mod tests {
 
     use crate::wire::Frame;
 
-    const hash: [u8; 32] = [
+    const FIXED_HASH: [u8; 32] = [
         105, 202, 186, 101, 26, 74, 160, 61, 42, 33, 92, 232, 251, 35, 67, 147,
         73, 198, 100, 5, 115, 67, 61, 212, 81, 61, 185, 60, 118, 99, 152, 143,
     ];
@@ -186,7 +188,7 @@ mod tests {
             .expect("should be valid hash");
 
         // Check if calculate hash is correct
-        assert_eq!(candidate.header.hash, hash);
+        assert_eq!(candidate.header.hash, FIXED_HASH);
 
         // Ensure that the dumped message is properly encoded
         assert_eq!(
@@ -232,7 +234,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::Reduction as u8,
                 },
                 Reduction {
@@ -273,7 +275,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::Agreement as u8,
                 },
                 Agreement {
@@ -324,7 +326,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::AggrAgreement as u8,
                 },
                 AggrAgreement {

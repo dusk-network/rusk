@@ -12,7 +12,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
-use consensus::commons::RoundUpdate;
+use consensus::commons::{RoundUpdate, Seed};
 use consensus::consensus::Consensus;
 use consensus::messages::Message;
 use consensus::user::provisioners::{Provisioners, DUSK};
@@ -174,7 +174,12 @@ fn spawn_node(
 
                     let _ = c
                         .spin(
-                            RoundUpdate::new(i, keys.1.clone(), keys.0),
+                            RoundUpdate::new(
+                                i,
+                                keys.1.clone(),
+                                keys.0,
+                                Seed::default(),
+                            ),
                             p.clone(),
                             cancel_rx,
                         )

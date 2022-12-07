@@ -71,7 +71,7 @@ fn spawn_consensus_in_thread_pool(
                 );
 
                 let mut cumulative_block_time = 0f64;
-                let mut prevSeed = Seed::new([0u8; 48]);
+                let prev_seed = Seed::new([0u8; 48]);
                 // Run consensus for N rounds
                 for i in 1..1000 {
                     let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
@@ -87,7 +87,7 @@ fn spawn_consensus_in_thread_pool(
                                 i,
                                 keys.1.clone(),
                                 keys.0,
-                                prevSeed,
+                                prev_seed,
                             ),
                             p.clone(),
                             cancel_rx,
