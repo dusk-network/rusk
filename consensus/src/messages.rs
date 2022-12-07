@@ -99,6 +99,7 @@ impl Serializable for Message {
 
         let topic = Topics::from(buf[0]);
         if topic == Topics::Unknown {
+            tracing::warn!("unsupported msg topic {}", buf[0]);
             return Ok(Message::default());
         }
 
