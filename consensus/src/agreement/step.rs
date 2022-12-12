@@ -225,7 +225,7 @@ impl<D: Database> Executor<D> {
         let hash = agreements
             .into_iter()
             .next()
-            .and_then(|b| Some(b.header.block_hash))?;
+            .map(|agr_msg| agr_msg.header.block_hash)?;
 
         // Create winning block
         self.create_winning_block(&hash).await
