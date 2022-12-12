@@ -292,6 +292,11 @@ impl Block {
     }
 
     pub fn calculate_hash(&mut self) -> io::Result<()> {
+        // Call hasher only if header.hash is empty
+        if self.header.hash != Hash::default() {
+            return Ok(());
+        }
+
         let mut hasher = sha3::Sha3_256::new();
         self.header.marshal_hashable(&mut hasher, true)?;
 
@@ -442,4 +447,10 @@ impl From<u8> for Topics {
 
         Topics::Unknown
     }
+}
+
+pub trait Database: Send + Sync {
+    fn store_candidate_block(&mut self, b: Block);
+    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<(Hash, Block)>;
+    fn delete_candidate_blocks(&mut self);
 }
