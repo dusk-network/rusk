@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::accumulator::Accumulator;
-use crate::commons::{Block, ConsensusError, Database, RoundUpdate};
+use crate::commons::{
+    Block, Certificate, ConsensusError, Database, RoundUpdate,
+};
 use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
@@ -222,28 +224,44 @@ impl<D: Database> Executor<D> {
             self.publish(msg).await;
         }
 
-        let hash = agreements
-            .into_iter()
-            .next()
-            .map(|agr_msg| agr_msg.header.block_hash)?;
+        let (cert, hash) = agreements.into_iter().next().map(|a| {
+            (
+                a.payload.generate_certificate(a.header.step),
+                a.header.block_hash,
+            )
+        })?;
 
         // Create winning block
-        self.create_winning_block(&hash).await
+        self.create_winning_block(&hash, &cert).await
     }
 
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Err(e) =
-            aggr_agreement::verify(&self.ru, self.committees_set.clone(), &msg)
-                .await
-        {
-            error!("failed to verify aggr agreement err: {:?}", e);
-            return None;
+        if let Payload::AggrAgreement(aggr) = &msg.payload {
+            // Perform verification of aggregated agreement message
+            if let Err(e) = aggr_agreement::verify(
+                &self.ru,
+                self.committees_set.clone(),
+                &msg.header,
+                aggr,
+            )
+            .await
+            {
+                error!("failed to verify aggr agreement err: {:?}", e);
+                return None;
+            }
+
+            // Re-publish the agreement message
+            self.publish(msg.clone()).await;
+
+            // Generate certificate from an agreement
+            let cert = aggr.agreement.generate_certificate(msg.header.step);
+
+            return self
+                .create_winning_block(&msg.header.block_hash, &cert)
+                .await;
         }
 
-        // Re-publish the agreement message
-        self.publish(msg.clone()).await;
-
-        self.create_winning_block(&msg.header.block_hash).await
+        None
     }
 
     async fn is_member(&self, hdr: &Header) -> bool {
@@ -266,14 +284,18 @@ impl<D: Database> Executor<D> {
         });
     }
 
-    async fn create_winning_block(&self, hash: &[u8; 32]) -> Option<Block> {
+    async fn create_winning_block(
+        &self,
+        hash: &[u8; 32],
+        cert: &Certificate,
+    ) -> Option<Block> {
         info!(
             "winning block hash {}",
             hex::ToHex::encode_hex::<String>(hash)
         );
 
         // Retrieve winning block from local storage
-        let (_, block) = self
+        let (_, mut block) = self
             .db
             .lock()
             .await
@@ -283,7 +305,7 @@ impl<D: Database> Executor<D> {
                 None
             })?;
 
-        // TODO: Create certificate
+        block.header.cert = cert.clone();
 
         Some(block)
     }

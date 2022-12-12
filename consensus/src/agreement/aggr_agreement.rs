@@ -6,7 +6,8 @@
 
 use crate::aggregator::AggrSignature;
 use crate::commons::{RoundUpdate, Topics};
-use crate::messages::{payload, Message, Payload};
+use crate::messages::payload::AggrAgreement;
+use crate::messages::{payload, Header, Message};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
@@ -19,39 +20,30 @@ use super::{accumulator, verifiers};
 pub(super) async fn verify(
     ru: &RoundUpdate,
     committees_set: Arc<Mutex<CommitteeSet>>,
-    msg: &Message,
+    hdr: &Header,
+    aggr: &AggrAgreement,
 ) -> Result<(), super::verifiers::Error> {
-    if let Payload::AggrAgreement(p) = &msg.payload {
-        // let hdr = &msg.header;
+    debug!("collected aggr agreement");
 
-        debug!("collected aggr agreement");
+    verifiers::verify_votes(
+        &hdr.block_hash,
+        aggr.bitset,
+        &aggr.aggr_signature,
+        &committees_set,
+        &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
+    )
+    .await?;
 
-        verifiers::verify_votes(
-            &msg.header.block_hash,
-            p.bitset,
-            &p.aggr_signature,
-            &committees_set,
-            &sortition::Config::new(ru.seed, ru.round, msg.header.step, 64),
-        )
-        .await?;
+    // Verify agreement
+    verifiers::verify_agreement(
+        Message::new_agreement(hdr.clone(), aggr.agreement.clone()),
+        committees_set.clone(),
+        ru.seed,
+    )
+    .await?;
 
-        // Verify agreement TODO:: new_agreement
-        let m = Message {
-            header: msg.header.clone(),
-            payload: Payload::Agreement(p.agreement.clone()),
-            metadata: Default::default(),
-        };
-
-        verifiers::verify_agreement(m, committees_set.clone(), ru.seed).await?;
-
-        debug!("valid aggr agreement");
-
-        return Ok(());
-    }
-
-    Err(verifiers::Error::VerificationFailed(
-        dusk_bls12_381_sign::Error::InvalidSignature,
-    ))
+    debug!("valid aggr agreement");
+    Ok(())
 }
 
 /// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.

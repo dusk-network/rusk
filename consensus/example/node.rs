@@ -43,16 +43,18 @@ pub async fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Failed on subscribe tracing");
 
-    let mut conf = Config::default();
-    conf.public_address =
-        matches.value_of("public_address").unwrap().to_string();
-    conf.listen_address =
-        matches.value_of("listen_address").map(|a| a.to_string());
-    conf.bootstrapping_nodes = matches
-        .values_of("bootstrap")
-        .unwrap_or_default()
-        .map(|s| s.to_string())
-        .collect();
+    let conf = Config {
+        public_address: matches.value_of("public_address").unwrap().to_string(),
+        listen_address: matches
+            .value_of("listen_address")
+            .map(|a| a.to_string()),
+        bootstrapping_nodes: matches
+            .values_of("bootstrap")
+            .unwrap_or_default()
+            .map(|s| s.to_string())
+            .collect(),
+        ..Default::default()
+    };
 
     let prov_id = matches
         .value_of("prov-id")

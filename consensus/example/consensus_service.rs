@@ -7,7 +7,7 @@
 use aes::Aes256;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
-use consensus::commons::{RoundUpdate,  Block};
+use consensus::commons::{Block, RoundUpdate};
 use consensus::consensus::Consensus;
 
 use consensus::user::provisioners::{Provisioners, DUSK};
@@ -92,7 +92,7 @@ fn spawn_consensus_in_thread_pool(
                 );
 
                 let mut cumulative_block_time = 0f64;
-                let mut chain_tip = Block::default(); 
+                let mut chain_tip = Block::default();
                 // Run consensus for N rounds
                 for i in 1..1000 {
                     let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();

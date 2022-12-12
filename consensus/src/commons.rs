@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::contract_state::Operations;
+use crate::messages::payload::StepVotes;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 use crate::messages::{self, Message, Serializable};
@@ -52,30 +53,23 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Certificate {
-    pub first_reduction: ([u8; 48], u64),
-    pub second_reduction: ([u8; 48], u64),
+    pub first_reduction: StepVotes,
+    pub second_reduction: StepVotes,
     pub step: u8,
-}
-
-impl Default for Certificate {
-    fn default() -> Self {
-        Self {
-            first_reduction: ([0u8; 48], 0),
-            second_reduction: ([0u8; 48], 0),
-            step: 0,
-        }
-    }
 }
 
 impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_le_bytes(w, &self.first_reduction.0[..])?;
-        Self::write_var_le_bytes(w, &self.second_reduction.0[..])?;
+        // TODO: Use StepVotes::write
+        // In order to be aligned with golang impl,
+        // we cannot use here StepVotes::write for now.
+        Self::write_var_le_bytes(w, &self.first_reduction.signature[..])?;
+        Self::write_var_le_bytes(w, &self.second_reduction.signature[..])?;
         w.write_all(&self.step.to_le_bytes())?;
-        w.write_all(&self.first_reduction.1.to_le_bytes())?;
-        w.write_all(&self.second_reduction.1.to_le_bytes())?;
+        w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
+        w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
 
         Ok(())
     }
@@ -84,8 +78,8 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let mut first_reduction = (Self::read_var_le_bytes(r)?, 0u64);
-        let mut second_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+        let first_red_signature = Self::read_var_le_bytes(r)?;
+        let sec_red_signature = Self::read_var_le_bytes(r)?;
 
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
@@ -93,15 +87,21 @@ impl Serializable for Certificate {
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        first_reduction.1 = u64::from_le_bytes(buf);
+        let first_red_bitset = u64::from_le_bytes(buf);
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        second_reduction.1 = u64::from_le_bytes(buf);
+        let sec_red_bitset = u64::from_le_bytes(buf);
 
         Ok(Certificate {
-            first_reduction,
-            second_reduction,
+            first_reduction: StepVotes {
+                bitset: first_red_bitset,
+                signature: first_red_signature,
+            },
+            second_reduction: StepVotes {
+                bitset: sec_red_bitset,
+                signature: sec_red_signature,
+            },
             step,
         })
     }

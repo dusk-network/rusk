@@ -10,6 +10,7 @@ use std::io::{self, Read, Write};
 /// Wire Frame definition.
 #[derive(Debug, Default)]
 pub struct Frame {
+    #[allow(unused)]
     header: FrameHeader,
     payload: FramePayload,
 }
