@@ -10,6 +10,7 @@ use kadcast::config::Config;
 use rustc_tools_util::{get_version_info, VersionInfo};
 
 mod consensus_service;
+mod mocks;
 mod network_service;
 mod wire;
 

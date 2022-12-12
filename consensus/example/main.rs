@@ -159,7 +159,8 @@ fn spawn_node(
                     outbound_msgs,
                     aggr_inbound_queue,
                     aggr_outbound_queue,
-                    Arc::new(Mutex::new(mocks::Executor {})),
+                    Arc::new(Mutex::new(crate::mocks::Executor {})),
+                    Arc::new(Mutex::new(crate::mocks::SimpleDB::default())),
                 );
 
                 let mut cumulative_block_time = 0f64;
