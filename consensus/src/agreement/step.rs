@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::accumulator::Accumulator;
-use crate::commons::{Block, ConsensusError, RoundUpdate};
+use crate::commons::{Block, ConsensusError, Database, RoundUpdate};
 use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
@@ -47,10 +47,11 @@ impl Agreement {
 
     /// Spawn a task to process agreement messages for a specified round
     /// There could be only one instance of this task per a time.
-    pub(crate) fn spawn(
+    pub(crate) fn spawn<D: Database + 'static>(
         &mut self,
         ru: RoundUpdate,
         provisioners: Provisioners,
+        db: Arc<Mutex<D>>,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let future_msgs = self.future_msgs.clone();
         let outbound = self.outbound_queue.clone();
@@ -60,7 +61,7 @@ impl Agreement {
             let round = ru.round;
             let pubkey = ru.pubkey_bls.encode_short_hex();
             // Run agreement life-cycle loop
-            Executor::new(ru, provisioners, inbound, outbound)
+            Executor::new(ru, provisioners, inbound, outbound, db)
                 .run(future_msgs)
                 .instrument(tracing::info_span!("agr_task", round, pubkey))
                 .await
@@ -69,21 +70,23 @@ impl Agreement {
 }
 
 /// Executor implements life-cycle loop of a single agreement instance. This should be started with each new round and dropped on round termination.
-struct Executor {
+struct Executor<D: Database> {
     ru: RoundUpdate,
 
     inbound_queue: PendingQueue,
     outbound_queue: PendingQueue,
 
     committees_set: Arc<Mutex<CommitteeSet>>,
+    db: Arc<Mutex<D>>,
 }
 
-impl Executor {
+impl<D: Database> Executor<D> {
     fn new(
         ru: RoundUpdate,
         provisioners: Provisioners,
         inbound_queue: PendingQueue,
         outbound_queue: PendingQueue,
+        db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
             inbound_queue,
@@ -93,6 +96,7 @@ impl Executor {
                 ConsensusPublicKey::default(),
                 provisioners,
             ))),
+            db,
         }
     }
 
@@ -218,13 +222,13 @@ impl Executor {
             self.publish(msg).await;
         }
 
-        info!("consensus_achieved");
+        let hash = agreements
+            .into_iter()
+            .next()
+            .and_then(|b| Some(b.header.block_hash))?;
 
-        // TODO: Generate winning block. This should be feasible once append-only db is enabled.
-        // generate committee per round, step
-        //  republish, generate_certificate, createWinningBlock
-
-        Some(Block::default())
+        // Create winning block
+        self.create_winning_block(&hash).await
     }
 
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
@@ -236,12 +240,10 @@ impl Executor {
             return None;
         }
 
-        //TODO:  Create winning block
-
         // Re-publish the agreement message
         self.publish(msg.clone()).await;
 
-        Some(Block::default())
+        self.create_winning_block(&msg.header.block_hash).await
     }
 
     async fn is_member(&self, hdr: &Header) -> bool {
@@ -262,5 +264,27 @@ impl Executor {
         self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
             error!("unable to publish msg(id:{}) {:?}", topic, err)
         });
+    }
+
+    async fn create_winning_block(&self, hash: &[u8; 32]) -> Option<Block> {
+        info!(
+            "winning block hash {}",
+            hex::ToHex::encode_hex::<String>(hash)
+        );
+
+        // Retrieve winning block from local storage
+        let (_, block) = self
+            .db
+            .lock()
+            .await
+            .get_candidate_block_by_hash(hash)
+            .or_else(|| {
+                tracing::error!("couldn't get candidate block");
+                None
+            })?;
+
+        // TODO: Create certificate
+
+        Some(block)
     }
 }
