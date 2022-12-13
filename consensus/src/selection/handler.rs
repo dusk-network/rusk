@@ -38,8 +38,6 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         _step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        //TODO: verify newblock candidate
-
         // store candidate block
         if let Payload::NewBlock(p) = msg.clone().payload {
             _ = self.db.try_lock().map(|mut d| {

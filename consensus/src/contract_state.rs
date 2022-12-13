@@ -46,5 +46,3 @@ pub trait Operations: Send + Sync {
 
     fn get_state_root(&self) -> Result<StateRoot, Error>;
 }
-
-// TODO: implement trait Operations
