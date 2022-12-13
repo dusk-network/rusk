@@ -22,7 +22,7 @@ use futures::Stream;
 pub use rusk_schema::{
     network_server::{Network, NetworkServer},
     AliveNodesRequest, AliveNodesResponse, BroadcastMessage, Message,
-    MessageMetadata, Null, PropagateMessage, SendMessage,
+    MessageMetadata, PropagateMessage, SendMessage,
 };
 use std::io::Write;
 use std::net::AddrParseError;
@@ -100,7 +100,7 @@ impl Network for KadcastDispatcher {
     async fn send(
         &self,
         request: Request<SendMessage>,
-    ) -> Result<Response<Null>, Status> {
+    ) -> Result<Response<()>, Status> {
         debug!("Received SendMessage request");
         let req = request.get_ref();
         self.peer
@@ -111,13 +111,13 @@ impl Network for KadcastDispatcher {
                 })?,
             )
             .await;
-        Ok(Response::new(Null {}))
+        Ok(Response::new(()))
     }
 
     async fn propagate(
         &self,
         request: Request<PropagateMessage>,
-    ) -> Result<Response<Null>, Status> {
+    ) -> Result<Response<()>, Status> {
         debug!("Received PropagateMessage request");
 
         let wire_message = {
@@ -136,13 +136,13 @@ impl Network for KadcastDispatcher {
                 warn!("Error in dispatcher notification {}", e);
                 0
             });
-        Ok(Response::new(Null {}))
+        Ok(Response::new(()))
     }
 
     async fn broadcast(
         &self,
         request: Request<BroadcastMessage>,
-    ) -> Result<Response<Null>, Status> {
+    ) -> Result<Response<()>, Status> {
         debug!("Received BroadcastMessage request");
         let req = request.get_ref();
         let kadcast_height: u8 = req
@@ -152,7 +152,7 @@ impl Network for KadcastDispatcher {
         self.peer
             .broadcast(&req.message, Some(kadcast_height))
             .await;
-        Ok(Response::new(Null {}))
+        Ok(Response::new(()))
     }
 
     async fn alive_nodes(
@@ -174,7 +174,7 @@ impl Network for KadcastDispatcher {
 
     async fn listen(
         &self,
-        _: Request<Null>,
+        _: Request<()>,
     ) -> Result<Response<Self::ListenStream>, Status> {
         debug!("Received Listen request");
         let mut rx = self.inbound_dispatcher.subscribe();
