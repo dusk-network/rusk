@@ -349,7 +349,7 @@ impl Default for Payload {
 
 pub mod payload {
     use super::Serializable;
-    use crate::commons::Block;
+    use crate::commons::{Block, Certificate};
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -435,6 +435,12 @@ pub mod payload {
         }
     }
 
+    impl StepVotes {
+        pub fn new(signature: [u8; 48], bitset: u64) -> StepVotes {
+            StepVotes { bitset, signature }
+        }
+    }
+
     impl Serializable for StepVotes {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             w.write_all(&self.bitset.to_le_bytes())?;
@@ -513,6 +519,17 @@ pub mod payload {
                 signature: [0; 48],
                 first_step: StepVotes::default(),
                 second_step: StepVotes::default(),
+            }
+        }
+    }
+
+    impl Agreement {
+        /// Generates a certificate from agreement.
+        pub fn generate_certificate(&self, step: u8) -> Certificate {
+            Certificate {
+                first_reduction: self.first_step.clone(),
+                second_reduction: self.second_step.clone(),
+                step,
             }
         }
     }
@@ -596,8 +613,8 @@ mod tests {
                 state_hash: [4; 32],
                 hash: [5; 32],
                 cert: Certificate {
-                    first_reduction: ([6; 48], 22222222),
-                    second_reduction: ([7; 48], 3333333),
+                    first_reduction: StepVotes::new([6; 48], 22222222),
+                    second_reduction: StepVotes::new([7; 48], 3333333),
                     step: 234,
                 },
             },

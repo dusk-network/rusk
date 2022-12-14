@@ -6,7 +6,8 @@
 
 use crate::aggregator::AggrSignature;
 use crate::commons::{RoundUpdate, Topics};
-use crate::messages::{payload, Message, Payload};
+use crate::messages::payload::AggrAgreement;
+use crate::messages::{payload, Header, Message};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
@@ -16,42 +17,35 @@ use tracing::debug;
 
 use super::{accumulator, verifiers};
 
-pub(super) async fn verify(
-    ru: &RoundUpdate,
-    committees_set: Arc<Mutex<CommitteeSet>>,
-    msg: &Message,
-) -> Result<(), super::verifiers::Error> {
-    if let Payload::AggrAgreement(p) = &msg.payload {
-        // let hdr = &msg.header;
-
+impl AggrAgreement {
+    pub(super) async fn verify(
+        &self,
+        ru: &RoundUpdate,
+        committees_set: Arc<Mutex<CommitteeSet>>,
+        hdr: &Header,
+    ) -> Result<(), super::verifiers::Error> {
         debug!("collected aggr agreement");
 
         verifiers::verify_votes(
-            &msg.header.block_hash,
-            p.bitset,
-            &p.aggr_signature,
+            &hdr.block_hash,
+            self.bitset,
+            &self.aggr_signature,
             &committees_set,
-            &sortition::Config::new(ru.seed, ru.round, msg.header.step, 64),
+            &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
         )
         .await?;
 
-        // Verify agreement TODO:: new_agreement
-        let m = Message {
-            header: msg.header.clone(),
-            payload: Payload::Agreement(p.agreement.clone()),
-            metadata: Default::default(),
-        };
-
-        verifiers::verify_agreement(m, committees_set.clone(), ru.seed).await?;
+        // Verify agreement
+        verifiers::verify_agreement(
+            Message::new_agreement(hdr.clone(), self.agreement.clone()),
+            committees_set.clone(),
+            ru.seed,
+        )
+        .await?;
 
         debug!("valid aggr agreement");
-
-        return Ok(());
+        Ok(())
     }
-
-    Err(verifiers::Error::VerificationFailed(
-        dusk_bls12_381_sign::Error::InvalidSignature,
-    ))
 }
 
 /// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.

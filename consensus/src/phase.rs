@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::ConsensusError;
+use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
@@ -39,13 +39,13 @@ macro_rules! call_phase {
     };
 }
 
-pub enum Phase<T: Operations> {
-    Selection(selection::step::Selection<T>),
+pub enum Phase<T: Operations, D: Database> {
+    Selection(selection::step::Selection<T, D>),
     Reduction1(firststep::step::Reduction<T>),
     Reduction2(secondstep::step::Reduction<T>),
 }
 
-impl<T: Operations + 'static> Phase<T> {
+impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
     pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
         trace!(
             "init phase:{} with msg {:?} at round:{} step:{}",

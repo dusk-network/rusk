@@ -97,16 +97,16 @@ mod tests {
         let dataset =
             vec![([3; 48], 123342342, 78899961), ([4; 48], 44443333, 5505832)];
 
-        for data in dataset {
+        for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
-                &Config::new(Seed::new(data.0), 10, 3, 0),
+                &Config::new(Seed::new(seed), 10, 3, 0),
                 1,
             );
 
-            let total_weight = BigInt::from(data.1);
+            let total_weight = BigInt::from(total_weight);
             let res = generate_sortition_score(hash, &total_weight);
 
-            assert_eq!(res, BigInt::from(data.2));
+            assert_eq!(res, BigInt::from(expected_score));
         }
     }
 }

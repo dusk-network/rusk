@@ -5,14 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use aes::Aes256;
-use blake3::Hash;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
-use consensus::commons::{RoundUpdate, Seed};
+use consensus::commons::{Block, RoundUpdate};
 use consensus::consensus::Consensus;
-use consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
+
 use consensus::user::provisioners::{Provisioners, DUSK};
 use consensus::util::pending_queue::PendingQueue;
 use consensus::util::pubkey::ConsensusPublicKey;
@@ -24,6 +21,24 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::{oneshot, Mutex};
 
+macro_rules! hex {
+    ( $bytes:expr, $offset:expr ) => {{
+        let hex = hex::ToHex::encode_hex::<String>($bytes);
+        let mut r = String::default();
+        if let Some(v) = hex.get(0..$offset) {
+            r.push_str(v);
+        }
+
+        r.push_str("...");
+
+        if let Some(v) = hex.get(hex.len() - $offset..hex.len()) {
+            r.push_str(v);
+        }
+
+        r
+    }};
+}
+
 pub fn run_main_loop(
     provisioners_num: usize,
     prov_id: usize,
@@ -32,9 +47,14 @@ pub fn run_main_loop(
     agr_inbound: PendingQueue,
     agr_outbound: PendingQueue,
 ) {
-    // Initialize N hard-coded provisioners
+    // Load provisioners keys from external consensus keys.
+    // The loaded keys should be the same as the ones from Genesis State.
     let keys = load_provisioners_keys(provisioners_num);
-    let provisioners = generate_provisioners_from_keys(keys.clone());
+    let mut provisioners = Provisioners::new();
+
+    for (_, (_, pk)) in keys.iter().enumerate() {
+        provisioners.add_member_with_value(pk.clone(), 1000 * DUSK * 10);
+    }
 
     spawn_consensus_in_thread_pool(
         keys[prov_id].clone(),
@@ -67,11 +87,12 @@ fn spawn_consensus_in_thread_pool(
                     outbound_msgs,
                     agr_inbound_queue,
                     agr_outbound_queue,
-                    Arc::new(Mutex::new(Executor {})),
+                    Arc::new(Mutex::new(crate::mocks::Executor {})),
+                    Arc::new(Mutex::new(crate::mocks::SimpleDB::default())),
                 );
 
                 let mut cumulative_block_time = 0f64;
-                let prev_seed = Seed::new([0u8; 48]);
+                let mut chain_tip = Block::default();
                 // Run consensus for N rounds
                 for i in 1..1000 {
                     let (_cancel_tx, cancel_rx) = oneshot::channel::<i32>();
@@ -81,18 +102,29 @@ fn spawn_consensus_in_thread_pool(
                         .unwrap()
                         .as_secs();
 
-                    let _ = c
+                    let res = c
                         .spin(
                             RoundUpdate::new(
                                 i,
                                 keys.1.clone(),
                                 keys.0,
-                                prev_seed,
+                                chain_tip.header.seed,
                             ),
                             p.clone(),
                             cancel_rx,
                         )
                         .await;
+
+                    if let Ok(b) = res {
+                        tracing::info!(
+                            "rusk-node accept_block height={} with hash={} with seed={}",
+                            i,
+                            hex!(&b.header.hash, 10),
+                            hex!(&b.header.seed.inner(), 10),
+                        );
+
+                        chain_tip = b;
+                    }
 
                     // Calc block time
                     let block_time = SystemTime::now()
@@ -116,41 +148,12 @@ fn spawn_consensus_in_thread_pool(
     });
 }
 
-pub struct Executor {}
-impl Operations for Executor {
-    fn verify_state_transition(
-        &self,
-        _params: CallParams,
-    ) -> Result<StateRoot, Error> {
-        Ok([0; 32])
-    }
-
-    fn execute_state_transition(
-        &self,
-        _params: CallParams,
-    ) -> Result<Output, Error> {
-        Ok(Output::default())
-    }
-
-    fn accept(&self, _params: CallParams) -> Result<Output, Error> {
-        Ok(Output::default())
-    }
-
-    fn finalize(&self, _params: CallParams) -> Result<Output, Error> {
-        Ok(Output::default())
-    }
-
-    fn get_state_root(&self) -> Result<StateRoot, Error> {
-        Ok([0; 32])
-    }
-}
-
 /// Fetches BLS public and secret keys from an encrypted consensus keys file.
 ///
 /// Panics on any error.
 pub fn fetch_blskeys_from_file(
     path: PathBuf,
-    pwd: Hash,
+    pwd: blake3::Hash,
 ) -> Option<(
     dusk_bls12_381_sign::PublicKey,
     dusk_bls12_381_sign::SecretKey,
@@ -216,18 +219,4 @@ fn load_provisioners_keys(n: usize) -> Vec<(SecretKey, ConsensusPublicKey)> {
     }
 
     keys
-}
-
-fn generate_provisioners_from_keys(
-    keys: Vec<(SecretKey, ConsensusPublicKey)>,
-) -> Provisioners {
-    let minimum_stake = 1000 * DUSK * 10; // TODO: file issues
-
-    let mut p = Provisioners::new();
-
-    for (_, (_, pk)) in keys.into_iter().enumerate() {
-        p.add_member_with_value(pk, minimum_stake);
-    }
-
-    p
 }

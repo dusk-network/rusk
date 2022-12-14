@@ -31,10 +31,10 @@ fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(Seed::default(), 7777, 8, 45);
+    let cfg = Config::new(Seed::new([3u8; 48]), 7777, 8, 45);
 
     let committee = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
-    assert_eq!(vec![4], committee.get_occurrences());
+    assert_eq!(vec![1, 3], committee.get_occurrences());
 }
 
 #[test]

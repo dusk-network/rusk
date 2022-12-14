@@ -10,6 +10,7 @@ use std::io::{self, Read, Write};
 /// Wire Frame definition.
 #[derive(Debug, Default)]
 pub struct Frame {
+    #[allow(unused)]
     header: FrameHeader,
     payload: FramePayload,
 }
@@ -74,12 +75,13 @@ impl Frame {
         let mut payload_buf = vec![];
         msg.write(&mut payload_buf)?;
 
-        let mut header = FrameHeader::default();
-        header.checksum = calc_checksum(&payload_buf[..]);
-        header.version = [0, 0, 0, 0, 1, 0, 0, 0];
-
         let mut header_buf = vec![];
-        header.write(&mut header_buf)?;
+        FrameHeader {
+            checksum: calc_checksum(&payload_buf[..]),
+            version: [0, 0, 0, 0, 1, 0, 0, 0],
+            reserved: 0,
+        }
+        .write(&mut header_buf)?;
 
         let frame_size = (header_buf.len() + payload_buf.len()) as u64;
 
@@ -94,7 +96,7 @@ impl Frame {
         Self: Sized,
     {
         let mut buf = [0u8; 8];
-        _ = r.read_exact(&mut buf)?;
+        r.read_exact(&mut buf)?;
 
         let header = FrameHeader::read(r)?;
         let payload = FramePayload(Message::read(r)?);

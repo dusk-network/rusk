@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::ConsensusError;
+use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::Message;
@@ -20,20 +20,20 @@ use tracing::error;
 
 pub const COMMITTEE_SIZE: usize = 1;
 
-pub struct Selection<T>
+pub struct Selection<T, D: Database>
 where
     T: Operations,
 {
-    handler: handler::Selection,
+    handler: handler::Selection<D>,
     bg: Generator<T>,
     timeout_millis: u64,
 }
 
-impl<T: Operations> Selection<T> {
-    pub fn new(executor: Arc<Mutex<T>>) -> Self {
+impl<T: Operations, D: Database> Selection<T, D> {
+    pub fn new(executor: Arc<Mutex<T>>, db: Arc<Mutex<D>>) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Selection {},
+            handler: handler::Selection { db },
             bg: Generator::new(executor),
         }
     }
@@ -58,7 +58,7 @@ impl<T: Operations> Selection<T> {
 
                 // register new candidate in local state
                 match self.handler.collect(
-                    msg,
+                    msg.clone(),
                     &ctx.round_update,
                     ctx.step,
                     &committee,
