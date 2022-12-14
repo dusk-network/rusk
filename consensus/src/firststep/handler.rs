@@ -5,11 +5,23 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{Block, ConsensusError, RoundUpdate, Signature};
+use crate::messages::payload::StepVotes;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
+
+macro_rules! empty_result {
+    (  ) => {
+        HandleMsgOutput::FinalResult(Message::from_stepvotes(
+            payload::StepVotesWithCandidate {
+                sv: StepVotes::default(),
+                candidate: Block::default(),
+            },
+        ))
+    };
+}
 
 #[derive(Default)]
 pub struct Reduction {
@@ -54,10 +66,21 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((_, sv)) =
+        if let Some((hash, sv)) =
             self.aggr.collect_vote(committee, &msg.header, &signed_hash)
         {
-            // TODO: if the votes converged for an empty hash we invoke halt and increase timeout
+            // if the votes converged for an empty hash we invoke halt
+            if hash == [0u8; 32] {
+                tracing::warn!("votes converged for an empty hash");
+                // TODO: increase timeout
+                return Ok(empty_result!());
+            }
+
+            if hash != self.candidate.header.hash {
+                tracing::warn!("request candidate block from peers");
+                // TODO: Fetch Candidate procedure
+                return Ok(empty_result!());
+            }
 
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
             return Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(

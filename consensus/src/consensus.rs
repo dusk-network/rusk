@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, ConsensusError, RoundUpdate};
+use crate::commons::{Block, ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 
@@ -22,7 +22,7 @@ use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
 
-pub struct Consensus<T: Operations> {
+pub struct Consensus<T: Operations, D: Database> {
     /// inbound is a queue of messages that comes from outside world
     inbound: PendingQueue,
     /// outbound_msgs is a queue of messages, this consensus instance shares
@@ -39,9 +39,12 @@ pub struct Consensus<T: Operations> {
 
     /// Reference to the executor of any EST-related call
     executor: Arc<Mutex<T>>,
+
+    // Database
+    db: Arc<Mutex<D>>,
 }
 
-impl<T: Operations + 'static> Consensus<T> {
+impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// Creates an instance of Consensus.
     ///
     /// # Arguments
@@ -57,6 +60,7 @@ impl<T: Operations + 'static> Consensus<T> {
         agr_inbound_queue: PendingQueue,
         agr_outbound_queue: PendingQueue,
         executor: Arc<Mutex<T>>,
+        db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
             inbound,
@@ -67,6 +71,7 @@ impl<T: Operations + 'static> Consensus<T> {
                 agr_outbound_queue,
             ),
             executor,
+            db,
         }
     }
 
@@ -91,9 +96,11 @@ impl<T: Operations + 'static> Consensus<T> {
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.
-        let mut agreement_task_handle = self
-            .agreement_process
-            .spawn(ru.clone(), provisioners.clone());
+        let mut agreement_task_handle = self.agreement_process.spawn(
+            ru.clone(),
+            provisioners.clone(),
+            self.db.clone(),
+        );
 
         // Consensus loop - generation-selection-reduction loop
         let mut main_task_handle = self.spawn_main_loop(
@@ -122,7 +129,8 @@ impl<T: Operations + 'static> Consensus<T> {
         }
 
         // Tear-down procedure
-        // TODO: Delete all candidates related to this round execution
+        // Delete all candidates
+        self.db.lock().await.delete_candidate_blocks();
 
         // Cancel all tasks
         agreement_task_handle.abort();
@@ -141,6 +149,7 @@ impl<T: Operations + 'static> Consensus<T> {
         let outbound = self.outbound.clone();
         let future_msgs = self.future_msgs.clone();
         let executor = self.executor.clone();
+        let db = self.db.clone();
 
         tokio::spawn(async move {
             if ru.round > 0 {
@@ -150,6 +159,7 @@ impl<T: Operations + 'static> Consensus<T> {
             let mut phases = [
                 Phase::Selection(selection::step::Selection::new(
                     executor.clone(),
+                    db.clone(),
                 )),
                 Phase::Reduction1(firststep::step::Reduction::new(
                     executor.clone(),

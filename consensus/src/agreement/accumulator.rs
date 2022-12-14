@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::verifiers;
-use crate::commons::Hash;
+use crate::commons::{Hash, Seed};
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
@@ -76,7 +76,7 @@ impl Accumulator {
         workers_amount: usize,
         output_chan: Sender<Output>,
         committees_set: Arc<Mutex<CommitteeSet>>,
-        seed: [u8; 32],
+        seed: Seed,
     ) {
         assert!(workers_amount > 0);
 
@@ -126,7 +126,7 @@ impl Accumulator {
                             rx.close();
                             output_chan.send(msg).await.unwrap_or_else(|err| {
                                 warn!(
-                                    "unable to send_msg collected_votes {:?}",
+                                    "unable to send_msg collected_votes {}",
                                     err
                                 )
                             });
@@ -159,7 +159,7 @@ impl Accumulator {
         stores: Arc<Mutex<StorePerHash>>,
         committees_set: Arc<Mutex<CommitteeSet>>,
         msg: messages::Message,
-        seed: [u8; 32],
+        seed: Seed,
     ) -> Option<Output> {
         let hdr = msg.header.clone();
 

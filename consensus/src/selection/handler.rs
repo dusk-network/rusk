@@ -4,14 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::messages::{Message, Payload};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-pub struct Selection {}
+#[derive(Debug, Default)]
+pub struct Selection<D: Database> {
+    pub(crate) db: Arc<Mutex<D>>,
+}
 
-impl MsgHandler<Message> for Selection {
+impl<D: Database> MsgHandler<Message> for Selection<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
         &mut self,
@@ -33,9 +38,20 @@ impl MsgHandler<Message> for Selection {
         _step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        // TODO: store candidate block
+        // store candidate block
+        if let Payload::NewBlock(p) = msg.clone().payload {
+            _ = self.db.try_lock().map(|mut d| {
+                tracing::info!(
+                    "candidate block with hash {} stored",
+                    hex::ToHex::encode_hex::<String>(&p.candidate.header.hash),
+                );
+                d.store_candidate_block(p.candidate.clone())
+            });
 
-        Ok(HandleMsgOutput::FinalResult(msg))
+            return Ok(HandleMsgOutput::FinalResult(msg));
+        }
+
+        Err(ConsensusError::InvalidMsgType)
     }
 
     /// Handles of an event of step execution timeout
@@ -48,7 +64,7 @@ impl MsgHandler<Message> for Selection {
     }
 }
 
-impl Selection {
+impl<D: Database> Selection<D> {
     fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
         //  Verify new_block msg signature
         if let Payload::NewBlock(p) = msg.clone().payload {

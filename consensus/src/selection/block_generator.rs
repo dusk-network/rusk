@@ -4,12 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, Certificate, RoundUpdate, Topics};
+use crate::commons::{Block, Certificate, RoundUpdate, Seed, Topics};
 use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
 use crate::{commons, config};
+use dusk_bytes::Serializable;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
@@ -28,11 +29,17 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
+        // Sign seed
+        let seed = ru
+            .secret_key
+            .sign(ru.pubkey_bls.inner(), &ru.seed.inner()[..])
+            .to_bytes();
+
         let candidate = self
             .generate_block(
                 &ru.pubkey_bls,
                 ru.round,
-                ru.seed,
+                Seed::new(seed),
                 ru.hash,
                 ru.timestamp,
             )
@@ -63,7 +70,7 @@ impl<T: Operations> Generator<T> {
         &self,
         pubkey: &ConsensusPublicKey,
         round: u64,
-        seed: [u8; 32],
+        seed: Seed,
         prev_block_hash: [u8; 32],
         prev_block_timestamp: i64,
     ) -> Result<Block, crate::contract_state::Error> {

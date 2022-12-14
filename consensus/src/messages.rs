@@ -35,11 +35,14 @@ pub trait Serializable {
         Ok(())
     }
 
+    // read_var_le_bytes reads length-prefixed fields
     fn read_var_le_bytes<R: Read, const N: usize>(
         r: &mut R,
     ) -> io::Result<[u8; N]> {
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
+
+        debug_assert_eq!(buf[0] as usize, N);
 
         let mut buf = [0u8; N];
         r.read_exact(&mut buf)?;
@@ -74,6 +77,7 @@ pub struct TransportData {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&[self.header.topic])?;
         self.header.write(w)?;
 
         match &self.payload {
@@ -89,8 +93,21 @@ impl Serializable for Message {
     where
         Self: Sized,
     {
-        let header = Header::read(r)?;
-        let payload = match Topics::from(header.topic) {
+        // Read topic
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+
+        let topic = Topics::from(buf[0]);
+        if topic == Topics::Unknown {
+            tracing::warn!("unsupported msg topic {}", buf[0]);
+            return Ok(Message::default());
+        }
+
+        // Decode message header only if the topic is supported
+        let mut header = Header::read(r)?;
+        header.topic = buf[0];
+
+        let payload = match topic {
             Topics::NewBlock => {
                 Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
@@ -103,10 +120,7 @@ impl Serializable for Message {
             Topics::AggrAgreement => {
                 Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
-            _ => {
-                debug_assert!(false, "unhandled topic {}", header.topic);
-                Payload::Empty
-            }
+            _ => Payload::Empty,
         };
 
         Ok(Message {
@@ -200,7 +214,6 @@ pub struct Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&[self.topic])?;
         Self::write_var_le_bytes(w, &self.pubkey_bls.bytes()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.step])?;
@@ -213,11 +226,6 @@ impl Serializable for Header {
     where
         Self: Sized,
     {
-        // Read topic
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-        let topic = buf[0];
-
         // Read bls pubkey
         let buf: [u8; 96] = Self::read_var_le_bytes(r)?;
 
@@ -251,7 +259,7 @@ impl Serializable for Header {
             round,
             step,
             block_hash,
-            topic,
+            topic: 0,
         })
     }
 }
@@ -341,7 +349,7 @@ impl Default for Payload {
 
 pub mod payload {
     use super::Serializable;
-    use crate::commons::Block;
+    use crate::commons::{Block, Certificate};
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -427,6 +435,12 @@ pub mod payload {
         }
     }
 
+    impl StepVotes {
+        pub fn new(signature: [u8; 48], bitset: u64) -> StepVotes {
+            StepVotes { bitset, signature }
+        }
+    }
+
     impl Serializable for StepVotes {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             w.write_all(&self.bitset.to_le_bytes())?;
@@ -509,6 +523,17 @@ pub mod payload {
         }
     }
 
+    impl Agreement {
+        /// Generates a certificate from agreement.
+        pub fn generate_certificate(&self, step: u8) -> Certificate {
+            Certificate {
+                first_reduction: self.first_step.clone(),
+                second_reduction: self.second_step.clone(),
+                step,
+            }
+        }
+    }
+
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct AggrAgreement {
         pub agreement: Agreement,
@@ -559,7 +584,7 @@ pub mod payload {
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
-    use crate::commons::{Block, Certificate, Topics};
+    use crate::commons::{Block, Certificate, Seed, Topics};
     use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
     use crate::messages::{self, Header, Message, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
@@ -573,7 +598,7 @@ mod tests {
             round: 8,
             step: 7,
             block_hash: [3; 32],
-            topic: 3,
+            topic: 0,
         });
 
         let sample_block = Block {
@@ -583,13 +608,13 @@ mod tests {
                 timestamp: 123456789,
                 gas_limit: 111111111,
                 prev_block_hash: [1; 32],
-                seed: [2; 32],
-                generator_bls_pubkey: [3; 96],
+                seed: Seed::new([2; 48]),
+                generator_bls_pubkey: [5; 96],
                 state_hash: [4; 32],
                 hash: [5; 32],
                 cert: Certificate {
-                    first_reduction: ([6; 48], 22222222),
-                    second_reduction: ([7; 48], 3333333),
+                    first_reduction: StepVotes::new([6; 48], 22222222),
+                    second_reduction: StepVotes::new([7; 48], 3333333),
                     step: 234,
                 },
             },

@@ -10,6 +10,7 @@ use std::io::{self, Read, Write};
 /// Wire Frame definition.
 #[derive(Debug, Default)]
 pub struct Frame {
+    #[allow(unused)]
     header: FrameHeader,
     payload: FramePayload,
 }
@@ -74,12 +75,13 @@ impl Frame {
         let mut payload_buf = vec![];
         msg.write(&mut payload_buf)?;
 
-        let mut header = FrameHeader::default();
-        header.checksum = calc_checksum(&payload_buf[..]);
-        header.version = [0, 0, 0, 0, 1, 0, 0, 0];
-
         let mut header_buf = vec![];
-        header.write(&mut header_buf)?;
+        FrameHeader {
+            checksum: calc_checksum(&payload_buf[..]),
+            version: [0, 0, 0, 0, 1, 0, 0, 0],
+            reserved: 0,
+        }
+        .write(&mut header_buf)?;
 
         let frame_size = (header_buf.len() + payload_buf.len()) as u64;
 
@@ -94,7 +96,7 @@ impl Frame {
         Self: Sized,
     {
         let mut buf = [0u8; 8];
-        _ = r.read_exact(&mut buf)?;
+        r.read_exact(&mut buf)?;
 
         let header = FrameHeader::read(r)?;
         let payload = FramePayload(Message::read(r)?);
@@ -111,6 +113,8 @@ impl Frame {
     }
 }
 
+#[cfg(test)]
+#[allow(unused)]
 mod tests {
     use consensus::commons::{Block, Certificate, Topics};
     use consensus::messages::payload::{
@@ -121,7 +125,7 @@ mod tests {
 
     use crate::wire::Frame;
 
-    const hash: [u8; 32] = [
+    const FIXED_HASH: [u8; 32] = [
         105, 202, 186, 101, 26, 74, 160, 61, 42, 33, 92, 232, 251, 35, 67, 147,
         73, 198, 100, 5, 115, 67, 61, 212, 81, 61, 185, 60, 118, 99, 152, 143,
     ];
@@ -186,7 +190,7 @@ mod tests {
             .expect("should be valid hash");
 
         // Check if calculate hash is correct
-        assert_eq!(candidate.header.hash, hash);
+        assert_eq!(candidate.header.hash, FIXED_HASH);
 
         // Ensure that the dumped message is properly encoded
         assert_eq!(
@@ -232,7 +236,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::Reduction as u8,
                 },
                 Reduction {
@@ -273,7 +277,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::Agreement as u8,
                 },
                 Agreement {
@@ -324,7 +328,7 @@ mod tests {
                     pubkey_bls: ConsensusPublicKey::default(),
                     round: 99999,
                     step: 123,
-                    block_hash: hash,
+                    block_hash: FIXED_HASH,
                     topic: Topics::AggrAgreement as u8,
                 },
                 AggrAgreement {

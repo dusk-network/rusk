@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::marshal_signable_vote;
+use crate::commons::{marshal_signable_vote, Seed};
 use crate::messages;
 use crate::messages::payload::StepVotes;
 use crate::messages::{Message, Payload};
@@ -37,7 +37,7 @@ impl From<dusk_bls12_381_sign::Error> for Error {
 pub async fn verify_agreement(
     msg: Message,
     committees_set: Arc<Mutex<CommitteeSet>>,
-    seed: [u8; 32],
+    seed: Seed,
 ) -> Result<(), Error> {
     match msg.payload {
         Payload::Agreement(payload) => {
@@ -73,7 +73,7 @@ pub async fn verify_agreement(
 pub(super) async fn verify_step_votes(
     sv: &StepVotes,
     committees_set: &Arc<Mutex<CommitteeSet>>,
-    seed: [u8; 32],
+    seed: Seed,
     hdr: &messages::Header,
     step_offset: u8,
 ) -> Result<(), Error> {

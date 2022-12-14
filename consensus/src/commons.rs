@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::contract_state::Operations;
+use crate::messages::payload::StepVotes;
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 use crate::messages::{self, Message, Serializable};
@@ -20,11 +21,14 @@ use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+pub type Seed = Signature;
+pub type Hash = [u8; 32];
+
 #[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
     pub round: u64,
-    pub seed: [u8; 32],
+    pub seed: Seed,
     pub hash: [u8; 32],
     pub timestamp: i64,
     pub pubkey_bls: ConsensusPublicKey,
@@ -36,40 +40,36 @@ impl RoundUpdate {
         round: u64,
         pubkey_bls: ConsensusPublicKey,
         secret_key: SecretKey,
+        seed: Seed,
     ) -> Self {
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            ..Default::default()
+            seed,
+            hash: [0u8; 32],
+            timestamp: 0,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Certificate {
-    pub first_reduction: ([u8; 48], u64),
-    pub second_reduction: ([u8; 48], u64),
+    pub first_reduction: StepVotes,
+    pub second_reduction: StepVotes,
     pub step: u8,
-}
-
-impl Default for Certificate {
-    fn default() -> Self {
-        Self {
-            first_reduction: ([0u8; 48], 0),
-            second_reduction: ([0u8; 48], 0),
-            step: 0,
-        }
-    }
 }
 
 impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_le_bytes(w, &self.first_reduction.0[..])?;
-        Self::write_var_le_bytes(w, &self.second_reduction.0[..])?;
+        // TODO: Use StepVotes::write
+        // In order to be aligned with golang impl,
+        // we cannot use here StepVotes::write for now.
+        Self::write_var_le_bytes(w, &self.first_reduction.signature[..])?;
+        Self::write_var_le_bytes(w, &self.second_reduction.signature[..])?;
         w.write_all(&self.step.to_le_bytes())?;
-        w.write_all(&self.first_reduction.1.to_le_bytes())?;
-        w.write_all(&self.second_reduction.1.to_le_bytes())?;
+        w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
+        w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
 
         Ok(())
     }
@@ -78,8 +78,8 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let mut first_reduction = (Self::read_var_le_bytes(r)?, 0u64);
-        let mut second_reduction = (Self::read_var_le_bytes(r)?, 0u64);
+        let first_red_signature = Self::read_var_le_bytes(r)?;
+        let sec_red_signature = Self::read_var_le_bytes(r)?;
 
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
@@ -87,15 +87,21 @@ impl Serializable for Certificate {
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        first_reduction.1 = u64::from_le_bytes(buf);
+        let first_red_bitset = u64::from_le_bytes(buf);
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        second_reduction.1 = u64::from_le_bytes(buf);
+        let sec_red_bitset = u64::from_le_bytes(buf);
 
         Ok(Certificate {
-            first_reduction,
-            second_reduction,
+            first_reduction: StepVotes {
+                bitset: first_red_bitset,
+                signature: first_red_signature,
+            },
+            second_reduction: StepVotes {
+                bitset: sec_red_bitset,
+                signature: sec_red_signature,
+            },
             step,
         })
     }
@@ -108,7 +114,7 @@ pub struct Header {
     pub height: u64,
     pub timestamp: i64,
     pub prev_block_hash: [u8; 32],
-    pub seed: [u8; 32],
+    pub seed: Seed,
     pub state_hash: [u8; 32],
     pub generator_bls_pubkey: [u8; 96],
     pub gas_limit: u64,
@@ -137,9 +143,9 @@ impl Header {
         w.write_all(&self.prev_block_hash[..])?;
 
         if fixed_size_seed {
-            w.write_all(&self.seed[..])?;
+            w.write_all(&self.seed.inner()[..])?;
         } else {
-            Self::write_var_le_bytes(w, &self.seed[..])?;
+            Self::write_var_le_bytes(w, &self.seed.inner()[..])?;
         }
 
         w.write_all(&self.state_hash[..])?;
@@ -183,7 +189,7 @@ impl Header {
             timestamp,
             gas_limit,
             prev_block_hash,
-            seed,
+            seed: Seed::new(seed),
             generator_bls_pubkey,
             state_hash,
             hash: [0; 32],
@@ -286,6 +292,11 @@ impl Block {
     }
 
     pub fn calculate_hash(&mut self) -> io::Result<()> {
+        // Call hasher only if header.hash is empty
+        if self.header.hash != Hash::default() {
+            return Ok(());
+        }
+
         let mut hasher = sha3::Sha3_256::new();
         self.header.marshal_hashable(&mut hasher, true)?;
 
@@ -310,11 +321,19 @@ pub enum ConsensusError {
     Canceled,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Signature(pub [u8; 48]);
 impl Signature {
     pub fn is_zeroed(&self) -> bool {
         self.0 == [0; 48]
+    }
+
+    pub fn inner(&self) -> [u8; 48] {
+        self.0
+    }
+
+    pub fn new(value: [u8; 48]) -> Signature {
+        Signature(value)
     }
 }
 
@@ -323,9 +342,6 @@ impl Default for Signature {
         Signature([0; 48])
     }
 }
-
-// TODO: Apply Hash type instead of u8; 32
-pub type Hash = [u8; 32];
 
 pub fn marshal_signable_vote(
     round: u64,
@@ -431,4 +447,10 @@ impl From<u8> for Topics {
 
         Topics::Unknown
     }
+}
+
+pub trait Database: Send + Sync {
+    fn store_candidate_block(&mut self, b: Block);
+    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<(Hash, Block)>;
+    fn delete_candidate_blocks(&mut self);
 }
