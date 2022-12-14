@@ -238,13 +238,9 @@ impl<D: Database> Executor<D> {
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
         if let Payload::AggrAgreement(aggr) = &msg.payload {
             // Perform verification of aggregated agreement message
-            if let Err(e) = aggr_agreement::verify(
-                &self.ru,
-                self.committees_set.clone(),
-                &msg.header,
-                aggr,
-            )
-            .await
+            if let Err(e) = aggr
+                .verify(&self.ru, self.committees_set.clone(), &msg.header)
+                .await
             {
                 error!("failed to verify aggr agreement err: {:?}", e);
                 return None;
