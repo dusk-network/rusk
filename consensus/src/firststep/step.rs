@@ -15,8 +15,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub const COMMITTEE_SIZE: usize = 64;
-
 #[allow(unused)]
 pub struct Reduction<T> {
     timeout_millis: u64,
@@ -75,6 +73,6 @@ impl<T: Operations + 'static> Reduction<T> {
         self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
-        COMMITTEE_SIZE
+        config::FIRST_REDUCTION_COMMITTEE_SIZE
     }
 }
