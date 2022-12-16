@@ -8,6 +8,7 @@ mod task;
 mod version;
 
 use clap::Parser;
+use clap::builder::ArgAction;
 use std::path::PathBuf;
 use version::VERSION_BUILD;
 
@@ -19,7 +20,7 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
+        value_parser,
         value_name = "PATH",
         env = "RUSK_PROFILE_PATH"
     )]
@@ -30,7 +31,7 @@ struct Cli {
     keep: bool,
 
     /// Sets different levels of verbosity
-    #[clap(short, long, parse(from_occurrences))]
+    #[clap(short, long, action = ArgAction::Count)]
     verbose: usize,
 }
 

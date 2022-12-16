@@ -14,7 +14,7 @@ use std::error::Error;
 use std::{env, io};
 use std::{fs, path::PathBuf};
 use tracing::info;
-use version::VERSION_BUILD;
+// use version::VERSION_BUILD;
 
 use rusk_recovery_tools::state::{deploy, restore_state, zip, Snapshot};
 
@@ -26,7 +26,7 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
+        value_parser,
         value_name = "PATH",
         env = "RUSK_PROFILE_PATH"
     )]
@@ -37,16 +37,16 @@ struct Cli {
     force: bool,
 
     /// Create a state applying the init config specified in this file.
-    #[clap(short, long, parse(from_os_str), value_name = "CONFIG")]
+    #[clap(short, long, value_parser, value_name = "CONFIG")]
     init: Option<PathBuf>,
 
     /// Sets different levels of verbosity
-    #[clap(short, long, parse(from_occurrences))]
+    #[clap(short, long, action = ArgAction::Count)]
     verbose: usize,
 
     /// If specified, the generated state is written on this file instead of
     /// save the state in the profile path.
-    #[clap(short, long, parse(from_os_str), takes_value(true))]
+    #[clap(Arg::num_args(1), short, long, value_parser)]
     output: Option<PathBuf>,
 }
 

@@ -21,7 +21,7 @@ async-stream = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["fmt", "env-filter", "json"] }
 hyper = { version = "0.14", features = ["full"] }
-clap = { version = "3.1", features = ["env"] }
+clap = { version = "4.0.29", features = ["env"] }
 prost = "0.9"
 tower = "0.4"
 futures = "0.3"
