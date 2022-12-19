@@ -27,7 +27,7 @@ A full implementation of SA mechanism.
  # Implementation details 
 SA is driven basically by two tokio-rs tasks - Main Loop and Agreement Loop. Each of them has its own inbound and outbound message queues/channels to exchange messages with outsiders. SA protocol parameters are defined in `/src/config.rs`.
 
-- `Main_Loop uses` `Operations trait` to execute Contract Storage calls and `Database trait` to store and retrieve candidate blocks. It is mainly responsible to execute Selection, 1th Reduction and 2nd Reduction steps in a row and eventually produce/broadcast an **Agreement Message**. Inbound queue for Main_Loop can contain messages of either **NewBlock** or **Reduction** type.
+- `Main_Loop` uses `Operations trait` to execute Contract Storage calls and `Database trait` to store and retrieve candidate blocks. It is mainly responsible to execute Selection, 1th Reduction and 2nd Reduction steps in a row and eventually produce/broadcast an **Agreement Message**. Inbound queue for Main_Loop can contain messages of either **NewBlock** or **Reduction** type.
 
 
 - `Agreement_Loop` uses `Database trait` to retrieve candidate block when a winner hash is found. It is mainly responsible to verify and accumulate **Agreement messages** from different Consensus iterations and process **Aggregated Agreement message**. Inbound queue for Agreement_Loop can contain messages of either **Agreement** or **AggrAgreement** type. An Agreement messages are verified and accumulated concurrently by a pool of workers/verifiers - again tokio-rs tasks.
