@@ -16,7 +16,11 @@ use std::{fs, path::PathBuf};
 use tracing::info;
 use version::VERSION_BUILD;
 
-use rusk_recovery_tools::state::{deploy, restore_state, zip, Snapshot};
+#[cfg(any(feature = "xz", feature = "gz"))]
+use rusk_recovery_tools::state::compress_tar::compress;
+#[cfg(feature = "zip")]
+use rusk_recovery_tools::state::compress_zip::compress;
+use rusk_recovery_tools::state::{deploy, restore_state, Snapshot};
 
 #[derive(Parser, Debug)]
 #[clap(name = "rusk-recovery-state")]
@@ -153,8 +157,12 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     if let Some(output) = config.output_file {
         let state_folder = rusk_profile::get_rusk_state_dir()?;
         let input = state_folder.parent().expect("state dir not equal to root");
-        info!("{} state into the output file", theme.info("Zipping"),);
-        zip::zip(input, &output)?;
+        #[cfg(feature = "zip")]
+        let operation = "Zipping";
+        #[cfg(not(feature = "zip"))]
+        let operation = "Compressing";
+        info!("{} state into the output file", theme.info(operation),);
+        compress(input, &output)?;
     }
 
     Ok(())

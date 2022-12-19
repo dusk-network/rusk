@@ -4,6 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(not(any(feature = "xz", feature = "gz", feature = "zip")))]
+compile_error! ("Exactly one compile feature of \"xz\", \"gz\" or \"zip\" must be enabled if feature \"state\" is enabled");
+#[cfg(any(
+    all(feature = "xz", feature = "gz"),
+    all(feature = "zip", feature = "gz"),
+    all(feature = "zip", feature = "xz")
+))]
+compile_error!(
+    "Only one compile feature may be enabled: \"xz\", \"gz\" or \"zip\""
+);
+
 use crate::theme::Theme;
 
 use canonical::{Canon, Sink, Source};
@@ -28,8 +39,17 @@ use url::Url;
 
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
+#[cfg(feature = "zip")]
+pub mod compress_zip;
+#[cfg(feature = "zip")]
+use compress_zip::uncompress;
+
+#[cfg(any(feature = "xz", feature = "gz"))]
+pub mod compress_tar;
+#[cfg(any(feature = "xz", feature = "gz"))]
+use compress_tar::uncompress;
+
 mod snapshot;
-pub mod zip;
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
@@ -277,7 +297,7 @@ fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     let output = state_dir.parent().expect("state dir not equal to root");
 
-    zip::unzip(&buffer, output)?;
+    uncompress(&buffer, output)?;
 
     let network = restore_state(&id_path)?;
     info!(

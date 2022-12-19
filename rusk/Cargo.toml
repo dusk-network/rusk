@@ -36,7 +36,10 @@ serde = "1.0"
 bs58 = "0.4"
 hex = "0.4"
 tempfile = "3.2"
-zip  = "0.5"
+zip  = { version = "0.6.3", optional = true }
+tar = { version = "0.4.38", optional = true }
+xz2 = { version = "0.1.7", optional = true }
+flate2 = { version = "1.0.25", optional = true }
 
 dusk-schnorr = "0.10.0-rc"
 dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
@@ -72,3 +75,8 @@ hex = "0.4"
 [build-dependencies]
 tonic-build = "0.6"
 rustc_tools_util = "=0.2.0"
+
+[features]
+xz = ["tar", "xz2"]
+gz = ["tar", "flate2"]
+default = ["xz"]

@@ -1,6 +1,6 @@
 [package]
 name = "rusk-recovery"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 autobins = false
 description = "Tool to restore Rusk to factory settings"
@@ -26,10 +26,10 @@ rustc_tools_util = "=0.2.0"
 hex = "0.4"
 rustc_tools_util = "0.2"
 dusk-plonk = { version = "0.10", features = ["canon", "std"] }
-dusk-pki ="0.10.0-rc"
+dusk-pki = "0.10.0-rc"
 phoenix-core = "0.16.0-rc"
 rand = "0.8"
-transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
+transfer-circuits = { path = "../circuits/transfer", features = ["builder"] }
 transfer-contract = { path = "../contracts/transfer", default-features = false }
 stake-contract = { path = "../contracts/stake", default-features = false }
 microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
@@ -48,8 +48,11 @@ console = "0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
-zip = "0.5"
 url = "2.3"
+zip = { version = "0.6.3", optional = true }
+tar = { version = "0.4.38", optional = true }
+xz2 = { version = "0.1.7", optional = true }
+flate2 = { version = "1.0.25", optional = true }
 
 serde_derive = { version = "1", optional = true }
 serde = { version = "1", optional = true }
@@ -59,5 +62,8 @@ tempfile = "3.3"
 walkdir = "2.3"
 
 [features]
-state = ["serde_derive", "serde", "toml", "bs58"]
+xz = ["tar", "xz2"]
+gz = ["tar", "flate2"]
 keys = []
+state = ["serde_derive", "serde", "toml", "bs58", "tar"]
+default = ["xz"]

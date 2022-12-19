@@ -4,15 +4,27 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(not(any(feature = "xz", feature = "gz", feature = "zip")))]
+compile_error!(
+    "Exactly one compile feature of \"xz\", \"gz\" or \"zip\" must be enabled"
+);
+#[cfg(any(
+    all(feature = "xz", feature = "gz"),
+    all(feature = "zip", feature = "gz"),
+    all(feature = "zip", feature = "xz")
+))]
+compile_error!(
+    "Only one compile feature may be enabled: \"xz\", \"gz\" or \"zip\""
+);
+
 use clap::{value_parser, Arg, Command};
 use std::{
     env,
-    fs::{self, File},
-    io::{BufReader, Read, Result},
+    fs::File,
+    io::Result,
     path::{Path, PathBuf},
 };
 use tempfile::TempDir;
-use zip::ZipArchive;
 
 pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
     command.arg(
@@ -29,22 +41,27 @@ pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
 
 pub(crate) fn configure(state_zip: &PathBuf) -> Result<Option<TempDir>> {
     let tmpdir = tempfile::tempdir()?;
-    unzip(state_zip, tmpdir.path())?;
+    uncompress_file(state_zip, tmpdir.path())?;
 
     env::set_var("RUSK_STATE_PATH", tmpdir.as_ref().as_os_str());
 
     Ok(Some(tmpdir))
 }
 
+#[cfg(feature = "zip")]
 /// Unzip a file into the output directory.
-fn unzip(zipfile: &PathBuf, output: &Path) -> Result<()> {
+fn uncompress_file(zipfile: &PathBuf, target_dir: &Path) -> Result<()> {
+    use std::fs;
+    use std::io::{BufReader, Read};
+    use zip::ZipArchive;
+
     let f = File::open(zipfile)?;
     let reader = BufReader::new(f);
     let mut zip = ZipArchive::new(reader)?;
 
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i)?;
-        let entry_path = output.join(entry.name());
+        let entry_path = target_dir.join(entry.name());
 
         if entry.is_dir() {
             let _ = fs::create_dir_all(entry_path);
@@ -54,6 +71,20 @@ fn unzip(zipfile: &PathBuf, output: &Path) -> Result<()> {
             fs::write(entry_path, buffer)?;
         }
     }
-
     Ok(())
+}
+
+#[cfg(any(feature = "xz", feature = "gz"))]
+fn uncompress_file(
+    compressed_tar_file: &PathBuf,
+    target_dir: &Path,
+) -> Result<()> {
+    #[cfg(feature = "gz")]
+    use flate2::read::GzDecoder as Uncompressor;
+    use tar::Archive;
+    #[cfg(feature = "xz")]
+    use xz2::read::XzDecoder as Uncompressor;
+
+    Archive::new(Uncompressor::new(File::open(compressed_tar_file)?))
+        .unpack(target_dir)
 }
