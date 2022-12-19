@@ -1,15 +1,17 @@
- # Consensus protocol
-  Consensus protocol called Succinct Attestation (SA from hereon). SA is a permission-less Proof-of-Stake-based consensus mechanism with statistical finality guarantees. SA belongs to the committee-based PoS subcategory due to its use of committees to finalize a block for a given round.
- 
-   SA is permission-less, meaning that any eligible (eligibility properties are defined below) Dusk Network protocol participant is authorized to join and participate in the consensus. An eligible participant is defined with the following properties:
- 
-- A participant with a pre-configured amount of DUSK locked as a stake (a.k.a Provisioner)
-- A participant, whose stake has a maturity of at least 2 epochs (a.k.a Eligible Provisioner)
+# Consensus Protocol
 
-Other terms used below:
-- `Round` - A single SA execution
-- `Round iteration` - All three phases (Selection, 1th Reduction and 2th Reduction) executed in a row.
-- `Committee` - A subset of Eligible Provisioners, extracted on performing `Deterministic Sortition`
+The Dusk Network utilizes a consensus protocol called Succinct Attestation (SA). SA is a permissionless proof-of-stake (PoS) consensus mechanism that provides statistical finality guarantees[^1]. SA belongs to the committee-based PoS category[^2] because it uses committees to finalize blocks for a given round.
+
+SA is permissionless, meaning that any eligible participant in the Dusk Network protocol can join and participate in the consensus process. To be eligible, a participant must meet the following requirements:
+
+    - Have a pre-configured amount of DUSK locked as a stake (referred to as a `Provisioner`)
+    - Have a stake with a maturity of at least two epochs (referred to as an `Eligible Provisioner`)
+
+Other terms used in the context of SA:
+
+    - `Round`: A single SA execution.
+    - `Round iteration`: The execution of all three phases (Selection, 1st Reduction, and 2nd Reduction) in a row.
+    - `Committee`: A subset of Eligible Provisioners, selected through a process called "Deterministic Sortition."
 
 # Repository structure
 
@@ -132,4 +134,5 @@ USAGE:
 
 ```
 
-
+[^1]: A finality guarantee that is achieved through the accumulation of blocks over time, such that the probability of a block being reversed decreases exponentially as more blocks are added on top of it. This type of guarantee is in contrast to absolute finality, which is achieved when it is mathematically impossible for a block to be reversed.
+[^2]: A type of Proof-of-Stake consensus mechanism that relies on a committee of validators, rather than all validators in the network, to reach consensus on the next block. Committee-based PoS mechanisms often have faster block times and lower overhead than their non-committee counterparts, but may also be more susceptible to censorship or centralization.
