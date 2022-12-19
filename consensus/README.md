@@ -4,14 +4,14 @@ The Dusk Network utilizes a consensus protocol called Succinct Attestation (SA).
 
 SA is permissionless, meaning that any eligible participant in the Dusk Network protocol can join and participate in the consensus process. To be eligible, a participant must meet the following requirements:
 
-    - Have a pre-configured amount of DUSK locked as a stake (referred to as a `Provisioner`)
-    - Have a stake with a maturity of at least two epochs (referred to as an `Eligible Provisioner`)
+ - Have a pre-configured amount of DUSK locked as a stake (referred to as a `Provisioner`)
+ - Have a stake with a maturity of at least two epochs (referred to as an `Eligible Provisioner`)
 
 Other terms used in the context of SA:
 
-    - `Round`: A single SA execution.
-    - `Round iteration`: The execution of all three phases (Selection, 1st Reduction, and 2nd Reduction) in a row.
-    - `Committee`: A subset of Eligible Provisioners, selected through a process called "Deterministic Sortition."
+ - `Round`: A single SA execution.
+ - `Round iteration`: The execution of all three phases (Selection, 1st Reduction, and 2nd Reduction) in a row.
+ - `Committee`: A subset of Eligible Provisioners, selected through a process called "Deterministic Sortition."
 
 # Repository structure
 
