@@ -16,7 +16,7 @@ Other terms used in the context of SA:
 # Repository structure
 
 ## Example Node
-A minimalistic and stateless version of dusk-blockchain node where Consensus protocol in conjuction with Kadcast is able to join and participate `dusk-blockchain`/test-harness. Useful for testing and diagnostic incompatibility issues. This executable should be deprecated once dusk-blockchain is fully migrated.
+"A minimalistic and stateless version of dusk-blockchain node running the SA protocol in conjuction with Kadcast and able to join and participate in dusk-blockchain/test-harness. Useful for testing and diagnostic incompatibility issues. This executable should be deprecated once dusk-blockchain is fully migrated.
 
 ## Example Testbed
 A multi-instance setup running 10 SA instances provisioned with 10 eligible participants. The setup is configured to run for up to 1000 rounds. Useful for any kind of testing (issues, stress and performance testing).
@@ -25,12 +25,12 @@ A multi-instance setup running 10 SA instances provisioned with 10 eligible part
 A full implementation of SA mechanism.
 
  # Implementation details 
-SA is driven basically by two tokio-rs tasks - Main Loop and Agreement Loop. Each of them has its own inbound and outbound message queues/channels to exchange messages with outsiders. SA protocol parameters are defined in `/src/config.rs`.
+SA is driven by two main tokio-rs tasks - Main Loop and Agreement Loop. Each of them has its own inbound and outbound message queues/channels to exchange messages with external components. SA protocol parameters are defined in `/src/config.rs`.
 
-- `Main_Loop` uses `Operations trait` to execute Contract Storage calls and `Database trait` to store and retrieve candidate blocks. It is mainly responsible to execute Selection, 1th Reduction and 2nd Reduction steps in a row and eventually produce/broadcast an **Agreement Message**. Inbound queue for Main_Loop can contain messages of either **NewBlock** or **Reduction** type.
+- `Main_Loop` uses `Operations trait` to execute Contract Storage calls and `Database trait` to store and retrieve candidate blocks. It is mainly responsible to execute Selection, 1st Reduction and 2nd Reduction steps in a row and eventually produce/broadcast an **Agreement Message**. Inbound queue for Main_Loop can contain messages of either **NewBlock** or **Reduction** type.
 
 
-- `Agreement_Loop` uses `Database trait` to retrieve candidate block when a winner hash is found. It is mainly responsible to verify and accumulate **Agreement messages** from different Consensus iterations and process **Aggregated Agreement message**. Inbound queue for Agreement_Loop can contain messages of either **Agreement** or **AggrAgreement** type. An Agreement messages are verified and accumulated concurrently by a pool of workers/verifiers - again tokio-rs tasks.
+- `Agreement_Loop` uses `Database trait` to retrieve a candidate block when a winner hash is selected. It is mainly responsible to verify and accumulate **Agreement messages** from different Consensus iterations and process **Aggregated Agreement message**. Inbound queue for Agreement_Loop can contain messages of either **Agreement** or **AggrAgreement** type. Agreement messages are verified and accumulated concurrently by a pool of workers/verifiers - again tokio-rs tasks.
 
 
  ![Screenshot](node.png)
@@ -64,7 +64,7 @@ loop {
 	let round_update = from(most_recent_block);
 
 	/// Consensus::Spin call initializes a consensus round
-	/// and spawns two consensus tokio::tasks.
+	/// and spawns main consensus tokio::tasks.
 	let ret = consensus.spin(
 			round_update
 			provisioners,
@@ -91,7 +91,7 @@ loop {
  
  ### Tokio runtime
 
-Ideally, we should opt for making the SA implementation runtime-agnostic. However, at that stage the implementation is fully based on Tokio-rs/Runtime. That's said the recommended way of setting up the runtime is shown below.
+The implementation is fully based on Tokio-rs/Runtime. That said the recommended way of setting up the runtime is shown below.
 
  ```rust
   tokio::runtime::Builder::new_multi_thread()
