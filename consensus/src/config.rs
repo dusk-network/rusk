@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/// Maximum number of steps Consensus runs per a single rounnd.
+/// Maximum number of steps Consensus runs per a single round.
 pub const CONSENSUS_MAX_STEP: u8 = 213;
 /// Percentage number that determines a quorum.
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
