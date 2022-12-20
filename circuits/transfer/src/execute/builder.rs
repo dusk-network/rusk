@@ -8,7 +8,9 @@ use super::{
     ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
     ExecuteCircuitTwoTwo,
 };
+
 use crate::error::Error;
+use crate::execute::ExecuteCircuit;
 use crate::POSEIDON_TREE_DEPTH;
 
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
@@ -121,8 +123,13 @@ macro_rules! execute_circuit_variant {
 
                 for (ssk, pos) in input_data.into_iter() {
                     let note = tree.get(pos).unwrap();
-                    let input =
-                        Self::input(rng, &ssk, tx_hash, &tree, note.into())?;
+                    let input = ExecuteCircuit::input(
+                        rng,
+                        &ssk,
+                        tx_hash,
+                        &tree,
+                        note.into(),
+                    )?;
 
                     circuit.add_input(input);
                 }
@@ -170,7 +177,7 @@ macro_rules! execute_circuit_variant {
                     );
                 } else {
                     fee.gas_limit = 5 + value;
-                    circuit.set_fee(&fee)?;
+                    circuit.set_fee(&fee);
                 }
 
                 Ok(circuit)
