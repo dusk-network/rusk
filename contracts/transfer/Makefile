@@ -14,10 +14,13 @@ test: wasm ## Perform the contract tests defined in the host module
 	@cargo test --release
 
 wasm: ## Build the WASM files
-	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)=" \
-		cargo rustc \
-		--release \
-		--target wasm32-unknown-unknown \
-		-- -C link-args=-s
+	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
+		cargo build \
+			--release \
+			--color=always \
+			-Z build-std=core,alloc,panic_abort \
+			-Z build-std-features=panic_immediate_abort \
+			--target wasm32-unknown-unknown
+
 
 .PHONY: all check test wasm help
