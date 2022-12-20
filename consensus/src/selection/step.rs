@@ -18,8 +18,6 @@ use crate::selection::handler;
 use crate::user::committee::Committee;
 use tracing::error;
 
-pub const COMMITTEE_SIZE: usize = 1;
-
 pub struct Selection<T, D: Database>
 where
     T: Operations,
@@ -95,6 +93,6 @@ impl<T: Operations, D: Database> Selection<T, D> {
         self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
-        COMMITTEE_SIZE
+        config::SELECTION_COMMITTEE_SIZE
     }
 }

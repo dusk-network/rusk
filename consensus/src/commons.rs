@@ -449,7 +449,7 @@ impl From<u8> for Topics {
     }
 }
 
-pub trait Database: Send + Sync {
+pub trait Database: Send {
     fn store_candidate_block(&mut self, b: Block);
     fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<(Hash, Block)>;
     fn delete_candidate_blocks(&mut self);

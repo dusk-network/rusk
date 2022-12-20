@@ -14,8 +14,6 @@ use crate::user::committee::Committee;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub const COMMITTEE_SIZE: usize = 64;
-
 #[allow(unused)]
 pub struct Reduction<T> {
     handler: handler::Reduction,
@@ -86,6 +84,6 @@ impl<T: Operations + 'static> Reduction<T> {
     }
 
     pub fn get_committee_size(&self) -> usize {
-        COMMITTEE_SIZE
+        config::SECOND_REDUCTION_COMMITTEE_SIZE
     }
 }

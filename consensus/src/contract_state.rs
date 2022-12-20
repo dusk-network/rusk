@@ -31,7 +31,7 @@ pub struct Output {
     provisioners: Provisioners,
 }
 
-pub trait Operations: Send + Sync {
+pub trait Operations: Send {
     fn verify_state_transition(
         &self,
         params: CallParams,
