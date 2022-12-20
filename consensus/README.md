@@ -16,7 +16,7 @@ Other terms used in the context of SA:
 # Repository structure
 
 ## Example Node
-"A minimalistic and stateless version of dusk-blockchain node running the SA protocol in conjuction with Kadcast and able to join and participate in dusk-blockchain/test-harness. Useful for testing and diagnostic incompatibility issues. This executable should be deprecated once dusk-blockchain is fully migrated.
+The minimalistic and stateless version of the dusk-blockchain node allows for testing and diagnosing compatibility issues using the Consensus protocol in conjunction with Kadcast[^3]. It enables the node to join and participate in the dusk-blockchain/test-harness. Once the dusk-blockchain is fully migrated, this executable will no longer be needed and can be deprecated.
 
 ## Example Testbed
 A multi-instance setup running 10 SA instances provisioned with 10 eligible participants. The setup is configured to run for up to 1000 rounds. Useful for any kind of testing (issues, stress and performance testing).
@@ -24,17 +24,14 @@ A multi-instance setup running 10 SA instances provisioned with 10 eligible part
 ## Consensus crate
 A full implementation of SA mechanism.
 
- # Implementation details 
-SA is driven by two main tokio-rs tasks - Main Loop and Agreement Loop. Each of them has its own inbound and outbound message queues/channels to exchange messages with external components. SA protocol parameters are defined in `/src/config.rs`.
+# Implementation details
+The implementation of *SA* consists of two main `tokio-rs` tasks, the `Main_Loop` and `Agreement_Loop`, which communicate with external components through message queues/channels. The protocol parameters for *SA* are located in `src/config.rs`.
 
-- `Main_Loop` uses `Operations trait` to execute Contract Storage calls and `Database trait` to store and retrieve candidate blocks. It is mainly responsible to execute Selection, 1st Reduction and 2nd Reduction steps in a row and eventually produce/broadcast an **Agreement Message**. Inbound queue for Main_Loop can contain messages of either **NewBlock** or **Reduction** type.
+- The `Main_Loop` is responsible for executing contract storage calls using the `Operations` trait and storing and retrieving candidate blocks using the `Database` trait. It performs the selection, first reduction, and second reduction steps[^4] in sequence and ultimately produces and broadcasts an `Agreement Message`. The inbound queue for the `Main_Loop` can contain either **NewBlock** or **Reduction** type messages.
 
-
-- `Agreement_Loop` uses `Database trait` to retrieve a candidate block when a winner hash is selected. It is mainly responsible to verify and accumulate **Agreement messages** from different Consensus iterations and process **Aggregated Agreement message**. Inbound queue for Agreement_Loop can contain messages of either **Agreement** or **AggrAgreement** type. Agreement messages are verified and accumulated concurrently by a pool of workers/verifiers - again tokio-rs tasks.
-
+- The `Agreement_Loop` retrieves a candidate block using the `Database` trait when a winner hash is selected. It is responsible for verifying and accumulating **Agreement** messages from different consensus iterations and processing the **Aggregated Agreement** message. The inbound queue for the `Agreement_Loop` can contain either **Agreement** or **Aggregated Agreement** type messages. The messages are concurrently verified and accumulated by a pool of worker tasks in `tokio-rs`.
 
  ![Screenshot](node.png)
-
 
 ## How to use (example code)
 ```rust
@@ -136,3 +133,5 @@ USAGE:
 
 [^1]: A finality guarantee that is achieved through the accumulation of blocks over time, such that the probability of a block being reversed decreases exponentially as more blocks are added on top of it. This type of guarantee is in contrast to absolute finality, which is achieved when it is mathematically impossible for a block to be reversed.
 [^2]: A type of Proof-of-Stake consensus mechanism that relies on a committee of validators, rather than all validators in the network, to reach consensus on the next block. Committee-based PoS mechanisms often have faster block times and lower overhead than their non-committee counterparts, but may also be more susceptible to censorship or centralization.
+[^3]: Kadcast is a decentralized protocol used for efficient communication between nodes in a network. It is based on the Kademlia algorithm and maintains a routing table to find the best path to another node. Kadcast is commonly used in decentralized systems, such as decentralized applications (DApps) and decentralized file sharing systems, to send messages and data between nodes in a fast and reliable manner. One of the main advantages of Kadcast is its decentralized nature, which makes it resistant to censorship and other forms of interference, making it a popular choice for applications that require decentralization. Please find the whitepaper [here](https://eprint.iacr.org/2021/996). Dusk's implementation can be found [on its repo](https://github.com/dusk-network/kadcast).
+[^4]: In the Selection phase, a replica (or Provisioner in Dusk terminolody) acting as a Block Generator, proposes a block. In the First Reduction phase, a sampled committee of Provisioners vote on the validity of the block by signing a message with a BLS signature and broadcasting it. In the Second Reduction phase, a different sampled committee of Provisioners vote on the block, gather the results of the First Reduction phase, and produce an "Agreement" message. The steps keep iterating until the process is interrupted by the `Agreement` loop. This allows the group to reach a final decision about which block to agree on.
