@@ -4,64 +4,31 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytecheck::CheckBytes;
-use rkyv::{Archive, Deserialize, Serialize};
-
 mod public_input;
 pub use public_input::*;
 
-/// The type of the circuit to request a proof verification on.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-#[non_exhaustive]
-pub enum CircuitType {
-    /// Execute circuit with the given inputs and outputs
-    Execute(usize, usize),
-    /// Withdraw from contract transparent
-    WFCT,
-    /// Send to contract transparent
-    STCT,
-    /// Withdraw from contract obfuscated
-    WFCO,
-    /// Send to contract obfuscated
-    STCO,
+pub(crate) enum Query {}
+
+impl Query {
+    pub const HASH: &str = "hash";
+    pub const POSEIDON_HASH: &str = "poseidon_hash";
+    pub const VERIFY_PROOF: &str = "verify_proof";
+    pub const VERIFY_SCHNORR: &str = "verify_schnorr";
+    pub const VERIFY_BLS: &str = "verify_bls";
 }
 
-/// Host query types offered by `rusk`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(not(feature = "host"), doc(hidden))]
-pub enum QueryType {
-    /// Perform a blake2b hash
-    Hash,
-    /// Perform a poseidon hash
-    PoseidonHash,
-    /// Verify a plonk proof
-    VerifyProof,
-    /// Verify a schnorr signature
-    VerifySchnorr,
-    /// Verify a BLS signature
-    VerifyBls,
-}
+pub(crate) enum Metadata {}
 
-impl QueryType {
-    /// Returns the string representation of the query type
-    pub const fn as_str(&self) -> &'static str {
-        match self {
-            QueryType::Hash => "hash",
-            QueryType::PoseidonHash => "poseidon_hash",
-            QueryType::VerifyProof => "verify_proof",
-            QueryType::VerifySchnorr => "verify_schnorr",
-            QueryType::VerifyBls => "verify_bls",
-        }
-    }
+impl Metadata {
+    pub const BLOCK_HEIGHT: &str = "block_height";
 }
 
 cfg_if::cfg_if! {
-  if #[cfg(feature = "host")] {
-      mod host;
-      pub use host::*;
-  } else {
-      mod hosted;
-      pub use hosted::*;
-  }
+    if #[cfg(feature = "host")] {
+        mod host;
+        pub use host::*;
+    } else {
+        mod hosted;
+        pub use hosted::*;
+    }
 }
