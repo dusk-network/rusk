@@ -1,0 +1,17 @@
+[package]
+name = "alice"
+version = "0.3.0"
+edition = "2021"
+resolver = "2"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
+rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+transfer-contract-types = { path = "../transfer-types", default-features = false }
+
+[dev-dependencies]
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
