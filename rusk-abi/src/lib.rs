@@ -12,16 +12,20 @@
 //!
 //! The ABI to develop Dusk Network smart contracts
 
-#![no_std]
+#![cfg_attr(not(feature = "host"), no_std)]
 #![deny(missing_docs)]
 #![deny(clippy::all)]
 #![feature(const_fn_floating_point_arithmetic)]
 
+extern crate alloc;
+
+use crate::hash::Hasher;
+
+// re-export `piecrust-uplink` such that `rusk-abi` is the only crate
+pub use piecrust_uplink::*;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-
-use piecrust_uplink::ModuleId;
-use piecrust_uplink::MODULE_ID_BYTES;
 
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
@@ -45,6 +49,14 @@ const fn reserved(b: u8) -> ModuleId {
     let mut bytes = [0u8; MODULE_ID_BYTES];
     bytes[0] = b;
     ModuleId::from_bytes(bytes)
+}
+
+/// Generate a [`ModuleId`] address from the given slice of bytes, that is
+/// also a valid [`BlsScalar`]
+pub fn gen_module_id(bytes: &[u8]) -> ModuleId {
+    let mut hasher = Hasher::new();
+    hasher.update(bytes);
+    ModuleId::from_bytes(hasher.output())
 }
 
 /// Converts a `ModuleId` to a `BlsScalar`

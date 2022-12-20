@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-extern crate alloc;
-
 use blake2b_simd::{Params, State};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;

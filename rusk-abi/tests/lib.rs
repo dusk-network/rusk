@@ -9,20 +9,17 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-    Signature as BlsSignature, APK,
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, APK,
 };
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use once_cell::sync::OnceCell;
 use piecrust::{Session, VM};
 use piecrust_uplink::ModuleId;
 use rand_core::OsRng;
-use rkyv::Deserialize;
 use rusk_abi::hash::Hasher;
-use rusk_abi::{CircuitType, PublicInput};
+use rusk_abi::{set_block_height, PublicInput};
 
 #[test]
 fn hash_host() {
@@ -48,119 +45,15 @@ fn hash_host() {
     );
 }
 
-struct ProverVerifier {
-    prover: Prover<TestCircuit>,
-    verifier: Verifier<TestCircuit>,
-}
-
-fn get_prover_verifier() -> &'static ProverVerifier {
-    static PROVER_VERIFIER: OnceCell<ProverVerifier> = OnceCell::new();
-
-    let pp = include_bytes!("./pp_test.bin");
-    let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
-
-    let label = b"dusk-network";
-
-    PROVER_VERIFIER.get_or_init(|| {
-        let (prover, verifier) = Compiler::compile(&pp, label)
-            .expect("Compiling the circuit should succeed");
-        ProverVerifier { prover, verifier }
-    })
-}
-
-fn hash_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
-    let root =
-        unsafe { rkyv::archived_root::<Vec<u8>>(&buf[..arg_len as usize]) };
-    let bytes: Vec<u8> = root.deserialize(&mut rkyv::Infallible).unwrap();
-    let valid = rusk_abi::hash(bytes);
-
-    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
-
-    buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn poseidon_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
-    let root = unsafe {
-        rkyv::archived_root::<Vec<BlsScalar>>(&buf[..arg_len as usize])
-    };
-    let scalars = root.deserialize(&mut rkyv::Infallible).unwrap();
-    let scalar = rusk_abi::poseidon_hash(scalars);
-
-    let bytes = rkyv::to_bytes::<_, 256>(&scalar).unwrap();
-
-    buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn schnorr_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
-    let root = unsafe {
-        rkyv::archived_root::<(BlsScalar, PublicKey, Signature)>(
-            &buf[..arg_len as usize],
-        )
-    };
-    let (msg, pk, sig): (BlsScalar, PublicKey, Signature) =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
-    let valid = rusk_abi::verify_schnorr(msg, pk, sig);
-
-    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
-
-    buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn bls_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
-    let root = unsafe {
-        rkyv::archived_root::<(Vec<u8>, APK, BlsSignature)>(
-            &buf[..arg_len as usize],
-        )
-    };
-
-    let (msg, apk, sig): (Vec<u8>, APK, BlsSignature) =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
-    let valid = rusk_abi::verify_bls(msg, apk, sig);
-
-    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
-
-    buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn plonk_host_query(buf: &mut [u8], arg_len: u32) -> u32 {
-    let root = unsafe {
-        rkyv::archived_root::<(CircuitType, Proof, Vec<PublicInput>)>(
-            &buf[..arg_len as usize],
-        )
-    };
-
-    // Ignore the circuit type here, since we're testing only the ability to
-    // prove.
-    let (_, proof, public_inputs): (CircuitType, Proof, Vec<PublicInput>) =
-        root.deserialize(&mut rkyv::Infallible).unwrap();
-
-    let verifier = &get_prover_verifier().verifier;
-    let valid = rusk_abi::verify_proof(verifier, proof, public_inputs);
-
-    let bytes = rkyv::to_bytes::<_, 256>(&valid).unwrap();
-
-    buf[..bytes.len()].copy_from_slice(&bytes);
-    bytes.len() as u32
-}
-
-fn instantiate() -> (Session, ModuleId) {
+fn instantiate<'a>(vm: &mut VM) -> (Session, ModuleId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    let mut vm = VM::ephemeral().expect("Instantiating the VM should succeed");
-
-    vm.register_host_query("hash", hash_host_query);
-    vm.register_host_query("poseidon_hash", poseidon_host_query);
-    vm.register_host_query("verify_proof", plonk_host_query);
-    vm.register_host_query("verify_bls", bls_host_query);
-    vm.register_host_query("verify_schnorr", schnorr_host_query);
+    rusk_abi::register_host_queries(vm);
 
     let mut session = vm.session();
+    session.set_point_limit(0x20000);
 
     let module_id = session
         .deploy(bytecode)
@@ -171,7 +64,8 @@ fn instantiate() -> (Session, ModuleId) {
 
 #[test]
 fn hash() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -201,7 +95,8 @@ fn hash() {
 
 #[test]
 fn poseidon_hash() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -226,13 +121,14 @@ fn poseidon_hash() {
 
 #[test]
 fn schnorr_signature() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
-    let sk = SecretKey::random(&mut rand_core::OsRng);
-    let message = BlsScalar::random(&mut rand_core::OsRng);
+    let sk = SecretKey::random(&mut OsRng);
+    let message = BlsScalar::random(&mut OsRng);
     let pk = PublicKey::from(&sk);
 
-    let sign = Signature::new(&sk, &mut rand_core::OsRng, message);
+    let sign = Signature::new(&sk, &mut OsRng, message);
 
     assert!(sign.verify(&pk, message));
 
@@ -242,7 +138,7 @@ fn schnorr_signature() {
 
     assert!(valid, "Signature verification expected to succeed");
 
-    let wrong_sk = SecretKey::random(&mut rand_core::OsRng);
+    let wrong_sk = SecretKey::random(&mut OsRng);
     let pk = PublicKey::from(&wrong_sk);
 
     let valid: bool = session
@@ -254,7 +150,8 @@ fn schnorr_signature() {
 
 #[test]
 fn bls_signature() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
     let message = b"some-message".to_vec();
 
@@ -318,11 +215,16 @@ impl Circuit for TestCircuit {
 
 #[test]
 fn plonk_proof() {
-    let (mut session, module_id) = instantiate();
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
 
-    let prover_verifier = get_prover_verifier();
-    let prover = &prover_verifier.prover;
-    let verifier = &prover_verifier.verifier;
+    let pp = include_bytes!("./pp_test.bin");
+    let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
+
+    let label = b"dusk-network";
+
+    let (prover, verifier) = Compiler::compile(&pp, label)
+        .expect("Circuit should compile successfully");
 
     let circuit = TestCircuit::new(1, 2);
 
@@ -335,14 +237,18 @@ fn plonk_proof() {
         .verify(&proof, &public_inputs)
         .expect("Proof should verify successfully");
 
-    let public_inputs: Vec<PublicInput> =
-        public_inputs.into_iter().map(From::from).collect();
+    let public_inputs: Vec<PublicInput> = public_inputs
+        .into_iter()
+        // FIXME: this should only be From::from, but due to the negative PI
+        //  problem we invert them here
+        .map(|pi| From::from(-pi))
+        .collect();
 
     let valid: bool = session
         .query(
             module_id,
             "verify_proof",
-            (CircuitType::WFCT, proof.clone(), public_inputs),
+            (verifier.to_bytes(), proof.clone(), public_inputs),
         )
         .expect("Query should succeed");
 
@@ -356,9 +262,25 @@ fn plonk_proof() {
         .query(
             module_id,
             "verify_proof",
-            (CircuitType::WFCT, proof, wrong_public_inputs),
+            (verifier.to_bytes(), proof, wrong_public_inputs),
         )
         .expect("Query should succeed");
 
     assert!(!valid, "The proof should be invalid");
+}
+
+#[test]
+fn block_height() {
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm);
+
+    const HEIGHT: u64 = 123;
+
+    set_block_height(&mut session, HEIGHT);
+
+    let height: u64 = session
+        .query(module_id, "block_height", ())
+        .expect("Query should succeed");
+
+    assert_eq!(height, HEIGHT);
 }
