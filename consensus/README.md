@@ -4,19 +4,28 @@ The Dusk Network utilizes a consensus protocol called Succinct Attestation (SA).
 
 SA is permissionless, meaning that any eligible participant in the Dusk Network protocol can join and participate in the consensus process. To be eligible, a participant must meet the following requirements:
 
- - Have a pre-configured amount of DUSK locked as a stake (referred to as a `Provisioner`)
- - Have a stake with a maturity of at least two epochs (referred to as an `Eligible Provisioner`)
+ - Have a pre-configured amount of DUSK locked as a stake (referred to as a _Provisioner_)
+ - Have a stake with a maturity of at least two epochs (referred to as an _Eligible Provisioner_)
 
-Other terms used in the context of SA:
+The SA consensus is divided in _rounds_, each of which creates a new block. In turn, in each round, on or more _iterations_ of the following _phases_ are executed:
 
- - `Round`: A single SA execution.
- - `Round iteration`: The execution of all three phases (Selection, 1st Reduction, and 2nd Reduction) in a row.
- - `Committee`: A subset of Eligible Provisioners, selected through a process called "Deterministic Sortition."
+  1. _Generation_: in this phase, a _generator_, extracted from the _Eligible Provisioners_, creates a new candidate block $B$ for the current round, and broadcasts it to the network;
+  
+  2. _1st Reduction_: in this phase, the members of a _committee_, extracted from the _Eligible Provisioners_, vote on the validity of the candidate block $B$; 
+  if votes reach a quorum of $2/3$ (i.e., 67% of the committee), the reduction outputs $B$, otherwise NIL;
+
+  3. _2nd Reduction_: in this phase, if the output of the 1st Reduction is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
+  if votes reach the quorum, an agreement message (containing the votes of the two Reduction phases) is broadcast;
+
+Agreement messages are processed by nodes in the _Agreement_ phase, which is run (in a loop) concurrently to the other phases. In this phase, nodes collect _agreement_ messages for the current round, and accept a new block if it reaches a quorum of votes (i.e., it reaches consensus).
+
+Note: the extraction process, used in the Generation and Reduction phases, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
+
 
 # Repository structure
 
 ## Example Node
-The minimalistic and stateless version of the dusk-blockchain node allows for testing and diagnosing compatibility issues using the Consensus protocol in conjunction with Kadcast[^3]. It enables the node to join and participate in the dusk-blockchain/test-harness. Once the dusk-blockchain is fully migrated, this executable will no longer be needed and can be deprecated.
+The minimalistic and stateless version of the dusk-blockchain node allows for testing and diagnosing compatibility issues using the Consensus protocol in conjunction with Kadcast[^4]. It enables the node to join and participate in the dusk-blockchain/test-harness. Once the dusk-blockchain is fully migrated, this executable will no longer be needed and can be deprecated.
 
 ## Example Testbed
 A multi-instance setup running 10 SA instances provisioned with 10 eligible participants. The setup is configured to run for up to 1000 rounds. Useful for any kind of testing (issues, stress and performance testing).
@@ -27,7 +36,7 @@ A full implementation of SA mechanism.
 # Implementation details
 The implementation of *SA* consists of two main `tokio-rs` tasks, the `Main_Loop` and `Agreement_Loop`, which communicate with external components through message queues/channels. The protocol parameters for *SA* are located in `src/config.rs`.
 
-- The `Main_Loop` is responsible for executing contract storage calls using the `Operations` trait and storing and retrieving candidate blocks using the `Database` trait. It performs the selection, first reduction, and second reduction steps[^4] in sequence and ultimately produces and broadcasts an `Agreement Message`. The inbound queue for the `Main_Loop` can contain either **NewBlock** or **Reduction** type messages.
+- The `Main_Loop` is responsible for executing contract storage calls using the `Operations` trait and storing and retrieving candidate blocks using the `Database` trait. It performs the selection, first reduction, and second reduction steps[^5] in sequence and ultimately produces and broadcasts an `Agreement Message`. The inbound queue for the `Main_Loop` can contain either **NewBlock** or **Reduction** type messages.
 
 - The `Agreement_Loop` retrieves a candidate block using the `Database` trait when a winner hash is selected. It is responsible for verifying and accumulating **Agreement** messages from different consensus iterations and processing the **Aggregated Agreement** message. The inbound queue for the `Agreement_Loop` can contain either **Agreement** or **Aggregated Agreement** type messages. The messages are concurrently verified and accumulated by a pool of worker tasks in `tokio-rs`.
 
@@ -133,5 +142,6 @@ USAGE:
 
 [^1]: A finality guarantee that is achieved through the accumulation of blocks over time, such that the probability of a block being reversed decreases exponentially as more blocks are added on top of it. This type of guarantee is in contrast to absolute finality, which is achieved when it is mathematically impossible for a block to be reversed.
 [^2]: A type of Proof-of-Stake consensus mechanism that relies on a committee of validators, rather than all validators in the network, to reach consensus on the next block. Committee-based PoS mechanisms often have faster block times and lower overhead than their non-committee counterparts, but may also be more susceptible to censorship or centralization.
-[^3]: Kadcast is a decentralized protocol used for efficient communication between nodes in a network. It is based on the Kademlia algorithm and maintains a routing table to find the best path to another node. Kadcast is commonly used in decentralized systems, such as decentralized applications (DApps) and decentralized file sharing systems, to send messages and data between nodes in a fast and reliable manner. One of the main advantages of Kadcast is its decentralized nature, which makes it resistant to censorship and other forms of interference, making it a popular choice for applications that require decentralization. Please find the whitepaper [here](https://eprint.iacr.org/2021/996). Dusk's implementation can be found [on its repo](https://github.com/dusk-network/kadcast).
-[^4]: In the Selection phase, a replica (or Provisioner in Dusk terminolody) acting as a Block Generator, proposes a block. In the First Reduction phase, a sampled committee of Provisioners vote on the validity of the block by signing a message with a BLS signature and broadcasting it. In the Second Reduction phase, a different sampled committee of Provisioners vote on the block, gather the results of the First Reduction phase, and produce an "Agreement" message. The steps keep iterating until the process is interrupted by the `Agreement` loop. This allows the group to reach a final decision about which block to agree on.
+[^3]: <!-- TODO: add short description here --> Deterministic Sortition is described [here](https://wiki.dusk.network/en/deterministic-sortition). 
+[^4]: Kadcast is a decentralized protocol used for efficient communication between nodes in a network. It is based on the Kademlia algorithm and maintains a routing table to find the best path to another node. Kadcast is commonly used in decentralized systems, such as decentralized applications (DApps) and decentralized file sharing systems, to send messages and data between nodes in a fast and reliable manner. One of the main advantages of Kadcast is its decentralized nature, which makes it resistant to censorship and other forms of interference, making it a popular choice for applications that require decentralization. Please find the whitepaper [here](https://eprint.iacr.org/2021/996). Dusk's implementation can be found [on its repo](https://github.com/dusk-network/kadcast).
+[^5]: In the Selection phase, a replica (or Provisioner in Dusk terminolody) acting as a Block Generator, proposes a block. In the First Reduction phase, a sampled committee of Provisioners vote on the validity of the block by signing a message with a BLS signature and broadcasting it. In the Second Reduction phase, a different sampled committee of Provisioners vote on the block, gather the results of the First Reduction phase, and produce an "Agreement" message. The steps keep iterating until the process is interrupted by the `Agreement` loop. This allows the group to reach a final decision about which block to agree on.
