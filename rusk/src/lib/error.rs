@@ -28,6 +28,8 @@ pub enum Error {
     Vm(rusk_vm::VMError),
     /// IO Errors
     Io(io::Error),
+    /// Address Parsing error
+    AddrParsing(std::net::AddrParseError),
     /// Persistence Errors
     Persistence(microkelvin::PersistError),
     /// Stake Contract Errors
@@ -36,6 +38,8 @@ pub enum Error {
     TransferContract(transfer_contract::Error),
     /// Tonic Status Errors
     Status(tonic::Status),
+    /// Tonic client/server error
+    Transport(tonic::transport::Error),
     /// Canonical Errors
     Canonical(canonical::CanonError),
     /// Bad block height in coinbase (got, expected)
@@ -108,6 +112,18 @@ impl From<canonical::CanonError> for Error {
     }
 }
 
+impl From<tonic::transport::Error> for Error {
+    fn from(err: tonic::transport::Error) -> Self {
+        Error::Transport(err)
+    }
+}
+
+impl From<std::net::AddrParseError> for Error {
+    fn from(err: std::net::AddrParseError) -> Self {
+        Error::AddrParsing(err)
+    }
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -131,6 +147,9 @@ impl fmt::Display for Error {
             }
             Error::Vm(err) => write!(f, "VM Error: {}", err),
             Error::Io(err) => write!(f, "IO Error: {}", err),
+            Error::AddrParsing(err) => {
+                write!(f, "Address Parsing Error: {}", err)
+            }
             Error::Persistence(err) => {
                 write!(f, "Persistence Error: {:?}", err)
             }
@@ -141,6 +160,7 @@ impl fmt::Display for Error {
                 write!(f, "Transfer Contract Error: {}", err)
             }
             Error::Status(err) => write!(f, "Status Error: {}", err),
+            Error::Transport(err) => write!(f, "Transport Error: {}", err),
             Error::Canonical(err) => write!(f, "Canonical Error: {:?}", err),
             Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
             Error::Other(err) => write!(f, "Other error: {}", err),

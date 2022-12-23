@@ -148,5 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 startup_with_uds(router, &config.grpc.socket).await
             }
         }
-    }
+    }?;
+
+    Ok(())
 }
