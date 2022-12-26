@@ -13,7 +13,7 @@ mod version;
 
 use std::path::PathBuf;
 
-use clap::{Arg, Command};
+use clap::{builder::Str, Arg, Command};
 use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
 use rusk::services::prover::{ProverServer, RuskProver};
@@ -38,10 +38,10 @@ pub fn disk_backend() -> BackendCtor<DiskBackend> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
-    let crate_name = &crate_info.crate_name.to_string();
-    let version = show_version(crate_info);
+    let crate_name = Str::from(crate_info.crate_name.clone());
+    let version = Str::from(show_version(crate_info));
     let command = Command::new(crate_name)
-        .version(version.as_str())
+        .version(version)
         .author("Dusk Network B.V. All Rights Reserved.")
         .about("Rusk Server node.")
         .arg(
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short('c')
                 .env("RUSK_CONFIG_TOML")
                 .help("Configuration file path")
-                .takes_value(true)
+                .num_args(1)
                 .required(false),
         );
 

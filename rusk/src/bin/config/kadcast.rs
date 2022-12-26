@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{Arg, ArgMatches, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 use kadcast::config::Config;
 use serde::{Deserialize, Serialize};
 
@@ -19,24 +19,26 @@ impl From<KadcastConfig> for Config {
 
 impl KadcastConfig {
     pub(crate) fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(public_address) = matches.value_of("kadcast_public_address")
+        if let Some(public_address) =
+            matches.get_one::<String>("kadcast_public_address")
         {
             self.0.public_address = public_address.into();
         };
-        if let Some(listen_address) = matches.value_of("kadcast_listen_address")
-        {
-            self.0.listen_address = Some(listen_address.into());
-        };
+
+        self.0.listen_address =
+            matches.get_one::<String>("kadcast_listen_address").cloned();
+
         if let Some(bootstrapping_nodes) =
-            matches.values_of("kadcast_bootstrap")
+            matches.get_many::<String>("kadcast_bootstrap")
         {
             self.0.bootstrapping_nodes =
                 bootstrapping_nodes.map(|s| s.into()).collect();
         };
-        self.0.auto_propagate = matches.is_present("kadcast_autobroadcast");
+
+        self.0.auto_propagate = matches.contains_id("kadcast_autobroadcast");
     }
 
-    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+    pub fn inject_args(command: Command) -> Command {
         command.arg(
             Arg::new("kadcast_public_address")
                 .long("kadcast_public_address")
@@ -44,7 +46,7 @@ impl KadcastConfig {
     This address MUST be accessible from any peer of the network")
                 .help("Public address you want to be identified with. Eg: 193.xxx.xxx.198:9999")
                 .env("KADCAST_PUBLIC_ADDRESS")
-                .takes_value(true)
+                .num_args(1)
                 .required(false),
         )
         .arg(
@@ -56,16 +58,16 @@ impl KadcastConfig {
     If this is not specified, the public address will be used for binding incoming connection")
                 .help("Optional internal address to listen incoming connections. Eg: 127.0.0.1:9999")
                 .env("KADCAST_LISTEN_ADDRESS")
-                .takes_value(true)
+                .num_args(1)
                 .required(false),
         )
         .arg(
             Arg::new("kadcast_bootstrap")
                 .long("kadcast_bootstrap")
                 .env("KADCAST_BOOTSTRAP")
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
                 .help("Kadcast list of bootstrapping server addresses")
-                .takes_value(true)
+                .num_args(1)
                 .required(false),
         )
         .arg(
@@ -73,7 +75,7 @@ impl KadcastConfig {
                 .long("kadcast_autobroadcast")
                 .env("KADCAST_AUTOBROADCAST")
                 .help("If used then the received messages are automatically re-broadcasted")
-                .takes_value(false)
+                .num_args(1)
                 .required(false),
         )
         .arg(
@@ -81,7 +83,7 @@ impl KadcastConfig {
                 .long("kadcast_test")
                 .env("KADCAST_TEST")
                 .help("If used then the received messages is a blake2b 256hash")
-                .takes_value(false)
+                .num_args(1)
                 .required(false),
         )
     }

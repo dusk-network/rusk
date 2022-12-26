@@ -36,20 +36,22 @@ impl Default for GrpcConfig {
 
 impl GrpcConfig {
     pub(crate) fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(host) = matches.value_of("host") {
-            self.host = host.into();
+        if let Some(host) = matches.get_one::<String>("host") {
+            self.host = host.into()
         }
-        if let Some(port) = matches.value_of("port") {
+        if let Some(port) = matches.get_one::<String>("port") {
             self.port = port.into();
         }
-        if let Some(ipc_method) = matches.value_of("ipc_method") {
-            self.ipc_method = Some(ipc_method.into());
-        }
-        if let Some(socket) = matches.value_of("socket") {
+
+        self.ipc_method = matches
+            .get_one::<String>("ipc_method")
+            .map(|e| e.to_string());
+
+        if let Some(socket) = matches.get_one::<String>("socket") {
             self.socket = socket.into();
         }
     }
-    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+    pub fn inject_args(command: Command) -> Command {
         command
             .arg(
                 Arg::new("socket")
@@ -57,17 +59,17 @@ impl GrpcConfig {
                     .long("socket")
                     .value_name("socket")
                     .help("Path for setting up the UDS ")
-                    .takes_value(true),
+                    .num_args(1),
             )
             .arg(
                 Arg::new("ipc_method")
                     .long("ipc_method")
                     .value_name("ipc_method")
-                    .possible_values(&["uds", "tcp_ip"])
+                    .value_parser(["uds", "tcp_ip"])
                     .help(
                         "Inter-Process communication protocol you want to use ",
                     )
-                    .takes_value(true),
+                    .num_args(1),
             )
             .arg(
                 Arg::new("port")
@@ -75,14 +77,14 @@ impl GrpcConfig {
                     .long("port")
                     .value_name("port")
                     .help("Port you want to use ")
-                    .takes_value(true),
+                    .num_args(1),
             )
             .arg(
                 Arg::new("host")
                     .short('h')
                     .long("host")
                     .value_name("host")
-                    .takes_value(true),
+                    .num_args(1),
             )
     }
 }

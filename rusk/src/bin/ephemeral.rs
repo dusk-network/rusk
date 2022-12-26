@@ -14,14 +14,14 @@ use std::{
 use tempfile::TempDir;
 use zip::ZipArchive;
 
-pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
+pub(crate) fn inject_args(command: Command) -> Command {
     command.arg(
         Arg::new("state_zip_file")
             .long("state")
             .short('s')
             .env("RUSK_STATE_ZIP_FILE")
             .help("Ephemeral state source path (.zip)")
-            .takes_value(true)
+            .num_args(1)
             .value_parser(value_parser!(PathBuf))
             .required(false),
     )

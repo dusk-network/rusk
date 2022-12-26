@@ -7,6 +7,7 @@
 mod task;
 mod version;
 
+use clap::builder::ArgAction;
 use clap::Parser;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use rusk_recovery_tools::theme::Theme;
@@ -26,7 +27,7 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
+        value_parser,
         value_name = "PATH",
         env = "RUSK_PROFILE_PATH"
     )]
@@ -37,20 +38,20 @@ struct Cli {
     force: bool,
 
     /// Create a state applying the init config specified in this file.
-    #[clap(short, long, parse(from_os_str), value_name = "CONFIG")]
+    #[clap(short, long, value_parser, value_name = "CONFIG")]
     init: Option<PathBuf>,
 
     /// Sets different levels of verbosity
-    #[clap(short, long, parse(from_occurrences))]
+    #[clap(short, long, action = ArgAction::Count)]
     verbose: usize,
 
     /// If specified, the generated state is written on this file instead of
     /// save the state in the profile path.
-    #[clap(short, long, parse(from_os_str), takes_value(true))]
+    #[clap(short, long, value_parser, num_args(1))]
     output: Option<PathBuf>,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     let config = match args.init {
