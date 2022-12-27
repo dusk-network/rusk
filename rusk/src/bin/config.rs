@@ -26,7 +26,7 @@ pub(crate) struct Config {
 /// Default log_level.
 const DEFAULT_LOG_LEVEL: &str = "info";
 
-/// Default log_type.
+/// Default log_type.  
 const DEFAULT_LOG_TYPE: &str = "coloured";
 
 impl From<&ArgMatches> for Config {
@@ -42,10 +42,14 @@ impl From<&ArgMatches> for Config {
         rusk_config.kadcast_test = matches.contains_id("kadcast_test");
 
         // Overwrite config log-level
-        rusk_config.log_level = matches.get_one::<String>("log-level").cloned();
-
+        if let Some(log_level) = matches.get_one::<String>("log-level").cloned()
+        {
+            rusk_config.log_level = Some(log_level);
+        }
         // Overwrite config log-type
-        rusk_config.log_type = matches.get_one::<String>("log-type").cloned();
+        if let Some(log_type) = matches.get_one::<String>("log-type").cloned() {
+            rusk_config.log_type = Some(log_type);
+        }
 
         rusk_config.grpc.merge(matches);
         rusk_config.kadcast.merge(matches);

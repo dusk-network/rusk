@@ -43,9 +43,12 @@ impl GrpcConfig {
             self.port = port.into();
         }
 
-        self.ipc_method = matches
+        if let Some(ipc_method) = matches
             .get_one::<String>("ipc_method")
-            .map(|e| e.to_string());
+            .map(|e| e.to_string())
+        {
+            self.ipc_method = Some(ipc_method);
+        }
 
         if let Some(socket) = matches.get_one::<String>("socket") {
             self.socket = socket.into();

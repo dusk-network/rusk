@@ -25,8 +25,11 @@ impl KadcastConfig {
             self.0.public_address = public_address.into();
         };
 
-        self.0.listen_address =
-            matches.get_one::<String>("kadcast_listen_address").cloned();
+        if let Some(listen_address) =
+            matches.get_one::<String>("kadcast_listen_address").cloned()
+        {
+            self.0.listen_address = Some(listen_address)
+        }
 
         if let Some(bootstrapping_nodes) =
             matches.get_many::<String>("kadcast_bootstrap")

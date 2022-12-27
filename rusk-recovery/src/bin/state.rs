@@ -7,7 +7,7 @@
 mod task;
 mod version;
 
-use clap::builder::ArgAction;
+use clap::builder::{ArgAction, BoolishValueParser};
 use clap::Parser;
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use rusk_recovery_tools::theme::Theme;
@@ -34,7 +34,7 @@ struct Cli {
     profile: PathBuf,
 
     /// Forces a build/download even if the state is in the profile path.
-    #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
+    #[clap(short = 'f', value_parser = BoolishValueParser::new(), long, env = "RUSK_FORCE_STATE")]
     force: bool,
 
     /// Create a state applying the init config specified in this file.
