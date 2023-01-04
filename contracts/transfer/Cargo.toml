@@ -18,18 +18,18 @@ dusk-pki = { version = "0.10.0-rc", default-features = false }
 dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
 microkelvin = { version = "0.15.0-rc", default-features = false }
 phoenix-core = { version = "0.16.0-rc", default-features = false, features = ["canon"] }
-rusk-abi = { path = "../../rusk-abi", features = ["module"] }
+rusk-abi = { path = "../../rusk-abi", version = "0.7", features = ["module"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dusk-plonk = "0.10"
 lazy_static = "1.4"
 rand = "0.8"
-rusk-profile = { path = "../../rusk-profile" }
+rusk-profile = { path = "../../rusk-profile", version = "0.5.1-rc.0" }  # If release type (e.g. "-rc.0") is present, Cargo requires exact specification
 rusk-vm = "0.12.0-rc"
-transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
+transfer-circuits = { path = "../../circuits/transfer", version = "0.4", features = ["builder"] }
 
 [dev-dependencies]
-transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }
+transfer-wrapper = { path = "../../test-utils/transfer-wrapper", version = "0.3" }
 hex = "0.4"
 
 [features]
