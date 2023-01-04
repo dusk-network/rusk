@@ -11,4 +11,4 @@ crate-type = ["cdylib", "rlib"]
 dusk-abi = "0.11"
 canonical = "0.7"
 canonical_derive = "0.7"
-rusk-abi = { path = "../../../rusk-abi", features = ["module"] }
+rusk-abi = { path = "../../../rusk-abi", version = "0.7", features = ["module"] }
