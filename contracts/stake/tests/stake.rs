@@ -359,8 +359,8 @@ fn allowlist() {
         .get_stake(&pk)
         .expect("Failed querying the state");
     assert!(
-        stake.is_none(),
-        "Adding to allowlist should not create the stake"
+        stake.is_some(),
+        "Adding to allowlist should create the stake"
     );
 
     let stake_owner = stake_contract

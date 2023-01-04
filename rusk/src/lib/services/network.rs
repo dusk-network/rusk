@@ -25,6 +25,7 @@ pub use rusk_schema::{
     MessageMetadata, Null, PropagateMessage, SendMessage,
 };
 use std::io::Write;
+use std::net::AddrParseError;
 use std::{net::SocketAddr, pin::Pin};
 
 pub struct KadcastDispatcher {
@@ -38,7 +39,10 @@ impl KadcastDispatcher {
         self.inbound_dispatcher.subscribe()
     }
 
-    pub fn new(config: KadcastConfig, hash_message: bool) -> KadcastDispatcher {
+    pub fn new(
+        config: KadcastConfig,
+        hash_message: bool,
+    ) -> Result<KadcastDispatcher, AddrParseError> {
         // Creating a broadcast channel which each grpc `listen` calls will
         // listen to.
         // The inbound_dispatcher is used by the KadcastListener to forward
@@ -53,17 +57,20 @@ impl KadcastDispatcher {
             hash_message,
         };
 
-        KadcastDispatcher {
-            peer: Peer::new(config, listener),
+        let peer = Peer::new(config, listener)?;
+
+        Ok(KadcastDispatcher {
+            peer,
             inbound_dispatcher,
             dummy_addr: "127.0.0.1:1".parse().expect("Unable to parse address"),
-        }
+        })
     }
 }
 
 impl Default for KadcastDispatcher {
     fn default() -> KadcastDispatcher {
         KadcastDispatcher::new(KadcastConfig::default(), false)
+            .expect("Default dispatcher to be infallible")
     }
 }
 struct KadcastListener {
@@ -138,8 +145,12 @@ impl Network for KadcastDispatcher {
     ) -> Result<Response<Null>, Status> {
         debug!("Received BroadcastMessage request");
         let req = request.get_ref();
+        let kadcast_height: u8 = req
+            .kadcast_height
+            .try_into()
+            .map_err(|_| Status::invalid_argument("Invalid kadcast_height"))?;
         self.peer
-            .broadcast(&req.message, Some(req.kadcast_height as usize))
+            .broadcast(&req.message, Some(kadcast_height))
             .await;
         Ok(Response::new(Null {}))
     }

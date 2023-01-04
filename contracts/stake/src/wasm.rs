@@ -29,17 +29,15 @@ impl StakeContract {
             panic!("Can only be called from the transfer contract!");
         }
 
-        if !self.is_allowlisted(&pk).expect("Failed to query the state") {
-            panic!("The address is not allowed!");
-        }
-
         if value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
 
         // allot a stake to the given key and increment the signature counter
-        let mut stake =
-            self.load_mut_stake(&pk).expect("Failed to query state!");
+        let mut stake = self
+            .load_mut_stake(&pk)
+            .expect("Failed to query state!")
+            .expect("The address is not allowed");
 
         let counter = stake.counter();
 

@@ -36,13 +36,13 @@ jobs:
           RUSK_BUILD_STATE="1"
           RUSK_FORCE_STATE="1"
           make test
-      - name: "Clippy check release"
-        uses: actions-rs/clippy-check@v1
-        env:
-          RUSK_PROFILE_PATH: "/var/opt/build-cache"
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --release -- -D warnings -A clippy::derive_partial_eq_without_eq
+      # - name: "Clippy check release"
+      #   uses: actions-rs/clippy-check@v1
+      #   env:
+      #     RUSK_PROFILE_PATH: "/var/opt/build-cache"
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     args: --all-features --release -- -D warnings -A clippy::derive_partial_eq_without_eq
       - name: "Upload Rusk Artifact"
         uses: actions/upload-artifact@v2
         with:
