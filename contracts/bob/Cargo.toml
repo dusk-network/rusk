@@ -1,0 +1,14 @@
+[package]
+name = "bob"
+version = "0.3.0"
+edition = "2021"
+resolver = "2"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
+
+[dev-dependencies]
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
