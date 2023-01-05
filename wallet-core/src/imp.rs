@@ -143,6 +143,21 @@ impl<S, SC, PC> Wallet<S, SC, PC> {
             prover,
         }
     }
+
+    /// Return the inner Store reference
+    pub const fn store(&self) -> &S {
+        &self.store
+    }
+
+    /// Return the inner State reference
+    pub const fn state(&self) -> &SC {
+        &self.state
+    }
+
+    /// Return the inner Prover reference
+    pub const fn prover(&self) -> &PC {
+        &self.prover
+    }
 }
 
 const TX_STAKE: u8 = 0x00;
