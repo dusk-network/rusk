@@ -116,12 +116,14 @@ impl Frame {
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
-    use consensus::commons::{Block, Certificate, Topics};
-    use consensus::messages::payload::{
-        AggrAgreement, Agreement, NewBlock, Reduction, StepVotes,
+    use dusk_consensus::{
+        commons::{Block, Certificate, Topics},
+        messages::payload::{
+            AggrAgreement, Agreement, NewBlock, Reduction, StepVotes,
+        },
+        messages::{self, Header, Message, Serializable},
+        util::pubkey::ConsensusPublicKey,
     };
-    use consensus::messages::{self, Header, Message, Serializable};
-    use consensus::util::pubkey::ConsensusPublicKey;
 
     use crate::wire::Frame;
 

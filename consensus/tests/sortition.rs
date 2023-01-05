@@ -4,11 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use consensus::commons::Seed;
-use consensus::user::committee::Committee;
-use consensus::user::provisioners::{Provisioners, DUSK};
-use consensus::user::sortition::Config;
-use consensus::util::pubkey::ConsensusPublicKey;
+use dusk_consensus::{
+    commons::Seed,
+    user::committee::Committee,
+    user::provisioners::{Provisioners, DUSK},
+    user::sortition::Config,
+    util::pubkey::ConsensusPublicKey,
+};
 
 #[test]
 fn test_deterministic_sortition_1() {
