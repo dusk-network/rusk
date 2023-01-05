@@ -1,5 +1,5 @@
 [package]
-name = "consensus"
+name = "dusk-consensus"
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/dusk-network/consensus"
@@ -10,7 +10,6 @@ license = "MPL-2.0"
 exclude = [".github/*", ".gitignore", ".env", ".vscode"]
 
 [lib]
-name = "consensus"
 path = "src/lib.rs"
 
 [dependencies]

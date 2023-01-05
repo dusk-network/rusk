@@ -12,13 +12,13 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, oneshot, Mutex};
 
-use consensus::commons::{RoundUpdate, Seed};
-use consensus::consensus::Consensus;
-use consensus::messages::Message;
-use consensus::user::provisioners::{Provisioners, DUSK};
+use dusk_consensus::commons::{RoundUpdate, Seed};
+use dusk_consensus::consensus::Consensus;
+use dusk_consensus::messages::Message;
+use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 
-use consensus::util::pending_queue::PendingQueue;
-use consensus::util::pubkey::ConsensusPublicKey;
+use dusk_consensus::util::pending_queue::PendingQueue;
+use dusk_consensus::util::pubkey::ConsensusPublicKey;
 use tokio::time;
 
 mod mocks;
@@ -149,7 +149,9 @@ fn spawn_node(
 ) {
     let _ = thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2 + consensus::config::ACCUMULATOR_WORKERS_AMOUNT)
+            .worker_threads(
+                2 + dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT,
+            )
             .enable_all()
             .build()
             .unwrap()

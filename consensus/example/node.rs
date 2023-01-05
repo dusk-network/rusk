@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use clap::{App, Arg, ArgMatches};
-use consensus::util::pending_queue::PendingQueue;
+use dusk_consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
 use rustc_tools_util::{get_version_info, VersionInfo};
 
