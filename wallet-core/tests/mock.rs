@@ -15,7 +15,7 @@ use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
-    ProverClient, StakeInfo, StateClient, Store, Transaction,
+    EnrichedNote, ProverClient, StakeInfo, StateClient, Store, Transaction,
     UnprovenTransaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 use phoenix_core::{Crossover, Fee, Note, NoteType};
@@ -90,7 +90,7 @@ fn new_notes<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     psk: &PublicSpendKey,
     note_values: &[u64],
-) -> Vec<(Note, u64)> {
+) -> Vec<EnrichedNote> {
     note_values
         .iter()
         .map(|val| {
@@ -126,7 +126,7 @@ impl Store for TestStore {
 /// A state client that always returns the same notes, anchor, and opening.
 #[derive(Debug, Clone)]
 pub struct TestStateClient {
-    notes: Vec<(Note, u64)>,
+    notes: Vec<EnrichedNote>,
     anchor: BlsScalar,
     opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
 }
@@ -134,7 +134,7 @@ pub struct TestStateClient {
 impl TestStateClient {
     /// Create a new node given the notes, anchor, and opening we will return.
     fn new(
-        notes: Vec<(Note, u64)>,
+        notes: Vec<EnrichedNote>,
         anchor: BlsScalar,
         opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
     ) -> Self {
@@ -152,7 +152,7 @@ impl StateClient for TestStateClient {
     fn fetch_notes(
         &self,
         _: &ViewKey,
-    ) -> Result<Vec<(Note, u64)>, Self::Error> {
+    ) -> Result<Vec<EnrichedNote>, Self::Error> {
         Ok(self.notes.clone())
     }
 

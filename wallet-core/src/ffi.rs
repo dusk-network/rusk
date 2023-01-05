@@ -30,8 +30,8 @@ use rusk_abi::ContractId;
 
 use crate::tx::UnprovenTransaction;
 use crate::{
-    BalanceInfo, Error, ProverClient, StakeInfo, StateClient, Store,
-    Transaction, Wallet, POSEIDON_TREE_DEPTH,
+    BalanceInfo, EnrichedNote, Error, ProverClient, StakeInfo, StateClient,
+    Store, Transaction, Wallet, POSEIDON_TREE_DEPTH,
 };
 
 extern "C" {
@@ -353,7 +353,7 @@ impl StateClient for FfiStateClient {
     fn fetch_notes(
         &self,
         vk: &ViewKey,
-    ) -> Result<Vec<(Note, u64)>, Self::Error> {
+    ) -> Result<Vec<EnrichedNote>, Self::Error> {
         let mut notes_ptr = ptr::null_mut();
         let mut notes_len = 0;
 

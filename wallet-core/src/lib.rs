@@ -137,6 +137,12 @@ pub trait ProverClient {
     ) -> Result<Proof, Self::Error>;
 }
 
+/// Block height representation
+pub type BlockHeight = u64;
+
+/// Tuple containing Note and Block height
+pub type EnrichedNote = (Note, BlockHeight);
+
 /// Types that are clients of the state API.
 pub trait StateClient {
     /// Error returned by the node client.
@@ -146,7 +152,7 @@ pub trait StateClient {
     fn fetch_notes(
         &self,
         vk: &ViewKey,
-    ) -> Result<Vec<(Note, u64)>, Self::Error>;
+    ) -> Result<Vec<EnrichedNote>, Self::Error>;
 
     /// Fetch the current anchor of the state.
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;
