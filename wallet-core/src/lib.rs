@@ -143,7 +143,10 @@ pub trait StateClient {
     type Error;
 
     /// Find notes for a view key.
-    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error>;
+    fn fetch_notes(
+        &self,
+        vk: &ViewKey,
+    ) -> Result<Vec<(Note, u64)>, Self::Error>;
 
     /// Fetch the current anchor of the state.
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error>;

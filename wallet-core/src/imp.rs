@@ -205,7 +205,7 @@ where
             self.state.fetch_notes(&vk).map_err(Error::from_state_err)?;
 
         let nullifiers: Vec<_> =
-            notes.iter().map(|n| n.gen_nullifier(ssk)).collect();
+            notes.iter().map(|(n, _)| n.gen_nullifier(ssk)).collect();
 
         let existing_nullifiers = self
             .state
@@ -216,7 +216,7 @@ where
             .into_iter()
             .zip(nullifiers.into_iter())
             .filter(|(_, nullifier)| !existing_nullifiers.contains(nullifier))
-            .map(|(note, _)| note)
+            .map(|((note, _), _)| note)
             .collect();
 
         Ok(unspent_notes)

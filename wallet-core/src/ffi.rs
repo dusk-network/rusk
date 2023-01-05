@@ -44,9 +44,12 @@ extern "C" {
     /// Asks the node to finds the notes for a specific view key.
     ///
     /// An implementor should allocate - see [`malloc`] - a buffer large enough
-    /// to contain the serialized notes and write them all in sequence. A
-    /// pointer to the first element of the buffer should then be written in
-    /// `notes`, while the number of bytes written should be put in `notes_len`.
+    /// to contain the serialized notes (and the corresponding block height) and
+    /// write them all in sequence. A pointer to the first element of the
+    /// buffer should then be written in `notes`, while the number of bytes
+    /// written should be put in `notes_len`.
+    ///
+    /// E.g: note1, block_height, note2, block_height, etc...
     fn fetch_notes(
         vk: *const [u8; ViewKey::SIZE],
         notes: *mut *mut u8,
@@ -347,7 +350,10 @@ struct FfiStateClient;
 impl StateClient for FfiStateClient {
     type Error = u8;
 
-    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(
+        &self,
+        vk: &ViewKey,
+    ) -> Result<Vec<(Note, u64)>, Self::Error> {
         let mut notes_ptr = ptr::null_mut();
         let mut notes_len = 0;
 
@@ -367,14 +373,18 @@ impl StateClient for FfiStateClient {
             )
         };
 
-        let num_notes = notes_len as usize / Note::SIZE;
+        let num_notes = notes_len as usize / (Note::SIZE + u64::SIZE);
         let mut notes = Vec::with_capacity(num_notes);
 
         let mut buf = &notes_buf[..];
         for _ in 0..num_notes {
-            notes.push(Note::from_reader(&mut buf).map_err(
+            let note = Note::from_reader(&mut buf).map_err(
                 Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
-            )?);
+            )?;
+            let block_height = u64::from_reader(&mut buf).map_err(
+                Error::<FfiStore, FfiStateClient, FfiProverClient>::from,
+            )?;
+            notes.push((note, block_height));
         }
 
         Ok(notes)
