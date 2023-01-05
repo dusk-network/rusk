@@ -7,14 +7,17 @@
 use aes::Aes256;
 use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
-use consensus::commons::{Block, RoundUpdate};
-use consensus::consensus::Consensus;
+extern crate dusk_consensus as consensus;
 
-use consensus::user::provisioners::{Provisioners, DUSK};
-use consensus::util::pending_queue::PendingQueue;
-use consensus::util::pubkey::ConsensusPublicKey;
+use dusk_consensus::commons::{Block, RoundUpdate};
+use dusk_consensus::consensus::Consensus;
+
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
+use dusk_consensus::user::provisioners::{Provisioners, DUSK};
+use dusk_consensus::util::pending_queue::PendingQueue;
+use dusk_consensus::util::pubkey::ConsensusPublicKey;
+
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;

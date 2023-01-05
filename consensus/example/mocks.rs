@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use consensus::{
+use dusk_consensus::{
     commons::{Block, Database, Hash},
     contract_state::{CallParams, Error, Operations, Output, StateRoot},
 };

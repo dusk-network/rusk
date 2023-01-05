@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use consensus::commons::Topics;
-use consensus::messages::{Message, TransportData};
-use consensus::util::pending_queue::PendingQueue;
+use dusk_consensus::commons::Topics;
+use dusk_consensus::messages::{Message, TransportData};
+use dusk_consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, NetworkListen, Peer};
 
