@@ -9,7 +9,7 @@
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::APK;
+use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::StealthAddress;
 use phoenix_core::Note;
@@ -17,8 +17,8 @@ use phoenix_core::Note;
 /// Return the digest to be signed in the `allow` function of the stake
 /// contract.
 #[must_use]
-pub fn allow_sign_digest(counter: u64, staker: APK) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(u64::SIZE + APK::SIZE);
+pub fn allow_sign_digest(counter: u64, staker: PublicKey) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(u64::SIZE + PublicKey::SIZE);
 
     bytes.extend(counter.to_bytes());
     bytes.extend(staker.to_bytes());
