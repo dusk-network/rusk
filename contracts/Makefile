@@ -1,4 +1,4 @@
-SUBDIRS := alice bob transfer
+SUBDIRS := alice bob transfer stake
 
 help: ## Display this help screen
 	@grep -h \
