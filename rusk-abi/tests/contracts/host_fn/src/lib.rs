@@ -12,7 +12,9 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
+use dusk_bls12_381_sign::{
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
+};
 use dusk_pki::PublicKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
@@ -56,10 +58,10 @@ impl HostFnTest {
     pub fn verify_bls(
         &self,
         msg: Vec<u8>,
-        apk: APK,
+        pk: BlsPublicKey,
         sig: BlsSignature,
     ) -> bool {
-        rusk_abi::verify_bls(msg, apk, sig)
+        rusk_abi::verify_bls(msg, pk, sig)
     }
 
     pub fn block_height(&self) -> u64 {

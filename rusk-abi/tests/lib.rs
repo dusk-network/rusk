@@ -157,25 +157,20 @@ fn bls_signature() {
 
     let sk = BlsSecretKey::random(&mut OsRng);
     let pk = BlsPublicKey::from(&sk);
-    let apk = APK::from(&pk);
 
     let sign = sk.sign(&pk, &message);
 
-    apk.verify(&sign, &message)
-        .expect("BLS signature should be valid");
-
     let valid: bool = session
-        .query(module_id, "verify_bls", (message.clone(), apk, sign))
+        .query(module_id, "verify_bls", (message.clone(), pk, sign))
         .expect("Query should succeed");
 
     assert!(valid, "BLS Signature verification expected to succeed");
 
     let wrong_sk = BlsSecretKey::random(&mut OsRng);
     let wrong_pk = BlsPublicKey::from(&wrong_sk);
-    let wrong_apk = APK::from(&wrong_pk);
 
     let valid: bool = session
-        .query(module_id, "verify_bls", (message, wrong_apk, sign))
+        .query(module_id, "verify_bls", (message, wrong_pk, sign))
         .expect("Query should succeed");
 
     assert!(!valid, "BLS Signature verification expected to fail");
