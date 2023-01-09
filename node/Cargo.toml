@@ -3,12 +3,10 @@ name = "node"
 version = "0.1.0"
 edition = "2021"
 autobins = false
-repository = "https://github.com/dusk-network/rusk"
 description = "An implementation of dusk-blockchain node in pure Rust"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
-keywords = ["consensus", "dusk", "cryptocurrency", "blockchain"]
+keywords = ["dusk", "cryptocurrency", "blockchain", "node"]
 license = "MPL-2.0"
-exclude = [".github/*", ".gitignore", ".env", ".vscode", "Cargo.lock"]
 
 [[bin]]
 name = "rusk-node"
