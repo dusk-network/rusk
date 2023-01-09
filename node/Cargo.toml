@@ -1,0 +1,23 @@
+[package]
+name = "node"
+version = "0.1.0"
+edition = "2021"
+autobins = false
+repository = "https://github.com/dusk-network/rusk"
+description = "An implementation of dusk-blockchain node in pure Rust"
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+keywords = ["consensus", "dusk", "cryptocurrency", "blockchain"]
+license = "MPL-2.0"
+exclude = [".github/*", ".gitignore", ".env", ".vscode", "Cargo.lock"]
+
+[[bin]]
+name = "rusk-node"
+path = "src/bin/main.rs"
+
+
+[dependencies]
+tracing = "0.1"
+hex = { version= "0.4.3"}
+dusk-consensus = "0.1.0"
+kadcast = "0.5.0-rc"
+
