@@ -6,7 +6,8 @@ members = [
     "contracts/bob",
     "contracts/transfer",
     "contracts/transfer-types",
-    # "contracts/stake",
+    "contracts/stake",
+    "contracts/stake-types",
     # "contracts/governance",
 
     "macros/code-hasher",
