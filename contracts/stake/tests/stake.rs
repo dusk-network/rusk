@@ -6,371 +6,915 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
-use dusk_jubjub::JubJubScalar;
-use microkelvin::{BackendCtor, DiskBackend, Persistence};
+use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
+use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
+use dusk_plonk::prelude::*;
+use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::{Fee, Note};
+use piecrust::Error;
+use piecrust::{Session, VM};
 use rand::rngs::StdRng;
-use rand::SeedableRng;
-use rusk_abi::dusk::*;
-use stake_contract::{Stake, StakeContract, MINIMUM_STAKE};
-use transfer_circuits::SendToContractTransparentCircuit;
-use transfer_wrapper::{StakeState, TransferWrapper};
+use rand::{CryptoRng, RngCore, SeedableRng};
+use rusk_abi::dusk::{dusk, LUX};
+use rusk_abi::{ModuleError, RawResult};
+use stake_contract_types::{
+    allow_sign_digest, stake_sign_digest, unstake_sign_digest,
+    withdraw_sign_digest, Allow, Stake, StakeData, Unstake, Withdraw,
+};
+use std::ops::Range;
+use transfer_circuits::{
+    CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
+    ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
+    SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
+};
+use transfer_contract_types::*;
 
-fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
-}
+const GENESIS_VALUE: u64 = dusk(1_000_000.0);
+const POINT_LIMIT: u64 = 0x10000000;
 
-#[test]
-fn withdraw() {
-    Persistence::with_backend(&testbackend(), |_| Ok(()))
-        .expect("Backend found");
+type Result<T, E = Error> = core::result::Result<T, E>;
 
-    let mut rng = StdRng::seed_from_u64(0xbeef);
+/// Instantiate the virtual machine with the transfer contract deployed, with a
+/// single note owned by the given public spend key.
+fn instantiate<'a, Rng: RngCore + CryptoRng>(
+    rng: &mut Rng,
+    vm: &'a mut VM,
+    psk: &PublicSpendKey,
+    pk: &PublicKey,
+) -> Session<'a> {
+    rusk_abi::register_host_queries(vm);
 
-    let sk = SecretKey::random(&mut rng);
-    let pk = PublicKey::from(&sk);
-
-    let reward_value = dusk(1000.0);
-    let genesis_value = dusk(50_000.0);
-    let block_height = 1;
-
-    let gas_price = 1;
-    let gas_limit = dusk(1.0) / gas_price;
-
-    let stake = Stake::new(0, reward_value, block_height);
-    let stake = StakeState {
-        stakes: &[(pk, stake)],
-        owners: &[],
-        allowlist: &[],
-    };
-    let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
-
-    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
-    let (_, refund_vk, _) = wrapper.identifier();
-    let (_, _, remainder_psk) = wrapper.identifier();
-    let (_, withdraw_vk, withdraw_psk) = wrapper.identifier();
-
-    let fee = Fee::new(&mut rng, gas_limit, gas_price, &remainder_psk);
-
-    let withdraw_r = JubJubScalar::random(&mut rng);
-    let withdraw_address = withdraw_psk.gen_stealth_address(&withdraw_r);
-    let withdraw_nonce = BlsScalar::random(&mut rng);
-
-    let withdraw_msg = StakeContract::withdraw_sign_message(
-        0,
-        withdraw_address,
-        withdraw_nonce,
+    let transfer_bytecode = include_bytes!(
+        "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     );
-    let withdraw_sig = sk.sign(&pk, &withdraw_msg);
-
-    let transaction = StakeContract::withdraw_transaction(
-        pk,
-        withdraw_sig,
-        withdraw_address,
-        withdraw_nonce,
+    let stake_bytecode = include_bytes!(
+        "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    wrapper
-        .execute(
-            block_height,
-            &[unspent_note],
-            &[genesis_ssk],
-            &refund_vk,
-            &remainder_psk,
-            true,
-            fee,
-            None,
-            Some(transaction),
+    let mut session = vm.session();
+
+    session.set_point_limit(POINT_LIMIT);
+    rusk_abi::set_block_height(&mut session, 0);
+
+    session
+        .deploy_with_id(rusk_abi::transfer_module(), transfer_bytecode)
+        .expect("Deploying the transfer contract should succeed");
+
+    session
+        .deploy_with_id(rusk_abi::stake_module(), stake_bytecode)
+        .expect("Deploying the stake contract should succeed");
+
+    let genesis_note = Note::transparent(rng, &psk, GENESIS_VALUE);
+
+    // push genesis note to the contract
+    let _: Note = session
+        .transact(
+            rusk_abi::transfer_module(),
+            "push_note",
+            (0u64, genesis_note),
         )
-        .expect("Failed to execute withdraw transaction");
+        .expect("Pushing genesis note should succeed");
 
-    let notes = wrapper.notes_owned_by(0, &withdraw_vk);
+    let _: BlsScalar = session
+        .transact(rusk_abi::transfer_module(), "update_root", ())
+        .expect("Updating the root should succeed");
 
-    assert_eq!(notes.len(), 1);
+    let _: () = session
+        .transact(rusk_abi::stake_module(), "add_owner", *pk)
+        .expect("Inserting APK into owners list should suceeed");
 
-    let withdraw_value = notes[0]
-        .value(None)
-        .expect("Reward note should be transparent");
-    assert_eq!(
-        withdraw_value, reward_value,
-        "Reward withdrawn should be consistent"
-    );
+    // allow given public key to stake
+    let _: () = session
+        .transact(rusk_abi::stake_module(), "insert_allowlist", *pk)
+        .expect("Inserting APK into allowlist should succeed");
 
-    let stake_contract = wrapper.stake_state();
-    let stake = stake_contract
-        .get_stake(&pk)
-        .expect("Failed querying the state")
-        .expect("Stake should still exist after withdraw");
+    // sets the block height for all subsequent operations to 1
+    rusk_abi::set_block_height(&mut session, 1);
 
-    assert_eq!(stake.reward(), 0, "Remaining reward should be 0");
-    assert_eq!(stake.counter(), 1, "Counter should be incremented");
+    session
+}
+
+fn leaves_in_range(
+    session: &mut Session,
+    range: Range<u64>,
+) -> Result<Vec<TreeLeaf>> {
+    session.query(
+        rusk_abi::transfer_module(),
+        "leaves_in_range",
+        (range.start, range.end),
+    )
+}
+
+fn root(session: &mut Session) -> Result<BlsScalar> {
+    session.query(rusk_abi::transfer_module(), "root", ())
+}
+
+fn opening(
+    session: &mut Session,
+    pos: u64,
+) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+    session.query(rusk_abi::transfer_module(), "opening", pos)
+}
+
+fn prover_verifier<C: Circuit>(
+    circuit_id: &[u8; 32],
+) -> (Prover<C>, Verifier<C>) {
+    let (pk, vd) = prover_verifier_keys(circuit_id);
+
+    let prover = Prover::try_from_bytes(&pk).unwrap();
+    let verifier = Verifier::try_from_bytes(&vd).unwrap();
+
+    (prover, verifier)
+}
+
+fn prover_verifier_keys(circuit_id: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
+    let keys = rusk_profile::keys_for(circuit_id).unwrap();
+
+    let pk = keys.get_prover().unwrap();
+    let vd = keys.get_verifier().unwrap();
+
+    (pk, vd)
+}
+
+fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
+    vk: ViewKey,
+    iter: I,
+) -> Vec<Note> {
+    iter.into_iter().filter(|note| vk.owns(note)).collect()
 }
 
 #[test]
-fn unstake() {
-    Persistence::with_backend(&testbackend(), |_| Ok(()))
-        .expect("Backend found");
+fn stake_withdraw_unstake() {
+    const STCT_FEE: u64 = dusk(1.0);
+    const WITHDRAW_FEE: u64 = dusk(1.0);
+    const WFCT_FEE: u64 = dusk(1.0);
 
-    let mut rng = StdRng::seed_from_u64(0xbeef);
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let sk = SecretKey::random(&mut rng);
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+
+    let ssk = SecretSpendKey::random(rng);
+    let vk = ssk.view_key();
+    let psk = PublicSpendKey::from(&ssk);
+
+    let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let stake_value = dusk(10_000.0);
-    let genesis_value = dusk(50_000.0);
-    let block_height = 1;
+    let session = &mut instantiate(rng, vm, &psk, &pk);
 
-    let gas_price = 1;
-    let gas_limit = dusk(1.1) / gas_price;
+    let leaves = leaves_in_range(session, 0..1)
+        .expect("Getting leaves in the given range should succeed");
 
-    let stake = Stake::new(stake_value, 0, block_height);
-    let stake = StakeState {
-        stakes: &[(pk, stake)],
-        owners: &[],
-        allowlist: &[],
-    };
+    assert_eq!(leaves.len(), 1, "There should be one note in the state");
 
-    let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
-    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
-    let (_, refund_vk, refund_psk) = wrapper.identifier();
-    let (_, _, remainder_psk) = wrapper.identifier();
-    let (_, unstake_vk, unstake_psk) = wrapper.identifier();
-
-    let (fee, crossover) =
-        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
-
-    let unstake_note = Note::transparent(&mut rng, &unstake_psk, stake_value);
-    let unstake_blinder = unstake_note
+    let input_note = leaves[0].note;
+    let input_value = input_note
+        .value(None)
+        .expect("The value should be transparent");
+    let input_blinder = input_note
         .blinding_factor(None)
-        .expect("Decrypt transparent note is infallible");
+        .expect("The blinder should be transparent");
+    let input_nullifier = input_note.gen_nullifier(&ssk);
 
-    let unstake_message = StakeContract::unstake_sign_message(0, unstake_note);
-    let unstake_sig = sk.sign(&pk, &unstake_message);
+    let gas_limit = STCT_FEE;
+    let gas_price = LUX;
 
-    let transaction = StakeContract::unstake_transaction(
-        pk,
-        unstake_sig,
-        unstake_note,
-        unstake_blinder,
-    )
-    .expect("Failed to produce withdraw transaction");
+    // Since we're transferring value to a contract, a crossover is needed. Here
+    // we transfer half of the input note to the stake contract, so the
+    // crossover value is `input_value/2`.
+    let crossover_value = input_value / 2;
+    let crossover_blinder = JubJubScalar::random(rng);
 
-    wrapper
-        .execute(
-            block_height,
-            &[unspent_note],
-            &[genesis_ssk],
-            &refund_vk,
-            &remainder_psk,
-            true,
-            fee,
-            Some(crossover),
-            Some(transaction),
-        )
-        .expect("Failed to execute unstake transaction");
+    let (mut fee, crossover) =
+        Note::obfuscated(rng, &psk, crossover_value, crossover_blinder)
+            .try_into()
+            .expect("Getting a fee and a crossover should succeed");
 
-    let notes = wrapper.notes_owned_by(block_height, &unstake_vk);
+    fee.gas_limit = gas_limit;
+    fee.gas_price = gas_price;
 
-    assert_eq!(notes.len(), 1);
+    // The change note should have the value of the input note, minus what is
+    // maximally spent.
+    let change_value = input_value - crossover_value - gas_price * gas_limit;
+    let change_blinder = JubJubScalar::random(rng);
+    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
-    let unstake_value = notes[0]
-        .value(None)
-        .expect("Unstake note should be transparent");
-    assert_eq!(
-        unstake_value, stake_value,
-        "Unstake value should be consistent"
-    );
-
-    let stake_contract = wrapper.stake_state();
-    let stake = stake_contract
-        .get_stake(&pk)
-        .expect("Failed querying the state")
-        .expect("Stake should still exist after unstake");
-
-    assert_eq!(stake.amount(), None, "There should be no stake amount");
-    assert_eq!(stake.counter(), 1, "Counter should be incremented");
-}
-
-#[test]
-fn stake() {
-    Persistence::with_backend(&testbackend(), |_| Ok(()))
-        .expect("Backend found");
-
-    let mut rng = StdRng::seed_from_u64(0xbeef);
-
-    let sk = SecretKey::random(&mut rng);
-    let pk = PublicKey::from(&sk);
-
-    let genesis_value = dusk(50_000.0);
-    let stake = StakeState {
-        stakes: &[],
-        owners: &[],
-        allowlist: &[pk],
-    };
-
-    let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
-
-    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
-    let (refund_ssk, refund_vk, refund_psk) = wrapper.identifier();
-    let (_, _, remainder_psk) = wrapper.identifier();
-
-    let block_height = 2;
-
-    let gas_price = 1;
-    let gas_limit = dusk(1.5) / gas_price;
-    let stake_value = MINIMUM_STAKE;
-
-    let stake_message = StakeContract::stake_sign_message(0, stake_value);
-
-    let stake_signature = sk.sign(&pk, stake_message.as_slice());
-
-    let (fee, crossover) =
-        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
-    let blinder =
-        TransferWrapper::decrypt_blinder(&fee, &crossover, &refund_vk);
-
-    let address = rusk_abi::stake_contract();
-    let address = rusk_abi::contract_to_scalar(&address);
+    // Prove the STCT circuit.
+    let stct_address = rusk_abi::module_to_scalar(&rusk_abi::stake_module());
     let stct_signature = SendToContractTransparentCircuit::sign(
-        wrapper.rng(),
-        &refund_ssk,
+        rng,
+        &ssk,
         &fee,
         &crossover,
-        stake_value,
-        &address,
+        crossover_value,
+        &stct_address,
     );
 
-    let transaction = StakeContract::stake_transaction(
+    let stct_circuit = SendToContractTransparentCircuit::new(
         &fee,
         &crossover,
-        blinder,
+        crossover_value,
+        crossover_blinder,
+        stct_address,
         stct_signature,
-        pk,
-        stake_signature,
-        stake_value,
-    )
-    .expect("Failed to produce stake transaction");
+    );
 
-    wrapper
-        .execute(
-            block_height,
-            &[unspent_note],
-            &[genesis_ssk],
-            &refund_vk,
-            &remainder_psk,
-            true,
-            fee,
-            Some(crossover),
-            Some(transaction),
-        )
-        .expect("Failed to execute stake transaction");
+    let (prover, _) =
+        prover_verifier(SendToContractTransparentCircuit::circuit_id());
+    let (stct_proof, _) = prover
+        .prove(rng, &stct_circuit)
+        .expect("Proving STCT circuit should succeed");
 
-    let stake_contract = wrapper.stake_state();
-    let stake = stake_contract
-        .get_stake(&pk)
-        .expect("Failed querying the state")
-        .expect("Stake should exist after stake");
+    let stake_digest = stake_sign_digest(0, crossover_value);
+    let sig = sk.sign(&pk, &stake_digest);
 
-    let (staked_value, eligibility) =
-        stake.amount().expect("Stake should have an amount");
+    // Fashion a Stake struct
+    let stake = Stake {
+        public_key: pk,
+        signature: sig,
+        value: crossover_value,
+        proof: stct_proof,
+    };
+    let stake_bytes = rkyv::to_bytes::<_, 4096>(&stake)
+        .expect("Should serialize Stake correctly")
+        .to_vec();
+
+    let call =
+        Some((rusk_abi::stake_module(), String::from("stake"), stake_bytes));
+
+    // Compose the circuit. In this case we're using one input and one output.
+    let mut execute_circuit = ExecuteCircuit::new(1);
+
+    execute_circuit.set_fee_crossover(
+        &fee,
+        &crossover,
+        crossover_value,
+        crossover_blinder,
+    );
+
+    execute_circuit.add_output_with_data(
+        change_note,
+        change_value,
+        change_blinder,
+    );
+
+    let input_opening = opening(session, *input_note.pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+
+    // Generate pk_r_p
+    let sk_r = ssk.sk_r(input_note.stealth_address());
+    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+
+    // The transaction hash must be computed before signing
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let tx_hash = Transaction::hash_from_components(
+        &[input_nullifier],
+        &[change_note],
+        &anchor,
+        &fee,
+        &Some(crossover),
+        &call,
+    );
+
+    execute_circuit.set_tx_hash(tx_hash);
+
+    let circuit_input_signature =
+        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+    let circuit_input = CircuitInput::new(
+        input_opening,
+        input_note,
+        pk_r_p.into(),
+        input_value,
+        input_blinder,
+        input_nullifier,
+        circuit_input_signature,
+    );
+
+    execute_circuit.add_input(circuit_input);
+
+    let (prover_key, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (execute_proof, _) = execute_circuit
+        .prove(rng, &prover_key)
+        .expect("Proving should be successful");
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![input_nullifier],
+        outputs: vec![change_note],
+        fee,
+        crossover: Some(crossover),
+        proof: execute_proof,
+        call,
+    };
+
+    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
+    let _: Option<Result<RawResult, ModuleError>> = session
+        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .expect("Transacting should succeed");
+
+    println!("STAKE   : {} gas", session.spent());
+
+    let stake_data: Option<StakeData> = session
+        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .expect("Getting the stake should succeed");
+    let stake_data = stake_data.expect("The stake should exist");
+
+    let (amount, eligibility) = *stake_data
+        .amount()
+        .expect("There should be an amount staked");
 
     assert_eq!(
-        stake_value, *staked_value,
-        "The staked amount should be consistent"
+        amount, crossover_value,
+        "Staked amount should match sent amount"
     );
     assert_eq!(
-        *eligibility,
-        Stake::eligibility_from_height(block_height),
-        "Eligibility should be as expected"
+        eligibility,
+        StakeData::eligibility_from_height(1),
+        "Eligibility should be computed correctly"
     );
-    assert_eq!(stake.counter(), 1, "Counter should be incremented");
+    assert_eq!(stake_data.reward(), 0, "Initial reward should be zero");
+    assert_eq!(stake_data.counter(), 1, "Counter should increment once");
+
+    // Add a reward to the staked key
+
+    const REWARD_AMOUNT: u64 = dusk(5.0);
+
+    let _: () = session
+        .transact(rusk_abi::stake_module(), "reward", (pk, REWARD_AMOUNT))
+        .expect("Rewarding a key should succeed");
+
+    let stake_data: Option<StakeData> = session
+        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .expect("Getting the stake should succeed");
+    let stake_data = stake_data.expect("The stake should exist");
+
+    let (amount, eligibility) = *stake_data
+        .amount()
+        .expect("There should be an amount staked");
+
+    assert_eq!(
+        amount, crossover_value,
+        "Staked amount should match sent amount"
+    );
+    assert_eq!(
+        stake_data.reward(),
+        REWARD_AMOUNT,
+        "Reward should be set to specified amount"
+    );
+    assert_eq!(
+        eligibility,
+        StakeData::eligibility_from_height(1),
+        "Eligibility should be computed correctly"
+    );
+    assert_eq!(stake_data.counter(), 1, "Counter should increment once");
+
+    // Start withdrawing the reward just given to our key
+
+    let leaves = leaves_in_range(session, 1..2)
+        .expect("Getting the notes should succeed");
+
+    let input_notes =
+        filter_notes_owned_by(vk, leaves.into_iter().map(|leaf| leaf.note));
+
+    assert_eq!(
+        input_notes.len(),
+        2,
+        "All new notes should be owned by our view key"
+    );
+
+    let mut input_values = [0u64; 2];
+    let mut input_blinders = [JubJubScalar::zero(); 2];
+    let mut input_nullifiers = [BlsScalar::zero(); 2];
+
+    for i in 0..2 {
+        input_values[i] = input_notes[i]
+            .value(Some(&vk))
+            .expect("The given view key should own the note");
+        input_blinders[i] = input_notes[i]
+            .blinding_factor(Some(&vk))
+            .expect("The given view key should own the note");
+        input_nullifiers[i] = input_notes[i].gen_nullifier(&ssk);
+    }
+
+    let input_value: u64 = input_values.iter().sum();
+
+    let gas_limit = WITHDRAW_FEE;
+    let gas_price = LUX;
+
+    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+
+    // The change note should have the value of the input note, minus what is
+    // maximally spent.
+    let change_value = input_value - gas_price * gas_limit;
+    let change_blinder = JubJubScalar::random(rng);
+    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+
+    // Fashion a `Withdraw` struct instance
+
+    let withdraw_address_r = JubJubScalar::random(rng);
+    let withdraw_address = psk.gen_stealth_address(&withdraw_address_r);
+
+    let withdraw_nonce = BlsScalar::random(rng);
+
+    let withdraw_digest = withdraw_sign_digest(
+        stake_data.counter(),
+        withdraw_address,
+        withdraw_nonce,
+    );
+    let withdraw_signature = sk.sign(&pk, &withdraw_digest);
+
+    let withdraw = Withdraw {
+        public_key: pk,
+        signature: withdraw_signature,
+        address: withdraw_address,
+        nonce: withdraw_nonce,
+    };
+    let withdraw_bytes = rkyv::to_bytes::<_, 2048>(&withdraw)
+        .expect("Serializing Withdraw should succeed")
+        .to_vec();
+
+    let call = Some((
+        rusk_abi::stake_module(),
+        String::from("withdraw"),
+        withdraw_bytes,
+    ));
+
+    // Compose the circuit. In this case we're using two inputs and one output.
+    let mut execute_circuit = ExecuteCircuit::new(2);
+
+    execute_circuit.set_fee(&fee);
+
+    execute_circuit.add_output_with_data(
+        change_note,
+        change_value,
+        change_blinder,
+    );
+
+    let input_opening_0 = opening(session, *input_notes[0].pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+    let input_opening_1 = opening(session, *input_notes[1].pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+
+    // Generate pk_r_p
+    let sk_r_0 = ssk.sk_r(input_notes[0].stealth_address());
+    let pk_r_p_0 = GENERATOR_NUMS_EXTENDED * sk_r_0.as_ref();
+    let sk_r_1 = ssk.sk_r(input_notes[1].stealth_address());
+    let pk_r_p_1 = GENERATOR_NUMS_EXTENDED * sk_r_1.as_ref();
+
+    // The transaction hash must be computed before signing
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let tx_hash = Transaction::hash_from_components(
+        &[input_nullifiers[0], input_nullifiers[1]],
+        &[change_note],
+        &anchor,
+        &fee,
+        &None,
+        &call,
+    );
+
+    execute_circuit.set_tx_hash(tx_hash);
+
+    let circuit_input_signature_0 =
+        CircuitInputSignature::sign(rng, &ssk, &input_notes[0], tx_hash);
+    let circuit_input_signature_1 =
+        CircuitInputSignature::sign(rng, &ssk, &input_notes[1], tx_hash);
+
+    let circuit_input_0 = CircuitInput::new(
+        input_opening_0,
+        input_notes[0],
+        pk_r_p_0.into(),
+        input_values[0],
+        input_blinders[0],
+        input_nullifiers[0],
+        circuit_input_signature_0,
+    );
+    let circuit_input_1 = CircuitInput::new(
+        input_opening_1,
+        input_notes[1],
+        pk_r_p_1.into(),
+        input_values[1],
+        input_blinders[1],
+        input_nullifiers[1],
+        circuit_input_signature_1,
+    );
+
+    execute_circuit.add_input(circuit_input_0);
+    execute_circuit.add_input(circuit_input_1);
+
+    let (prover_key, _) =
+        prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+    let (execute_proof, _) = execute_circuit
+        .prove(rng, &prover_key)
+        .expect("Proving should be successful");
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![input_nullifiers[0], input_nullifiers[1]],
+        outputs: vec![change_note],
+        fee,
+        crossover: None,
+        proof: execute_proof,
+        call,
+    };
+
+    // set different block height so that the new notes are easily located and
+    // filtered
+    rusk_abi::set_block_height(session, 2);
+
+    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
+    let _: Option<Result<RawResult, ModuleError>> = session
+        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .expect("Transacting should succeed");
+
+    println!("WITHDRAW: {} gas", session.spent());
+
+    let stake_data: Option<StakeData> = session
+        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .expect("Getting the stake should succeed");
+    let stake_data = stake_data.expect("The stake should exist");
+
+    let (amount, eligibility) = *stake_data
+        .amount()
+        .expect("There should be an amount staked");
+
+    assert_eq!(
+        amount, crossover_value,
+        "Staked amount should match sent amount"
+    );
+    assert_eq!(stake_data.reward(), 0, "Reward should be set to zero");
+    assert_eq!(
+        eligibility,
+        StakeData::eligibility_from_height(1),
+        "Eligibility should remain the same"
+    );
+    assert_eq!(stake_data.counter(), 2, "Counter should increment once");
+
+    // Start unstaking the previously staked amount
+
+    let leaves = leaves_in_range(session, 2..3)
+        .expect("Getting the notes should succeed");
+    assert_eq!(
+        leaves.len(),
+        3,
+        "There should be three notes in the tree at this block height \
+        due to there there also a reward note having been produced"
+    );
+
+    let input_notes =
+        filter_notes_owned_by(vk, leaves.into_iter().map(|leaf| leaf.note));
+
+    assert_eq!(
+        input_notes.len(),
+        3,
+        "All new notes should be owned by our view key"
+    );
+
+    let mut input_values = [0u64; 3];
+    let mut input_blinders = [JubJubScalar::zero(); 3];
+    let mut input_nullifiers = [BlsScalar::zero(); 3];
+
+    for i in 0..3 {
+        input_values[i] = input_notes[i]
+            .value(Some(&vk))
+            .expect("The given view key should own the note");
+        input_blinders[i] = input_notes[i]
+            .blinding_factor(Some(&vk))
+            .expect("The given view key should own the note");
+        input_nullifiers[i] = input_notes[i].gen_nullifier(&ssk);
+    }
+
+    let input_value: u64 = input_values.iter().sum();
+
+    let gas_limit = WFCT_FEE;
+    let gas_price = LUX;
+
+    let fee = Fee::new(rng, gas_limit, gas_price, &psk);
+
+    // The change note should have the value of the input note, minus what is
+    // maximally spent.
+    let change_value = input_value - gas_price * gas_limit;
+    let change_blinder = JubJubScalar::random(rng);
+    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+
+    let withdraw_value = crossover_value;
+    let withdraw_blinder = JubJubScalar::random(rng);
+    let withdraw_note =
+        Note::obfuscated(rng, &psk, withdraw_value, withdraw_blinder);
+
+    // Fashion a WFCT proof and an `Unstake` struct instance
+
+    let wfct_circuit = WithdrawFromTransparentCircuit::new(
+        *withdraw_note.value_commitment(),
+        withdraw_value,
+        withdraw_blinder,
+    );
+    let (wfct_prover, _) =
+        prover_verifier(WithdrawFromTransparentCircuit::circuit_id());
+
+    let (wfct_proof, _) = wfct_prover
+        .prove(rng, &wfct_circuit)
+        .expect("Proving WFCT circuit should succeed");
+
+    let unstake_digest =
+        unstake_sign_digest(stake_data.counter(), withdraw_note);
+    let unstake_sig = sk.sign(&pk, &unstake_digest);
+
+    let unstake = Unstake {
+        public_key: pk,
+        signature: unstake_sig,
+        note: withdraw_note,
+        proof: wfct_proof,
+    };
+    let unstake_bytes = rkyv::to_bytes::<_, 2048>(&unstake)
+        .expect("Serializing Unstake should succeed")
+        .to_vec();
+
+    let call = Some((
+        rusk_abi::stake_module(),
+        String::from("unstake"),
+        unstake_bytes,
+    ));
+
+    // Compose the circuit. In this case we're using three inputs and one
+    // output.
+    let mut execute_circuit = ExecuteCircuit::new(3);
+
+    execute_circuit.set_fee(&fee);
+
+    execute_circuit.add_output_with_data(
+        change_note,
+        change_value,
+        change_blinder,
+    );
+
+    let input_opening_0 = opening(session, *input_notes[0].pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+    let input_opening_1 = opening(session, *input_notes[1].pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+    let input_opening_2 = opening(session, *input_notes[2].pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+
+    // Generate pk_r_p
+    let sk_r_0 = ssk.sk_r(input_notes[0].stealth_address());
+    let pk_r_p_0 = GENERATOR_NUMS_EXTENDED * sk_r_0.as_ref();
+    let sk_r_1 = ssk.sk_r(input_notes[1].stealth_address());
+    let pk_r_p_1 = GENERATOR_NUMS_EXTENDED * sk_r_1.as_ref();
+    let sk_r_2 = ssk.sk_r(input_notes[2].stealth_address());
+    let pk_r_p_2 = GENERATOR_NUMS_EXTENDED * sk_r_2.as_ref();
+
+    // The transaction hash must be computed before signing
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let tx_hash = Transaction::hash_from_components(
+        &[
+            input_nullifiers[0],
+            input_nullifiers[1],
+            input_nullifiers[2],
+        ],
+        &[change_note],
+        &anchor,
+        &fee,
+        &None,
+        &call,
+    );
+
+    execute_circuit.set_tx_hash(tx_hash);
+
+    let circuit_input_signature_0 =
+        CircuitInputSignature::sign(rng, &ssk, &input_notes[0], tx_hash);
+    let circuit_input_signature_1 =
+        CircuitInputSignature::sign(rng, &ssk, &input_notes[1], tx_hash);
+    let circuit_input_signature_2 =
+        CircuitInputSignature::sign(rng, &ssk, &input_notes[2], tx_hash);
+
+    let circuit_input_0 = CircuitInput::new(
+        input_opening_0,
+        input_notes[0],
+        pk_r_p_0.into(),
+        input_values[0],
+        input_blinders[0],
+        input_nullifiers[0],
+        circuit_input_signature_0,
+    );
+    let circuit_input_1 = CircuitInput::new(
+        input_opening_1,
+        input_notes[1],
+        pk_r_p_1.into(),
+        input_values[1],
+        input_blinders[1],
+        input_nullifiers[1],
+        circuit_input_signature_1,
+    );
+    let circuit_input_2 = CircuitInput::new(
+        input_opening_2,
+        input_notes[2],
+        pk_r_p_2.into(),
+        input_values[2],
+        input_blinders[2],
+        input_nullifiers[2],
+        circuit_input_signature_2,
+    );
+
+    execute_circuit.add_input(circuit_input_0);
+    execute_circuit.add_input(circuit_input_1);
+    execute_circuit.add_input(circuit_input_2);
+
+    let (prover_key, _) =
+        prover_verifier_keys(ExecuteCircuitThreeTwo::circuit_id());
+    let (execute_proof, _) = execute_circuit
+        .prove(rng, &prover_key)
+        .expect("Proving should be successful");
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![
+            input_nullifiers[0],
+            input_nullifiers[1],
+            input_nullifiers[2],
+        ],
+        outputs: vec![change_note],
+        fee,
+        crossover: None,
+        proof: execute_proof,
+        call,
+    };
+
+    // set different block height so that the new notes are easily located and
+    // filtered
+    rusk_abi::set_block_height(session, 3);
+
+    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
+    let _: Option<Result<RawResult, ModuleError>> = session
+        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .expect("Transacting should succeed");
+
+    println!("UNSTAKE : {} gas", session.spent());
 }
 
 #[test]
-fn allowlist() {
-    Persistence::with_backend(&testbackend(), |_| Ok(()))
-        .expect("Backend found");
+fn allow() {
+    const ALLOW_FEE: u64 = dusk(1.0);
 
-    let mut rng = StdRng::seed_from_u64(0xbeef);
+    let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let sk_owner = SecretKey::random(&mut rng);
-    let pk_owner = PublicKey::from(&sk_owner);
+    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
 
-    let genesis_value = dusk(50_000.0);
-    let stake = StakeState {
-        stakes: &[],
-        owners: &[pk_owner],
-        allowlist: &[],
-    };
+    let ssk = SecretSpendKey::random(rng);
+    // let vk = ssk.view_key();
+    let psk = PublicSpendKey::from(&ssk);
 
-    let mut wrapper =
-        TransferWrapper::with_stakes(0xbeef, genesis_value, stake);
-
-    let (genesis_ssk, unspent_note) = wrapper.genesis_identifier();
-    let (_, refund_vk, refund_psk) = wrapper.identifier();
-    let (_, _, remainder_psk) = wrapper.identifier();
-
-    let block_height = 2;
-
-    let gas_price = 1;
-    let gas_limit = dusk(1.5) / gas_price;
-    let stake_value = MINIMUM_STAKE;
-
-    let sk = SecretKey::random(&mut rng);
+    let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let allowlist_message = StakeContract::allowlist_sign_message(0, &pk);
+    let allow_sk = SecretKey::random(rng);
+    let allow_pk = PublicKey::from(&allow_sk);
 
-    let allowlist_signature =
-        sk_owner.sign(&pk_owner, allowlist_message.as_slice());
+    let session = &mut instantiate(rng, vm, &psk, &pk);
 
-    let (fee, crossover) =
-        wrapper.fee_crossover(gas_limit, gas_price, &refund_psk, stake_value);
+    let leaves = leaves_in_range(session, 0..1)
+        .expect("Getting leaves in the given range should succeed");
 
-    let transaction =
-        StakeContract::allowlist_transaction(pk, allowlist_signature, pk_owner);
+    assert_eq!(leaves.len(), 1, "There should be one note in the state");
 
-    wrapper
-        .execute(
-            block_height,
-            &[unspent_note],
-            &[genesis_ssk],
-            &refund_vk,
-            &remainder_psk,
-            true,
-            fee,
-            Some(crossover),
-            Some(transaction),
-        )
-        .expect("Failed to execute stake transaction");
+    let input_note = leaves[0].note;
+    let input_value = input_note
+        .value(None)
+        .expect("The value should be transparent");
+    let input_blinder = input_note
+        .blinding_factor(None)
+        .expect("The blinder should be transparent");
+    let input_nullifier = input_note.gen_nullifier(&ssk);
 
-    let stake_contract = wrapper.stake_state();
+    let gas_limit = ALLOW_FEE;
+    let gas_price = LUX;
 
-    let list = stake_contract
-        .stakers_allowlist()
-        .expect("Failed to query the original state");
+    // Since we're transferring value to a contract, a crossover is needed. Here
+    // we transfer half of the input note to the stake contract, so the
+    // crossover value is `input_value/2`.
+    let crossover_value = input_value / 2;
+    let crossover_blinder = JubJubScalar::random(rng);
 
-    assert!(list.contains(&pk));
+    let (mut fee, crossover) =
+        Note::obfuscated(rng, &psk, crossover_value, crossover_blinder)
+            .try_into()
+            .expect("Getting a fee and a crossover should succeed");
 
-    let stake = stake_contract
-        .get_stake(&pk)
-        .expect("Failed querying the state");
-    assert!(
-        stake.is_some(),
-        "Adding to allowlist should create the stake"
+    fee.gas_limit = gas_limit;
+    fee.gas_price = gas_price;
+
+    // The change note should have the value of the input note, minus what is
+    // maximally spent.
+    let change_value = input_value - crossover_value - gas_price * gas_limit;
+    let change_blinder = JubJubScalar::random(rng);
+    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
+
+    // Fashion a Allow struct
+    let allow_digest = allow_sign_digest(0, allow_pk);
+    let allow_sig = sk.sign(&pk, &allow_digest);
+
+    let allow = Allow {
+        public_key: allow_pk,
+        owner: pk,
+        signature: allow_sig,
+    };
+    let allow_bytes = rkyv::to_bytes::<_, 2048>(&allow)
+        .expect("Should serialize Allow correctly")
+        .to_vec();
+
+    let call =
+        Some((rusk_abi::stake_module(), String::from("allow"), allow_bytes));
+
+    // Compose the circuit. In this case we're using one input and one output.
+    let mut execute_circuit = ExecuteCircuit::new(1);
+
+    execute_circuit.set_fee_crossover(
+        &fee,
+        &crossover,
+        crossover_value,
+        crossover_blinder,
     );
 
-    let stake_owner = stake_contract
-        .get_stake(&pk_owner)
-        .expect("Failed querying the state")
-        .expect("Owner stake should still exist after a allowlist");
-    assert_eq!(stake_owner.counter(), 1, "Counter should be incremented");
+    execute_circuit.add_output_with_data(
+        change_note,
+        change_value,
+        change_blinder,
+    );
 
-    let allowlisted = stake_contract
-        .stakers_allowlist()
-        .expect("Failed querying the state");
-    assert!(allowlisted.contains(&pk), "provisioner should be allowed");
+    let input_opening = opening(session, *input_note.pos())
+        .expect("Querying the opening for the given position should succeed")
+        .expect("An opening should exist for a note in the tree");
+
+    // Generate pk_r_p
+    let sk_r = ssk.sk_r(input_note.stealth_address());
+    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
+
+    // The transaction hash must be computed before signing
+    let anchor =
+        root(session).expect("Getting the anchor should be successful");
+
+    let tx_hash = Transaction::hash_from_components(
+        &[input_nullifier],
+        &[change_note],
+        &anchor,
+        &fee,
+        &Some(crossover),
+        &call,
+    );
+
+    execute_circuit.set_tx_hash(tx_hash);
+
+    let circuit_input_signature =
+        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
+    let circuit_input = CircuitInput::new(
+        input_opening,
+        input_note,
+        pk_r_p.into(),
+        input_value,
+        input_blinder,
+        input_nullifier,
+        circuit_input_signature,
+    );
+
+    execute_circuit.add_input(circuit_input);
+
+    let (prover_key, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (execute_proof, _) = execute_circuit
+        .prove(rng, &prover_key)
+        .expect("Proving should be successful");
+
+    let tx = Transaction {
+        anchor,
+        nullifiers: vec![input_nullifier],
+        outputs: vec![change_note],
+        fee,
+        crossover: Some(crossover),
+        proof: execute_proof,
+        call,
+    };
+
+    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
+    let _: Option<Result<RawResult, ModuleError>> = session
+        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .expect("Transacting should succeed");
+
+    println!("ALLOW   : {} gas", session.spent());
+
+    let is_allowed: bool = session
+        .query(rusk_abi::stake_module(), "is_allowlisted", allow_pk)
+        .expect("Querying the allowlist should succeed");
+
+    assert!(is_allowed, "The new public key should now be allowed");
 }
