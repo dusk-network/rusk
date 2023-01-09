@@ -15,7 +15,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 tracing = "0.1"
-hex = { version= "0.4.3"}
-dusk-consensus = "0.1.0"
+hex = "0.4"
+dusk-consensus = "0.1"
 kadcast = "0.5.0-rc"
 
