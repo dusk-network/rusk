@@ -19,7 +19,7 @@ mod stake;
 pub use sig::*;
 pub use stake::*;
 
-use dusk_bls12_381_sign::{Signature, APK};
+use dusk_bls12_381_sign::{PublicKey, Signature};
 use dusk_pki::StealthAddress;
 use dusk_plonk::prelude::*;
 use phoenix_core::Note;
@@ -32,7 +32,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[archive_attr(derive(CheckBytes))]
 pub struct Stake {
     /// Public key to which the stake will belong.
-    pub public_key: APK,
+    pub public_key: PublicKey,
     /// Signature belonging to the given public key.
     pub signature: Signature,
     /// Value to stake.
@@ -55,7 +55,7 @@ impl Stake {
 #[archive_attr(derive(CheckBytes))]
 pub struct Unstake {
     /// Public key to unstake.
-    pub public_key: APK,
+    pub public_key: PublicKey,
     /// Signature belonging to the given public key.
     pub signature: Signature,
     /// Note to withdraw to.
@@ -69,7 +69,7 @@ pub struct Unstake {
 #[archive_attr(derive(CheckBytes))]
 pub struct Withdraw {
     /// Public key to withdraw the rewards.
-    pub public_key: APK,
+    pub public_key: PublicKey,
     /// Signature belonging to the given public key.
     pub signature: Signature,
     /// The address to mint to.
@@ -83,9 +83,9 @@ pub struct Withdraw {
 #[archive_attr(derive(CheckBytes))]
 pub struct Allow {
     /// The public key to allow staking to.
-    pub public_key: APK,
+    pub public_key: PublicKey,
     /// The "owner" of the smart contract.
-    pub owner: APK,
+    pub owner: PublicKey,
     /// Signature of the `owner` key.
     pub signature: Signature,
 }
