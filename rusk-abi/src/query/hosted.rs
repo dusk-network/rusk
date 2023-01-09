@@ -9,7 +9,9 @@ use crate::query::*;
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
+use dusk_bls12_381_sign::{
+    PublicKey as BlsPublicKey, Signature as BlsSignature,
+};
 use dusk_pki::{PublicKey, PublicSpendKey};
 use dusk_plonk::prelude::Proof;
 use dusk_schnorr::Signature;
@@ -60,8 +62,8 @@ pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
 }
 
 /// Verify a BLS signature is valid for the given public key and message
-pub fn verify_bls(msg: Vec<u8>, apk: APK, sig: BlsSignature) -> bool {
-    piecrust_uplink::host_query(Query::VERIFY_BLS, (msg, apk, sig))
+pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
+    piecrust_uplink::host_query(Query::VERIFY_BLS, (msg, pk, sig))
 }
 
 /// Get the current block height.

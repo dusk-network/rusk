@@ -11,7 +11,9 @@ use crate::query::*;
 use crate::PublicInput;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{Signature as BlsSignature, APK};
+use dusk_bls12_381_sign::{
+    PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
+};
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
@@ -73,9 +75,7 @@ fn host_verify_schnorr(arg_buf: &mut [u8], arg_len: u32) -> u32 {
 }
 
 fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
-    wrap_host_query(arg_buf, arg_len, |(msg, apk, sig)| {
-        verify_bls(msg, apk, sig)
-    })
+    wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| verify_bls(msg, pk, sig))
 }
 
 /// Compute the blake2b hash of the given scalars, returning the resulting
@@ -132,7 +132,8 @@ pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
 }
 
 /// Verify a BLS signature is valid for the given public key and message
-pub fn verify_bls(msg: Vec<u8>, apk: APK, sig: BlsSignature) -> bool {
+pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
+    let apk = APK::from(&pk);
     apk.verify(&sig, &msg).is_ok()
 }
 
