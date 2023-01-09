@@ -33,4 +33,7 @@ test: keys wasm abi circuits state allmacros contracts ## Run the tests
 run: keys state ## Run the server
 	cargo run --release --bin rusk
 
-.PHONY: abi keys state wasm circuits contracts test run help
+node: rusk ## Build node binary
+	$(MAKE) -C ./node binary
+
+.PHONY: abi keys state wasm circuits contracts test run help node
