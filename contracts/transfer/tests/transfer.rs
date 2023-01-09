@@ -653,7 +653,7 @@ fn send_and_withdraw_transparent() {
     let call = Some((ALICE_ID, String::from("withdraw"), wfct_bytes));
 
     // Compose the circuit. In this case we're using two inputs and one output.
-    let mut execute_circuit = ExecuteCircuit::new(1);
+    let mut execute_circuit = ExecuteCircuit::new(2);
 
     execute_circuit.set_fee(&fee);
 
@@ -1078,7 +1078,7 @@ fn send_and_withdraw_obfuscated() {
         Some((ALICE_ID, String::from("withdraw_obfuscated"), wfco_bytes));
 
     // Compose the circuit. In this case we're using two inputs and one output.
-    let mut execute_circuit = ExecuteCircuit::new(1);
+    let mut execute_circuit = ExecuteCircuit::new(2);
 
     execute_circuit.set_fee(&fee);
 
