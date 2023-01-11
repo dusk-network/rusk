@@ -23,6 +23,7 @@ required-features = ["state"]
 rustc_tools_util = "=0.2.0"
 
 [dependencies]
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
 hex = "0.4"
 rustc_tools_util = "0.2"
 dusk-plonk = { version = "0.13", features = ["rkyv-impl"] }
@@ -33,6 +34,7 @@ transfer-circuits = { path = "../circuits/transfer", features=["builder"] }
 #transfer-contract = { path = "../contracts/transfer", default-features = false }
 #stake-contract = { path = "../contracts/stake", default-features = false }
 #governance-contract = { path = "../contracts/governance", default-features = false }
+stake-contract-types = { path = "../contracts/stake-types"}
 microkelvin = "0.17"
 rusk-profile = { path = "../rusk-profile" }
 rusk-abi = { path = "../rusk-abi", features = ["host"] }
@@ -43,7 +45,7 @@ dusk-bls12_381-sign = "0.4"
 clap = { version = "3.1", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
 console = "0.12"
-tracing = "0.1"
+tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"
 zip = "0.5"
