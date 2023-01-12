@@ -8,13 +8,13 @@ mod task;
 mod version;
 
 use clap::Parser;
+use piecrust::VM;
 use rusk_recovery_tools::theme::Theme;
 use std::error::Error;
 use std::{env, io};
 use std::{fs, path::PathBuf};
 use tracing::info;
 use version::VERSION_BUILD;
-use piecrust::VM;
 
 use rusk_recovery_tools::state::{deploy, restore_state, zip, Snapshot};
 
@@ -101,7 +101,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let state_path = rusk_profile::get_rusk_state_dir()?;
     let id_path = rusk_profile::get_rusk_state_id_path()?;
 
-    let mut vm = VM::new(&state_path).map_err(|_e|std::fmt::Error)?;// todo error conversion
+    let mut vm = VM::new(&state_path)?;
     rusk_abi::register_host_queries(&mut vm);
 
     // if the state already exists in the expected path, stop early.
@@ -111,13 +111,17 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
         rusk_abi::set_block_height(&mut session, 0);
         info!("{} existing state", theme.info("Found"));
 
-        restore_state(&mut session, &id_path)?;
+        let commit_id = restore_state(&mut session, &id_path)?;
         info!(
             "{} state id at {}",
             theme.success("Checked"),
             id_path.display()
         );
-        info!("{} todo!", theme.action("Root")/*, hex::encode(vm_session.root())*/);
+        info!(
+            "{} {}",
+            theme.action("Root"),
+            hex::encode(commit_id.as_bytes())
+        );
 
         return Ok(());
     }
@@ -131,13 +135,15 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let commit_id = deploy(config.init, &mut session)?;
 
     info!("{} persisted id", theme.success("Storing"));
-    commit_id.persist(&id_path).map_err(|_e|std::fmt::Error)?;// todo error conversion;
+    commit_id.persist(&id_path)?;
+    vm.persist()?;
+    let mut session = vm.session(); // we need new session todo explain why
 
-    restore_state(&mut session, &id_path)?;
+    let commit_id = restore_state(&mut session, &id_path)?;
     info!(
-        "{} todo!",
-        theme.action("Final Root")//,
-        //hex::encode(network.root())
+        "{} {}",
+        theme.action("Final Root"),
+        hex::encode(commit_id.as_bytes())
     );
 
     info!(
