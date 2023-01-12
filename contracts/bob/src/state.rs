@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 /// Bob contract.
-///
 #[derive(Debug, Clone)]
 pub struct Bob;
 

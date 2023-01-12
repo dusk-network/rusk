@@ -23,7 +23,7 @@ required-features = ["state"]
 rustc_tools_util = "=0.2.0"
 
 [dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust" }
+piecrust = { git = "https://github.com/dusk-network/piecrust", branch="error-enhancement-132" }
 hex = "0.4"
 rustc_tools_util = "0.2"
 dusk-plonk = { version = "0.13", features = ["rkyv-impl"] }
