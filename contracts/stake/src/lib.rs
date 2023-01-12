@@ -81,7 +81,7 @@ unsafe fn owners(arg_len: u32) -> u32 {
 unsafe fn insert_stake(arg_len: u32) -> u32 {
     rusk_abi::wrap_transaction(arg_len, |(pk, stake_data)| {
         assert_external_caller();
-        STATE.insert_stake(pk, stake_data);
+        STATE.insert_stake(pk, stake_data)
     })
 }
 
