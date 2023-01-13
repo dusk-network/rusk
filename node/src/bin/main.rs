@@ -4,8 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-fn main() {
-    if let Err(e) = node::bootstrap() {
-        println!("{:?}", e);
+use node::{
+    chain::ChainSrv,
+    mempool::MempoolSrv,
+    network::{self},
+    LongLivedService, Node,
+};
+
+#[tokio::main]
+pub async fn main() {
+    node::enable_log(tracing::Level::INFO);
+
+    // Select list of services to enable
+    let service_list: Vec<Box<dyn LongLivedService<network::Kadcast>>> =
+        vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
+
+    let net = network::Kadcast::new(kadcast::config::Config::default());
+
+    // node spawn_all is the entry point
+    if let Err(e) = Node::new(net).spawn_all(service_list).await {
+        tracing::error!("node terminated with err: {}", e);
     }
 }

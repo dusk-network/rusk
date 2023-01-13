@@ -18,4 +18,12 @@ tracing = "0.1"
 hex = "0.4"
 dusk-consensus = "0.1"
 kadcast = "0.5.0-rc"
+sha3 = {version = "0.10"}
+anyhow = "1.0"
+async-trait = "0.1"
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber =  "0.2"
+async-channel = "1.7"
+ 
+
 
