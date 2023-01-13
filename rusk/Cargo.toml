@@ -55,14 +55,14 @@ canonical = "0.7"
 canonical_derive = "0.7"
 parking_lot = "0.12"
 
-rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
-transfer-circuits = { path = "../circuits/transfer" }
-transfer-contract = { path = "../contracts/transfer" }
-stake-contract = { path = "../contracts/stake" }
-rusk-profile = { path = "../rusk-profile" }
+rusk-recovery = { path = "../rusk-recovery", version = "0.5", features = ["state"] }
+transfer-circuits = { path = "../circuits/transfer", version = "0.4" }
+transfer-contract = { path = "../contracts/transfer", version = "0.10" }
+stake-contract = { path = "../contracts/stake", version = "0.6" }
+rusk-profile = { path = "../rusk-profile", version = "0.5.1-rc.0" } # If release type (e.g. "-rc.0") is present, Cargo requires exact specification
 microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
-rusk-abi = { path = "../rusk-abi" }
-rusk-schema = { path = "../rusk-schema" }
+rusk-abi = { path = "../rusk-abi", version = "0.7" }
+rusk-schema = { path = "../rusk-schema", version = "0.4" }
 
 [dev-dependencies]
 test-context = "0.1"

@@ -10,6 +10,7 @@ members = [
     "rusk-abi",
     "rusk-schema",
     "rusk",
+    "node",
     "test-utils/transfer-wrapper",
     "test-utils/contracts/alice",
     "test-utils/contracts/bob",

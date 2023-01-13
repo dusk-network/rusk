@@ -11,14 +11,14 @@ dusk-bls12_381 = "0.9"
 dusk-jubjub = "0.11"
 dusk-plonk = "0.10"
 dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
-dusk-pki ="0.10.0-rc"
+dusk-pki = "0.10.0-rc"
 dusk-schnorr = "0.10.0-rc"
 phoenix-core = { version = "0.16.0-rc", features = ["canon"] }
 canonical = "0.7"
 canonical_derive = { version = "0.7", optional = true }
 
-code-hasher = { path = "../../macros/code-hasher" }
-rusk-profile = { path = "../../rusk-profile", optional = true }
+code-hasher = { path = "../../macros/code-hasher", version = "0.3.0-rc.0" }
+rusk-profile = { path = "../../rusk-profile", version = "0.5.1-rc.0", optional = true } # If release type (e.g. "-rc.0") is present, Cargo requires exact specification
 
 [dev-dependencies]
 rand = "0.8"
