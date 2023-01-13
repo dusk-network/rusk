@@ -10,18 +10,18 @@ use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_hamt::Map;
 use dusk_jubjub::GENERATOR_EXTENDED;
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
 
+use crate::collection::Collection;
 use crate::*;
 
 #[derive(Debug, Default, Clone, Canon)]
 pub struct GovernanceContract {
-    pub(crate) seeds: Map<BlsScalar, ()>,
-    pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) whitelist: Map<PublicKey, ()>,
+    pub(crate) seeds: Collection<BlsScalar, ()>,
+    pub(crate) balances: Collection<PublicKey, u64>,
+    pub(crate) whitelist: Collection<PublicKey, ()>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
 }
@@ -70,10 +70,11 @@ impl GovernanceContract {
         (!self.paused).then_some(()).ok_or(Error::ContractIsPaused)
     }
 
+    // to keep code consistent with other collections, we supress deref warnings
+    // as its not implemented for other when we switch features.
     fn is_allowed(&self, address: &PublicKey) -> Result<(), Error> {
         self.whitelist
             .get(address)?
-            .as_deref()
             .copied()
             .ok_or(Error::AddressIsNotWhitelisted)
     }
@@ -169,7 +170,6 @@ impl GovernanceContract {
         let value = self
             .balances
             .get(&address)?
-            .as_deref()
             .copied()
             .unwrap_or(0)
             .checked_add(value)
@@ -202,7 +202,6 @@ impl GovernanceContract {
         let value = self
             .balances
             .get(&address)?
-            .as_deref()
             .copied()
             .unwrap_or(0)
             .checked_sub(value)
@@ -238,19 +237,21 @@ impl GovernanceContract {
         {
             self.is_allowed(&from)?;
 
-            let base = self
-                .balances
-                .get(&from)?
-                .as_deref()
-                .copied()
-                .unwrap_or(0)
-                .checked_sub(amount)
-                .ok_or(Error::InsufficientBalance)?;
+            let mut base = self.balances.get(&from)?.copied().unwrap_or(0);
+
+            if base < amount {
+                let remaining = amount - base;
+
+                self.mint(seed, signature, from, remaining)?;
+
+                base = 0;
+            } else {
+                base -= amount;
+            }
 
             let target = self
                 .balances
                 .get(&to)?
-                .as_deref()
                 .copied()
                 .unwrap_or(0)
                 .checked_add(amount)
