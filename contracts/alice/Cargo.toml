@@ -14,4 +14,4 @@ dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"
 transfer-contract-types = { path = "../transfer-types", default-features = false }
 
 [dev-dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust", branch="error-enhancement-132" }
+piecrust = { git = "https://github.com/dusk-network/piecrust" }

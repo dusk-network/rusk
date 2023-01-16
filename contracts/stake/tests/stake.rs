@@ -71,21 +71,21 @@ fn instantiate<'a, Rng: RngCore + CryptoRng>(
         .transact(
             rusk_abi::transfer_module(),
             "push_note",
-            (0u64, genesis_note),
+            &(0u64, genesis_note),
         )
         .expect("Pushing genesis note should succeed");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", ())
+        .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("Updating the root should succeed");
 
     let _: () = session
-        .transact(rusk_abi::stake_module(), "add_owner", *pk)
+        .transact(rusk_abi::stake_module(), "add_owner", &*pk)
         .expect("Inserting APK into owners list should suceeed");
 
     // allow given public key to stake
     let _: () = session
-        .transact(rusk_abi::stake_module(), "insert_allowlist", *pk)
+        .transact(rusk_abi::stake_module(), "insert_allowlist", &*pk)
         .expect("Inserting APK into allowlist should succeed");
 
     // sets the block height for all subsequent operations to 1
@@ -101,19 +101,19 @@ fn leaves_in_range(
     session.query(
         rusk_abi::transfer_module(),
         "leaves_in_range",
-        (range.start, range.end),
+        &(range.start, range.end),
     )
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.query(rusk_abi::transfer_module(), "root", ())
+    session.query(rusk_abi::transfer_module(), "root", &())
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
-    session.query(rusk_abi::transfer_module(), "opening", pos)
+    session.query(rusk_abi::transfer_module(), "opening", &pos)
 }
 
 fn prover_verifier<C: Circuit>(
@@ -313,13 +313,13 @@ fn stake_withdraw_unstake() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("STAKE   : {} gas", session.spent());
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .transact(rusk_abi::stake_module(), "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -344,11 +344,11 @@ fn stake_withdraw_unstake() {
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
     let _: () = session
-        .transact(rusk_abi::stake_module(), "reward", (pk, REWARD_AMOUNT))
+        .transact(rusk_abi::stake_module(), "reward", &(pk, REWARD_AMOUNT))
         .expect("Rewarding a key should succeed");
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .transact(rusk_abi::stake_module(), "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -531,13 +531,13 @@ fn stake_withdraw_unstake() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("WITHDRAW: {} gas", session.spent());
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", pk)
+        .transact(rusk_abi::stake_module(), "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -757,7 +757,7 @@ fn stake_withdraw_unstake() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("UNSTAKE : {} gas", session.spent());
@@ -907,13 +907,13 @@ fn allow() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("ALLOW   : {} gas", session.spent());
 
     let is_allowed: bool = session
-        .query(rusk_abi::stake_module(), "is_allowlisted", allow_pk)
+        .query(rusk_abi::stake_module(), "is_allowlisted", &allow_pk)
         .expect("Querying the allowlist should succeed");
 
     assert!(is_allowed, "The new public key should now be allowed");
