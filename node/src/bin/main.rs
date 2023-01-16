@@ -15,8 +15,10 @@ use node::{
 pub async fn main() {
     node::enable_log(tracing::Level::INFO);
 
+    type Services = dyn LongLivedService<network::Kadcast<255>>;
+
     // Select list of services to enable
-    let service_list: Vec<Box<dyn LongLivedService<network::Kadcast>>> =
+    let service_list: Vec<Box<Services>> =
         vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
 
     let net = network::Kadcast::new(kadcast::config::Config::default());

@@ -42,8 +42,6 @@ impl<N: Network> LongLivedService<N> for ChainSrv {
                     }
                     _ => todo!(),
                 }
-
-                _ = network.read().await.repropagate(&msg, 0);
             }
         }
     }
