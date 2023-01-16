@@ -20,7 +20,7 @@ transfer-contract-types = { path = "../transfer-types", default-features = false
 stake-contract-types = { path = "../stake-types", default-features = false }
 
 [dev-dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust", branch="error-enhancement-132" }
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
 rusk-profile = { path = "../../rusk-profile" }
 rusk-abi = { path = "../../rusk-abi", features = ["host"] }
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
