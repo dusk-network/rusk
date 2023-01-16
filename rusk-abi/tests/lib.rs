@@ -9,7 +9,7 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey, APK,
+    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
@@ -84,7 +84,7 @@ fn hash() {
     }
 
     let scalar: BlsScalar = session
-        .query(module_id, "hash", input)
+        .query(module_id, "hash", &input)
         .expect("Querying should succeed");
 
     assert_eq!(
@@ -110,7 +110,7 @@ fn poseidon_hash() {
         .collect();
 
     let scalar: BlsScalar = session
-        .query(module_id, "poseidon_hash", test_inputs)
+        .query(module_id, "poseidon_hash", &test_inputs)
         .expect("Querying should succeed");
 
     assert_eq!(
@@ -133,7 +133,7 @@ fn schnorr_signature() {
     assert!(sign.verify(&pk, message));
 
     let valid: bool = session
-        .query(module_id, "verify_schnorr", (message, pk, sign))
+        .query(module_id, "verify_schnorr", &(message, pk, sign))
         .expect("Querying should succeed");
 
     assert!(valid, "Signature verification expected to succeed");
@@ -142,7 +142,7 @@ fn schnorr_signature() {
     let pk = PublicKey::from(&wrong_sk);
 
     let valid: bool = session
-        .query(module_id, "verify_schnorr", (message, pk, sign))
+        .query(module_id, "verify_schnorr", &(message, pk, sign))
         .expect("Querying should succeed");
 
     assert!(!valid, "Signature verification expected to fail");
@@ -160,8 +160,9 @@ fn bls_signature() {
 
     let sign = sk.sign(&pk, &message);
 
+    let arg = (message, pk, sign);
     let valid: bool = session
-        .query(module_id, "verify_bls", (message.clone(), pk, sign))
+        .query(module_id, "verify_bls", &arg)
         .expect("Query should succeed");
 
     assert!(valid, "BLS Signature verification expected to succeed");
@@ -169,8 +170,9 @@ fn bls_signature() {
     let wrong_sk = BlsSecretKey::random(&mut OsRng);
     let wrong_pk = BlsPublicKey::from(&wrong_sk);
 
+    let arg = (arg.0, wrong_pk, arg.2);
     let valid: bool = session
-        .query(module_id, "verify_bls", (message, wrong_pk, sign))
+        .query(module_id, "verify_bls", &arg)
         .expect("Query should succeed");
 
     assert!(!valid, "BLS Signature verification expected to fail");
@@ -231,6 +233,7 @@ fn plonk_proof() {
     verifier
         .verify(&proof, &public_inputs)
         .expect("Proof should verify successfully");
+    let verifier = verifier.to_bytes();
 
     let public_inputs: Vec<PublicInput> = public_inputs
         .into_iter()
@@ -239,12 +242,9 @@ fn plonk_proof() {
         .map(|pi| From::from(-pi))
         .collect();
 
+    let arg = (verifier, proof, public_inputs);
     let valid: bool = session
-        .query(
-            module_id,
-            "verify_proof",
-            (verifier.to_bytes(), proof.clone(), public_inputs),
-        )
+        .query(module_id, "verify_proof", &arg)
         .expect("Query should succeed");
 
     assert!(valid, "The proof should be valid");
@@ -253,12 +253,9 @@ fn plonk_proof() {
     let wrong_public_inputs: Vec<PublicInput> =
         wrong_public_inputs.into_iter().map(From::from).collect();
 
+    let arg = (arg.0, arg.1, wrong_public_inputs);
     let valid: bool = session
-        .query(
-            module_id,
-            "verify_proof",
-            (verifier.to_bytes(), proof, wrong_public_inputs),
-        )
+        .query(module_id, "verify_proof", &arg)
         .expect("Query should succeed");
 
     assert!(!valid, "The proof should be invalid");
@@ -274,7 +271,7 @@ fn block_height() {
     set_block_height(&mut session, HEIGHT);
 
     let height: u64 = session
-        .query(module_id, "block_height", ())
+        .query(module_id, "block_height", &())
         .expect("Query should succeed");
 
     assert_eq!(height, HEIGHT);
