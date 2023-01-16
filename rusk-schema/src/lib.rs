@@ -52,7 +52,7 @@ impl From<&phoenix_core::Fee> for Fee {
             gas_price: fee.gas_price,
             stealth_address: Some(fee.stealth_address().into()),
         }
-
+    }
 }
 
 impl From<&dusk_pki::StealthAddress> for StealthAddress {
