@@ -85,12 +85,12 @@ fn instantiate<'a, Rng: RngCore + CryptoRng>(
         .transact(
             rusk_abi::transfer_module(),
             "push_note",
-            (0u64, genesis_note),
+            &(0u64, genesis_note),
         )
         .expect("Pushing genesis note should succeed");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", ())
+        .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
@@ -106,16 +106,16 @@ fn leaves_in_range(
     session.query(
         rusk_abi::transfer_module(),
         "leaves_in_range",
-        (range.start, range.end),
+        &(range.start, range.end),
     )
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.query(rusk_abi::transfer_module(), "root", ())
+    session.query(rusk_abi::transfer_module(), "root", &())
 }
 
 fn module_balance(session: &mut Session, module: ModuleId) -> Result<u64> {
-    session.query(rusk_abi::transfer_module(), "module_balance", module)
+    session.query(rusk_abi::transfer_module(), "module_balance", &module)
 }
 
 fn message(
@@ -123,14 +123,14 @@ fn message(
     module: ModuleId,
     pk: PublicKey,
 ) -> Result<Option<Message>> {
-    session.query(rusk_abi::transfer_module(), "message", (module, pk))
+    session.query(rusk_abi::transfer_module(), "message", &(module, pk))
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
-    session.query(rusk_abi::transfer_module(), "opening", pos)
+    session.query(rusk_abi::transfer_module(), "opening", &pos)
 }
 
 fn prover_verifier<C: Circuit>(
@@ -268,7 +268,7 @@ fn transfer() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_1_2 : {} gas", session.spent());
@@ -382,7 +382,7 @@ fn alice_ping() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_PING: {} gas", session.spent());
@@ -560,7 +560,7 @@ fn send_and_withdraw_transparent() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_STCT: {} gas", session.spent());
@@ -735,7 +735,7 @@ fn send_and_withdraw_transparent() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_WFCT: {} gas", session.spent());
@@ -936,7 +936,7 @@ fn send_and_withdraw_obfuscated() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_STCO: {} gas", session.spent());
@@ -1160,7 +1160,7 @@ fn send_and_withdraw_obfuscated() {
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
-        .transact(rusk_abi::transfer_module(), "execute", tx)
+        .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_WFCO: {} gas", session.spent());

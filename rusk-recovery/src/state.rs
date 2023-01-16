@@ -209,18 +209,19 @@ fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// note: deploy consumes session as it produces commit id
 pub fn deploy(
     snapshot: &Snapshot,
-    session: &mut Session,
+    mut session: Session,
 ) -> Result<CommitId, Box<dyn Error>> {
     let theme = Theme::default();
 
     match snapshot.base_state() {
-        Some(state) => load_state(session, state),
-        None => generate_empty_state(session),
+        Some(state) => load_state(&mut session, state),
+        None => generate_empty_state(&mut session),
     }?;
-    generate_transfer_state(session, snapshot)?;
-    generate_stake_state(session, snapshot)?;
+    generate_transfer_state(&mut session, snapshot)?;
+    generate_stake_state(&mut session, snapshot)?;
 
     let commit_id = session.commit()?;
 
@@ -287,5 +288,10 @@ fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
     tar::unarchive(&buffer, output)?;
 
     restore_state(session, &id_path)?;
+    info!(
+        "{} {}",
+        Theme::default().action("Base Root"),
+        hex::encode(session.root(false)?)
+    );
     Ok(())
 }
