@@ -66,7 +66,7 @@ fn generate_transfer_state(
                 .transact(
                     rusk_abi::transfer_module(),
                     "push_note",
-                    (GENESIS_BLOCK_HEIGHT, note),
+                    &(GENESIS_BLOCK_HEIGHT, note),
                 )
                 .expect("Genesis note to be pushed to the state");
         });
@@ -74,7 +74,7 @@ fn generate_transfer_state(
     });
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", ())
+        .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("Root to be updated after pushing genesis note");
 
     let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
@@ -83,7 +83,7 @@ fn generate_transfer_state(
         .query(
             rusk_abi::transfer_module(),
             "module_balance",
-            rusk_abi::stake_module(),
+            &rusk_abi::stake_module(),
         )
         .expect("Stake contract balance query should succeed");
 
@@ -92,7 +92,7 @@ fn generate_transfer_state(
         .transact(
             rusk_abi::transfer_module(),
             "add_module_balance",
-            (m, stake_balance),
+            &(m, stake_balance),
         )
         .expect("Stake contract balance to be set with provisioner stakes");
 
@@ -115,20 +115,20 @@ fn generate_stake_state(
             .transact(
                 rusk_abi::stake_module(),
                 "insert_stake",
-                (*staker.address(), stake),
+                &(*staker.address(), stake),
             )
             .expect("stake to be inserted into the state");
         let _: () = session
             .transact(
                 rusk_abi::stake_module(),
                 "insert_allowlist",
-                *staker.address(),
+                &*staker.address(),
             )
             .expect("staker to be inserted into the allowlist");
     });
     snapshot.owners().for_each(|provisioner| {
         let _: () = session
-            .transact(rusk_abi::stake_module(), "add_owner", *provisioner)
+            .transact(rusk_abi::stake_module(), "add_owner", &*provisioner)
             .expect("owner to be added into the state");
     });
 
@@ -137,7 +137,7 @@ fn generate_stake_state(
             .transact(
                 rusk_abi::stake_module(),
                 "insert_allowlist",
-                *provisioner,
+                &*provisioner,
             )
             .expect("provisioner to be inserted into the allowlist");
     });
@@ -167,12 +167,12 @@ fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
         .transact(
             rusk_abi::transfer_module(),
             "add_module_balance",
-            (rusk_abi::stake_module(), 0u64),
+            &(rusk_abi::stake_module(), 0u64),
         )
         .expect("stake contract balance to be set with provisioner stakes");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", ())
+        .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("root to be updated after pushing genesis note");
 
     Ok(())
