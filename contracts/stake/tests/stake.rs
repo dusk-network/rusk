@@ -80,12 +80,12 @@ fn instantiate<'a, Rng: RngCore + CryptoRng>(
         .expect("Updating the root should succeed");
 
     let _: () = session
-        .transact(rusk_abi::stake_module(), "add_owner", &*pk)
+        .transact(rusk_abi::stake_module(), "add_owner", pk)
         .expect("Inserting APK into owners list should suceeed");
 
     // allow given public key to stake
     let _: () = session
-        .transact(rusk_abi::stake_module(), "insert_allowlist", &*pk)
+        .transact(rusk_abi::stake_module(), "insert_allowlist", pk)
         .expect("Inserting APK into allowlist should succeed");
 
     // sets the block height for all subsequent operations to 1

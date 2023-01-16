@@ -18,19 +18,19 @@ impl Alice {
 
     pub fn withdraw(self: &mut State<Self>, wfct: Wfct) {
         let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfct", wfct)
+            .transact(rusk_abi::transfer_module(), "wfct", &wfct)
             .expect("Transparent withdrawal transaction should succeed");
     }
 
     pub fn withdraw_obfuscated(self: &mut State<Self>, wfco: Wfco) {
         let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfco", wfco)
+            .transact(rusk_abi::transfer_module(), "wfco", &wfco)
             .expect("Obfuscated withdrawal transaction should succeed");
     }
 
     pub fn withdraw_to_contract(self: &mut State<Self>, wfctc: Wfctc) {
         let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfctc", wfctc)
+            .transact(rusk_abi::transfer_module(), "wfctc", &wfctc)
             .expect("Obfuscated withdrawal transaction should succeed");
     }
 }
