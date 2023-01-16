@@ -83,7 +83,7 @@ impl StakeState {
         };
 
         let _: bool = self
-            .transact(transfer_module, "stct", stct)
+            .transact(transfer_module, "stct", &stct)
             .expect("Sending note to contract should succeed");
     }
 
@@ -121,7 +121,7 @@ impl StakeState {
             .transact(
                 transfer_module,
                 "wfct",
-                Wfct {
+                &Wfct {
                     value,
                     note: unstake.note,
                     proof: unstake.proof,
@@ -173,7 +173,7 @@ impl StakeState {
             .transact(
                 transfer_module,
                 "mint",
-                Mint {
+                &Mint {
                     address: withdraw.address,
                     value: reward,
                     nonce: withdraw.nonce,

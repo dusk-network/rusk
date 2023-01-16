@@ -362,7 +362,7 @@ impl TransferState {
 
         let res = tx.call.map(|(module, fn_name, data)| {
             let raw_tx = RawTransaction::from_parts(&fn_name, data);
-            self.transact_raw(module, raw_tx)
+            self.transact_raw(module, &raw_tx)
         });
 
         // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)
