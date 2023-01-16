@@ -132,12 +132,14 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
     info!("{} new state", theme.info("Building"));
 
-    let commit_id = deploy(config.init, &mut session)?;
+    // note: deploy consumes session as it performs a commit
+    let commit_id = deploy(config.init, session)?;
 
     info!("{} persisted id", theme.success("Storing"));
     commit_id.persist(&id_path)?;
     vm.persist()?;
-    let mut session = vm.session(); // we need new session todo explain why
+    // we need new session as our previous session was consumed by deploy
+    let mut session = vm.session();
 
     let commit_id = restore_state(&mut session, &id_path)?;
     info!(

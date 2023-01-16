@@ -11,4 +11,4 @@ crate-type = ["cdylib", "rlib"]
 rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 
 [dev-dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust", branch="error-enhancement-132" }
+piecrust = { git = "https://github.com/dusk-network/piecrust" }
