@@ -15,7 +15,7 @@ pub const TX_TYPE_TRANSFER: u32 = 1;
 
 impl From<dusk_pki::PublicSpendKey> for PublicKey {
     fn from(value: dusk_pki::PublicSpendKey) -> Self {
-        crate::PublicKey {
+        PublicKey {
             payload: value.to_bytes().to_vec(),
         }
     }
@@ -31,7 +31,7 @@ impl From<dusk_pki::SecretSpendKey> for SecretKey {
 
 impl From<dusk_pki::ViewKey> for ViewKey {
     fn from(value: dusk_pki::ViewKey) -> Self {
-        crate::ViewKey {
+        ViewKey {
             payload: value.to_bytes().to_vec(),
         }
     }
@@ -52,7 +52,7 @@ impl From<&phoenix_core::Fee> for Fee {
             gas_price: fee.gas_price,
             stealth_address: Some(fee.stealth_address().into()),
         }
-    }
+
 }
 
 impl From<&dusk_pki::StealthAddress> for StealthAddress {
