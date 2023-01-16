@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{net::IpAddr, sync::Arc};
+use std::{default, net::IpAddr, sync::Arc};
 
 use crate::{utils::PendingQueue, Message};
 use async_trait::async_trait;
@@ -13,13 +13,13 @@ use tokio::sync::RwLock;
 
 mod frame;
 
-type RoutesList = Vec<Option<PendingQueue<Message>>>;
+type RoutesList<const N: usize> = [Option<PendingQueue<Message>>; N];
 
-pub struct Listener {
-    routes: Arc<RwLock<RoutesList>>,
+pub struct Listener<const N: usize> {
+    routes: Arc<RwLock<RoutesList<N>>>,
 }
 
-impl Listener {
+impl<const N: usize> Listener<N> {
     fn reroute(
         &self,
         topic: impl Into<u8>,
@@ -36,7 +36,7 @@ impl Listener {
     }
 }
 
-impl kadcast::NetworkListen for Listener {
+impl<const N: usize> kadcast::NetworkListen for Listener<N> {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
         // TODO: Decode message
         if let Err(e) = self.reroute(0, Message::default()) {
@@ -45,14 +45,15 @@ impl kadcast::NetworkListen for Listener {
     }
 }
 
-pub struct Kadcast {
+pub struct Kadcast<const N: usize> {
     peer: Peer,
-    routes: Arc<RwLock<RoutesList>>,
+    routes: Arc<RwLock<RoutesList<N>>>,
 }
 
-impl Kadcast {
+impl<const N: usize> Kadcast<N> {
     pub fn new(conf: Config) -> Self {
-        let routes = Arc::new(RwLock::new(vec![None; 255]));
+        const INIT: Option<PendingQueue<Message>> = None;
+        let routes = Arc::new(RwLock::new([INIT; N]));
         Kadcast {
             routes: routes.clone(),
             peer: Peer::new(conf, Listener { routes }).unwrap(),
@@ -61,9 +62,9 @@ impl Kadcast {
 }
 
 #[async_trait]
-impl crate::Network for Kadcast {
+impl<const N: usize> crate::Network for Kadcast<N> {
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()> {
-        // Sample broadcast
+        // TODO: broadcast
         self.peer.broadcast(&[0u8; 8], Some(0)).await;
 
         anyhow::Ok(())
@@ -74,6 +75,7 @@ impl crate::Network for Kadcast {
         msg: &Message,
         from_height: u8,
     ) -> anyhow::Result<()> {
+        // TODO: repropagate message with this height
         anyhow::Ok(())
     }
 
@@ -101,9 +103,16 @@ impl crate::Network for Kadcast {
         msg_type: u8,
         queue: PendingQueue<Message>,
     ) -> anyhow::Result<()> {
-        if let Some(q) = self.routes.write().await.get_mut(msg_type as usize) {
-            *q = Some(queue)
-        }
+        let mut guard = self.routes.write().await;
+
+        let mut route = guard
+            .get_mut(msg_type as usize)
+            .expect("should be a valid type");
+
+        assert!(route.is_none(), "msg type already registered");
+
+        *route = Some(queue);
+
         anyhow::Ok(())
     }
 }

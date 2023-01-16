@@ -6,7 +6,7 @@
 
 use std::io::{self, Read, Write};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum Topics {
     // Data exchange topics.
     GetData = 8,
