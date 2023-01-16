@@ -14,12 +14,12 @@ repository = "https://github.com/dusk-network/rusk"
 exclude = [".github/workflows/", ".gitignore"]
 
 [dependencies]
-tonic = "0.6"
-prost = "0.9"
+tonic = "0.8"
+prost = "0.11"
 
-dusk-pki ="0.10.0-rc"
+dusk-pki ="0.11"
 dusk-bytes = "0.1"
-phoenix-core = "0.16.0-rc"
+phoenix-core = "0.18"
 
 [build-dependencies]
-tonic-build = "0.6"
+tonic-build = "0.8"
