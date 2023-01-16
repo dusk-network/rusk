@@ -73,5 +73,5 @@ pub fn block_height() -> u64 {
 
 /// Query a contract for the types of payment it accepts.
 pub fn payment_info(module: ModuleId) -> Result<PaymentInfo, ModuleError> {
-    piecrust_uplink::query(module, "payment_info", ())
+    piecrust_uplink::query(module, "payment_info", &())
 }
