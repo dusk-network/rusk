@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{default, net::IpAddr, sync::Arc};
+use std::{any, default, net::IpAddr, sync::Arc};
 
-use crate::{utils::PendingQueue, Message};
+use crate::{utils::PendingQueue, BoxedFilter, Message};
 use async_trait::async_trait;
 use kadcast::{config::Config, MessageInfo, Peer};
 use tokio::sync::RwLock;
@@ -14,9 +14,11 @@ use tokio::sync::RwLock;
 mod frame;
 
 type RoutesList<const N: usize> = [Option<PendingQueue<Message>>; N];
+type FilterList<const N: usize> = [Option<BoxedFilter>; N];
 
 pub struct Listener<const N: usize> {
     routes: Arc<RwLock<RoutesList<N>>>,
+    filters: Arc<RwLock<FilterList<N>>>,
 }
 
 impl<const N: usize> Listener<N> {
@@ -34,11 +36,31 @@ impl<const N: usize> Listener<N> {
 
         anyhow::Ok(())
     }
+
+    fn call_filters(
+        &self,
+        topic: impl Into<u8>,
+        msg: Message,
+    ) -> anyhow::Result<()> {
+        let topic = topic.into() as usize;
+
+        match self.filters.try_write()?.get_mut(topic) {
+            Some(Some(f)) => f.filter(&msg),
+            _ => anyhow::Ok(()),
+        }
+    }
 }
 
 impl<const N: usize> kadcast::NetworkListen for Listener<N> {
     fn on_message(&self, message: Vec<u8>, md: MessageInfo) {
         // TODO: Decode message
+
+        if let Err(e) = self.call_filters(0, Message::default()) {
+            /// Discarding message
+            tracing::trace!("discard message due to {:?}", e);
+            return;
+        }
+
         if let Err(e) = self.reroute(0, Message::default()) {
             tracing::error!("could not dispatch {:?}", e);
         }
@@ -48,15 +70,21 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
 pub struct Kadcast<const N: usize> {
     peer: Peer,
     routes: Arc<RwLock<RoutesList<N>>>,
+    filters: Arc<RwLock<FilterList<N>>>,
 }
 
 impl<const N: usize> Kadcast<N> {
     pub fn new(conf: Config) -> Self {
         const INIT: Option<PendingQueue<Message>> = None;
         let routes = Arc::new(RwLock::new([INIT; N]));
+
+        const INIT_FN: Option<BoxedFilter> = None;
+        let filters = Arc::new(RwLock::new([INIT_FN; N]));
+
         Kadcast {
             routes: routes.clone(),
-            peer: Peer::new(conf, Listener { routes }).unwrap(),
+            filters: filters.clone(),
+            peer: Peer::new(conf, Listener { routes, filters }).unwrap(),
         }
     }
 }
@@ -112,6 +140,22 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         assert!(route.is_none(), "msg type already registered");
 
         *route = Some(queue);
+
+        anyhow::Ok(())
+    }
+
+    async fn add_filter(
+        &mut self,
+        msg_type: u8,
+        filter_fn: BoxedFilter,
+    ) -> anyhow::Result<()> {
+        let mut guard = self.filters.write().await;
+
+        let mut filter = guard
+            .get_mut(msg_type as usize)
+            .expect("should be valid type");
+
+        *filter = Some(filter_fn);
 
         anyhow::Ok(())
     }

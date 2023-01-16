@@ -23,6 +23,21 @@ use tokio::{
 };
 use tracing::{error, info, Instrument};
 
+/// Filter is used by Network implementor to filter messages before re-routing
+/// them. It's like the middleware in HTTP pipeline.
+///
+/// To avoid delaying other messages handling, the execution of any filter
+/// should be fast as it is performed in the message handler .
+///
+/// e.g a message could be dropped by Reputation System Filter due to banned
+/// source addr.
+pub trait Filter {
+    /// Filters a message.
+    fn filter(&mut self, msg: &Message) -> anyhow::Result<()>;
+}
+
+pub type BoxedFilter = Box<dyn Filter + Sync + Send>;
+
 #[derive(Clone, Default)]
 pub struct Message {
     topic: Topics,
@@ -50,6 +65,13 @@ pub trait Network: Send + Sync + 'static {
         msg_type: u8,
         queue: PendingQueue<Message>,
     ) -> anyhow::Result<()>;
+
+    /// Moves a filter of a specified topic to Network.
+    async fn add_filter(
+        &mut self,
+        msg_type: u8,
+        filter: BoxedFilter,
+    ) -> anyhow::Result<()>;
 }
 
 /// Service processes specified set of messages and eventually produces a
@@ -73,6 +95,16 @@ pub trait LongLivedService<N: Network>: Send + Sync {
         for topic in my_topics {
             guard.add_route(*topic, queue.clone()).await?
         }
+        anyhow::Ok(())
+    }
+
+    async fn add_filter(
+        &self,
+        topic: u8,
+        filter_fn: BoxedFilter,
+        network: &Arc<RwLock<N>>,
+    ) -> anyhow::Result<()> {
+        network.write().await.add_filter(topic, filter_fn).await?;
         anyhow::Ok(())
     }
 

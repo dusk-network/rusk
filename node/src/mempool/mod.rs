@@ -20,6 +20,16 @@ pub struct MempoolSrv {
     inbound: PendingQueue<Message>,
 }
 
+pub struct TxFilter {}
+impl crate::Filter for TxFilter {
+    fn filter(&mut self, msg: &Message) -> anyhow::Result<()> {
+        // TODO: Ensure transaction does not exist in the mempool state
+        // TODO: Ensure transaction does not exist in blockchain
+        // TODO: Check  Nullifier
+        Ok(())
+    }
+}
+
 #[async_trait]
 impl<N: Network> LongLivedService<N> for MempoolSrv {
     async fn execute(
@@ -28,6 +38,15 @@ impl<N: Network> LongLivedService<N> for MempoolSrv {
     ) -> anyhow::Result<usize> {
         self.add_routes(TOPICS, self.inbound.clone(), &network)
             .await?;
+
+        // Add a filter that will discard any transactions invalid to the actual
+        // mempool, blockchain state.
+        self.add_filter(
+            data::Topics::Tx.into(),
+            Box::new(TxFilter {}),
+            &network,
+        )
+        .await?;
 
         loop {
             if let Ok(msg) = self.inbound.recv().await {
@@ -51,7 +70,7 @@ impl<N: Network> LongLivedService<N> for MempoolSrv {
 
 impl MempoolSrv {
     fn handle_tx(&mut self, msg: &Message) -> anyhow::Result<()> {
-        // TODO: Verify
+        // TODO: Preverify
 
         // TODO: Put in mempool storage
         Ok(())
