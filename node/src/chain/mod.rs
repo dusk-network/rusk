@@ -6,7 +6,7 @@
 
 use crate::data::Topics;
 use crate::utils::PendingQueue;
-use crate::{data, Network};
+use crate::{data, database, Network};
 use crate::{LongLivedService, Message};
 use async_trait::async_trait;
 use tokio::sync::RwLock;
@@ -21,13 +21,19 @@ pub struct ChainSrv {
 }
 
 #[async_trait]
-impl<N: Network> LongLivedService<N> for ChainSrv {
+impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
+        db: Arc<RwLock<DB>>,
     ) -> anyhow::Result<usize> {
-        self.add_routes(TOPICS, self.inbound.clone(), &network)
-            .await?;
+        LongLivedService::<N, DB>::add_routes(
+            self,
+            TOPICS,
+            self.inbound.clone(),
+            &network,
+        )
+        .await?;
 
         loop {
             if let Ok(msg) = self.inbound.recv().await {
