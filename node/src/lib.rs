@@ -17,11 +17,9 @@ use crate::utils::PendingQueue;
 use async_trait::async_trait;
 use data::Topics;
 use std::sync::Arc;
-use tokio::{
-    signal::unix::{signal, SignalKind},
-    sync::RwLock,
-    task::JoinSet,
-};
+use tokio::signal::unix::{signal, SignalKind};
+use tokio::sync::RwLock;
+use tokio::task::JoinSet;
 use tracing::{error, info, Instrument};
 
 /// Filter is used by Network implementor to filter messages before re-routing
@@ -29,9 +27,6 @@ use tracing::{error, info, Instrument};
 ///
 /// To avoid delaying other messages handling, the execution of any filter
 /// should be fast as it is performed in the message handler .
-///
-/// e.g a message could be dropped by Reputation System Filter due to banned
-/// source addr.
 pub trait Filter {
     /// Filters a message.
     fn filter(&mut self, msg: &Message) -> anyhow::Result<()>;

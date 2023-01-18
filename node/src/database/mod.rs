@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod rocksdb;
-
 use anyhow::Result;
 pub trait DB: Send + Sync + 'static {
     type T: Tx;

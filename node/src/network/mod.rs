@@ -93,7 +93,7 @@ impl<const N: usize> Kadcast<N> {
 impl<const N: usize> crate::Network for Kadcast<N> {
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()> {
         // TODO: broadcast
-        self.peer.broadcast(&[0u8; 8], Some(0)).await;
+        self.peer.broadcast(&[0u8; 8], None).await;
 
         anyhow::Ok(())
     }

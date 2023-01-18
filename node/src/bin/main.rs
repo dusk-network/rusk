@@ -4,27 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node::{
-    chain::ChainSrv,
-    mempool::MempoolSrv,
-    network::{self},
-    LongLivedService, Node,
-};
+use node::chain::ChainSrv;
+use node::database::rocksdb;
+use node::mempool::MempoolSrv;
+use node::network::Kadcast;
+use node::{LongLivedService, Node};
 
 #[tokio::main]
 pub async fn main() {
     node::enable_log(tracing::Level::INFO);
 
-    type Services = dyn LongLivedService<network::Kadcast<255>>;
+    // Set up a node where:
+    // transport layer is Kadcast with message ids from 0 to 255
+    // persistence layer is rocksdb
+    type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend>;
 
     // Select list of services to enable
     let service_list: Vec<Box<Services>> =
         vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
 
-    let net = network::Kadcast::new(kadcast::config::Config::default());
+    let net = Kadcast::new(kadcast::config::Config::default());
+    let db = rocksdb::Backend {};
 
     // node spawn_all is the entry point
-    if let Err(e) = Node::new(net).spawn_all(service_list).await {
+    if let Err(e) = Node::new(net, db).spawn_all(service_list).await {
         tracing::error!("node terminated with err: {}", e);
     }
 }

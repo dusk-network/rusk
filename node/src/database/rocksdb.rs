@@ -16,8 +16,8 @@ pub struct Backend {}
 
 impl Backend {
     fn begin_tx(&mut self, read_only: TxType) -> Transaction {
-        // TODO: This should be addressed with another issue about integrating
-        // RocksDB
+        // TODO: rusk/issues/806 This should be addressed with another issue
+        // about integrating RocksDB
         Transaction {}
     }
 }
