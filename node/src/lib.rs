@@ -8,6 +8,7 @@
 
 pub mod chain;
 mod data;
+pub mod database;
 pub mod mempool;
 pub mod network;
 mod utils;
@@ -79,10 +80,11 @@ pub trait Network: Send + Sync + 'static {
 ///
 /// Service is allowed to propagate a message to the network as well.
 #[async_trait]
-pub trait LongLivedService<N: Network>: Send + Sync {
+pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
+        database: Arc<RwLock<DB>>,
     ) -> anyhow::Result<usize>;
 
     async fn add_routes(
@@ -112,22 +114,23 @@ pub trait LongLivedService<N: Network>: Send + Sync {
     fn name(&self) -> &'static str;
 }
 
-pub struct Node<N: Network> {
+pub struct Node<N: Network, DB: database::DB> {
     network: Arc<RwLock<N>>,
-    // TODO: data_source: Arc<DataSource>,
+    database: Arc<RwLock<DB>>,
 }
 
-impl<N: Network> Node<N> {
-    pub fn new(n: N) -> Self {
+impl<N: Network, DB: database::DB> Node<N, DB> {
+    pub fn new(n: N, d: DB) -> Self {
         Self {
             network: Arc::new(RwLock::new(n)),
+            database: Arc::new(RwLock::new(d)),
         }
     }
 
     /// Sets up and runs a list of services.
     pub async fn spawn_all(
         &self,
-        service_list: Vec<Box<dyn LongLivedService<N>>>,
+        service_list: Vec<Box<dyn LongLivedService<N, DB>>>,
     ) -> anyhow::Result<()> {
         // Initialize DataSources
         // TODO:
@@ -146,12 +149,13 @@ impl<N: Network> Node<N> {
         for (mut s) in service_list.into_iter() {
             //let ds = self.data_source.clone();
             let n = self.network.clone();
+            let d = self.database.clone();
             let name = s.name();
 
             info!("starting service {}", name);
 
             set.spawn(async move {
-                s.execute(n)
+                s.execute(n, d)
                     .instrument(tracing::info_span!("srv", name))
                     .await
             });
