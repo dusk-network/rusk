@@ -11,6 +11,7 @@ canonical = "0.7"
 canonical_derive = "0.7"
 dusk-abi = "0.11"
 dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
+dusk-bls12_381-sign = "0.3.0-rc"
 dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.10.0-rc", default-features = false }

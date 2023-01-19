@@ -10,9 +10,8 @@ use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::GENERATOR_EXTENDED;
-use dusk_pki::PublicKey;
-use dusk_schnorr::Signature;
+use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
+use dusk_bytes::Serializable;
 
 use crate::collection::Collection;
 use crate::*;
@@ -31,14 +30,20 @@ impl GovernanceContract {
     ///
     /// Will have to be defined in the constant space so the bytecode of the
     /// contract will be changed as the authority does
-    pub const AUTHORITY: PublicKey =
-        PublicKey::from_raw_unchecked(GENERATOR_EXTENDED);
+    pub const AUTHORITY: &[u8; 96] = include_bytes!(concat!(
+        env!("RUSK_PROFILE_PATH"),
+        "/governance_authority.cpk"
+    ));
 
     fn validate_seed(
         &mut self,
         arguments: Vec<BlsScalar>,
         signature: Signature,
     ) -> Result<(), Error> {
+        // Cannot construct BlsPublicKey in a const context that's why we
+        // construct it in the function body.
+        let authority = BlsPublicKey::from_bytes(Self::AUTHORITY).map_err(|_| Error::InvalidPublicKey)?;
+        
         let seed = arguments[0];
 
         if self.seeds.get(&seed)?.is_some() {
@@ -46,17 +51,22 @@ impl GovernanceContract {
         }
 
         #[cfg(target_arch = "wasm32")]
-        if !rusk_abi::verify_schnorr_sign(
+        if !rusk_abi::verify_bls_sign(
             signature,
             Self::AUTHORITY,
-            rusk_abi::poseidon_hash(arguments),
+            authority,
+            rusk_abi::poseidon_hash(arguments).to_bytes().to_vec(),
         ) {
             return Err(Error::InvalidSignature);
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if !signature
-            .verify(&Self::AUTHORITY, dusk_poseidon::sponge::hash(&arguments))
+        if authority
+            .verify(
+                &signature,
+                &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
+            )
+            .is_ok()
         {
             return Err(Error::InvalidSignature);
         }
