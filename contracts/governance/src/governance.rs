@@ -42,8 +42,9 @@ impl GovernanceContract {
     ) -> Result<(), Error> {
         // Cannot construct BlsPublicKey in a const context that's why we
         // construct it in the function body.
-        let authority = BlsPublicKey::from_bytes(Self::AUTHORITY).map_err(|_| Error::InvalidPublicKey)?;
-        
+        let authority = BlsPublicKey::from_bytes(Self::AUTHORITY)
+            .map_err(|_| Error::InvalidPublicKey)?;
+
         let seed = arguments[0];
 
         if self.seeds.get(&seed)?.is_some() {
