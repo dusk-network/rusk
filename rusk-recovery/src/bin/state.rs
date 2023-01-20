@@ -8,7 +8,7 @@ mod task;
 mod version;
 
 use clap::Parser;
-use microkelvin::{BackendCtor, DiskBackend, Persistence};
+use piecrust::VM;
 use rusk_recovery_tools::theme::Theme;
 use std::error::Error;
 use std::{env, io};
@@ -78,6 +78,8 @@ pub struct ExecConfig<'a> {
     pub output_file: Option<PathBuf>,
 }
 
+const POINT_LIMIT: u64 = 10000000000;
+
 pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} Network state", theme.action("Checking"));
@@ -99,44 +101,51 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let state_path = rusk_profile::get_rusk_state_dir()?;
     let id_path = rusk_profile::get_rusk_state_id_path()?;
 
-    let ctor = &BackendCtor::new(|| {
-        DiskBackend::new(rusk_profile::get_rusk_state_dir()?)
-    });
+    let mut vm = VM::new(&state_path)?;
+    rusk_abi::register_host_queries(&mut vm);
 
     // if the state already exists in the expected path, stop early.
     if state_path.exists() && id_path.exists() {
+        let mut session = vm.session();
+        session.set_point_limit(POINT_LIMIT);
+        rusk_abi::set_block_height(&mut session, 0);
         info!("{} existing state", theme.info("Found"));
 
-        // `restore_state` function requires a backend set to the Persistence.
-        //
-        // Usually it's instantiated inside the `deploy` function, but in this
-        // case that function it's not called at all, so there is the need to
-        // explicitly instantiate it.
-        Persistence::with_backend(ctor, |_| Ok(()))?;
-
-        let network = restore_state(&id_path)?;
+        let commit_id = restore_state(&mut session, &id_path)?;
         info!(
             "{} state id at {}",
             theme.success("Checked"),
             id_path.display()
         );
-        info!("{} {}", theme.action("Root"), hex::encode(network.root()));
+        info!(
+            "{} {}",
+            theme.action("Root"),
+            hex::encode(commit_id.as_bytes())
+        );
 
         return Ok(());
     }
 
+    let mut session = vm.session();
+    session.set_point_limit(POINT_LIMIT);
+    rusk_abi::set_block_height(&mut session, 0);
+
     info!("{} new state", theme.info("Building"));
 
-    let state_id = deploy(config.init, ctor)?;
+    // note: deploy consumes session as it performs a commit
+    let commit_id = deploy(config.init, session)?;
 
     info!("{} persisted id", theme.success("Storing"));
-    state_id.write(&id_path)?;
+    commit_id.persist(&id_path)?;
+    vm.persist()?;
+    // we need new session as our previous session was consumed by deploy
+    let mut session = vm.session();
 
-    let network = restore_state(&id_path)?;
+    let commit_id = restore_state(&mut session, &id_path)?;
     info!(
         "{} {}",
         theme.action("Final Root"),
-        hex::encode(network.root())
+        hex::encode(commit_id.as_bytes())
     );
 
     info!(

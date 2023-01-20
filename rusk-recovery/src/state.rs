@@ -6,24 +6,20 @@
 
 use crate::theme::Theme;
 
-use canonical::{Canon, Sink, Source};
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
-use microkelvin::{Backend, BackendCtor, Persistence};
 use once_cell::sync::Lazy;
 use phoenix_core::Note;
+use piecrust::{CommitId, ModuleId, Session};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::ContractId;
-use rusk_vm::dusk_abi::ContractState;
-use rusk_vm::{Contract, NetworkState, NetworkStateId};
-use stake_contract::{Stake, StakeContract};
+use stake_contract_types::StakeData;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use tracing::info;
-use transfer_contract::TransferContract;
 use url::Url;
 
 pub use snapshot::{Balance, GenesisStake, Snapshot};
@@ -44,208 +40,188 @@ pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
 });
 
 fn generate_transfer_state(
+    session: &mut Session,
     snapshot: &Snapshot,
-    state: &mut NetworkState,
-) -> Result<TransferContract, Box<dyn Error>> {
-    let mut transfer: TransferContract =
-        state.get_contract_cast_state(&rusk_abi::transfer_contract())?;
+) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
 
     snapshot.transfers().enumerate().for_each(|(idx, balance)| {
-        info!("{} balance #{}", theme.action("Generating"), idx);
+        info!(
+            "{} balance #{} = {:?}",
+            theme.action("Generating"),
+            idx,
+            balance.notes
+        );
 
         let mut rng = match balance.seed {
             Some(seed) => StdRng::seed_from_u64(seed),
             None => StdRng::from_entropy(),
         };
 
+        info!("pushing notes {}", balance.notes.len());
         balance.notes.iter().for_each(|&amount| {
             let note = Note::transparent(&mut rng, balance.address(), amount);
-            transfer
-                .push_note(GENESIS_BLOCK_HEIGHT, note)
+            let _: Note = session
+                .transact(
+                    rusk_abi::transfer_module(),
+                    "push_note",
+                    &(GENESIS_BLOCK_HEIGHT, note),
+                )
                 .expect("Genesis note to be pushed to the state");
         });
+        info!("after pushing notes {}", balance.notes.len());
     });
 
-    transfer
-        .update_root()
+    let _: BlsScalar = session
+        .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("Root to be updated after pushing genesis note");
 
-    let stake_balance = snapshot.stakes().map(|s| s.amount).sum();
+    let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
 
-    transfer
-        .add_balance(rusk_abi::stake_contract(), stake_balance)
+    let _: u64 = session
+        .query(
+            rusk_abi::transfer_module(),
+            "module_balance",
+            &rusk_abi::stake_module(),
+        )
+        .expect("Stake contract balance query should succeed");
+
+    let m: ModuleId = rusk_abi::stake_module();
+    let _: () = session
+        .transact(
+            rusk_abi::transfer_module(),
+            "add_module_balance",
+            &(m, stake_balance),
+        )
         .expect("Stake contract balance to be set with provisioner stakes");
 
-    Ok(transfer)
+    Ok(())
 }
 
 fn generate_stake_state(
+    session: &mut Session,
     snapshot: &Snapshot,
-    state: &mut NetworkState,
-) -> Result<StakeContract, Box<dyn Error>> {
+) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
-    let mut stake_contract: StakeContract =
-        state.get_contract_cast_state(&rusk_abi::stake_contract())?;
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
-        let stake = Stake::with_eligibility(
+        let stake = StakeData::with_eligibility(
             staker.amount,
             staker.reward.unwrap_or_default(),
             staker.eligibility.unwrap_or_default(),
         );
-        stake_contract
-            .insert_stake(*staker.address(), stake)
+        let _: Option<StakeData> = session
+            .transact(
+                rusk_abi::stake_module(),
+                "insert_stake",
+                &(*staker.address(), stake),
+            )
             .expect("stake to be inserted into the state");
-        stake_contract
-            .insert_allowlist(*staker.address())
+        let _: () = session
+            .transact(
+                rusk_abi::stake_module(),
+                "insert_allowlist",
+                &*staker.address(),
+            )
             .expect("staker to be inserted into the allowlist");
     });
     snapshot.owners().for_each(|provisioner| {
-        stake_contract
-            .add_owner(*provisioner)
+        let _: () = session
+            .transact(rusk_abi::stake_module(), "add_owner", &*provisioner)
             .expect("owner to be added into the state");
     });
 
     snapshot.allowlist().for_each(|provisioner| {
-        stake_contract
-            .insert_allowlist(*provisioner)
+        let _: () = session
+            .transact(
+                rusk_abi::stake_module(),
+                "insert_allowlist",
+                &*provisioner,
+            )
             .expect("provisioner to be inserted into the allowlist");
     });
 
-    Ok(stake_contract)
+    Ok(())
 }
 
-fn generate_empty_state() -> Result<NetworkState, Box<dyn Error>> {
+fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
 
     let transfer_code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
-    )
-    .to_vec();
+    );
 
     let stake_code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
-    )
-    .to_vec();
-
-    let mut transfer = TransferContract::default();
-
-    transfer
-        .add_balance(rusk_abi::stake_contract(), 0)
-        .expect("stake contract balance to be set with provisioner stakes");
-    transfer
-        .update_root()
-        .expect("root to be updated after pushing genesis note");
-
-    let transfer = Contract::new(transfer, transfer_code);
-    let stake = Contract::new(StakeContract::default(), stake_code);
-
-    let mut network = NetworkState::default();
-
-    info!("{} Genesis Transfer Contract", theme.action("Deploying"));
-    network.deploy_with_id(rusk_abi::transfer_contract(), transfer)?;
-
-    info!("{} Genesis Stake Contract", theme.action("Deploying"));
-    network.deploy_with_id(rusk_abi::stake_contract(), stake)?;
-
-    info!(
-        "{} {}",
-        theme.action("Empty Root"),
-        hex::encode(network.root())
     );
 
-    Ok(network)
-}
+    info!("{} Genesis Transfer Contract", theme.action("Deploying"));
+    session.deploy_with_id(rusk_abi::transfer_module(), transfer_code)?;
 
-/// Set the contract state for the given Contract Id.
-///
-/// # Safety
-///
-/// This function will corrupt the state if the contract state given is
-/// not the same type as the one stored in the state at the address
-/// provided; and the subsequent contract's call will fail.
-pub unsafe fn set_contract_state<C>(
-    contract_id: &ContractId,
-    state: &C,
-    network: &mut NetworkState,
-) -> Result<(), Box<dyn Error>>
-where
-    C: Canon,
-{
-    const PAGE_SIZE: usize = 1024 * 64;
-    let mut bytes = [0u8; PAGE_SIZE];
-    let mut sink = Sink::new(&mut bytes[..]);
-    ContractState::from_canon(state).encode(&mut sink);
-    let mut source = Source::new(&bytes[..]);
-    let contract_state = ContractState::decode(&mut source).unwrap();
-    *network.get_contract_mut(contract_id)?.state_mut() = contract_state;
+    info!("{} Genesis Stake Contract", theme.action("Deploying"));
+    session.deploy_with_id(rusk_abi::stake_module(), stake_code)?;
+
+    let _: () = session
+        .transact(
+            rusk_abi::transfer_module(),
+            "add_module_balance",
+            &(rusk_abi::stake_module(), 0u64),
+        )
+        .expect("stake contract balance to be set with provisioner stakes");
+
+    let _: BlsScalar = session
+        .transact(rusk_abi::transfer_module(), "update_root", &())
+        .expect("root to be updated after pushing genesis note");
 
     Ok(())
 }
 
-pub fn deploy<B>(
+// note: deploy consumes session as it produces commit id
+pub fn deploy(
     snapshot: &Snapshot,
-    ctor: &BackendCtor<B>,
-) -> Result<NetworkStateId, Box<dyn Error>>
-where
-    B: 'static + Backend,
-{
+    mut session: Session,
+) -> Result<CommitId, Box<dyn Error>> {
     let theme = Theme::default();
-    Persistence::with_backend(ctor, |_| Ok(()))?;
 
-    let mut network = match snapshot.base_state() {
-        Some(state) => load_state(state),
-        None => generate_empty_state(),
+    match snapshot.base_state() {
+        Some(state) => load_state(&mut session, state),
+        None => generate_empty_state(&mut session),
     }?;
-    let transfer = generate_transfer_state(snapshot, &mut network)?;
-    let stake = generate_stake_state(snapshot, &mut network)?;
+    generate_transfer_state(&mut session, snapshot)?;
+    generate_stake_state(&mut session, snapshot)?;
 
-    // SAFETY: this is safe because we know the contracts exist
-    unsafe {
-        set_contract_state(&rusk_abi::stake_contract(), &stake, &mut network)?;
-        set_contract_state(
-            &rusk_abi::transfer_contract(),
-            &transfer,
-            &mut network,
-        )?;
-    };
-    network.commit();
-    network.push();
+    let commit_id = session.commit()?;
 
     info!(
         "{} {}",
         theme.action("Init Root"),
-        hex::encode(network.root())
+        hex::encode(commit_id.as_bytes())
     );
 
-    let state_id = network.persist(ctor)?;
-
-    Ok(state_id)
+    Ok(commit_id)
 }
 
 /// Restore a state from a specific id_path
 pub fn restore_state(
+    session: &mut Session,
     id_path: &PathBuf,
-) -> Result<NetworkState, Box<dyn Error>> {
+) -> Result<CommitId, Box<dyn Error>> {
     if !id_path.exists() {
         return Err(
             format!("Missing persisted id at {}", id_path.display()).into()
         );
     }
-
-    let id = NetworkStateId::read(id_path)?;
-    let network = NetworkState::new().restore(id)?;
-
-    Ok(network)
+    let commit_id = CommitId::restore(id_path)?;
+    session.restore(&commit_id)?;
+    Ok(commit_id)
 }
 
 /// Load a state file and save it into the rusk state directory.
-fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
+fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
     let id_path = rusk_profile::get_rusk_state_id_path()?;
     assert!(
-        restore_state(&id_path).is_err(),
+        restore_state(session, &id_path).is_err(),
         "No valid state should be found"
     );
 
@@ -279,11 +255,11 @@ fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
 
     zip::unzip(&buffer, output)?;
 
-    let network = restore_state(&id_path)?;
+    restore_state(session, &id_path)?;
     info!(
         "{} {}",
         Theme::default().action("Base Root"),
-        hex::encode(network.root())
+        hex::encode(session.root(false)?)
     );
-    Ok(network)
+    Ok(())
 }
