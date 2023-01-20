@@ -16,7 +16,6 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
 use dusk_pki::PublicKey;
-use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
 use rusk_abi::{ModuleId, PaymentInfo, PublicInput, State};
 
@@ -40,7 +39,7 @@ impl HostFnTest {
     pub fn verify_proof(
         &self,
         verifier_data: Vec<u8>,
-        proof: Proof,
+        proof: Vec<u8>,
         public_inputs: Vec<PublicInput>,
     ) -> bool {
         rusk_abi::verify_proof(verifier_data, proof, public_inputs)

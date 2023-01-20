@@ -13,7 +13,6 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
 use dusk_pki::{PublicKey, PublicSpendKey};
-use dusk_plonk::prelude::Proof;
 use dusk_schnorr::Signature;
 use piecrust_uplink::{ModuleError, ModuleId};
 
@@ -47,7 +46,7 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 /// Verify a proof is valid for a given circuit type and public inputs
 pub fn verify_proof(
     verifier_data: Vec<u8>,
-    proof: Proof,
+    proof: Vec<u8>,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
     piecrust_uplink::host_query(
