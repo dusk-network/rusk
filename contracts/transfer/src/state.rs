@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::circuits::*;
 use crate::error::Error;
 use crate::tree::Tree;
 
@@ -17,15 +18,14 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
-use dusk_plonk::prelude::Proof;
 use dusk_poseidon::tree::PoseidonBranch;
+use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::dusk::{Dusk, LUX};
 use rusk_abi::{
     ModuleError, ModuleId, PaymentInfo, PublicInput, RawResult, RawTransaction,
     State,
 };
-use transfer_contract_types::*;
 
 #[derive(Debug, Clone)]
 pub struct TransferState {
@@ -93,7 +93,12 @@ impl TransferState {
             .take_crossover()
             .expect("The crossover is mandatory for STCT!");
 
-        let message = sign_message_stct(&crossover, stct.value, &stct.module);
+        let address =
+            rusk_abi::module_to_scalar(&ModuleId::from_bytes(stct.module));
+
+        let message =
+            stct_signature_message(&crossover, stct.value, address).to_vec();
+        let message = rusk_abi::poseidon_hash(message);
 
         let mut pi = Vec::with_capacity(6);
 
@@ -104,10 +109,12 @@ impl TransferState {
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
-        self.add_balance(stct.module, stct.value);
+        let module = ModuleId::from_bytes(stct.module);
+        self.add_balance(module, stct.value);
 
         //  3. if a.isPayable() ↦ true then continue
-        match rusk_abi::payment_info(stct.module)
+        let module = ModuleId::from_bytes(stct.module);
+        match rusk_abi::payment_info(module)
             .expect("Querying the payment info should succeed")
         {
             PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
@@ -155,11 +162,15 @@ impl TransferState {
             .take_crossover()
             .expect("The crossover is mandatory for STCO!");
 
+        let module_id = ModuleId::from_bytes(stco.module);
+        let module = rusk_abi::module_to_scalar(&module_id);
+
         let sign_message =
-            sign_message_stco(&crossover, &stco.message, &stco.module);
+            stco_signature_message(&crossover, &stco.message, module).to_vec();
+        let sign_message = rusk_abi::poseidon_hash(sign_message);
 
         let (message_psk_a, message_psk_b) =
-            match rusk_abi::payment_info(stco.module)
+            match rusk_abi::payment_info(module_id)
                 .expect("Querying the payment info should succeed")
             {
                 PaymentInfo::Obfuscated(Some(k))
@@ -183,13 +194,13 @@ impl TransferState {
         pi.push(stco.message_address.pk_r().as_ref().into());
         pi.push(stco.message.nonce().into());
         pi.extend(stco.message.cipher().iter().map(|c| c.into()));
-        pi.push(rusk_abi::module_to_scalar(&stco.module).into());
+        pi.push(module.into());
         pi.push(sign_message.into());
         pi.push(crossover_pk.as_ref().into());
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
-        self.push_message(stco.module, stco.message_address, stco.message);
+        self.push_message(module_id, stco.message_address, stco.message);
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
         //  4. verify(C.c, M, pk, π)
@@ -275,7 +286,8 @@ impl TransferState {
         );
 
         //  3. B_to↦ = B_to↦ + v
-        self.add_balance(wfctc.module, wfctc.value);
+        let module = ModuleId::from_bytes(wfctc.module);
+        self.add_balance(module, wfctc.value);
 
         true
     }
@@ -300,7 +312,7 @@ impl TransferState {
         let inputs = tx.nullifiers.len();
         let outputs = tx.outputs.len();
 
-        let tx_hash = tx.hash();
+        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
 
         let mut pi = Vec::with_capacity(5 + inputs + 2 * outputs);
 
@@ -361,6 +373,7 @@ impl TransferState {
             .replace((*tx.fee.stealth_address().pk_r().as_ref()).into());
 
         let res = tx.call.map(|(module, fn_name, data)| {
+            let module = ModuleId::from_bytes(module);
             let raw_tx = RawTransaction::from_parts(&fn_name, data);
             self.transact_raw(module, &raw_tx)
         });
@@ -591,7 +604,7 @@ impl TransferState {
 
     fn assert_proof(
         verifier_data: &[u8],
-        proof: Proof,
+        proof: Vec<u8>,
         public_inputs: Vec<PublicInput>,
     ) -> Result<(), Error> {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
