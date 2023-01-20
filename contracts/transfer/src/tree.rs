@@ -8,15 +8,51 @@ use core::borrow::Borrow;
 use core::ops::Range;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::{PoseidonBranch, PoseidonTree};
+use dusk_poseidon::tree::{PoseidonBranch, PoseidonLeaf, PoseidonTree};
 use microkelvin::{Child, Compound, Step, Walk, Walker};
 use nstack::annotation::{Keyed, MaxKey};
+use phoenix_core::transaction::*;
+use phoenix_core::Note;
 use ranno::Annotation;
-use transfer_contract_types::{TreeLeaf, TRANSFER_TREE_DEPTH};
+
+#[derive(Debug, Clone)]
+struct TreeLeafWrapper(TreeLeaf);
+
+impl PoseidonLeaf for TreeLeafWrapper {
+    fn poseidon_hash(&self) -> BlsScalar {
+        rusk_abi::poseidon_hash(self.0.note.hash_inputs().into())
+    }
+
+    fn pos(&self) -> &u64 {
+        self.0.note.pos()
+    }
+
+    fn set_pos(&mut self, pos: u64) {
+        self.0.note.set_pos(pos);
+    }
+}
+
+impl Keyed<u64> for TreeLeafWrapper {
+    fn key(&self) -> &u64 {
+        &self.0.block_height
+    }
+}
+
+impl AsRef<Note> for TreeLeafWrapper {
+    fn as_ref(&self) -> &Note {
+        &self.0.note
+    }
+}
+
+impl Borrow<u64> for TreeLeafWrapper {
+    fn borrow(&self) -> &u64 {
+        self.0.note.pos()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Tree {
-    tree: PoseidonTree<TreeLeaf, u64, TRANSFER_TREE_DEPTH>,
+    tree: PoseidonTree<TreeLeafWrapper, u64, TRANSFER_TREE_DEPTH>,
 }
 
 impl Tree {
@@ -27,11 +63,11 @@ impl Tree {
     }
 
     pub fn get(&self, pos: u64) -> Option<TreeLeaf> {
-        self.tree.get(pos)
+        self.tree.get(pos).map(|l| l.0)
     }
 
     pub fn push(&mut self, leaf: TreeLeaf) -> u64 {
-        self.tree.push(leaf)
+        self.tree.push(TreeLeafWrapper(leaf))
     }
 
     pub fn root(&self) -> BlsScalar {
@@ -44,7 +80,7 @@ impl Tree {
     ) -> Option<impl Iterator<Item = &TreeLeaf>> {
         self.tree
             .annotated_iter_walk(HeightRangeWalker(range))
-            .map(|v| v.into_iter())
+            .map(|v| v.into_iter().map(|lw| &lw.0))
     }
 
     pub fn opening(
