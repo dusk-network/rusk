@@ -5,9 +5,7 @@ members = [
     "contracts/alice",
     "contracts/bob",
     "contracts/stake",
-    "contracts/stake-types",
     "contracts/transfer",
-    "contracts/transfer-types",
 
     "macros/code-hasher",
     "rusk-recovery",
@@ -17,7 +15,7 @@ members = [
     "rusk-abi/tests/contracts/host_fn",
 
     "rusk-schema",
-    # "rusk",
+#    "rusk",
 ]
 resolver = "2"
 
