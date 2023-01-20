@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use phoenix_core::transaction::*;
 use rusk_abi::State;
-use transfer_contract_types::*;
 
 /// Alice contract.
 #[derive(Debug, Clone)]
