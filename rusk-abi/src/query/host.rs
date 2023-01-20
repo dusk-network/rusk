@@ -14,6 +14,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
 };
+use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
@@ -96,11 +97,12 @@ pub fn poseidon_hash(scalars: Vec<BlsScalar>) -> BlsScalar {
 /// This will panic if `verifier_data` is not valid.
 pub fn verify_proof(
     verifier_data: Vec<u8>,
-    proof: Proof,
+    proof: Vec<u8>,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
     let verifier = Verifier::<DummyCircuit>::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
+    let proof = Proof::from_slice(&proof).expect("Proof should be valid");
 
     let n_pi = public_inputs.iter().fold(0, |num, pi| {
         num + match pi {

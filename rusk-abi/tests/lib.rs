@@ -242,6 +242,8 @@ fn plonk_proof() {
         .map(|pi| From::from(-pi))
         .collect();
 
+    let proof = proof.to_bytes().to_vec();
+
     let arg = (verifier, proof, public_inputs);
     let valid: bool = session
         .query(module_id, "verify_proof", &arg)
