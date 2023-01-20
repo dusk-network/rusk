@@ -5,10 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bls12_381::BlsScalar;
+use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
+use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
 use piecrust::Error;
 use piecrust::{Session, VM};
@@ -24,7 +26,6 @@ use transfer_circuits::{
     StcoCrossover, StcoMessage, WfoChange, WfoCommitment,
     WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
-use transfer_contract_types::*;
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
@@ -226,7 +227,7 @@ fn transfer() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[output_note, change_note],
         &anchor,
@@ -234,6 +235,7 @@ fn transfer() {
         &None,
         &None,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     circuit.set_tx_hash(tx_hash);
 
@@ -262,7 +264,7 @@ fn transfer() {
         outputs: vec![output_note, change_note],
         fee,
         crossover: None,
-        proof,
+        proof: proof.to_bytes().to_vec(),
         call: None,
     };
 
@@ -320,7 +322,7 @@ fn alice_ping() {
     let change_blinder = JubJubScalar::random(rng);
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
-    let call = Some((ALICE_ID, String::from("ping"), vec![]));
+    let call = Some((ALICE_ID.to_bytes(), String::from("ping"), vec![]));
 
     // Compose the circuit. In this case we're using one input and one output.
     let mut circuit = ExecuteCircuit::new(1);
@@ -340,7 +342,7 @@ fn alice_ping() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -348,6 +350,7 @@ fn alice_ping() {
         &None,
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     circuit.set_tx_hash(tx_hash);
 
@@ -376,7 +379,7 @@ fn alice_ping() {
         outputs: vec![change_note],
         fee,
         crossover: None,
-        proof,
+        proof: proof.to_bytes().to_vec(),
         call,
     };
 
@@ -476,16 +479,16 @@ fn send_and_withdraw_transparent() {
 
     // Fashion the STCT struct
     let stct = Stct {
-        module: ALICE_ID,
+        module: ALICE_ID.to_bytes(),
         value: crossover_value,
-        proof: stct_proof,
+        proof: stct_proof.to_bytes().to_vec(),
     };
     let stct_bytes = rkyv::to_bytes::<_, 2048>(&stct)
         .expect("Should serialize Stct correctly")
         .to_vec();
 
     let call = Some((
-        rusk_abi::transfer_module(),
+        rusk_abi::transfer_module().to_bytes(),
         String::from("stct"),
         stct_bytes,
     ));
@@ -518,7 +521,7 @@ fn send_and_withdraw_transparent() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -526,6 +529,7 @@ fn send_and_withdraw_transparent() {
         &Some(crossover),
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -554,7 +558,7 @@ fn send_and_withdraw_transparent() {
         outputs: vec![change_note],
         fee,
         crossover: Some(crossover),
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -644,13 +648,14 @@ fn send_and_withdraw_transparent() {
     let wfct = Wfct {
         value: crossover_value,
         note: withdraw_note,
-        proof: wfct_proof,
+        proof: wfct_proof.to_bytes().to_vec(),
     };
     let wfct_bytes = rkyv::to_bytes::<_, 2048>(&wfct)
         .expect("Serializing Wfct should succeed")
         .to_vec();
 
-    let call = Some((ALICE_ID, String::from("withdraw"), wfct_bytes));
+    let call =
+        Some((ALICE_ID.to_bytes(), String::from("withdraw"), wfct_bytes));
 
     // Compose the circuit. In this case we're using two inputs and one output.
     let mut execute_circuit = ExecuteCircuit::new(2);
@@ -680,7 +685,7 @@ fn send_and_withdraw_transparent() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -688,6 +693,7 @@ fn send_and_withdraw_transparent() {
         &None,
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -729,7 +735,7 @@ fn send_and_withdraw_transparent() {
         outputs: vec![change_note],
         fee,
         crossover: None,
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -851,17 +857,17 @@ fn send_and_withdraw_obfuscated() {
 
     // Fashion the STCO struct
     let stco = Stco {
-        module: ALICE_ID,
+        module: ALICE_ID.to_bytes(),
         message: stco_m,
         message_address: stco_m_address,
-        proof: stco_proof,
+        proof: stco_proof.to_bytes().to_vec(),
     };
     let stco_bytes = rkyv::to_bytes::<_, 2048>(&stco)
         .expect("Should serialize Stco correctly")
         .to_vec();
 
     let call = Some((
-        rusk_abi::transfer_module(),
+        rusk_abi::transfer_module().to_bytes(),
         String::from("stco"),
         stco_bytes,
     ));
@@ -894,7 +900,7 @@ fn send_and_withdraw_obfuscated() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -902,6 +908,7 @@ fn send_and_withdraw_obfuscated() {
         &Some(crossover),
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -930,7 +937,7 @@ fn send_and_withdraw_obfuscated() {
         outputs: vec![change_note],
         fee,
         crossover: Some(crossover),
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -1068,14 +1075,17 @@ fn send_and_withdraw_obfuscated() {
         change: wfco_change_message,
         change_address: wfco_change_address,
         output: wfco_output_note,
-        proof: wfco_proof,
+        proof: wfco_proof.to_bytes().to_vec(),
     };
     let wfco_bytes = rkyv::to_bytes::<_, 2048>(&wfco)
         .expect("Serializing Wfct should succeed")
         .to_vec();
 
-    let call =
-        Some((ALICE_ID, String::from("withdraw_obfuscated"), wfco_bytes));
+    let call = Some((
+        ALICE_ID.to_bytes(),
+        String::from("withdraw_obfuscated"),
+        wfco_bytes,
+    ));
 
     // Compose the circuit. In this case we're using two inputs and one output.
     let mut execute_circuit = ExecuteCircuit::new(2);
@@ -1105,7 +1115,7 @@ fn send_and_withdraw_obfuscated() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -1113,6 +1123,7 @@ fn send_and_withdraw_obfuscated() {
         &None,
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -1154,7 +1165,7 @@ fn send_and_withdraw_obfuscated() {
         outputs: vec![change_note],
         fee,
         crossover: None,
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 

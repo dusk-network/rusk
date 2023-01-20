@@ -10,6 +10,7 @@
 
 extern crate alloc;
 
+mod circuits;
 mod error;
 mod state;
 mod tree;
