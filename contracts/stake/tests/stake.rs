@@ -6,10 +6,12 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
+use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
+use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
 use piecrust::Error;
 use piecrust::{Session, VM};
@@ -17,17 +19,12 @@ use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{ModuleError, RawResult};
-use stake_contract_types::{
-    allow_sign_digest, stake_sign_digest, unstake_sign_digest,
-    withdraw_sign_digest, Allow, Stake, StakeData, Unstake, Withdraw,
-};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
     SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
 };
-use transfer_contract_types::*;
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
@@ -64,7 +61,7 @@ fn instantiate<'a, Rng: RngCore + CryptoRng>(
         .deploy_with_id(rusk_abi::stake_module(), stake_bytecode)
         .expect("Deploying the stake contract should succeed");
 
-    let genesis_note = Note::transparent(rng, &psk, GENESIS_VALUE);
+    let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
     // push genesis note to the contract
     let _: Note = session
@@ -225,7 +222,7 @@ fn stake_withdraw_unstake() {
         .prove(rng, &stct_circuit)
         .expect("Proving STCT circuit should succeed");
 
-    let stake_digest = stake_sign_digest(0, crossover_value);
+    let stake_digest = stake_signature_message(0, crossover_value);
     let sig = sk.sign(&pk, &stake_digest);
 
     // Fashion a Stake struct
@@ -233,14 +230,17 @@ fn stake_withdraw_unstake() {
         public_key: pk,
         signature: sig,
         value: crossover_value,
-        proof: stct_proof,
+        proof: stct_proof.to_bytes().to_vec(),
     };
     let stake_bytes = rkyv::to_bytes::<_, 4096>(&stake)
         .expect("Should serialize Stake correctly")
         .to_vec();
 
-    let call =
-        Some((rusk_abi::stake_module(), String::from("stake"), stake_bytes));
+    let call = Some((
+        rusk_abi::stake_module().to_bytes(),
+        String::from("stake"),
+        stake_bytes,
+    ));
 
     // Compose the circuit. In this case we're using one input and one output.
     let mut execute_circuit = ExecuteCircuit::new(1);
@@ -270,7 +270,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -278,6 +278,7 @@ fn stake_withdraw_unstake() {
         &Some(crossover),
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -307,7 +308,7 @@ fn stake_withdraw_unstake() {
         outputs: vec![change_note],
         fee,
         crossover: Some(crossover),
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -323,21 +324,15 @@ fn stake_withdraw_unstake() {
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
-    let (amount, eligibility) = *stake_data
-        .amount()
-        .expect("There should be an amount staked");
+    let (amount, _) =
+        stake_data.amount.expect("There should be an amount staked");
 
     assert_eq!(
         amount, crossover_value,
         "Staked amount should match sent amount"
     );
-    assert_eq!(
-        eligibility,
-        StakeData::eligibility_from_height(1),
-        "Eligibility should be computed correctly"
-    );
-    assert_eq!(stake_data.reward(), 0, "Initial reward should be zero");
-    assert_eq!(stake_data.counter(), 1, "Counter should increment once");
+    assert_eq!(stake_data.reward, 0, "Initial reward should be zero");
+    assert_eq!(stake_data.counter, 1, "Counter should increment once");
 
     // Add a reward to the staked key
 
@@ -352,25 +347,18 @@ fn stake_withdraw_unstake() {
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
-    let (amount, eligibility) = *stake_data
-        .amount()
-        .expect("There should be an amount staked");
+    let (amount, _) =
+        stake_data.amount.expect("There should be an amount staked");
 
     assert_eq!(
         amount, crossover_value,
         "Staked amount should match sent amount"
     );
     assert_eq!(
-        stake_data.reward(),
-        REWARD_AMOUNT,
+        stake_data.reward, REWARD_AMOUNT,
         "Reward should be set to specified amount"
     );
-    assert_eq!(
-        eligibility,
-        StakeData::eligibility_from_height(1),
-        "Eligibility should be computed correctly"
-    );
-    assert_eq!(stake_data.counter(), 1, "Counter should increment once");
+    assert_eq!(stake_data.counter, 1, "Counter should increment once");
 
     // Start withdrawing the reward just given to our key
 
@@ -420,8 +408,8 @@ fn stake_withdraw_unstake() {
 
     let withdraw_nonce = BlsScalar::random(rng);
 
-    let withdraw_digest = withdraw_sign_digest(
-        stake_data.counter(),
+    let withdraw_digest = withdraw_signature_message(
+        stake_data.counter,
         withdraw_address,
         withdraw_nonce,
     );
@@ -438,7 +426,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module(),
+        rusk_abi::stake_module().to_bytes(),
         String::from("withdraw"),
         withdraw_bytes,
     ));
@@ -471,7 +459,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -479,6 +467,7 @@ fn stake_withdraw_unstake() {
         &None,
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -521,7 +510,7 @@ fn stake_withdraw_unstake() {
         outputs: vec![change_note],
         fee,
         crossover: None,
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -541,21 +530,15 @@ fn stake_withdraw_unstake() {
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
-    let (amount, eligibility) = *stake_data
-        .amount()
-        .expect("There should be an amount staked");
+    let (amount, _) =
+        stake_data.amount.expect("There should be an amount staked");
 
     assert_eq!(
         amount, crossover_value,
         "Staked amount should match sent amount"
     );
-    assert_eq!(stake_data.reward(), 0, "Reward should be set to zero");
-    assert_eq!(
-        eligibility,
-        StakeData::eligibility_from_height(1),
-        "Eligibility should remain the same"
-    );
-    assert_eq!(stake_data.counter(), 2, "Counter should increment once");
+    assert_eq!(stake_data.reward, 0, "Reward should be set to zero");
+    assert_eq!(stake_data.counter, 2, "Counter should increment once");
 
     // Start unstaking the previously staked amount
 
@@ -624,21 +607,21 @@ fn stake_withdraw_unstake() {
         .expect("Proving WFCT circuit should succeed");
 
     let unstake_digest =
-        unstake_sign_digest(stake_data.counter(), withdraw_note);
+        unstake_signature_message(stake_data.counter, withdraw_note);
     let unstake_sig = sk.sign(&pk, &unstake_digest);
 
     let unstake = Unstake {
         public_key: pk,
         signature: unstake_sig,
         note: withdraw_note,
-        proof: wfct_proof,
+        proof: wfct_proof.to_bytes().to_vec(),
     };
     let unstake_bytes = rkyv::to_bytes::<_, 2048>(&unstake)
         .expect("Serializing Unstake should succeed")
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module(),
+        rusk_abi::stake_module().to_bytes(),
         String::from("unstake"),
         unstake_bytes,
     ));
@@ -677,7 +660,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[
             input_nullifiers[0],
             input_nullifiers[1],
@@ -689,6 +672,7 @@ fn stake_withdraw_unstake() {
         &None,
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -747,7 +731,7 @@ fn stake_withdraw_unstake() {
         outputs: vec![change_note],
         fee,
         crossover: None,
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 
@@ -821,7 +805,7 @@ fn allow() {
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
     // Fashion a Allow struct
-    let allow_digest = allow_sign_digest(0, allow_pk);
+    let allow_digest = allow_signature_message(0, allow_pk);
     let allow_sig = sk.sign(&pk, &allow_digest);
 
     let allow = Allow {
@@ -833,8 +817,11 @@ fn allow() {
         .expect("Should serialize Allow correctly")
         .to_vec();
 
-    let call =
-        Some((rusk_abi::stake_module(), String::from("allow"), allow_bytes));
+    let call = Some((
+        rusk_abi::stake_module().to_bytes(),
+        String::from("allow"),
+        allow_bytes,
+    ));
 
     // Compose the circuit. In this case we're using one input and one output.
     let mut execute_circuit = ExecuteCircuit::new(1);
@@ -864,7 +851,7 @@ fn allow() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash = Transaction::hash_from_components(
+    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -872,6 +859,7 @@ fn allow() {
         &Some(crossover),
         &call,
     );
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -901,7 +889,7 @@ fn allow() {
         outputs: vec![change_note],
         fee,
         crossover: Some(crossover),
-        proof: execute_proof,
+        proof: execute_proof.to_bytes().to_vec(),
         call,
     };
 

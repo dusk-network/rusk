@@ -13,11 +13,9 @@ dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-poseidon = { version = "0.28", default-features = false, features = ["rkyv-impl", "alloc"] }
-phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl"] }
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl", "alloc"] }
 rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
-transfer-contract-types = { path = "../transfer-types", default-features = false }
-stake-contract-types = { path = "../stake-types", default-features = false }
 
 [dev-dependencies]
 piecrust = { git = "https://github.com/dusk-network/piecrust" }
