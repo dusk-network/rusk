@@ -13,7 +13,7 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tonic = "0.6"
+tonic = "0.8"
 tokio = { version = "1.15", features = ["rt-multi-thread", "time", "fs", "macros"] }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
@@ -22,12 +22,12 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = ["fmt", "env-filter", "json"] }
 hyper = { version = "0.14", features = ["full"] }
 clap = { version = "3.1", features = ["env"] }
-prost = "0.9"
+prost = "0.11"
 tower = "0.4"
 futures = "0.3"
 semver = "1.0"
 anyhow = "1.0"
-rustc_tools_util = "0.2"
+rustc_tools_util = "0.3"
 rand = "0.8"
 once_cell = "1.9"
 blake2 = "0.10"
@@ -37,31 +37,24 @@ bs58 = "0.4"
 hex = "0.4"
 tempfile = "3.2"
 
-dusk-schnorr = "0.10.0-rc"
-dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
-dusk-plonk = { version = "0.10", features = ["canon"] }
-dusk-bls12_381 = { version = "0.9", features = ["canon"] }
-dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
-dusk-jubjub = { version = "0.11", features = ["canon"] }
-dusk-pki = "0.10.0-rc"
+dusk-schnorr = "0.12"
+dusk-poseidon = "0.28"
+dusk-plonk = "0.13"
+dusk-bls12_381 = "0.11"
+dusk-bls12_381-sign = "0.4"
+dusk-jubjub = "0.12"
+dusk-pki = "0.11"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.14.0-rc.0"
-dusk-abi = "0.11"
-rusk-vm = "0.12.0-rc"
-phoenix-core = "0.16.0-rc"
-kadcast = "0.5.0-rc"
-canonical = "0.7"
-canonical_derive = "0.7"
+dusk-wallet-core = "0.15.0-rc"
+phoenix-core = "0.18"
+kadcast = "0.4.0"
 parking_lot = "0.12"
 
-rusk-recovery = { path = "../rusk-recovery", version = "0.5", features = ["state"] }
-transfer-circuits = { path = "../circuits/transfer", version = "0.4" }
-transfer-contract = { path = "../contracts/transfer", version = "0.10" }
-stake-contract = { path = "../contracts/stake", version = "0.6" }
-rusk-profile = { path = "../rusk-profile", version = "0.5.1-rc.0" } # If release type (e.g. "-rc.0") is present, Cargo requires exact specification
-microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
-rusk-abi = { path = "../rusk-abi", version = "0.7" }
-rusk-schema = { path = "../rusk-schema", version = "0.4" }
+rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
+transfer-circuits = { path = "../circuits/transfer" }
+rusk-profile = { path = "../rusk-profile" }
+rusk-abi = { path = "../rusk-abi", features = ["host"] }
+rusk-schema = { path = "../rusk-schema" }
 
 [dev-dependencies]
 test-context = "0.1"
@@ -69,5 +62,4 @@ async-trait = "0.1"
 hex = "0.4"
 
 [build-dependencies]
-tonic-build = "0.6"
 rustc_tools_util = "=0.2.0"
