@@ -9,8 +9,13 @@ use anyhow::Result;
 pub trait DB: Send + Sync + 'static {
     type T: Tx;
 
+    /// Creates or open a database located at this path.
+    ///
+    /// Panics if openning db or creating one fails.
+    fn create_or_open(path: String) -> Self;
+
     /// Provides a managed execution of a read-only isolated transaction.
-    fn view<F>(&mut self, f: F) -> Result<()>
+    fn view<F>(&'static mut self, f: F) -> Result<()>
     where
         F: FnOnce(&Self::T) -> Result<()>;
 
@@ -21,9 +26,9 @@ pub trait DB: Send + Sync + 'static {
     ///
     /// Transaction commit will happen only if no error is returned by `fn`
     /// and no panic is raised on `fn` execution.
-    fn update<F>(&mut self, f: F) -> Result<()>
+    fn update<F>(&'static self, f: F) -> Result<()>
     where
-        F: FnOnce(&Self::T) -> Result<()>;
+        F: FnOnce(&mut Self::T) -> Result<()>;
 
     fn close(&mut self);
 }
@@ -64,7 +69,7 @@ pub trait Tx {
     //fn fetch_candidate_message(&self, hash: &[u8]) -> Result<Block>;
     fn clear_candidate_messages(&mut self) -> Result<()>;
     fn clear_database(&mut self) -> Result<()>;
-    fn commit(&mut self) -> Result<()>;
+    fn commit(self) -> Result<()>;
     fn rollback(&mut self) -> Result<()>;
     fn close(&mut self);
 }
