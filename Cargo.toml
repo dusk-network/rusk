@@ -40,3 +40,6 @@ overflow-checks = true
 
 [profile.release.package.transfer-contract]
 overflow-checks = true
+
+[patch.crates-io]
+dusk-wallet-core = { path = "../wallet-core" }
