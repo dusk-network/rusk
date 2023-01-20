@@ -13,8 +13,81 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 use rusk_abi::State;
 
-use stake_contract_types::*;
-use transfer_contract_types::*;
+use phoenix_core::transaction::*;
+
+type BlockHeight = u64;
+
+/// Maturity of the stake
+const MATURITY: u64 = 2 * EPOCH;
+
+/// Epoch used for stake operations
+const EPOCH: u64 = 2160;
+
+#[derive(Debug, Clone)]
+pub struct StakeDataWrapper(pub StakeData);
+
+impl StakeDataWrapper {
+    /// Returns the value of the reward.
+    #[must_use]
+    pub const fn reward(&self) -> u64 {
+        self.0.reward
+    }
+
+    /// Returns the interaction count of the stake.
+    #[must_use]
+    pub const fn counter(&self) -> u64 {
+        self.0.counter
+    }
+
+    /// Insert a stake [`amount`] with a particular `value`, starting from a
+    /// particular `block_height`.
+    ///
+    /// # Panics
+    /// If the value is zero or the stake already contains an amount.
+    pub fn insert_amount(&mut self, value: u64, block_height: BlockHeight) {
+        assert_ne!(value, 0, "A stake can't have zero value");
+        assert!(
+            self.0.amount.is_none(),
+            "Can't stake twice for the same key!"
+        );
+
+        let eligibility = Self::eligibility_from_height(block_height);
+        self.0.amount = Some((value, eligibility));
+    }
+
+    /// Increases the held reward by the given `value`.
+    pub fn increase_reward(&mut self, value: u64) {
+        self.0.reward += value;
+    }
+
+    /// Removes the total [`amount`] staked.
+    ///
+    /// # Panics
+    /// If the stake has no amount.
+    pub fn remove_amount(&mut self) -> (u64, BlockHeight) {
+        self.0
+            .amount
+            .take()
+            .expect("Can't withdraw non-existing amount!")
+    }
+
+    /// Sets the reward to zero.
+    pub fn deplete_reward(&mut self) {
+        self.0.reward = 0;
+    }
+
+    /// Increment the interaction [`counter`].
+    pub fn increment_counter(&mut self) {
+        self.0.counter += 1;
+    }
+
+    /// Compute the eligibility of a stake from the starting block height.
+    #[must_use]
+    pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
+        let epoch = EPOCH - block_height % EPOCH;
+        block_height + MATURITY + epoch
+    }
+}
 
 /// Contract keeping track of each public key's stake.
 ///
@@ -26,7 +99,7 @@ use transfer_contract_types::*;
 /// valid stake.
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
-    stakes: BTreeMap<[u8; PublicKey::SIZE], StakeData>,
+    stakes: BTreeMap<[u8; PublicKey::SIZE], StakeDataWrapper>,
     allowlist: BTreeSet<[u8; PublicKey::SIZE]>,
     owners: BTreeSet<[u8; PublicKey::SIZE]>,
 }
@@ -66,7 +139,7 @@ impl StakeState {
         drop(loaded_stake);
 
         // verify the signature is over the correct digest
-        let digest = stake_sign_digest(counter, stake.value);
+        let digest = stake_signature_message(counter, stake.value).to_vec();
 
         if !rusk_abi::verify_bls(digest, stake.public_key, stake.signature) {
             panic!("Invalid signature!");
@@ -77,7 +150,7 @@ impl StakeState {
         let transfer_module = rusk_abi::transfer_module();
 
         let stct = Stct {
-            module: rusk_abi::self_id(),
+            module: rusk_abi::self_id().to_bytes(),
             value: stake.value,
             proof: stake.proof,
         };
@@ -107,7 +180,7 @@ impl StakeState {
         drop(loaded_stake);
 
         // verify signature
-        let digest = unstake_sign_digest(counter, unstake.note);
+        let digest = unstake_signature_message(counter, unstake.note).to_vec();
 
         if !rusk_abi::verify_bls(digest, unstake.public_key, unstake.signature)
         {
@@ -155,8 +228,12 @@ impl StakeState {
         drop(loaded_stake);
 
         // verify signature
-        let digest =
-            withdraw_sign_digest(counter, withdraw.address, withdraw.nonce);
+        let digest = withdraw_signature_message(
+            counter,
+            withdraw.address,
+            withdraw.nonce,
+        )
+        .to_vec();
 
         if !rusk_abi::verify_bls(
             digest,
@@ -204,7 +281,8 @@ impl StakeState {
         drop(owner_stake);
 
         // verify signature
-        let digest = allow_sign_digest(owner_counter, allow.public_key);
+        let digest =
+            allow_signature_message(owner_counter, allow.public_key).to_vec();
 
         if !rusk_abi::verify_bls(digest, allow.owner, allow.signature) {
             panic!("Invalid signature!");
@@ -214,12 +292,15 @@ impl StakeState {
     }
 
     /// Gets a reference to a stake.
-    pub fn get_stake(&self, key: &PublicKey) -> Option<&StakeData> {
+    pub fn get_stake(&self, key: &PublicKey) -> Option<&StakeDataWrapper> {
         self.stakes.get(&key.to_bytes())
     }
 
     /// Gets a mutable reference to a stake.
-    pub fn get_stake_mut(&mut self, key: &PublicKey) -> Option<&mut StakeData> {
+    pub fn get_stake_mut(
+        &mut self,
+        key: &PublicKey,
+    ) -> Option<&mut StakeDataWrapper> {
         self.stakes.get_mut(&key.to_bytes())
     }
 
@@ -229,18 +310,26 @@ impl StakeState {
         &mut self,
         public_key: PublicKey,
         stake: StakeData,
-    ) -> Option<StakeData> {
-        self.stakes.insert(public_key.to_bytes(), stake)
+    ) -> Option<StakeDataWrapper> {
+        self.stakes
+            .insert(public_key.to_bytes(), StakeDataWrapper(stake))
     }
 
     /// Gets a mutable reference to the stake of a given key. If said stake
     /// doesn't exist, a default one is inserted and a mutable reference
     /// returned.
-    pub(crate) fn load_stake_mut(&mut self, pk: &PublicKey) -> &mut StakeData {
+    pub(crate) fn load_stake_mut(
+        &mut self,
+        pk: &PublicKey,
+    ) -> &mut StakeDataWrapper {
         let is_missing = self.stakes.get(&pk.to_bytes()).is_none();
 
         if is_missing {
-            let stake = StakeData::default();
+            let stake = StakeDataWrapper(StakeData {
+                amount: None,
+                reward: 0,
+                counter: 0,
+            });
             self.stakes.insert(pk.to_bytes(), stake);
         }
 
@@ -259,7 +348,7 @@ impl StakeState {
     pub fn stakes(&self) -> Vec<(PublicKey, StakeData)> {
         self.stakes
             .iter()
-            .map(|(k, v)| (PublicKey::from_bytes(k).unwrap(), v.clone()))
+            .map(|(k, v)| (PublicKey::from_bytes(k).unwrap(), v.clone().0))
             .collect()
     }
 
