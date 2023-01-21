@@ -11,11 +11,11 @@ use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
 use once_cell::sync::Lazy;
+use phoenix_core::transaction::*;
 use phoenix_core::Note;
 use piecrust::{CommitId, ModuleId, Session};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use stake_contract_types::StakeData;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
@@ -106,11 +106,14 @@ fn generate_stake_state(
     let theme = Theme::default();
     snapshot.stakes().enumerate().for_each(|(idx, staker)| {
         info!("{} provisioner #{}", theme.action("Generating"), idx);
-        let stake = StakeData::with_eligibility(
-            staker.amount,
-            staker.reward.unwrap_or_default(),
-            staker.eligibility.unwrap_or_default(),
-        );
+        let stake = StakeData {
+            amount: Some((
+                staker.amount,
+                staker.eligibility.unwrap_or_default(),
+            )),
+            reward: staker.reward.unwrap_or_default(),
+            counter: 0,
+        };
         let _: Option<StakeData> = session
             .transact(
                 rusk_abi::stake_module(),
@@ -122,23 +125,19 @@ fn generate_stake_state(
             .transact(
                 rusk_abi::stake_module(),
                 "insert_allowlist",
-                &*staker.address(),
+                staker.address(),
             )
             .expect("staker to be inserted into the allowlist");
     });
     snapshot.owners().for_each(|provisioner| {
         let _: () = session
-            .transact(rusk_abi::stake_module(), "add_owner", &*provisioner)
+            .transact(rusk_abi::stake_module(), "add_owner", provisioner)
             .expect("owner to be added into the state");
     });
 
     snapshot.allowlist().for_each(|provisioner| {
         let _: () = session
-            .transact(
-                rusk_abi::stake_module(),
-                "insert_allowlist",
-                &*provisioner,
-            )
+            .transact(rusk_abi::stake_module(), "insert_allowlist", provisioner)
             .expect("provisioner to be inserted into the allowlist");
     });
 
