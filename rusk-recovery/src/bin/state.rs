@@ -16,7 +16,7 @@ use std::{fs, path::PathBuf};
 use tracing::info;
 use version::VERSION_BUILD;
 
-use rusk_recovery_tools::state::{deploy, restore_state, zip, Snapshot};
+use rusk_recovery_tools::state::{deploy, restore_state, tar, Snapshot};
 
 #[derive(Parser, Debug)]
 #[clap(name = "rusk-recovery-state")]
@@ -154,7 +154,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
         let state_folder = rusk_profile::get_rusk_state_dir()?;
         let input = state_folder.parent().expect("state dir not equal to root");
         info!("{} state into the output file", theme.info("Zipping"),);
-        zip::zip(input, &output)?;
+        tar::archive(input, &output)?;
     }
 
     Ok(())
