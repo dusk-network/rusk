@@ -23,25 +23,17 @@ pub struct GovernanceContract {
     pub(crate) whitelist: Collection<PublicKey, ()>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
-    pub(crate) broker: BlsPublicKey,
-    pub(crate) authority: BlsPublicKey,
+    // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
+    // dusk_pki::PublicKey because of our verification method
+    pub broker: BlsPublicKey,
+    pub authority: BlsPublicKey,
 }
 
 /// Use `GovernanceContract::default()` for instance.
 impl GovernanceContract {
-    /// Update the authority public address of the Governance Contract
-    pub fn authority(&mut self, key: &[u8; 96]) -> Result<(), Error> {
-        self.authority = BlsPublicKey::from_bytes(key)
-            .map_err(|_| Error::InvalidPublicKey)?;
-
-        Ok(())
-    }
-    /// Update the broker public address of the Governance Contract
-    pub fn broker(&mut self, key: &[u8; 96]) -> Result<(), Error> {
-        self.broker = BlsPublicKey::from_bytes(key)
-            .map_err(|_| Error::InvalidPublicKey)?;
-
-        Ok(())
+    // convert a buffer to a BlsPublicKey
+    fn bls_public_key(key: &[u8; 96]) -> Result<BlsPublicKey, Error> {
+        BlsPublicKey::from_bytes(key).map_err(|_| Error::InvalidPublicKey)
     }
 
     fn validate_seed(
@@ -286,5 +278,54 @@ impl GovernanceContract {
         }
 
         Ok(())
+    }
+    /// Update the authority public address of the Governance Contract
+    pub fn update_authority(&mut self, key: &[u8; 96]) -> Result<(), Error> {
+        self.authority = Self::bls_public_key(key)?;
+
+        Ok(())
+    }
+    /// Update the broker public address of the Governance Contract
+    pub fn update_broker(&mut self, key: &[u8; 96]) -> Result<(), Error> {
+        self.broker = Self::bls_public_key(key)?;
+
+        Ok(())
+    }
+}
+
+// write unit test for this module
+#[cfg(test)]
+mod tests {
+    use dusk_bls12_381::G2Affine;
+
+    use super::*;
+
+    #[test]
+    fn check_update_authority() {
+        let mut contract = GovernanceContract::default();
+
+        assert_eq!(contract.authority, BlsPublicKey::default());
+        let key = G2Affine::generator().to_bytes();
+
+        contract.update_authority(&key).unwrap();
+
+        assert_eq!(
+            contract.authority,
+            GovernanceContract::bls_public_key(&key).unwrap()
+        );
+    }
+    #[test]
+    fn check_update_broker() {
+        let mut contract = GovernanceContract::default();
+
+        assert_eq!(contract.broker, BlsPublicKey::default());
+        let key = G2Affine::generator().to_bytes();
+
+        contract.update_broker(&key).unwrap();
+
+        assert_eq!(
+            contract.broker,
+            GovernanceContract::bls_public_key(&key).unwrap()
+        );
     }
 }
