@@ -6,9 +6,13 @@
 
 use super::{Registry, Tx, DB};
 use anyhow::Result;
+
+use dusk_consensus::commons::Block;
+use dusk_consensus::messages::Serializable;
 use rocksdb_lib::{
-    ColumnFamily, DBCommon, DBWithThreadMode, MultiThreaded,
-    OptimisticTransactionDB, Options, ReadOptions, WriteBatch, WriteOptions,
+    ColumnFamily, DBAccess, DBCommon, DBWithThreadMode, MultiThreaded,
+    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
+    ReadOptions, SnapshotWithThreadMode, WriteOptions,
 };
 use std::{marker::PhantomData, path::Path, sync::Arc};
 
@@ -20,16 +24,20 @@ enum TxType {
 const CF_LEDGER: &str = "cf_ledger";
 const CF_CANDIDATES: &str = "cf_candidates";
 
-/// Unit test
-/// draft PR
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
 }
 
 impl Backend {
-    fn begin_tx(&'static self, access_type: TxType) -> Transaction {
+    fn begin_txn(
+        &self,
+        access_type: TxType,
+    ) -> Transaction<'_, OptimisticTransactionDB> {
         // Create a new RocksDB transaction
-        let txn = self.rocksdb.transaction();
+        let write_options = WriteOptions::default();
+        let mut txn_options = OptimisticTransactionOptions::default();
+
+        let inner = self.rocksdb.transaction_opt(&write_options, &txn_options);
 
         // Borrow column families
         let ledger_cf = self
@@ -39,20 +47,23 @@ impl Backend {
 
         let candidates_cf = self
             .rocksdb
-            .cf_handle(CF_LEDGER)
+            .cf_handle(CF_CANDIDATES)
             .expect("candidates column family must exist");
 
-        Transaction {
-            inner: txn,
+        let snapshot = self.rocksdb.snapshot();
+
+        Transaction::<'_, OptimisticTransactionDB> {
+            inner,
             access_type,
             candidates_cf,
             ledger_cf,
+            snapshot,
         }
     }
 }
 
 impl DB for Backend {
-    type T = Transaction;
+    type T<'a> = Transaction<'a, OptimisticTransactionDB>;
 
     fn create_or_open(path: String) -> Self {
         let mut opts = Options::default();
@@ -67,34 +78,34 @@ impl DB for Backend {
                     Path::new(&path),
                     [CF_LEDGER, CF_CANDIDATES],
                 )
-                .expect("should be a valid path"),
+                .expect("should be a valid database"),
             ),
         }
     }
 
-    fn view<F>(&'static mut self, f: F) -> Result<()>
+    fn view<F>(&self, f: F) -> Result<()>
     where
-        F: FnOnce(&Transaction) -> Result<()>,
+        F: for<'a> FnOnce(Self::T<'a>) -> Result<()>,
     {
         // Create a new read-only transaction
-        let tx = self.begin_tx(TxType::ReadOnly);
+        let tx = self.begin_txn(TxType::ReadOnly);
 
         // Execute all read-only transactions in isolation
-        f(&tx)?;
+        f(tx)?;
 
         Ok(())
     }
 
-    fn update<F>(&'static self, f: F) -> Result<()>
+    fn update<F>(&self, f: F) -> Result<()>
     where
-        F: FnOnce(&mut Transaction) -> Result<()>,
+        F: for<'a> FnOnce(&Self::T<'a>) -> Result<()>,
     {
         // Create read-write transaction
-        let mut tx = self.begin_tx(TxType::ReadWrite);
+        let tx = self.begin_txn(TxType::ReadWrite);
 
         // If f returns err, no commit will be applied into backend
         // storage
-        f(&mut tx)?;
+        f(&tx)?;
 
         // Apply changes in atomic way
         tx.commit()?;
@@ -105,124 +116,243 @@ impl DB for Backend {
     fn close(&mut self) {}
 }
 
-pub struct Transaction {
-    inner: rocksdb_lib::Transaction<'static, OptimisticTransactionDB>,
+pub struct Transaction<'db, DB: DBAccess> {
+    inner: rocksdb_lib::Transaction<'db, DB>,
     access_type: TxType,
 
-    candidates_cf: &'static ColumnFamily,
-    ledger_cf: &'static ColumnFamily,
+    candidates_cf: &'db ColumnFamily,
+    ledger_cf: &'db ColumnFamily,
+    snapshot: SnapshotWithThreadMode<'db, DB>,
 }
 
-impl Tx for Transaction {
-    // Read-only transactions.
-    // fn fetch_block_header(&self, hash: &[u8]) -> Result<&Header> {
-    //     // Code for fetching block header here
-    //     // ...
-    // }
+impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
+    fn store_block(&self, b: &Block, persisted: bool) -> Result<()> {
+        let mut serialized = vec![];
+        b.header.write(&mut serialized)?;
 
-    // fn fetch_block_txs(&self, hash: &[u8]) -> Result<Vec<ContractCall>> {
-    //     // Code for fetching block transactions here
-    //     // ...
-    // }
+        self.inner
+            .put_cf(self.ledger_cf, b.header.hash, serialized)?;
 
-    // fn fetch_block_tx_by_hash(&self, tx_id: &[u8]) -> Result<(ContractCall,
-    // u32, &[u8])> {     // Code for fetching block transaction by hash
-    // here     // ...
-    // }
-
-    fn fetch_block_hash_by_height(&self, height: u64) -> Result<&[u8]> {
-        Err(anyhow::Error::msg("message"))
+        anyhow::Ok(())
     }
 
-    fn fetch_block_exists(&self, hash: &[u8]) -> Result<bool> {
-        anyhow::Ok(false)
+    fn delete_block(&self, b: &Block) -> Result<()> {
+        let key = b.header.hash;
+        self.inner.delete_cf(self.ledger_cf, key)?;
+
+        anyhow::Ok(())
     }
 
-    // fn fetch_block_by_state_root(&self, from_height: u64, state_root: &[u8])
-    // -> Result<&Block> {     // Code for fetching block by state root here
-    //     // ...
-    // }
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+        if let Some(blob) = self.snapshot.get_cf(self.ledger_cf, hash)? {
+            let b = Block::read(&mut &blob[..])?;
+            return Ok(Some(b));
+        }
 
-    fn fetch_registry(&self) -> Result<Registry> {
-        anyhow::Ok(Registry::default())
+        // Block not found
+        Ok(None)
     }
 
-    fn fetch_current_height(&self) -> Result<u64> {
-        anyhow::Ok(0)
+    /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
+    fn clear_database(&self) -> Result<()> {
+        // Create an iterator over the column family CF_LEDGER
+        let iter = self
+            .inner
+            .iterator_cf(self.ledger_cf, rocksdb_lib::IteratorMode::Start);
+
+        // Iterate through the CF_LEDGER column family and delete all items
+        iter.map(Result::unwrap)
+            .map(|(key, _)| {
+                self.inner.delete_cf(self.ledger_cf, key);
+            })
+            .collect::<Vec<_>>();
+
+        self.clear_candidates()?;
+        anyhow::Ok(())
     }
 
-    fn fetch_block_height_since(
-        &self,
-        since_unix_time: i64,
-        offset: u64,
-    ) -> Result<u64> {
-        anyhow::Ok(0)
+    fn store_candidate_block(&self, b: Block) -> Result<()> {
+        let mut serialized = vec![];
+        b.write(&mut serialized)?;
+
+        self.inner
+            .put_cf(self.candidates_cf, b.header.hash, serialized)?;
+
+        Ok(())
+    }
+
+    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+        if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
+            let b = Block::read(&mut &blob[..])?;
+            return Ok(Some(b));
+        }
+
+        // Block not found
+        Ok(None)
     }
 
     /// Deletes all items from CF_CANDIDATES column family
-    fn clear_candidate_messages(&mut self) -> Result<()> {
+    fn clear_candidates(&self) -> Result<()> {
         // Create an iterator over the column family CF_CANDIDATES
         let iter = self
             .inner
             .iterator_cf(self.candidates_cf, rocksdb_lib::IteratorMode::Start);
 
         // Iterate through the CF_CANDIDATES column family and delete all items
-        iter.map(Result::unwrap).map(|(key, _)| {
-            self.inner.delete_cf(self.candidates_cf, key);
-        });
-
-        anyhow::Ok(())
-    }
-
-    /// Deletes all items from CF_LEDGER column family
-    fn clear_database(&mut self) -> Result<()> {
-        // Create an iterator over the column family CF_CANDIDATES
-        let iter = self
-            .inner
-            .iterator_cf(self.ledger_cf, rocksdb_lib::IteratorMode::Start);
-
-        // Iterate through the CF_CANDIDATES column family and delete all items
-        iter.map(Result::unwrap).map(|(key, _)| {
-            self.inner.delete_cf(self.candidates_cf, key);
-        });
+        iter.map(Result::unwrap)
+            .map(|(key, _)| {
+                self.inner.delete_cf(self.candidates_cf, key);
+            })
+            .collect::<Vec<_>>();
 
         anyhow::Ok(())
     }
 
     fn commit(self) -> Result<()> {
-        self.inner.commit()?;
+        if let Err(e) = self.inner.commit() {
+            return Err(anyhow::Error::new(e).context("failed to commit"));
+        }
         anyhow::Ok(())
     }
-
-    fn rollback(&mut self) -> Result<()> {
-        anyhow::Ok(())
-    }
-
-    fn close(&mut self) {}
-
-    // Read-write transactions
-    // fn store_block(&mut self, block: &Block, persisted)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dusk_consensus::commons::{Certificate, Header, Signature};
     use lazy_static::lazy_static;
 
     #[test]
-    fn test_clear_candidates() {
-        lazy_static! {
-            static ref TEST_DB: Backend =
-                Backend::create_or_open("/tmp/db_test/".to_owned());
-        }
+    fn test_store_block() {
+        let t = TestWrapper {
+            path: "_test_store_block",
+        };
 
-        let res = TEST_DB.update(|txn| {
-            txn.clear_candidate_messages()?;
-            txn.clear_database()?;
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path.to_owned());
 
-            anyhow::Ok(())
+            let b = mock_block(100);
+            let hash = b.header.hash;
+
+            assert!(db
+                .update(|txn| {
+                    txn.store_block(&b, false)?;
+                    anyhow::Ok(())
+                })
+                .is_ok());
+
+            db.view(|txn| {
+                assert!(txn.fetch_block(&hash)?.unwrap() == b);
+                anyhow::Ok(())
+            });
+
+            assert!(db
+                .update(|txn| {
+                    txn.clear_database()?;
+                    anyhow::Ok(())
+                })
+                .is_ok());
+
+            db.view(|txn| {
+                assert!(txn.fetch_block(&hash)?.is_none());
+                anyhow::Ok(())
+            });
         });
+    }
 
-        assert!(res.is_ok());
+    #[test]
+    fn test_read_only() {
+        let t = TestWrapper {
+            path: "_test_read_only",
+        };
+
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path.to_owned());
+            let b = mock_block(22);
+            assert!(db
+                .view(|txn| {
+                    txn.store_block(&b, false)?;
+                    anyhow::Ok(())
+                })
+                .is_ok());
+
+            db.view(|txn| {
+                assert!(txn.fetch_block(&b.header.hash)?.is_none());
+                anyhow::Ok(())
+            });
+        });
+    }
+
+    #[test]
+    fn test_transaction_isolation() {
+        let t = TestWrapper {
+            path: "_test_transaction_isolation",
+        };
+
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path.to_owned());
+            let b = mock_block(101);
+            let hash = b.header.hash;
+
+            db.view(|txn| {
+                // Simulate a concurrent update is committed during read-only
+                // transaction
+                assert!(db
+                    .update(|txn| {
+                        txn.store_block(&b, false)?;
+
+                        // No need to support Read-Your-Own-Writes
+                        assert!(txn.fetch_block(&hash)?.is_none());
+                        anyhow::Ok(())
+                    })
+                    .is_ok());
+
+                // Asserts that the read-only/view transaction runs in isolation
+                assert!(txn.fetch_block(&hash)?.is_none());
+                anyhow::Ok(())
+            });
+
+            // Asserts that update was done
+            db.view(|txn| {
+                assert!(txn.fetch_block(&hash)?.unwrap() == b);
+                anyhow::Ok(())
+            });
+        });
+    }
+
+    struct TestWrapper {
+        path: &'static str,
+    }
+
+    impl TestWrapper {
+        pub fn run<F>(&self, test_func: F)
+        where
+            F: FnOnce(&str),
+        {
+            test_func(self.path);
+
+            // Destroy/deletion of a database can happen only after dropping DB.
+            let opts = Options::default();
+            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+        }
+    }
+
+    fn mock_block(height: u64) -> Block {
+        Block::new(
+            Header {
+                version: 0,
+                height,
+                timestamp: 11112222,
+                gas_limit: 123456,
+                prev_block_hash: [10; 32],
+                seed: Signature::default(),
+                generator_bls_pubkey: [12; 96],
+                state_hash: [13; 32],
+                hash: [0; 32],
+                cert: Certificate::default(),
+            },
+            vec![],
+        )
+        .expect("should be valid hash")
     }
 }
