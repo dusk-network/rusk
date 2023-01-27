@@ -29,7 +29,8 @@ use url::Url;
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
 mod snapshot;
-pub mod zip;
+pub mod tar;
+mod zip;
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
@@ -277,7 +278,7 @@ fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     let output = state_dir.parent().expect("state dir not equal to root");
 
-    zip::unzip(&buffer, output)?;
+    tar::unarchive(&buffer, output)?;
 
     let network = restore_state(&id_path)?;
     info!(
