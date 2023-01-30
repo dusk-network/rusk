@@ -41,3 +41,48 @@ impl<K, V> Default for Collection<K, V> {
         Self { data: Vec::new() }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn dummy() -> Collection<u8, u8> {
+        let mut collections: Collection<u8, u8> = Default::default();
+
+        collections.insert(1, 20).unwrap();
+        collections.insert(12, 120).unwrap();
+
+        collections
+    }
+
+    #[test]
+    fn get() {
+        // this is also a test of insert
+        let data = dummy();
+
+        assert_eq!(*data.get(&1).unwrap().unwrap(), 20);
+        assert_eq!(*data.get(&12).unwrap().unwrap(), 120);
+    }
+
+    #[test]
+    fn insert() {
+        let mut data = dummy();
+
+        // updates the value
+        data.insert(1, 22).unwrap();
+        data.insert(4, 90).unwrap();
+
+        assert_eq!(*data.get(&1).unwrap().unwrap(), 22);
+        assert_eq!(*data.get(&4).unwrap().unwrap(), 90);
+    }
+
+    #[test]
+    #[should_panic]
+    fn remove() {
+        let mut data = dummy();
+
+        data.remove(&12).unwrap();
+
+        data.get(&12).unwrap().unwrap();
+    }
+}

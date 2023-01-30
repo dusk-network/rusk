@@ -18,6 +18,7 @@ dusk-pki = { version = "0.10.0-rc", default-features = false }
 dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
 dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
 rusk-abi = { path = "../../rusk-abi", features = ["module"] }
+cfg-if = "1.0.0"
 
 [features]
 no-bridge = []

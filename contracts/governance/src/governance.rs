@@ -16,35 +16,26 @@ use dusk_bytes::Serializable;
 use crate::collection::Collection;
 use crate::*;
 
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Clone, Default, Canon)]
 pub struct GovernanceContract {
     pub(crate) seeds: Collection<BlsScalar, ()>,
     pub(crate) balances: Collection<PublicKey, u64>,
     pub(crate) whitelist: Collection<PublicKey, ()>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
+    // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
+    // dusk_pki::PublicKey because of our verification method
+    pub(crate) broker: BlsPublicKey,
+    pub(crate) authority: BlsPublicKey,
 }
 
+/// Use `GovernanceContract::default()` for instance.
 impl GovernanceContract {
-    /// Authority of the contract
-    ///
-    /// Will have to be defined in the constant space so the bytecode of the
-    /// contract will be changed as the authority does
-    pub const AUTHORITY: &[u8; 96] = include_bytes!(concat!(
-        env!("RUSK_PROFILE_PATH"),
-        "/governance_authority.cpk"
-    ));
-
     fn validate_seed(
         &mut self,
         arguments: Vec<BlsScalar>,
         signature: Signature,
     ) -> Result<(), Error> {
-        // Cannot construct BlsPublicKey in a const context that's why we
-        // construct it in the function body.
-        let authority = BlsPublicKey::from_bytes(Self::AUTHORITY)
-            .map_err(|_| Error::InvalidPublicKey)?;
-
         let seed = arguments[0];
 
         if self.seeds.get(&seed)?.is_some() {
@@ -54,14 +45,15 @@ impl GovernanceContract {
         #[cfg(target_arch = "wasm32")]
         if !rusk_abi::verify_bls_sign(
             signature,
-            authority,
+            self.authority,
             rusk_abi::poseidon_hash(arguments).to_bytes().to_vec(),
         ) {
             return Err(Error::InvalidSignature);
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if authority
+        if self
+            .authority
             .verify(
                 &signature,
                 &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
@@ -281,5 +273,28 @@ impl GovernanceContract {
         }
 
         Ok(())
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(not(target_arch = "wasm32"))] {
+        #[cfg(test)]
+        mod tests;
+
+        /// Methods we don't want in the wasm binary
+        impl GovernanceContract {
+            /// Update the authority public address of the Governance Contract
+            pub fn update_authority(&mut self, key: BlsPublicKey) -> Result<(), Error> {
+                self.authority = key;
+
+                Ok(())
+            }
+            /// Update the broker public address of the Governance Contract
+            pub fn update_broker(&mut self, key: BlsPublicKey) -> Result<(), Error> {
+                self.broker = key;
+
+                Ok(())
+            }
+        }
     }
 }
