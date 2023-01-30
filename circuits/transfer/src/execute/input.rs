@@ -87,7 +87,7 @@ impl CircuitInput {
         let hash_inputs = note.hash_inputs();
 
         let note_type = hash_inputs[0];
-        let note_type = composer.append_witness(note_type);
+        let note_type = composer.append_public(note_type);
 
         // Plonk API will not allow points to be constructed from variables
         let value_commitment = note.value_commitment();
