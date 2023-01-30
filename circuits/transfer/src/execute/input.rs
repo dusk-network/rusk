@@ -93,7 +93,7 @@ impl CircuitInput {
         let value_commitment = note.value_commitment();
         let value_commitment = composer.append_point(value_commitment);
 
-        let pos = hash_inputs[8];
+        let pos = hash_inputs[5];
         let pos = composer.append_witness(pos);
 
         let value = composer.append_witness(self.value);
