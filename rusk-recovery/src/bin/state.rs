@@ -99,7 +99,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     }
 
     let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
+    let id_path = rusk_profile::to_rusk_state_id_path(&state_path);
 
     let mut vm = VM::new(&state_path)?;
     rusk_abi::register_host_queries(&mut vm);

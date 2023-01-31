@@ -16,17 +16,21 @@ use phoenix_core::Note;
 use piecrust::{CommitId, ModuleId, Session};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rusk_abi::dusk::{dusk, Dusk};
 use std::error::Error;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tracing::info;
 use url::Url;
 
+use crate::provisioners::DUSK_KEY as DUSK_BLS_KEY;
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
 mod snapshot;
 pub mod tar;
 mod zip;
+
+pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
@@ -114,7 +118,7 @@ fn generate_stake_state(
             reward: staker.reward.unwrap_or_default(),
             counter: 0,
         };
-        let _: Option<StakeData> = session
+        let _: () = session
             .transact(
                 rusk_abi::stake_module(),
                 "insert_stake",
@@ -174,15 +178,23 @@ fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
         .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("root to be updated after pushing genesis note");
 
+    let _: Option<StakeData> = session
+        .query(rusk_abi::stake_module(), "get_stake", &*DUSK_BLS_KEY)
+        .expect("Querying a stake should succeed");
+
     Ok(())
 }
 
 // note: deploy consumes session as it produces commit id
-pub fn deploy(
+pub fn deploy<P: AsRef<Path>>(
+    commit_id_path: P,
     snapshot: &Snapshot,
     mut session: Session,
 ) -> Result<CommitId, Box<dyn Error>> {
     let theme = Theme::default();
+
+    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
+    session.set_point_limit(u64::MAX);
 
     match snapshot.base_state() {
         Some(state) => load_state(&mut session, state),
@@ -192,6 +204,7 @@ pub fn deploy(
     generate_stake_state(&mut session, snapshot)?;
 
     let commit_id = session.commit()?;
+    commit_id.persist(commit_id_path)?;
 
     info!(
         "{} {}",
@@ -219,7 +232,9 @@ pub fn restore_state(
 
 /// Load a state file and save it into the rusk state directory.
 fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    let id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
+
     assert!(
         restore_state(session, &id_path).is_err(),
         "No valid state should be found"
