@@ -108,14 +108,9 @@ pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
         })
 }
 
-pub fn get_rusk_state_id_path() -> Result<PathBuf, io::Error> {
-    let mut state_dir = get_rusk_state_dir()?;
-    state_dir.set_file_name("state.id");
-    Ok(state_dir)
-}
-
-pub fn get_rusk_state_id() -> Result<Vec<u8>, io::Error> {
-    read(get_rusk_state_id_path()?)
+pub fn to_rusk_state_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
+    let dir = dir.as_ref();
+    dir.join("state.id")
 }
 
 pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
