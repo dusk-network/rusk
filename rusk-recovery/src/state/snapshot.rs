@@ -100,10 +100,9 @@ mod tests {
 
     use crate::{
         provisioners,
-        state::{self, Balance, GenesisStake},
+        state::{self, Balance, GenesisStake, MINIMUM_STAKE},
     };
     use rusk_abi::dusk::{dusk, Dusk};
-    use stake_contract::MINIMUM_STAKE;
 
     /// Amount of the note inserted in the genesis state.
     const GENESIS_DUSK: Dusk = dusk(1_000.0);
@@ -203,9 +202,9 @@ mod tests {
         let str = toml::to_string_pretty(&testnet)?;
 
         let back: Snapshot = toml::from_str(&str)?;
-        assert!(testnet == back);
+        assert_eq!(testnet, back);
 
-        assert!(testnet == testnet_from_file()?);
+        assert_eq!(testnet, testnet_from_file()?);
         Ok(())
     }
 
@@ -216,9 +215,9 @@ mod tests {
         println!("{str}");
 
         let back: Snapshot = toml::from_str(&str)?;
-        assert!(localnet == back);
+        assert_eq!(localnet, back);
 
-        assert!(localnet == localnet_from_file()?);
+        assert_eq!(localnet, localnet_from_file()?);
         Ok(())
     }
 
@@ -228,8 +227,9 @@ mod tests {
         let deserialized: Snapshot = toml::from_str(&str)?;
 
         // `Snapshot` is too big to be compared with assert_eq
-        assert!(
-            Snapshot::default() == deserialized,
+        assert_eq!(
+            Snapshot::default(),
+            deserialized,
             "Deserialized struct differs from the serialized one"
         );
         Ok(())
