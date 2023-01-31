@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use canonical::{Canon, Store};
-use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_poseidon::tree::PoseidonLeaf;
 use phoenix_core::Note;
