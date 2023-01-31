@@ -304,15 +304,10 @@ impl StakeState {
         self.stakes.get_mut(&key.to_bytes())
     }
 
-    /// Pushes the given `stake` onto the state for a given `public_key`. If a
-    /// stake already exists for the given key, it is returned.
-    pub fn insert_stake(
-        &mut self,
-        public_key: PublicKey,
-        stake: StakeData,
-    ) -> Option<StakeDataWrapper> {
+    /// Pushes the given `stake` onto the state for a given `public_key`.
+    pub fn insert_stake(&mut self, public_key: PublicKey, stake: StakeData) {
         self.stakes
-            .insert(public_key.to_bytes(), StakeDataWrapper(stake))
+            .insert(public_key.to_bytes(), StakeDataWrapper(stake));
     }
 
     /// Gets a mutable reference to the stake of a given key. If said stake
