@@ -220,8 +220,6 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
 mod tests {
     use super::*;
     use dusk_consensus::commons::{Certificate, Header, Signature};
-    use lazy_static::lazy_static;
-
     #[test]
     fn test_store_block() {
         let t = TestWrapper {
