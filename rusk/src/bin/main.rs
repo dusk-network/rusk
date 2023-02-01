@@ -20,7 +20,7 @@ use rusk::services::prover::{ProverServer, RuskProver};
 use rusk::services::state::StateServer;
 use rusk::services::version::{CompatibilityInterceptor, RuskVersionLayer};
 use rusk::{Result, Rusk};
-use rustc_tools_util::{get_version_info, VersionInfo};
+use rustc_tools_util::get_version_info;
 use tonic::transport::Server;
 use version::show_version;
 
@@ -28,12 +28,6 @@ use services::startup_with_tcp_ip;
 use services::startup_with_uds;
 
 use crate::config::Config;
-
-use microkelvin::{BackendCtor, DiskBackend};
-
-pub fn disk_backend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(|| DiskBackend::new(rusk_profile::get_rusk_state_dir()?))
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -91,9 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let router = {
-        let rusk = Rusk::builder(disk_backend)
-            .path(rusk_profile::get_rusk_state_id_path()?)
-            .build()?;
+        let rusk = Rusk::new(rusk_profile::get_rusk_state_dir()?)?;
 
         let kadcast = KadcastDispatcher::new(
             config.kadcast.clone().into(),
