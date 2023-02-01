@@ -7,7 +7,7 @@ all: keys wasm abi circuits state allmacros contracts node ## Build everything
 
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
-	
+
 allmacros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros all
 
@@ -34,7 +34,6 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk/ $@
-	$(MAKE) -C ./test-utils $@
 	$(MAKE) -C ./node $@
 
 run: keys state ## Run the server
