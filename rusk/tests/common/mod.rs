@@ -6,6 +6,7 @@
 
 pub mod encoding;
 pub mod keys;
+pub mod state;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
@@ -51,7 +52,7 @@ pub fn logger() {
 pub async fn setup() -> (
     Channel,
     async_stream::AsyncStream<
-        Result<unix::UnixStream, std::io::Error>,
+        Result<unix::UnixStream, io::Error>,
         impl futures::Future<Output = ()>,
     >,
 ) where {

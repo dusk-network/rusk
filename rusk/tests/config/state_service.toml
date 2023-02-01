@@ -1,0 +1,22 @@
+[acl.stake]
+owners = []
+allowlist = []
+
+[[stake]]
+address = "21aLx16qNEyU14aCGzacr8efbwx7bEytxa2rT71XB24zGZrb6Y398ebg38My7aQikamhpdYzphUAMHfPhH3BWvwsG2G655Dr8gwmQLKH9nERiGmD79Jewkn4ZkMeptfYBMiS"
+amount = 1_000_000_000_000
+
+[[balance]]
+address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
+seed = 57005
+notes = [10_000_000_000]
+
+[[balance]]
+address = "3MoVQ6VfGNu8fJ5GeHPRDVUfxcsDEmGXpWhvKhXY7F2dKCp7QWRw8RqPcbuJGdRqeTtxpuiwETnGAJLnhT4Kq4e8"
+seed = 57005
+notes = [10_000_000_000]
+
+[[balance]]
+address = "4RyaodGmN8MyUDmpRrtRxJJhrVW2HsY2ycRUnRUXR97JCN1GHraQT9Ygb8yYo7oKzyZg2EXXCGkHBwoeNb96BKtQ"
+seed = 57005
+notes = [10_000_000_000]
