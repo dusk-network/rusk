@@ -27,7 +27,6 @@ contracts: ## Execute the test for all contracts
 
 test: keys wasm abi circuits state allmacros contracts ## Run the tests
 	$(MAKE) -C ./rusk/ $@
-	$(MAKE) -C ./test-utils $@
 
 run: keys state ## Run the server
 	cargo run --release --bin rusk
