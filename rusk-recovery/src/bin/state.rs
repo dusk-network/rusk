@@ -133,7 +133,10 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     info!("{} new state", theme.info("Building"));
 
     // note: deploy consumes session as it performs a commit
-    let commit_id = deploy(config.init, session)?;
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
+
+    let commit_id = deploy(state_id_path, config.init, session)?;
 
     info!("{} persisted id", theme.success("Storing"));
     commit_id.persist(&id_path)?;
@@ -171,16 +174,8 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
 fn clean_state() -> Result<(), io::Error> {
     let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
 
     fs::remove_dir_all(state_path).or_else(|e| {
-        if e.kind() == io::ErrorKind::NotFound {
-            Ok(())
-        } else {
-            Err(e)
-        }
-    })?;
-    fs::remove_file(id_path).or_else(|e| {
         if e.kind() == io::ErrorKind::NotFound {
             Ok(())
         } else {
