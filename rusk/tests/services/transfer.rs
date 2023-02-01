@@ -5,101 +5,62 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-use crate::common::keys::BLS_SK;
-use crate::common::*;
-
-use canonical::{Canon, Source};
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
+use dusk_bytes::{DeserializableSlice, Serializable};
+use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::{SecretSpendKey, ViewKey};
+use dusk_plonk::proof_system::Proof;
+use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
+use dusk_wallet_core::{
+    self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
+};
 use futures::StreamExt;
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
+use phoenix_core::{Crossover, Fee, Note};
+use rand::prelude::*;
+use rand::rngs::StdRng;
+use rusk::error::Error;
 use rusk::services::network::{KadcastDispatcher, NetworkServer};
 use rusk::services::prover::ExecuteProverRequest;
+use rusk::services::prover::{ProverServer, RuskProver};
+use rusk::services::state::StateServer;
 use rusk::services::state::{
     ExecuteStateTransitionRequest, ExecuteStateTransitionResponse,
     FindExistingNullifiersRequest, GetAnchorRequest, GetNotesRequest,
     GetOpeningRequest, PreverifyRequest, StateTransitionRequest,
     VerifyStateTransitionRequest,
 };
+use rusk::{Result, Rusk};
+use rusk_abi::POSEIDON_TREE_DEPTH;
 use rusk_schema::network_client::NetworkClient;
 use rusk_schema::prover_client::ProverClient;
 use rusk_schema::state_client::StateClient;
 use rusk_schema::{PropagateMessage, Transaction as TransactionProto};
-
-use dusk_bytes::{DeserializableSlice, Serializable};
-
-use once_cell::sync::Lazy;
-use rand::prelude::*;
-use rand::rngs::StdRng;
-use rusk::error::Error;
-use rusk::{Result, Rusk};
-
-use microkelvin::{BackendCtor, DiskBackend};
-
+use tempfile::tempdir;
+use tonic::transport::Server;
 use tracing::info;
 
-use tonic::transport::Server;
-
-use rusk::services::prover::{ProverServer, RuskProver};
-use rusk::services::state::StateServer;
-
-use dusk_wallet_core::{
-    self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
-};
-
-use phoenix_core::{Crossover, Fee, Note};
-
-use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, JubJubScalar};
-use dusk_plonk::proof_system::Proof;
-
-use dusk_poseidon::tree::PoseidonBranch;
-use rusk_abi::POSEIDON_TREE_DEPTH;
+use crate::common::keys::BLS_SK;
+use crate::common::state::new_state;
+use crate::common::*;
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 const MAX_NOTES: u64 = 10;
 
-// Function used to creates a temporary diskbackend for Rusk
-fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
-}
-
 // Creates the Rusk initial state for the tests below
-fn initial_state() -> Result<Rusk> {
+fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("../config/transfer.toml"))
         .expect("Cannot deserialize config");
 
-    let state_id =
-        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
-
-    let rusk = Rusk::builder(testbackend).id(state_id).build()?;
-
-    let mut state = rusk.state()?;
-    let transfer = state.transfer_contract()?;
-
-    assert!(
-        transfer.get_note(MAX_NOTES - 1)?.is_some(),
-        "Expect to have more notes",
-    );
-    assert!(
-        transfer.get_note(MAX_NOTES)?.is_none(),
-        "Expect to have only {} notes",
-        MAX_NOTES
-    );
-
-    state.finalize();
-
-    Ok(rusk)
+    new_state(dir, &snapshot)
 }
-
-static STATE_LOCK: Lazy<Mutex<Rusk>> = Lazy::new(|| {
-    let rusk = initial_state().expect("Failed to create initial state");
-    Mutex::new(rusk)
-});
 
 static SSK: Lazy<SecretSpendKey> = Lazy::new(|| {
     info!("Generating SecretSpendKey");
@@ -170,7 +131,11 @@ fn wallet_transfer(
         )
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
-    info!("Tx ID: {}", hex::encode(tx.hash().to_bytes()));
+
+    let tx_hash_bytes = tx.to_hash_input_bytes();
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+
+    info!("Tx ID: {}", hex::encode(tx_hash.to_bytes()));
     generator_procedure(channel.clone(), &tx, block_height)
         .expect("generator procedure to succeed");
     empty_block(channel, block_height + 1)
@@ -217,7 +182,9 @@ fn generator_procedure(
     tx: &Transaction,
     block_height: u64,
 ) -> Result<()> {
-    let tx_hash = tx.hash();
+    let tx_hash_bytes = tx.to_hash_input_bytes();
+    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+
     let tx_bytes = tx.to_var_bytes();
 
     let tx = TransactionProto {
@@ -428,7 +395,7 @@ fn empty_block(
 #[derive(Debug, Clone)]
 struct TestStore;
 
-impl wallet::Store for TestStore {
+impl Store for TestStore {
     type Error = ();
 
     fn get_seed(&self) -> Result<[u8; 64], Self::Error> {
@@ -444,15 +411,15 @@ struct TestStateClient {
 
 #[derive(Default, Debug, Clone)]
 struct DummyCacheItem {
-    notes: Vec<Note>,
-    last_heigth: u64,
+    notes: Vec<(Note, u64)>,
+    last_height: u64,
 }
 
 impl DummyCacheItem {
     fn add(&mut self, note: Note, block_height: u64) {
-        if !self.notes.contains(&note) {
-            self.notes.push(note);
-            self.last_heigth = block_height;
+        if !self.notes.contains(&(note, block_height)) {
+            self.notes.push((note, block_height));
+            self.last_height = block_height;
         }
     }
 }
@@ -461,7 +428,10 @@ impl wallet::StateClient for TestStateClient {
     type Error = Error;
 
     /// Find notes for a view key, starting from the given block height.
-    fn fetch_notes(&self, vk: &ViewKey) -> Result<Vec<Note>, Self::Error> {
+    fn fetch_notes(
+        &self,
+        vk: &ViewKey,
+    ) -> Result<Vec<(Note, u64)>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
         let cache_read = self.cache.read().unwrap();
         let mut vk_cache = if cache_read.contains_key(&vk.to_bytes().to_vec()) {
@@ -471,10 +441,10 @@ impl wallet::StateClient for TestStateClient {
         };
 
         let request = tonic::Request::new(GetNotesRequest {
-            height: vk_cache.last_heigth,
+            height: vk_cache.last_height,
             vk: vk.to_bytes().to_vec(),
         });
-        info!("Requesting notes from height {}", vk_cache.last_heigth);
+        info!("Requesting notes from height {}", vk_cache.last_height);
 
         let stream = client.get_notes(request).wait()?.into_inner();
 
@@ -515,24 +485,6 @@ impl wallet::StateClient for TestStateClient {
             .map_err(Error::Serialization)
     }
 
-    /// Queries the node to find the opening for a specific note.
-    fn fetch_opening(
-        &self,
-        note: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
-        let mut client = StateClient::new(self.channel.clone());
-
-        let request = tonic::Request::new(GetOpeningRequest {
-            note: note.to_bytes().to_vec(),
-        });
-
-        let response = client.get_opening(request).wait()?;
-        let response = response.into_inner();
-
-        let mut source = Source::new(&response.branch);
-        Ok(PoseidonBranch::decode(&mut source)?)
-    }
-
     fn fetch_existing_nullifiers(
         &self,
         nullifiers: &[BlsScalar],
@@ -558,6 +510,23 @@ impl wallet::StateClient for TestStateClient {
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(nullifiers)
+    }
+
+    /// Queries the node to find the opening for a specific note.
+    fn fetch_opening(
+        &self,
+        note: &Note,
+    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
+        let mut client = StateClient::new(self.channel.clone());
+
+        let request = tonic::Request::new(GetOpeningRequest {
+            note: note.to_bytes().to_vec(),
+        });
+
+        let response = client.get_opening(request).wait()?;
+        let response = response.into_inner();
+
+        Ok(PoseidonBranch::from_slice(&response.branch)?)
     }
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
@@ -629,17 +598,15 @@ pub async fn wallet_grpc() -> Result<()> {
     // Setup the logger and gRPC channels
     let (channel, incoming) = setup().await;
 
-    // Get the Rusk's instance to pass to the `StateServer`
-    let rusk = STATE_LOCK.lock();
+    let tmp = tempdir().expect("Creating temporary directory should succeed");
+    let rusk =
+        initial_state(&tmp).expect("Creating initial state should succeed");
 
     let state = StateServer::new(rusk.clone());
     let prover = ProverServer::new(RuskProver::default());
     let dispatcher = KadcastDispatcher::default();
     let mut kadcast_recv = dispatcher.subscribe();
     let network = NetworkServer::new(dispatcher);
-
-    // Drop the Rusk instance so it can be re-acquired later on
-    drop(rusk);
 
     // Build and Spawn the server
     tokio::spawn(async move {
@@ -665,15 +632,14 @@ pub async fn wallet_grpc() -> Result<()> {
         },
     );
 
-    let rusk = STATE_LOCK.lock();
-    let original_root = rusk.state()?.root();
+    let original_root = rusk.state_root();
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
     wallet_transfer(&wallet, channel.clone(), 1_000, 2);
 
     // Check the state's root is changed from the original one
-    let new_root = rusk.state()?.root();
+    let new_root = rusk.state_root();
     info!(
         "New root after the 1st transfer: {:?}",
         hex::encode(new_root)
@@ -681,27 +647,23 @@ pub async fn wallet_grpc() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    rusk.state()?.revert();
+    rusk.revert().expect("Reverting should succeed");
     cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
-    info!("Root after reset: {:?}", hex::encode(rusk.state()?.root()));
-    assert_eq!(
-        original_root,
-        rusk.state()?.root(),
-        "Root be the same again"
-    );
+    info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
+    assert_eq!(original_root, rusk.state_root(), "Root be the same again");
 
     wallet_transfer(&wallet, channel, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
         "New root after the 2nd transfer: {:?}",
-        hex::encode(rusk.state()?.root())
+        hex::encode(rusk.state_root())
     );
     assert_eq!(
         new_root,
-        rusk.state()?.root(),
+        rusk.state_root(),
         "Root is the same compare to the first transfer"
     );
 

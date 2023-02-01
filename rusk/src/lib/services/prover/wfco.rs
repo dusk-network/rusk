@@ -6,6 +6,9 @@
 
 use super::*;
 
+use dusk_plonk::prelude::Prover;
+use rand::rngs::OsRng;
+
 const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
     + JubJubAffine::SIZE
@@ -20,12 +23,13 @@ const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
     + JubJubAffine::SIZE;
 
-pub static WFCO_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
-    let keys = keys_for(&WithdrawFromObfuscatedCircuit::CIRCUIT_ID)
-        .expect("keys to be available");
-    let pk = keys.get_prover().expect("prover to be available");
-    ProverKey::from_slice(&pk).expect("prover key to be valid")
-});
+pub static WFCO_PROVER: Lazy<Prover<WithdrawFromObfuscatedCircuit>> =
+    Lazy::new(|| {
+        let keys = keys_for(&WithdrawFromObfuscatedCircuit::circuit_id())
+            .expect("keys to be available");
+        let pk = keys.get_prover().expect("prover to be available");
+        Prover::try_from_bytes(pk).expect("prover key to be valid")
+    });
 
 impl RuskProver {
     pub(crate) fn prove_wfco(
@@ -117,17 +121,15 @@ impl RuskProver {
             commitment: output_commitment,
         };
 
-        let mut circ = WithdrawFromObfuscatedCircuit {
+        let circ = WithdrawFromObfuscatedCircuit {
             input,
             change,
             output,
         };
 
-        let proof = circ
-            .prove(&crate::PUB_PARAMS, &WFCO_PROVER_KEY, b"dusk-network")
-            .map_err(|e| {
-                Status::internal(format!("Failed proving the circuit: {}", e))
-            })?;
+        let (proof, _) = WFCO_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
+            Status::internal(format!("Failed proving the circuit: {}", e))
+        })?;
         let proof = proof.to_bytes().to_vec();
 
         Ok(Response::new(WfcoProverResponse { proof }))
