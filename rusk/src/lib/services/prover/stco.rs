@@ -6,6 +6,9 @@
 
 use super::*;
 
+use dusk_plonk::prelude::Prover;
+use rand::rngs::OsRng;
+
 const STCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
     + JubJubScalar::SIZE
@@ -19,12 +22,13 @@ const STCO_INPUT_LEN: usize = u64::SIZE
     + BlsScalar::SIZE
     + Signature::SIZE;
 
-pub static STCO_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
-    let keys = keys_for(&SendToContractObfuscatedCircuit::CIRCUIT_ID)
-        .expect("keys to be available");
-    let pk = keys.get_prover().expect("prover to be available");
-    ProverKey::from_slice(&pk).expect("prover key to be valid")
-});
+pub static STCO_PROVER: Lazy<Prover<SendToContractObfuscatedCircuit>> =
+    Lazy::new(|| {
+        let keys = keys_for(&SendToContractObfuscatedCircuit::circuit_id())
+            .expect("keys to be available");
+        let pk = keys.get_prover().expect("prover to be available");
+        Prover::try_from_bytes(pk).expect("prover key to be valid")
+    });
 
 impl RuskProver {
     pub(crate) fn prove_stco(
@@ -95,7 +99,7 @@ impl RuskProver {
         };
         let stco_crossover = StcoCrossover::new(crossover, crossover_blinder);
 
-        let mut circ = SendToContractObfuscatedCircuit::new(
+        let circ = SendToContractObfuscatedCircuit::new(
             value,
             stco_message,
             stco_crossover,
@@ -104,11 +108,9 @@ impl RuskProver {
             signature,
         );
 
-        let proof = circ
-            .prove(&crate::PUB_PARAMS, &STCO_PROVER_KEY, b"dusk-network")
-            .map_err(|e| {
-                Status::internal(format!("Failed proving the circuit: {}", e))
-            })?;
+        let (proof, _) = STCO_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
+            Status::internal(format!("Failed proving the circuit: {}", e))
+        })?;
         let proof = proof.to_bytes().to_vec();
 
         Ok(Response::new(StcoProverResponse { proof }))

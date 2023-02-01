@@ -45,10 +45,13 @@ dusk-bls12_381-sign = "0.4"
 dusk-jubjub = "0.12"
 dusk-pki = "0.11"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.15.0-rc"
+dusk-wallet-core = "0.16.0-alpha"
 phoenix-core = "0.18"
-kadcast = "0.4.0"
+piecrust = "0.1.0-alpha"
+kadcast = "0.5.0-rc"
 parking_lot = "0.12"
+rkyv = "0.7"
+bytecheck = "0.6"
 
 rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { path = "../circuits/transfer" }
@@ -60,6 +63,7 @@ rusk-schema = { path = "../rusk-schema" }
 test-context = "0.1"
 async-trait = "0.1"
 hex = "0.4"
+tempfile = "3.3"
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"

@@ -12,33 +12,14 @@ use rusk::services::version::RuskVersionLayer;
 use std::path::Path;
 use tokio::net::UnixListener;
 
-use tonic::body::BoxBody;
-use tonic::codegen::http::{Request, Response};
-use tonic::codegen::Service;
 use tonic::transport::server::Router;
-use tonic::transport::{Body, NamedService};
-type TonicError = Box<dyn std::error::Error + Send + Sync>;
+use tower::layer::util::{Identity, Stack};
 
 #[cfg(not(target_os = "windows"))]
-pub(crate) async fn startup_with_uds<S, A>(
-    router: Router<S, A, RuskVersionLayer>,
+pub(crate) async fn startup_with_uds(
+    router: Router<Stack<RuskVersionLayer, Identity>>,
     socket: &str,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    A: Service<Request<Body>, Response = Response<BoxBody>>
-        + Clone
-        + Send
-        + 'static,
-    A::Future: Send + 'static,
-    A::Error: Into<TonicError> + Send,
-    S: Service<Request<Body>, Response = Response<BoxBody>>
-        + NamedService
-        + Clone
-        + Send
-        + 'static,
-    S::Future: Send + 'static,
-    S::Error: Into<TonicError> + Send,
-{
+) -> Result<(), Box<dyn std::error::Error>> {
     tokio::fs::create_dir_all(Path::new(socket).parent().unwrap()).await?;
     let uds = UnixListener::bind(socket)?;
     let incoming = {
@@ -52,26 +33,11 @@ where
     Ok(())
 }
 
-pub(crate) async fn startup_with_tcp_ip<S, A>(
-    router: Router<S, A, RuskVersionLayer>,
+pub(crate) async fn startup_with_tcp_ip(
+    router: Router<Stack<RuskVersionLayer, Identity>>,
     host: &str,
     port: &str,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    A: Service<Request<Body>, Response = Response<BoxBody>>
-        + Clone
-        + Send
-        + 'static,
-    A::Future: Send + 'static,
-    A::Error: Into<TonicError> + Send,
-    S: Service<Request<Body>, Response = Response<BoxBody>>
-        + NamedService
-        + Clone
-        + Send
-        + 'static,
-    S::Future: Send + 'static,
-    S::Error: Into<TonicError> + Send,
-{
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut full_address = host.to_string();
     full_address.push(':');
     full_address.push_str(port);
