@@ -108,7 +108,9 @@ fn generate_stake_state(
             .expect("owner to be added into the state");
     });
 
-    snapshot.allowlist().for_each(|provisioner| {
+    let to_allow = snapshot.allowlist().enumerate();
+    to_allow.for_each(|(idx, provisioner)| {
+        info!("{} additional provisioner #{idx}", theme.action("Allowing"));
         stake_contract
             .insert_allowlist(*provisioner)
             .expect("provisioner to be inserted into the allowlist");
