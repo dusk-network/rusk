@@ -46,3 +46,4 @@ overflow-checks = true
 
 [patch.crates-io]
 dusk-wallet-core = { path = "../wallet-core" }
+rusk-abi = { path = "rusk-abi" }
