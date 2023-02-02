@@ -60,7 +60,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
                 match msg.topic {
                     Topics::Tx => {
                         if self.handle_tx(&msg).is_ok() {
-                            _ = network.read().await.repropagate(&msg, 0);
+                            network.read().await.repropagate(&msg, 0).await;
                         }
                     }
                     _ => todo!(),
