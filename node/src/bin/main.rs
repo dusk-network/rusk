@@ -24,7 +24,7 @@ pub async fn main() {
         vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
 
     let net = Kadcast::new(kadcast::config::Config::default());
-    let db = rocksdb::Backend::create_or_open("/tmp/db/".to_string());
+    let db = rocksdb::Backend::create_or_open("".to_string());
 
     // node spawn_all is the entry point
     if let Err(e) = Node::new(net, db).spawn_all(service_list).await {

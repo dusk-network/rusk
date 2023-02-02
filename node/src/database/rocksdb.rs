@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{Registry, Tx, DB};
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use dusk_consensus::commons::Block;
 use dusk_consensus::messages::Serializable;
@@ -29,15 +29,15 @@ pub struct Backend {
 }
 
 impl Backend {
-    fn begin_txn(
+    fn begin_tx(
         &self,
         access_type: TxType,
     ) -> Transaction<'_, OptimisticTransactionDB> {
         // Create a new RocksDB transaction
         let write_options = WriteOptions::default();
-        let mut txn_options = OptimisticTransactionOptions::default();
+        let mut tx_options = OptimisticTransactionOptions::default();
 
-        let inner = self.rocksdb.transaction_opt(&write_options, &txn_options);
+        let inner = self.rocksdb.transaction_opt(&write_options, &tx_options);
 
         // Borrow column families
         let ledger_cf = self
@@ -88,7 +88,7 @@ impl DB for Backend {
         F: for<'a> FnOnce(Self::T<'a>) -> Result<()>,
     {
         // Create a new read-only transaction
-        let tx = self.begin_txn(TxType::ReadOnly);
+        let tx = self.begin_tx(TxType::ReadOnly);
 
         // Execute all read-only transactions in isolation
         f(tx)?;
@@ -96,16 +96,16 @@ impl DB for Backend {
         Ok(())
     }
 
-    fn update<F>(&self, f: F) -> Result<()>
+    fn update<F>(&self, execute: F) -> Result<()>
     where
         F: for<'a> FnOnce(&Self::T<'a>) -> Result<()>,
     {
         // Create read-write transaction
-        let tx = self.begin_txn(TxType::ReadWrite);
+        let tx = self.begin_tx(TxType::ReadWrite);
 
         // If f returns err, no commit will be applied into backend
         // storage
-        f(&tx)?;
+        execute(&tx)?;
 
         // Apply changes in atomic way
         tx.commit()?;
@@ -133,14 +133,14 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
         self.inner
             .put_cf(self.ledger_cf, b.header.hash, serialized)?;
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     fn delete_block(&self, b: &Block) -> Result<()> {
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
@@ -168,7 +168,7 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
             .collect::<Vec<_>>();
 
         self.clear_candidates()?;
-        anyhow::Ok(())
+        Ok(())
     }
 
     fn store_candidate_block(&self, b: Block) -> Result<()> {
@@ -205,14 +205,15 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
             })
             .collect::<Vec<_>>();
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     fn commit(self) -> Result<()> {
         if let Err(e) = self.inner.commit() {
             return Err(anyhow::Error::new(e).context("failed to commit"));
         }
-        anyhow::Ok(())
+
+        Ok(())
     }
 }
 
@@ -235,25 +236,25 @@ mod tests {
             assert!(db
                 .update(|txn| {
                     txn.store_block(&b, false)?;
-                    anyhow::Ok(())
+                    Ok(())
                 })
                 .is_ok());
 
             db.view(|txn| {
                 assert!(txn.fetch_block(&hash)?.unwrap() == b);
-                anyhow::Ok(())
+                Ok(())
             });
 
             assert!(db
                 .update(|txn| {
                     txn.clear_database()?;
-                    anyhow::Ok(())
+                    Ok(())
                 })
                 .is_ok());
 
             db.view(|txn| {
                 assert!(txn.fetch_block(&hash)?.is_none());
-                anyhow::Ok(())
+                Ok(())
             });
         });
     }
@@ -270,13 +271,13 @@ mod tests {
             assert!(db
                 .view(|txn| {
                     txn.store_block(&b, false)?;
-                    anyhow::Ok(())
+                    Ok(())
                 })
                 .is_ok());
 
             db.view(|txn| {
                 assert!(txn.fetch_block(&b.header.hash)?.is_none());
-                anyhow::Ok(())
+                Ok(())
             });
         });
     }
@@ -301,19 +302,19 @@ mod tests {
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
-                        anyhow::Ok(())
+                        Ok(())
                     })
                     .is_ok());
 
                 // Asserts that the read-only/view transaction runs in isolation
                 assert!(txn.fetch_block(&hash)?.is_none());
-                anyhow::Ok(())
+                Ok(())
             });
 
             // Asserts that update was done
             db.view(|txn| {
                 assert!(txn.fetch_block(&hash)?.unwrap() == b);
-                anyhow::Ok(())
+                Ok(())
             });
         });
     }
