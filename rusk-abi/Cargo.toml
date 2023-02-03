@@ -1,6 +1,6 @@
 [package]
 name = "rusk-abi"
-version = "0.7.0"
+version = "0.8.0-alpha"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
