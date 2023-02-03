@@ -3,7 +3,7 @@ help: ## Display this help screen
 		-E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-all: keys wasm abi circuits state allmacros contracts ## Build everything
+all: keys wasm abi circuits state allmacros contracts node ## Build everything
 
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
@@ -36,6 +36,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./test-utils $@
+	$(MAKE) -C ./node $@
 
 run: keys state ## Run the server
 	cargo run --release --bin rusk
