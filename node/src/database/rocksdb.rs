@@ -10,9 +10,9 @@ use anyhow::{Context, Result};
 use dusk_consensus::commons::Block;
 use dusk_consensus::messages::Serializable;
 use rocksdb_lib::{
-    ColumnFamily, DBAccess, DBCommon, DBWithThreadMode, MultiThreaded,
-    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    ReadOptions, SnapshotWithThreadMode, WriteOptions,
+    ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon, DBWithThreadMode,
+    MultiThreaded, OptimisticTransactionDB, OptimisticTransactionOptions,
+    Options, ReadOptions, SnapshotWithThreadMode, WriteOptions,
 };
 use std::{marker::PhantomData, path::Path, sync::Arc};
 
@@ -23,6 +23,7 @@ enum TxType {
 
 const CF_LEDGER: &str = "cf_ledger";
 const CF_CANDIDATES: &str = "cf_candidates";
+const CF_MEMPOOL: &str = "cf_mempool";
 
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
@@ -50,6 +51,11 @@ impl Backend {
             .cf_handle(CF_CANDIDATES)
             .expect("candidates column family must exist");
 
+        let mempool_cf = self
+            .rocksdb
+            .cf_handle(CF_MEMPOOL)
+            .expect("candidates column family must exist");
+
         let snapshot = self.rocksdb.snapshot();
 
         Transaction::<'_, OptimisticTransactionDB> {
@@ -57,6 +63,7 @@ impl Backend {
             access_type,
             candidates_cf,
             ledger_cf,
+            mempool_cf,
             snapshot,
         }
     }
@@ -71,12 +78,32 @@ impl DB for Backend {
         opts.create_missing_column_families(true);
         opts.set_level_compaction_dynamic_level_bytes(true);
 
+        // Configure CF_MEMPOOL column family so it benefits from low
+        // write-latency of L0
+        let mut mp_opts = Options::default();
+        mp_opts.set_write_buffer_size(64 * 1024 * 1024); // 64 MiB
+
+        // Disable WAL by default
+        mp_opts.set_wal_dir("");
+
+        // Disable flush-to-disk by default
+        mp_opts.set_disable_auto_compactions(true);
+
+        // TODO: Consider disableDataSync
+        // TODO: Consider mp_opts.set_comparator(name, compare_fn);
+
+        let cfs = vec![
+            ColumnFamilyDescriptor::new(CF_LEDGER, Options::default()),
+            ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
+            ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts),
+        ];
+
         Self {
             rocksdb: Arc::new(
-                rocksdb_lib::OptimisticTransactionDB::open_cf(
+                rocksdb_lib::OptimisticTransactionDB::open_cf_descriptors(
                     &opts,
                     Path::new(&path),
-                    [CF_LEDGER, CF_CANDIDATES],
+                    cfs,
                 )
                 .expect("should be a valid database"),
             ),
@@ -122,6 +149,8 @@ pub struct Transaction<'db, DB: DBAccess> {
 
     candidates_cf: &'db ColumnFamily,
     ledger_cf: &'db ColumnFamily,
+    mempool_cf: &'db ColumnFamily,
+
     snapshot: SnapshotWithThreadMode<'db, DB>,
 }
 
