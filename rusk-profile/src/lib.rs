@@ -115,14 +115,16 @@ pub fn to_rusk_state_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
 
 pub fn get_common_reference_string() -> Result<Vec<u8>, io::Error> {
     let mut profile = get_rusk_profile_dir()?;
-    profile.push("dev.crs");
+    profile.push(CRS_FNAME);
 
     read(profile)
 }
 
+const CRS_FNAME: &str = "dev-piecrust.crs";
+
 pub fn set_common_reference_string(buffer: Vec<u8>) -> Result<(), io::Error> {
     let mut profile = get_rusk_profile_dir()?;
-    profile.push("dev.crs");
+    profile.push(CRS_FNAME);
 
     write(&profile, &buffer)?;
     info!("CRS added to cache");
@@ -132,7 +134,7 @@ pub fn set_common_reference_string(buffer: Vec<u8>) -> Result<(), io::Error> {
 
 pub fn delete_common_reference_string() -> Result<(), io::Error> {
     let mut profile = get_rusk_profile_dir()?;
-    profile.push("dev.crs");
+    profile.push(CRS_FNAME);
 
     remove_file(&profile)?;
     info!("CRS removed from cache");
