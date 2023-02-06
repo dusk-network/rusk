@@ -70,8 +70,8 @@ impl From<SpentTransaction> for rusk_schema::ExecutedTransaction {
     fn from(spent_tx: SpentTransaction) -> Self {
         let (transaction, gas_spent, error) = spent_tx.into_inner();
 
-        let tx_hash_bytes = transaction.to_hash_input_bytes();
-        let tx_hash = rusk_abi::hash(tx_hash_bytes);
+        let tx_hash_input_bytes = transaction.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
         let error = error.map(|e| match e {
             ModuleError::Panic => Error {

@@ -123,8 +123,8 @@ fn generator_procedure(
     channel: tonic::transport::Channel,
     tx: &Transaction,
 ) -> Result<()> {
-    let tx_hash_bytes = tx.to_hash_input_bytes();
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash_input_bytes = tx.to_hash_input_bytes();
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     let tx_bytes = tx.to_var_bytes();
 

@@ -70,8 +70,8 @@ impl State for Rusk {
         let tx = TransferPayload::from_slice(&tx_proto.payload)
             .map_err(Error::Serialization)?;
 
-        let tx_hash_bytes = tx.to_hash_input_bytes();
-        let tx_hash = rusk_abi::hash(tx_hash_bytes);
+        let tx_hash_input_bytes = tx.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
         self.pre_verify(&tx)?;
 
