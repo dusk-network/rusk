@@ -13,4 +13,4 @@ rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 
 [dev-dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust" }
+piecrust = "0.1.0-alpha"

@@ -18,7 +18,7 @@ rusk-abi = { path = "../../rusk-abi", features = ["wee_alloc"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
-piecrust = { git = "https://github.com/dusk-network/piecrust" }
+piecrust = "0.1.0-alpha"
 rusk-profile = { path = "../../rusk-profile" }
 rusk-abi = { path = "../../rusk-abi", features = ["host"] }
 transfer-circuits = { path = "../../circuits/transfer", features = ["builder"] }
