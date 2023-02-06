@@ -227,7 +227,7 @@ fn transfer() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[output_note, change_note],
         &anchor,
@@ -235,7 +235,7 @@ fn transfer() {
         &None,
         &None,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     circuit.set_tx_hash(tx_hash);
 
@@ -342,7 +342,7 @@ fn alice_ping() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -350,7 +350,7 @@ fn alice_ping() {
         &None,
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     circuit.set_tx_hash(tx_hash);
 
@@ -521,7 +521,7 @@ fn send_and_withdraw_transparent() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -529,7 +529,7 @@ fn send_and_withdraw_transparent() {
         &Some(crossover),
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -685,7 +685,7 @@ fn send_and_withdraw_transparent() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -693,7 +693,7 @@ fn send_and_withdraw_transparent() {
         &None,
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -900,7 +900,7 @@ fn send_and_withdraw_obfuscated() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -908,7 +908,7 @@ fn send_and_withdraw_obfuscated() {
         &Some(crossover),
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -1115,7 +1115,7 @@ fn send_and_withdraw_obfuscated() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -1123,7 +1123,7 @@ fn send_and_withdraw_obfuscated() {
         &None,
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
