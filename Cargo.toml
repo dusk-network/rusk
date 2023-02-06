@@ -15,7 +15,7 @@ members = [
     "rusk-abi/tests/contracts/host_fn",
 
     "rusk-schema",
-#    "rusk",
+    "rusk",
 ]
 resolver = "2"
 
