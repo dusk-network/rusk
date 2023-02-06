@@ -82,10 +82,13 @@ impl StakeDataWrapper {
     }
 
     /// Compute the eligibility of a stake from the starting block height.
+    ///
+    /// A stake is eligible to participate in the consensus two EPOCHs
+    /// (MATURITY) after the end of the current one.
     #[must_use]
     pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
         let epoch = EPOCH - block_height % EPOCH;
-        block_height + MATURITY + epoch
+        block_height + epoch + MATURITY
     }
 }
 

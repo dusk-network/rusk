@@ -132,8 +132,8 @@ fn wallet_transfer(
         .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
-    let tx_hash_bytes = tx.to_hash_input_bytes();
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash_input_bytes = tx.to_hash_input_bytes();
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     info!("Tx ID: {}", hex::encode(tx_hash.to_bytes()));
     generator_procedure(channel.clone(), &tx, block_height)
@@ -182,8 +182,8 @@ fn generator_procedure(
     tx: &Transaction,
     block_height: u64,
 ) -> Result<()> {
-    let tx_hash_bytes = tx.to_hash_input_bytes();
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash_input_bytes = tx.to_hash_input_bytes();
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     let tx_bytes = tx.to_var_bytes();
 

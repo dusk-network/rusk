@@ -270,7 +270,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -278,7 +278,7 @@ fn stake_withdraw_unstake() {
         &Some(crossover),
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -459,7 +459,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
         &[change_note],
         &anchor,
@@ -467,7 +467,7 @@ fn stake_withdraw_unstake() {
         &None,
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -660,7 +660,7 @@ fn stake_withdraw_unstake() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[
             input_nullifiers[0],
             input_nullifiers[1],
@@ -672,7 +672,7 @@ fn stake_withdraw_unstake() {
         &None,
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 
@@ -851,7 +851,7 @@ fn allow() {
     let anchor =
         root(session).expect("Getting the anchor should be successful");
 
-    let tx_hash_bytes = Transaction::hash_input_bytes_from_components(
+    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
         &[change_note],
         &anchor,
@@ -859,7 +859,7 @@ fn allow() {
         &Some(crossover),
         &call,
     );
-    let tx_hash = rusk_abi::hash(tx_hash_bytes);
+    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     execute_circuit.set_tx_hash(tx_hash);
 

@@ -239,8 +239,8 @@ fn generator_procedure(
         .collect();
 
     for (i, tx) in txs.iter().enumerate() {
-        let tx_hash_bytes = tx.to_hash_input_bytes();
-        let tx_hash = rusk_abi::hash(tx_hash_bytes);
+        let tx_hash_input_bytes = tx.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
         let response = client
             .preverify(PreverifyRequest {
