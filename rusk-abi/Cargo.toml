@@ -1,6 +1,6 @@
 [package]
 name = "rusk-abi"
-version = "0.7.0"
+version = "0.8.0-alpha"
 edition = "2021"
 
 repository = "https://github.com/dusk-network/rusk"
@@ -21,13 +21,13 @@ dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-im
 dusk-bytes = "0.1"
 rkyv = { version = "0.7", default-features = false }
 bytecheck = { version = "0.6", default-features = false }
-piecrust-uplink = { git = "https://github.com/dusk-network/piecrust", default-features = false }
-piecrust = { git = "https://github.com/dusk-network/piecrust", optional = true }
+piecrust-uplink = { version = "0.1.0-alpha", default-features = false }
+piecrust = { version = "0.1.0-alpha", optional = true }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
 dusk-bytes = "0.1"
-piecrust = { git = "https://github.com/dusk-network/piecrust" }
+piecrust = "0.1.0-alpha"
 rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
 once_cell = "1.15"
 
