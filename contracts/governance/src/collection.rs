@@ -5,38 +5,71 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use canonical::CanonError;
 use canonical_derive::Canon;
 
 #[derive(Clone, Canon, Debug)]
-pub struct Collection<K, V> {
+pub struct Map<K, V> {
     data: Vec<(K, V)>,
 }
 
-impl<K: PartialEq, V: PartialEq> Collection<K, V> {
-    // Methods return a result to keep things consistent with the map methods
-    pub fn get(&self, key: &K) -> Result<Option<&V>, CanonError> {
-        Ok(self.data.iter().find_map(|(k, v)| (k == key).then_some(v)))
+#[derive(Clone, Canon, Debug)]
+pub struct Set<V> {
+    data: Vec<V>,
+}
+
+impl<K: PartialEq, V: PartialEq> Map<K, V> {
+    #[allow(dead_code)]
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.data.iter().find_map(|(k, v)| (k == key).then_some(v))
     }
 
-    pub fn insert(&mut self, key: K, value: V) -> Result<(), CanonError> {
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.data
+            .iter_mut()
+            .find_map(|(k, v)| (k == key).then_some(v))
+    }
+
+    pub fn insert(&mut self, key: K, value: V) {
         if let Some(pos) = self.data.iter().position(|(k, _)| k == &key) {
             self.data[pos] = (key, value)
         } else {
             self.data.push((key, value))
         }
-
-        Ok(())
     }
 
-    pub fn remove(&mut self, key: &K) -> Result<(), CanonError> {
+    #[allow(dead_code)]
+    pub fn remove(&mut self, key: &K) {
         self.data.retain(|(k, _)| k != key);
-
-        Ok(())
     }
 }
 
-impl<K, V> Default for Collection<K, V> {
+impl<V: PartialEq> Set<V> {
+    pub fn get(&self, value: &V) -> Option<&V> {
+        self.data.iter().find(|&v| v == value)
+    }
+
+    pub fn contains(&self, value: &V) -> bool {
+        self.data.iter().any(|v| v == value)
+    }
+
+    pub fn insert(&mut self, value: V) {
+        if !self.contains(&value) {
+            self.data.push(value);
+        }
+    }
+
+    pub fn remove(&mut self, value: &V) {
+        self.data.retain(|v| v != value);
+    }
+}
+
+impl<K, V> Default for Map<K, V> {
+    fn default() -> Self {
+        Self { data: Vec::new() }
+    }
+}
+
+impl<V> Default for Set<V> {
     fn default() -> Self {
         Self { data: Vec::new() }
     }
@@ -46,43 +79,43 @@ impl<K, V> Default for Collection<K, V> {
 mod test {
     use super::*;
 
-    fn dummy() -> Collection<u8, u8> {
-        let mut collections: Collection<u8, u8> = Default::default();
+    #[test]
+    fn test_map() {
+        let mut data = Map::<u8, u8>::default();
 
-        collections.insert(1, 20).unwrap();
-        collections.insert(12, 120).unwrap();
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_none());
 
-        collections
+        data.insert(12, 0);
+
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_some());
+
+        data.remove(&12);
+
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_none());
     }
 
     #[test]
-    fn get() {
-        // this is also a test of insert
-        let data = dummy();
+    fn test_set() {
+        let mut data = Set::<u8>::default();
 
-        assert_eq!(*data.get(&1).unwrap().unwrap(), 20);
-        assert_eq!(*data.get(&12).unwrap().unwrap(), 120);
-    }
+        assert!(!data.contains(&1), "1 is not in the set");
+        assert!(!data.contains(&12), "12 is not in the set");
 
-    #[test]
-    fn insert() {
-        let mut data = dummy();
+        data.insert(12);
 
-        // updates the value
-        data.insert(1, 22).unwrap();
-        data.insert(4, 90).unwrap();
+        assert!(!data.contains(&1), "1 is still not in the set");
+        assert!(data.contains(&12), "12 is in the set");
 
-        assert_eq!(*data.get(&1).unwrap().unwrap(), 22);
-        assert_eq!(*data.get(&4).unwrap().unwrap(), 90);
-    }
+        data.remove(&12);
 
-    #[test]
-    #[should_panic]
-    fn remove() {
-        let mut data = dummy();
+        assert!(!data.contains(&1), "1 is still not in the set");
+        assert!(!data.contains(&12), "12 is removed from the set");
 
-        data.remove(&12).unwrap();
+        data.remove(&10);
 
-        data.get(&12).unwrap().unwrap();
+        assert!(!data.contains(&10), "10 is not in the set");
     }
 }
