@@ -41,7 +41,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                     Topics::Block => {
                         // Try to validate message
                         if self.is_valid(&msg).is_ok() {
-                            _ = network.read().await.repropagate(&msg, 0);
+                            network.read().await.repropagate(&msg, 0).await;
 
                             self.handle_block_msg(&msg);
                         }

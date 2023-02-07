@@ -6,7 +6,7 @@
 
 use std::io::{self, Read, Write};
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub enum Topics {
     // Data exchange topics.
     GetData = 8,
@@ -25,13 +25,8 @@ pub enum Topics {
     Agreement = 18,
     AggrAgreement = 19,
 
+    #[default]
     Unknown = 100,
-}
-
-impl Default for Topics {
-    fn default() -> Self {
-        Topics::Unknown
-    }
 }
 
 impl From<Topics> for u8 {

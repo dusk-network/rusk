@@ -29,7 +29,8 @@ use url::Url;
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
 mod snapshot;
-pub mod zip;
+pub mod tar;
+mod zip;
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
@@ -107,7 +108,9 @@ fn generate_stake_state(
             .expect("owner to be added into the state");
     });
 
-    snapshot.allowlist().for_each(|provisioner| {
+    let to_allow = snapshot.allowlist().enumerate();
+    to_allow.for_each(|(idx, provisioner)| {
+        info!("{} additional provisioner #{idx}", theme.action("Allowing"));
         stake_contract
             .insert_allowlist(*provisioner)
             .expect("provisioner to be inserted into the allowlist");
@@ -277,7 +280,7 @@ fn load_state(url: &str) -> Result<NetworkState, Box<dyn Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     let output = state_dir.parent().expect("state dir not equal to root");
 
-    zip::unzip(&buffer, output)?;
+    tar::unarchive(&buffer, output)?;
 
     let network = restore_state(&id_path)?;
     info!(

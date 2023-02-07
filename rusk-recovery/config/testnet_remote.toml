@@ -1,4 +1,4 @@
-base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/testnet-state.zip"
+base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/rusk-state/testnet-state-20230201"
 
 [acl.stake]
 owners = []
