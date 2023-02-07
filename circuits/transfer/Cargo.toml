@@ -16,8 +16,8 @@ dusk-pki ="0.11"
 dusk-schnorr = "0.12"
 phoenix-core = "0.18"
 
-code-hasher = { path = "../../macros/code-hasher" }
-rusk-profile = { path = "../../rusk-profile", optional = true }
+code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
+rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
