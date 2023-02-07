@@ -233,7 +233,7 @@ pub fn restore_state(
 /// Load a state file and save it into the rusk state directory.
 fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
+    let id_path = rusk_profile::to_rusk_state_id_path(state_dir);
 
     assert!(
         restore_state(session, &id_path).is_err(),
