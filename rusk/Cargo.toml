@@ -53,11 +53,11 @@ parking_lot = "0.12"
 rkyv = "0.7"
 bytecheck = "0.6"
 
-rusk-recovery = { path = "../rusk-recovery", features = ["state"] }
-transfer-circuits = { path = "../circuits/transfer" }
-rusk-profile = { path = "../rusk-profile" }
-rusk-abi = { path = "../rusk-abi", features = ["host"] }
-rusk-schema = { path = "../rusk-schema" }
+rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
+transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
+rusk-profile = { version = "0.6", path = "../rusk-profile" }
+rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", features = ["host"] }
+rusk-schema = { version = "0.5", path = "../rusk-schema" }
 
 [dev-dependencies]
 test-context = "0.1"
