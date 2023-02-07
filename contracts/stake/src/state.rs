@@ -23,6 +23,8 @@ const MATURITY: u64 = 2 * EPOCH;
 /// Epoch used for stake operations
 const EPOCH: u64 = 2160;
 
+/// Wraps [`StakeData`] to allow for encapsulating the functionality written
+/// below.
 #[derive(Debug, Clone)]
 pub struct StakeDataWrapper(pub StakeData);
 
