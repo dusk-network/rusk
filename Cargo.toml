@@ -17,8 +17,8 @@ members = [
 
     "rusk-schema",
     "rusk",
-    # "node",
-    # "node-data",
+    "node",
+    "node-data",
 ]
 resolver = "2"
 
