@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![feature(generic_associated_types)]
 #![allow(unused)]
 
 pub mod chain;
