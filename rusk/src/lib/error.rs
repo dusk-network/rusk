@@ -96,35 +96,30 @@ impl fmt::Display for Error {
                 write!(f, "Failed to build a Rusk instance")
             }
             Error::OpeningPositionNotFound(pos) => {
-                write!(f, "Failed to fetch opening of position {}", pos)
+                write!(f, "Failed to fetch opening of position {pos}")
             }
             Error::OpeningNoteUndefined(pos) => {
-                write!(f, "Note {} not found, opening of position", pos)
+                write!(f, "Note {pos} not found, opening of position")
             }
             Error::Serialization(err) => {
-                write!(f, "Serialization Error: {:?}", err)
+                write!(f, "Serialization Error: {err:?}")
             }
-            Error::Vm(err) => write!(f, "VM Error: {}", err),
-            Error::Io(err) => write!(f, "IO Error: {}", err),
-            Error::Status(err) => write!(f, "Status Error: {}", err),
-            Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
-            Error::Other(err) => write!(f, "Other error: {}", err),
+            Error::Vm(err) => write!(f, "VM Error: {err}"),
+            Error::Io(err) => write!(f, "IO Error: {err}"),
+            Error::Status(err) => write!(f, "Status Error: {err}"),
+            Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
+            Error::Other(err) => write!(f, "Other error: {err}"),
             Error::CoinbaseBlockHeight(got, expected) => write!(
                 f,
-                "Coinbase has block height {}, expected {}",
-                got, expected
+                "Coinbase has block height {got}, expected {expected}"
             ),
             Error::CoinbaseDuskSpent(got, expected) => {
-                write!(
-                    f,
-                    "Coinbase has dusk spent {}, expected {}",
-                    got, expected
-                )
+                write!(f, "Coinbase has dusk spent {got}, expected {expected}")
             }
             Error::ProofVerification => write!(f, "Proof verification failure"),
             Error::OutOfGas => write!(f, "Out of gas"),
             Error::RepeatingNullifiers(n) => {
-                write!(f, "Nullifiers repeat: {:?}", n)
+                write!(f, "Nullifiers repeat: {n:?}")
             }
         }
     }
@@ -132,6 +127,6 @@ impl fmt::Display for Error {
 
 impl From<Error> for tonic::Status {
     fn from(err: Error) -> Self {
-        tonic::Status::internal(format!("{}", err))
+        tonic::Status::internal(format!("{err}"))
     }
 }

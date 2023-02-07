@@ -14,7 +14,7 @@ const WFCT_INPUT_LEN: usize =
 
 pub static WFCT_PROVER: Lazy<Prover<WithdrawFromTransparentCircuit>> =
     Lazy::new(|| {
-        let keys = keys_for(&WithdrawFromTransparentCircuit::circuit_id())
+        let keys = keys_for(WithdrawFromTransparentCircuit::circuit_id())
             .expect("keys to be available");
         let pk = keys.get_prover().expect("prover to be available");
         Prover::try_from_bytes(pk).expect("prover key to be valid")
@@ -53,7 +53,7 @@ impl RuskProver {
             WithdrawFromTransparentCircuit::new(commitment, value, blinder);
 
         let (proof, _) = WFCT_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
-            Status::internal(format!("Failed proving the circuit: {}", e))
+            Status::internal(format!("Failed proving the circuit: {e}"))
         })?;
         let proof = proof.to_bytes().to_vec();
 

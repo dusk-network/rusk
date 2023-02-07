@@ -143,7 +143,7 @@ impl Rusk {
             spent_txs.push(SpentTransaction(
                 tx,
                 gas_spent,
-                call_result.map(|result| result.err()).flatten(),
+                call_result.and_then(|result| result.err()),
             ));
 
             // No need to keep executing if there is no gas left in the
@@ -246,7 +246,7 @@ impl Rusk {
     }
 
     pub fn pre_verify(&self, tx: &Transaction) -> Result<()> {
-        println!("PREVERIFY: {:?}", tx);
+        println!("PREVERIFY: {tx:?}");
 
         let existing_nullifiers = self.existing_nullifiers(&tx.nullifiers)?;
 
@@ -410,7 +410,7 @@ fn accept(
         spent_txs.push(SpentTransaction(
             tx,
             gas_spent,
-            call_result.map(|result| result.err()).flatten(),
+            call_result.and_then(|result| result.err()),
         ));
     }
 

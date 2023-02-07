@@ -355,7 +355,7 @@ impl State for Rusk {
         let stream = ReceiverStream::new(receiver).map(|leaf| {
             Ok(GetNotesResponse {
                 note: leaf.note.to_bytes().to_vec(),
-                height: leaf.block_height.into(),
+                height: leaf.block_height,
             })
         });
 
