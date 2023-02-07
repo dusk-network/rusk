@@ -65,7 +65,7 @@ impl Config {
             Arg::new("log-level")
                 .long("log-level")
                 .value_name("LOG")
-                .possible_values(&["error", "warn", "info", "debug", "trace"])
+                .possible_values(["error", "warn", "info", "debug", "trace"])
                 .help("Output log level")
                 .takes_value(true),
         )
@@ -73,7 +73,7 @@ impl Config {
             Arg::new("log-type")
                 .long("log-type")
                 .value_name("LOG_TYPE")
-                .possible_values(&["coloured", "plain", "json"])
+                .possible_values(["coloured", "plain", "json"])
                 .help("Change the log format accordingly")
                 .takes_value(true),
         )
@@ -100,7 +100,7 @@ impl Config {
             Some(log_level) => log_level,
         };
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
-            panic!("Invalid log-level specified '{}' - {}", log_level, e)
+            panic!("Invalid log-level specified '{log_level}' - {e}")
         })
     }
 }

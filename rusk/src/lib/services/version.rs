@@ -99,7 +99,7 @@ impl Interceptor for CompatibilityInterceptor {
                 };
                 if !is_compat {
                     return Err(Status::failed_precondition(
-                        format!("Requested rusk version is not supported. Expected {} but got {}!", VERSION, client_version),
+                        format!("Requested rusk version is not supported. Expected {VERSION} but got {client_version}!"),
                     ));
                 }
             }

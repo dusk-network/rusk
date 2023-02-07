@@ -204,6 +204,7 @@ impl SendToContractObfuscatedCircuit {
     }
 }
 
+#[allow(clippy::option_map_unit_fn)]
 #[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
 impl Circuit for SendToContractObfuscatedCircuit {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {

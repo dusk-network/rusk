@@ -67,7 +67,7 @@ pub fn hash(args: TokenStream, input: TokenStream) -> TokenStream {
     if let Some(v) = args.version {
         let v = match Version::parse(&v) {
             Ok(v) => v,
-            Err(e) => panic!("version should be valid semver: {}", e),
+            Err(e) => panic!("version should be valid semver: {e}"),
         };
 
         if v.major == 0 {
