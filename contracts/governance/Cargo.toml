@@ -16,7 +16,7 @@ dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"]
 dusk-pki = { version = "0.10.0-rc", default-features = false }
 dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
 dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
-rusk-abi = { path = "../../rusk-abi", features = ["module"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["module"] }
 
 [features]
 no-bridge = []
