@@ -31,6 +31,7 @@ phoenix-core = "0.16.0-rc"
 rand = "0.8"
 transfer-circuits = { path = "../circuits/transfer", version = "0.4", features=["builder"] }
 transfer-contract = { path = "../contracts/transfer", version = "0.10", default-features = false }
+governance-contract = { path = "../contracts/governance", version = "0.11", default-features = false }
 stake-contract = { path = "../contracts/stake", version = "0.6", default-features = false }
 microkelvin = { version = "0.15.0-rc", features = ["persistence"] }
 rusk-vm = "0.12.0-rc"
