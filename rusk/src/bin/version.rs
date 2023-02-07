@@ -19,7 +19,7 @@ pub(crate) fn show_version(info: VersionInfo) -> String {
     );
 
     if build.len() > 1 {
-        format!("{} ({})", version, build)
+        format!("{version} ({build})")
     } else {
         version
     }

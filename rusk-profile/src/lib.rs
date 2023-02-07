@@ -126,7 +126,7 @@ pub fn set_common_reference_string(buffer: Vec<u8>) -> Result<(), io::Error> {
     let mut profile = get_rusk_profile_dir()?;
     profile.push(CRS_FNAME);
 
-    write(&profile, &buffer)?;
+    write(&profile, buffer)?;
     info!("CRS added to cache");
 
     Ok(())
@@ -145,7 +145,7 @@ pub fn delete_common_reference_string() -> Result<(), io::Error> {
 pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     info!("Checking integrity of CRS");
     let mut hasher = Sha256::new();
-    hasher.update(&buff);
+    hasher.update(buff);
     let hash = format!("{:x}", hasher.finalize());
 
     hash == CRS_17
@@ -155,7 +155,7 @@ pub fn clean_outdated_keys(ids: &[[u8; 32]]) -> Result<(), io::Error> {
     info!("Cleaning outdated keys (if any)");
     let ids_as_string: Vec<_> = ids.iter().map(hex::encode).collect();
 
-    fs::read_dir(&get_rusk_keys_dir()?)?
+    fs::read_dir(get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
         .filter_map(|res| res.ok())
         .filter(|e| e.is_file())
@@ -207,7 +207,7 @@ pub fn add_keys_for(
 pub fn clear_all_keys() -> Result<(), io::Error> {
     info!("Clearing all the Keys folder contents");
 
-    fs::read_dir(&get_rusk_keys_dir()?)?
+    fs::read_dir(get_rusk_keys_dir()?)?
         .map(|res| res.map(|e| e.path()))
         .filter_map(|res| res.ok())
         .filter(|e| e.is_file())

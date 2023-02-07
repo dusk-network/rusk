@@ -26,7 +26,7 @@ impl RuskProver {
         for input in utx.inputs() {
             let cis = CircuitInputSignature::from(input.signature());
             let cinput = CircuitInput::new(
-                input.opening().clone(),
+                *input.opening(),
                 *input.note(),
                 input.pk_r_prime().into(),
                 input.value(),
@@ -54,7 +54,7 @@ impl RuskProver {
         let pk = &keys.get_prover()?;
 
         let (proof, _) = circ.prove(&mut OsRng, pk).map_err(|e| {
-            Status::internal(format!("Failed proving the circuit: {}", e))
+            Status::internal(format!("Failed proving the circuit: {e}"))
         })?;
 
         Ok(Response::new(ExecuteProverResponse {

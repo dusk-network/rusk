@@ -30,6 +30,7 @@ jobs:
           profile: minimal
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
+      - run: rustup component add rust-src
       - run: >
           RUSK_PROFILE_PATH="/var/opt/build-cache"
           RUSK_KEEP_KEYS="1"
@@ -42,7 +43,7 @@ jobs:
           RUSK_PROFILE_PATH: "/var/opt/build-cache"
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --release -- -D warnings -A clippy::derive_partial_eq_without_eq
+          args: --all-features --release --exclude host_fn --exclude alice --exclude bob --workspace -- -D warnings 
       - name: "Upload Rusk Artifact"
         uses: actions/upload-artifact@v2
         with:
