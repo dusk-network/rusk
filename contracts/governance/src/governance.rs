@@ -10,73 +10,130 @@ use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::GENERATOR_EXTENDED;
-use dusk_pki::PublicKey;
-use dusk_schnorr::Signature;
+use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
+use dusk_bytes::Serializable;
 
-use crate::collection::Collection;
+use crate::collection::{Map, Set};
 use crate::*;
 
-#[derive(Debug, Default, Clone, Canon)]
+#[derive(Debug, Clone, Default, Canon)]
 pub struct GovernanceContract {
-    pub(crate) seeds: Collection<BlsScalar, ()>,
-    pub(crate) balances: Collection<PublicKey, u64>,
-    pub(crate) whitelist: Collection<PublicKey, ()>,
-    pub(crate) paused: bool,
+    pub(crate) seeds: Set<BlsScalar>,
+    pub(crate) balances: Map<PublicKey, u64>,
+    pub(crate) allowlist: Set<PublicKey>,
+    pub(crate) running: bool,
     pub(crate) total_supply: u64,
+    // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
+    // dusk_pki::PublicKey because of our verification method
+    //
+    // They need to be public so they can be accessed from the host environment
+    // (rusk). Once contract deployment stragery will be implemented, this will
+    // change.
+    pub broker: BlsPublicKey,
+    pub authority: BlsPublicKey,
 }
 
+/// Use `GovernanceContract::default()` for instance.
 impl GovernanceContract {
-    /// Authority of the contract
-    ///
-    /// Will have to be defined in the constant space so the bytecode of the
-    /// contract will be changed as the authority does
-    pub const AUTHORITY: PublicKey =
-        PublicKey::from_raw_unchecked(GENERATOR_EXTENDED);
-
-    fn validate_seed(
+    /// Seed invariant: asserts that the seed is valid and is not already used
+    fn assert_seed(
         &mut self,
         arguments: Vec<BlsScalar>,
         signature: Signature,
     ) -> Result<(), Error> {
         let seed = arguments[0];
 
-        if self.seeds.get(&seed)?.is_some() {
+        if self.seeds.contains(&seed) {
             return Err(Error::SeedAlreadyUsed);
         }
 
         #[cfg(target_arch = "wasm32")]
-        if !rusk_abi::verify_schnorr_sign(
+        if !rusk_abi::verify_bls_sign(
             signature,
-            Self::AUTHORITY,
-            rusk_abi::poseidon_hash(arguments),
+            self.authority,
+            rusk_abi::poseidon_hash(arguments).to_bytes().to_vec(),
         ) {
             return Err(Error::InvalidSignature);
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if !signature
-            .verify(&Self::AUTHORITY, dusk_poseidon::sponge::hash(&arguments))
+        if self
+            .authority
+            .verify(
+                &signature,
+                &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
+            )
+            .is_ok()
         {
             return Err(Error::InvalidSignature);
         }
 
-        self.seeds.insert(seed, ())?;
+        self.seeds.insert(seed);
 
         Ok(())
     }
 
-    fn check_pause(&self) -> Result<(), Error> {
-        (!self.paused).then_some(()).ok_or(Error::ContractIsPaused)
+    /// Running invariant: asserts the contract is running and not paused
+    fn assert_running(&self) -> Result<(), Error> {
+        if self.running {
+            Ok(())
+        } else {
+            Err(Error::ContractIsPaused)
+        }
     }
 
-    // to keep code consistent with other collections, we supress deref warnings
-    // as its not implemented for other when we switch features.
-    fn is_allowed(&self, address: &PublicKey) -> Result<(), Error> {
-        self.whitelist
-            .get(address)?
-            .copied()
-            .ok_or(Error::AddressIsNotWhitelisted)
+    /// Address invariant: asserts the address is allowed to perform operations
+    /// on this contract
+    fn assert_address(&self, address: &PublicKey) -> Result<(), Error> {
+        self.allowlist
+            .get(address)
+            .ok_or(Error::AddressIsNotAllowed)?;
+
+        Ok(())
+    }
+
+    /// Add the value given to the specified address' balance.
+    /// If the address is not present, it will be created with the given value
+    /// as balance.
+    ///
+    /// Returns an error if the balance overflows.
+    fn add_balance(
+        &mut self,
+        address: &PublicKey,
+        value: u64,
+    ) -> Result<(), Error> {
+        // No matter if the address exists or not, if the value is `0` we bail
+        // out
+        if value == 0 {
+            return Ok(());
+        }
+
+        if let Some(balance) = self.balances.get_mut(address) {
+            *balance =
+                balance.checked_add(value).ok_or(Error::BalanceOverflow)?;
+        } else {
+            self.balances.insert(*address, value);
+        }
+
+        Ok(())
+    }
+
+    /// Subtract the value given from the specified address' balance.
+    /// If the address is not present nothing happens.
+    fn sub_balance(&mut self, address: &PublicKey, value: u64) -> u64 {
+        match self.balances.get_mut(address) {
+            Some(balance) if *balance < value => {
+                let remaining = value - *balance;
+                *balance = 0;
+
+                remaining
+            }
+            Some(balance) => {
+                *balance -= value;
+                0
+            }
+            None => value,
+        }
     }
 
     pub fn pause(
@@ -84,12 +141,12 @@ impl GovernanceContract {
         seed: BlsScalar,
         signature: Signature,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             vec![seed, BlsScalar::from(TX_PAUSE as u64)],
             signature,
         )?;
 
-        self.paused = true;
+        self.running = false;
 
         Ok(())
     }
@@ -99,11 +156,12 @@ impl GovernanceContract {
         seed: BlsScalar,
         signature: Signature,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             vec![seed, BlsScalar::from(TX_UNPAUSE as u64)],
             signature,
         )?;
-        self.paused = false;
+
+        self.running = true;
 
         Ok(())
     }
@@ -114,14 +172,15 @@ impl GovernanceContract {
         signature: Signature,
         address: PublicKey,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             iter::once([seed, BlsScalar::from(TX_ALLOW as u64)])
                 .chain(iter::once(address.as_ref().to_hash_inputs()))
                 .flatten()
                 .collect(),
             signature,
         )?;
-        self.whitelist.insert(address, ())?;
+
+        self.allowlist.insert(address);
 
         Ok(())
     }
@@ -132,14 +191,15 @@ impl GovernanceContract {
         signature: Signature,
         address: PublicKey,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             iter::once([seed, BlsScalar::from(TX_BLOCK as u64)])
                 .chain(iter::once(address.as_ref().to_hash_inputs()))
                 .flatten()
                 .collect(),
             signature,
         )?;
-        self.whitelist.remove(&address)?;
+
+        self.allowlist.remove(&address);
 
         Ok(())
     }
@@ -151,7 +211,7 @@ impl GovernanceContract {
         address: PublicKey,
         value: u64,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             iter::once([seed, BlsScalar::from(TX_MINT as u64)])
                 .chain(iter::once(address.as_ref().to_hash_inputs()))
                 .flatten()
@@ -159,25 +219,16 @@ impl GovernanceContract {
                 .collect(),
             signature,
         )?;
-        self.check_pause()?;
-        self.is_allowed(&address)?;
+
+        self.assert_running()?;
+        self.assert_address(&address)?;
 
         self.total_supply = self
             .total_supply
             .checked_add(value)
             .ok_or(Error::BalanceOverflow)?;
 
-        let value = self
-            .balances
-            .get(&address)?
-            .copied()
-            .unwrap_or(0)
-            .checked_add(value)
-            .ok_or(Error::BalanceOverflow)?;
-
-        self.balances.insert(address, value)?;
-
-        Ok(())
+        self.add_balance(&address, value)
     }
 
     pub fn burn(
@@ -187,7 +238,7 @@ impl GovernanceContract {
         address: PublicKey,
         value: u64,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             iter::once([seed, BlsScalar::from(TX_BURN as u64)])
                 .chain(iter::once(address.as_ref().to_hash_inputs()))
                 .flatten()
@@ -195,23 +246,11 @@ impl GovernanceContract {
                 .collect(),
             signature,
         )?;
-        self.check_pause()?;
 
+        self.assert_running()?;
         self.total_supply = self.total_supply.saturating_sub(value);
 
-        let value = self
-            .balances
-            .get(&address)?
-            .copied()
-            .unwrap_or(0)
-            .checked_sub(value)
-            .ok_or(Error::InsufficientBalance)?;
-
-        if value == 0 {
-            self.balances.remove(&address)?;
-        } else {
-            self.balances.insert(address, value)?;
-        }
+        self.sub_balance(&address, value);
 
         Ok(())
     }
@@ -222,52 +261,28 @@ impl GovernanceContract {
         signature: Signature,
         batch: Vec<Transfer>,
     ) -> Result<(), Error> {
-        self.validate_seed(
+        self.assert_seed(
             iter::once([seed, BlsScalar::from(TX_TRANSFER as u64)])
                 .flatten()
                 .chain(batch.iter().flat_map(Transfer::as_scalars))
                 .collect(),
             signature,
         )?;
-        self.check_pause()?;
+        self.assert_running()?;
 
         for Transfer {
             from, to, amount, ..
         } in batch
         {
-            self.is_allowed(&from)?;
+            self.assert_address(&from)?;
 
-            let mut base = self.balances.get(&from)?.copied().unwrap_or(0);
+            let remaining = self.sub_balance(&from, amount);
 
-            if base < amount {
-                let remaining = amount - base;
-
-                self.mint(seed, signature, from, remaining)?;
-
-                base = 0;
-            } else {
-                base -= amount;
+            if remaining > 0 {
+                self.mint(seed, signature, to, remaining)?
             }
 
-            let target = self
-                .balances
-                .get(&to)?
-                .copied()
-                .unwrap_or(0)
-                .checked_add(amount)
-                .ok_or(Error::BalanceOverflow)?;
-
-            if base == 0 {
-                self.balances.remove(&from)?;
-            } else {
-                self.balances.insert(from, base)?;
-            }
-
-            if target == 0 {
-                self.balances.remove(&to)?;
-            } else {
-                self.balances.insert(to, target)?;
-            }
+            self.add_balance(&to, amount - remaining)?;
         }
 
         Ok(())

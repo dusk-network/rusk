@@ -24,47 +24,50 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
 
     match tid {
         TX_PAUSE => {
-            let (seed, signature) = Canon::decode(&mut source).unwrap();
+            let (seed, signature) = Canon::decode(&mut source)
+                .expect("[TX_PAUSE] Arguments parsing failed");
 
             contract.pause(seed, signature).unwrap();
         }
 
         TX_UNPAUSE => {
-            let (seed, signature) = Canon::decode(&mut source).unwrap();
+            let (seed, signature) = Canon::decode(&mut source)
+                .expect("[TX_UNPAUSE] Arguments parsing failed");
 
             contract.unpause(seed, signature).unwrap();
         }
 
         TX_ALLOW => {
-            let (seed, signature, address) =
-                Canon::decode(&mut source).unwrap();
+            let (seed, signature, address) = Canon::decode(&mut source)
+                .expect("[TX_ALLOW] Arguments parsing failed");
 
             contract.allow(seed, signature, address).unwrap();
         }
 
         TX_BLOCK => {
-            let (seed, signature, address) =
-                Canon::decode(&mut source).unwrap();
+            let (seed, signature, address) = Canon::decode(&mut source)
+                .expect("[TX_BLOCK] Arguments parsing failed");
 
             contract.block(seed, signature, address).unwrap();
         }
 
         TX_MINT => {
-            let (seed, signature, address, value) =
-                Canon::decode(&mut source).unwrap();
+            let (seed, signature, address, value) = Canon::decode(&mut source)
+                .expect("[TX_MINT] Arguments parsing failed");
 
             contract.mint(seed, signature, address, value).unwrap();
         }
 
         TX_BURN => {
-            let (seed, signature, address, value) =
-                Canon::decode(&mut source).unwrap();
+            let (seed, signature, address, value) = Canon::decode(&mut source)
+                .expect("[TX_BURN] Arguments parsing failed");
 
             contract.burn(seed, signature, address, value).unwrap();
         }
 
         TX_TRANSFER => {
-            let (seed, signature, batch) = Canon::decode(&mut source).unwrap();
+            let (seed, signature, batch) = Canon::decode(&mut source)
+                .expect("[TX_TRANSFER] Arguments parsing failed");
 
             contract.transfer(seed, signature, batch).unwrap();
         }

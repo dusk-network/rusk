@@ -5,39 +5,120 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use canonical::CanonError;
 use canonical_derive::Canon;
 
 #[derive(Clone, Canon, Debug)]
-pub struct Collection<K, V> {
+pub struct Map<K, V> {
     data: Vec<(K, V)>,
 }
 
-impl<K: PartialEq, V: PartialEq> Collection<K, V> {
-    // Methods return a result to keep things consistent with the map methods
-    pub fn get(&self, key: &K) -> Result<Option<&V>, CanonError> {
-        Ok(self.data.iter().find_map(|(k, v)| (k == key).then_some(v)))
+#[derive(Clone, Canon, Debug)]
+pub struct Set<V> {
+    data: Vec<V>,
+}
+
+impl<K: PartialEq, V: PartialEq> Map<K, V> {
+    #[allow(dead_code)]
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.data.iter().find_map(|(k, v)| (k == key).then_some(v))
     }
 
-    pub fn insert(&mut self, key: K, value: V) -> Result<(), CanonError> {
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        self.data
+            .iter_mut()
+            .find_map(|(k, v)| (k == key).then_some(v))
+    }
+
+    pub fn insert(&mut self, key: K, value: V) {
         if let Some(pos) = self.data.iter().position(|(k, _)| k == &key) {
             self.data[pos] = (key, value)
         } else {
             self.data.push((key, value))
         }
-
-        Ok(())
     }
 
-    pub fn remove(&mut self, key: &K) -> Result<(), CanonError> {
+    #[allow(dead_code)]
+    pub fn remove(&mut self, key: &K) {
         self.data.retain(|(k, _)| k != key);
-
-        Ok(())
     }
 }
 
-impl<K, V> Default for Collection<K, V> {
+impl<V: PartialEq> Set<V> {
+    pub fn get(&self, value: &V) -> Option<&V> {
+        self.data.iter().find(|&v| v == value)
+    }
+
+    pub fn contains(&self, value: &V) -> bool {
+        self.data.iter().any(|v| v == value)
+    }
+
+    pub fn insert(&mut self, value: V) -> bool {
+        if self.contains(&value) {
+            return false;
+        }
+
+        self.data.push(value);
+        true
+    }
+
+    pub fn remove(&mut self, value: &V) {
+        self.data.retain(|v| v != value);
+    }
+}
+
+impl<K, V> Default for Map<K, V> {
     fn default() -> Self {
         Self { data: Vec::new() }
+    }
+}
+
+impl<V> Default for Set<V> {
+    fn default() -> Self {
+        Self { data: Vec::new() }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_map() {
+        let mut data = Map::<u8, u8>::default();
+
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_none());
+
+        data.insert(12, 0);
+
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_some());
+
+        data.remove(&12);
+
+        assert!(data.get(&1).is_none());
+        assert!(data.get(&12).is_none());
+    }
+
+    #[test]
+    fn test_set() {
+        let mut data = Set::<u8>::default();
+
+        assert!(!data.contains(&1), "1 is not in the set");
+        assert!(!data.contains(&12), "12 is not in the set");
+
+        data.insert(12);
+
+        assert!(!data.contains(&1), "1 is still not in the set");
+        assert!(data.contains(&12), "12 is in the set");
+
+        data.remove(&12);
+
+        assert!(!data.contains(&1), "1 is still not in the set");
+        assert!(!data.contains(&12), "12 is removed from the set");
+
+        data.remove(&10);
+
+        assert!(!data.contains(&10), "10 is not in the set");
     }
 }

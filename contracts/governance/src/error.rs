@@ -9,8 +9,9 @@ use core::fmt;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    AddressIsNotWhitelisted,
+    AddressIsNotAllowed,
     BalanceOverflow,
+    InvalidPublicKey,
     Canon(CanonError),
     ContractIsPaused,
     InsufficientBalance,
