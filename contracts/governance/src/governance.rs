@@ -20,8 +20,8 @@ use crate::*;
 pub struct GovernanceContract {
     pub(crate) seeds: Set<BlsScalar>,
     pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) whitelist: Set<PublicKey>,
-    pub(crate) paused: bool,
+    pub(crate) allowlist: Set<PublicKey>,
+    pub(crate) running: bool,
     pub(crate) total_supply: u64,
     // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
     // dusk_pki::PublicKey because of our verification method
@@ -35,6 +35,7 @@ pub struct GovernanceContract {
 
 /// Use `GovernanceContract::default()` for instance.
 impl GovernanceContract {
+    /// Seed invariant: asserts that the seed is valid and is not already used
     fn assert_seed(
         &mut self,
         arguments: Vec<BlsScalar>,
@@ -72,27 +73,41 @@ impl GovernanceContract {
         Ok(())
     }
 
-    fn assert_pause(&self) -> Result<(), Error> {
-        if self.paused {
-            Err(Error::ContractIsPaused)
-        } else {
+    /// Running invariant: asserts the contract is running and not paused
+    fn assert_running(&self) -> Result<(), Error> {
+        if self.running {
             Ok(())
+        } else {
+            Err(Error::ContractIsPaused)
         }
     }
 
+    /// Address invariant: asserts the address is allowed to perform operations
+    /// on this contract
     fn assert_address(&self, address: &PublicKey) -> Result<(), Error> {
-        self.whitelist
+        self.allowlist
             .get(address)
-            .ok_or(Error::AddressIsNotWhitelisted)?;
+            .ok_or(Error::AddressIsNotAllowed)?;
 
         Ok(())
     }
 
-    fn balance_add(
+    /// Add the value given to the specified address' balance.
+    /// If the address is not present, it will be created with the given value
+    /// as balance.
+    ///
+    /// Returns an error if the balance overflows.
+    fn add_balance(
         &mut self,
         address: &PublicKey,
         value: u64,
     ) -> Result<(), Error> {
+        // No matter if the address exists or not, if the value is `0` we bail
+        // out
+        if value == 0 {
+            return Ok(());
+        }
+
         if let Some(balance) = self.balances.get_mut(address) {
             *balance =
                 balance.checked_add(value).ok_or(Error::BalanceOverflow)?;
@@ -103,7 +118,9 @@ impl GovernanceContract {
         Ok(())
     }
 
-    fn balance_sub(&mut self, address: &PublicKey, value: u64) -> u64 {
+    /// Subtract the value given from the specified address' balance.
+    /// If the address is not present nothing happens.
+    fn sub_balance(&mut self, address: &PublicKey, value: u64) -> u64 {
         match self.balances.get_mut(address) {
             Some(balance) if *balance < value => {
                 let remaining = value - *balance;
@@ -115,7 +132,7 @@ impl GovernanceContract {
                 *balance -= value;
                 0
             }
-            None => 0,
+            None => value,
         }
     }
 
@@ -129,7 +146,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.paused = true;
+        self.running = false;
 
         Ok(())
     }
@@ -144,7 +161,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.paused = false;
+        self.running = true;
 
         Ok(())
     }
@@ -163,7 +180,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.whitelist.insert(address);
+        self.allowlist.insert(address);
 
         Ok(())
     }
@@ -182,7 +199,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.whitelist.remove(&address);
+        self.allowlist.remove(&address);
 
         Ok(())
     }
@@ -203,7 +220,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.assert_pause()?;
+        self.assert_running()?;
         self.assert_address(&address)?;
 
         self.total_supply = self
@@ -211,7 +228,7 @@ impl GovernanceContract {
             .checked_add(value)
             .ok_or(Error::BalanceOverflow)?;
 
-        self.balance_add(&address, value)
+        self.add_balance(&address, value)
     }
 
     pub fn burn(
@@ -230,10 +247,10 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.assert_pause()?;
+        self.assert_running()?;
         self.total_supply = self.total_supply.saturating_sub(value);
 
-        self.balance_sub(&address, value);
+        self.sub_balance(&address, value);
 
         Ok(())
     }
@@ -251,7 +268,7 @@ impl GovernanceContract {
                 .collect(),
             signature,
         )?;
-        self.assert_pause()?;
+        self.assert_running()?;
 
         for Transfer {
             from, to, amount, ..
@@ -259,13 +276,13 @@ impl GovernanceContract {
         {
             self.assert_address(&from)?;
 
-            let remaining = self.balance_sub(&from, amount);
+            let remaining = self.sub_balance(&from, amount);
 
             if remaining > 0 {
-                self.mint(seed, signature, from, remaining)?
+                self.mint(seed, signature, to, remaining)?
             }
 
-            self.balance_add(&to, amount)?;
+            self.add_balance(&to, amount - remaining)?;
         }
 
         Ok(())

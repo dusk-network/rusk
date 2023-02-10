@@ -52,10 +52,13 @@ impl<V: PartialEq> Set<V> {
         self.data.iter().any(|v| v == value)
     }
 
-    pub fn insert(&mut self, value: V) {
-        if !self.contains(&value) {
-            self.data.push(value);
+    pub fn insert(&mut self, value: V) -> bool {
+        if self.contains(&value) {
+            return false;
         }
+
+        self.data.push(value);
+        true
     }
 
     pub fn remove(&mut self, value: &V) {
