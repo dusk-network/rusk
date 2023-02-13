@@ -7,6 +7,8 @@
 #![feature(generic_associated_types)]
 #![allow(unused)]
 
+extern crate core;
+
 pub mod chain;
 mod data;
 pub mod database;

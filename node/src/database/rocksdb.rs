@@ -4,17 +4,26 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Registry, Tx, DB};
+use super::{Candidate, Ledger, Persist, Registry, DB};
 use anyhow::{Context, Result};
 
+use crate::data::ledger;
+use crate::database::Mempool;
+
+use dusk_bytes::Serializable as DuskBytesSerializable;
+use dusk_consensus::messages::Serializable as DuskConsensusSerializable;
+
 use dusk_consensus::commons::Block;
-use dusk_consensus::messages::Serializable;
 use rocksdb_lib::{
     ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon, DBWithThreadMode,
-    MultiThreaded, OptimisticTransactionDB, OptimisticTransactionOptions,
-    Options, ReadOptions, SnapshotWithThreadMode, WriteOptions,
+    IteratorMode, MultiThreaded, OptimisticTransactionDB,
+    OptimisticTransactionOptions, Options, ReadOptions, SnapshotWithThreadMode,
+    WriteOptions,
 };
+
+use std::io::Read;
 use std::{marker::PhantomData, path::Path, sync::Arc};
+use tokio::io::AsyncWriteExt;
 
 enum TxType {
     ReadWrite,
@@ -24,6 +33,10 @@ enum TxType {
 const CF_LEDGER: &str = "cf_ledger";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_MEMPOOL: &str = "cf_mempool";
+const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
+const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
+
+const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
@@ -33,7 +46,7 @@ impl Backend {
     fn begin_tx(
         &self,
         access_type: TxType,
-    ) -> Transaction<'_, OptimisticTransactionDB> {
+    ) -> DBTransaction<'_, OptimisticTransactionDB> {
         // Create a new RocksDB transaction
         let write_options = WriteOptions::default();
         let mut tx_options = OptimisticTransactionOptions::default();
@@ -54,23 +67,35 @@ impl Backend {
         let mempool_cf = self
             .rocksdb
             .cf_handle(CF_MEMPOOL)
-            .expect("candidates column family must exist");
+            .expect("mempool column family must exist");
+
+        let nullifiers_cf = self
+            .rocksdb
+            .cf_handle(CF_MEMPOOL_NULLIFIERS)
+            .expect("CF_MEMPOOL_NULLIFIERS column family must exist");
+
+        let fees_cf = self
+            .rocksdb
+            .cf_handle(CF_MEMPOOL_FEES)
+            .expect("CF_MEMPOOL_FEES column family must exist");
 
         let snapshot = self.rocksdb.snapshot();
 
-        Transaction::<'_, OptimisticTransactionDB> {
+        DBTransaction::<'_, OptimisticTransactionDB> {
             inner,
             access_type,
             candidates_cf,
             ledger_cf,
             mempool_cf,
+            nullifiers_cf,
+            fees_cf,
             snapshot,
         }
     }
 }
 
 impl DB for Backend {
-    type T<'a> = Transaction<'a, OptimisticTransactionDB>;
+    type P<'a> = DBTransaction<'a, OptimisticTransactionDB>;
 
     fn create_or_open(path: String) -> Self {
         let mut opts = Options::default();
@@ -81,21 +106,20 @@ impl DB for Backend {
         // Configure CF_MEMPOOL column family so it benefits from low
         // write-latency of L0
         let mut mp_opts = Options::default();
-        mp_opts.set_write_buffer_size(64 * 1024 * 1024); // 64 MiB
+        mp_opts.set_write_buffer_size(MAX_MEMPOOL_SIZE);
 
         // Disable WAL by default
-        mp_opts.set_wal_dir("");
+        mp_opts.set_manual_wal_flush(true);
 
         // Disable flush-to-disk by default
         mp_opts.set_disable_auto_compactions(true);
 
-        // TODO: Consider disableDataSync
-        // TODO: Consider mp_opts.set_comparator(name, compare_fn);
-
         let cfs = vec![
             ColumnFamilyDescriptor::new(CF_LEDGER, Options::default()),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
-            ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts),
+            ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
+            ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
+            ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts),
         ];
 
         Self {
@@ -112,7 +136,7 @@ impl DB for Backend {
 
     fn view<F>(&self, f: F) -> Result<()>
     where
-        F: for<'a> FnOnce(Self::T<'a>) -> Result<()>,
+        F: for<'a> FnOnce(Self::P<'a>) -> Result<()>,
     {
         // Create a new read-only transaction
         let tx = self.begin_tx(TxType::ReadOnly);
@@ -125,7 +149,7 @@ impl DB for Backend {
 
     fn update<F>(&self, execute: F) -> Result<()>
     where
-        F: for<'a> FnOnce(&Self::T<'a>) -> Result<()>,
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<()>,
     {
         // Create read-write transaction
         let tx = self.begin_tx(TxType::ReadWrite);
@@ -143,18 +167,20 @@ impl DB for Backend {
     fn close(&mut self) {}
 }
 
-pub struct Transaction<'db, DB: DBAccess> {
+pub struct DBTransaction<'db, DB: DBAccess> {
     inner: rocksdb_lib::Transaction<'db, DB>,
     access_type: TxType,
 
     candidates_cf: &'db ColumnFamily,
     ledger_cf: &'db ColumnFamily,
     mempool_cf: &'db ColumnFamily,
+    nullifiers_cf: &'db ColumnFamily,
+    fees_cf: &'db ColumnFamily,
 
     snapshot: SnapshotWithThreadMode<'db, DB>,
 }
 
-impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
+impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(&self, b: &Block, persisted: bool) -> Result<()> {
         let mut serialized = vec![];
         b.header.write(&mut serialized)?;
@@ -181,25 +207,9 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
         // Block not found
         Ok(None)
     }
+}
 
-    /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
-    fn clear_database(&self) -> Result<()> {
-        // Create an iterator over the column family CF_LEDGER
-        let iter = self
-            .inner
-            .iterator_cf(self.ledger_cf, rocksdb_lib::IteratorMode::Start);
-
-        // Iterate through the CF_LEDGER column family and delete all items
-        iter.map(Result::unwrap)
-            .map(|(key, _)| {
-                self.inner.delete_cf(self.ledger_cf, key);
-            })
-            .collect::<Vec<_>>();
-
-        self.clear_candidates()?;
-        Ok(())
-    }
-
+impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
     fn store_candidate_block(&self, b: Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
@@ -222,10 +232,9 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
 
     /// Deletes all items from CF_CANDIDATES column family
     fn clear_candidates(&self) -> Result<()> {
-        // Create an iterator over the column family CF_CANDIDATES
         let iter = self
             .inner
-            .iterator_cf(self.candidates_cf, rocksdb_lib::IteratorMode::Start);
+            .iterator_cf(self.candidates_cf, IteratorMode::Start);
 
         // Iterate through the CF_CANDIDATES column family and delete all items
         iter.map(Result::unwrap)
@@ -234,6 +243,24 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
             })
             .collect::<Vec<_>>();
 
+        Ok(())
+    }
+}
+
+impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
+    /// Deletes all items from both CF_LEDGER and CF_CANDIDATES column families
+    fn clear_database(&self) -> Result<()> {
+        // Create an iterator over the column family CF_LEDGER
+        let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
+
+        // Iterate through the CF_LEDGER column family and delete all items
+        iter.map(Result::unwrap)
+            .map(|(key, _)| {
+                self.inner.delete_cf(self.ledger_cf, key);
+            })
+            .collect::<Vec<_>>();
+
+        self.clear_candidates()?;
         Ok(())
     }
 
@@ -246,10 +273,151 @@ impl<'db, DB: DBAccess> Tx for Transaction<'db, DB> {
     }
 }
 
+impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
+    fn add_tx(&self, tx: &ledger::Transaction) -> Result<()> {
+        // Map Hash to serialized transaction
+        let mut d = vec![];
+        tx.write(&mut d)?;
+
+        let hash = tx.hash();
+        self.inner.put_cf(self.mempool_cf, hash, d)?;
+
+        // Add Secondary indexes //
+        // Nullifiers
+        for n in tx.inner.inputs().into_iter() {
+            let key: [u8; 32] = n.to_bytes().into();
+            self.inner.put_cf(self.nullifiers_cf, key, vec![0])?;
+        }
+
+        // Map Fee_Hash to Null to facilitate sort-by-fee
+        self.inner.put_cf(
+            self.fees_cf,
+            serialize_fee_key(tx.gas_price(), hash)?,
+            vec![0],
+        )?;
+
+        Ok(())
+    }
+
+    fn get_tx(&self, hash: [u8; 32]) -> Result<Option<ledger::Transaction>> {
+        let data = self.inner.get_cf(self.mempool_cf, hash)?;
+
+        match data {
+            // None has a meaning key not found
+            None => Ok(None),
+            Some(blob) => {
+                Ok(Some(ledger::Transaction::read(&mut &blob.to_vec()[..])?))
+            }
+        }
+    }
+
+    fn get_tx_exists(&self, h: [u8; 32]) -> bool {
+        // Check for hash if exists without deserializing
+        self.snapshot.get_cf(self.mempool_cf, h).is_ok()
+    }
+
+    fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
+        let tx = self.get_tx(h)?;
+        if let Some(tx) = tx {
+            let hash = tx.hash();
+
+            self.inner.delete_cf(self.mempool_cf, hash)?;
+
+            // Delete Secondary indexes
+            // Delete Nullifiers
+            for n in tx.inner.inputs().into_iter() {
+                let key: [u8; 32] = n.to_bytes().into();
+                self.inner.delete_cf(self.nullifiers_cf, key)?;
+            }
+
+            // Delete Fee_Hash
+            self.inner.delete_cf(
+                self.fees_cf,
+                serialize_fee_key(tx.gas_price(), hash)?,
+            )?;
+
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+
+    fn get_nullifiers_exist(&self, nullifiers: Vec<[u8; 32]>) -> bool {
+        nullifiers
+            .into_iter()
+            .all(|n| self.snapshot.get_cf(self.nullifiers_cf, n).is_ok())
+    }
+
+    fn get_txs_sorted_by_fee(
+        &self,
+        max_gas_limit: u64,
+    ) -> Result<Vec<Option<ledger::Transaction>>> {
+        // The slippageGasLimit is the threshold that consider the "estimated
+        // gas spent" acceptable even if it exceeds the strict GasLimit.
+        // This is required to avoid to iterate the whole mempool until
+        // it fit perfectly the block GasLimit
+        let slippage_gas_limit = max_gas_limit + max_gas_limit / 10;
+
+        let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
+        iter.seek_to_last();
+
+        let mut total_gas: u64 = 0;
+        let mut txs_list = vec![];
+
+        // Iterate all keys from the end in reverse lexicographic order
+        while iter.valid() {
+            if let Some(key) = iter.key() {
+                let (read_gp, tx_hash) =
+                    deserialize_fee_key(&mut &key.to_vec()[..])?;
+
+                let mut tx = self.get_tx(tx_hash)?;
+                if let Some(tx) = tx {
+                    let gas_price = tx.gas_price();
+                    debug_assert_eq!(read_gp, gas_price);
+                    total_gas += gas_price;
+
+                    if total_gas > slippage_gas_limit {
+                        break;
+                    }
+
+                    txs_list.push(Some(tx));
+                }
+            }
+
+            iter.prev();
+        }
+
+        Ok(txs_list)
+    }
+}
+
+fn serialize_fee_key(fee: u64, hash: [u8; 32]) -> std::io::Result<Vec<u8>> {
+    let mut w = vec![];
+    std::io::Write::write_all(&mut w, &fee.to_be_bytes())?;
+    std::io::Write::write_all(&mut w, &hash)?;
+    Ok(w)
+}
+
+fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
+    // Read fee
+    let mut buf = [0u8; 8];
+    r.read_exact(&mut buf)?;
+    let fee = u64::from_be_bytes(buf);
+
+    // Read tx hash
+    let mut hash = [0u8; 32];
+    r.read_exact(&mut hash[..])?;
+
+    Ok((fee, hash))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use dusk_consensus::commons::{Certificate, Header, Signature};
+    use rand::prelude::*;
+    use rand::Rng;
+
     #[test]
     fn test_store_block() {
         let t = TestWrapper {
@@ -270,7 +438,7 @@ mod tests {
                 .is_ok());
 
             db.view(|txn| {
-                assert!(txn.fetch_block(&hash)?.unwrap() == b);
+                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
                 Ok(())
             });
 
@@ -342,7 +510,7 @@ mod tests {
 
             // Asserts that update was done
             db.view(|txn| {
-                assert!(txn.fetch_block(&hash)?.unwrap() == b);
+                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
                 Ok(())
             });
         });
@@ -357,6 +525,10 @@ mod tests {
         where
             F: FnOnce(&str),
         {
+            // Destroy/deletion of a database can happen only before creating
+            let opts = Options::default();
+            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+
             test_func(self.path);
 
             // Destroy/deletion of a database can happen only after dropping DB.
