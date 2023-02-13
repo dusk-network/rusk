@@ -15,7 +15,6 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn hash(&self) -> [u8; 32] {
-        use dusk_bytes::Serializable;
         self.inner.hash().to_bytes().into()
     }
 

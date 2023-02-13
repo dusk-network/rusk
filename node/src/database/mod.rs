@@ -60,7 +60,7 @@ pub trait Mempool {
     fn get_tx_exists(&self, h: [u8; 32]) -> bool;
     fn delete_tx(&self, h: [u8; 32]) -> Result<bool>;
 
-    fn get_nullifiers_exist(&self, nullifiers: Vec<[u8; 32]>) -> bool;
+    fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool;
     fn get_txs_sorted_by_fee(
         &self,
         max_gas_limit: u64,
