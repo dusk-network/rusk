@@ -332,6 +332,35 @@ impl TransferWrapper {
             .collect()
     }
 
+    // Return all the unspent notes beloging to the `ssk` alongside a vector
+    // containing _N_ ssk where _N_ is the length of the notes beloging to `ssk`
+    //
+    // This is useful to use in combination with TransferWrapper::execute
+    pub fn unspent_notes(
+        &self,
+        ssk: &SecretSpendKey,
+    ) -> (Vec<Note>, Vec<SecretSpendKey>) {
+        let transfer_state: TransferContract = self.transfer_state();
+        let vk = ssk.view_key();
+
+        let notes = self.notes_owned_by(0, &vk);
+
+        let nullifiers: Vec<_> =
+            notes.iter().map(|n| n.gen_nullifier(ssk)).collect();
+
+        let existing_nullifiers = transfer_state
+            .find_existing_nullifiers(&nullifiers)
+            .expect("nullifiers must be fetch");
+
+        let unspent_notes = notes
+            .into_iter()
+            .zip(nullifiers.into_iter())
+            .filter(|(_, nullifier)| !existing_nullifiers.contains(nullifier))
+            .map(|(note, _)| (note, *ssk));
+
+        unspent_notes.unzip()
+    }
+
     pub fn notes_owned_by(&self, block_height: u64, vk: &ViewKey) -> Vec<Note> {
         self.notes(block_height)
             .iter()
