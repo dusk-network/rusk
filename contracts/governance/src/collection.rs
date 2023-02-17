@@ -43,6 +43,7 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
     }
 }
 
+#[allow(dead_code)]
 impl<V: PartialEq> Set<V> {
     pub fn get(&self, value: &V) -> Option<&V> {
         self.data.iter().find(|&v| v == value)

@@ -37,20 +37,6 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
             contract.unpause(seed, signature).unwrap();
         }
 
-        TX_ALLOW => {
-            let (seed, signature, address) = Canon::decode(&mut source)
-                .expect("[TX_ALLOW] Arguments parsing failed");
-
-            contract.allow(seed, signature, address).unwrap();
-        }
-
-        TX_BLOCK => {
-            let (seed, signature, address) = Canon::decode(&mut source)
-                .expect("[TX_BLOCK] Arguments parsing failed");
-
-            contract.block(seed, signature, address).unwrap();
-        }
-
         TX_MINT => {
             let (seed, signature, address, value) = Canon::decode(&mut source)
                 .expect("[TX_MINT] Arguments parsing failed");

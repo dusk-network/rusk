@@ -26,11 +26,9 @@ pub use governance::GovernanceContract;
 
 pub const TX_PAUSE: u8 = 0x00;
 pub const TX_UNPAUSE: u8 = 0x01;
-pub const TX_ALLOW: u8 = 0x02;
-pub const TX_BLOCK: u8 = 0x03;
-pub const TX_MINT: u8 = 0x04;
-pub const TX_BURN: u8 = 0x05;
-pub const TX_TRANSFER: u8 = 0x06;
+pub const TX_MINT: u8 = 0x02;
+pub const TX_BURN: u8 = 0x03;
+pub const TX_TRANSFER: u8 = 0x04;
 
 #[derive(Debug, Clone, PartialEq, Eq, Canon)]
 pub struct Transfer {

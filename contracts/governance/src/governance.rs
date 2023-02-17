@@ -20,7 +20,6 @@ use crate::*;
 pub struct GovernanceContract {
     pub(crate) seeds: Set<BlsScalar>,
     pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) allowlist: Set<PublicKey>,
     pub(crate) running: bool,
     pub(crate) total_supply: u64,
     // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
@@ -80,16 +79,6 @@ impl GovernanceContract {
         } else {
             Err(Error::ContractIsPaused)
         }
-    }
-
-    /// Address invariant: asserts the address is allowed to perform operations
-    /// on this contract
-    fn assert_address(&self, address: &PublicKey) -> Result<(), Error> {
-        self.allowlist
-            .get(address)
-            .ok_or(Error::AddressIsNotAllowed)?;
-
-        Ok(())
     }
 
     /// Add the value given to the specified address' balance.
@@ -166,44 +155,6 @@ impl GovernanceContract {
         Ok(())
     }
 
-    pub fn allow(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-        address: PublicKey,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            iter::once([seed, BlsScalar::from(TX_ALLOW as u64)])
-                .chain(iter::once(address.as_ref().to_hash_inputs()))
-                .flatten()
-                .collect(),
-            signature,
-        )?;
-
-        self.allowlist.insert(address);
-
-        Ok(())
-    }
-
-    pub fn block(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-        address: PublicKey,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            iter::once([seed, BlsScalar::from(TX_BLOCK as u64)])
-                .chain(iter::once(address.as_ref().to_hash_inputs()))
-                .flatten()
-                .collect(),
-            signature,
-        )?;
-
-        self.allowlist.remove(&address);
-
-        Ok(())
-    }
-
     pub fn mint(
         &mut self,
         seed: BlsScalar,
@@ -221,7 +172,6 @@ impl GovernanceContract {
         )?;
 
         self.assert_running()?;
-        self.assert_address(&address)?;
 
         self.total_supply = self
             .total_supply
@@ -274,8 +224,6 @@ impl GovernanceContract {
             from, to, amount, ..
         } in batch
         {
-            self.assert_address(&from)?;
-
             let remaining = self.sub_balance(&from, amount);
 
             if remaining > 0 {
