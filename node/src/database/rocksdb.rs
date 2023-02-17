@@ -7,13 +7,14 @@
 use super::{Candidate, Ledger, Persist, Registry, DB};
 use anyhow::{Context, Result};
 
-use crate::data::ledger;
+use node_common::encoding::*;
+use node_common::ledger;
+use node_common::Serializable;
+
 use crate::database::Mempool;
 
 use dusk_bytes::Serializable as DuskBytesSerializable;
-use dusk_consensus::messages::Serializable as DuskConsensusSerializable;
 
-use dusk_consensus::commons::Block;
 use rocksdb_lib::{
     ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon, DBWithThreadMode,
     IteratorMode, MultiThreaded, OptimisticTransactionDB,
@@ -181,7 +182,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &Block, persisted: bool) -> Result<()> {
+    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
         let mut serialized = vec![];
         b.header.write(&mut serialized)?;
 
@@ -191,16 +192,16 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn delete_block(&self, b: &Block) -> Result<()> {
+    fn delete_block(&self, b: &ledger::Block) -> Result<()> {
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
 
         Ok(())
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.ledger_cf, hash)? {
-            let b = Block::read(&mut &blob[..])?;
+            let b = ledger::Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -210,7 +211,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
-    fn store_candidate_block(&self, b: Block) -> Result<()> {
+    fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -220,9 +221,12 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn fetch_candidate_block(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<ledger::Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
-            let b = Block::read(&mut &blob[..])?;
+            let b = ledger::Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -414,7 +418,6 @@ fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dusk_consensus::commons::{Certificate, Header, Signature};
     use rand::prelude::*;
     use rand::Rng;
 
@@ -638,19 +641,19 @@ mod tests {
         }
     }
 
-    fn mock_block(height: u64) -> Block {
-        Block::new(
-            Header {
+    fn mock_block(height: u64) -> ledger::Block {
+        ledger::Block::new(
+            ledger::Header {
                 version: 0,
                 height,
                 timestamp: 11112222,
                 gas_limit: 123456,
                 prev_block_hash: [10; 32],
-                seed: Signature::default(),
-                generator_bls_pubkey: [12; 96],
+                seed: ledger::Signature::default(),
+                generator_bls_pubkey: ledger::BlsPubkey([12; 96]),
                 state_hash: [13; 32],
                 hash: [0; 32],
-                cert: Certificate::default(),
+                cert: ledger::Certificate::default(),
             },
             vec![],
         )

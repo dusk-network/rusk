@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::commons::Block;
-
 pub mod rocksdb;
 
-use crate::data::ledger;
 use anyhow::Result;
+use node_common::ledger;
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -42,15 +40,18 @@ pub trait DB: Send + Sync + 'static {
 
 pub trait Ledger {
     // Read-write transactions
-    fn store_block(&self, b: &Block, persisted: bool) -> Result<()>;
-    fn delete_block(&self, b: &Block) -> Result<()>;
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()>;
+    fn delete_block(&self, b: &ledger::Block) -> Result<()>;
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
 }
 
 pub trait Candidate {
     // Read-write transactions
-    fn store_candidate_block(&self, cm: Block) -> Result<()>;
-    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>>;
+    fn store_candidate_block(&self, cm: ledger::Block) -> Result<()>;
+    fn fetch_candidate_block(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<ledger::Block>>;
     fn clear_candidates(&self) -> Result<()>;
 }
 

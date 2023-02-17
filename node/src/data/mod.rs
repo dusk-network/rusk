@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod ledger;
 use std::ops::Range;
 
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
