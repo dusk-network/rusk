@@ -20,7 +20,7 @@ use crate::*;
 pub struct GovernanceContract {
     pub(crate) seeds: Set<BlsScalar>,
     pub(crate) balances: Map<PublicKey, u64>,
-    pub(crate) running: bool,
+    pub(crate) paused: bool,
     pub(crate) total_supply: u64,
     // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
     // dusk_pki::PublicKey because of our verification method
@@ -74,10 +74,10 @@ impl GovernanceContract {
 
     /// Running invariant: asserts the contract is running and not paused
     fn assert_running(&self) -> Result<(), Error> {
-        if self.running {
-            Ok(())
-        } else {
+        if self.paused {
             Err(Error::ContractIsPaused)
+        } else {
+            Ok(())
         }
     }
 
@@ -135,7 +135,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.running = false;
+        self.paused = true;
 
         Ok(())
     }
@@ -150,7 +150,7 @@ impl GovernanceContract {
             signature,
         )?;
 
-        self.running = true;
+        self.paused = false;
 
         Ok(())
     }
