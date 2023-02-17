@@ -4,11 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{any, default, net::IpAddr, sync::Arc};
+use std::net::IpAddr;
+use std::sync::Arc;
+use std::{any, default};
 
-use crate::{utils::PendingQueue, BoxedFilter, Message};
+use crate::utils::PendingQueue;
+use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
-use kadcast::{config::Config, MessageInfo, Peer};
+use kadcast::config::Config;
+use kadcast::{MessageInfo, Peer};
 use tokio::sync::RwLock;
 
 mod frame;
@@ -34,7 +38,7 @@ impl<const N: usize> Listener<N> {
             _ => Ok(()),
         };
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     fn call_filters(
@@ -46,7 +50,7 @@ impl<const N: usize> Listener<N> {
 
         match self.filters.try_write()?.get_mut(topic) {
             Some(Some(f)) => f.filter(&msg),
-            _ => anyhow::Ok(()),
+            _ => Ok(()),
         }
     }
 }
@@ -95,7 +99,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         // TODO: broadcast
         self.peer.broadcast(&[0u8; 8], None).await;
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     async fn repropagate(
@@ -104,7 +108,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         from_height: u8,
     ) -> anyhow::Result<()> {
         // TODO: repropagate message with this height
-        anyhow::Ok(())
+        Ok(())
     }
 
     async fn send(
@@ -122,7 +126,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             )
             .await;
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     /// Route  any message of the specified type to this queue.
@@ -141,7 +145,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         *route = Some(queue);
 
-        anyhow::Ok(())
+        Ok(())
     }
 
     async fn add_filter(
@@ -157,6 +161,6 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         *filter = Some(filter_fn);
 
-        anyhow::Ok(())
+        Ok(())
     }
 }

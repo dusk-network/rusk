@@ -93,7 +93,7 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
         for topic in my_topics {
             guard.add_route(*topic, queue.clone()).await?
         }
-        anyhow::Ok(())
+        Ok(())
     }
 
     async fn add_filter(
@@ -103,7 +103,7 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
         network: &Arc<RwLock<N>>,
     ) -> anyhow::Result<()> {
         network.write().await.add_filter(topic, filter_fn).await?;
-        anyhow::Ok(())
+        Ok(())
     }
 
     /// Returns service name.
