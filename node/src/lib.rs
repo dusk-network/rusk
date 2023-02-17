@@ -184,15 +184,6 @@ impl<N: Network, DB: database::DB> Node<N, DB> {
     }
 }
 
-pub fn enable_log(filter: impl Into<tracing::metadata::LevelFilter>) {
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(filter)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed on subscribe tracing");
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
