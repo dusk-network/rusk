@@ -13,6 +13,9 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
 use dusk_bytes::Serializable;
 
+#[cfg(not(target_arch = "wasm32"))]
+use dusk_bls12_381_sign::APK as AggregatedBlsPublicKey;
+
 use crate::collection::{Map, Set};
 use crate::*;
 
@@ -56,8 +59,7 @@ impl GovernanceContract {
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if self
-            .authority
+        if AggregatedBlsPublicKey::from(&self.authority)
             .verify(
                 &signature,
                 &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
@@ -125,6 +127,14 @@ impl GovernanceContract {
         }
     }
 
+    pub fn balance(&self, address: &PublicKey) -> u64 {
+        *self.balances.get(address).unwrap_or(&0)
+    }
+
+    pub fn total_supply(&self) -> u64 {
+        self.total_supply
+    }
+
     pub fn pause(
         &mut self,
         seed: BlsScalar,
@@ -155,6 +165,19 @@ impl GovernanceContract {
         Ok(())
     }
 
+    fn mint_internal(
+        &mut self,
+        address: PublicKey,
+        value: u64,
+    ) -> Result<(), Error> {
+        self.total_supply = self
+            .total_supply
+            .checked_add(value)
+            .ok_or(Error::BalanceOverflow)?;
+
+        self.add_balance(&address, value)
+    }
+
     pub fn mint(
         &mut self,
         seed: BlsScalar,
@@ -173,12 +196,7 @@ impl GovernanceContract {
 
         self.assert_running()?;
 
-        self.total_supply = self
-            .total_supply
-            .checked_add(value)
-            .ok_or(Error::BalanceOverflow)?;
-
-        self.add_balance(&address, value)
+        self.mint_internal(address, value)
     }
 
     pub fn burn(
@@ -227,7 +245,7 @@ impl GovernanceContract {
             let remaining = self.sub_balance(&from, amount);
 
             if remaining > 0 {
-                self.mint(seed, signature, to, remaining)?
+                self.mint_internal(to, remaining)?
             }
 
             self.add_balance(&to, amount - remaining)?;
