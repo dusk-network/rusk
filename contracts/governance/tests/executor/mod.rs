@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod tx;
+
 use dusk_abi::{ContractId, Transaction};
 use dusk_pki::SecretSpendKey;
 use governance_contract::GovernanceContract;
@@ -11,7 +13,7 @@ use std::error::Error;
 use transfer_wrapper::TransferWrapper;
 
 const GOVERNANCE_BYTECODE: &[u8] = include_bytes!(
-    "../../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
+    "../../../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
 );
 
 pub struct Executor {
@@ -43,18 +45,18 @@ impl Executor {
         self.wrapper.state(&self.contract_id)
     }
 
-    pub fn run_tx(
+    pub fn run(
         &mut self,
         transaction: Transaction,
     ) -> Result<GovernanceContract, Box<dyn Error>> {
-        self.block_heigth = self.block_heigth + 1;
+        self.block_heigth += 1;
 
         let (unspent_notes, note_keys) =
             self.wrapper.unspent_notes(&self.genesis_ssk);
 
         let refund_vk = self.genesis_ssk.view_key();
         let refund_psk = self.genesis_ssk.public_spend_key();
-        let remainder_psk = refund_psk.clone();
+        let remainder_psk = refund_psk;
 
         let gas_limit = 1_750_000_000;
         let gas_price = 1;
