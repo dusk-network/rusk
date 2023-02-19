@@ -14,12 +14,21 @@ path = "src/bin/main.rs"
 
 [dependencies]
 tonic = "0.6"
-tokio = { version = "1.15", features = ["rt-multi-thread", "time", "fs", "macros"] }
+tokio = { version = "1.15", features = [
+  "rt-multi-thread",
+  "time",
+  "fs",
+  "macros",
+] }
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
-async-stream = "0.3"
+async-stream = "=0.3.3"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3.0", features = ["fmt", "env-filter", "json"] }
+tracing-subscriber = { version = "0.3.0", features = [
+  "fmt",
+  "env-filter",
+  "json",
+] }
 hyper = { version = "0.14", features = ["full"] }
 clap = { version = "3.1", features = ["env"] }
 prost = "0.9"
@@ -54,7 +63,9 @@ canonical = "0.7"
 canonical_derive = "0.7"
 parking_lot = "0.12"
 
-rusk-recovery = { path = "../rusk-recovery", version = "0.5", features = ["state"] }
+rusk-recovery = { path = "../rusk-recovery", version = "0.5", features = [
+  "state",
+] }
 transfer-circuits = { path = "../circuits/transfer", version = "0.4" }
 transfer-contract = { path = "../contracts/transfer", version = "0.10" }
 stake-contract = { path = "../contracts/stake", version = "0.6" }
