@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, ConsensusError, RoundUpdate, Signature};
-use crate::messages::payload::StepVotes;
+use node_common::ledger;
+use crate::commons::{ConsensusError, RoundUpdate};
+use node_common::ledger::{Signature,Block, StepVotes};
+
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
@@ -102,7 +104,7 @@ impl MsgHandler<Message> for Reduction {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
             payload::StepVotesWithCandidate {
-                sv: payload::StepVotes::default(),
+                sv: ledger::StepVotes::default(),
                 candidate: self.candidate.clone(),
             },
         )))

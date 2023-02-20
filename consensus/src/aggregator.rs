@@ -4,8 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::Hash;
-use crate::messages::payload::StepVotes;
+use node_common::ledger::{StepVotes, Hash, Signature};
 use crate::messages::Header;
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
@@ -72,12 +71,12 @@ impl Aggregator {
             );
 
             if total >= committee.quorum() {
-                let signature = aggr_sign
+                let s = aggr_sign
                     .aggregated_bytes()
                     .expect("Signature to exist after quorum reached");
                 let bitset = committee.bits(cluster);
 
-                let step_votes = StepVotes { bitset, signature };
+                let step_votes = StepVotes { bitset, signature: Signature::from(s) };
 
                 return Some((hash, step_votes));
             }
@@ -140,7 +139,7 @@ impl AggrSignature {
 mod tests {
     use super::*;
     use crate::aggregator::Aggregator;
-    use crate::commons::Seed;
+    use node_common::ledger::Seed;
     use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
@@ -199,7 +198,7 @@ mod tests {
         p.update_eligibility_flag(round);
 
         // Execute sortition with specific config
-        let cfg = Config::new(Seed::new([4u8; 48]), round, step, 10);
+        let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10);
         let c = Committee::new(
             ConsensusPublicKey::new(PublicKey::default()),
             &mut p,

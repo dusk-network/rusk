@@ -6,8 +6,10 @@
 
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{
-    Block, Certificate, ConsensusError, Database, RoundUpdate,
+     ConsensusError, Database, RoundUpdate,
 };
+
+use node_common::ledger::{Block, Certificate};
 use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;

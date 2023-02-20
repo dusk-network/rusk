@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::verifiers;
-use crate::commons::{Hash, Seed};
+use node_common::ledger::{Hash, Seed};
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;

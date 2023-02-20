@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_send_reduction, Block, ConsensusError};
+use crate::commons::{spawn_send_reduction, ConsensusError};
+use node_common::ledger::Block;
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;

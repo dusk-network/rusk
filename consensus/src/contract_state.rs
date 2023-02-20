@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::Transaction;
+use node_common::ledger::Transaction;
 use crate::user::provisioners::Provisioners;
 
 pub type StateRoot = [u8; 32];
