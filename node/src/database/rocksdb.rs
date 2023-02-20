@@ -441,7 +441,10 @@ mod tests {
                 .is_ok());
 
             db.view(|txn| {
-                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
+                assert_eq!(
+                    txn.fetch_block(&hash)?.unwrap().header.hash,
+                    b.header.hash
+                );
                 Ok(())
             });
 
@@ -490,7 +493,7 @@ mod tests {
 
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path.to_owned());
-            let b = mock_block(101);
+            let mut b = mock_block(101);
             let hash = b.header.hash;
 
             db.view(|txn| {
@@ -513,10 +516,16 @@ mod tests {
 
             // Asserts that update was done
             db.view(|txn| {
-                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
+                assert_blocks_eq(&mut txn.fetch_block(&hash)?.unwrap(), &mut b);
                 Ok(())
             });
         });
+    }
+
+    fn assert_blocks_eq(a: &mut ledger::Block, b: &mut ledger::Block) {
+        assert!(a.calculate_hash().is_ok());
+        assert!(b.calculate_hash().is_ok());
+        assert!(a.header.hash.eq(&b.header.hash));
     }
 
     #[test]

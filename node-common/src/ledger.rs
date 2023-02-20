@@ -12,13 +12,13 @@ use std::io::{self, Read, Write};
 pub type Seed = Signature;
 pub type Hash = [u8; 32];
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone)]
 pub struct Block {
     pub header: Header,
     pub txs: Vec<Transaction>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub struct Header {
     // Hashable fields
     pub version: u8,
@@ -52,19 +52,7 @@ impl Transaction {
     }
 }
 
-impl PartialEq for Transaction {
-    fn eq(&self, other: &Self) -> bool {
-        todo!()
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        todo!()
-    }
-}
-
-impl Eq for Transaction {}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct Certificate {
     pub first_reduction: StepVotes,
     pub second_reduction: StepVotes,
