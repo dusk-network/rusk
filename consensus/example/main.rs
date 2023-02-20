@@ -10,9 +10,10 @@ use rand_core::SeedableRng;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use node_common::ledger::Seed;
 use tokio::sync::{mpsc, oneshot, Mutex};
 
-use dusk_consensus::commons::{RoundUpdate, Seed};
+use dusk_consensus::commons::RoundUpdate;
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::messages::Message;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
