@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::{
-    commons::Seed,
-    user::committee::Committee,
-    user::provisioners::{Provisioners, DUSK},
-    user::sortition::Config,
-    util::pubkey::ConsensusPublicKey,
-};
+
+use dusk_consensus::user::committee::Committee;
+use dusk_consensus::user::provisioners::{Provisioners, DUSK};
+use dusk_consensus::user::sortition::Config;
+use dusk_consensus::util::pubkey::ConsensusPublicKey;
+
+
+use node_common::ledger::Seed;
 
 #[test]
 fn test_deterministic_sortition_1() {
@@ -33,7 +34,7 @@ fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(Seed::new([3u8; 48]), 7777, 8, 45);
+    let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, 45);
 
     let committee = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
     assert_eq!(vec![1, 3], committee.get_occurrences());
