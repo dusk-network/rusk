@@ -4,12 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
 use dusk_consensus::user::committee::Committee;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::user::sortition::Config;
 use dusk_consensus::util::pubkey::ConsensusPublicKey;
-
 
 use node_common::ledger::Seed;
 

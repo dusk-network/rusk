@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
-use node_common::ledger::{StepVotes, Seed};
-use crate::commons::{marshal_signable_vote};
+use crate::commons::marshal_signable_vote;
 use crate::messages;
+use node_common::ledger::{Seed, StepVotes};
 
 use crate::messages::{Message, Payload};
 use crate::user::committee::CommitteeSet;

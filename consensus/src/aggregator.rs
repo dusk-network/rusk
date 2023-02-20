@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_common::ledger::{StepVotes, Hash, Signature};
 use crate::messages::Header;
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
+use node_common::ledger::{Hash, Signature, StepVotes};
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
@@ -76,7 +76,10 @@ impl Aggregator {
                     .expect("Signature to exist after quorum reached");
                 let bitset = committee.bits(cluster);
 
-                let step_votes = StepVotes { bitset, signature: Signature::from(s) };
+                let step_votes = StepVotes {
+                    bitset,
+                    signature: Signature::from(s),
+                };
 
                 return Some((hash, step_votes));
             }
@@ -139,13 +142,13 @@ impl AggrSignature {
 mod tests {
     use super::*;
     use crate::aggregator::Aggregator;
-    use node_common::ledger::Seed;
     use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bls12_381_sign::PublicKey;
     use hex::FromHex;
+    use node_common::ledger::Seed;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {

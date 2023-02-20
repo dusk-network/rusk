@@ -4,19 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ RoundUpdate, Topics};
-use node_common::ledger::{Block, Certificate,   Seed};
+use crate::commons::{RoundUpdate, Topics};
+use node_common::ledger::{Block, Certificate, Seed};
 
+use crate::config;
 use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
-use crate::{  config};
 use dusk_bytes::Serializable;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use node_common::ledger;
 use node_common::ledger::*;
+use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
 pub struct Generator<T: Operations> {
@@ -88,7 +88,7 @@ impl<T: Operations> Generator<T> {
             crate::contract_state::CallParams::default(),
         )?;
 
-        let blk_header =  ledger::Header {
+        let blk_header = ledger::Header {
             version: 0,
             height: round,
             timestamp: self.get_timestamp(prev_block_timestamp) as i64,

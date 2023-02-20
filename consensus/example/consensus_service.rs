@@ -18,11 +18,11 @@ use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::util::pending_queue::PendingQueue;
 use dusk_consensus::util::pubkey::ConsensusPublicKey;
 
+use node_common::ledger::Block;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use node_common::ledger::Block;
 use tokio::sync::{oneshot, Mutex};
 
 macro_rules! hex {

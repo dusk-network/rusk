@@ -5,12 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::verifiers;
-use node_common::ledger::{Hash, Seed};
 use crate::messages;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use hex::ToHex;
+use node_common::ledger::{Hash, Seed};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;

@@ -4,10 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_common::ledger;
-use node_common::ledger::{Hash, Signature, StepVotes};
 use crate::commons::{ConsensusError, RoundUpdate, Topics};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use node_common::ledger;
+use node_common::ledger::{Hash, Signature, StepVotes};
 use tracing::error;
 
 use crate::aggregator::Aggregator;

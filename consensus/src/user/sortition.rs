@@ -67,14 +67,11 @@ pub fn generate_sortition_score(
 
 #[cfg(test)]
 mod tests {
-    use num_bigint::BigInt;
     use node_common::ledger::Seed;
+    use num_bigint::BigInt;
 
-    use crate::{
-
-        user::sortition::{
-            create_sortition_hash, generate_sortition_score, Config,
-        },
+    use crate::user::sortition::{
+        create_sortition_hash, generate_sortition_score, Config,
     };
 
     #[test]

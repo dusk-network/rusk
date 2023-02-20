@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node_common::ledger;
 use crate::commons::{ConsensusError, RoundUpdate};
-use node_common::ledger::{Signature,Block, StepVotes};
+use node_common::ledger;
+use node_common::ledger::{Block, Signature, StepVotes};
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
