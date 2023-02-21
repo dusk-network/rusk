@@ -34,11 +34,3 @@ pub trait Serializable {
         Ok(buf)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_empty() {}
-}

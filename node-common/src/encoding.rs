@@ -195,3 +195,39 @@ impl Serializable for StepVotes {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use fake::{Dummy, Fake, Faker};
+
+    /// Asserts if encoding/decoding of a serializable type runs properly.
+    fn assert_serializable<S: Dummy<Faker> + Eq + Serializable>() {
+        let obj: S = Faker.fake();
+        let mut buf = vec![];
+        obj.write(&mut buf).expect("should be writable");
+
+        assert!(obj
+            .eq(&S::read(&mut &buf.to_vec()[..]).expect("should be readable")));
+    }
+
+    #[test]
+    fn test_encoding_cert() {
+        assert_serializable::<Certificate>();
+    }
+
+    #[test]
+    fn test_encoding_transaction() {
+        assert_serializable::<Transaction>();
+    }
+
+    #[test]
+    fn test_encoding_header() {
+        assert_serializable::<Header>();
+    }
+
+    #[test]
+    fn test_encoding_block() {
+        assert_serializable::<Block>();
+    }
+}
