@@ -46,17 +46,17 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
         TX_PAUSE => contract.pause(),
         TX_UNPAUSE => contract.unpause(),
         TX_MINT => {
-            let (address, value) = Canon::decode(&mut source)
+            let (address, value): (PublicKey, u64) = Canon::decode(&mut source)
                 .expect("[TX_MINT] arguments should be decoded");
 
-            contract.mint(address, value).unwrap();
+            contract.mint(&address, value).unwrap();
         }
 
         TX_BURN => {
-            let (address, value) = Canon::decode(&mut source)
+            let (address, value): (PublicKey, u64) = Canon::decode(&mut source)
                 .expect("[TX_BURN] arguments should be decoded");
 
-            contract.burn(address, value).unwrap();
+            contract.burn(&address, value).unwrap();
         }
 
         TX_TRANSFER => {
@@ -64,6 +64,13 @@ fn t(bytes: &mut [u8; PAGE_SIZE]) {
                 .expect("[TX_TRANSFER] arguments should be decoded");
 
             contract.transfer(batch).unwrap();
+        }
+
+        TX_FEE => {
+            let batch = Canon::decode(&mut source)
+                .expect("[TX_FEE] arguments should be decoded");
+
+            contract.fee(batch).unwrap();
         }
 
         _ => panic!("Tx id not implemented"),
