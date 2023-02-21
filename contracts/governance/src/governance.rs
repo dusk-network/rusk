@@ -4,14 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::iter;
-
-use alloc::vec;
 use alloc::vec::Vec;
 use canonical_derive::Canon;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
-use dusk_bytes::Serializable;
 
 #[cfg(not(target_arch = "wasm32"))]
 use dusk_bls12_381_sign::APK as AggregatedBlsPublicKey;
@@ -37,38 +33,34 @@ pub struct GovernanceContract {
 
 /// Use `GovernanceContract::default()` for instance.
 impl GovernanceContract {
-    /// Seed invariant: asserts that the seed is valid and is not already used
-    fn assert_seed(
+    pub fn verify(
         &mut self,
-        arguments: Vec<BlsScalar>,
+        seed: BlsScalar,
         signature: Signature,
+        message: &[u8],
     ) -> Result<(), Error> {
-        let seed = arguments[0];
-
-        if self.seeds.contains(&seed) {
-            return Err(Error::SeedAlreadyUsed);
-        }
+        self.assert_seed(seed)?;
 
         #[cfg(target_arch = "wasm32")]
         if !rusk_abi::verify_bls_sign(
             signature,
             self.authority,
-            rusk_abi::poseidon_hash(arguments).to_bytes().to_vec(),
+            message.to_vec(),
         ) {
             return Err(Error::InvalidSignature);
         }
 
         #[cfg(not(target_arch = "wasm32"))]
-        if AggregatedBlsPublicKey::from(&self.authority)
-            .verify(
-                &signature,
-                &dusk_poseidon::sponge::hash(&arguments).to_bytes(),
-            )
-            .is_ok()
-        {
-            return Err(Error::InvalidSignature);
+        AggregatedBlsPublicKey::from(&self.authority)
+            .verify(&signature, message)
+            .or(Err(Error::InvalidSignature))?;
+        Ok(())
+    }
+    /// Seed invariant: asserts that the seed is valid and is not already used
+    fn assert_seed(&mut self, seed: BlsScalar) -> Result<(), Error> {
+        if self.seeds.contains(&seed) {
+            return Err(Error::SeedAlreadyUsed);
         }
-
         self.seeds.insert(seed);
 
         Ok(())
@@ -135,41 +127,21 @@ impl GovernanceContract {
         self.total_supply
     }
 
-    pub fn pause(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            vec![seed, BlsScalar::from(TX_PAUSE as u64)],
-            signature,
-        )?;
-
+    pub fn pause(&mut self) {
         self.paused = true;
-
-        Ok(())
     }
 
-    pub fn unpause(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            vec![seed, BlsScalar::from(TX_UNPAUSE as u64)],
-            signature,
-        )?;
-
+    pub fn unpause(&mut self) {
         self.paused = false;
-
-        Ok(())
     }
 
-    fn mint_internal(
+    pub fn mint(
         &mut self,
         address: PublicKey,
         value: u64,
     ) -> Result<(), Error> {
+        self.assert_running()?;
+
         self.total_supply = self
             .total_supply
             .checked_add(value)
@@ -178,44 +150,13 @@ impl GovernanceContract {
         self.add_balance(&address, value)
     }
 
-    pub fn mint(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-        address: PublicKey,
-        value: u64,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            iter::once([seed, BlsScalar::from(TX_MINT as u64)])
-                .chain(iter::once(address.as_ref().to_hash_inputs()))
-                .flatten()
-                .chain(iter::once(BlsScalar::from(value)))
-                .collect(),
-            signature,
-        )?;
-
-        self.assert_running()?;
-
-        self.mint_internal(address, value)
-    }
-
     pub fn burn(
         &mut self,
-        seed: BlsScalar,
-        signature: Signature,
         address: PublicKey,
         value: u64,
     ) -> Result<(), Error> {
-        self.assert_seed(
-            iter::once([seed, BlsScalar::from(TX_BURN as u64)])
-                .chain(iter::once(address.as_ref().to_hash_inputs()))
-                .flatten()
-                .chain(iter::once(BlsScalar::from(value)))
-                .collect(),
-            signature,
-        )?;
-
         self.assert_running()?;
+
         self.total_supply = self.total_supply.saturating_sub(value);
 
         self.sub_balance(&address, value);
@@ -223,19 +164,7 @@ impl GovernanceContract {
         Ok(())
     }
 
-    pub fn transfer(
-        &mut self,
-        seed: BlsScalar,
-        signature: Signature,
-        batch: Vec<Transfer>,
-    ) -> Result<(), Error> {
-        self.assert_seed(
-            iter::once([seed, BlsScalar::from(TX_TRANSFER as u64)])
-                .flatten()
-                .chain(batch.iter().flat_map(Transfer::as_scalars))
-                .collect(),
-            signature,
-        )?;
+    pub fn transfer(&mut self, batch: Vec<Transfer>) -> Result<(), Error> {
         self.assert_running()?;
 
         for Transfer {
@@ -245,7 +174,7 @@ impl GovernanceContract {
             let remaining = self.sub_balance(&from, amount);
 
             if remaining > 0 {
-                self.mint_internal(to, remaining)?
+                self.mint(to, remaining)?
             }
 
             self.add_balance(&to, amount - remaining)?;

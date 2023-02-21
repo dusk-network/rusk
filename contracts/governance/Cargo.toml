@@ -1,6 +1,6 @@
 [package]
 name = "governance-contract"
-version = "0.10.1"
+version = "0.11.0"
 edition = "2021"
 
 [lib]
@@ -10,13 +10,12 @@ crate-type = ["cdylib", "rlib"]
 canonical = "0.7"
 canonical_derive = "0.7"
 dusk-abi = "0.11"
-dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
+dusk-bls12_381 = { version = "0.9", default-features = false, features = [
+  "canon",
+] }
 dusk-bls12_381-sign = "0.3.0-rc"
 dusk-bytes = "0.1"
-dusk-jubjub = { version = "0.11", default-features = false, features = ["canon"] }
 dusk-pki = { version = "0.10.0-rc", default-features = false }
-dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-dusk-poseidon = { version = "0.25.0-rc", default-features = false, features = ["canon"] }
 rusk-abi = { path = "../../rusk-abi", version = "0.7", features = ["module"] }
 
 [features]
@@ -26,4 +25,3 @@ no-bridge = []
 transfer-wrapper = { path = "../../test-utils/transfer-wrapper", version = "0.3" }
 microkelvin = "0.15.0-rc"
 rand = "0.8"
-blake2 = { version = "0.10", default-features = false }

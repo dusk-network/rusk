@@ -4,39 +4,41 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod executor;
+
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_pki::{PublicKey, SecretKey};
+use executor::tx::{self, seed};
 use executor::Executor;
 use governance_contract::{GovernanceContract, Transfer};
 use microkelvin::{BackendCtor, DiskBackend, Persistence};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-mod executor;
-mod tx;
+const DUMMY_TS: u64 = 946681200000; // Dummy timestamp representing 01/01/2000
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn testbackend() -> BackendCtor<DiskBackend> {
     BackendCtor::new(DiskBackend::ephemeral)
 }
 
-const DUMMY_TS: u64 = 946681200000; // Dummy timestamp representing 01/01/2000
-
 #[test]
-fn mint_burn_transfer() {
-    Persistence::with_backend(&testbackend(), |_| Ok(()))
-        .expect("Backend found");
+fn balance_overflow() -> TestResult {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))?;
 
     let mut rng = StdRng::seed_from_u64(0xbeef);
-    let a = PublicKey::from(&SecretKey::random(&mut rng));
-    let b = PublicKey::from(&SecretKey::random(&mut rng));
+    let alice = PublicKey::from(&SecretKey::random(&mut rng));
+    let bob = PublicKey::from(&SecretKey::random(&mut rng));
 
     let sk_authority = BlsSecretKey::random(&mut rng);
+    let authority = BlsPublicKey::from(&sk_authority);
 
     let mut contract = GovernanceContract::default();
-    // set authority
-    contract.authority = BlsPublicKey::from(&sk_authority);
+    contract.authority = authority;
 
     let genesis_value = 100_000_000_000_000;
 
@@ -44,46 +46,155 @@ fn mint_burn_transfer() {
     let contract = executor.state();
 
     assert_eq!(contract.total_supply(), 0);
-    assert_eq!(contract.balance(&a), 0);
-    assert_eq!(contract.balance(&b), 0);
+    assert_eq!(contract.balance(&alice), 0);
+    assert_eq!(contract.balance(&bob), 0);
 
-    let mint = tx::mint(&a, 100, &sk_authority);
-    let contract = executor.run_tx(mint).expect("Failed to mint");
+    let mint = tx::mint(&sk_authority, seed(), &alice, u64::MAX);
+    let contract = executor.run(mint)?;
 
-    assert_eq!(contract.total_supply(), 100);
-    assert_eq!(contract.balance(&a), 100);
-    assert_eq!(contract.balance(&b), 0);
+    assert_eq!(contract.total_supply(), u64::MAX);
+    assert_eq!(contract.balance(&alice), u64::MAX);
+    assert_eq!(contract.balance(&bob), 0);
 
-    let t_1 = Transfer {
-        // transfer 200 from a to b
-        from: a,
-        to: b,
+    let t = Transfer {
+        from: bob,
+        to: alice,
         amount: 200,
         timestamp: DUMMY_TS,
     };
-    let transfer_1 = tx::transfer(vec![t_1], &sk_authority);
-    let contract = executor
-        .run_tx(transfer_1)
-        .expect("Failed to execute transfer 1");
+
+    let transfer = tx::transfer(&sk_authority, seed(), vec![t]);
+    assert!(executor.run(transfer).is_err(), "transfer should overflow");
+
+    // The balances are still the same since the transfer overflowed
+    let contract = executor.state();
+
+    assert_eq!(contract.total_supply(), u64::MAX);
+    assert_eq!(contract.balance(&alice), u64::MAX);
+    assert_eq!(contract.balance(&bob), 0);
+
+    Ok(())
+}
+
+#[test]
+fn same_seed() -> TestResult {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))?;
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk_authority = BlsSecretKey::random(&mut rng);
+    let authority = BlsPublicKey::from(&sk_authority);
+
+    let mut contract = GovernanceContract::default();
+    contract.authority = authority;
+
+    let genesis_value = 100_000_000_000_000;
+
+    let mut executor = Executor::new(2324, contract, genesis_value);
+
+    let seed = BlsScalar::zero();
+
+    let pause = tx::pause(&sk_authority, seed);
+    assert!(executor.run(pause).is_ok(), "pause should succeed");
+
+    let unpause = tx::unpause(&sk_authority, seed);
+    assert!(
+        executor.run(unpause).is_err(),
+        "unpause should fail (same seed)"
+    );
+
+    Ok(())
+}
+
+#[test]
+fn wrong_signature() -> TestResult {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))?;
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+
+    let sk_authority = BlsSecretKey::random(&mut rng);
+    let bad_sk_authority = BlsSecretKey::random(&mut rng);
+
+    let authority = BlsPublicKey::from(&sk_authority);
+
+    let mut contract = GovernanceContract::default();
+    contract.authority = authority;
+
+    let genesis_value = 100_000_000_000_000;
+
+    let mut executor = Executor::new(2324, contract, genesis_value);
+
+    let pause = tx::pause(&bad_sk_authority, seed());
+
+    assert!(
+        executor.run(pause).is_err(),
+        "pause should fail (bad signature)"
+    );
+
+    let pause = tx::pause(&sk_authority, seed());
+
+    executor.run(pause).expect("executor should pass");
+
+    Ok(())
+}
+
+#[test]
+fn mint_burn_transfer() -> TestResult {
+    Persistence::with_backend(&testbackend(), |_| Ok(()))?;
+
+    let mut rng = StdRng::seed_from_u64(0xbeef);
+    let alice = PublicKey::from(&SecretKey::random(&mut rng));
+    let bob = PublicKey::from(&SecretKey::random(&mut rng));
+
+    let sk_authority = BlsSecretKey::random(&mut rng);
+    let authority = BlsPublicKey::from(&sk_authority);
+
+    let mut contract = GovernanceContract::default();
+    contract.authority = authority;
+
+    let genesis_value = 100_000_000_000_000;
+
+    let mut executor = Executor::new(2324, contract, genesis_value);
+    let contract = executor.state();
+
+    assert_eq!(contract.total_supply(), 0);
+    assert_eq!(contract.balance(&alice), 0);
+    assert_eq!(contract.balance(&bob), 0);
+
+    let mint = tx::mint(&sk_authority, seed(), &alice, 100);
+    let contract = executor.run(mint)?;
+
+    assert_eq!(contract.total_supply(), 100);
+    assert_eq!(contract.balance(&alice), 100);
+    assert_eq!(contract.balance(&bob), 0);
+
+    let t_1 = Transfer {
+        // transfer 200 from a to b
+        from: alice,
+        to: bob,
+        amount: 200,
+        timestamp: DUMMY_TS,
+    };
+    let transfer_1 = tx::transfer(&sk_authority, seed(), vec![t_1]);
+    let contract = executor.run(transfer_1)?;
 
     assert_eq!(contract.total_supply(), 200);
-    assert_eq!(contract.balance(&a), 0);
-    assert_eq!(contract.balance(&b), 200);
+    assert_eq!(contract.balance(&alice), 0);
+    assert_eq!(contract.balance(&bob), 200);
 
     let t_2 = Transfer {
-        // transfer 50 from b to a
-        from: b,
-        to: a,
+        from: bob,
+        to: alice,
         amount: 50,
         timestamp: DUMMY_TS,
     };
 
-    let transfer_2 = tx::transfer(vec![t_2], &sk_authority);
-    let contract = executor
-        .run_tx(transfer_2)
-        .expect("Failed to execute transfer 2");
+    let transfer_2 = tx::transfer(&sk_authority, seed(), vec![t_2]);
+    let contract = executor.run(transfer_2)?;
 
     assert_eq!(contract.total_supply(), 200);
-    assert_eq!(contract.balance(&a), 50);
-    assert_eq!(contract.balance(&b), 150);
+    assert_eq!(contract.balance(&alice), 50);
+    assert_eq!(contract.balance(&bob), 150);
+
+    Ok(())
 }
