@@ -6,9 +6,7 @@ edition = "2021"
 [dependencies]
 dusk-wallet-core = "0.14.0-rc.0"
 dusk-bytes = "^0.1"
-sha3 = {version = "0.10"}
-
-[dev-dependencies]
-fake = { version = "2.5", features=['derive']}
+sha3 = { version = "0.10" }
+fake = { version = "2.5", features = ['derive'] }
 rand = "0.8"
 hex = "0.4"
