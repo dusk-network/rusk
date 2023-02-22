@@ -31,6 +31,7 @@ dusk-bytes = "^0.1"
 node-common = { path = "../node-common", version = "0.1" }
 
 [dev-dependencies]
+fake = { version = "2.5", features=['derive']}
 rand = "0.8"
 rand_core = "0.6"
 
