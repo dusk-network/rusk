@@ -12,7 +12,7 @@ use dusk_bls12_381_sign::{
 };
 use dusk_pki::PublicKey;
 use governance_contract::{
-    Transfer, TX_MINT, TX_PAUSE, TX_TRANSFER, TX_UNPAUSE,
+    Transfer, TX_FEE, TX_MINT, TX_PAUSE, TX_TRANSFER, TX_UNPAUSE,
 };
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -43,12 +43,32 @@ where
     Transaction::from_canon(&transaction)
 }
 
-pub fn transfer(
+pub fn transfer<T>(
     sk_authority: &BlsSecretKey,
     seed: BlsScalar,
-    transfers: Vec<Transfer>,
-) -> Transaction {
+    transfers: Vec<T>,
+) -> Transaction
+where
+    T: Into<Transfer>,
+{
+    let transfers: Vec<Transfer> =
+        transfers.into_iter().map(|t| t.into()).collect();
+
     signed_transaction(sk_authority, (seed, TX_TRANSFER, transfers))
+}
+
+pub fn fee<T>(
+    sk_authority: &BlsSecretKey,
+    seed: BlsScalar,
+    transfers: Vec<T>,
+) -> Transaction
+where
+    T: Into<Transfer>,
+{
+    let transfers: Vec<Transfer> =
+        transfers.into_iter().map(|t| t.into()).collect();
+
+    signed_transaction(sk_authority, (seed, TX_FEE, transfers))
 }
 
 pub fn mint(
