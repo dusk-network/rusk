@@ -21,13 +21,11 @@ pub struct GovernanceContract {
     pub(crate) balances: Map<PublicKey, u64>,
     pub(crate) paused: bool,
     pub(crate) total_supply: u64,
-    // we use BlsPublicKey or dusk_bls12_381_sign::PublicKey and not a
-    // dusk_pki::PublicKey because of our verification method
-    //
-    // They need to be public so they can be accessed from the host environment
-    // (rusk). Once contract deployment stragery will be implemented, this will
-    // change.
-    pub broker: BlsPublicKey,
+    // The `broker` and the `authority` needs to be public so they can be
+    // accessed from the host environment (rusk).
+    // TODO: `broker` is wrapped in an option because does not support
+    // `Default`
+    pub broker: Option<PublicKey>,
     pub authority: BlsPublicKey,
 }
 
@@ -137,7 +135,7 @@ impl GovernanceContract {
 
     pub fn mint(
         &mut self,
-        address: PublicKey,
+        address: &PublicKey,
         value: u64,
     ) -> Result<(), Error> {
         self.assert_running()?;
@@ -147,19 +145,36 @@ impl GovernanceContract {
             .checked_add(value)
             .ok_or(Error::BalanceOverflow)?;
 
-        self.add_balance(&address, value)
+        self.add_balance(address, value)
     }
 
     pub fn burn(
         &mut self,
-        address: PublicKey,
+        address: &PublicKey,
         value: u64,
     ) -> Result<(), Error> {
         self.assert_running()?;
 
-        self.total_supply = self.total_supply.saturating_sub(value);
+        let remaining = self.sub_balance(address, value);
 
-        self.sub_balance(&address, value);
+        self.total_supply = self.total_supply.saturating_sub(value - remaining);
+
+        Ok(())
+    }
+
+    fn checked_transfer(
+        &mut self,
+        from: &PublicKey,
+        to: &PublicKey,
+        amount: u64,
+    ) -> Result<(), Error> {
+        let remaining = self.sub_balance(from, amount);
+
+        if remaining > 0 {
+            self.mint(to, remaining)?
+        }
+
+        self.add_balance(to, amount - remaining)?;
 
         Ok(())
     }
@@ -168,16 +183,47 @@ impl GovernanceContract {
         self.assert_running()?;
 
         for Transfer {
-            from, to, amount, ..
+            mut from,
+            mut to,
+            amount,
+            ..
         } in batch
         {
-            let remaining = self.sub_balance(&from, amount);
-
-            if remaining > 0 {
-                self.mint(to, remaining)?
+            if from == self.broker {
+                from.take();
             }
 
-            self.add_balance(&to, amount - remaining)?;
+            if to == self.broker {
+                to.take();
+            }
+
+            match (from, to) {
+                (None, None) => {}
+                // Withdraw or Transfer to the `broker`
+                (Some(from), None) => {
+                    self.burn(&from, amount)?;
+                }
+                // Deposit or Transfer from the `broker`
+                (None, Some(to)) => {
+                    self.mint(&to, amount)?;
+                }
+                // Transfer between two shareholders
+                (Some(from), Some(to)) => {
+                    self.checked_transfer(&from, &to, amount)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn fee(&mut self, batch: Vec<Transfer>) -> Result<(), Error> {
+        self.assert_running()?;
+
+        for Transfer { from, amount, .. } in batch {
+            if let (Some(from), Some(broker)) = (from, self.broker) {
+                self.checked_transfer(&from, &broker, amount)?;
+            }
         }
 
         Ok(())

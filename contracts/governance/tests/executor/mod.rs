@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod builder;
 pub mod tx;
 
 use dusk_abi::{ContractId, Transaction};
@@ -62,9 +63,14 @@ impl Executor {
         let gas_price = 1;
         let fee = self.wrapper.fee(gas_limit, gas_price, &refund_psk);
 
+        let note = unspent_notes
+            .iter()
+            .max_by_key(|n| n.value(Some(&refund_vk)).unwrap_or_default())
+            .expect("At least one note should be unspent");
+
         self.wrapper.execute(
             self.block_heigth,
-            &unspent_notes,
+            &[*note],
             &note_keys,
             &refund_vk,
             &remainder_psk,

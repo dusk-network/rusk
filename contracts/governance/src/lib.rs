@@ -26,11 +26,12 @@ pub const TX_UNPAUSE: u8 = 0x01;
 pub const TX_MINT: u8 = 0x02;
 pub const TX_BURN: u8 = 0x03;
 pub const TX_TRANSFER: u8 = 0x04;
+pub const TX_FEE: u8 = 0x05;
 
 #[derive(Debug, Clone, PartialEq, Eq, Canon)]
 pub struct Transfer {
-    pub from: PublicKey,
-    pub to: PublicKey,
+    pub from: Option<PublicKey>,
+    pub to: Option<PublicKey>,
     pub amount: u64,
     pub timestamp: u64,
 }
