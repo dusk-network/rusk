@@ -7,13 +7,14 @@
 use super::{Candidate, Ledger, Persist, Registry, DB};
 use anyhow::{Context, Result};
 
-use crate::data::ledger;
+use node_data::encoding::*;
+use node_data::ledger;
+use node_data::Serializable;
+
 use crate::database::Mempool;
 
 use dusk_bytes::Serializable as DuskBytesSerializable;
-use dusk_consensus::messages::Serializable as DuskConsensusSerializable;
 
-use dusk_consensus::commons::Block;
 use rocksdb_lib::{
     ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon, DBWithThreadMode,
     IteratorMode, MultiThreaded, OptimisticTransactionDB,
@@ -181,7 +182,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &Block, persisted: bool) -> Result<()> {
+    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
         let mut serialized = vec![];
         b.header.write(&mut serialized)?;
 
@@ -191,16 +192,16 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn delete_block(&self, b: &Block) -> Result<()> {
+    fn delete_block(&self, b: &ledger::Block) -> Result<()> {
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
 
         Ok(())
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.ledger_cf, hash)? {
-            let b = Block::read(&mut &blob[..])?;
+            let b = ledger::Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -210,7 +211,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
-    fn store_candidate_block(&self, b: Block) -> Result<()> {
+    fn store_candidate_block(&self, b: ledger::Block) -> Result<()> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
@@ -220,9 +221,12 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn fetch_candidate_block(&self, hash: &[u8]) -> Result<Option<Block>> {
+    fn fetch_candidate_block(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<ledger::Block>> {
         if let Some(blob) = self.snapshot.get_cf(self.candidates_cf, hash)? {
-            let b = Block::read(&mut &blob[..])?;
+            let b = ledger::Block::read(&mut &blob[..])?;
             return Ok(Some(b));
         }
 
@@ -374,9 +378,13 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                 if let Some(tx) = tx {
                     let gas_price = tx.gas_price();
                     debug_assert_eq!(read_gp, gas_price);
-                    total_gas += gas_price;
 
-                    if total_gas > slippage_gas_limit {
+                    if let Some(res) = total_gas.checked_add(gas_price) {
+                        total_gas = res;
+                        if total_gas > slippage_gas_limit {
+                            break;
+                        }
+                    } else {
                         break;
                     }
 
@@ -414,7 +422,9 @@ fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dusk_consensus::commons::{Certificate, Header, Signature};
+    use node_data::ledger;
+
+    use fake::{Dummy, Fake, Faker};
     use rand::prelude::*;
     use rand::Rng;
 
@@ -427,7 +437,7 @@ mod tests {
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path.to_owned());
 
-            let b = mock_block(100);
+            let b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
 
             assert!(db
@@ -438,7 +448,10 @@ mod tests {
                 .is_ok());
 
             db.view(|txn| {
-                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
+                assert_eq!(
+                    txn.fetch_block(&hash)?.unwrap().header.hash,
+                    b.header.hash
+                );
                 Ok(())
             });
 
@@ -464,7 +477,7 @@ mod tests {
 
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path.to_owned());
-            let b = mock_block(22);
+            let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
                     txn.store_block(&b, false)?;
@@ -487,7 +500,7 @@ mod tests {
 
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path.to_owned());
-            let b = mock_block(101);
+            let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
 
             db.view(|txn| {
@@ -510,10 +523,16 @@ mod tests {
 
             // Asserts that update was done
             db.view(|txn| {
-                assert_eq!(txn.fetch_block(&hash)?.unwrap(), b);
+                assert_blocks_eq(&mut txn.fetch_block(&hash)?.unwrap(), &mut b);
                 Ok(())
             });
         });
+    }
+
+    fn assert_blocks_eq(a: &mut ledger::Block, b: &mut ledger::Block) {
+        assert!(a.calculate_hash().is_ok());
+        assert!(b.calculate_hash().is_ok());
+        assert!(a.header.hash.eq(&b.header.hash));
     }
 
     #[test]
@@ -524,7 +543,7 @@ mod tests {
 
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path.to_owned());
-            let t = mock_tx(1, 1);
+            let t: ledger::Transaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
 
@@ -562,7 +581,8 @@ mod tests {
             let mut rng = rand::thread_rng();
             db.update(|txn| {
                 for i in 0..10u32 {
-                    txn.add_tx(&mock_tx(i, rng.gen::<u32>() as u64))?;
+                    let t: ledger::Transaction = Faker.fake();
+                    txn.add_tx(&t)?;
                 }
                 Ok(())
             });
@@ -582,6 +602,8 @@ mod tests {
                         fee <= last_fee,
                         "tx fees are not in decreasing order"
                     );
+
+                    println!("fee: {}", fee);
                 }
 
                 Ok(())
@@ -590,7 +612,7 @@ mod tests {
     }
 
     #[test]
-    fn test_block_size_limit() {
+    fn test_max_gas_limit() {
         let t = TestWrapper {
             path: "test_block_size_limit",
         };
@@ -600,7 +622,8 @@ mod tests {
 
             db.update(|txn| {
                 for i in 0..10u32 {
-                    txn.add_tx(&mock_tx(i, i as u64))?;
+                    let t = ledger::faker::gen_dummy_tx(i as u64);
+                    txn.add_tx(&t)?;
                 }
                 Ok(())
             });
@@ -635,44 +658,6 @@ mod tests {
             // Destroy/deletion of a database can happen only after dropping DB.
             let opts = Options::default();
             rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
-        }
-    }
-
-    fn mock_block(height: u64) -> Block {
-        Block::new(
-            Header {
-                version: 0,
-                height,
-                timestamp: 11112222,
-                gas_limit: 123456,
-                prev_block_hash: [10; 32],
-                seed: Signature::default(),
-                generator_bls_pubkey: [12; 96],
-                state_hash: [13; 32],
-                hash: [0; 32],
-                cert: Certificate::default(),
-            },
-            vec![],
-        )
-        .expect("should be valid hash")
-    }
-
-    fn mock_tx(h: u32, gas_price: u64) -> ledger::Transaction {
-        let mut hash = [0u8; 32];
-        hash[..4].copy_from_slice(&h.to_be_bytes());
-
-        let fixed = "010000000000000001020304050607080102030405060708010203040506070801020304050607080200000000000000010c8088b9e8c9d06915673d4d94fc76348fb7ce7503e8587f30caea67ab8379b815ce6aba274054f337bdd92d9411d8be3f282b05e3c6d42e8eea9f3215b8de33b96a3c7c1dbcb4d8cdd8ef13e50e84cf6480116311677676269d3e662cea608c5a3479e042102a78621252a37f2d99e6824e17a2b11597147d1adf4624e7d436ffffffffffffffff997ebe7877346dc48137c1d115176c60c5dbf0ea77dd8cdca0cfbc0f3d90304ecb5b2b3d60a2b9d4df4a999ef3a768f8bd75c75aac343bff35bed7cfb2e3513315e8ece73c24ca0c97bda403149dcf9fea1c8827b682c1bbe089c8d10355c45e01e549d068cb470cbefe6fddd3b2d8aacfa5a76805e725d5394e882a79d157695ec48dcb7e531ccc3b334ae122d4fd40e242e7d8a85fdb82bd4c9e9621a9a60d042dbbaec8a2acb879b48d311f1264b1aafe6bf26ccc0bb250af7a2e19e8dcdc3851f382c509fb449a701a93c9489ae97bae88feaebe38fc6c128dc4b286724c10ffffffffffffffff14b611da24f94e89dd03121410f05b53c52cfc785da3c8d59bb65d07b78ab0241c6a8f3ffadc251790b9f78a31b82246c883cbfa1330337bd094045c01dcca2a7de1eadf6f1f7116169ed9dd10541a407035bb8fe834a973d8176f51f07a8435fee6a01aa94b675366ed1b054b8091542329dd1538bcec8a7503906281f0b61200ca9a3b00000000GASPRICEd85dbd596fc0476c779f3e2e7b5e58b732cb71f9ca056a8828cf845885a22f17848a28b1224942eb4222b7c43fc01e60529c7ee5fab115f3802c91179d0edfa19851d4394c5da06a86f955b2bd1305672e61a9569b5e024f03c957d4160d3d23fad4651d0897d60d89845c58baee90dbb291366e711628910673b9f3eedaaec355d87e2b2619a6809157bf01d3579145794a2b10e5e0f23d053e48a699ad318d80d2e737ca67e32f0848724907f3a847befe125d83031fc249cc24d489bee3cca6dfba0129d5578102c594b72631a13797cc0413391a5a1886c7536e6fdc0c489dfdbc00baba13e05157a7ab7273523dbb98d34c06e3a058424f361aad4a8fbda04b3327dbf973a2fc07d54445ebe6651b2e35a3f5c983dad6f05599505d20e8049ab8b6a8f099304dbc4badb806e2e8b02f90619eacef17710c48c316cddd0889badea8613806d13450208797859e6271335cda185bbfc5844358e701c0ca03ad84e86019661d4b29336d10be7f2d1510cb65478f0ea3e0baea5d49ff962bcccdcf4396a0b3cfed0f1b8c5537b148f88f31e782f30be64807cad8900706b18a31cce9a743694b0abf94d6ff32789e870b3b70970bc2a01b69faea5a6dfc3514b4d6cf831dd715429cb3c9c3c9011422260233eab35f30dec5415fe06f9a22e5e4847cde93f61e896ebeec082ced1e65b7bf5dfe6f6dd064d2649580ae5ec6b09934167cdd0efc24150dee406c18dc4d6def110c74049a3f14c7d2b019606518ab91cba648915908d032c33cd3a6c07bfb908902c5a8bd55ed5fb25582659a9f4fb82aedba03c6946823b020ff8fad039772696c1b58a3434a5c53f5b6670943e90ccf49fb24d88929f467341cd68978082969dfc75ccdf161e1340bb3d66633b52703b2efd6cf769395fa892f5738cf5dee96afe27fe085bed54dd607bc0f0b3fe5fd5e83f1a18ed9e3457ac28bc6a49224c20f17d63fbc38f2d3e49af4f108407a9523e55fc1e89a2c221b0d15a993a3856a9f9618655555f7828734da3193ad2353c81a6f0720e90dbc62a8dcdd1e117b8f6addd574a6c483a5bebb06255e9614ff22ce4ac848de8ee8df47bd133fbd5f46bf9bf9a56e80d6e411cf2803186dad1a7cd9176ba85dff17e29471fb1c6f3a9304630e190406857e511c93711eca6a472f89005ddef430f0df953dcf5a3751bddaf39da32e25a87b1f41cc23f14b25ea9e0289785520696b0a82d6a23a19eb11ca32021c414ba83f0d4012933a4a962826e7185f21f440c8b08c1adf58aec9daee1c8e15e607239e819fc5dea80c697e800a1a18acd235789fb9dfee43f3e8a51ba190656ca8ee9dc7ed1cbfce26a0deb7563f52292f3f6bef6360095b1fa416afa01640ddbabbd3b8fc15223d50c0cdc80cb846947b80408764fab356051d2783e2a9e54917cfaab223c75dd8d5187841fbe93fc79bbc1d63ffffce68ae16c3b4ef3bd92d87bec21f2f958ab4f91535f10c50ef186e3a4d2a43b8060ac15b9ef21256e52123862563540c14d9d0904c20c70d2c5915e352b582f7ee0dfe3338658c1e7245b651428799705d9b76847e9fc8a872ef3aae9c978ca64e3f5f11dd7d49decaad5c299680e7478ddc9651d8578774431b46cc701601af616f9c7323ce76fcd1c6055f7d02652c9a2354ad21ebfd1df37d5254609e3d38666940a2a6dd21c59400bf444f8b297203243de4099b1c8640fb43849f160cdab42a52e0a107df5db400819f7587957f07d72cb498ae97aa6d1e67ae2900ff56f7378f742e04fcdedd2a72ef20aea340f9f65cff2bedc1362733170906a443a1964bdc59c245808014604e2fc9c9f23ecc590da6bedcb81c69ef8f369d69a0c9c663e0faccefde8bf848224166c59b49eb9a58f8fb38bdb42f6b33b5470378bfe21a980b1d78a8da4c32b4f380127bdd6a9c0c96f1b3ee4c0bbc69fa312e7a77560ad2eafdc97017ff9e51da30ee8e2acfaef091236c4c6cf66e2f43129d70744812d2eafdc97017ff9e51da30ee8e2acfaef091236c4c6cf66e2f43129d707448126981ddc905c11356d461b7ccc828dc1ac8e3c92cc9ba3619ee76f9150095a75304d64fd0d2d436f18e6881aae6b7d99bed17078b8f508f0cf4bb2dbd3e7f7871170c739f9d9ea4404bff4066c3ed34d6a52245965b485b766344a380f65e5d2800000000000000000000000000000000";
-
-        let utx_bytes = hex::decode(fixed.replace(
-            "GASPRICE",
-            hex::encode((gas_price).to_le_bytes()).as_str(),
-        ))
-        .expect("decodable data");
-
-        ledger::Transaction {
-            inner: dusk_wallet_core::Transaction::from_slice(&utx_bytes)
-                .expect("should be valid"),
-            gas_spent: None,
         }
     }
 }

@@ -1,0 +1,20 @@
+[package]
+name = "node-data"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dusk-wallet-core = "0.14.0-rc"
+dusk-bytes = "^0.1"
+sha3 = { version = "0.10" }
+fake = { version = "2.5", features = ['derive'], optional = true }
+rand = { version = "0.8", optional = true }
+hex = { version = "0.4", optional = true }
+
+[dev-dependencies]
+fake = { version = "2.5", features = ['derive'] }
+rand = "0.8"
+hex = "0.4"
+
+[features]
+faker = ["dep:fake", "dep:rand", "dep:hex"]
