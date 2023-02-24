@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bls12_381_sign::PublicKey;
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use serde_derive::{Deserialize, Serialize};
 
@@ -17,6 +17,6 @@ pub(super) struct Acl {
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub(super) struct Users {
-    pub(super) owners: Vec<Wrapper<PublicKey, { PublicKey::SIZE }>>,
-    pub(super) allowlist: Vec<Wrapper<PublicKey, { PublicKey::SIZE }>>,
+    pub(super) owners: Vec<Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>>,
+    pub(super) allowlist: Vec<Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>>,
 }

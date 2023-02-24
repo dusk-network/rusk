@@ -9,6 +9,7 @@ use crate::theme::Theme;
 use canonical::{Canon, Sink, Source};
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
+use governance_contract::GovernanceContract;
 use http_req::request;
 use microkelvin::{Backend, BackendCtor, Persistence};
 use once_cell::sync::Lazy;
@@ -28,6 +29,8 @@ use url::Url;
 
 pub use snapshot::{Balance, GenesisStake, Snapshot};
 
+use self::snapshot::Governance;
+
 mod snapshot;
 pub mod tar;
 mod zip;
@@ -43,6 +46,37 @@ pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
     let bytes = include_bytes!("../assets/faucet.psk");
     PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
 });
+
+fn deploy_governance_contract(
+    governance: &Governance,
+    state: &mut NetworkState,
+) -> Result<(), Box<dyn Error>> {
+    let gov_code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
+    )
+    .to_vec();
+    let contract = Contract::new(GovernanceContract::default(), gov_code);
+    let contract_id = governance.contract();
+
+    let theme = Theme::default();
+    info!(
+        "{} {} governance to {}",
+        theme.action("Deploying"),
+        governance.name,
+        contract_id
+    );
+    state.deploy_with_id(contract_id, contract)?;
+
+    let mut gov_state: GovernanceContract =
+        state.get_contract_cast_state(&contract_id)?;
+    gov_state.authority = *governance.authority();
+    gov_state.broker = Some(*governance.broker());
+
+    unsafe {
+        set_contract_state(&contract_id, &gov_state, state)?;
+    }
+    Ok(())
+}
 
 fn generate_transfer_state(
     snapshot: &Snapshot,
@@ -214,6 +248,11 @@ where
             &mut network,
         )?;
     };
+
+    for governance in snapshot.governance_contracts() {
+        deploy_governance_contract(governance, &mut network)?;
+    }
+
     network.commit();
     network.push();
 

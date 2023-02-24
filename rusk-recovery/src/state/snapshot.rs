@@ -6,19 +6,22 @@
 
 use std::fmt::Debug;
 
-use dusk_bls12_381_sign::PublicKey;
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
 mod acl;
+mod governance;
 mod stake;
 mod wrapper;
 
 use acl::Acl;
 pub use stake::GenesisStake;
 use wrapper::Wrapper;
+
+pub use self::governance::Governance;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct Balance {
@@ -44,6 +47,8 @@ pub struct Snapshot {
     balance: Vec<Balance>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     stake: Vec<GenesisStake>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
+    governance: Vec<Governance>,
 }
 
 impl Debug for Snapshot {
@@ -68,17 +73,21 @@ impl Snapshot {
     }
 
     /// Returns an iterator of the owners of the staking contract
-    pub fn owners(&self) -> impl Iterator<Item = &PublicKey> {
+    pub fn owners(&self) -> impl Iterator<Item = &BlsPublicKey> {
         self.acl.stake.owners.iter().map(|pk| &**pk)
     }
 
     /// Returns an iterator of the allowed staking addresses
-    pub fn allowlist(&self) -> impl Iterator<Item = &PublicKey> {
+    pub fn allowlist(&self) -> impl Iterator<Item = &BlsPublicKey> {
         self.acl.stake.allowlist.iter().map(|pk| &**pk)
     }
 
     pub fn base_state(&self) -> Option<&str> {
         self.base_state.as_deref()
+    }
+
+    pub fn governance_contracts(&self) -> impl Iterator<Item = &Governance> {
+        self.governance.iter()
     }
 }
 
@@ -127,6 +136,7 @@ mod tests {
             acl: Acl {
                 stake: Users { allowlist, owners },
             },
+            governance: vec![],
         }
     }
 
@@ -163,6 +173,7 @@ mod tests {
             acl: Acl {
                 stake: Users { allowlist, owners },
             },
+            governance: vec![],
         }
     }
 
