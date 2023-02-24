@@ -26,8 +26,7 @@ libmath = { version = "0.2.1" }
 dusk-bytes = "0.1"
 bytes = "0.6.0"
 async-channel = "1.7.1"
-#node-data = { path = "./../rusk/node-data", version = "0.1" }
-node-data = { git = "https://github.com/dusk-network/rusk/node-data", version = "0.1" }
+node-data = { git = "https://github.com/dusk-network/rusk/", version = "0.1" }
 
 [dev-dependencies]
 hex-literal = { version = "0.3.4" }
