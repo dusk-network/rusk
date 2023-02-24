@@ -7,9 +7,9 @@
 use super::{Candidate, Ledger, Persist, Registry, DB};
 use anyhow::{Context, Result};
 
-use node_common::encoding::*;
-use node_common::ledger;
-use node_common::Serializable;
+use node_data::encoding::*;
+use node_data::ledger;
+use node_data::Serializable;
 
 use crate::database::Mempool;
 
@@ -422,7 +422,7 @@ fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use node_common::ledger;
+    use node_data::ledger;
 
     use fake::{Dummy, Fake, Faker};
     use rand::prelude::*;

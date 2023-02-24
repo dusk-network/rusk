@@ -7,7 +7,7 @@
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_common::ledger;
+use node_data::ledger;
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
