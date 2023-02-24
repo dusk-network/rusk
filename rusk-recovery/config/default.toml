@@ -1,0 +1,5 @@
+base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/rusk-state/pilot-state-20230224"
+
+[acl.stake]
+owners = []
+allowlist = []
