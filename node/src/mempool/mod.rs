@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::data::Topics;
+use crate::data::{self, Topics};
 use crate::utils::PendingQueue;
-use crate::{data, database, Network};
-use crate::{LongLivedService, Message};
+use crate::{database, LongLivedService, Message, Network};
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 

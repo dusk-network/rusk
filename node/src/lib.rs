@@ -93,7 +93,7 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
         for topic in my_topics {
             guard.add_route(*topic, queue.clone()).await?
         }
-        anyhow::Ok(())
+        Ok(())
     }
 
     async fn add_filter(
@@ -103,7 +103,7 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
         network: &Arc<RwLock<N>>,
     ) -> anyhow::Result<()> {
         network.write().await.add_filter(topic, filter_fn).await?;
-        anyhow::Ok(())
+        Ok(())
     }
 
     /// Returns service name.
@@ -182,15 +182,6 @@ impl<N: Network, DB: database::DB> Node<N, DB> {
 
         Ok(())
     }
-}
-
-pub fn enable_log(filter: impl Into<tracing::metadata::LevelFilter>) {
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_max_level(filter)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed on subscribe tracing");
 }
 
 #[cfg(test)]
