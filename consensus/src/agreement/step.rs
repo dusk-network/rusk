@@ -14,7 +14,7 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
-use node_common::ledger::{Block, Certificate};
+use node_data::ledger::{Block, Certificate};
 
 use crate::agreement::aggr_agreement;
 use crate::config;

@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{RoundUpdate, Topics};
-use node_common::ledger::{Block, Certificate, Seed};
+use node_data::ledger::{Block, Certificate, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
@@ -13,8 +13,8 @@ use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
-use node_common::ledger;
-use node_common::ledger::*;
+use node_data::ledger;
+use node_data::ledger::*;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;

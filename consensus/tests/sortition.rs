@@ -9,7 +9,7 @@ use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::user::sortition::Config;
 use dusk_consensus::util::pubkey::ConsensusPublicKey;
 
-use node_common::ledger::Seed;
+use node_data::ledger::Seed;
 
 #[test]
 fn test_deterministic_sortition_1() {

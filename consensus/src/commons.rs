@@ -10,7 +10,7 @@ use crate::contract_state::Operations;
 // Provisioners, the BidList, the Seed and the Hash.
 use crate::messages::{self, Message};
 
-use node_common::ledger::*;
+use node_data::ledger::*;
 
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;

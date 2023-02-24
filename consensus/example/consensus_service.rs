@@ -18,7 +18,7 @@ use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::util::pending_queue::PendingQueue;
 use dusk_consensus::util::pubkey::ConsensusPublicKey;
 
-use node_common::ledger::Block;
+use node_data::ledger::Block;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;

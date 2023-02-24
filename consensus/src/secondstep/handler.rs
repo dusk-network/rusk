@@ -6,8 +6,8 @@
 
 use crate::commons::{ConsensusError, RoundUpdate, Topics};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use node_common::ledger;
-use node_common::ledger::{Hash, Signature, StepVotes};
+use node_data::ledger;
+use node_data::ledger::{Hash, Signature, StepVotes};
 use tracing::error;
 
 use crate::aggregator::Aggregator;

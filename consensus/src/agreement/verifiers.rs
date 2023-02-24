@@ -6,7 +6,7 @@
 
 use crate::commons::marshal_signable_vote;
 use crate::messages;
-use node_common::ledger::{Seed, StepVotes};
+use node_data::ledger::{Seed, StepVotes};
 
 use crate::messages::{Message, Payload};
 use crate::user::committee::CommitteeSet;

@@ -9,7 +9,7 @@ use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
-use node_common::ledger::{Hash, Signature, StepVotes};
+use node_data::ledger::{Hash, Signature, StepVotes};
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
@@ -148,7 +148,7 @@ mod tests {
     use crate::user::sortition::Config;
     use dusk_bls12_381_sign::PublicKey;
     use hex::FromHex;
-    use node_common::ledger::Seed;
+    use node_data::ledger::Seed;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {

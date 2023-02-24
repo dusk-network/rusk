@@ -11,7 +11,7 @@ use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
-use node_common::ledger::Block;
+use node_data::ledger::Block;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

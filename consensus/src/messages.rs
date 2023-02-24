@@ -10,7 +10,7 @@ use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::commons::{marshal_signable_vote, Topics};
 use crate::util::pubkey::ConsensusPublicKey;
-use node_common::{ledger, Serializable};
+use node_data::{ledger, Serializable};
 use std::io::{self, Read, Write};
 
 pub enum Status {
@@ -318,8 +318,8 @@ impl Default for Payload {
 }
 
 pub mod payload {
-    use node_common::ledger::{Block, Certificate, StepVotes};
-    use node_common::Serializable;
+    use node_data::ledger::{Block, Certificate, StepVotes};
+    use node_data::Serializable;
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -533,7 +533,7 @@ mod tests {
     use crate::messages::payload::{Agreement, NewBlock, Reduction};
     use crate::messages::{self, Message, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
-    use node_common::ledger::*;
+    use node_data::ledger::*;
 
     use super::payload::AggrAgreement;
 

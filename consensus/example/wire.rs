@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_consensus::messages::Message;
-use node_common::Serializable;
+use node_data::Serializable;
 use std::io::{self, Read, Write};
 
 /// Wire Frame definition.

@@ -9,7 +9,7 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-use node_common::ledger::Seed;
+use node_data::ledger::Seed;
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
@@ -67,7 +67,7 @@ pub fn generate_sortition_score(
 
 #[cfg(test)]
 mod tests {
-    use node_common::ledger::Seed;
+    use node_data::ledger::Seed;
     use num_bigint::BigInt;
 
     use crate::user::sortition::{

@@ -10,7 +10,7 @@ use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use hex::ToHex;
-use node_common::ledger::{Hash, Seed};
+use node_data::ledger::{Hash, Seed};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
