@@ -56,7 +56,7 @@ fn deploy_governance_contract(
     )
     .to_vec();
     let contract = Contract::new(GovernanceContract::default(), gov_code);
-    let contract_id = ContractId::reserved(governance.contract_address);
+    let contract_id = governance.contract();
 
     let theme = Theme::default();
     info!(
