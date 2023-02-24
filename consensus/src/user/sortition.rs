@@ -9,7 +9,7 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-use crate::commons::Seed;
+use node_data::ledger::Seed;
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
@@ -67,13 +67,11 @@ pub fn generate_sortition_score(
 
 #[cfg(test)]
 mod tests {
+    use node_data::ledger::Seed;
     use num_bigint::BigInt;
 
-    use crate::{
-        commons::Seed,
-        user::sortition::{
-            create_sortition_hash, generate_sortition_score, Config,
-        },
+    use crate::user::sortition::{
+        create_sortition_hash, generate_sortition_score, Config,
     };
 
     #[test]
@@ -85,7 +83,7 @@ mod tests {
         ];
         assert_eq!(
             create_sortition_hash(
-                &Config::new(Seed::new([3; 48]), 10, 3, 0),
+                &Config::new(Seed::from([3; 48]), 10, 3, 0),
                 1
             )[..],
             hash[..],
@@ -99,7 +97,7 @@ mod tests {
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
-                &Config::new(Seed::new(seed), 10, 3, 0),
+                &Config::new(Seed::from(seed), 10, 3, 0),
                 1,
             );
 

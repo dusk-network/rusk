@@ -4,13 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::Hash;
-use crate::messages::payload::StepVotes;
 use crate::messages::Header;
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
 use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
+use node_data::ledger::{Hash, Signature, StepVotes};
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
@@ -72,12 +71,15 @@ impl Aggregator {
             );
 
             if total >= committee.quorum() {
-                let signature = aggr_sign
+                let s = aggr_sign
                     .aggregated_bytes()
                     .expect("Signature to exist after quorum reached");
                 let bitset = committee.bits(cluster);
 
-                let step_votes = StepVotes { bitset, signature };
+                let step_votes = StepVotes {
+                    bitset,
+                    signature: Signature::from(s),
+                };
 
                 return Some((hash, step_votes));
             }
@@ -140,13 +142,13 @@ impl AggrSignature {
 mod tests {
     use super::*;
     use crate::aggregator::Aggregator;
-    use crate::commons::Seed;
     use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bls12_381_sign::PublicKey;
     use hex::FromHex;
+    use node_data::ledger::Seed;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {
@@ -199,7 +201,7 @@ mod tests {
         p.update_eligibility_flag(round);
 
         // Execute sortition with specific config
-        let cfg = Config::new(Seed::new([4u8; 48]), round, step, 10);
+        let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10);
         let c = Committee::new(
             ConsensusPublicKey::new(PublicKey::default()),
             &mut p,

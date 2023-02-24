@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::{
-    commons::{Block, Database, Hash},
-    contract_state::{CallParams, Error, Operations, Output, StateRoot},
+use dusk_consensus::commons::Database;
+use dusk_consensus::contract_state::{
+    CallParams, Error, Operations, Output, StateRoot,
 };
+use node_data::ledger::*;
 
 /// Implements Executor trait to mock Contract Storage calls.
 pub struct Executor {}

@@ -5,9 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::accumulator::Accumulator;
-use crate::commons::{
-    Block, Certificate, ConsensusError, Database, RoundUpdate,
-};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
+
 use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
@@ -15,6 +14,7 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::util::pending_queue::PendingQueue;
 use crate::util::pubkey::ConsensusPublicKey;
+use node_data::ledger::{Block, Certificate};
 
 use crate::agreement::aggr_agreement;
 use crate::config;

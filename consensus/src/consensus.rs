@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, ConsensusError, Database, RoundUpdate};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
+use node_data::ledger::Block;
 
 use crate::agreement::step;
 use crate::execution_ctx::ExecutionCtx;

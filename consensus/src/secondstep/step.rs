@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_send_reduction, Block, ConsensusError};
+use crate::commons::{spawn_send_reduction, ConsensusError};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::messages::{Message, Payload};
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
+use node_data::ledger::Block;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

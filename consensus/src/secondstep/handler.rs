@@ -4,13 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Hash, RoundUpdate, Signature, Topics};
+use crate::commons::{ConsensusError, RoundUpdate, Topics};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use node_data::ledger;
+use node_data::ledger::{Hash, Signature, StepVotes};
 use tracing::error;
 
 use crate::aggregator::Aggregator;
 use crate::messages;
-use crate::messages::payload::StepVotes;
 use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
 
@@ -88,7 +89,7 @@ impl Reduction {
         ru: &RoundUpdate,
         step: u8,
         block_hash: Hash,
-        second_step_votes: payload::StepVotes,
+        second_step_votes: ledger::StepVotes,
     ) -> Message {
         let hdr = messages::Header {
             pubkey_bls: ru.pubkey_bls.clone(),

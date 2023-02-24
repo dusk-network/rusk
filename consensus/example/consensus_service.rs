@@ -9,7 +9,7 @@ use block_modes::block_padding::Pkcs7;
 use block_modes::{BlockMode, Cbc};
 extern crate dusk_consensus as consensus;
 
-use dusk_consensus::commons::{Block, RoundUpdate};
+use dusk_consensus::commons::RoundUpdate;
 use dusk_consensus::consensus::Consensus;
 
 use dusk_bls12_381_sign::SecretKey;
@@ -18,6 +18,7 @@ use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::util::pending_queue::PendingQueue;
 use dusk_consensus::util::pubkey::ConsensusPublicKey;
 
+use node_data::ledger::Block;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;

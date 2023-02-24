@@ -4,13 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{Block, Certificate, RoundUpdate, Seed, Topics};
+use crate::commons::{RoundUpdate, Topics};
+use node_data::ledger::{Block, Certificate, Seed};
+
+use crate::config;
 use crate::contract_state::Operations;
 use crate::messages::payload::NewBlock;
 use crate::messages::{Header, Message};
 use crate::util::pubkey::ConsensusPublicKey;
-use crate::{commons, config};
 use dusk_bytes::Serializable;
+use node_data::ledger;
+use node_data::ledger::*;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
@@ -39,7 +43,7 @@ impl<T: Operations> Generator<T> {
             .generate_block(
                 &ru.pubkey_bls,
                 ru.round,
-                Seed::new(seed),
+                Seed::from(seed),
                 ru.hash,
                 ru.timestamp,
             )
@@ -84,14 +88,14 @@ impl<T: Operations> Generator<T> {
             crate::contract_state::CallParams::default(),
         )?;
 
-        let blk_header = commons::Header {
+        let blk_header = ledger::Header {
             version: 0,
             height: round,
             timestamp: self.get_timestamp(prev_block_timestamp) as i64,
             gas_limit: 0,
             prev_block_hash,
             seed,
-            generator_bls_pubkey: *pubkey.bytes(),
+            generator_bls_pubkey: BlsPubkey(*pubkey.bytes()),
             state_hash: [0; 32],
             hash: [0; 32],
             cert: Certificate::default(),

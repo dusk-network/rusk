@@ -10,45 +10,13 @@ use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::commons::{marshal_signable_vote, Topics};
 use crate::util::pubkey::ConsensusPublicKey;
+use node_data::{ledger, Serializable};
 use std::io::{self, Read, Write};
 
 pub enum Status {
     Past,
     Present,
     Future,
-}
-
-pub trait Serializable {
-    /// Serialize struct to Vec<u8>.
-    fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
-
-    fn read<R: Read>(reader: &mut R) -> io::Result<Self>
-    where
-        Self: Sized;
-
-    fn write_var_le_bytes<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
-        let len = buf.len() as u8;
-
-        w.write_all(&len.to_le_bytes())?;
-        w.write_all(buf)?;
-
-        Ok(())
-    }
-
-    // read_var_le_bytes reads length-prefixed fields
-    fn read_var_le_bytes<R: Read, const N: usize>(
-        r: &mut R,
-    ) -> io::Result<[u8; N]> {
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-
-        debug_assert_eq!(buf[0] as usize, N);
-
-        let mut buf = [0u8; N];
-        r.read_exact(&mut buf)?;
-
-        Ok(buf)
-    }
 }
 
 pub trait MessageTrait {
@@ -58,7 +26,7 @@ pub trait MessageTrait {
 }
 
 /// Message is a data unit that consensus phase can process.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone)]
 pub struct Message {
     pub header: Header,
     pub payload: Payload,
@@ -85,7 +53,7 @@ impl Serializable for Message {
             Payload::Reduction(p) => p.write(w),
             Payload::Agreement(p) => p.write(w),
             Payload::AggrAgreement(p) => p.write(w),
-            _ => Ok(()), // non-serialziable messages are those which are not sent on the wire.
+            _ => Ok(()), // non-serializable messages are those which are not sent on the wire.
         }
     }
 
@@ -227,7 +195,9 @@ impl Serializable for Header {
         Self: Sized,
     {
         // Read bls pubkey
-        let buf: [u8; 96] = Self::read_var_le_bytes(r)?;
+        let buf: [u8; 96] = Self::read_var_le_bytes(r)?
+            .try_into()
+            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         let mut pubkey_bls = ConsensusPublicKey::default();
         if buf != [0u8; 96] {
@@ -330,11 +300,11 @@ impl Header {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
-    StepVotes(payload::StepVotes),
+    StepVotes(ledger::StepVotes),
     StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
@@ -348,8 +318,8 @@ impl Default for Payload {
 }
 
 pub mod payload {
-    use super::Serializable;
-    use crate::commons::{Block, Certificate};
+    use node_data::ledger::{Block, Certificate, StepVotes};
+    use node_data::Serializable;
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -367,7 +337,10 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signed_hash = Self::read_var_le_bytes(r)?;
+            let signed_hash: [u8; 48] = Self::read_var_le_bytes(r)?
+                .try_into()
+                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
             Ok(Reduction { signed_hash })
         }
     }
@@ -380,7 +353,7 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone)]
     pub struct NewBlock {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
@@ -396,6 +369,16 @@ pub mod payload {
             }
         }
     }
+
+    impl PartialEq<Self> for NewBlock {
+        fn eq(&self, other: &Self) -> bool {
+            self.prev_hash.eq(&other.prev_hash)
+                && self.signed_hash.eq(&other.signed_hash)
+                && self.candidate.header.hash.eq(&other.candidate.header.hash)
+        }
+    }
+
+    impl Eq for NewBlock {}
 
     impl Serializable for NewBlock {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
@@ -414,57 +397,15 @@ pub mod payload {
 
             r.read_exact(&mut result.prev_hash[..])?;
             result.candidate = Block::read(r)?;
-            result.signed_hash = Self::read_var_le_bytes(r)?;
+            result.signed_hash = Self::read_var_le_bytes(r)?
+                .try_into()
+                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
             Ok(result)
         }
     }
 
-    #[derive(Debug, Clone, Eq, Hash, PartialEq)]
-    pub struct StepVotes {
-        pub bitset: u64,
-        pub signature: [u8; 48],
-    }
-
-    impl Default for StepVotes {
-        fn default() -> Self {
-            Self {
-                bitset: 0,
-                signature: [0; 48],
-            }
-        }
-    }
-
-    impl StepVotes {
-        pub fn new(signature: [u8; 48], bitset: u64) -> StepVotes {
-            StepVotes { bitset, signature }
-        }
-    }
-
-    impl Serializable for StepVotes {
-        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            w.write_all(&self.bitset.to_le_bytes())?;
-            Self::write_var_le_bytes(w, &self.signature[..])?;
-
-            Ok(())
-        }
-
-        fn read<R: Read>(r: &mut R) -> io::Result<Self>
-        where
-            Self: Sized,
-        {
-            let mut buf = [0u8; 8];
-            r.read_exact(&mut buf[..])?;
-            let signature = Self::read_var_le_bytes(r)?;
-
-            Ok(StepVotes {
-                bitset: u64::from_le_bytes(buf),
-                signature,
-            })
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
+    #[derive(Debug, Clone)]
     pub struct StepVotesWithCandidate {
         pub sv: StepVotes,
         pub candidate: Block,
@@ -497,7 +438,9 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signature = Self::read_var_le_bytes(r)?;
+            let signature = Self::read_var_le_bytes(r)?
+                .try_into()
+                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
             let mut step_votes_len = [0u8; 1];
             r.read_exact(&mut step_votes_len)?;
@@ -560,7 +503,9 @@ pub mod payload {
             r.read_exact(&mut buf)?;
             let bitset = u64::from_le_bytes(buf);
 
-            let aggr_signature = Self::read_var_le_bytes(r)?;
+            let aggr_signature = Self::read_var_le_bytes(r)?
+                .try_into()
+                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
             Ok(AggrAgreement {
                 agreement,
@@ -584,16 +529,17 @@ pub mod payload {
 #[cfg(test)]
 #[allow(unused)]
 mod tests {
-    use crate::commons::{Block, Certificate, Seed, Topics};
-    use crate::messages::payload::{Agreement, NewBlock, Reduction, StepVotes};
-    use crate::messages::{self, Header, Message, Serializable};
+    use crate::commons::Topics;
+    use crate::messages::payload::{Agreement, NewBlock, Reduction};
+    use crate::messages::{self, Message, Serializable};
     use crate::util::pubkey::ConsensusPublicKey;
+    use node_data::ledger::*;
 
     use super::payload::AggrAgreement;
 
     #[test]
     fn test_serialize() {
-        assert_serialize(Header {
+        assert_serialize(crate::messages::Header {
             pubkey_bls: ConsensusPublicKey::from_sk_seed_u64(1),
             round: 8,
             step: 7,
@@ -602,14 +548,14 @@ mod tests {
         });
 
         let sample_block = Block {
-            header: crate::commons::Header {
+            header: Header {
                 version: 3,
                 height: 1888881,
                 timestamp: 123456789,
                 gas_limit: 111111111,
                 prev_block_hash: [1; 32],
-                seed: Seed::new([2; 48]),
-                generator_bls_pubkey: [5; 96],
+                seed: Seed::from([2; 48]),
+                generator_bls_pubkey: BlsPubkey([5; 96]),
                 state_hash: [4; 32],
                 hash: [5; 32],
                 cert: Certificate {
@@ -629,17 +575,17 @@ mod tests {
 
         assert_serialize(StepVotes {
             bitset: 12345,
-            signature: [4; 48],
+            signature: Signature([4; 48]),
         });
 
         assert_serialize(Agreement {
             first_step: StepVotes {
                 bitset: 12345,
-                signature: [1; 48],
+                signature: Signature([1; 48]),
             },
             second_step: StepVotes {
                 bitset: 98765,
-                signature: [2; 48],
+                signature: Signature([2; 48]),
             },
             signature: [3; 48],
         });
@@ -648,11 +594,11 @@ mod tests {
             agreement: Agreement {
                 first_step: StepVotes {
                     bitset: 12345,
-                    signature: [1; 48],
+                    signature: Signature([1; 48]),
                 },
                 second_step: StepVotes {
                     bitset: 98765,
-                    signature: [2; 48],
+                    signature: Signature([2; 48]),
                 },
                 signature: [3; 48],
             },

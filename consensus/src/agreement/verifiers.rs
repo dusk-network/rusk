@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{marshal_signable_vote, Seed};
+use crate::commons::marshal_signable_vote;
 use crate::messages;
-use crate::messages::payload::StepVotes;
+use node_data::ledger::{Seed, StepVotes};
+
 use crate::messages::{Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
@@ -87,7 +88,7 @@ pub(super) async fn verify_step_votes(
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
-        &sv.signature,
+        &sv.signature.inner(),
         committees_set,
         &cfg,
     )
