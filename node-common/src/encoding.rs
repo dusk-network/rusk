@@ -45,7 +45,7 @@ impl Serializable for Transaction {
         let data = self.inner.to_var_bytes();
 
         // Write inner transaction
-        let len: u32 = data.len() as u32;
+        let len = data.len() as u32;
         w.write_all(&len.to_le_bytes())?;
         w.write_all(&data)?;
 

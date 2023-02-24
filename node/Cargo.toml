@@ -26,7 +26,6 @@ tracing-subscriber = "0.3.16"
 async-channel = "1.7"
 
 rocksdb_lib = { package = "rocksdb", version = "0.19.0", default-features = false }
-dusk-wallet-core = "0.14.0-rc.0"
 dusk-bytes = "^0.1"
 node-common = { path = "../node-common", version = "0.1" }
 
