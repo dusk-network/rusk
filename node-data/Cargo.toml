@@ -1,5 +1,5 @@
 [package]
-name = "node-common"
+name = "node-data"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,7 @@ dusk-bytes = "^0.1"
 sha3 = { version = "0.10" }
 fake = { version = "2.5", features = ['derive'], optional = true }
 rand = { version = "0.8", optional = true }
-hex =  { version = "0.4", optional = true }
+hex = { version = "0.4", optional = true }
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }

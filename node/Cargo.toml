@@ -27,7 +27,7 @@ async-channel = "1.7"
 
 rocksdb_lib = { package = "rocksdb", version = "0.19.0", default-features = false }
 dusk-bytes = "^0.1"
-node-common = { path = "../node-common", version = "0.1" }
+node-data = { path = "../node-data", version = "0.1" }
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }
