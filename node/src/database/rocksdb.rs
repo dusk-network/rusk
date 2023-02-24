@@ -297,8 +297,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         // Add Secondary indexes //
         // Nullifiers
-        for n in tx.inner.inputs().into_iter() {
-            let key: [u8; 32] = n.to_bytes().into();
+        for n in tx.inner.inputs().iter() {
+            let key = n.to_bytes();
             self.inner.put_cf(self.nullifiers_cf, key, vec![0])?;
         }
 
@@ -338,8 +338,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
             // Delete Secondary indexes
             // Delete Nullifiers
-            for n in tx.inner.inputs().into_iter() {
-                let key: [u8; 32] = n.to_bytes().into();
+            for n in tx.inner.inputs().iter() {
+                let key = n.to_bytes();
                 self.inner.delete_cf(self.nullifiers_cf, key)?;
             }
 
