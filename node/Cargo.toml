@@ -37,6 +37,7 @@ rustc_tools_util = "=0.2.0"
 clap = { version = "3.1", features = ["env"] }
 toml = "0.5"
 serde = "1.0"
+dirs = "4"
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }

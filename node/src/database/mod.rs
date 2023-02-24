@@ -4,6 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::path::Path;
+
+use dusk_consensus::commons::Block;
+
 pub mod rocksdb;
 
 use anyhow::Result;
@@ -15,7 +19,9 @@ pub trait DB: Send + Sync + 'static {
     /// Creates or open a database located at this path.
     ///
     /// Panics if opening db or creating one fails.
-    fn create_or_open(path: String) -> Self;
+    fn create_or_open<T>(path: T) -> Self
+    where
+        T: AsRef<Path>;
 
     /// Provides a managed execution of a read-only isolated transaction.
     fn view<F>(&self, f: F) -> Result<()>

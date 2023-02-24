@@ -28,6 +28,8 @@ use std::path::Path;
 use std::sync::Arc;
 use tokio::io::AsyncWriteExt;
 
+use tracing::info;
+
 enum TxType {
     ReadWrite,
     ReadOnly,
@@ -100,7 +102,14 @@ impl Backend {
 impl DB for Backend {
     type P<'a> = DBTransaction<'a, OptimisticTransactionDB>;
 
-    fn create_or_open(path: String) -> Self {
+    fn create_or_open<T>(path: T) -> Self
+    where
+        T: AsRef<Path>,
+    {
+        info!(
+            "Opening database in {:?}",
+            path.as_ref().to_str().unwrap_or_default()
+        );
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -128,11 +137,9 @@ impl DB for Backend {
         Self {
             rocksdb: Arc::new(
                 rocksdb_lib::OptimisticTransactionDB::open_cf_descriptors(
-                    &opts,
-                    Path::new(&path),
-                    cfs,
+                    &opts, path, cfs,
                 )
-                .expect("should be a valid database"),
+                .expect("should be a valid database in {path}"),
             ),
         }
     }

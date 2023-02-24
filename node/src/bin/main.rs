@@ -35,7 +35,7 @@ pub async fn main() -> anyhow::Result<()> {
     let service_list: Vec<Box<Services>> =
         vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
 
-    let db = rocksdb::Backend::create_or_open("".to_string());
+    let db = rocksdb::Backend::create_or_open(config.db_path());
     let net = Kadcast::new(config.network.into());
 
     // node spawn_all is the entry point

@@ -6,6 +6,7 @@
 
 pub mod kadcast;
 
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use clap::{Arg, ArgMatches, Command};
@@ -18,6 +19,7 @@ pub(crate) struct Config {
     log_level: Option<String>,
     log_type: Option<String>,
     pub(crate) network: KadcastConfig,
+    db_path: Option<PathBuf>,
 }
 
 /// Default log_level.
@@ -89,6 +91,15 @@ impl Config {
         };
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
             panic!("Invalid log-level specified '{}' - {}", log_level, e)
+        })
+    }
+
+    pub(crate) fn db_path(&self) -> PathBuf {
+        self.db_path.clone().unwrap_or_else(|| {
+            let mut path = dirs::home_dir().expect("OS not supported");
+            path.push(".dusk");
+            path.push(env!("CARGO_BIN_NAME"));
+            path
         })
     }
 }
