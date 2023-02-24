@@ -622,7 +622,7 @@ mod tests {
 
             db.update(|txn| {
                 for i in 0..10u32 {
-                    let t = ledger::gen_dummy_tx(i as u64);
+                    let t = ledger::faker::gen_dummy_tx(i as u64);
                     txn.add_tx(&t)?;
                 }
                 Ok(())
