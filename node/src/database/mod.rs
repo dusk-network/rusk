@@ -6,8 +6,6 @@
 
 use std::path::Path;
 
-use dusk_consensus::commons::Block;
-
 pub mod rocksdb;
 
 use anyhow::Result;

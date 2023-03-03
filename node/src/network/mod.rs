@@ -107,7 +107,10 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         from_height: u8,
     ) -> anyhow::Result<()> {
+        // TODO: Serialize
+
         // TODO: repropagate message with this height
+
         Ok(())
     }
 
