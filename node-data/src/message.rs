@@ -11,6 +11,8 @@ use dusk_bytes::Serializable as DuskSerializable;
 use crate::{bls, ledger, Serializable};
 use std::io::{self, Read, Write};
 
+use async_channel::TrySendError;
+
 pub enum Status {
     Past,
     Present,
@@ -36,20 +38,19 @@ pub trait MessageTrait {
     fn get_block_hash(&self) -> [u8; 32];
 }
 
-/// Message is a data unit that consensus phase can process.
+/// Message definition
 #[derive(Debug, Default, Clone)]
 pub struct Message {
     pub header: Header,
     pub payload: Payload,
 
-    pub metadata: Option<TransportData>,
+    pub metadata: Option<Metadata>,
 }
 
 /// Defines a transport-related properties that determines how the message
 /// will be broadcast.
-/// TODO: This should be moved out of consensus message definition.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TransportData {
+pub struct Metadata {
     pub height: u8,
     pub src_addr: String,
 }
@@ -64,6 +65,7 @@ impl Serializable for Message {
             Payload::Reduction(p) => p.write(w),
             Payload::Agreement(p) => p.write(w),
             Payload::AggrAgreement(p) => p.write(w),
+            Payload::Block(p) => p.write(w),
             _ => Ok(()), /* non-serializable messages are those which are not
                           * sent on the wire. */
         }
@@ -100,6 +102,7 @@ impl Serializable for Message {
             Topics::AggrAgreement => {
                 Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
+            Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
             _ => Payload::Empty,
         };
 
@@ -173,6 +176,14 @@ impl Message {
         }
     }
 
+    pub fn new_with_block(payload: Box<ledger::Block>) -> Message {
+        Self {
+            header: Header::default(),
+            payload: Payload::Block(payload),
+            ..Default::default()
+        }
+    }
+
     pub fn empty() -> Message {
         Self {
             header: Header::default(),
@@ -180,16 +191,20 @@ impl Message {
             ..Default::default()
         }
     }
+
+    pub fn topic(&self) -> Topics {
+        Topics::from(self.header.topic)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Header {
+    pub topic: u8,
+
     pub pubkey_bls: bls::PublicKey,
     pub round: u64,
     pub step: u8,
     pub block_hash: [u8; 32],
-
-    pub topic: u8,
 }
 
 impl Serializable for Header {
@@ -321,6 +336,7 @@ pub enum Payload {
     StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
+    Block(Box<ledger::Block>),
     Empty,
 }
 
@@ -539,105 +555,16 @@ pub mod payload {
     }
 }
 
-#[cfg(test)]
-#[allow(unused)]
-mod tests {
-    use crate::commons::Topics;
-    use crate::messages::payload::{Agreement, NewBlock, Reduction};
-    use crate::messages::{self, Message, Serializable};
-    use node_data::ledger::*;
-
-    use super::payload::AggrAgreement;
-
-    #[test]
-    fn test_serialize() {
-        assert_serialize(crate::messages::Header {
-            pubkey_bls: bls::PublicKey::from_sk_seed_u64(1),
-            round: 8,
-            step: 7,
-            block_hash: [3; 32],
-            topic: 0,
-        });
-
-        let sample_block = Block {
-            header: Header {
-                version: 3,
-                height: 1888881,
-                timestamp: 123456789,
-                gas_limit: 111111111,
-                prev_block_hash: [1; 32],
-                seed: Seed::from([2; 48]),
-                generator_bls_pubkey: BlsPubkey([5; 96]),
-                state_hash: [4; 32],
-                hash: [5; 32],
-                cert: Certificate {
-                    first_reduction: StepVotes::new([6; 48], 22222222),
-                    second_reduction: StepVotes::new([7; 48], 3333333),
-                    step: 234,
-                },
-            },
-            txs: vec![],
-        };
-
-        assert_serialize(NewBlock {
-            prev_hash: [3; 32],
-            candidate: sample_block,
-            signed_hash: [4; 48],
-        });
-
-        assert_serialize(StepVotes {
-            bitset: 12345,
-            signature: Signature([4; 48]),
-        });
-
-        assert_serialize(Agreement {
-            first_step: StepVotes {
-                bitset: 12345,
-                signature: Signature([1; 48]),
-            },
-            second_step: StepVotes {
-                bitset: 98765,
-                signature: Signature([2; 48]),
-            },
-            signature: [3; 48],
-        });
-
-        assert_serialize(AggrAgreement {
-            agreement: Agreement {
-                first_step: StepVotes {
-                    bitset: 12345,
-                    signature: Signature([1; 48]),
-                },
-                second_step: StepVotes {
-                    bitset: 98765,
-                    signature: Signature([2; 48]),
-                },
-                signature: [3; 48],
-            },
-            aggr_signature: [8; 48],
-            bitset: 10,
-        });
-
-        assert_serialize(Reduction {
-            signed_hash: [4; 48],
-        });
-    }
-
-    fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {
-        let mut buf = vec![];
-        assert!(v.write(&mut buf).is_ok());
-        let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
-        assert_eq!(
-            v,
-            dup,
-            "failed to (de)serialize {}",
-            std::any::type_name::<S>()
-        );
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub enum Topics {
+    // Data exchange topics.
+    GetData = 8,
+    GetBlocks = 9,
+    Tx = 10,
+    Block = 11,
+    MemPool = 13,
+    Inv = 14,
+
     // Consensus main loop topics
     Candidate = 15,
     NewBlock = 16,
@@ -647,13 +574,8 @@ pub enum Topics {
     Agreement = 18,
     AggrAgreement = 19,
 
-    Unknown = 100,
-}
-
-impl Default for Topics {
-    fn default() -> Self {
-        Topics::Unknown
-    }
+    #[default]
+    Unknown = 255,
 }
 
 impl From<Topics> for u8 {
@@ -681,5 +603,133 @@ impl From<u8> for Topics {
         }
 
         Topics::Unknown
+    }
+}
+
+/// AsyncQueue is a thin wrapper of async_channel.
+#[derive(Clone)]
+pub struct AsyncQueue<M: Clone> {
+    receiver: async_channel::Receiver<M>,
+    sender: async_channel::Sender<M>,
+}
+
+impl<M: Clone> Default for AsyncQueue<M> {
+    fn default() -> Self {
+        let (sender, receiver) = async_channel::unbounded();
+        Self { receiver, sender }
+    }
+}
+
+impl<M: Clone> AsyncQueue<M> {
+    pub fn send(&mut self, msg: M) -> async_channel::Send<'_, M> {
+        self.sender.send(msg)
+    }
+
+    pub fn try_send(&self, msg: M) -> Result<(), TrySendError<M>> {
+        self.sender.try_send(msg)
+    }
+
+    pub fn recv(&self) -> async_channel::Recv<'_, M> {
+        self.receiver.recv()
+    }
+}
+
+#[cfg(test)]
+#[allow(unused)]
+mod tests {
+    use super::*;
+    use crate::ledger;
+    use crate::ledger::*;
+    use crate::Serializable;
+
+    #[test]
+    fn test_serialize() {
+        assert_serialize(crate::message::Header {
+            pubkey_bls: bls::PublicKey::from_sk_seed_u64(1),
+            round: 8,
+            step: 7,
+            block_hash: [3; 32],
+            topic: 0,
+        });
+
+        let sample_block = ledger::Block {
+            header: ledger::Header {
+                version: 3,
+                height: 1888881,
+                timestamp: 123456789,
+                gas_limit: 111111111,
+                prev_block_hash: [1; 32],
+                seed: ledger::Seed::from([2; 48]),
+                generator_bls_pubkey: ledger::BlsPubkey([5; 96]),
+                state_hash: [4; 32],
+                hash: [5; 32],
+                cert: Certificate {
+                    first_reduction: ledger::StepVotes::new([6; 48], 22222222),
+                    second_reduction: ledger::StepVotes::new([7; 48], 3333333),
+                    step: 234,
+                },
+            },
+            txs: vec![],
+        };
+
+        assert_serialize(payload::NewBlock {
+            prev_hash: [3; 32],
+            candidate: sample_block,
+            signed_hash: [4; 48],
+        });
+
+        assert_serialize(payload::AggrAgreement {
+            agreement: payload::Agreement {
+                first_step: StepVotes {
+                    bitset: 12345,
+                    signature: Signature([1; 48]),
+                },
+                second_step: StepVotes {
+                    bitset: 98765,
+                    signature: Signature([2; 48]),
+                },
+                signature: [3; 48],
+            },
+            aggr_signature: [8; 48],
+            bitset: 10,
+        });
+
+        assert_serialize(ledger::StepVotes {
+            bitset: 12345,
+            signature: Signature([4; 48]),
+        });
+
+        assert_serialize(payload::Reduction {
+            signed_hash: [4; 48],
+        });
+
+        assert_serialize(ledger::StepVotes {
+            bitset: 12345,
+            signature: Signature([4; 48]),
+        });
+
+        assert_serialize(payload::Agreement {
+            first_step: ledger::StepVotes {
+                bitset: 12345,
+                signature: Signature([1; 48]),
+            },
+            second_step: ledger::StepVotes {
+                bitset: 98765,
+                signature: Signature([2; 48]),
+            },
+            signature: [3; 48],
+        });
+    }
+
+    fn assert_serialize<S: Serializable + PartialEq + core::fmt::Debug>(v: S) {
+        let mut buf = vec![];
+        assert!(v.write(&mut buf).is_ok());
+        let dup = S::read(&mut &buf[..]).expect("deserialize is ok");
+        assert_eq!(
+            v,
+            dup,
+            "failed to (de)serialize {}",
+            std::any::type_name::<S>()
+        );
     }
 }
