@@ -6,10 +6,20 @@ edition = "2021"
 [dependencies]
 dusk-wallet-core = "0.14.0-rc"
 dusk-bytes = "^0.1"
+bytes = "0.6"
 sha3 = { version = "0.10" }
 fake = { version = "2.5", features = ['derive'], optional = true }
 rand = { version = "0.8", optional = true }
 hex = { version = "0.4", optional = true }
+dusk-bls12_381-sign = { version = "0.3.0-rc", default-features = false }
+rand_core = { version = "0.6", default-features = false }
+blake3 = "1.3"
+block-modes = "0.8"
+aes = "0.7"
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+base64 = "0.13"
+async-channel = "1.7"
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }
@@ -17,4 +27,5 @@ rand = "0.8"
 hex = "0.4"
 
 [features]
+default = ["dep:rand", "dep:hex"]
 faker = ["dep:fake", "dep:rand", "dep:hex"]

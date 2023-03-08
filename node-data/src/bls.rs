@@ -11,6 +11,13 @@ use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use std::cmp::Ordering;
 
+use aes::Aes256;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Cbc};
+use dusk_bytes::DeserializableSlice;
+use std::fs;
+use std::path::PathBuf;
+
 pub const PUBLIC_BLS_SIZE: usize = dusk_bls12_381_sign::PublicKey::SIZE;
 
 /// Extends dusk_bls12_381_sign::PublicKey by implementing a few traits
@@ -86,4 +93,67 @@ impl std::fmt::Debug for PublicKey {
         let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
         ::core::fmt::DebugTuple::finish(debug_trait_builder)
     }
+}
+
+/// Loads consensus keys from an encrypted file.
+///
+/// Panics on any error.
+pub fn load_keys(
+    path: String,
+    pwd: String,
+) -> (dusk_bls12_381_sign::SecretKey, PublicKey) {
+    let pwd = blake3::hash(pwd.as_bytes());
+
+    let path_buf = PathBuf::from(path);
+    let (pk, sk) = read_from_file(path_buf, pwd);
+
+    (sk, PublicKey::new(pk))
+}
+
+/// Fetches BLS public and secret keys from an encrypted consensus keys file.
+///
+/// Panics on any error.
+pub fn read_from_file(
+    path: PathBuf,
+    pwd: blake3::Hash,
+) -> (
+    dusk_bls12_381_sign::PublicKey,
+    dusk_bls12_381_sign::SecretKey,
+) {
+    use serde::Deserialize;
+    type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+
+    /// Bls key pair helper structure
+    #[derive(Deserialize)]
+    struct BlsKeyPair {
+        secret_key_bls: String,
+        public_key_bls: String,
+    }
+
+    // attempt to load and decode wallet
+    let ciphertext =
+        fs::read(&path).expect("path should be valid consensus keys file");
+
+    // Decrypt
+    let iv = &ciphertext[..16];
+    let enc = &ciphertext[16..];
+
+    let cipher =
+        Aes256Cbc::new_from_slices(pwd.as_bytes(), iv).expect("valid data");
+    let bytes = cipher.decrypt_vec(enc).expect("pwd should be valid");
+
+    let keys: BlsKeyPair =
+        serde_json::from_slice(&bytes).expect("keys files should contain json");
+
+    let sk = dusk_bls12_381_sign::SecretKey::from_slice(
+        &base64::decode(keys.secret_key_bls).expect("sk should be base64")[..],
+    )
+    .expect("sk should be valid");
+
+    let pk = dusk_bls12_381_sign::PublicKey::from_slice(
+        &base64::decode(keys.public_key_bls).expect("pk should be base64")[..],
+    )
+    .expect("pk should be valid");
+
+    (pk, sk)
 }
