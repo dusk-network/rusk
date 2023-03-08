@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod bls;
 pub mod encoding;
 pub mod ledger;
+pub mod message;
 
 use std::io::{self, Read, Write};
 
