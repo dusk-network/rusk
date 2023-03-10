@@ -58,7 +58,7 @@ impl<const N: usize> Listener<N> {
 
 impl<const N: usize> kadcast::NetworkListen for Listener<N> {
     fn on_message(&self, blob: Vec<u8>, md: MessageInfo) {
-        match frame::PDU::decode(&mut &blob.to_vec()[..]) {
+        match frame::Pdu::decode(&mut &blob.to_vec()[..]) {
             Ok(d) => {
                 let mut msg = d.payload;
 
@@ -75,18 +75,16 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 }
 
                 // Reroute message to the upper layer
-                if let Err(e) = self.reroute(0, msg) {
+                if let Err(e) = self.reroute(msg.topic(), msg) {
                     tracing::error!("could not reroute due to {:?}", e);
                 }
             }
             Err(err) => {
                 // Dump message blob and topic number
-                let topic_pos = 8 + 8 + 8 + 4;
-
                 tracing::error!(
                     "err: {:?}, msg_topic: {:?} msg_blob: {:?}",
                     err,
-                    blob.get(topic_pos),
+                    blob.get(node_data::message::TOPIC_FIELD_POS),
                     blob
                 );
             }
@@ -125,9 +123,17 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             None => None,
         };
 
-        self.peer.broadcast(&frame::PDU::encode(msg)?, height).await;
-
-        Ok(())
+        match frame::Pdu::encode(msg) {
+            Ok(encoded) => {
+                tracing::trace!("broadcasting message {:?}", msg.header.topic);
+                self.peer.broadcast(&encoded, height).await;
+                Ok(())
+            }
+            Err(err) => {
+                tracing::error!("could not encode message {:?}: {}", msg, err);
+                anyhow::bail!("could not encode message due to {}", err)
+            }
+        }
     }
 
     async fn send(
@@ -135,6 +141,8 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         dst: Vec<String>,
     ) -> anyhow::Result<()> {
+        todo!();
+        /*
         self.peer
             .send(
                 &[0u8; 8],
@@ -144,6 +152,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
                 ),
             )
             .await;
+         */
 
         Ok(())
     }
