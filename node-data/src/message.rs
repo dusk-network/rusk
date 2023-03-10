@@ -13,6 +13,8 @@ use std::io::{self, Read, Write};
 
 use async_channel::TrySendError;
 
+pub const TOPIC_FIELD_POS: usize = 8 + 8 + 8 + 4;
+
 pub enum Status {
     Past,
     Present,
@@ -328,7 +330,7 @@ impl Header {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
@@ -337,13 +339,9 @@ pub enum Payload {
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
     Block(Box<ledger::Block>),
-    Empty,
-}
 
-impl Default for Payload {
-    fn default() -> Self {
-        Payload::Empty
-    }
+    #[default]
+    Empty,
 }
 
 pub mod payload {
@@ -660,7 +658,7 @@ mod tests {
                 gas_limit: 111111111,
                 prev_block_hash: [1; 32],
                 seed: ledger::Seed::from([2; 48]),
-                generator_bls_pubkey: ledger::BlsPubkey([5; 96]),
+                generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
                 state_hash: [4; 32],
                 hash: [5; 32],
                 cert: Certificate {

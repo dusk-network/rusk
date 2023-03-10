@@ -23,16 +23,19 @@ pub const PUBLIC_BLS_SIZE: usize = dusk_bls12_381_sign::PublicKey::SIZE;
 /// Extends dusk_bls12_381_sign::PublicKey by implementing a few traits
 ///
 /// See also PublicKey::bytes(&self)
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Default, Eq, PartialEq, Clone)]
 pub struct PublicKey {
     inner: dusk_bls12_381_sign::PublicKey,
-    data: [u8; PUBLIC_BLS_SIZE],
+    as_bytes: PublicKeyBytes,
 }
 
 impl PublicKey {
     pub fn new(inner: dusk_bls12_381_sign::PublicKey) -> Self {
-        let data = inner.to_bytes();
-        Self { inner, data }
+        let b = inner.to_bytes();
+        Self {
+            inner,
+            as_bytes: PublicKeyBytes(b),
+        }
     }
 
     /// from_sk_seed_u64 generates a sk from the specified seed and returns the
@@ -48,7 +51,7 @@ impl PublicKey {
     /// PublicKey::new call. NB Frequent use of `to_bytes()` creates a
     /// noticeable perf overhead.
     pub fn bytes(&self) -> &[u8; PUBLIC_BLS_SIZE] {
-        &self.data
+        self.as_bytes.inner()
     }
 
     pub fn inner(&self) -> &dusk_bls12_381_sign::PublicKey {
@@ -62,36 +65,42 @@ impl PublicKey {
     }
 }
 
-impl Default for PublicKey {
-    fn default() -> Self {
-        Self {
-            inner: dusk_bls12_381_sign::PublicKey::default(),
-            data: [0; PUBLIC_BLS_SIZE],
-        }
-    }
-}
-
 impl PartialOrd<PublicKey> for PublicKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.data.partial_cmp(&other.data)
+        self.as_bytes.inner().partial_cmp(other.as_bytes.inner())
     }
 }
 
 impl Ord for PublicKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.data.cmp(&other.data)
+        self.as_bytes.inner().cmp(other.as_bytes.inner())
     }
 }
 
 impl std::fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-        let mut hex = self.data.encode_hex::<String>();
+        let mut hex = self.as_bytes.inner().encode_hex::<String>();
         hex.truncate(16);
 
         let debug_trait_builder =
             &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
         let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
         ::core::fmt::DebugTuple::finish(debug_trait_builder)
+    }
+}
+/// a wrapper of 96-sized array
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub struct PublicKeyBytes(pub [u8; PUBLIC_BLS_SIZE]);
+
+impl Default for PublicKeyBytes {
+    fn default() -> Self {
+        PublicKeyBytes([0; 96])
+    }
+}
+
+impl PublicKeyBytes {
+    pub fn inner(&self) -> &[u8; 96] {
+        &self.0
     }
 }
 
@@ -132,7 +141,7 @@ pub fn read_from_file(
 
     // attempt to load and decode wallet
     let ciphertext =
-        fs::read(&path).expect("path should be valid consensus keys file");
+        fs::read(path).expect("path should be valid consensus keys file");
 
     // Decrypt
     let iv = &ciphertext[..16];
@@ -156,4 +165,31 @@ pub fn read_from_file(
     .expect("pk should be valid");
 
     (pk, sk)
+}
+
+/// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded
+/// consensus keys.
+///
+/// It reads RUSK_WALLET_PWD var to unlock wallet files.
+pub fn load_provisioners_keys(
+    n: usize,
+) -> Vec<(dusk_bls12_381_sign::SecretKey, PublicKey)> {
+    let mut keys = vec![];
+
+    let dir = std::env::var("DUSK_WALLET_DIR").unwrap();
+    let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS").unwrap();
+
+    let pwd = blake3::hash(pwd.as_bytes());
+
+    for i in 0..n {
+        let mut path = dir.clone();
+        path.push_str(&format!("node_{i}.keys"));
+        let path_buf = PathBuf::from(path);
+
+        let (pk, sk) = read_from_file(path_buf, pwd);
+
+        keys.push((sk, PublicKey::new(pk)));
+    }
+
+    keys
 }

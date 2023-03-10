@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Serializable;
+use crate::{bls, Serializable};
 use dusk_bytes::Serializable as DuskBytesSerializable;
 use sha3::Digest;
 use std::io::{self, Read, Write};
@@ -31,7 +31,7 @@ pub struct Header {
     pub prev_block_hash: Hash,
     pub seed: Seed,
     pub state_hash: Hash,
-    pub generator_bls_pubkey: BlsPubkey,
+    pub generator_bls_pubkey: bls::PublicKeyBytes,
     pub gas_limit: u64,
 
     // Block hash
@@ -131,7 +131,7 @@ impl Header {
             gas_limit,
             prev_block_hash,
             seed: Seed::from(seed),
-            generator_bls_pubkey: BlsPubkey(generator_bls_pubkey),
+            generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
             state_hash,
             hash: [0; 32],
             cert: Default::default(),
@@ -202,22 +202,6 @@ impl Default for Signature {
     }
 }
 
-/// a wrapper of 96-sized array to facilitate BLS Public key
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub struct BlsPubkey(pub [u8; 96]);
-
-impl Default for BlsPubkey {
-    fn default() -> Self {
-        BlsPubkey([0; 96])
-    }
-}
-
-impl BlsPubkey {
-    pub fn inner(&self) -> [u8; 96] {
-        self.0
-    }
-}
-
 impl PartialEq<Self> for Block {
     fn eq(&self, other: &Self) -> bool {
         self.header.hash == other.header.hash
@@ -260,12 +244,12 @@ pub mod faker {
         }
     }
 
-    impl<T> Dummy<T> for BlsPubkey {
+    impl<T> Dummy<T> for PublicKeyBytes {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let rand_val = rng.gen::<[u8; 32]>();
             let mut bls_key = [0u8; 96];
             bls_key[..32].copy_from_slice(&rand_val);
-            BlsPubkey(bls_key)
+            bls::PublicKeyBytes(bls_key)
         }
     }
 
