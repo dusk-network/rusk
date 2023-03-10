@@ -20,6 +20,7 @@ pub(crate) struct Config {
     log_type: Option<String>,
     pub(crate) network: KadcastConfig,
     db_path: Option<PathBuf>,
+    consensus_keys_path: Option<PathBuf>,
 }
 
 /// Default log_level.
@@ -48,6 +49,19 @@ impl From<&ArgMatches> for Config {
             config.log_type = Some(log_type.into());
         }
 
+        // Overwrite config consensus-keys-path
+        if let Some(consensus_keys_path) =
+            matches.value_of("consensus-keys-path")
+        {
+            config.consensus_keys_path =
+                Some(PathBuf::from(consensus_keys_path));
+        }
+
+        // Overwrite config db-path
+        if let Some(db_path) = matches.value_of("db-path") {
+            config.db_path = Some(PathBuf::from(db_path));
+        }
+
         config.network.merge(matches);
         config
     }
@@ -61,7 +75,7 @@ impl Config {
                 Arg::new("log-level")
                     .long("log-level")
                     .value_name("LOG")
-                    .possible_values(&[
+                    .possible_values([
                         "error", "warn", "info", "debug", "trace",
                     ])
                     .help("Output log level")
@@ -71,8 +85,22 @@ impl Config {
                 Arg::new("log-type")
                     .long("log-type")
                     .value_name("LOG_TYPE")
-                    .possible_values(&["coloured", "plain", "json"])
+                    .possible_values(["coloured", "plain", "json"])
                     .help("Change the log format accordingly")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("consensus-keys-path")
+                    .long("consensus-keys-path")
+                    .value_name("CONSENSUS_KEYS_PATH")
+                    .help("path to encrypted BLS keys")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("db-path")
+                    .long("db-path")
+                    .value_name("DB_PATH")
+                    .help("path to blockchain database")
                     .takes_value(true),
             )
     }
@@ -90,7 +118,7 @@ impl Config {
             Some(log_level) => log_level,
         };
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
-            panic!("Invalid log-level specified '{}' - {}", log_level, e)
+            panic!("Invalid log-level specified '{log_level}' - {e}")
         })
     }
 
@@ -101,5 +129,19 @@ impl Config {
             path.push(env!("CARGO_BIN_NAME"));
             path
         })
+    }
+
+    pub(crate) fn consensus_keys_path(&self) -> String {
+        self.consensus_keys_path
+            .clone()
+            .unwrap_or_else(|| {
+                let mut path = dirs::home_dir().expect("OS not supported");
+                path.push(".dusk");
+                path.push("consensus.keys");
+                path
+            })
+            .as_path()
+            .display()
+            .to_string()
     }
 }
