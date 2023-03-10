@@ -8,15 +8,13 @@
 #![allow(unused)]
 
 pub mod chain;
-mod data;
 pub mod database;
 pub mod mempool;
 pub mod network;
-mod utils;
 
-use crate::utils::PendingQueue;
 use async_trait::async_trait;
-use data::Topics;
+use node_data::message::AsyncQueue;
+use node_data::message::Message;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
@@ -35,22 +33,10 @@ pub trait Filter {
 
 pub type BoxedFilter = Box<dyn Filter + Sync + Send>;
 
-#[derive(Clone, Default)]
-pub struct Message {
-    topic: Topics,
-}
-
 #[async_trait]
 pub trait Network: Send + Sync + 'static {
     /// Broadcasts a message.
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()>;
-
-    /// Repropagates a received message.
-    async fn repropagate(
-        &self,
-        msg: &Message,
-        from_height: u8,
-    ) -> anyhow::Result<()>;
 
     /// Sends a message to specified peers.
     async fn send(&self, msg: &Message, dst: Vec<String>)
@@ -60,7 +46,7 @@ pub trait Network: Send + Sync + 'static {
     async fn add_route(
         &mut self,
         msg_type: u8,
-        queue: PendingQueue<Message>,
+        queue: AsyncQueue<Message>,
     ) -> anyhow::Result<()>;
 
     /// Moves a filter of a specified topic to Network.
@@ -86,7 +72,7 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
     async fn add_routes(
         &self,
         my_topics: &[u8],
-        queue: PendingQueue<Message>,
+        queue: AsyncQueue<Message>,
         network: &Arc<RwLock<N>>,
     ) -> anyhow::Result<()> {
         let mut guard = network.write().await;

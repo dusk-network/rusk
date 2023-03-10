@@ -2,6 +2,7 @@ log_level = 'debug'
 log_type = 'json'
 
 db_path = '/tmp/fff'
+consensus_keys_path = '/tmp/consensus_bls.keys'
 
 [network]
 public_address = '127.0.0.1:9000'

@@ -10,9 +10,8 @@ use std::io::{self, Read, Write};
 
 /// Defines PDU (Protocol Data Unit) structure.
 #[derive(Debug, Default)]
-pub struct PDU {
+pub struct Pdu {
     pub header: Header,
-    // PDU payload is actually the Application layer message.
     pub payload: node_data::message::Message,
 }
 
@@ -24,7 +23,7 @@ pub struct Header {
     checksum: [u8; 4],
 }
 
-impl PDU {
+impl Pdu {
     pub fn encode(msg: &Message) -> io::Result<Vec<u8>> {
         let mut payload_buf = vec![];
         msg.write(&mut payload_buf)?;
@@ -55,7 +54,7 @@ impl PDU {
         let header = Header::read(r)?;
         let payload = Message::read(r)?;
 
-        Ok(PDU { header, payload })
+        Ok(Pdu { header, payload })
     }
 }
 

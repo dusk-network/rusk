@@ -444,7 +444,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
@@ -485,7 +485,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
@@ -508,7 +508,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
 
@@ -551,7 +551,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let t: ledger::Transaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
@@ -585,7 +585,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             // Populate mempool with N contract calls
             let mut rng = rand::thread_rng();
             db.update(|txn| {
@@ -612,7 +612,7 @@ mod tests {
                         "tx fees are not in decreasing order"
                     );
 
-                    println!("fee: {}", fee);
+                    println!("fee: {fee}");
                 }
 
                 Ok(())
@@ -627,7 +627,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
 
             db.update(|txn| {
                 for i in 0..10u32 {

@@ -174,6 +174,12 @@ impl ChainSrv {
         db.read().await.update(|t| t.store_block(blk, true))?;
         self.most_recent_block = blk.clone();
 
+        tracing::info!(
+            "block accepted height:{} hash:{}",
+            blk.header.height,
+            hex::encode(blk.header.hash)
+        );
+
         // Restart Consensus.
         // NB. This will be moved out of accept_block when Synchronizer is
         // implemented.
