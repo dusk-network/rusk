@@ -21,7 +21,7 @@ pub struct Block {
     pub txs: Vec<Transaction>,
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Clone)]
+#[derive(Default, Eq, PartialEq, Clone)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Header {
     // Hashable fields
@@ -39,6 +39,39 @@ pub struct Header {
 
     // Non-hashable fields
     pub cert: Certificate,
+}
+
+impl std::fmt::Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let timestamp =
+            chrono::NaiveDateTime::from_timestamp_opt(self.timestamp, 0)
+                .map_or_else(
+                    || "unknown".to_owned(),
+                    |v| {
+                        chrono::DateTime::<chrono::Utc>::from_utc(
+                            v,
+                            chrono::Utc,
+                        )
+                        .to_rfc2822()
+                    },
+                );
+
+        f.debug_struct("Header")
+            .field("version", &self.version)
+            .field("height", &self.height)
+            .field("timestamp", &timestamp)
+            .field("prev_block_hash", &hex::encode(self.prev_block_hash))
+            .field("seed", &hex::encode(self.seed.inner()))
+            .field("state_hash", &hex::encode(self.state_hash))
+            .field(
+                "generator_bls_pubkey",
+                &hex::encode(self.generator_bls_pubkey.inner()),
+            )
+            .field("gas_limit", &self.gas_limit)
+            .field("hash", &hex::encode(self.hash))
+            .field("cert", &self.cert)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -178,7 +211,7 @@ impl StepVotes {
 }
 
 /// a wrapper of 48-sized array to facilitate Signature
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Signature(pub [u8; 48]);
 
 impl Signature {
@@ -187,6 +220,14 @@ impl Signature {
     }
     pub fn inner(&self) -> [u8; 48] {
         self.0
+    }
+}
+
+impl std::fmt::Debug for Signature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Signature")
+            .field("signature", &hex::encode(self.0))
+            .finish()
     }
 }
 
@@ -221,6 +262,7 @@ impl Eq for Transaction {}
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
+    use crate::bls::PublicKeyBytes;
     use hex;
     use rand::Rng;
 

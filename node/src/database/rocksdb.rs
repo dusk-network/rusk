@@ -193,7 +193,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
         let mut serialized = vec![];
-        b.header.write(&mut serialized)?;
+        b.write(&mut serialized)?;
 
         self.inner
             .put_cf(self.ledger_cf, b.header.hash, serialized)?;
@@ -405,6 +405,48 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         }
 
         Ok(txs_list)
+    }
+}
+
+impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //  Print ledger blocks
+        let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
+
+        iter.map(Result::unwrap).try_for_each(|(hash, _)| {
+            if let Ok(Some(blob)) =
+                self.snapshot.get_cf(self.ledger_cf, &hash[..])
+            {
+                let b = ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                writeln!(f, "ledger_block [{}]: {:#?}", b.header.height, b)
+            } else {
+                Ok(())
+            }
+        })?;
+
+        // Print candidate blocks
+        let iter = self
+            .inner
+            .iterator_cf(self.candidates_cf, IteratorMode::Start);
+
+        let results: std::fmt::Result =
+            iter.map(Result::unwrap).try_for_each(|(hash, _)| {
+                if let Ok(Some(blob)) =
+                    self.snapshot.get_cf(self.candidates_cf, &hash[..])
+                {
+                    let b =
+                        ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                    writeln!(
+                        f,
+                        "candidate_block [{}]: {:#?}",
+                        b.header.height, b
+                    )
+                } else {
+                    Ok(())
+                }
+            });
+
+        results
     }
 }
 

@@ -4,17 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use aes::Aes256;
+use block_modes::block_padding::Pkcs7;
+use block_modes::{BlockMode, Cbc};
 use dusk_bls12_381_sign::SecretKey;
+use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
+
 use hex::ToHex;
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use std::cmp::Ordering;
-
-use aes::Aes256;
-use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, Cbc};
-use dusk_bytes::DeserializableSlice;
 use std::fs;
 use std::path::PathBuf;
 

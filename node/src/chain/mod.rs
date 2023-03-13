@@ -180,6 +180,13 @@ impl ChainSrv {
             hex::encode(blk.header.hash)
         );
 
+        /*  Uncomment to dump DB
+        db.read().await.view(|t| {
+            println!("{:#?}", t);
+            Ok(())
+        });
+        */
+
         // Restart Consensus.
         // NB. This will be moved out of accept_block when Synchronizer is
         // implemented.
