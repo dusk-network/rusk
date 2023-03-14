@@ -7,7 +7,8 @@
 use dusk_consensus::user::committee::Committee;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use dusk_consensus::user::sortition::Config;
-use dusk_consensus::util::pubkey::ConsensusPublicKey;
+
+use node_data::bls::PublicKey;
 
 use node_data::ledger::Seed;
 
@@ -22,8 +23,7 @@ fn test_deterministic_sortition_1() {
 
     assert_eq!(
         vec![1, 3],
-        Committee::new(ConsensusPublicKey::default(), &mut p, cfg)
-            .get_occurrences()
+        Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
 
@@ -34,7 +34,7 @@ fn test_deterministic_sortition_2() {
 
     let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, 45);
 
-    let committee = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
+    let committee = Committee::new(PublicKey::default(), &mut p, cfg);
     assert_eq!(vec![1, 3], committee.get_occurrences());
 }
 
@@ -46,7 +46,7 @@ fn test_quorum() {
     let cfg = Config::new(Seed::default(), 7777, 8, 64);
     p.update_eligibility_flag(cfg.round);
 
-    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
     assert_eq!(c.quorum(), 3);
 }
 
@@ -58,7 +58,7 @@ fn test_quorum_max_size() {
     let cfg = Config::new(Seed::default(), 7777, 8, 4);
     p.update_eligibility_flag(cfg.round);
 
-    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
     assert_eq!(c.quorum(), 3);
 }
 
@@ -70,7 +70,7 @@ fn test_intersect() {
     p.update_eligibility_flag(cfg.round);
     // println!("{:#?}", p);
 
-    let c = Committee::new(ConsensusPublicKey::default(), &mut p, cfg);
+    let c = Committee::new(PublicKey::default(), &mut p, cfg);
     // println!("{:#?}", c);
 
     let max_bitset = (2_i32.pow((c.size()) as u32) - 1) as u64;
@@ -88,7 +88,7 @@ fn generate_provisioners(n: usize) -> Provisioners {
     for i in 1..n {
         let stake_value = 1000 * (i as u64) * DUSK;
         p.add_member_with_value(
-            ConsensusPublicKey::from_sk_seed_u64(i as u64),
+            PublicKey::from_sk_seed_u64(i as u64),
             stake_value,
         );
     }

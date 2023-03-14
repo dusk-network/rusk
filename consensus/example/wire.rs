@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::messages::Message;
+use node_data::message::Message;
 use node_data::Serializable;
 use std::io::{self, Read, Write};
 
@@ -123,10 +123,11 @@ mod tests {
             AggrAgreement, Agreement, NewBlock, Reduction, StepVotes,
         },
         messages::{self, Header, Message, Serializable},
-        util::pubkey::ConsensusPublicKey,
+        util::pubkey::PublicKey,
     };
 
     use crate::wire::Frame;
+    use node_data::message::Topics;
 
     const FIXED_HASH: [u8; 32] = [
         105, 202, 186, 101, 26, 74, 160, 61, 42, 33, 92, 232, 251, 35, 67, 147,
@@ -199,7 +200,7 @@ mod tests {
         assert_eq!(
             Frame::encode(Message::new_newblock(
                 messages::Header {
-                    pubkey_bls: ConsensusPublicKey::default(),
+                    pubkey_bls: PublicKey::default(),
                     round: 999999,
                     step: 255,
                     block_hash: candidate.header.hash,
@@ -236,7 +237,7 @@ mod tests {
         assert_eq!(
             Frame::encode(Message::new_reduction(
                 messages::Header {
-                    pubkey_bls: ConsensusPublicKey::default(),
+                    pubkey_bls: PublicKey::default(),
                     round: 99999,
                     step: 123,
                     block_hash: FIXED_HASH,
@@ -277,7 +278,7 @@ mod tests {
         assert_eq!(
             Frame::encode(Message::new_agreement(
                 messages::Header {
-                    pubkey_bls: ConsensusPublicKey::default(),
+                    pubkey_bls: PublicKey::default(),
                     round: 99999,
                     step: 123,
                     block_hash: FIXED_HASH,
@@ -328,7 +329,7 @@ mod tests {
         assert_eq!(
             Frame::encode(Message::new_aggr_agreement(
                 messages::Header {
-                    pubkey_bls: ConsensusPublicKey::default(),
+                    pubkey_bls: PublicKey::default(),
                     round: 99999,
                     step: 123,
                     block_hash: FIXED_HASH,

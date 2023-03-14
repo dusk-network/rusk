@@ -15,18 +15,17 @@ use tokio::sync::{mpsc, oneshot, Mutex};
 
 use dusk_consensus::commons::RoundUpdate;
 use dusk_consensus::consensus::Consensus;
-use dusk_consensus::messages::Message;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
+use node_data::message::{AsyncQueue, Message};
 
-use dusk_consensus::util::pending_queue::PendingQueue;
-use dusk_consensus::util::pubkey::ConsensusPublicKey;
+use node_data::bls::PublicKey;
 use tokio::time;
 
 mod mocks;
 
 const MOCKED_PROVISIONERS_NUM: u64 = 10;
 
-fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
+fn generate_keys(n: u64) -> Vec<(SecretKey, PublicKey)> {
     let mut keys = vec![];
 
     for i in 0..n {
@@ -34,7 +33,7 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
         let sk = dusk_bls12_381_sign::SecretKey::random(rng);
         keys.push((
             sk,
-            ConsensusPublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
+            PublicKey::new(dusk_bls12_381_sign::PublicKey::from(&sk)),
         ));
     }
 
@@ -42,7 +41,7 @@ fn generate_keys(n: u64) -> Vec<(SecretKey, ConsensusPublicKey)> {
 }
 
 fn generate_provisioners_from_keys(
-    keys: Vec<(SecretKey, ConsensusPublicKey)>,
+    keys: Vec<(SecretKey, PublicKey)>,
 ) -> Provisioners {
     let mut p = Provisioners::new();
 
@@ -68,11 +67,11 @@ async fn perform_basic_run() {
 
     // Spawn N virtual nodes
     for key in keys.into_iter() {
-        let inbound = PendingQueue::new("inbound_main_loop");
-        let outbound = PendingQueue::new("outbound_main_loop");
+        let inbound = AsyncQueue::default();
+        let outbound = AsyncQueue::default();
 
-        let aggr_inbound = PendingQueue::new("inbound_agreement");
-        let aggr_outbound = PendingQueue::new("outbound_agreement");
+        let aggr_inbound = AsyncQueue::default();
+        let aggr_outbound = AsyncQueue::default();
 
         // Spawn a node which simulates a provisioner running its own consensus instance.
         spawn_node(
@@ -112,9 +111,12 @@ async fn perform_basic_run() {
         loop {
             if let Some(msg) = recv_bridge.recv().await {
                 for to_inbound in all_to_inbound.iter_mut() {
+                    /* TODO
                     if to_inbound.is_duplicate(&msg) {
                         continue;
                     };
+
+                     */
 
                     let _ = to_inbound.send(msg.clone()).await;
                 }
@@ -126,9 +128,11 @@ async fn perform_basic_run() {
         loop {
             if let Some(msg) = aggr_recv_bridge.recv().await {
                 for to_inbound in agr_to_inbound.iter_mut() {
+                    /* TODO
                     if to_inbound.is_duplicate(&msg) {
                         continue;
                     };
+                     */
 
                     let _ = to_inbound.send(msg.clone()).await;
                 }
@@ -141,12 +145,12 @@ async fn perform_basic_run() {
 
 /// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
 fn spawn_node(
-    keys: (SecretKey, ConsensusPublicKey),
+    keys: (SecretKey, PublicKey),
     p: Provisioners,
-    inbound_msgs: PendingQueue,
-    outbound_msgs: PendingQueue,
-    aggr_inbound_queue: PendingQueue,
-    aggr_outbound_queue: PendingQueue,
+    inbound_msgs: AsyncQueue<Message>,
+    outbound_msgs: AsyncQueue<Message>,
+    aggr_inbound_queue: AsyncQueue<Message>,
+    aggr_outbound_queue: AsyncQueue<Message>,
 ) {
     let _ = thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()

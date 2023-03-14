@@ -7,14 +7,13 @@
 use crate::agreement::accumulator::Accumulator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 
-use crate::messages::{Header, Message, Payload, Status};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use crate::util::pending_queue::PendingQueue;
-use crate::util::pubkey::ConsensusPublicKey;
+use node_data::bls::PublicKey;
 use node_data::ledger::{Block, Certificate};
+use node_data::message::{AsyncQueue, Header, Message, Payload, Status};
 
 use crate::agreement::aggr_agreement;
 use crate::config;
@@ -29,16 +28,16 @@ use super::accumulator;
 const COMMITTEE_SIZE: usize = 64;
 
 pub struct Agreement {
-    pub inbound_queue: PendingQueue,
-    outbound_queue: PendingQueue,
+    pub inbound_queue: AsyncQueue<Message>,
+    outbound_queue: AsyncQueue<Message>,
 
     future_msgs: Arc<Mutex<Queue<Message>>>,
 }
 
 impl Agreement {
     pub fn new(
-        inbound_queue: PendingQueue,
-        outbound_queue: PendingQueue,
+        inbound_queue: AsyncQueue<Message>,
+        outbound_queue: AsyncQueue<Message>,
     ) -> Self {
         Self {
             inbound_queue,
@@ -75,8 +74,8 @@ impl Agreement {
 struct Executor<D: Database> {
     ru: RoundUpdate,
 
-    inbound_queue: PendingQueue,
-    outbound_queue: PendingQueue,
+    inbound_queue: AsyncQueue<Message>,
+    outbound_queue: AsyncQueue<Message>,
 
     committees_set: Arc<Mutex<CommitteeSet>>,
     db: Arc<Mutex<D>>,
@@ -86,8 +85,8 @@ impl<D: Database> Executor<D> {
     fn new(
         ru: RoundUpdate,
         provisioners: Provisioners,
-        inbound_queue: PendingQueue,
-        outbound_queue: PendingQueue,
+        inbound_queue: AsyncQueue<Message>,
+        outbound_queue: AsyncQueue<Message>,
         db: Arc<Mutex<D>>,
     ) -> Self {
         Self {
@@ -95,7 +94,7 @@ impl<D: Database> Executor<D> {
             outbound_queue,
             ru,
             committees_set: Arc::new(Mutex::new(CommitteeSet::new(
-                ConsensusPublicKey::default(),
+                PublicKey::default(),
                 provisioners,
             ))),
             db,
@@ -238,9 +237,13 @@ impl<D: Database> Executor<D> {
     async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
         if let Payload::AggrAgreement(aggr) = &msg.payload {
             // Perform verification of aggregated agreement message
-            if let Err(e) = aggr
-                .verify(&self.ru, self.committees_set.clone(), &msg.header)
-                .await
+            if let Err(e) = aggr_agreement::verify(
+                aggr,
+                &self.ru,
+                self.committees_set.clone(),
+                &msg.header,
+            )
+            .await
             {
                 error!("failed to verify aggr agreement err: {:?}", e);
                 return None;
@@ -291,7 +294,7 @@ impl<D: Database> Executor<D> {
         );
 
         // Retrieve winning block from local storage
-        let (_, mut block) = self
+        let mut block = self
             .db
             .lock()
             .await

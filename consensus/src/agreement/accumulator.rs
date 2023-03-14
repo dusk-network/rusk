@@ -5,12 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::agreement::verifiers;
-use crate::messages;
-use crate::messages::{payload, Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use hex::ToHex;
 use node_data::ledger::{Hash, Seed};
+use node_data::message::{payload, Message, Payload};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -20,7 +19,7 @@ use tracing::{error, info, warn, Instrument};
 
 #[derive(Debug, Clone, Eq)]
 pub(super) struct AgreementMessage {
-    pub(super) header: messages::Header,
+    pub(super) header: node_data::message::Header,
     pub(super) payload: payload::Agreement,
 }
 
@@ -158,7 +157,7 @@ impl Accumulator {
     async fn accumulate(
         stores: Arc<Mutex<StorePerHash>>,
         committees_set: Arc<Mutex<CommitteeSet>>,
-        msg: messages::Message,
+        msg: Message,
         seed: Seed,
     ) -> Option<Output> {
         let hdr = msg.header.clone();

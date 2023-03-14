@@ -15,8 +15,7 @@ use dusk_consensus::consensus::Consensus;
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::user::provisioners::{Provisioners, DUSK};
-use dusk_consensus::util::pending_queue::PendingQueue;
-use dusk_consensus::util::pubkey::ConsensusPublicKey;
+use node_data::message::{AsyncQueue, Message};
 
 use node_data::ledger::Block;
 use std::fs;
@@ -46,10 +45,10 @@ macro_rules! hex {
 pub fn run_main_loop(
     provisioners_num: usize,
     prov_id: usize,
-    inbound: PendingQueue,
-    outbound: PendingQueue,
-    agr_inbound: PendingQueue,
-    agr_outbound: PendingQueue,
+    inbound: AsyncQueue<Message>,
+    outbound: AsyncQueue<Message>,
+    agr_inbound: AsyncQueue<Message>,
+    agr_outbound: AsyncQueue<Message>,
 ) {
     // Load provisioners keys from external consensus keys.
     // The loaded keys should be the same as the ones from Genesis State.
@@ -72,12 +71,12 @@ pub fn run_main_loop(
 
 /// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
 fn spawn_consensus_in_thread_pool(
-    keys: (SecretKey, ConsensusPublicKey),
+    keys: (SecretKey, node_data::bls::PublicKey),
     p: Provisioners,
-    inbound_msgs: PendingQueue,
-    outbound_msgs: PendingQueue,
-    agr_inbound_queue: PendingQueue,
-    agr_outbound_queue: PendingQueue,
+    inbound_msgs: AsyncQueue<Message>,
+    outbound_msgs: AsyncQueue<Message>,
+    agr_inbound_queue: AsyncQueue<Message>,
+    agr_outbound_queue: AsyncQueue<Message>,
 ) {
     let _ = std::thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()
@@ -203,7 +202,9 @@ pub fn fetch_blskeys_from_file(
 /// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded consensus keys.
 ///
 /// It reads RUSK_WALLET_PWD var to unlock wallet files.
-fn load_provisioners_keys(n: usize) -> Vec<(SecretKey, ConsensusPublicKey)> {
+fn load_provisioners_keys(
+    n: usize,
+) -> Vec<(SecretKey, node_data::bls::PublicKey)> {
     let mut keys = vec![];
 
     let dir = std::env::var("DUSK_WALLET_DIR").unwrap();
@@ -219,7 +220,7 @@ fn load_provisioners_keys(n: usize) -> Vec<(SecretKey, ConsensusPublicKey)> {
         let (pk, sk) = fetch_blskeys_from_file(path_buf, pwd)
             .expect("should be valid file");
 
-        keys.push((sk, ConsensusPublicKey::new(pk)));
+        keys.push((sk, node_data::bls::PublicKey::new(pk)));
     }
 
     keys

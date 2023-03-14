@@ -4,17 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{RoundUpdate, Topics};
+use crate::commons::RoundUpdate;
 use node_data::ledger::{Block, Certificate, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
-use crate::messages::payload::NewBlock;
-use crate::messages::{Header, Message};
-use crate::util::pubkey::ConsensusPublicKey;
+
 use dusk_bytes::Serializable;
+use node_data::bls::PublicKey;
 use node_data::ledger;
-use node_data::ledger::*;
+use node_data::message::payload::NewBlock;
+use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
@@ -72,7 +72,7 @@ impl<T: Operations> Generator<T> {
 
     async fn generate_block(
         &self,
-        pubkey: &ConsensusPublicKey,
+        pubkey: &PublicKey,
         round: u64,
         seed: Seed,
         prev_block_hash: [u8; 32],
@@ -95,7 +95,9 @@ impl<T: Operations> Generator<T> {
             gas_limit: 0,
             prev_block_hash,
             seed,
-            generator_bls_pubkey: BlsPubkey(*pubkey.bytes()),
+            generator_bls_pubkey: node_data::bls::PublicKeyBytes(
+                *pubkey.bytes(),
+            ),
             state_hash: [0; 32],
             hash: [0; 32],
             cert: Certificate::default(),

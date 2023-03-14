@@ -5,47 +5,45 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::aggregator::AggrSignature;
-use crate::commons::{RoundUpdate, Topics};
-use crate::messages::payload::AggrAgreement;
-use crate::messages::{payload, Header, Message};
+use crate::commons::RoundUpdate;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
+use node_data::message::payload::AggrAgreement;
+use node_data::message::{payload, Header, Message, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::debug;
 
 use super::{accumulator, verifiers};
 
-impl AggrAgreement {
-    pub(super) async fn verify(
-        &self,
-        ru: &RoundUpdate,
-        committees_set: Arc<Mutex<CommitteeSet>>,
-        hdr: &Header,
-    ) -> Result<(), super::verifiers::Error> {
-        debug!("collected aggr agreement");
+pub(super) async fn verify(
+    aggr: &AggrAgreement,
+    ru: &RoundUpdate,
+    committees_set: Arc<Mutex<CommitteeSet>>,
+    hdr: &Header,
+) -> Result<(), super::verifiers::Error> {
+    debug!("collected aggr agreement");
 
-        verifiers::verify_votes(
-            &hdr.block_hash,
-            self.bitset,
-            &self.aggr_signature,
-            &committees_set,
-            &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
-        )
-        .await?;
+    verifiers::verify_votes(
+        &hdr.block_hash,
+        aggr.bitset,
+        &aggr.aggr_signature,
+        &committees_set,
+        &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
+    )
+    .await?;
 
-        // Verify agreement
-        verifiers::verify_agreement(
-            Message::new_agreement(hdr.clone(), self.agreement.clone()),
-            committees_set.clone(),
-            ru.seed,
-        )
-        .await?;
+    // Verify agreement
+    verifiers::verify_agreement(
+        Message::new_agreement(hdr.clone(), aggr.agreement.clone()),
+        committees_set.clone(),
+        ru.seed,
+    )
+    .await?;
 
-        debug!("valid aggr agreement");
-        Ok(())
-    }
+    debug!("valid aggr agreement");
+    Ok(())
 }
 
 /// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.

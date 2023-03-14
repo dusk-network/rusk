@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-use crate::messages::{Message, Payload};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
+use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

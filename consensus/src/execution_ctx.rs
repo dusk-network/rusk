@@ -5,13 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::messages::Message;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::queue::Queue;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use crate::util::pending_queue::PendingQueue;
+use node_data::message::{AsyncQueue, Message};
 use std::cmp;
 
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
@@ -25,8 +24,8 @@ use tracing::{error, trace};
 /// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
 pub struct ExecutionCtx<'a> {
     /// Messaging-related fields
-    pub inbound: PendingQueue,
-    pub outbound: PendingQueue,
+    pub inbound: AsyncQueue<Message>,
+    pub outbound: AsyncQueue<Message>,
     pub future_msgs: Arc<Mutex<Queue<Message>>>,
 
     /// State-related fields
@@ -40,8 +39,8 @@ pub struct ExecutionCtx<'a> {
 impl<'a> ExecutionCtx<'a> {
     /// Creates step execution context.
     pub fn new(
-        inbound: PendingQueue,
-        outbound: PendingQueue,
+        inbound: AsyncQueue<Message>,
+        outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
