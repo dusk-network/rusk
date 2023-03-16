@@ -33,12 +33,12 @@ type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
-fn instantiate<'a, Rng: RngCore + CryptoRng>(
+fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    vm: &'a mut VM,
+    vm: &mut VM,
     psk: &PublicSpendKey,
     pk: &PublicKey,
-) -> Session<'a> {
+) -> Session {
     rusk_abi::register_host_queries(vm);
 
     let transfer_bytecode = include_bytes!(
@@ -48,7 +48,7 @@ fn instantiate<'a, Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = vm.session();
+    let mut session = vm.genesis_session();
 
     session.set_point_limit(POINT_LIMIT);
     rusk_abi::set_block_height(&mut session, 0);
@@ -118,8 +118,8 @@ fn prover_verifier<C: Circuit>(
 ) -> (Prover<C>, Verifier<C>) {
     let (pk, vd) = prover_verifier_keys(circuit_id);
 
-    let prover = Prover::try_from_bytes(&pk).unwrap();
-    let verifier = Verifier::try_from_bytes(&vd).unwrap();
+    let prover = Prover::try_from_bytes(pk).unwrap();
+    let verifier = Verifier::try_from_bytes(vd).unwrap();
 
     (prover, verifier)
 }
