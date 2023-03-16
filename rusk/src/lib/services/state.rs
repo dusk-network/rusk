@@ -213,7 +213,7 @@ impl State for Rusk {
         info!("Received Revert request");
 
         let commit_id = self.revert()?;
-        let state_root = commit_id.to_bytes().to_vec();
+        let state_root = commit_id.to_vec();
 
         Ok(Response::new(RevertResponse { state_root }))
     }
@@ -228,7 +228,7 @@ impl State for Rusk {
 
         let state_root = self.state_root();
 
-        if request.state_root != state_root.as_bytes() {
+        if request.state_root != state_root {
             return Err(Status::invalid_argument(format!(
                 "state root mismatch. Expected {}, Got {}",
                 hex::encode(state_root),
@@ -282,7 +282,7 @@ impl State for Rusk {
 
         let state_root = self.state_root();
         Ok(Response::new(GetStateRootResponse {
-            state_root: state_root.to_bytes().to_vec(),
+            state_root: state_root.to_vec(),
         }))
     }
 

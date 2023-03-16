@@ -6,8 +6,6 @@
 
 use std::path::Path;
 
-use piecrust::VM;
-
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
@@ -15,16 +13,8 @@ use rusk_recovery_tools::state::{self, Snapshot};
 pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     let dir = dir.as_ref();
 
-    let mut vm = VM::new(dir).expect("Instantiating a VM should succeed");
-    rusk_abi::register_host_queries(&mut vm);
-
-    let session = vm.session();
-
-    let commit_id_path = rusk_profile::to_rusk_state_id_path(dir);
-    let commit_id = state::deploy(commit_id_path, snapshot, session)
+    let (_, commit_id) = state::deploy(dir, snapshot)
         .expect("Deploying initial state should succeed");
-
-    vm.persist()?;
 
     let rusk = Rusk::new(dir).expect("Instantiating rusk should succeed");
 

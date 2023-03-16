@@ -45,7 +45,10 @@ where
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
     rusk.with_inner(|mut inner| {
-        let mut session = inner.vm.session();
+        let mut session = inner
+            .vm
+            .session(inner.current_commit)
+            .expect("current commit should exist");
 
         session.set_point_limit(u64::MAX);
         rusk_abi::set_block_height(&mut session, BLOCK_HEIGHT);
