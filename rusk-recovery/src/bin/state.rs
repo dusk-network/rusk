@@ -50,7 +50,7 @@ struct Cli {
     output: Option<PathBuf>,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     let config = match args.init {
@@ -78,8 +78,6 @@ pub struct ExecConfig<'a> {
     pub output_file: Option<PathBuf>,
 }
 
-const POINT_LIMIT: u64 = 10000000000;
-
 pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} Network state", theme.action("Checking"));
@@ -98,68 +96,42 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
         clean_state()?;
     }
 
-    let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::to_rusk_state_id_path(&state_path);
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    let state_id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
 
-    let mut vm = VM::new(&state_path)?;
+    let mut vm = VM::new(&state_dir)?;
     rusk_abi::register_host_queries(&mut vm);
 
     // if the state already exists in the expected path, stop early.
-    if state_path.exists() && id_path.exists() {
-        let mut session = vm.session();
-        session.set_point_limit(POINT_LIMIT);
-        rusk_abi::set_block_height(&mut session, 0);
+    if state_dir.exists() && state_id_path.exists() {
         info!("{} existing state", theme.info("Found"));
 
-        let commit_id = restore_state(&mut session, &id_path)?;
+        let (_, commit_id) = restore_state(state_dir)?;
         info!(
             "{} state id at {}",
             theme.success("Checked"),
-            id_path.display()
+            state_id_path.display()
         );
-        info!(
-            "{} {}",
-            theme.action("Root"),
-            hex::encode(commit_id.as_bytes())
-        );
+        info!("{} {}", theme.action("Root"), hex::encode(commit_id));
 
         return Ok(());
     }
 
-    let mut session = vm.session();
-    session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
-
     info!("{} new state", theme.info("Building"));
 
-    // note: deploy consumes session as it performs a commit
-    let state_dir = rusk_profile::get_rusk_state_dir()?;
-    let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
+    let (_, commit_id) = deploy(&state_dir, config.init)?;
 
-    let commit_id = deploy(state_id_path, config.init, session)?;
-
-    info!("{} persisted id", theme.success("Storing"));
-    commit_id.persist(&id_path)?;
-    vm.persist()?;
-    // we need new session as our previous session was consumed by deploy
-    let mut session = vm.session();
-
-    let commit_id = restore_state(&mut session, &id_path)?;
-    info!(
-        "{} {}",
-        theme.action("Final Root"),
-        hex::encode(commit_id.as_bytes())
-    );
+    info!("{} {}", theme.action("Final Root"), hex::encode(commit_id));
 
     info!(
         "{} network state at {}",
         theme.success("Stored"),
-        state_path.display()
+        state_dir.display()
     );
     info!(
         "{} persisted id at {}",
         theme.success("Stored"),
-        id_path.display()
+        state_id_path.display()
     );
 
     if let Some(output) = config.output_file {
