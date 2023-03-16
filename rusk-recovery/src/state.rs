@@ -13,13 +13,13 @@ use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
-use piecrust::{CommitId, ModuleId, Session};
+use piecrust::{ModuleId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
 use std::error::Error;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tracing::info;
 use url::Url;
 
@@ -179,9 +179,21 @@ fn generate_stake_state(
     Ok(())
 }
 
-fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
+fn generate_empty_state<P: AsRef<Path>>(
+    state_dir: P,
+) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
+
+    let state_dir = state_dir.as_ref();
+
+    let mut vm = VM::new(state_dir)?;
+    rusk_abi::register_host_queries(&mut vm);
+
+    let mut session = vm.genesis_session();
+
+    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
+    session.set_point_limit(u64::MAX);
 
     let transfer_code = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
@@ -213,63 +225,85 @@ fn generate_empty_state(session: &mut Session) -> Result<(), Box<dyn Error>> {
         .query(rusk_abi::stake_module(), "get_stake", &*DUSK_BLS_KEY)
         .expect("Querying a stake should succeed");
 
-    Ok(())
+    let commit_id = session.commit()?;
+
+    Ok((vm, commit_id))
 }
 
 // note: deploy consumes session as it produces commit id
 pub fn deploy<P: AsRef<Path>>(
-    commit_id_path: P,
+    state_dir: P,
     snapshot: &Snapshot,
-    mut session: Session,
-) -> Result<CommitId, Box<dyn Error>> {
+) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
     let theme = Theme::default();
+
+    let state_dir = state_dir.as_ref();
+    let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
+
+    let (vm, old_commit_id) = match snapshot.base_state() {
+        Some(state) => load_state(state_dir, state),
+        None => generate_empty_state(state_dir),
+    }?;
+
+    let mut session = vm.session(old_commit_id)?;
 
     rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
     session.set_point_limit(u64::MAX);
 
-    match snapshot.base_state() {
-        Some(state) => load_state(&mut session, state),
-        None => generate_empty_state(&mut session),
-    }?;
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
 
+    info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
-    commit_id.persist(commit_id_path)?;
+    fs::write(state_id_path, commit_id)?;
 
-    info!(
-        "{} {}",
-        theme.action("Init Root"),
-        hex::encode(commit_id.as_bytes())
-    );
+    vm.delete_commit(old_commit_id)?;
+    vm.squash_commit(commit_id)?;
 
-    Ok(commit_id)
+    info!("{} {}", theme.action("Init Root"), hex::encode(commit_id));
+
+    Ok((vm, commit_id))
 }
 
-/// Restore a state from a specific id_path
-pub fn restore_state(
-    session: &mut Session,
-    id_path: &PathBuf,
-) -> Result<CommitId, Box<dyn Error>> {
-    if !id_path.exists() {
-        return Err(
-            format!("Missing persisted id at {}", id_path.display()).into()
-        );
+/// Restore a state from the given directory.
+pub fn restore_state<P: AsRef<Path>>(
+    state_dir: P,
+) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+    let state_dir = state_dir.as_ref();
+    let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
+
+    if !state_id_path.exists() {
+        return Err(format!("Missing ID at {}", state_id_path.display()).into());
     }
-    let commit_id = CommitId::restore(id_path)?;
-    session.restore(&commit_id)?;
-    Ok(commit_id)
+
+    let commit_id_bytes = fs::read(state_id_path)?;
+    if commit_id_bytes.len() != 32 {
+        return Err(format!(
+            "Wrong length for id {}, expected 32",
+            commit_id_bytes.len()
+        )
+        .into());
+    }
+    let mut commit_id = [0u8; 32];
+    commit_id.copy_from_slice(&commit_id_bytes);
+
+    let mut vm = VM::new(state_dir)?;
+    rusk_abi::register_host_queries(&mut vm);
+
+    Ok((vm, commit_id))
 }
 
 /// Load a state file and save it into the rusk state directory.
-fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
-    let state_dir = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::to_rusk_state_id_path(state_dir);
+fn load_state<P: AsRef<Path>>(
+    state_dir: P,
+    url: &str,
+) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
+    let state_dir = state_dir.as_ref();
+    let state_id_path = rusk_profile::to_rusk_state_id_path(state_dir);
 
-    assert!(
-        restore_state(session, &id_path).is_err(),
-        "No valid state should be found"
-    );
+    if state_id_path.exists() {
+        return Err("No valid state should be found".into());
+    }
 
     info!(
         "{} base state from {url}",
@@ -296,16 +330,14 @@ fn load_state(session: &mut Session, url: &str) -> Result<(), Box<dyn Error>> {
         _ => Err("Unsupported scheme for base state")?,
     };
 
-    let state_dir = rusk_profile::get_rusk_state_dir()?;
-    let output = state_dir.parent().expect("state dir not equal to root");
+    tar::unarchive(&buffer, state_dir)?;
 
-    tar::unarchive(&buffer, output)?;
-
-    restore_state(session, &id_path)?;
+    let (vm, commit) = restore_state(state_dir)?;
     info!(
         "{} {}",
         Theme::default().action("Base Root"),
-        hex::encode(session.root(false)?)
+        hex::encode(commit)
     );
-    Ok(())
+
+    Ok((vm, commit))
 }
