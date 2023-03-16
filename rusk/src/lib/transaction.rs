@@ -84,6 +84,11 @@ impl From<SpentTransaction> for rusk_schema::ExecutedTransaction {
                 contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
                 data: String::from(""),
             },
+            ModuleError::Other(_) => Error {
+                code: Code::Other.into(),
+                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
+                data: String::from(""),
+            },
         });
 
         rusk_schema::ExecutedTransaction {
