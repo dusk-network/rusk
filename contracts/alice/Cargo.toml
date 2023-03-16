@@ -13,4 +13,4 @@ rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 
 [dev-dependencies]
-piecrust = "0.1.0-alpha"
+piecrust = "0.1"
