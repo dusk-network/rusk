@@ -9,10 +9,10 @@ use crate::services::prover::RuskProver;
 use crate::transaction::SpentTransaction;
 
 use std::collections::BTreeSet;
-use std::fs;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::{cmp, fs, io};
 
 pub mod error;
 pub mod services;
@@ -28,7 +28,7 @@ use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::*;
 use phoenix_core::Message;
-use piecrust::{CommitId, Session, VM};
+use piecrust::{Session, VM};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
@@ -48,8 +48,8 @@ pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
 const STREAM_BUF_SIZE: usize = 64;
 
 pub struct RuskInner {
-    pub current_commit: CommitId,
-    pub base_commit: CommitId,
+    pub current_commit: [u8; 32],
+    pub base_commit: [u8; 32],
     pub vm: VM,
 }
 
@@ -65,12 +65,21 @@ impl Rusk {
         let dir = dir.as_ref();
         let commit_id_path = to_rusk_state_id_path(dir);
 
-        let base_commit = CommitId::restore(commit_id_path)?;
+        let base_commit_bytes = fs::read(commit_id_path)?;
+        if base_commit_bytes.len() != 32 {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!(
+                    "Expected commit id to have 32 bytes, got {}",
+                    base_commit_bytes.len()
+                ),
+            )
+            .into());
+        }
+        let mut base_commit = [0u8; 32];
+        base_commit.copy_from_slice(&base_commit_bytes);
+
         let mut vm = VM::new(dir)?;
-
-        let mut session = vm.session();
-        session.restore(&base_commit)?;
-
         rusk_abi::register_host_queries(&mut vm);
 
         let inner = Arc::new(Mutex::new(RuskInner {
@@ -93,9 +102,9 @@ impl Rusk {
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
-        let mut inner = self.inner.lock();
+        let inner = self.inner.lock();
 
-        let mut session = inner.vm.session();
+        let mut session = inner.vm.session(inner.current_commit)?;
         rusk_abi::set_block_height(&mut session, block_height);
 
         let mut block_gas_left = block_gas_limit;
@@ -108,9 +117,9 @@ impl Rusk {
         let mut nullifiers = BTreeSet::new();
 
         // Here we discard transactions that:
-        // - Fail parsing
         // - Use nullifiers that are already use by previous TXs
-        // - Spend more gas than the running `block_gas_left`
+        // - Fail for any reason other than out of gas due to hitting the block
+        //   gas limit
         'tx_loop: for tx in txs {
             for nullifier in &tx.nullifiers {
                 if !nullifiers.insert(*nullifier) {
@@ -119,23 +128,36 @@ impl Rusk {
                 }
             }
 
-            session.set_point_limit(tx.fee.gas_limit);
+            // The gas limit set for a transaction is either the limit it sets,
+            // or the gas left in the block, whichever is smallest.
+            let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
+            session.set_point_limit(gas_limit);
 
-            let call_result: Option<Result<RawResult, ModuleError>> = session
-                .transact(
-                rusk_abi::transfer_module(),
-                "execute",
-                &tx,
-            )?;
+            let call_result: Option<Result<RawResult, ModuleError>> =
+                match session.transact(
+                    rusk_abi::transfer_module(),
+                    "execute",
+                    &tx,
+                ) {
+                    Ok(call_result) => call_result,
+                    Err(err) => match err {
+                        piecrust::Error::OutOfPoints => {
+                            // If the transaction would have been out of points
+                            // with its own gas limit, it is invalid and should
+                            // be discarded.
+                            if gas_limit == tx.fee.gas_limit {
+                                discarded_txs.push(tx);
+                            }
+                            continue;
+                        }
+                        _ => {
+                            discarded_txs.push(tx);
+                            continue;
+                        }
+                    },
+                };
 
             let gas_spent = session.spent();
-
-            // If the transaction executes with more gas than is left in the
-            // block reject it
-            if gas_spent > block_gas_left {
-                discarded_txs.push(tx);
-                continue 'tx_loop;
-            }
 
             block_gas_left -= gas_spent;
             dusk_spent += gas_spent * tx.fee.gas_price;
@@ -154,7 +176,7 @@ impl Rusk {
         }
 
         reward(&mut session, block_height, dusk_spent, generator)?;
-        let state_root = session.root(true)?;
+        let state_root = session.root();
 
         Ok((spent_txs, discarded_txs, state_root))
     }
@@ -167,8 +189,8 @@ impl Rusk {
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
-        let mut inner = self.inner.lock();
-        let mut session = inner.vm.session();
+        let inner = self.inner.lock();
+        let mut session = inner.vm.session(inner.current_commit)?;
 
         accept(&mut session, block_height, block_gas_limit, generator, txs)
     }
@@ -182,7 +204,7 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session();
+        let mut session = inner.vm.session(inner.current_commit)?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -207,7 +229,7 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session();
+        let mut session = inner.vm.session(inner.current_commit)?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -229,25 +251,16 @@ impl Rusk {
     }
 
     pub fn persist_state(&self) -> Result<()> {
-        let inner = self.inner.lock();
-        Ok(inner.vm.persist()?)
+        Ok(())
     }
 
-    pub fn revert(&self) -> Result<CommitId> {
+    pub fn revert(&self) -> Result<[u8; 32]> {
         let mut inner = self.inner.lock();
-        let base_commit = inner.base_commit;
-
-        let mut session = inner.vm.session();
-
-        session.restore(&base_commit)?;
         inner.current_commit = inner.base_commit;
-
         Ok(inner.current_commit)
     }
 
     pub fn pre_verify(&self, tx: &Transaction) -> Result<()> {
-        println!("PREVERIFY: {tx:?}");
-
         let existing_nullifiers = self.existing_nullifiers(&tx.nullifiers)?;
 
         if !existing_nullifiers.is_empty() {
@@ -271,13 +284,13 @@ impl Rusk {
     }
 
     /// Get the base root.
-    pub fn base_root(&self) -> CommitId {
+    pub fn base_root(&self) -> [u8; 32] {
         let inner = self.inner.lock();
         inner.base_commit
     }
 
     /// Get the current state root.
-    pub fn state_root(&self) -> CommitId {
+    pub fn state_root(&self) -> [u8; 32] {
         let inner = self.inner.lock();
         inner.current_commit
     }
@@ -359,9 +372,9 @@ impl Rusk {
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
-        let mut inner = self.inner.lock();
+        let inner = self.inner.lock();
 
-        let mut session = inner.vm.session();
+        let mut session = inner.vm.session(inner.current_commit)?;
 
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
@@ -395,7 +408,8 @@ fn accept(
             }
         }
 
-        session.set_point_limit(tx.fee.gas_limit);
+        let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
+        session.set_point_limit(gas_limit);
 
         let call_result: Option<Result<RawResult, ModuleError>> =
             session.transact(rusk_abi::transfer_module(), "execute", &tx)?;
@@ -415,7 +429,7 @@ fn accept(
     }
 
     reward(session, block_height, dusk_spent, generator)?;
-    let state_root = session.root(true)?;
+    let state_root = session.root();
 
     Ok((spent_txs, state_root))
 }
