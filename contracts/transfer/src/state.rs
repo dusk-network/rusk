@@ -485,8 +485,7 @@ impl TransferState {
     fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
         let block_height = rusk_abi::block_height();
 
-        let gas_left = rusk_abi::limit() - rusk_abi::spent();
-        let remainder = fee.gen_remainder(fee.gas_limit - gas_left);
+        let remainder = fee.gen_remainder(fee.gas_limit - rusk_abi::spent());
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
         if remainder_value > 0 {
