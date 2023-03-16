@@ -45,14 +45,14 @@ fn hash_host() {
     );
 }
 
-fn instantiate<'a>(vm: &mut VM) -> (Session, ModuleId) {
+fn instantiate(vm: &mut VM) -> (Session, ModuleId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
     rusk_abi::register_host_queries(vm);
 
-    let mut session = vm.session();
+    let mut session = vm.genesis_session();
     session.set_point_limit(0x20000);
 
     let module_id = session
@@ -89,7 +89,7 @@ fn hash() {
 
     assert_eq!(
         "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
-        format!("{:#x}", scalar)
+        format!("{scalar:#x}")
     );
 }
 
@@ -115,7 +115,7 @@ fn poseidon_hash() {
 
     assert_eq!(
         "0xe36f4ea9b858d5c85b02770823c7c5d8253c28787d17f283ca348b906dca8528",
-        format!("{:#x}", scalar)
+        format!("{scalar:#x}")
     );
 }
 

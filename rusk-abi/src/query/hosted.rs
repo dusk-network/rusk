@@ -67,7 +67,7 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
 
 /// Get the current block height.
 pub fn block_height() -> u64 {
-    piecrust_uplink::host_data(Metadata::BLOCK_HEIGHT)
+    piecrust_uplink::meta_data(Metadata::BLOCK_HEIGHT).unwrap()
 }
 
 /// Query a contract for the types of payment it accepts.
