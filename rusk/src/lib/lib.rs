@@ -242,6 +242,18 @@ impl Rusk {
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
 
+        // Delete all commits except the previous base commit, and the current
+        // commit
+        let mut delete_commits = inner.vm.commits();
+        delete_commits
+            .retain(|c| c != &inner.current_commit && c != &inner.base_commit);
+        for commit in delete_commits {
+            inner.vm.delete_commit(commit)?;
+        }
+
+        // Squash the current commit
+        inner.vm.squash_commit(inner.current_commit)?;
+
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit_id)?;
 
