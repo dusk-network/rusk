@@ -7,7 +7,7 @@
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicKey;
-use rusk_abi::ContractId;
+use rusk_abi::ModuleId;
 use serde_derive::{Deserialize, Serialize};
 
 use super::wrapper::Wrapper;
@@ -28,10 +28,10 @@ impl Governance {
         &self.broker
     }
 
-    pub fn contract(&self) -> ContractId {
+    pub fn contract(&self) -> ModuleId {
         let mut data = [0u8; 32];
-        let address = (self.contract_address as u64).to_be_bytes();
+        let address = self.contract_address.to_be_bytes();
         data[24..].copy_from_slice(&address);
-        ContractId::from(data)
+        ModuleId::from(data)
     }
 }

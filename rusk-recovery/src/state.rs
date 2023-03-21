@@ -24,7 +24,7 @@ use tracing::info;
 use url::Url;
 
 use crate::provisioners::DUSK_KEY as DUSK_BLS_KEY;
-pub use snapshot::{Balance, GenesisStake, Snapshot};
+pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
 
 mod snapshot;
 pub mod tar;
@@ -45,33 +45,27 @@ pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
 });
 
 fn deploy_governance_contract(
+    session: &mut Session,
     governance: &Governance,
-    state: &mut NetworkState,
 ) -> Result<(), Box<dyn Error>> {
-    let gov_code = include_bytes!(
+    let module_id = governance.contract();
+    let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
-    )
-    .to_vec();
-    let contract = Contract::new(GovernanceContract::default(), gov_code);
-    let contract_id = governance.contract();
+    );
 
     let theme = Theme::default();
     info!(
         "{} {} governance to {}",
         theme.action("Deploying"),
         governance.name,
-        contract_id
+        hex::encode(module_id)
     );
-    state.deploy_with_id(contract_id, contract)?;
+    session.deploy_with_id(module_id, bytecode)?;
 
-    let mut gov_state: GovernanceContract =
-        state.get_contract_cast_state(&contract_id)?;
-    gov_state.authority = *governance.authority();
-    gov_state.broker = Some(*governance.broker());
+    // Set the broker and the authority of the governance contract
+    session.transact(module_id, "set_broker", governance.broker())?;
+    session.transact(module_id, "set_authority", governance.authority())?;
 
-    unsafe {
-        set_contract_state(&contract_id, &gov_state, state)?;
-    }
     Ok(())
 }
 
@@ -252,6 +246,10 @@ pub fn deploy<P: AsRef<Path>>(
 
     generate_transfer_state(&mut session, snapshot)?;
     generate_stake_state(&mut session, snapshot)?;
+
+    for governance in snapshot.governance_contracts() {
+        deploy_governance_contract(&mut session, governance)?;
+    }
 
     info!("{} persisted id", theme.success("Storing"));
     let commit_id = session.commit()?;
