@@ -8,7 +8,6 @@ extern crate core;
 
 pub mod commons;
 pub mod consensus;
-pub mod messages;
 pub mod user;
 pub mod util;
 

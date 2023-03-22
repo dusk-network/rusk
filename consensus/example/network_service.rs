@@ -4,20 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::commons::Topics;
-use dusk_consensus::messages::{Message, TransportData};
-use dusk_consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, NetworkListen, Peer};
+use node_data::message::{AsyncQueue, Message, Metadata, Topics};
 
 use crate::wire;
 
 pub async fn run_main_loop(
     conf: Config,
-    inbound: PendingQueue,
-    outbound: PendingQueue,
-    agr_inbound: PendingQueue,
-    agr_outbound: PendingQueue,
+    inbound: AsyncQueue<Message>,
+    outbound: AsyncQueue<Message>,
+    agr_inbound: AsyncQueue<Message>,
+    agr_outbound: AsyncQueue<Message>,
 ) {
     // Initialize reader and its dispatcher
     let mut r = Reader::default();
@@ -48,8 +46,8 @@ pub async fn run_main_loop(
 
 async fn broadcast(peer: &Peer, msg: Message) {
     let height = match msg.metadata {
-        Some(TransportData { height: 0, .. }) => return,
-        Some(TransportData { height, .. }) => Some((height as usize) - 1),
+        Some(Metadata { height: 0, .. }) => return,
+        Some(Metadata { height, .. }) => Some((height as usize) - 1),
         None => None,
     };
     peer.broadcast(
@@ -69,7 +67,7 @@ impl NetworkListen for Reader {
         match wire::Frame::decode(&mut &message.to_vec()[..]) {
             Ok(decoded) => {
                 let mut msg = decoded.get_msg().clone();
-                msg.metadata = Some(TransportData {
+                msg.metadata = Some(Metadata {
                     height: md.height(),
                     src_addr: md.src().to_string(),
                 });
@@ -99,16 +97,16 @@ impl NetworkListen for Reader {
 /// Implements a simple message dispatcher that delegates a message to the
 /// associated queue depending on the topic value read from wire message.
 struct Dispatcher {
-    queues: Vec<Option<PendingQueue>>,
-    default_queue: Option<PendingQueue>,
+    queues: Vec<Option<AsyncQueue<Message>>>,
+    default_queue: Option<AsyncQueue<Message>>,
 }
 
 impl Dispatcher {
-    fn add(&mut self, topic: impl Into<u8>, queue: PendingQueue) {
+    fn add(&mut self, topic: impl Into<u8>, queue: AsyncQueue<Message>) {
         self.queues[topic.into() as usize] = Some(queue);
     }
 
-    fn add_default(&mut self, queue: PendingQueue) {
+    fn add_default(&mut self, queue: AsyncQueue<Message>) {
         self.default_queue = Some(queue);
     }
 

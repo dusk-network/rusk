@@ -11,8 +11,8 @@ use node_data::ledger::{Block, Signature, StepVotes};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
-use crate::messages::{payload, Message, Payload};
 use crate::user::committee::Committee;
+use node_data::message::{payload, Message, Payload};
 
 macro_rules! empty_result {
     (  ) => {

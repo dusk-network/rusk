@@ -4,15 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate, Topics};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
 use tracing::error;
 
 use crate::aggregator::Aggregator;
-use crate::messages;
-use crate::messages::{payload, Message, Payload};
+use node_data::message::{payload, Message, Payload, Topics};
+
 use crate::user::committee::Committee;
 
 pub struct Reduction {
@@ -91,7 +91,7 @@ impl Reduction {
         block_hash: Hash,
         second_step_votes: ledger::StepVotes,
     ) -> Message {
-        let hdr = messages::Header {
+        let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             step,

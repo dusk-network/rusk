@@ -5,17 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::marshal_signable_vote;
-use crate::messages;
+
 use node_data::ledger::{Seed, StepVotes};
 
-use crate::messages::{Message, Payload};
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use crate::util::cluster::Cluster;
-use crate::util::pubkey::ConsensusPublicKey;
 use bytes::Buf;
-use dusk_bls12_381_sign::{PublicKey, APK};
+
 use dusk_bytes::Serializable;
+use node_data::bls::PublicKey;
+use node_data::message::{Header, Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -75,7 +75,7 @@ pub(super) async fn verify_step_votes(
     sv: &StepVotes,
     committees_set: &Arc<Mutex<CommitteeSet>>,
     seed: Seed,
-    hdr: &messages::Header,
+    hdr: &Header,
     step_offset: u8,
 ) -> Result<(), Error> {
     if hdr.step == 0 {
@@ -126,14 +126,14 @@ pub async fn verify_votes(
     Ok(())
 }
 
-impl Cluster<ConsensusPublicKey> {
+impl Cluster<PublicKey> {
     fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
-        let pks: Vec<&PublicKey> =
+        let pks: Vec<&dusk_bls12_381_sign::PublicKey> =
             self.iter().map(|(pubkey, _)| pubkey.inner()).collect();
 
         match pks.split_first() {
             Some((&first, rest)) => {
-                let mut apk = APK::from(first);
+                let mut apk = dusk_bls12_381_sign::APK::from(first);
                 rest.iter().for_each(|&&p| apk.aggregate(&[p]));
                 Ok(apk)
             }

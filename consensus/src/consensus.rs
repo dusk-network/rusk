@@ -8,13 +8,12 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 use node_data::ledger::Block;
+use node_data::message::{AsyncQueue, Message};
 
 use crate::agreement::step;
 use crate::execution_ctx::ExecutionCtx;
-use crate::messages::Message;
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
-use crate::util::pending_queue::PendingQueue;
 use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
@@ -25,10 +24,10 @@ use tokio::task::JoinHandle;
 
 pub struct Consensus<T: Operations, D: Database> {
     /// inbound is a queue of messages that comes from outside world
-    inbound: PendingQueue,
+    inbound: AsyncQueue<Message>,
     /// outbound_msgs is a queue of messages, this consensus instance shares
     /// with the outside world.
-    outbound: PendingQueue,
+    outbound: AsyncQueue<Message>,
 
     /// future_msgs is a queue of messages read from inbound_msgs queue. These
     /// msgs are pending to be handled in a future round/step.
@@ -56,10 +55,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `agr_inbound_queue` - a queue of input messages consumed solely by Agreement loop
     /// * `agr_outbound_queue` - a queue of output messages that Agreement loop broadcasts to the outside world
     pub fn new(
-        inbound: PendingQueue,
-        outbound: PendingQueue,
-        agr_inbound_queue: PendingQueue,
-        agr_outbound_queue: PendingQueue,
+        inbound: AsyncQueue<Message>,
+        outbound: AsyncQueue<Message>,
+        agr_inbound_queue: AsyncQueue<Message>,
+        agr_outbound_queue: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
         db: Arc<Mutex<D>>,
     ) -> Self {
@@ -144,7 +143,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        mut agr_inbound_queue: PendingQueue,
+        mut agr_inbound_queue: AsyncQueue<Message>,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
@@ -220,7 +219,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     }
 
     async fn send_agreement(
-        agr_inbound_queue: &mut PendingQueue,
+        agr_inbound_queue: &mut AsyncQueue<Message>,
         msg: Message,
     ) {
         let _ = agr_inbound_queue

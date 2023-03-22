@@ -56,9 +56,9 @@ impl Database for SimpleDB {
         self.candidates.entry(b.header.hash).or_insert(b);
     }
 
-    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<(Hash, Block)> {
+    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<Block> {
         if let Some(v) = self.candidates.get_key_value(h) {
-            return Some((*v.0, v.1.clone()));
+            return Some(v.1.clone());
         }
         None
     }

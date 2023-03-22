@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::messages::{Message, MessageTrait, Status};
 use crate::user::committee::Committee;
 use hex::ToHex;
+use node_data::message::{Message, MessageTrait, Status};
 use std::fmt::Debug;
 
 pub enum HandleMsgOutput {

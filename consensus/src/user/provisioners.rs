@@ -6,7 +6,7 @@
 
 use crate::user::sortition;
 use crate::user::stake::Stake;
-use crate::util::pubkey::ConsensusPublicKey;
+use node_data::bls::PublicKey;
 
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
@@ -18,18 +18,18 @@ pub const DUSK: u64 = 100_000_000;
 pub struct Member {
     /// Vector of pairs (stake and eligibility flag)
     stakes: Vec<(Stake, bool)>,
-    pubkey_bls: ConsensusPublicKey,
+    pubkey_bls: PublicKey,
 }
 
 impl Member {
-    pub fn new(pubkey_bls: ConsensusPublicKey) -> Self {
+    pub fn new(pubkey_bls: PublicKey) -> Self {
         Self {
             stakes: vec![],
             pubkey_bls,
         }
     }
 
-    pub fn public_key(&self) -> &ConsensusPublicKey {
+    pub fn public_key(&self) -> &PublicKey {
         &self.pubkey_bls
     }
 
@@ -80,7 +80,7 @@ impl Member {
 
 #[derive(Clone, Default, Debug)]
 pub struct Provisioners {
-    members: BTreeMap<ConsensusPublicKey, Member>,
+    members: BTreeMap<PublicKey, Member>,
 }
 
 impl Provisioners {
@@ -95,7 +95,7 @@ impl Provisioners {
     /// It appends the stake if the given provisioner already exists.
     pub fn add_member_with_stake(
         &mut self,
-        pubkey_bls: ConsensusPublicKey,
+        pubkey_bls: PublicKey,
         stake: Stake,
     ) {
         self.members
@@ -107,11 +107,7 @@ impl Provisioners {
     /// Adds a new member with reward=0 and elibile_since=0.
     ///
     /// Useful for implementing unit tests.
-    pub fn add_member_with_value(
-        &mut self,
-        pubkey_bls: ConsensusPublicKey,
-        value: u64,
-    ) {
+    pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
         self.add_member_with_stake(pubkey_bls, Stake::new(value, 0, 0));
     }
 
@@ -132,7 +128,7 @@ impl Provisioners {
     }
 
     /// Returns a member of Provisioner list by public key.
-    pub fn get_member(&self, key: &ConsensusPublicKey) -> Option<&Member> {
+    pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
         self.members.get(key)
     }
 
@@ -142,8 +138,8 @@ impl Provisioners {
     pub fn create_committee(
         &mut self,
         cfg: &sortition::Config,
-    ) -> Vec<ConsensusPublicKey> {
-        let mut committee: Vec<ConsensusPublicKey> = vec![];
+    ) -> Vec<PublicKey> {
+        let mut committee: Vec<PublicKey> = vec![];
         let committee_size = self.get_eligible_size(cfg.max_committee_size);
 
         // Restore intermediate value of all stakes.
@@ -204,7 +200,7 @@ impl Provisioners {
     fn extract_and_subtract_member(
         &mut self,
         mut score: BigInt,
-    ) -> Option<(ConsensusPublicKey, BigInt)> {
+    ) -> Option<(PublicKey, BigInt)> {
         if self.members.is_empty() {
             return None;
         }

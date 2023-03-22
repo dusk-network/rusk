@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
-use crate::messages::Message;
+use node_data::message::Message;
 
 use crate::user::committee::Committee;
 

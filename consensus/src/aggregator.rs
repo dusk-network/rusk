@@ -4,12 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::messages::Header;
 use crate::user::committee::Committee;
 use crate::util::cluster::Cluster;
-use crate::util::pubkey::ConsensusPublicKey;
 use dusk_bytes::Serializable;
+use node_data::bls::PublicKey;
 use node_data::ledger::{Hash, Signature, StepVotes};
+use node_data::message::Header;
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{error, warn};
@@ -18,9 +18,7 @@ use tracing::{error, warn};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(
-    BTreeMap<Hash, (AggrSignature, Cluster<ConsensusPublicKey>)>,
-);
+pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<PublicKey>)>);
 
 impl Aggregator {
     pub fn collect_vote(
@@ -142,13 +140,13 @@ impl AggrSignature {
 mod tests {
     use super::*;
     use crate::aggregator::Aggregator;
-    use crate::messages;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bls12_381_sign::PublicKey;
     use hex::FromHex;
     use node_data::ledger::Seed;
+    use node_data::message;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {
@@ -178,13 +176,11 @@ mod tests {
             let rng = &mut StdRng::seed_from_u64(i);
             let sk = dusk_bls12_381_sign::SecretKey::random(rng);
 
-            let pk = ConsensusPublicKey::new(
-                dusk_bls12_381_sign::PublicKey::from(&sk),
-            );
+            let pk = node_data::bls::PublicKey::new(PublicKey::from(&sk));
 
             p.add_member_with_value(pk.clone(), 1000 * DUSK);
 
-            let header = messages::Header {
+            let header = message::Header {
                 pubkey_bls: pk,
                 round,
                 step,
@@ -203,7 +199,7 @@ mod tests {
         // Execute sortition with specific config
         let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10);
         let c = Committee::new(
-            ConsensusPublicKey::new(PublicKey::default()),
+            node_data::bls::PublicKey::new(PublicKey::default()),
             &mut p,
             cfg,
         );

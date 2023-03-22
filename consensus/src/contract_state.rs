@@ -20,7 +20,7 @@ pub struct CallParams {
     round: u64,
     txs: Vec<Transaction>,
     block_gas_limit: u64,
-    generator_pubkey: crate::util::pubkey::ConsensusPublicKey,
+    generator_pubkey: node_data::bls::PublicKey,
 }
 
 #[allow(unused)]

@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use clap::{App, Arg, ArgMatches};
-use dusk_consensus::util::pending_queue::PendingQueue;
 use kadcast::config::Config;
+use node_data::message::AsyncQueue;
 use rustc_tools_util::{get_version_info, VersionInfo};
 
 mod consensus_service;
@@ -78,11 +78,11 @@ async fn run_main_loop(
     provisioners_num: usize,
     provisioner_id: usize,
 ) {
-    let inbound = PendingQueue::new("inbound_main_loop");
-    let outbound = PendingQueue::new("outbound_main_loop");
+    let inbound = AsyncQueue::default();
+    let outbound = AsyncQueue::default();
 
-    let agr_inbound = PendingQueue::new("inbound_agreement");
-    let agr_outbound = PendingQueue::new("outbound_agreement");
+    let agr_inbound = AsyncQueue::default();
+    let agr_outbound = AsyncQueue::default();
 
     // Spawn consensus layer
     consensus_service::run_main_loop(

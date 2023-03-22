@@ -7,8 +7,8 @@
 use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
-use crate::messages::Message;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use node_data::message::Message;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
