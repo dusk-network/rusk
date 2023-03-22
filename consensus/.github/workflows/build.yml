@@ -6,7 +6,6 @@ on:
 name: build
 jobs:
   analyze:
-    if: ${{ false }}  # disable for now
     name: Dusk Analyzer
     runs-on: ubuntu-latest
     steps:
