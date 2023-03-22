@@ -15,7 +15,7 @@ path = "src/bin/main.rs"
 [dependencies]
 tracing = "0.1"
 hex = "0.4"
-dusk-consensus = { git = "https://github.com/dusk-network/consensus/", tag="v0.1.1-rc.0" }
+dusk-consensus = { git = "https://github.com/dusk-network/consensus/" }
 kadcast = "0.5.0-rc"
 sha3 = { version = "0.10" }
 anyhow = "1.0"
