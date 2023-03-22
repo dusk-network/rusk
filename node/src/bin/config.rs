@@ -137,6 +137,7 @@ impl Config {
             .unwrap_or_else(|| {
                 let mut path = dirs::home_dir().expect("OS not supported");
                 path.push(".dusk");
+                path.push(env!("CARGO_BIN_NAME"));
                 path.push("consensus.keys");
                 path
             })

@@ -653,8 +653,6 @@ mod tests {
                         fee <= last_fee,
                         "tx fees are not in decreasing order"
                     );
-
-                    println!("fee: {fee}");
                 }
 
                 Ok(())

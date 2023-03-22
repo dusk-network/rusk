@@ -8,6 +8,8 @@ use node_data::message::Message;
 use node_data::Serializable;
 use std::io::{self, Read, Write};
 
+const RROTOCOL_VERSION: [u8; 8] = [0, 0, 0, 0, 1, 0, 0, 0];
+
 /// Defines PDU (Protocol Data Unit) structure.
 #[derive(Debug, Default)]
 pub struct Pdu {
@@ -31,7 +33,7 @@ impl Pdu {
         let mut header_buf = vec![];
         Header {
             checksum: calc_checksum(&payload_buf[..]),
-            version: [0, 0, 0, 0, 1, 0, 0, 0],
+            version: RROTOCOL_VERSION,
             reserved: 0,
         }
         .write(&mut header_buf)?;
