@@ -193,7 +193,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
         let mut serialized = vec![];
-        b.header.write(&mut serialized)?;
+        b.write(&mut serialized)?;
 
         self.inner
             .put_cf(self.ledger_cf, b.header.hash, serialized)?;
@@ -408,6 +408,48 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 }
 
+impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //  Print ledger blocks
+        let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
+
+        iter.map(Result::unwrap).try_for_each(|(hash, _)| {
+            if let Ok(Some(blob)) =
+                self.snapshot.get_cf(self.ledger_cf, &hash[..])
+            {
+                let b = ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                writeln!(f, "ledger_block [{}]: {:#?}", b.header.height, b)
+            } else {
+                Ok(())
+            }
+        })?;
+
+        // Print candidate blocks
+        let iter = self
+            .inner
+            .iterator_cf(self.candidates_cf, IteratorMode::Start);
+
+        let results: std::fmt::Result =
+            iter.map(Result::unwrap).try_for_each(|(hash, _)| {
+                if let Ok(Some(blob)) =
+                    self.snapshot.get_cf(self.candidates_cf, &hash[..])
+                {
+                    let b =
+                        ledger::Block::read(&mut &blob[..]).unwrap_or_default();
+                    writeln!(
+                        f,
+                        "candidate_block [{}]: {:#?}",
+                        b.header.height, b
+                    )
+                } else {
+                    Ok(())
+                }
+            });
+
+        results
+    }
+}
+
 fn serialize_fee_key(fee: u64, hash: [u8; 32]) -> std::io::Result<Vec<u8>> {
     let mut w = vec![];
     std::io::Write::write_all(&mut w, &fee.to_be_bytes())?;
@@ -444,7 +486,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
@@ -485,7 +527,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
@@ -508,7 +550,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
 
@@ -551,7 +593,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             let t: ledger::Transaction = Faker.fake();
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
@@ -585,7 +627,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
             // Populate mempool with N contract calls
             let mut rng = rand::thread_rng();
             db.update(|txn| {
@@ -611,8 +653,6 @@ mod tests {
                         fee <= last_fee,
                         "tx fees are not in decreasing order"
                     );
-
-                    println!("fee: {}", fee);
                 }
 
                 Ok(())
@@ -627,7 +667,7 @@ mod tests {
         };
 
         t.run(|path| {
-            let db: Backend = Backend::create_or_open(path.to_owned());
+            let db: Backend = Backend::create_or_open(path);
 
             db.update(|txn| {
                 for i in 0..10u32 {

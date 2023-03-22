@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Serializable;
+use crate::{bls, Serializable};
 use dusk_bytes::Serializable as DuskBytesSerializable;
 use sha3::Digest;
 use std::io::{self, Read, Write};
@@ -21,7 +21,7 @@ pub struct Block {
     pub txs: Vec<Transaction>,
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Clone)]
+#[derive(Default, Eq, PartialEq, Clone)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Header {
     // Hashable fields
@@ -31,7 +31,7 @@ pub struct Header {
     pub prev_block_hash: Hash,
     pub seed: Seed,
     pub state_hash: Hash,
-    pub generator_bls_pubkey: BlsPubkey,
+    pub generator_bls_pubkey: bls::PublicKeyBytes,
     pub gas_limit: u64,
 
     // Block hash
@@ -39,6 +39,39 @@ pub struct Header {
 
     // Non-hashable fields
     pub cert: Certificate,
+}
+
+impl std::fmt::Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let timestamp =
+            chrono::NaiveDateTime::from_timestamp_opt(self.timestamp, 0)
+                .map_or_else(
+                    || "unknown".to_owned(),
+                    |v| {
+                        chrono::DateTime::<chrono::Utc>::from_utc(
+                            v,
+                            chrono::Utc,
+                        )
+                        .to_rfc2822()
+                    },
+                );
+
+        f.debug_struct("Header")
+            .field("version", &self.version)
+            .field("height", &self.height)
+            .field("timestamp", &timestamp)
+            .field("prev_block_hash", &hex::encode(self.prev_block_hash))
+            .field("seed", &hex::encode(self.seed.inner()))
+            .field("state_hash", &hex::encode(self.state_hash))
+            .field(
+                "generator_bls_pubkey",
+                &hex::encode(self.generator_bls_pubkey.inner()),
+            )
+            .field("gas_limit", &self.gas_limit)
+            .field("hash", &hex::encode(self.hash))
+            .field("cert", &self.cert)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -131,7 +164,7 @@ impl Header {
             gas_limit,
             prev_block_hash,
             seed: Seed::from(seed),
-            generator_bls_pubkey: BlsPubkey(generator_bls_pubkey),
+            generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
             state_hash,
             hash: [0; 32],
             cert: Default::default(),
@@ -178,7 +211,7 @@ impl StepVotes {
 }
 
 /// a wrapper of 48-sized array to facilitate Signature
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub struct Signature(pub [u8; 48]);
 
 impl Signature {
@@ -187,6 +220,14 @@ impl Signature {
     }
     pub fn inner(&self) -> [u8; 48] {
         self.0
+    }
+}
+
+impl std::fmt::Debug for Signature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Signature")
+            .field("signature", &hex::encode(self.0))
+            .finish()
     }
 }
 
@@ -199,22 +240,6 @@ impl From<[u8; 48]> for Signature {
 impl Default for Signature {
     fn default() -> Self {
         Signature([0; 48])
-    }
-}
-
-/// a wrapper of 96-sized array to facilitate BLS Public key
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-pub struct BlsPubkey(pub [u8; 96]);
-
-impl Default for BlsPubkey {
-    fn default() -> Self {
-        BlsPubkey([0; 96])
-    }
-}
-
-impl BlsPubkey {
-    pub fn inner(&self) -> [u8; 96] {
-        self.0
     }
 }
 
@@ -237,6 +262,7 @@ impl Eq for Transaction {}
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
     use super::*;
+    use crate::bls::PublicKeyBytes;
     use hex;
     use rand::Rng;
 
@@ -260,12 +286,12 @@ pub mod faker {
         }
     }
 
-    impl<T> Dummy<T> for BlsPubkey {
+    impl<T> Dummy<T> for PublicKeyBytes {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let rand_val = rng.gen::<[u8; 32]>();
             let mut bls_key = [0u8; 96];
             bls_key[..32].copy_from_slice(&rand_val);
-            BlsPubkey(bls_key)
+            bls::PublicKeyBytes(bls_key)
         }
     }
 

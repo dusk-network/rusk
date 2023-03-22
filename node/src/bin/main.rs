@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
 use node::chain::ChainSrv;
 use node::database::{rocksdb, DB};
 use node::mempool::MempoolSrv;
@@ -19,32 +20,41 @@ use crate::config::Config;
 mod config;
 mod version;
 
-#[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
+pub fn main() -> anyhow::Result<()> {
     let args = args();
     let config = Config::from(&args);
 
     configure_log(&config)?;
 
-    // Set up a node where:
-    // transport layer is Kadcast with message ids from 0 to 255
-    // persistence layer is rocksdb
-    type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend>;
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2 + ACCUMULATOR_WORKERS_AMOUNT)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            // Set up a node where:
+            // transport layer is Kadcast with message ids from 0 to 255
+            // persistence layer is rocksdb
+            type Services =
+                dyn LongLivedService<Kadcast<255>, rocksdb::Backend>;
 
-    // Select list of services to enable
-    let service_list: Vec<Box<Services>> =
-        vec![Box::<MempoolSrv>::default(), Box::<ChainSrv>::default()];
+            // Select list of services to enable
+            let service_list: Vec<Box<Services>> = vec![
+                Box::<MempoolSrv>::default(),
+                Box::new(ChainSrv::new(config.consensus_keys_path())),
+            ];
 
-    let db = rocksdb::Backend::create_or_open(config.db_path());
-    let net = Kadcast::new(config.network.into());
+            let db = rocksdb::Backend::create_or_open(config.db_path());
+            let net = Kadcast::new(config.network.into());
 
-    // node spawn_all is the entry point
-    if let Err(e) = Node::new(net, db).spawn_all(service_list).await {
-        tracing::error!("node terminated with err: {}", e);
-        Err(e)
-    } else {
-        Ok(())
-    }
+            // node spawn_all is the entry point
+            if let Err(e) = Node::new(net, db).spawn_all(service_list).await {
+                tracing::error!("node terminated with err: {}", e);
+                Err(e)
+            } else {
+                Ok(())
+            }
+        })
 }
 
 fn args() -> ArgMatches {

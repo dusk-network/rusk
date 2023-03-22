@@ -4,19 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::data::{self, Topics};
-use crate::utils::PendingQueue;
 use crate::{database, LongLivedService, Message, Network};
 use async_trait::async_trait;
+use node_data::message::AsyncQueue;
+use node_data::message::Topics;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use std::sync::Arc;
-
-const TOPICS: &[u8] = &[data::Topics::Tx as u8];
+const TOPICS: &[u8] = &[Topics::Tx as u8];
 
 #[derive(Default)]
 pub struct MempoolSrv {
-    inbound: PendingQueue<Message>,
+    inbound: AsyncQueue<Message>,
 }
 
 pub struct TxFilter {}
@@ -48,7 +47,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
         // mempool, blockchain state.
         LongLivedService::<N, DB>::add_filter(
             self,
-            data::Topics::Tx.into(),
+            Topics::Tx.into(),
             Box::new(TxFilter {}),
             &network,
         )
@@ -56,10 +55,10 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 
         loop {
             if let Ok(msg) = self.inbound.recv().await {
-                match msg.topic {
+                match msg.topic() {
                     Topics::Tx => {
                         if self.handle_tx(&msg).is_ok() {
-                            network.read().await.repropagate(&msg, 0).await;
+                            network.read().await.broadcast(&msg).await;
                         }
                     }
                     _ => todo!(),

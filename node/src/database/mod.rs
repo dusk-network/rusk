@@ -6,8 +6,6 @@
 
 use std::path::Path;
 
-use dusk_consensus::commons::Block;
-
 pub mod rocksdb;
 
 use anyhow::Result;
@@ -74,7 +72,7 @@ pub trait Mempool {
     ) -> Result<Vec<Option<ledger::Transaction>>>;
 }
 
-pub trait Persist: Ledger + Candidate {
+pub trait Persist: Ledger + Candidate + core::fmt::Debug {
     // Candidate block functions
 
     fn clear_database(&self) -> Result<()>;

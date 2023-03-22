@@ -4,20 +4,57 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::data::Topics;
-use crate::utils::PendingQueue;
-use crate::{data, database, Network};
+mod consensus;
+mod genesis;
+
+use crate::database::{Candidate, Ledger};
+use crate::{database, Network};
 use crate::{LongLivedService, Message};
 use async_trait::async_trait;
-use tokio::sync::RwLock;
+use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
+use dusk_consensus::consensus::Consensus;
+use dusk_consensus::contract_state::{
+    CallParams, Error, Operations, Output, StateRoot,
+};
+use dusk_consensus::user::provisioners::Provisioners;
+use node_data::ledger::{Block, Hash};
+use node_data::message::AsyncQueue;
+use node_data::message::{Payload, Topics};
+use node_data::Serializable;
+use tokio::sync::{oneshot, Mutex, RwLock};
+use tokio::task::JoinHandle;
 
+use std::any;
 use std::sync::Arc;
 
-const TOPICS: &[u8] = &[data::Topics::Block as u8];
+use self::consensus::Task;
 
-#[derive(Default)]
+const TOPICS: &[u8] = &[
+    Topics::Block as u8,
+    Topics::NewBlock as u8,
+    Topics::Reduction as u8,
+    Topics::AggrAgreement as u8,
+    Topics::Agreement as u8,
+];
+
 pub struct ChainSrv {
-    inbound: PendingQueue<Message>,
+    /// Inbound wire messages queue
+    inbound: AsyncQueue<Message>,
+
+    /// Most recently accepted block
+    most_recent_block: Block,
+
+    /// List of eligible provisioners of actual round
+    eligible_provisioners: Provisioners,
+
+    /// Upper layer consensus task
+    upper: consensus::Task,
+}
+
+impl Drop for ChainSrv {
+    fn drop(&mut self) {
+        self.upper.abort();
+    }
 }
 
 #[async_trait]
@@ -27,6 +64,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
     ) -> anyhow::Result<usize> {
+        // Register routes
         LongLivedService::<N, DB>::add_routes(
             self,
             TOPICS,
@@ -35,19 +73,58 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
         )
         .await?;
 
-        loop {
-            if let Ok(msg) = self.inbound.recv().await {
-                match msg.topic {
-                    Topics::Block => {
-                        // Try to validate message
-                        if self.is_valid(&msg).is_ok() {
-                            network.read().await.repropagate(&msg, 0).await;
+        self.init::<N, DB>(&network, &db).await?;
 
-                            self.handle_block_msg(&msg);
+        loop {
+            tokio::select! {
+                // Receives results from the upper layer
+                recv = &mut self.upper.result.recv() => {
+                    if let Ok(res) = recv {
+                        match res {
+                            Ok(blk) => {
+                                if let Err(e) = self.accept_block::<DB>( &db, &blk).await {
+                                    tracing::error!("failed to accept block: {}", e);
+                                } else {
+                                    network.read().await.
+                                        broadcast(&Message::new_with_block(Box::new(blk))).await;
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("consensus halted due to: {:?}", e);
+                            }
                         }
                     }
-                    _ => todo!(),
-                }
+                },
+                // Receives inbound wire messages.
+                // Component should either process it or re-route it to the next upper layer
+                recv = &mut self.inbound.recv() => {
+                    if let Ok(mut msg) = recv {
+                        match &msg.payload {
+                            Payload::Block(b) => {
+                                if let Err(e) = self.accept_block::<DB>(&db, b).await {
+                                    tracing::error!("failed to accept block: {}", e);
+                                } else {
+                                    network.read().await.broadcast(&msg).await;
+                                }
+                            }
+
+                            // Re-route message to upper layer (in this case it is the Consensus layer)
+                            Payload::NewBlock(_) |  Payload::Reduction(_) => {
+                                self.upper.main_inbound.try_send(msg);
+                            }
+                            Payload::Agreement(_) | Payload::AggrAgreement(_) => {
+                                self.upper.agreement_inbound.try_send(msg);
+                            }
+                            _ => tracing::warn!("invalid inbound message"),
+                        }
+                    }
+                },
+                // Re-routes messages originated from Consensus (upper) layer to the network layer.
+                recv = &mut self.upper.outbound.recv() => {
+                    if let Ok(msg) = recv {
+                        network.read().await.broadcast(&msg).await;
+                    }
+                },
             }
         }
     }
@@ -59,12 +136,66 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
 }
 
 impl ChainSrv {
-    fn is_valid(&self, msg: &Message) -> anyhow::Result<()> {
-        // TODO:
-        Ok(())
+    pub fn new(keys_path: String) -> Self {
+        Self {
+            inbound: Default::default(),
+            upper: Task::new_with_keys(keys_path),
+            most_recent_block: Block::default(),
+            eligible_provisioners: Provisioners::default(),
+        }
     }
 
-    fn handle_block_msg(&mut self, msg: &Message) {
-        // TODO:
+    async fn init<N: Network, DB: database::DB>(
+        &mut self,
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+    ) -> anyhow::Result<usize> {
+        (self.most_recent_block, self.eligible_provisioners) =
+            genesis::generate_state();
+
+        self.upper.spawn(
+            &self.most_recent_block.header,
+            &self.eligible_provisioners,
+            db,
+        );
+
+        anyhow::Ok(0)
+    }
+
+    async fn accept_block<DB: database::DB>(
+        &mut self,
+        db: &Arc<RwLock<DB>>,
+        blk: &Block,
+    ) -> anyhow::Result<()> {
+        // Reset Consensus
+        self.upper.abort();
+
+        // Persist block
+        db.read().await.update(|t| t.store_block(blk, true))?;
+        self.most_recent_block = blk.clone();
+
+        tracing::info!(
+            "block accepted height:{} hash:{}",
+            blk.header.height,
+            hex::encode(blk.header.hash)
+        );
+
+        /*  Uncomment to dump DB
+        db.read().await.view(|t| {
+            println!("{:#?}", t);
+            Ok(())
+        });
+        */
+
+        // Restart Consensus.
+        // NB. This will be moved out of accept_block when Synchronizer is
+        // implemented.
+        self.upper.spawn(
+            &self.most_recent_block.header,
+            &self.eligible_provisioners,
+            db,
+        );
+
+        Ok(())
     }
 }
