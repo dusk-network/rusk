@@ -214,6 +214,8 @@ fn generate_empty_state<P: AsRef<Path>>(
 
     let commit_id = session.commit()?;
 
+    info!("{} {}", theme.action("Empty Root"), hex::encode(commit_id));
+
     Ok((vm, commit_id))
 }
 
