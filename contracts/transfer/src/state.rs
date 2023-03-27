@@ -477,9 +477,13 @@ impl TransferState {
     }
 
     fn any_nullifier_exists(&self, nullifiers: &[BlsScalar]) -> bool {
-        nullifiers
-            .iter()
-            .fold(false, |t, n| t || self.nullifiers.get(n).is_some())
+        for nullifier in nullifiers {
+            if self.nullifiers.contains(nullifier) {
+                return true;
+            }
+        }
+
+        false
     }
 
     fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
