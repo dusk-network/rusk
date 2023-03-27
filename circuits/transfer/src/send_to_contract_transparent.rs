@@ -171,7 +171,7 @@ impl Circuit for SendToContractTransparentCircuit {
         let commitment = composer.append_public_point(self.commitment);
         let value = composer.append_public(self.value);
         let pk_r = composer.append_public_point(self.pk_r);
-        let _message = composer.append_public(self.message);
+        let _ = composer.append_public(self.message);
 
         // 1. commitment(Cc,Cv,Cb,64)
         gadgets::commitment(composer, commitment, value, blinder, 64)?;
