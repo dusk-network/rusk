@@ -76,12 +76,7 @@ fn generate_transfer_state(
     let theme = Theme::default();
 
     snapshot.transfers().enumerate().for_each(|(idx, balance)| {
-        info!(
-            "{} balance #{} = {:?}",
-            theme.action("Generating"),
-            idx,
-            balance.notes
-        );
+        info!("{} balance #{}", theme.action("Generating"), idx,);
 
         let mut rng = match balance.seed {
             Some(seed) => StdRng::seed_from_u64(seed),
