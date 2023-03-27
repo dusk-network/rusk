@@ -83,7 +83,6 @@ fn generate_transfer_state(
             None => StdRng::from_entropy(),
         };
 
-        info!("pushing notes {}", balance.notes.len());
         balance.notes.iter().for_each(|&amount| {
             let note = Note::transparent(&mut rng, balance.address(), amount);
             let _: Note = session
@@ -94,7 +93,6 @@ fn generate_transfer_state(
                 )
                 .expect("Genesis note to be pushed to the state");
         });
-        info!("after pushing notes {}", balance.notes.len());
     });
 
     let _: BlsScalar = session
