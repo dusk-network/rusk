@@ -1,0 +1,16 @@
+[package]
+name = "alice"
+version = "0.3.0"
+edition = "2021"
+resolver = "2"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl", "alloc"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+
+[dev-dependencies]
+piecrust = "0.1"

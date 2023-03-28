@@ -13,9 +13,19 @@ use tonic::Status;
 pub const TX_VERSION: u32 = 1;
 pub const TX_TYPE_TRANSFER: u32 = 1;
 
+impl From<phoenix_core::Transaction> for Transaction {
+    fn from(tx: phoenix_core::Transaction) -> Self {
+        Transaction {
+            version: TX_VERSION,
+            r#type: TX_TYPE_TRANSFER,
+            payload: tx.to_var_bytes(),
+        }
+    }
+}
+
 impl From<dusk_pki::PublicSpendKey> for PublicKey {
     fn from(value: dusk_pki::PublicSpendKey) -> Self {
-        crate::PublicKey {
+        PublicKey {
             payload: value.to_bytes().to_vec(),
         }
     }
@@ -31,7 +41,7 @@ impl From<dusk_pki::SecretSpendKey> for SecretKey {
 
 impl From<dusk_pki::ViewKey> for ViewKey {
     fn from(value: dusk_pki::ViewKey) -> Self {
-        crate::ViewKey {
+        ViewKey {
             payload: value.to_bytes().to_vec(),
         }
     }

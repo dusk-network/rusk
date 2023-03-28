@@ -63,7 +63,7 @@ impl GrpcConfig {
                 Arg::new("ipc_method")
                     .long("ipc_method")
                     .value_name("ipc_method")
-                    .possible_values(&["uds", "tcp_ip"])
+                    .possible_values(["uds", "tcp_ip"])
                     .help(
                         "Inter-Process communication protocol you want to use ",
                     )

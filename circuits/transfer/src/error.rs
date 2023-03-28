@@ -6,7 +6,6 @@
 
 use dusk_bytes::Error as BytesError;
 use dusk_plonk::error::Error as PlonkError;
-use dusk_poseidon::Error as PoseidonError;
 use phoenix_core::Error as PhoenixError;
 
 use std::str::ParseBoolError;
@@ -17,7 +16,7 @@ pub enum Error {
     BytesError(BytesError),
     PhoenixError(PhoenixError),
     PlonkError(PlonkError),
-    PoseidonError(PoseidonError),
+    NoSuchBranch,
     ParseBoolError(ParseBoolError),
     Io(io::Error),
     KeysNotFound,
@@ -29,7 +28,7 @@ pub enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -58,12 +57,6 @@ impl From<PhoenixError> for Error {
 impl From<PlonkError> for Error {
     fn from(e: PlonkError) -> Self {
         Self::PlonkError(e)
-    }
-}
-
-impl From<PoseidonError> for Error {
-    fn from(e: PoseidonError) -> Self {
-        Self::PoseidonError(e)
     }
 }
 

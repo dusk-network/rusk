@@ -176,12 +176,22 @@ impl TestStateClient {
 impl StateClient for TestStateClient {
     type Error = ();
 
-    fn fetch_notes(&self, _: &ViewKey) -> Result<Vec<Note>, Self::Error> {
-        Ok(self.notes.clone())
+    fn fetch_notes(
+        &self,
+        _: &ViewKey,
+    ) -> Result<Vec<(Note, u64)>, Self::Error> {
+        Ok(self.notes.iter().map(|note| (note.clone(), 0)).collect())
     }
 
     fn fetch_anchor(&self) -> Result<BlsScalar, Self::Error> {
         Ok(self.anchor)
+    }
+
+    fn fetch_existing_nullifiers(
+        &self,
+        _nullifiers: &[BlsScalar],
+    ) -> Result<Vec<BlsScalar>, Self::Error> {
+        Ok(self.nullifiers.clone())
     }
 
     fn fetch_opening(
@@ -193,13 +203,6 @@ impl StateClient for TestStateClient {
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         unimplemented!();
-    }
-
-    fn fetch_existing_nullifiers(
-        &self,
-        _nullifiers: &[BlsScalar],
-    ) -> Result<Vec<BlsScalar>, Self::Error> {
-        Ok(self.nullifiers.clone())
     }
 }
 

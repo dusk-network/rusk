@@ -9,8 +9,6 @@ use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
 
-use crate::ExecuteCircuit;
-
 #[derive(Debug, Clone)]
 pub struct CircuitOutput {
     note: Note,
@@ -19,12 +17,24 @@ pub struct CircuitOutput {
 }
 
 impl CircuitOutput {
+    // Constant for a pedersen commitment with zero value.
+    //
+    // Calculated as `G^0 · G'^0`
+    pub const ZERO_COMMITMENT: JubJubExtended =
+        JubJubExtended::from_raw_unchecked(
+            BlsScalar::zero(),
+            BlsScalar::one(),
+            BlsScalar::one(),
+            BlsScalar::zero(),
+            BlsScalar::one(),
+        );
+
     /// Zeroed stealth address used for padding
     pub const ZERO_STEALTH_ADDRESS: StealthAddress = {
-        let pk = ExecuteCircuit::ZERO_COMMITMENT;
+        let pk = Self::ZERO_COMMITMENT;
         let pk = PublicKey::from_raw_unchecked(pk);
 
-        let r = ExecuteCircuit::ZERO_COMMITMENT;
+        let r = Self::ZERO_COMMITMENT;
 
         StealthAddress::from_raw_unchecked(r, pk)
     };
@@ -55,7 +65,7 @@ impl CircuitOutput {
         Self::new(note, 0, JubJubScalar::zero())
     }
 
-    pub fn to_witness(&self, composer: &mut TurboComposer) -> WitnessOutput {
+    pub fn to_witness<C: Composer>(&self, composer: &mut C) -> WitnessOutput {
         let value = composer.append_witness(self.value);
         let blinding_factor = composer.append_witness(self.blinding_factor);
         let value_commitment = *self.note.value_commitment();

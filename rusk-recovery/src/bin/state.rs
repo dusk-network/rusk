@@ -8,7 +8,7 @@ mod task;
 mod version;
 
 use clap::Parser;
-use microkelvin::{BackendCtor, DiskBackend, Persistence};
+use piecrust::VM;
 use rusk_recovery_tools::theme::Theme;
 use std::error::Error;
 use std::{env, io};
@@ -50,7 +50,7 @@ struct Cli {
     output: Option<PathBuf>,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::parse();
 
     let config = match args.init {
@@ -96,58 +96,42 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
         clean_state()?;
     }
 
-    let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    let state_id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
 
-    let ctor = &BackendCtor::new(|| {
-        DiskBackend::new(rusk_profile::get_rusk_state_dir()?)
-    });
+    let mut vm = VM::new(&state_dir)?;
+    rusk_abi::register_host_queries(&mut vm);
 
     // if the state already exists in the expected path, stop early.
-    if state_path.exists() && id_path.exists() {
+    if state_dir.exists() && state_id_path.exists() {
         info!("{} existing state", theme.info("Found"));
 
-        // `restore_state` function requires a backend set to the Persistence.
-        //
-        // Usually it's instantiated inside the `deploy` function, but in this
-        // case that function it's not called at all, so there is the need to
-        // explicitly instantiate it.
-        Persistence::with_backend(ctor, |_| Ok(()))?;
-
-        let network = restore_state(&id_path)?;
+        let (_, commit_id) = restore_state(state_dir)?;
         info!(
             "{} state id at {}",
             theme.success("Checked"),
-            id_path.display()
+            state_id_path.display()
         );
-        info!("{} {}", theme.action("Root"), hex::encode(network.root()));
+        info!("{} {}", theme.action("Root"), hex::encode(commit_id));
 
         return Ok(());
     }
 
     info!("{} new state", theme.info("Building"));
 
-    let state_id = deploy(config.init, ctor)?;
+    let (_, commit_id) = deploy(&state_dir, config.init)?;
 
-    info!("{} persisted id", theme.success("Storing"));
-    state_id.write(&id_path)?;
-
-    let network = restore_state(&id_path)?;
-    info!(
-        "{} {}",
-        theme.action("Final Root"),
-        hex::encode(network.root())
-    );
+    info!("{} {}", theme.action("Final Root"), hex::encode(commit_id));
 
     info!(
         "{} network state at {}",
         theme.success("Stored"),
-        state_path.display()
+        state_dir.display()
     );
     info!(
         "{} persisted id at {}",
         theme.success("Stored"),
-        id_path.display()
+        state_id_path.display()
     );
 
     if let Some(output) = config.output_file {
@@ -162,16 +146,8 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
 fn clean_state() -> Result<(), io::Error> {
     let state_path = rusk_profile::get_rusk_state_dir()?;
-    let id_path = rusk_profile::get_rusk_state_id_path()?;
 
     fs::remove_dir_all(state_path).or_else(|e| {
-        if e.kind() == io::ErrorKind::NotFound {
-            Ok(())
-        } else {
-            Err(e)
-        }
-    })?;
-    fs::remove_file(id_path).or_else(|e| {
         if e.kind() == io::ErrorKind::NotFound {
             Ok(())
         } else {

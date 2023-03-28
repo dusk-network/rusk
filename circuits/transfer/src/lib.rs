@@ -7,10 +7,6 @@
 /// Constant depth of the merkle tree that provides the opening proofs.
 pub const POSEIDON_TREE_DEPTH: usize = 17;
 
-/// Label used for the ZK transcript initialization. Must be the same for prover
-/// and verifier.
-pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
-
 mod error;
 mod execute;
 mod gadgets;

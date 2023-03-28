@@ -1,4 +1,4 @@
-SUBDIRS := $(wildcard ./*/.)
+SUBDIRS := alice bob transfer stake governance
 
 help: ## Display this help screen
 	@grep -h \
