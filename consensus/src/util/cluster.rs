@@ -71,7 +71,7 @@ mod tests {
         assert_eq!(a.total_occurrences(), 14);
 
         let res = a.set_weight(&'b', 1);
-        assert!(res == None);
+        assert!(res.is_none());
         assert_eq!(a.total_occurrences(), 14);
     }
 }

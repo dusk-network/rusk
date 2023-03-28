@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
+use crate::contract_state::CallParams;
 use node_data::ledger::{Block, Certificate, Seed};
 
 use crate::config;
@@ -63,7 +64,7 @@ impl<T: Operations> Generator<T> {
         Ok(Message::new_newblock(
             msg_header,
             NewBlock {
-                prev_hash: [0; 32],
+                prev_hash: ru.hash,
                 candidate,
                 signed_hash,
             },
@@ -78,14 +79,23 @@ impl<T: Operations> Generator<T> {
         prev_block_hash: [u8; 32],
         prev_block_timestamp: i64,
     ) -> Result<Block, crate::contract_state::Error> {
-        // TODO: fetch mempool transactions
-
         // Delay next iteration execution so we avoid consensus-split situation.
         tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS))
             .await;
 
-        self.executor.lock().await.execute_state_transition(
-            crate::contract_state::CallParams::default(),
+        let txs = self
+            .executor
+            .lock()
+            .await
+            .get_mempool_txs(config::DEFAULT_BLOCK_GAS_LIMIT)?;
+
+        let result = self.executor.lock().await.execute_state_transition(
+            CallParams {
+                round,
+                txs,
+                block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
+                generator_pubkey: pubkey.clone(),
+            },
         )?;
 
         let blk_header = ledger::Header {
@@ -98,12 +108,12 @@ impl<T: Operations> Generator<T> {
             generator_bls_pubkey: node_data::bls::PublicKeyBytes(
                 *pubkey.bytes(),
             ),
-            state_hash: [0; 32],
+            state_hash: result.state_root,
             hash: [0; 32],
             cert: Certificate::default(),
         };
 
-        Ok(Block::new(blk_header, vec![]).expect("block should be valid"))
+        Ok(Block::new(blk_header, result.txs).expect("block should be valid"))
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {
