@@ -54,6 +54,9 @@ pub trait Network: Send + Sync + 'static {
         msg_type: u8,
         filter: BoxedFilter,
     ) -> anyhow::Result<()>;
+
+    /// Retrieves information about the network.
+    fn get_info(&self) -> anyhow::Result<String>;
 }
 
 /// Service processes specified set of messages and eventually produces a
@@ -113,9 +116,6 @@ impl<N: Network, DB: database::DB> Node<N, DB> {
         &self,
         service_list: Vec<Box<dyn LongLivedService<N, DB>>>,
     ) -> anyhow::Result<()> {
-        // Initialize DataSources
-        // TODO:
-
         // Initialize Rusk instance
         // TODO:
 
