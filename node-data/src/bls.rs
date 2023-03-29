@@ -122,7 +122,7 @@ pub fn load_keys(
 /// Fetches BLS public and secret keys from an encrypted consensus keys file.
 ///
 /// Panics on any error.
-pub fn read_from_file(
+fn read_from_file(
     path: PathBuf,
     pwd: blake3::Hash,
 ) -> (

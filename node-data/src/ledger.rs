@@ -281,8 +281,8 @@ pub mod faker {
     }
 
     impl<T> Dummy<T> for Transaction {
-        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
-            gen_dummy_tx(rng.gen::<u32>() as u64)
+        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, _rng: &mut R) -> Self {
+            gen_dummy_tx(1_000_000)
         }
     }
 

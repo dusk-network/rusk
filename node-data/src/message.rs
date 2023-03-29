@@ -13,6 +13,7 @@ use std::io::{self, Read, Write};
 
 use async_channel::TrySendError;
 
+/// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 8 + 8 + 8 + 4;
 
 pub enum Status {
@@ -68,6 +69,7 @@ impl Serializable for Message {
             Payload::Agreement(p) => p.write(w),
             Payload::AggrAgreement(p) => p.write(w),
             Payload::Block(p) => p.write(w),
+            Payload::Transaction(p) => p.write(w),
             _ => Ok(()), /* non-serializable messages are those which are not
                           * sent on the wire. */
         }
@@ -83,8 +85,10 @@ impl Serializable for Message {
 
         let topic = Topics::from(buf[0]);
         if topic == Topics::Unknown {
-            // TODO: tracing::warn!("unsupported msg topic {}", buf[0]);
-            return Ok(Message::default());
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Unknown topic",
+            ));
         }
 
         // Decode message header only if the topic is supported
@@ -105,6 +109,9 @@ impl Serializable for Message {
                 Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
+            Topics::Tx => {
+                Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
+            }
             _ => Payload::Empty,
         };
 
@@ -339,6 +346,7 @@ pub enum Payload {
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
     Block(Box<ledger::Block>),
+    Transaction(Box<ledger::Transaction>),
 
     #[default]
     Empty,
@@ -553,6 +561,14 @@ pub mod payload {
     }
 }
 
+macro_rules! map_topic {
+    ($v:expr, $enum_v:expr) => {
+        if $v == $enum_v as u8 {
+            return $enum_v;
+        }
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub enum Topics {
     // Data exchange topics.
@@ -576,31 +592,27 @@ pub enum Topics {
     Unknown = 255,
 }
 
-impl From<Topics> for u8 {
-    fn from(t: Topics) -> Self {
-        t as u8
+impl From<u8> for Topics {
+    fn from(v: u8) -> Self {
+        map_topic!(v, Topics::GetData);
+        map_topic!(v, Topics::GetBlocks);
+        map_topic!(v, Topics::Tx);
+        map_topic!(v, Topics::Block);
+        map_topic!(v, Topics::MemPool);
+        map_topic!(v, Topics::Inv);
+        map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::NewBlock);
+        map_topic!(v, Topics::Reduction);
+        map_topic!(v, Topics::Agreement);
+        map_topic!(v, Topics::AggrAgreement);
+
+        Topics::Unknown
     }
 }
 
-impl From<u8> for Topics {
-    fn from(v: u8) -> Self {
-        if v == Topics::NewBlock as u8 {
-            return Topics::NewBlock;
-        }
-
-        if v == Topics::Reduction as u8 {
-            return Topics::Reduction;
-        }
-
-        if v == Topics::Agreement as u8 {
-            return Topics::Agreement;
-        }
-
-        if v == Topics::AggrAgreement as u8 {
-            return Topics::AggrAgreement;
-        }
-
-        Topics::Unknown
+impl From<Topics> for u8 {
+    fn from(t: Topics) -> Self {
+        t as u8
     }
 }
 
