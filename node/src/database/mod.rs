@@ -47,6 +47,13 @@ pub trait Ledger {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()>;
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
+
+    fn get_ledger_tx_by_hash(
+        &self,
+        tx_hash: &[u8],
+    ) -> Result<Option<ledger::Transaction>>;
+
+    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> bool;
 }
 
 pub trait Candidate {
@@ -61,18 +68,20 @@ pub trait Candidate {
 
 pub trait Mempool {
     fn add_tx(&self, tx: &ledger::Transaction) -> Result<()>;
-    fn get_tx(&self, h: [u8; 32]) -> Result<Option<ledger::Transaction>>;
-    fn get_tx_exists(&self, h: [u8; 32]) -> bool;
-    fn delete_tx(&self, h: [u8; 32]) -> Result<bool>;
+    fn get_tx(&self, tx_hash: [u8; 32]) -> Result<Option<ledger::Transaction>>;
+
+    /// Checks if a transaction exists in the mempool.
+    fn get_tx_exists(&self, tx_hash: [u8; 32]) -> bool;
+    fn delete_tx(&self, tx_hash: [u8; 32]) -> Result<bool>;
 
     fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool;
     fn get_txs_sorted_by_fee(
         &self,
         max_gas_limit: u64,
-    ) -> Result<Vec<Option<ledger::Transaction>>>;
+    ) -> Result<Vec<ledger::Transaction>>;
 }
 
-pub trait Persist: Ledger + Candidate + core::fmt::Debug {
+pub trait Persist: Ledger + Candidate + Mempool + core::fmt::Debug {
     // Candidate block functions
 
     fn clear_database(&self) -> Result<()>;

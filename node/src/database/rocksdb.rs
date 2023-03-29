@@ -36,6 +36,7 @@ enum TxType {
 }
 
 const CF_LEDGER: &str = "cf_ledger";
+const CF_LEDGER_TXS: &str = "cf_ledger_txs";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
@@ -64,6 +65,11 @@ impl Backend {
             .cf_handle(CF_LEDGER)
             .expect("ledger column family must exist");
 
+        let ledger_txs_cf = self
+            .rocksdb
+            .cf_handle(CF_LEDGER_TXS)
+            .expect("CF_LEDGER_TXS column family must exist");
+
         let candidates_cf = self
             .rocksdb
             .cf_handle(CF_CANDIDATES)
@@ -91,6 +97,7 @@ impl Backend {
             access_type,
             candidates_cf,
             ledger_cf,
+            ledger_txs_cf,
             mempool_cf,
             nullifiers_cf,
             fees_cf,
@@ -128,6 +135,7 @@ impl DB for Backend {
 
         let cfs = vec![
             ColumnFamilyDescriptor::new(CF_LEDGER, Options::default()),
+            ColumnFamilyDescriptor::new(CF_LEDGER_TXS, Options::default()),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
@@ -183,6 +191,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 
     candidates_cf: &'db ColumnFamily,
     ledger_cf: &'db ColumnFamily,
+    ledger_txs_cf: &'db ColumnFamily,
     mempool_cf: &'db ColumnFamily,
     nullifiers_cf: &'db ColumnFamily,
     fees_cf: &'db ColumnFamily,
@@ -195,6 +204,13 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         let mut serialized = vec![];
         b.write(&mut serialized)?;
 
+        // store all block transactions in a separate column family
+        for tx in &b.txs {
+            let mut d = vec![];
+            tx.write(&mut d)?;
+            self.inner.put_cf(self.ledger_txs_cf, tx.hash(), d)?;
+        }
+
         self.inner
             .put_cf(self.ledger_cf, b.header.hash, serialized)?;
 
@@ -202,6 +218,10 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()> {
+        for tx in &b.txs {
+            self.inner.delete_cf(self.ledger_txs_cf, tx.hash())?;
+        }
+
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
 
@@ -216,6 +236,33 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         // Block not found
         Ok(None)
+    }
+
+    fn get_ledger_tx_by_hash(
+        &self,
+        tx_hash: &[u8],
+    ) -> Result<Option<ledger::Transaction>> {
+        if let Some(blob) = self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)? {
+            let b = ledger::Transaction::read(&mut &blob[..])?;
+            return Ok(Some(b));
+        }
+
+        // Tx not found
+        Ok(None)
+    }
+
+    /// Returns true if the transaction exists in the
+    /// ledger
+    ///
+    /// This is a convenience method that checks if a transaction exists in the
+    /// ledger without unmarshalling the transaction
+    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> bool {
+        let result = self.snapshot.get_cf(self.ledger_txs_cf, tx_hash);
+
+        match result {
+            Ok(r) => r.is_some(),
+            _ => false,
+        }
     }
 }
 
@@ -325,8 +372,12 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 
     fn get_tx_exists(&self, h: [u8; 32]) -> bool {
-        // Check for hash if exists without deserializing
-        self.snapshot.get_cf(self.mempool_cf, h).is_ok()
+        let result = self.snapshot.get_cf(self.mempool_cf, h);
+
+        match result {
+            Ok(r) => r.is_some(),
+            _ => false,
+        }
     }
 
     fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
@@ -356,15 +407,19 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 
     fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool {
-        nullifiers
-            .into_iter()
-            .all(|n| self.snapshot.get_cf(self.nullifiers_cf, n).is_ok())
+        nullifiers.into_iter().all(|n| {
+            let r = self.snapshot.get_cf(self.nullifiers_cf, n);
+            match r {
+                Ok(r) => r.is_some(),
+                _ => false,
+            }
+        })
     }
 
     fn get_txs_sorted_by_fee(
         &self,
         max_gas_limit: u64,
-    ) -> Result<Vec<Option<ledger::Transaction>>> {
+    ) -> Result<Vec<ledger::Transaction>> {
         // The slippageGasLimit is the threshold that consider the "estimated
         // gas spent" acceptable even if it exceeds the strict GasLimit.
         // This is required to avoid to iterate the whole mempool until
@@ -397,7 +452,9 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                         break;
                     }
 
-                    txs_list.push(Some(tx));
+                    txs_list.push(tx);
+                } else {
+                    tracing::error!("get_txs_sorted_by_fee tx: not found");
                 }
             }
 
@@ -587,7 +644,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_tx() {
+    fn test_add_mempool_tx() {
         let t = TestWrapper {
             path: "test_add_tx",
         };
@@ -598,11 +655,11 @@ mod tests {
 
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
 
-            db.view(|txn| {
-                assert!(txn.get_tx_exists(t.hash()));
+            db.view(|vq| {
+                assert!(vq.get_tx_exists(t.hash()));
 
                 let fetched_tx =
-                    txn.get_tx(t.hash()).expect("valid contract call").unwrap();
+                    vq.get_tx(t.hash()).expect("valid contract call").unwrap();
 
                 assert_eq!(
                     fetched_tx.hash(),
@@ -621,9 +678,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tx_sorted_by_fee() {
+    fn test_mempool_txs_sorted_by_fee() {
         let t = TestWrapper {
-            path: "test_tx_sorted_by_fee",
+            path: "test_mempool_txs_sorted_by_fee",
         };
 
         t.run(|path| {
@@ -648,7 +705,7 @@ mod tests {
                 assert!(!txs.is_empty());
                 let mut last_fee = u64::MAX;
                 for t in txs {
-                    let fee = t.expect("valid tx").gas_price();
+                    let fee = t.gas_price();
                     assert!(
                         fee <= last_fee,
                         "tx fees are not in decreasing order"
@@ -684,6 +741,41 @@ mod tests {
                     .expect("should return all txs");
 
                 assert_eq!(txs.len(), 3);
+                Ok(())
+            });
+        });
+    }
+
+    #[test]
+    fn test_get_ledger_tx_by_hash() {
+        let t = TestWrapper {
+            path: "test_get_ledger_tx_by_hash",
+        };
+
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            let mut b: ledger::Block = Faker.fake();
+            assert!(b.txs.len() > 0);
+
+            // Store a block
+            assert!(db
+                .update(|txn| {
+                    txn.store_block(&b, false)?;
+                    Ok(())
+                })
+                .is_ok());
+
+            // Assert all transactions of the accepted (stored) block are
+            // accessible by hash.
+            db.view(|v| {
+                for t in b.txs.iter() {
+                    assert!(v
+                        .get_ledger_tx_by_hash(&t.hash())
+                        .expect("should not return error")
+                        .expect("should find a transaction")
+                        .eq(&t));
+                }
+
                 Ok(())
             });
         });
