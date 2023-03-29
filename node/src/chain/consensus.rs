@@ -4,9 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{Candidate, Ledger};
+use crate::chain::genesis::DUSK;
+use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, Network};
 use crate::{LongLivedService, Message};
+use anyhow::bail;
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
@@ -14,15 +16,15 @@ use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{Block, Hash};
+use node_data::ledger::{Block, Hash, Transaction};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 
-use std::any;
 use std::sync::Arc;
+use std::{any, vec};
 
 /// Consensus Service Task is responsible for running the consensus layer.
 ///
@@ -81,7 +83,7 @@ impl Task {
             self.outbound.clone(),
             self.agreement_inbound.clone(),
             self.outbound.clone(),
-            Arc::new(Mutex::new(Executor {})),
+            Arc::new(Mutex::new(Executor::new(db))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
         );
 
@@ -156,8 +158,17 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
 }
 
 /// Implements Executor trait to mock Contract Storage calls.
-pub struct Executor {}
-impl Operations for Executor {
+pub struct Executor<DB: database::DB> {
+    db: Arc<RwLock<DB>>,
+}
+
+impl<DB: database::DB> Executor<DB> {
+    fn new(db: &Arc<RwLock<DB>>) -> Self {
+        Executor { db: db.clone() }
+    }
+}
+
+impl<DB: database::DB> Operations for Executor<DB> {
     fn verify_state_transition(
         &self,
         _params: CallParams,
@@ -168,10 +179,17 @@ impl Operations for Executor {
 
     fn execute_state_transition(
         &self,
-        _params: CallParams,
+        params: CallParams,
     ) -> Result<Output, Error> {
         tracing::info!("executing state transition");
-        Ok(Output::default())
+
+        // For now we just return the transactions that were passed to us.
+        // Later we will need to actually execute the transactions and return proper results.
+        Ok(Output {
+            txs: params.txs,
+            state_root: [0; 32],
+            provisioners: Provisioners::default(),
+        })
     }
 
     fn accept(&self, _params: CallParams) -> Result<Output, Error> {
@@ -186,5 +204,27 @@ impl Operations for Executor {
 
     fn get_state_root(&self) -> Result<StateRoot, Error> {
         Ok([0; 32])
+    }
+
+    fn get_mempool_txs(
+        &self,
+        block_gas_limit: u64,
+    ) -> Result<Vec<Transaction>, Error> {
+        let db = self.db.try_read().map_err(|e| {
+            tracing::error!("failed to try_read mempool: {}", e);
+            Error::Failed
+        })?;
+
+        let mut txs = vec![];
+        db.view(|v| {
+            txs = v.get_txs_sorted_by_fee(block_gas_limit)?;
+            Ok(())
+        })
+        .map_err(|err| {
+            tracing::error!("failed to get mempool txs: {}", err);
+            Error::Failed
+        });
+
+        Ok(txs)
     }
 }
