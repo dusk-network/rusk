@@ -26,3 +26,5 @@ pub const ACCUMULATOR_QUEUE_CAP: usize = 100;
 
 /// Enables aggregated agreements messaging in Agreement loop.
 pub const ENABLE_AGGR_AGREEMENT: bool = true;
+
+pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;

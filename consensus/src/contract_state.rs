@@ -17,25 +17,29 @@ pub enum Error {
 #[allow(unused)]
 #[derive(Default)]
 pub struct CallParams {
-    round: u64,
-    txs: Vec<Transaction>,
-    block_gas_limit: u64,
-    generator_pubkey: node_data::bls::PublicKey,
+    pub round: u64,
+    pub txs: Vec<Transaction>,
+    pub block_gas_limit: u64,
+    pub generator_pubkey: node_data::bls::PublicKey,
 }
 
 #[allow(unused)]
 #[derive(Default)]
 pub struct Output {
-    txs: Vec<Transaction>,
-    state_root: StateRoot,
-    provisioners: Provisioners,
+    pub txs: Vec<Transaction>,
+    pub state_root: StateRoot,
+    pub provisioners: Provisioners,
 }
-
-pub trait Operations: Send {
+pub trait Operations: Send + Sync {
     fn verify_state_transition(
         &self,
         params: CallParams,
     ) -> Result<StateRoot, Error>;
+
+    fn get_mempool_txs(
+        &self,
+        block_gas_limit: u64,
+    ) -> Result<Vec<Transaction>, Error>;
 
     fn execute_state_transition(
         &self,

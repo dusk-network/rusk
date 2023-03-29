@@ -12,6 +12,7 @@ use node_data::ledger::*;
 
 /// Implements Executor trait to mock Contract Storage calls.
 pub struct Executor {}
+
 impl Operations for Executor {
     fn verify_state_transition(
         &self,
@@ -37,6 +38,13 @@ impl Operations for Executor {
 
     fn get_state_root(&self) -> Result<StateRoot, Error> {
         Ok([0; 32])
+    }
+
+    fn get_mempool_txs(
+        &self,
+        _block_gas_limit: u64,
+    ) -> Result<Vec<Transaction>, Error> {
+        Ok(vec![])
     }
 }
 
