@@ -67,14 +67,22 @@ pub trait Candidate {
 }
 
 pub trait Mempool {
+    /// Adds a transaction to the mempool.
     fn add_tx(&self, tx: &ledger::Transaction) -> Result<()>;
+
+    /// Gets a transaction from the mempool.
     fn get_tx(&self, tx_hash: [u8; 32]) -> Result<Option<ledger::Transaction>>;
 
     /// Checks if a transaction exists in the mempool.
     fn get_tx_exists(&self, tx_hash: [u8; 32]) -> bool;
+
+    /// Deletes a transaction from the mempool.
     fn delete_tx(&self, tx_hash: [u8; 32]) -> Result<bool>;
 
+    /// Checks if any of the passed nullifiers exists in the mempool.
     fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool;
+
+    /// Get all or subset of mempool transactions sorted by fee limited by max_gas_limit.
     fn get_txs_sorted_by_fee(
         &self,
         max_gas_limit: u64,
