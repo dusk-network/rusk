@@ -184,7 +184,8 @@ impl<DB: database::DB> Operations for Executor<DB> {
         tracing::info!("executing state transition");
 
         // For now we just return the transactions that were passed to us.
-        // Later we will need to actually execute the transactions and return proper results.
+        // Later we will need to actually execute the transactions and return
+        // proper results.
         Ok(Output {
             txs: params.txs,
             state_root: [0; 32],
@@ -216,8 +217,11 @@ impl<DB: database::DB> Operations for Executor<DB> {
         })?;
 
         let mut txs = vec![];
-        db.view(|v| {
-            txs = v.get_txs_sorted_by_fee(block_gas_limit)?;
+        db.view(|view| {
+            txs = database::Mempool::get_txs_sorted_by_fee(
+                &view,
+                block_gas_limit,
+            )?;
             Ok(())
         })
         .map_err(|err| {

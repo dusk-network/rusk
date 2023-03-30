@@ -120,7 +120,7 @@ impl MempoolSrv {
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
             // ensure transaction does not exist in the mempool
-            if view.get_tx_exists(hash) {
+            if Mempool::get_tx_exists(&view, hash) {
                 return Err(anyhow!(TxAcceptanceError::AlreadyExistsInMempool));
             }
 
@@ -132,14 +132,14 @@ impl MempoolSrv {
                 .collect();
 
             // ensure nullifiers do not exist in the mempool
-            if view.get_any_nullifier_exists(nullifiers) {
+            if Mempool::get_any_nullifier_exists(&view, nullifiers) {
                 return Err(anyhow!(
                     TxAcceptanceError::NullifierExistsInMempool
                 ));
             }
 
             // ensure transaction does not exist in the blockchain
-            if view.get_ledger_tx_exists(&hash) {
+            if Ledger::get_ledger_tx_exists(&view, &hash) {
                 return Err(anyhow!(TxAcceptanceError::AlreadyExistsInLedger));
             }
 
@@ -154,7 +154,9 @@ impl MempoolSrv {
         tracing::debug!("accepted transaction {:?}", hex::encode(hash));
 
         // Add transaction to the mempool
-        db.read().await.update(|u| u.add_tx(tx))?;
+        db.read()
+            .await
+            .update(|update| Mempool::add_tx(update, tx))?;
 
         Ok(())
     }

@@ -178,9 +178,9 @@ impl ChainSrv {
         self.most_recent_block = blk.clone();
 
         // Delete from mempool any transaction already included in the block
-        db.read().await.update(|u| {
+        db.read().await.update(|update| {
             for tx in blk.txs.iter() {
-                u.delete_tx(tx.hash());
+                database::Mempool::delete_tx(update, tx.hash());
             }
             Ok(())
         })?;

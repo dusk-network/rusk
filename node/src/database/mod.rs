@@ -82,7 +82,8 @@ pub trait Mempool {
     /// Checks if any of the passed nullifiers exists in the mempool.
     fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool;
 
-    /// Get all or subset of mempool transactions sorted by fee limited by max_gas_limit.
+    /// Get all or subset of mempool transactions sorted by fee limited by
+    /// max_gas_limit.
     fn get_txs_sorted_by_fee(
         &self,
         max_gas_limit: u64,
