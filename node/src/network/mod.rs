@@ -27,19 +27,13 @@ pub struct Listener<const N: usize> {
 }
 
 impl<const N: usize> Listener<N> {
-    fn reroute(
-        &self,
-        topic: impl Into<u8>,
-        msg: Message,
-    ) -> anyhow::Result<()> {
-        let topic = topic.into() as usize;
-
-        _ = match self.routes.try_read()?.get(topic) {
-            Some(Some(r)) => r.try_send(msg),
-            _ => Ok(()),
-        };
-
-        Ok(())
+    fn reroute(&self, topic: u8, msg: Message) -> anyhow::Result<()> {
+        match self.routes.try_read()?.get(topic as usize) {
+            Some(Some(queue)) => queue.try_send(msg).map_err(|e| e.into()),
+            _ => {
+                anyhow::bail!("route not registered for {:?} topic", topic)
+            }
+        }
     }
 
     fn call_filters(
@@ -69,23 +63,22 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 });
 
                 // Allow upper layers to fast-discard a message before queueing
-                if let Err(e) = self.call_filters(0, &msg) {
+                if let Err(e) = self.call_filters(msg.topic(), &msg) {
                     tracing::info!("discard message due to {:?}", e);
                     return;
                 }
 
                 // Reroute message to the upper layer
-                if let Err(e) = self.reroute(msg.topic(), msg) {
+                if let Err(e) = self.reroute(msg.topic().into(), msg) {
                     tracing::error!("could not reroute due to {:?}", e);
                 }
             }
             Err(err) => {
                 // Dump message blob and topic number
                 tracing::error!(
-                    "err: {:?}, msg_topic: {:?} msg_blob: {:?}",
+                    "err: {:?}, msg_topic: {:?}",
                     err,
                     blob.get(node_data::message::TOPIC_FIELD_POS),
-                    blob
                 );
             }
         };
@@ -96,6 +89,7 @@ pub struct Kadcast<const N: usize> {
     peer: Peer,
     routes: Arc<RwLock<RoutesList<N>>>,
     filters: Arc<RwLock<FilterList<N>>>,
+    conf: Config,
 }
 
 impl<const N: usize> Kadcast<N> {
@@ -109,7 +103,9 @@ impl<const N: usize> Kadcast<N> {
         Kadcast {
             routes: routes.clone(),
             filters: filters.clone(),
-            peer: Peer::new(conf, Listener { routes, filters }).unwrap(),
+            peer: Peer::new(conf.clone(), Listener { routes, filters })
+                .unwrap(),
+            conf,
         }
     }
 }
@@ -190,5 +186,9 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         *filter = Some(filter_fn);
 
         Ok(())
+    }
+
+    fn get_info(&self) -> anyhow::Result<String> {
+        Ok(self.conf.public_address.to_string())
     }
 }

@@ -7,7 +7,7 @@
 mod consensus;
 mod genesis;
 
-use crate::database::{Candidate, Ledger};
+use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, Network};
 use crate::{LongLivedService, Message};
 use async_trait::async_trait;
@@ -170,22 +170,27 @@ impl ChainSrv {
         // Reset Consensus
         self.upper.abort();
 
+        // TODO: Ensure block is valid
+        // TODO: Call ExecuteStateTransition
+
         // Persist block
         db.read().await.update(|t| t.store_block(blk, true))?;
         self.most_recent_block = blk.clone();
 
-        tracing::info!(
-            "block accepted height:{} hash:{}",
-            blk.header.height,
-            hex::encode(blk.header.hash)
-        );
-
-        /*  Uncomment to dump DB
-        db.read().await.view(|t| {
-            println!("{:#?}", t);
+        // Delete from mempool any transaction already included in the block
+        db.read().await.update(|update| {
+            for tx in blk.txs.iter() {
+                database::Mempool::delete_tx(update, tx.hash());
+            }
             Ok(())
-        });
-        */
+        })?;
+
+        tracing::info!(
+            "block accepted height:{} hash:{} txs_count: {}",
+            blk.header.height,
+            hex::encode(blk.header.hash),
+            blk.txs.len(),
+        );
 
         // Restart Consensus.
         // NB. This will be moved out of accept_block when Synchronizer is
