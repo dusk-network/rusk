@@ -120,7 +120,7 @@ impl MempoolSrv {
         // Perform basic checks on the transaction
         db.read().await.view(|view| {
             // ensure transaction does not exist in the mempool
-            if Mempool::get_tx_exists(&view, hash) {
+            if Mempool::get_tx_exists(&view, hash)? {
                 return Err(anyhow!(TxAcceptanceError::AlreadyExistsInMempool));
             }
 
@@ -139,7 +139,7 @@ impl MempoolSrv {
             }
 
             // ensure transaction does not exist in the blockchain
-            if Ledger::get_ledger_tx_exists(&view, &hash) {
+            if Ledger::get_ledger_tx_exists(&view, &hash)? {
                 return Err(anyhow!(TxAcceptanceError::AlreadyExistsInLedger));
             }
 

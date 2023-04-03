@@ -53,7 +53,7 @@ pub trait Ledger {
         tx_hash: &[u8],
     ) -> Result<Option<ledger::Transaction>>;
 
-    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> bool;
+    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
 }
 
 pub trait Candidate {
@@ -74,7 +74,7 @@ pub trait Mempool {
     fn get_tx(&self, tx_hash: [u8; 32]) -> Result<Option<ledger::Transaction>>;
 
     /// Checks if a transaction exists in the mempool.
-    fn get_tx_exists(&self, tx_hash: [u8; 32]) -> bool;
+    fn get_tx_exists(&self, tx_hash: [u8; 32]) -> Result<bool>;
 
     /// Deletes a transaction from the mempool.
     fn delete_tx(&self, tx_hash: [u8; 32]) -> Result<bool>;

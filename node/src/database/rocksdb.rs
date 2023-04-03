@@ -242,13 +242,13 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         &self,
         tx_hash: &[u8],
     ) -> Result<Option<ledger::Transaction>> {
-        if let Some(blob) = self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)? {
-            let b = ledger::Transaction::read(&mut &blob[..])?;
-            return Ok(Some(b));
-        }
+        let tx = self
+            .snapshot
+            .get_cf(self.ledger_txs_cf, tx_hash)?
+            .map(|blob| ledger::Transaction::read(&mut &blob[..]))
+            .transpose()?;
 
-        // Tx not found
-        Ok(None)
+        Ok(tx)
     }
 
     /// Returns true if the transaction exists in the
@@ -256,13 +256,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     ///
     /// This is a convenience method that checks if a transaction exists in the
     /// ledger without unmarshalling the transaction
-    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> bool {
-        let result = self.snapshot.get_cf(self.ledger_txs_cf, tx_hash);
-
-        match result {
-            Ok(r) => r.is_some(),
-            _ => false,
-        }
+    fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool> {
+        Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)?.is_some())
     }
 }
 
@@ -371,13 +366,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         }
     }
 
-    fn get_tx_exists(&self, h: [u8; 32]) -> bool {
-        let result = self.snapshot.get_cf(self.mempool_cf, h);
-
-        match result {
-            Ok(r) => r.is_some(),
-            _ => false,
-        }
+    fn get_tx_exists(&self, h: [u8; 32]) -> Result<bool> {
+        Ok(self.snapshot.get_cf(self.mempool_cf, h)?.is_some())
     }
 
     fn delete_tx(&self, h: [u8; 32]) -> Result<bool> {
@@ -407,7 +397,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     }
 
     fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool {
-        nullifiers.into_iter().all(|n| {
+        nullifiers.into_iter().any(|n| {
             let r = self.snapshot.get_cf(self.nullifiers_cf, n);
             match r {
                 Ok(r) => r.is_some(),
@@ -656,7 +646,7 @@ mod tests {
             assert!(db.update(|txn| { txn.add_tx(&t) }).is_ok());
 
             db.view(|vq| {
-                assert!(vq.get_tx_exists(t.hash()));
+                assert!(Mempool::get_tx_exists(&vq, t.hash()).unwrap());
 
                 let fetched_tx =
                     vq.get_tx(t.hash()).expect("valid contract call").unwrap();
