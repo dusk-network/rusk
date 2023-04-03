@@ -10,6 +10,11 @@ mod genesis;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, Network};
 use crate::{LongLivedService, Message};
+use anyhow::{anyhow, bail, Result};
+
+use dusk_consensus::user::committee::CommitteeSet;
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
@@ -17,7 +22,7 @@ use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{Block, Hash};
+use node_data::ledger::{self, Block, Hash, Header};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -25,7 +30,6 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 
 use std::any;
-use std::sync::Arc;
 
 use self::consensus::Task;
 
@@ -83,7 +87,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                         match res {
                             Ok(blk) => {
                                 if let Err(e) = self.accept_block::<DB>( &db, &blk).await {
-                                    tracing::error!("failed to accept block: {}", e);
+                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
                                 } else {
                                     network.read().await.
                                         broadcast(&Message::new_with_block(Box::new(blk))).await;
@@ -102,7 +106,8 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                         match &msg.payload {
                             Payload::Block(b) => {
                                 if let Err(e) = self.accept_block::<DB>(&db, b).await {
-                                    tracing::error!("failed to accept block: {}", e);
+                                    let blk = std::ops::Deref::deref(&b);
+                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
                                 } else {
                                     network.read().await.broadcast(&msg).await;
                                 }
@@ -167,11 +172,11 @@ impl ChainSrv {
         db: &Arc<RwLock<DB>>,
         blk: &Block,
     ) -> anyhow::Result<()> {
+        // Full block verification should pass before any state updates
+        self.verify_block(&self.most_recent_block, &blk, db).await?;
+
         // Reset Consensus
         self.upper.abort();
-
-        // TODO: Ensure block is valid
-        // TODO: Call ExecuteStateTransition
 
         // Persist block
         db.read().await.update(|t| t.store_block(blk, true))?;
@@ -200,6 +205,125 @@ impl ChainSrv {
             &self.eligible_provisioners,
             db,
         );
+
+        Ok(())
+    }
+
+    async fn verify_block<DB: database::DB>(
+        &self,
+        prev_block: &ledger::Block,
+        blk: &ledger::Block,
+        db: &Arc<RwLock<DB>>,
+    ) -> anyhow::Result<()> {
+        let hash = blk.header.hash;
+
+        // Ensure block is not already in the ledger
+        db.read().await.view(|view| {
+            // TODO: Impl fetch block exists without deserializing
+            match Ledger::fetch_block(&view, &hash) {
+                Ok(Some(_)) => return Err(anyhow!("block already exists")),
+                _ => Ok(()),
+            }
+        })?;
+
+        // Verify Block Header
+        self.verify_block_header(&prev_block.header, &blk.header)
+            .await?;
+
+        //TODO: Add global component that mocks implementation of this
+        // ExecuteStateTransition
+
+        Ok(())
+    }
+
+    async fn verify_block_header(
+        &self,
+        prev_block_header: &ledger::Header,
+        blk_header: &ledger::Header,
+    ) -> anyhow::Result<()> {
+        if blk_header.version > 0 {
+            return Err(anyhow!("unsupported block version"));
+        }
+
+        if blk_header.height != prev_block_header.height + 1 {
+            return Err(anyhow!("invalid block height"));
+        }
+
+        if blk_header.prev_block_hash != prev_block_header.hash {
+            return Err(anyhow!("invalid previous block hash"));
+        }
+
+        if blk_header.timestamp <= prev_block_header.timestamp {
+            return Err(anyhow!("invalid block timestamp"));
+        }
+
+        // TODO: Add check point for MaxBlockTime
+
+        // Verify Certificate
+        // NB: Genesis block has no certificate
+        if blk_header.height > 0 {
+            return self
+                .verify_block_cert(
+                    blk_header.hash,
+                    blk_header.height,
+                    &blk_header.seed,
+                    &blk_header.cert,
+                )
+                .await;
+        }
+
+        Ok(())
+    }
+
+    async fn verify_block_cert(
+        &self,
+        block_hash: [u8; 32],
+        height: u64,
+        seed: &ledger::Seed,
+        cert: &ledger::Certificate,
+    ) -> anyhow::Result<()> {
+        let (_, public_key) = &self.upper.keys;
+
+        let committee = Arc::new(Mutex::new(CommitteeSet::new(
+            public_key.clone(),
+            self.eligible_provisioners.clone(),
+        )));
+
+        let hdr = node_data::message::Header {
+            topic: 0,
+            pubkey_bls: public_key.clone(),
+            round: height,
+            step: cert.step,
+            block_hash,
+        };
+
+        // Verify first reduction
+        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+            &cert.first_reduction,
+            &committee,
+            *seed,
+            &hdr,
+            0,
+        )
+        .await
+        {
+            tracing::error!("{:#?}", e);
+            return bail!("invalid signature first reduction");
+        }
+
+        // Verify second reduction
+        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+            &cert.second_reduction,
+            &committee,
+            *seed,
+            &hdr,
+            1,
+        )
+        .await
+        {
+            tracing::error!("second red: {:#?}", e);
+            return bail!("invalid signature second reduction");
+        }
 
         Ok(())
     }

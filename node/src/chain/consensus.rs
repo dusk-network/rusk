@@ -42,7 +42,7 @@ pub(crate) struct Task {
     task_id: u64,
 
     /// Loaded Consensus keys
-    keys: (dusk_bls12_381_sign::SecretKey, node_data::bls::PublicKey),
+    pub keys: (dusk_bls12_381_sign::SecretKey, node_data::bls::PublicKey),
 }
 
 impl Task {
