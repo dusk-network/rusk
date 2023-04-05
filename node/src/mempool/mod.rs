@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::database::{Ledger, Mempool};
-use crate::{database, LongLivedService, Message, Network};
+use crate::{database, vm, LongLivedService, Message, Network};
 use anyhow::{anyhow, bail};
 use async_trait::async_trait;
 use dusk_bytes::Serializable;
@@ -63,13 +63,16 @@ impl crate::Filter for TxFilter {
 }
 
 #[async_trait]
-impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution>
+    LongLivedService<N, DB, VM> for MempoolSrv
+{
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
-        LongLivedService::<N, DB>::add_routes(
+        LongLivedService::<N, DB, VM>::add_routes(
             self,
             TOPICS,
             self.inbound.clone(),
@@ -79,7 +82,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 
         // Add a filter that will discard any transactions invalid to the actual
         // mempool, blockchain state.
-        LongLivedService::<N, DB>::add_filter(
+        LongLivedService::<N, DB, VM>::add_filter(
             self,
             Topics::Tx.into(),
             Box::new(TxFilter {}),
@@ -91,7 +94,9 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
             if let Ok(msg) = self.inbound.recv().await {
                 match &msg.payload {
                     Payload::Transaction(tx) => {
-                        if let Err(e) = self.accept_tx::<DB>(&db, tx).await {
+                        if let Err(e) =
+                            self.accept_tx::<DB, VM>(&db, &vm, tx).await
+                        {
                             tracing::error!("{}", e);
                         } else {
                             network.read().await.broadcast(&msg).await;
@@ -110,9 +115,10 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 }
 
 impl MempoolSrv {
-    async fn accept_tx<DB: database::DB>(
+    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
     ) -> anyhow::Result<()> {
         let hash = tx.hash();
@@ -146,10 +152,8 @@ impl MempoolSrv {
             Ok(())
         })?;
 
-        // TODO: Preverify call
-        if false {
-            return Err(anyhow!(TxAcceptanceError::VerificationFailed));
-        }
+        // Preverify call
+        vm.read().await.preverify(tx)?;
 
         tracing::debug!("accepted transaction {:?}", hex::encode(hash));
 
