@@ -11,7 +11,7 @@ use node_data::bls::PublicKey;
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
 
-pub const DUSK: u64 = 100_000_000;
+pub const DUSK: u64 = 1_000_000_000;
 
 #[derive(Clone, Debug)]
 #[allow(unused)]
