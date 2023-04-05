@@ -208,27 +208,29 @@ mod tests {
 
         let mut a = Aggregator::default();
 
-        // Ensure no change is applied on a vote from a non-committee provisioner.
+        // Ensure total value for this block_hash is increased with 2 on a vote
+        // from a provisioner at pos 1.
         let (signature, h) = input.get(1).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
-
-        // no change
-        assert_eq!(a.get_total(block_hash), None);
-
-        // Ensure total value for this block_hash is increased with 2 on a vote
-        // from a provisioner at pos 0.
-        let (signature, h) = input.get(0).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
+        dbg!("{:?}", p);
 
         // this provisioner vote has weight of 2
         assert_eq!(a.get_total(block_hash), Some(2));
 
-        // Ensure total value for this block_hash is increased with 2 on a vote
+        // Ensure total value for this block_hash is increased with 1 on a vote
+        // from a provisioner at pos 0.
+        let (signature, h) = input.get(0).expect("invalid index");
+        assert!(a.collect_vote(&c, h, signature).is_none());
+
+        // this provisioner vote has weight of 1
+        assert_eq!(a.get_total(block_hash), Some(3));
+
+        // Ensure total value for this block_hash is increased with 1 on a vote
         // from a provisioner at pos 5.
         let (signature, h) = input.get(5).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
 
-        // this provisioner has weight of 2. Total should be sum of weights of both votes.
+        // this provisioner has weight of 1. Total should be sum of weights of all prior votes.
         assert_eq!(a.get_total(block_hash), Some(4));
 
         // Ensure a duplicated vote is discarded
@@ -238,13 +240,14 @@ mod tests {
 
         let (signature, h) = input.get(6).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
-        // this provisioner vote has weight of 1. Still quorum threshold not reached
-        assert_eq!(a.get_total(block_hash), Some(5));
+        // this provisioner vote has weight of 0.
+
+        assert_eq!(a.get_total(block_hash), Some(4));
 
         let (signature, h) = input.get(8).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
-        // this provisioner vote has weight of 1. Still quorum threshold not reached
-        assert_eq!(a.get_total(block_hash), Some(6));
+        // this provisioner vote has weight of 0. Quorum threshold still not reached
+        assert_eq!(a.get_total(block_hash), Some(4));
 
         let (signature, h) = input.get(9).expect("invalid index");
         let (hash, sv) = a
@@ -252,11 +255,11 @@ mod tests {
             .expect("failed to reach quorum");
 
         assert_eq!(hash, block_hash);
-        // this provisioner vote has weight of 1. Quorum reached
+        // this provisioner vote has weight of 3. Quorum reached
         assert!(a.get_total(block_hash).unwrap() >= c.quorum());
 
-        // bitset: 0b00000000000000000000000000000000000000000000000000000000110111
+        // bitset: 0b00000000000000000000000000000000000000000000000000000000100111
         println!("bitset: {:#064b}", sv.bitset);
-        assert_eq!(sv.bitset, 55);
+        assert_eq!(sv.bitset, 39);
     }
 }

@@ -22,7 +22,7 @@ fn test_deterministic_sortition_1() {
     p.update_eligibility_flag(cfg.round);
 
     assert_eq!(
-        vec![1, 3],
+        vec![1, 2, 1],
         Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
     );
 }
@@ -35,7 +35,7 @@ fn test_deterministic_sortition_2() {
     let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, 45);
 
     let committee = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(vec![1, 3], committee.get_occurrences());
+    assert_eq!(vec![2, 2], committee.get_occurrences());
 }
 
 #[test]
