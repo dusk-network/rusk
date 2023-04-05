@@ -10,6 +10,7 @@ pub mod chain;
 pub mod database;
 pub mod mempool;
 pub mod network;
+pub mod vm;
 
 use async_trait::async_trait;
 use node_data::message::AsyncQueue;
@@ -64,11 +65,14 @@ pub trait Network: Send + Sync + 'static {
 ///
 /// Service is allowed to propagate a message to the network as well.
 #[async_trait]
-pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
+pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
+    Send + Sync
+{
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
         database: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize>;
 
     async fn add_routes(
@@ -98,27 +102,26 @@ pub trait LongLivedService<N: Network, DB: database::DB>: Send + Sync {
     fn name(&self) -> &'static str;
 }
 
-pub struct Node<N: Network, DB: database::DB> {
+pub struct Node<N: Network, DB: database::DB, VM: vm::VMExecution> {
     network: Arc<RwLock<N>>,
     database: Arc<RwLock<DB>>,
+    vm_handler: Arc<RwLock<VM>>,
 }
 
-impl<N: Network, DB: database::DB> Node<N, DB> {
-    pub fn new(n: N, d: DB) -> Self {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
+    pub fn new(n: N, d: DB, vm_h: VM) -> Self {
         Self {
             network: Arc::new(RwLock::new(n)),
             database: Arc::new(RwLock::new(d)),
+            vm_handler: Arc::new(RwLock::new(vm_h)),
         }
     }
 
     /// Sets up and runs a list of services.
     pub async fn spawn_all(
         &self,
-        service_list: Vec<Box<dyn LongLivedService<N, DB>>>,
+        service_list: Vec<Box<dyn LongLivedService<N, DB, VM>>>,
     ) -> anyhow::Result<()> {
-        // Initialize Rusk instance
-        // TODO:
-
         // Spawn all services and join-wait for their termination.
         let mut set = JoinSet::new();
         set.spawn(async {
@@ -128,15 +131,15 @@ impl<N: Network, DB: database::DB> Node<N, DB> {
         });
 
         for (mut s) in service_list.into_iter() {
-            //let ds = self.data_source.clone();
             let n = self.network.clone();
             let d = self.database.clone();
-            let name = s.name();
+            let vm = self.vm_handler.clone();
 
+            let name = s.name();
             info!("starting service {}", name);
 
             set.spawn(async move {
-                s.execute(n, d)
+                s.execute(n, d, vm)
                     .instrument(tracing::info_span!("srv", name))
                     .await
             });

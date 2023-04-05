@@ -8,7 +8,7 @@ mod consensus;
 mod genesis;
 
 use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, Network};
+use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, bail, Result};
 
@@ -62,14 +62,17 @@ impl Drop for ChainSrv {
 }
 
 #[async_trait]
-impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution>
+    LongLivedService<N, DB, VM> for ChainSrv
+{
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         // Register routes
-        LongLivedService::<N, DB>::add_routes(
+        LongLivedService::<N, DB, VM>::add_routes(
             self,
             TOPICS,
             self.inbound.clone(),
@@ -86,11 +89,11 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                     if let Ok(res) = recv {
                         match res {
                             Ok(blk) => {
-                                if let Err(e) = self.accept_block::<DB>( &db, &blk).await {
-                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
+                                if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
+                                    println!("failed to accept block: {} {:#?}", e, blk.header);
                                 } else {
-                                    network.read().await.
-                                        broadcast(&Message::new_with_block(Box::new(blk))).await;
+                                    //network.read().await.
+                                    //    broadcast(&Message::new_with_block(Box::new(blk))).await;
                                 }
                             }
                             Err(e) => {
@@ -105,9 +108,9 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                     if let Ok(mut msg) = recv {
                         match &msg.payload {
                             Payload::Block(b) => {
-                                if let Err(e) = self.accept_block::<DB>(&db, b).await {
+                                if let Err(e) = self.accept_block::<DB, VM>(&db, &vm, b).await {
                                     let blk = std::ops::Deref::deref(&b);
-                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
+                                    tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.broadcast(&msg).await;
                                 }
@@ -167,19 +170,38 @@ impl ChainSrv {
         anyhow::Ok(0)
     }
 
-    async fn accept_block<DB: database::DB>(
+    async fn accept_block<DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
         blk: &Block,
     ) -> anyhow::Result<()> {
-        // Full block verification should pass before any state updates
-        self.verify_block(&self.most_recent_block, &blk, db).await?;
+        // Verify Block Header
+        self.verify_block_header(
+            db,
+            &self.most_recent_block.header,
+            &blk.header,
+        )
+        .await?;
 
         // Reset Consensus
         self.upper.abort();
 
-        // Persist block
-        db.read().await.update(|t| t.store_block(blk, true))?;
+        // Persist block in consistency with the VM state update
+        {
+            let vm = vm.read().await;
+            db.read().await.update(|t| {
+                t.store_block(blk, true)?;
+
+                // Accept block transactions into the VM
+                if blk.header.cert.step == 3 {
+                    return vm.finalize(blk);
+                }
+
+                vm.accept(blk)
+            })
+        }?;
+
         self.most_recent_block = blk.clone();
 
         // Delete from mempool any transaction already included in the block
@@ -209,35 +231,9 @@ impl ChainSrv {
         Ok(())
     }
 
-    async fn verify_block<DB: database::DB>(
+    async fn verify_block_header<DB: database::DB>(
         &self,
-        prev_block: &ledger::Block,
-        blk: &ledger::Block,
         db: &Arc<RwLock<DB>>,
-    ) -> anyhow::Result<()> {
-        let hash = blk.header.hash;
-
-        // Ensure block is not already in the ledger
-        db.read().await.view(|view| {
-            // TODO: Impl fetch block exists without deserializing
-            match Ledger::fetch_block(&view, &hash) {
-                Ok(Some(_)) => return Err(anyhow!("block already exists")),
-                _ => Ok(()),
-            }
-        })?;
-
-        // Verify Block Header
-        self.verify_block_header(&prev_block.header, &blk.header)
-            .await?;
-
-        //TODO: Add global component that mocks implementation of this
-        // ExecuteStateTransition
-
-        Ok(())
-    }
-
-    async fn verify_block_header(
-        &self,
         prev_block_header: &ledger::Header,
         blk_header: &ledger::Header,
     ) -> anyhow::Result<()> {
@@ -257,6 +253,15 @@ impl ChainSrv {
             return Err(anyhow!("invalid block timestamp"));
         }
 
+        // Ensure block is not already in the ledger
+        db.read().await.view(|view| {
+            if Ledger::get_block_exists(&view, &blk_header.hash)? {
+                return Err(anyhow!("block already exists"));
+            }
+
+            Ok(())
+        })?;
+
         // TODO: Add check point for MaxBlockTime
 
         // Verify Certificate
@@ -266,7 +271,7 @@ impl ChainSrv {
                 .verify_block_cert(
                     blk_header.hash,
                     blk_header.height,
-                    &blk_header.seed,
+                    &prev_block_header.seed,
                     &blk_header.cert,
                 )
                 .await;
@@ -307,8 +312,7 @@ impl ChainSrv {
         )
         .await
         {
-            tracing::error!("{:#?}", e);
-            return bail!("invalid signature first reduction");
+            return Err(anyhow!("ininvalid first reduction votes"));
         }
 
         // Verify second reduction
@@ -321,8 +325,7 @@ impl ChainSrv {
         )
         .await
         {
-            tracing::error!("second red: {:#?}", e);
-            return bail!("invalid signature second reduction");
+            return Err(anyhow!("invalid second reduction votes"));
         }
 
         Ok(())
