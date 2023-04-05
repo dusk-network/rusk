@@ -71,7 +71,7 @@ pub async fn verify_agreement(
     }
 }
 
-pub(super) async fn verify_step_votes(
+pub async fn verify_step_votes(
     sv: &StepVotes,
     committees_set: &Arc<Mutex<CommitteeSet>>,
     seed: Seed,
@@ -117,6 +117,7 @@ pub async fn verify_votes(
     }?;
 
     // aggregate public keys
+
     let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures

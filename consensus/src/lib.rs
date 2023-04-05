@@ -12,7 +12,7 @@ pub mod user;
 pub mod util;
 
 mod aggregator;
-mod agreement;
+pub mod agreement;
 pub mod config;
 pub mod contract_state;
 mod execution_ctx;
