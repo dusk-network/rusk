@@ -10,7 +10,7 @@ use std::io::{self, Read, Write};
 
 impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        self.header.write(w)?;
+        self.header().write(w)?;
 
         let txs_num = self.txs.len() as u8;
         w.write_all(&txs_num.to_le_bytes())?;
@@ -36,7 +36,7 @@ impl Serializable for Block {
             .map(|_| Transaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Block { header, txs })
+        Block::new(header, txs)
     }
 }
 

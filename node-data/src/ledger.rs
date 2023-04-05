@@ -192,6 +192,13 @@ impl Block {
         self.header.hash = hasher.finalize().into();
         Ok(())
     }
+
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+    pub fn txs(&self) -> &Vec<Transaction> {
+        &self.txs
+    }
 }
 
 #[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
