@@ -80,7 +80,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        self.init::<N, DB>(&network, &db).await?;
+        self.init::<N, DB, VM>(&network, &db, &vm).await?;
 
         loop {
             tokio::select! {
@@ -153,10 +153,11 @@ impl ChainSrv {
         }
     }
 
-    async fn init<N: Network, DB: database::DB>(
+    async fn init<N: Network, DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         (self.most_recent_block, self.eligible_provisioners) =
             genesis::generate_state();
@@ -165,6 +166,7 @@ impl ChainSrv {
             &self.most_recent_block.header,
             &self.eligible_provisioners,
             db,
+            vm,
         );
 
         anyhow::Ok(0)
@@ -226,6 +228,7 @@ impl ChainSrv {
             &self.most_recent_block.header,
             &self.eligible_provisioners,
             db,
+            vm,
         );
 
         Ok(())
