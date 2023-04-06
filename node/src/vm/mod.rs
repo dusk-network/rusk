@@ -11,8 +11,16 @@ use node_data::ledger::{Block, Transaction};
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn execute_state_transition(&self) -> anyhow::Result<()>;
-    fn verify_state_transition(&self) -> anyhow::Result<()>;
+    fn execute_state_transition(
+        &self,
+        txs: &[Transaction],
+    ) -> anyhow::Result<()>;
+
+    fn verify_state_transition(
+        &self,
+        txs: &[Transaction],
+    ) -> anyhow::Result<()>;
+
     fn accept(&self, blk: &Block) -> anyhow::Result<()>;
     fn finalize(&self, blk: &Block) -> anyhow::Result<()>;
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
@@ -28,11 +36,17 @@ impl VMExecutionImpl {
 }
 
 impl VMExecution for VMExecutionImpl {
-    fn execute_state_transition(&self) -> anyhow::Result<()> {
+    fn execute_state_transition(
+        &self,
+        txs: &[Transaction],
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 
-    fn verify_state_transition(&self) -> anyhow::Result<()> {
+    fn verify_state_transition(
+        &self,
+        txs: &[Transaction],
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 

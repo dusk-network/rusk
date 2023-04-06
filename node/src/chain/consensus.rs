@@ -6,7 +6,7 @@
 
 use crate::chain::genesis::DUSK;
 use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, Network};
+use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::bail;
 use async_trait::async_trait;
@@ -72,18 +72,19 @@ impl Task {
         }
     }
 
-    pub(crate) fn spawn<D: database::DB>(
+    pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution>(
         &mut self,
         most_recent_block: &node_data::ledger::Header,
         provisioners: &Provisioners,
         db: &Arc<RwLock<D>>,
+        vm: &Arc<RwLock<VM>>,
     ) {
         let mut c = Consensus::new(
             self.main_inbound.clone(),
             self.outbound.clone(),
             self.agreement_inbound.clone(),
             self.outbound.clone(),
-            Arc::new(Mutex::new(Executor::new(db))),
+            Arc::new(Mutex::new(Executor::new(db, vm))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
         );
 
@@ -158,22 +159,37 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
 }
 
 /// Implements Executor trait to mock Contract Storage calls.
-pub struct Executor<DB: database::DB> {
+pub struct Executor<DB: database::DB, VM: vm::VMExecution> {
     db: Arc<RwLock<DB>>,
+    vm: Arc<RwLock<VM>>,
 }
 
-impl<DB: database::DB> Executor<DB> {
-    fn new(db: &Arc<RwLock<DB>>) -> Self {
-        Executor { db: db.clone() }
+impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
+    fn new(db: &Arc<RwLock<DB>>, vm: &Arc<RwLock<VM>>) -> Self {
+        Executor {
+            db: db.clone(),
+            vm: vm.clone(),
+        }
     }
 }
 
-impl<DB: database::DB> Operations for Executor<DB> {
+impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     fn verify_state_transition(
         &self,
-        _params: CallParams,
+        params: CallParams,
     ) -> Result<StateRoot, dusk_consensus::contract_state::Error> {
         tracing::info!("verifying state");
+
+        let vm = self.vm.try_read().map_err(|e| {
+            tracing::error!("failed to try_read vm: {}", e);
+            Error::Failed
+        })?;
+
+        vm.verify_state_transition(&params.txs).map_err(|err| {
+            tracing::error!("failed to call VST {}", err);
+            Error::Failed
+        })?;
+
         Ok([0; 32])
     }
 
@@ -182,6 +198,16 @@ impl<DB: database::DB> Operations for Executor<DB> {
         params: CallParams,
     ) -> Result<Output, Error> {
         tracing::info!("executing state transition");
+
+        let vm = self.vm.try_read().map_err(|e| {
+            tracing::error!("failed to try_read vm: {}", e);
+            Error::Failed
+        })?;
+
+        vm.execute_state_transition(&params.txs).map_err(|err| {
+            tracing::error!("failed to call EST {}", err);
+            Error::Failed
+        })?;
 
         // For now we just return the transactions that were passed to us.
         // Later we will need to actually execute the transactions and return
@@ -227,7 +253,7 @@ impl<DB: database::DB> Operations for Executor<DB> {
         .map_err(|err| {
             tracing::error!("failed to get mempool txs: {}", err);
             Error::Failed
-        });
+        })?;
 
         Ok(txs)
     }
