@@ -152,7 +152,7 @@ impl MempoolSrv {
             Ok(())
         })?;
 
-        // Preverify call
+        // VM Preverify call
         vm.read().await.preverify(tx)?;
 
         tracing::debug!("accepted transaction {:?}", hex::encode(hash));

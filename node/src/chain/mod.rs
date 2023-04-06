@@ -90,9 +90,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         match res {
                             Ok(blk) => {
                                 if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
-                                    println!("failed to accept block: {} {:#?}", e, blk.header);
+                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
                                 } else {
-                                    //network.read().await.
+                                    // Disabled until #53 is resolved
+                                    // network.read().await.
                                     //    broadcast(&Message::new_with_block(Box::new(blk))).await;
                                 }
                             }
@@ -109,7 +110,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         match &msg.payload {
                             Payload::Block(b) => {
                                 if let Err(e) = self.accept_block::<DB, VM>(&db, &vm, b).await {
-                                    let blk = std::ops::Deref::deref(&b);
                                     tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.broadcast(&msg).await;
@@ -265,22 +265,14 @@ impl ChainSrv {
             Ok(())
         })?;
 
-        // TODO: Add check point for MaxBlockTime
-
         // Verify Certificate
-        // NB: Genesis block has no certificate
-        if blk_header.height > 0 {
-            return self
-                .verify_block_cert(
-                    blk_header.hash,
-                    blk_header.height,
-                    &prev_block_header.seed,
-                    &blk_header.cert,
-                )
-                .await;
-        }
-
-        Ok(())
+        self.verify_block_cert(
+            blk_header.hash,
+            blk_header.height,
+            &prev_block_header.seed,
+            &blk_header.cert,
+        )
+        .await
     }
 
     async fn verify_block_cert(
@@ -315,7 +307,7 @@ impl ChainSrv {
         )
         .await
         {
-            return Err(anyhow!("ininvalid first reduction votes"));
+            return Err(anyhow!("invalid first reduction votes"));
         }
 
         // Verify second reduction
