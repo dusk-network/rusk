@@ -1,4 +1,4 @@
-SUBDIRS := alice bob transfer stake governance
+SUBDIRS := alice bob transfer stake governance license
 
 help: ## Display this help screen
 	@grep -h \

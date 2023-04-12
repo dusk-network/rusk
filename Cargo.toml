@@ -7,6 +7,7 @@ members = [
     "contracts/stake",
     "contracts/governance",
     "contracts/transfer",
+    "contracts/license",
 
     "macros/code-hasher",
     "rusk-recovery",

@@ -7,4 +7,6 @@ wasm: ## Generate the optimized WASM for the contract given
     		-Z build-std-features=panic_immediate_abort \
     		--target wasm32-unknown-unknown
 
+all: wasm
+
 test:
