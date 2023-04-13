@@ -7,7 +7,6 @@
 pub mod kadcast;
 
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
@@ -24,9 +23,11 @@ pub(crate) struct Config {
 }
 
 /// Default log_level.
+#[allow(unused)]
 const DEFAULT_LOG_LEVEL: &str = "info";
 
 /// Default log_type.
+#[allow(unused)]
 const DEFAULT_LOG_TYPE: &str = "coloured";
 
 impl From<&ArgMatches> for Config {
@@ -105,6 +106,7 @@ impl Config {
             )
     }
 
+    #[cfg(not(feature = "with_telemetry"))]
     pub(crate) fn log_type(&self) -> String {
         match &self.log_type {
             None => DEFAULT_LOG_TYPE.into(),
@@ -112,14 +114,16 @@ impl Config {
         }
     }
 
+    #[cfg(not(feature = "with_telemetry"))]
     pub(crate) fn log_level(&self) -> tracing::Level {
         let log_level = match &self.log_level {
             None => DEFAULT_LOG_LEVEL,
             Some(log_level) => log_level,
         };
-        tracing::Level::from_str(log_level).unwrap_or_else(|e| {
-            panic!("Invalid log-level specified '{log_level}' - {e}")
-        })
+        <tracing::Level as std::str::FromStr>::from_str(log_level)
+            .unwrap_or_else(|e| {
+                panic!("Invalid log-level specified '{log_level}' - {e}")
+            })
     }
 
     pub(crate) fn db_path(&self) -> PathBuf {
