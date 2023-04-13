@@ -10,6 +10,9 @@ test: ## Run Node tests
 binary: ## Build a binary
 	@cargo b --release --bin rusk-node
 
+debug_with_telemetry: # Build a binary with telemetry enabled. Currently, telemetry is only based on tokio_console
+	 cargo --config 'build.rustflags = ["--cfg", "tokio_unstable"]' build --features with_telemetry --bin rusk-node
+
 clean:
 	@cargo clean
 
