@@ -86,6 +86,7 @@ fn args() -> ArgMatches {
     command.get_matches()
 }
 
+#[allow(unused)]
 fn configure_log(config: &Config) -> anyhow::Result<()> {
     #[cfg(feature = "with_telemetry")]
     console_subscriber::init();
