@@ -87,30 +87,36 @@ fn args() -> ArgMatches {
 }
 
 fn configure_log(config: &Config) -> anyhow::Result<()> {
-    let log = config.log_level();
+    #[cfg(feature = "with_telemetry")]
+    console_subscriber::init();
 
-    // Generate a subscriber with the desired log level.
-    let subscriber =
-        tracing_subscriber::fmt::Subscriber::builder().with_max_level(log);
+    #[cfg(not(feature = "with_telemetry"))]
+    {
+        let log = config.log_level();
 
-    // Set the subscriber as global.
-    // so this subscriber will be used as the default in all threads for the
-    // remainder of the duration of the program, similar to how `loggers`
-    // work in the `log` crate.
-    match config.log_type().as_str() {
-        "json" => {
-            let subscriber = subscriber.json().flatten_event(true).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        "plain" => {
-            let subscriber = subscriber.with_ansi(false).finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        "coloured" => {
-            let subscriber = subscriber.finish();
-            tracing::subscriber::set_global_default(subscriber)?;
-        }
-        _ => unreachable!(),
-    };
+        // Generate a subscriber with the desired log level.
+        let subscriber =
+            tracing_subscriber::fmt::Subscriber::builder().with_max_level(log);
+
+        // Set the subscriber as global.
+        // so this subscriber will be used as the default in all threads for the
+        // remainder of the duration of the program, similar to how `loggers`
+        // work in the `log` crate.
+        match config.log_type().as_str() {
+            "json" => {
+                let subscriber = subscriber.json().flatten_event(true).finish();
+                tracing::subscriber::set_global_default(subscriber)?;
+            }
+            "plain" => {
+                let subscriber = subscriber.with_ansi(false).finish();
+                tracing::subscriber::set_global_default(subscriber)?;
+            }
+            "coloured" => {
+                let subscriber = subscriber.finish();
+                tracing::subscriber::set_global_default(subscriber)?;
+            }
+            _ => unreachable!(),
+        };
+    }
     Ok(())
 }
