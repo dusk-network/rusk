@@ -90,11 +90,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         match res {
                             Ok(blk) => {
                                 if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
-                                    tracing::error!("failed to accept block: {} {:#?}", e, blk.header);
+                                    tracing::error!("failed to accept block: {}", e);
                                 } else {
-                                    // Disabled until #53 is resolved
-                                    // network.read().await.
-                                    //    broadcast(&Message::new_with_block(Box::new(blk))).await;
+                                    network.read().await.
+                                        broadcast(&Message::new_with_block(Box::new(blk))).await;
                                 }
                             }
                             Err(e) => {
@@ -187,7 +186,7 @@ impl ChainSrv {
         .await?;
 
         // Reset Consensus
-        self.upper.abort();
+        self.upper.abort().await;
 
         // Persist block in consistency with the VM state update
         {
