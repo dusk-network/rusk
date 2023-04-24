@@ -64,6 +64,30 @@ fn request_set_get() {
 }
 
 #[test]
+fn license_issue_get() {
+    let mut session = initialize();
+
+    let user_pk = UserPublicKey { user_pk: 4u64 };
+
+    let license = License { user_pk };
+    session
+        .transact::<License, ()>(
+            LICENSE_CONTRACT_ID,
+            "issue_license",
+            &license,
+        )
+        .expect("Issuing license should succeed");
+
+    let _license = session
+        .query::<UserPublicKey, License>(
+            LICENSE_CONTRACT_ID,
+            "get_license",
+            &user_pk,
+        )
+        .expect("Querying the license should succeed");
+}
+
+#[test]
 fn get_session_none() {
     let mut session = initialize();
 

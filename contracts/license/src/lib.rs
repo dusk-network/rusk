@@ -19,12 +19,12 @@ mod wasm {
     use super::*;
 
     use rusk_abi::{ModuleId, State};
-    use state::License;
+    use state::LicensesData;
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();
 
-    static mut STATE: State<License> = State::new(License::new());
+    static mut STATE: State<LicensesData> = State::new(LicensesData::new());
 
     #[no_mangle]
     unsafe fn request_license(arg_len: u32) -> u32 {
@@ -42,12 +42,12 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn issue_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.issue_license())
+        rusk_abi::wrap_transaction(arg_len, |license| STATE.issue_license(license))
     }
 
     #[no_mangle]
     unsafe fn get_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.get_license())
+        rusk_abi::wrap_query(arg_len, |user_public_key| STATE.get_license(user_public_key))
     }
 
     #[no_mangle]
