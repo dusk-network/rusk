@@ -71,11 +71,7 @@ fn license_issue_get() {
 
     let license = License { user_pk };
     session
-        .transact::<License, ()>(
-            LICENSE_CONTRACT_ID,
-            "issue_license",
-            &license,
-        )
+        .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
         .expect("Issuing license should succeed");
 
     let _license = session
@@ -91,7 +87,7 @@ fn license_issue_get() {
 fn get_session_none() {
     let mut session = initialize();
 
-    let nullifier = LicenseNullifier {};
+    let nullifier = LicenseNullifier { value: 6u64 };
 
     let license_session = session
         .query::<LicenseNullifier, Option<LicenseSession>>(

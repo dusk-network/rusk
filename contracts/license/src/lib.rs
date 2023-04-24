@@ -42,12 +42,16 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn issue_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |license| STATE.issue_license(license))
+        rusk_abi::wrap_transaction(arg_len, |license| {
+            STATE.issue_license(license)
+        })
     }
 
     #[no_mangle]
     unsafe fn get_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |user_public_key| STATE.get_license(user_public_key))
+        rusk_abi::wrap_query(arg_len, |user_public_key| {
+            STATE.get_license(user_public_key)
+        })
     }
 
     #[no_mangle]

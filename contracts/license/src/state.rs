@@ -4,14 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{License, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey, UserPublicKey};
-use alloc::{collections::BTreeMap, vec, vec::Vec};
+use crate::{
+    License, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey,
+    UserPublicKey,
+};
+use alloc::collections::BTreeMap;
 
 /// License contract.
 #[derive(Debug, Clone)]
 pub struct LicensesData {
     pub requests: BTreeMap<SPPublicKey, LicenseRequest>,
-    pub sessions: Vec<LicenseSession>, /* todo: possibly use map keyed with nullifier */
+    pub sessions: BTreeMap<LicenseNullifier, LicenseSession>,
     pub licenses: BTreeMap<UserPublicKey, License>,
 }
 
@@ -19,7 +22,7 @@ impl LicensesData {
     pub const fn new() -> Self {
         Self {
             requests: BTreeMap::new(),
-            sessions: vec![],
+            sessions: BTreeMap::new(),
             licenses: BTreeMap::new(),
         }
     }
@@ -49,7 +52,7 @@ impl LicensesData {
         self.licenses.insert(license.user_pk, license);
     }
 
-    pub fn get_license(&self, user_pk: UserPublicKey) -> Option<License>{
+    pub fn get_license(&self, user_pk: UserPublicKey) -> Option<License> {
         rusk_abi::debug!("License contract: get_license");
         self.licenses.get(&user_pk).cloned()
     }
@@ -61,9 +64,6 @@ impl LicensesData {
         nullifier: LicenseNullifier,
     ) -> Option<LicenseSession> {
         rusk_abi::debug!("License contract: get_session");
-        self.sessions
-            .iter()
-            .find(|&session| session.nullifier == nullifier)
-            .cloned()
+        self.sessions.get(&nullifier).cloned()
     }
 }

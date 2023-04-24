@@ -55,9 +55,27 @@ impl Ord for UserPublicKey {
 }
 
 /// License Nullifier.
-#[derive(Debug, Clone, Eq, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialOrd,
+    Eq,
+    PartialEq,
+    Archive,
+    Serialize,
+    Deserialize,
+)]
 #[archive_attr(derive(CheckBytes))]
-pub struct LicenseNullifier;
+pub struct LicenseNullifier {
+    pub value: u64,
+}
+
+impl Ord for LicenseNullifier {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.value.cmp(&other.value)
+    }
+}
 
 /// License Request.
 #[derive(Debug, Clone, Eq, PartialEq, Archive, Serialize, Deserialize)]
@@ -77,5 +95,5 @@ pub struct LicenseSession {
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct License {
-    pub user_pk: UserPublicKey
+    pub user_pk: UserPublicKey,
 }
