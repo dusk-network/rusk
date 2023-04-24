@@ -19,6 +19,7 @@ pub struct LicensesData {
 }
 
 impl LicensesData {
+    #[allow(dead_code)]
     pub const fn new() -> Self {
         Self {
             requests: BTreeMap::new(),
@@ -33,10 +34,11 @@ impl LicensesData {
     }
 }
 
+#[allow(dead_code)]
 impl LicensesData {
     pub fn request_license(&mut self, request: LicenseRequest) {
         rusk_abi::debug!("License contract: request_license");
-        self.requests.insert(request.sp_public_key, request.clone());
+        self.requests.insert(request.sp_public_key, request);
     }
 
     pub fn get_license_request(
