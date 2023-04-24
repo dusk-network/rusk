@@ -8,6 +8,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
+rkyv = { version = "0.7", default-features = false }
+bytecheck = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 piecrust = "0.1"
