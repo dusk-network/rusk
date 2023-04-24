@@ -4,20 +4,21 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use alloc::{vec, vec::Vec};
-use crate::{LicenseNullifier, LicenseRequest, LicenseSession};
+use crate::{LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey};
+use alloc::{collections::BTreeMap, vec, vec::Vec};
 
 /// License contract.
 #[derive(Debug, Clone)]
 pub struct License {
-    pub requests: Vec<LicenseRequest>,
-    pub sessions: Vec<LicenseSession>,
+    pub requests: BTreeMap<SPPublicKey, LicenseRequest>,
+    pub sessions: Vec<LicenseSession>, /* todo: possibly use map keyed with
+                                        * nullifier */
 }
 
 impl License {
     pub const fn new() -> Self {
         Self {
-            requests: vec![],
+            requests: BTreeMap::new(),
             sessions: vec![],
         }
     }
@@ -29,11 +30,18 @@ impl License {
 }
 
 impl License {
-    pub fn request_license(&mut self) {
-        self.requests.push(LicenseRequest {})
+    pub fn request_license(&mut self, request: LicenseRequest) {
+        rusk_abi::debug!("License contract: request_license");
+        self.requests.insert(request.sp_public_key, request.clone());
     }
 
-    pub fn get_license_request(&self) {}
+    pub fn get_license_request(
+        &self,
+        sp_public_key: SPPublicKey,
+    ) -> Option<LicenseRequest> {
+        rusk_abi::debug!("License contract: get_license_request");
+        self.requests.get(&sp_public_key).cloned()
+    }
 
     pub fn issue_license(&mut self) {}
 
@@ -41,7 +49,10 @@ impl License {
 
     pub fn use_license(&mut self) {}
 
-    pub fn get_session(&self, nullifier: LicenseNullifier) -> Option<LicenseSession> {
+    pub fn get_session(
+        &self,
+        nullifier: LicenseNullifier,
+    ) -> Option<LicenseSession> {
         rusk_abi::debug!("License contract: get_session");
         self.sessions
             .iter()

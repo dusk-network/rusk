@@ -11,7 +11,7 @@ extern crate alloc;
 mod license_types;
 use license_types::*;
 
-use piecrust::{ModuleId, VM};
+use piecrust::{ModuleId, Session, VM};
 
 const LICENSE_CONTRACT_ID: ModuleId = {
     let mut bytes = [0u8; 32];
@@ -21,8 +21,7 @@ const LICENSE_CONTRACT_ID: ModuleId = {
 
 const POINT_LIMIT: u64 = 0x10000000;
 
-#[test]
-fn get_session() {
+fn initialize() -> Session {
     let vm = VM::ephemeral().expect("Creating a VM should succeed");
 
     let bytecode = include_bytes!(
@@ -37,9 +36,46 @@ fn get_session() {
         .deploy_with_id(LICENSE_CONTRACT_ID, bytecode)
         .expect("Deploying the license contract should succeed");
 
+    session
+}
+
+#[test]
+fn request_set_get() {
+    let mut session = initialize();
+
+    let sp_public_key = SPPublicKey { sp_pk: 3u64 };
+
+    let license_request = LicenseRequest { sp_public_key };
+    session
+        .transact::<LicenseRequest, ()>(
+            LICENSE_CONTRACT_ID,
+            "request_license",
+            &license_request,
+        )
+        .expect("Requesting license should succeed");
+
+    let _license_request = session
+        .query::<SPPublicKey, LicenseRequest>(
+            LICENSE_CONTRACT_ID,
+            "get_license_request",
+            &sp_public_key,
+        )
+        .expect("Querying the license request should succeed");
+}
+
+#[test]
+fn get_session_none() {
+    let mut session = initialize();
+
     let nullifier = LicenseNullifier {};
 
-    let license_session = session.query::<LicenseNullifier, Option<LicenseSession>>(LICENSE_CONTRACT_ID, "get_session", &nullifier).expect("Querying the session should succeed");
+    let license_session = session
+        .query::<LicenseNullifier, Option<LicenseSession>>(
+            LICENSE_CONTRACT_ID,
+            "get_session",
+            &nullifier,
+        )
+        .expect("Querying the session should succeed");
 
     assert_eq!(None::<LicenseSession>, license_session);
 }

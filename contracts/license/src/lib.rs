@@ -9,11 +9,9 @@
 
 extern crate alloc;
 
-mod state;
 mod license_types;
-use state::{License};
+mod state;
 use license_types::*;
-
 
 #[cfg(target_family = "wasm")]
 #[path = ""]
@@ -21,6 +19,7 @@ mod wasm {
     use super::*;
 
     use rusk_abi::{ModuleId, State};
+    use state::License;
 
     #[no_mangle]
     static SELF_ID: ModuleId = ModuleId::uninitialized();
@@ -29,12 +28,16 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn request_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.request_license())
+        rusk_abi::wrap_transaction(arg_len, |license_request| {
+            STATE.request_license(license_request)
+        })
     }
 
     #[no_mangle]
     unsafe fn get_license_request(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.get_license_request())
+        rusk_abi::wrap_query(arg_len, |sp_public_key| {
+            STATE.get_license_request(sp_public_key)
+        })
     }
 
     #[no_mangle]
