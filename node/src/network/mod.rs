@@ -4,17 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
+use std::time::Duration;
 use std::{any, default};
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
 use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
-use node_data::message::AsyncQueue;
 use node_data::message::Metadata;
+use node_data::message::{AsyncQueue, Topics};
 use tokio::sync::RwLock;
+use tokio::time::{self, Instant};
 
 mod frame;
 
@@ -59,7 +61,7 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
                 // Update Transport Data
                 msg.metadata = Some(Metadata {
                     height: md.height(),
-                    src_addr: md.src().to_string(),
+                    src_addr: md.src(),
                 });
 
                 // Allow upper layers to fast-discard a message before queueing
@@ -108,6 +110,21 @@ impl<const N: usize> Kadcast<N> {
             conf,
         }
     }
+
+    /// Removes a route, if exists, for a given topic.
+    async fn remove_route(&mut self, topic: u8) -> anyhow::Result<()> {
+        let mut guard = self.routes.write().await;
+
+        match guard.get_mut(topic as usize) {
+            Some(Some(_)) => {
+                guard[topic as usize] = None;
+                Ok(())
+            }
+            _ => {
+                anyhow::bail!("route not registered for {:?} topic", topic)
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -127,30 +144,55 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             }
             Err(err) => {
                 tracing::error!("could not encode message {:?}: {}", msg, err);
-                anyhow::bail!("could not encode message due to {}", err)
+                anyhow::bail!("failed to broadcast: {}", err)
             }
         }
     }
 
-    async fn send(
+    async fn send_to_peer(
         &self,
         msg: &Message,
-        dst: Vec<String>,
+        dest: SocketAddr,
     ) -> anyhow::Result<()> {
-        todo!();
-        /*
-        self.peer
-            .send(
-                &[0u8; 8],
-                std::net::SocketAddr::new(
-                    IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)),
-                    8080,
-                ),
-            )
-            .await;
-         */
+        match frame::Pdu::encode(msg) {
+            Ok(encoded) => {
+                tracing::trace!("send message {:?}", msg.header.topic);
+                self.peer.send(&encoded, dest).await;
 
-        Ok(())
+                Ok(())
+            }
+            Err(err) => {
+                tracing::error!("could not encode message {:?}: {}", msg, err);
+                anyhow::bail!("failed to send: {}", err)
+            }
+        }
+    }
+
+    /// Sends to random set of alive peers.
+    async fn send_to_alive_peers(
+        &self,
+        msg: &Message,
+        amount: usize,
+    ) -> anyhow::Result<()> {
+        match frame::Pdu::encode(msg) {
+            Ok(encoded) => {
+                // Send to multiple peers
+                for recv_addr in self.peer.alive_nodes(amount).await {
+                    tracing::trace!(
+                        "send message {:?} {:?}",
+                        msg.header.topic,
+                        recv_addr
+                    );
+                    self.peer.send(&encoded, recv_addr).await;
+                }
+
+                Ok(())
+            }
+            Err(err) => {
+                tracing::error!("could not encode message {:?}: {}", msg, err);
+                anyhow::bail!("failed to send: {}", err)
+            }
+        }
     }
 
     /// Route any message of the specified type to this queue.
@@ -161,15 +203,51 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     ) -> anyhow::Result<()> {
         let mut guard = self.routes.write().await;
 
-        let mut route = guard
-            .get_mut(msg_type as usize)
-            .expect("should be a valid type");
+        let mut route = guard.get_mut(msg_type as usize).ok_or_else(|| {
+            anyhow::anyhow!("msg type out of range: {}", msg_type)
+        })?;
 
-        assert!(route.is_none(), "msg type already registered");
+        debug_assert!(route.is_none(), "topic already registered");
 
         *route = Some(queue);
 
         Ok(())
+    }
+
+    async fn send_and_wait(
+        &mut self,
+        request_msg: &Message,
+        response_msg_topic: Topics,
+        timeout_millis: u64,
+        recv_peers_count: usize,
+    ) -> anyhow::Result<Message> {
+        self.remove_route(response_msg_topic.into()).await;
+
+        let res = {
+            let queue = AsyncQueue::default();
+            // register a temporary route that will be unregister on drop
+            self.add_route(response_msg_topic.into(), queue.clone())
+                .await;
+
+            self.send_to_alive_peers(request_msg, recv_peers_count)
+                .await?;
+
+            let deadline =
+                Instant::now() + Duration::from_millis(timeout_millis);
+
+            // Wait for a response message or a timeout
+            match time::timeout_at(deadline, queue.recv()).await {
+                // Got a response message
+                Ok(Ok(msg)) => Ok(msg),
+                // Failed to receive a response message
+                Ok(Err(_)) => anyhow::bail!("failed to receive"),
+                // Timeout expired
+                Err(_) => anyhow::bail!("timeout err"),
+            }
+        };
+
+        self.remove_route(response_msg_topic.into()).await;
+        res
     }
 
     async fn add_filter(
