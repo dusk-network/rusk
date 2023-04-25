@@ -17,6 +17,7 @@ use dusk_consensus::contract_state::{
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Hash, Transaction};
+use node_data::message::payload::{self, GetCandidate};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -76,12 +77,13 @@ impl Task {
         }
     }
 
-    pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution>(
+    pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         most_recent_block: &node_data::ledger::Header,
         provisioners: &Provisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
+        network: &Arc<RwLock<N>>,
     ) {
         let mut c = Consensus::new(
             self.main_inbound.clone(),
@@ -89,7 +91,7 @@ impl Task {
             self.agreement_inbound.clone(),
             self.outbound.clone(),
             Arc::new(Mutex::new(Executor::new(db, vm))),
-            Arc::new(Mutex::new(CandidateDB::new(db.clone()))),
+            Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
         let round_update = RoundUpdate {
@@ -126,17 +128,21 @@ impl Task {
 #[derive(Debug, Default)]
 /// Implements dusk_consensus Database trait to store candidate blocks in the
 /// RocksDB storage.
-pub struct CandidateDB<DB: database::DB> {
+pub struct CandidateDB<DB: database::DB, N: Network> {
     db: Arc<RwLock<DB>>,
+    network: Arc<RwLock<N>>,
 }
 
-impl<DB: database::DB> CandidateDB<DB> {
-    pub fn new(db: Arc<RwLock<DB>>) -> Self {
-        Self { db }
+impl<DB: database::DB, N: Network> CandidateDB<DB, N> {
+    pub fn new(db: Arc<RwLock<DB>>, network: Arc<RwLock<N>>) -> Self {
+        Self { db, network }
     }
 }
 
-impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
+#[async_trait]
+impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
+    for CandidateDB<DB, N>
+{
     fn store_candidate_block(&mut self, b: Block) {
         tracing::trace!("store candidate block: {:?}", b);
 
@@ -145,16 +151,62 @@ impl<DB: database::DB> dusk_consensus::commons::Database for CandidateDB<DB> {
         }
     }
 
-    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<Block> {
+    async fn get_candidate_block_by_hash(
+        &self,
+        h: &Hash,
+    ) -> anyhow::Result<Block> {
+        // Make an attempt to fetch the candidate block from local storage
         let mut res = Option::None;
-        if let Ok(db) = self.db.try_read() {
-            db.view(|t| {
-                res = t.fetch_candidate_block(h)?;
-                Ok(())
-            });
+        self.db.read().await.view(|t| {
+            res = t.fetch_candidate_block(h)?;
+            Ok(())
+        });
+
+        if let Some(b) = res {
+            return Ok(b);
         }
 
-        res
+        const RECV_PEERS_COUNT: usize = 5;
+        const TIMEOUT_MILLIS: u64 = 1000;
+        // If the candidate block is not found in local storage, make an attempt
+        // to fetch it from the network
+        // For redundancy reasons, we send the request to multiple peers
+
+        let request = Message::new_get_candidate(GetCandidate { hash: *h });
+        let res = self
+            .network
+            .write()
+            .await
+            .send_and_wait(
+                &request,
+                Topics::Candidate,
+                TIMEOUT_MILLIS,
+                RECV_PEERS_COUNT,
+            )
+            .await?;
+
+        match res.payload {
+            Payload::CandidateResp(cr) => {
+                let b = cr.candidate;
+
+                // Ensure that the received candidate block is the one we
+                // requested
+                if b.header.hash != *h {
+                    return Err(anyhow::anyhow!(
+                        "incorrect candidate block hash"
+                    ));
+                }
+
+                tracing::info!(
+                    "received candidate_resp height: {:?}  hash: {:?}",
+                    b.header.height,
+                    hex::ToHex::encode_hex::<String>(&b.header.hash)
+                );
+
+                Ok(b)
+            }
+            _ => Err(anyhow::anyhow!("couldn't get candidate block")),
+        }
     }
 
     fn delete_candidate_blocks(&mut self) {
