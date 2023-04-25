@@ -89,7 +89,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Ok(res) = recv {
                         match res {
                             Ok(blk) => {
-                                if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
+                                if let Err(e) = self.accept_block::<DB, VM, N>( &db, &vm, &network, &blk).await {
                                     tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.
@@ -108,7 +108,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     if let Ok(mut msg) = recv {
                         match &msg.payload {
                             Payload::Block(b) => {
-                                if let Err(e) = self.accept_block::<DB, VM>(&db, &vm, b).await {
+                                if let Err(e) = self.accept_block::<DB, VM, N>(&db, &vm, &network, b).await {
                                     tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.broadcast(&msg).await;
@@ -166,15 +166,17 @@ impl ChainSrv {
             &self.eligible_provisioners,
             db,
             vm,
+            network,
         );
 
         anyhow::Ok(0)
     }
 
-    async fn accept_block<DB: database::DB, VM: vm::VMExecution>(
+    async fn accept_block<DB: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
+        network: &Arc<RwLock<N>>,
         blk: &Block,
     ) -> anyhow::Result<()> {
         // Verify Block Header
@@ -228,6 +230,7 @@ impl ChainSrv {
             &self.eligible_provisioners,
             db,
             vm,
+            network,
         );
 
         Ok(())
