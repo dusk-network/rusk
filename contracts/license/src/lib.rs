@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+mod collection;
 mod license_types;
 mod state;
 use license_types::*;

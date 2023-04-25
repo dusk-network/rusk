@@ -9,6 +9,13 @@ extern crate alloc;
 #[allow(unused)]
 #[path = "../src/license_types.rs"]
 mod license_types;
+
+use dusk_bls12_381::BlsScalar;
+use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
+use dusk_pki::SecretKey;
+use rand::rngs::StdRng;
+use rand::{CryptoRng, RngCore, SeedableRng};
+
 use license_types::*;
 
 use piecrust::{ModuleId, Session, VM};
@@ -20,6 +27,11 @@ const LICENSE_CONTRACT_ID: ModuleId = {
 };
 
 const POINT_LIMIT: u64 = 0x10000000;
+
+fn random_public_key<R: RngCore + CryptoRng>(rng: &mut R) -> JubJubAffine {
+    let sk = SecretKey::random(rng);
+    JubJubAffine::from(GENERATOR_EXTENDED * sk.as_ref())
+}
 
 fn initialize() -> Session {
     let vm = VM::ephemeral().expect("Creating a VM should succeed");
@@ -41,11 +53,16 @@ fn initialize() -> Session {
 
 #[test]
 fn request_set_get() {
+    let rng = &mut StdRng::seed_from_u64(0xcafe);
     let mut session = initialize();
 
-    let sp_public_key = SPPublicKey { sp_pk: 3u64 };
+    let sp_pk = SPPublicKey {
+        sp_pk: random_public_key(rng),
+    };
+    let license_request = LicenseRequest {
+        sp_public_key: sp_pk,
+    };
 
-    let license_request = LicenseRequest { sp_public_key };
     session
         .transact::<LicenseRequest, ()>(
             LICENSE_CONTRACT_ID,
@@ -58,18 +75,21 @@ fn request_set_get() {
         .query::<SPPublicKey, LicenseRequest>(
             LICENSE_CONTRACT_ID,
             "get_license_request",
-            &sp_public_key,
+            &sp_pk,
         )
         .expect("Querying the license request should succeed");
 }
 
 #[test]
 fn license_issue_get() {
+    let rng = &mut StdRng::seed_from_u64(0xcafe);
     let mut session = initialize();
 
-    let user_pk = UserPublicKey { user_pk: 4u64 };
-
+    let user_pk = UserPublicKey {
+        user_pk: random_public_key(rng),
+    };
     let license = License { user_pk };
+
     session
         .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
         .expect("Issuing license should succeed");
@@ -87,7 +107,9 @@ fn license_issue_get() {
 fn get_session_none() {
     let mut session = initialize();
 
-    let nullifier = LicenseNullifier { value: 6u64 };
+    let nullifier = LicenseNullifier {
+        value: BlsScalar::from(7u64),
+    };
 
     let license_session = session
         .query::<LicenseNullifier, Option<LicenseSession>>(
