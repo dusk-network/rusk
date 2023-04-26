@@ -19,11 +19,14 @@ dusk-schnorr = { version = "0.12", default-features = false, features = ["rkyv-i
 dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-rkyv = { version = "0.7", default-features = false }
 bytecheck = { version = "0.6", default-features = false }
 piecrust-uplink = { version = "0.1", default-features = false }
 piecrust = { version = "0.1", optional = true }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
+
+# These are patches since these crates don't seem to like semver.
+rkyv = { version = "=0.7.39", default-features = false }
+wasmer = { version = "=3.1", optional = true }
 
 [dev-dependencies]
 dusk-bytes = "0.1"
