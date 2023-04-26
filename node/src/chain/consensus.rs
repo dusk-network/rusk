@@ -150,6 +150,8 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
         }
     }
 
+    /// Makes attempts to fetch a candidate block from either the local storage
+    /// or the network.
     async fn get_candidate_block_by_hash(
         &self,
         h: &Hash,
@@ -167,10 +169,9 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 
         const RECV_PEERS_COUNT: usize = 5;
         const TIMEOUT_MILLIS: u64 = 1000;
-        // If the candidate block is not found in local storage, make an attempt
-        // to fetch it from the network
-        // For redundancy reasons, we send the request to multiple peers
 
+        // For redundancy reasons, we send the GetCandidate request to multiple
+        // network peers
         let request = Message::new_get_candidate(GetCandidate { hash: *h });
         let res = self
             .network
@@ -197,7 +198,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
                 }
 
                 tracing::info!(
-                    "received candidate_resp height: {:?}  hash: {:?}",
+                    "received candidate height: {:?}  hash: {:?}",
                     b.header.height,
                     hex::ToHex::encode_hex::<String>(&b.header.hash)
                 );

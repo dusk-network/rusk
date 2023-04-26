@@ -82,7 +82,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             match Self::handle_request(&network, &db, &msg).await {
                                 Ok(resp) => {
                                     // Send response
-                                    network.write().await.
+                                    network.read().await.
                                         send_to_peer(&resp.msg, resp.recv_peer).await;
                                 },
                                 Err(e) => {
@@ -124,7 +124,7 @@ impl DataBrokerSrv {
                     Self::handle_get_candidate(network, db, m.clone()).await?;
                 Ok(Response { msg, recv_peer })
             }
-            _ => Err(anyhow::anyhow!("unhandled message")),
+            _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
     }
 

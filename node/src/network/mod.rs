@@ -136,36 +136,36 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             None => None,
         };
 
-        match frame::Pdu::encode(msg) {
-            Ok(encoded) => {
-                tracing::trace!("broadcasting message {:?}", msg.header.topic);
-                self.peer.broadcast(&encoded, height).await;
-                Ok(())
-            }
-            Err(err) => {
-                tracing::error!("could not encode message {:?}: {}", msg, err);
-                anyhow::bail!("failed to broadcast: {}", err)
-            }
-        }
+        let encoded = frame::Pdu::encode(msg).map_err(|err| {
+            tracing::error!("could not encode message {:?}: {}", msg, err);
+            anyhow::anyhow!("failed to broadcast: {}", err)
+        })?;
+
+        tracing::trace!("broadcasting msg ({:?})", msg.header.topic);
+        self.peer.broadcast(&encoded, height).await;
+
+        Ok(())
     }
 
+    /// Sends an encoded message to a given peer.
     async fn send_to_peer(
         &self,
         msg: &Message,
-        dest: SocketAddr,
+        recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
-        match frame::Pdu::encode(msg) {
-            Ok(encoded) => {
-                tracing::trace!("send message {:?}", msg.header.topic);
-                self.peer.send(&encoded, dest).await;
+        let encoded = frame::Pdu::encode(msg).map_err(|err| {
+            anyhow::anyhow!("failed to send_to_peer: {}", err)
+        })?;
 
-                Ok(())
-            }
-            Err(err) => {
-                tracing::error!("could not encode message {:?}: {}", msg, err);
-                anyhow::bail!("failed to send: {}", err)
-            }
-        }
+        tracing::trace!(
+            "sending msg ({:?}) to peer {:?}",
+            msg.header.topic,
+            recv_addr
+        );
+
+        self.peer.send(&encoded, recv_addr).await;
+
+        Ok(())
     }
 
     /// Sends to random set of alive peers.
@@ -174,38 +174,33 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         amount: usize,
     ) -> anyhow::Result<()> {
-        match frame::Pdu::encode(msg) {
-            Ok(encoded) => {
-                // Send to multiple peers
-                for recv_addr in self.peer.alive_nodes(amount).await {
-                    tracing::trace!(
-                        "send message {:?} {:?}",
-                        msg.header.topic,
-                        recv_addr
-                    );
-                    self.peer.send(&encoded, recv_addr).await;
-                }
+        let encoded = frame::Pdu::encode(msg)
+            .map_err(|err| anyhow::anyhow!("failed to encode: {}", err))?;
 
-                Ok(())
-            }
-            Err(err) => {
-                tracing::error!("could not encode message {:?}: {}", msg, err);
-                anyhow::bail!("failed to send: {}", err)
-            }
+        for recv_addr in self.peer.alive_nodes(amount).await {
+            tracing::trace!(
+                "sending msg ({:?}) to peer {:?}",
+                msg.header.topic,
+                recv_addr
+            );
+
+            self.peer.send(&encoded, recv_addr).await;
         }
+
+        Ok(())
     }
 
     /// Route any message of the specified type to this queue.
     async fn add_route(
         &mut self,
-        msg_type: u8,
+        topic: u8,
         queue: AsyncQueue<Message>,
     ) -> anyhow::Result<()> {
         let mut guard = self.routes.write().await;
 
-        let mut route = guard.get_mut(msg_type as usize).ok_or_else(|| {
-            anyhow::anyhow!("msg type out of range: {}", msg_type)
-        })?;
+        let mut route = guard
+            .get_mut(topic as usize)
+            .ok_or_else(|| anyhow::anyhow!("topic out of range: {}", topic))?;
 
         debug_assert!(route.is_none(), "topic already registered");
 
