@@ -34,6 +34,7 @@ node-data = { git = "https://github.com/dusk-network/rusk/", version = "0.1" }
 rustc_tools_util = "=0.2.0"
 blake2 = "0.10.5"
 dusk-bls12_381-sign = { version = "0.3.0-rc", default-features = false }
+console-subscriber = { version = "0.1.8", optional = true }
 
 ## Binary dependencies
 clap = { version = "3.1", features = ["env"] }
@@ -51,3 +52,6 @@ rand_core = "0.6"
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
+
+[features]
+with_telemetry = ["dep:console-subscriber"]
