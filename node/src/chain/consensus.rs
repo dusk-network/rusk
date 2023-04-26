@@ -110,9 +110,9 @@ impl Task {
 
         self.running_task = Some((
             tokio::spawn(async move {
-                result_queue.send(
-                    c.spin(round_update, provisioners, cancel_rx).await,
-                ).await;
+                result_queue
+                    .send(c.spin(round_update, provisioners, cancel_rx).await)
+                    .await;
 
                 tracing::trace!("terminate consensus task: {}", id);
                 id
