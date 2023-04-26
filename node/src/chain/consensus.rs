@@ -104,15 +104,15 @@ impl Task {
         tracing::trace!("spawn consensus task: {}", self.task_id);
 
         let id = self.task_id;
-        let result_queue = self.result.clone();
+        let mut result_queue = self.result.clone();
         let provisioners = provisioners.clone();
         let (cancel_tx, cancel_rx) = oneshot::channel::<i32>();
 
         self.running_task = Some((
             tokio::spawn(async move {
-                result_queue.try_send(
+                result_queue.send(
                     c.spin(round_update, provisioners, cancel_rx).await,
-                );
+                ).await;
 
                 tracing::trace!("terminate consensus task: {}", id);
                 id
