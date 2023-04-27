@@ -13,6 +13,7 @@ mod license_types;
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
 use dusk_pki::SecretKey;
+use dusk_schnorr::Signature;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
@@ -88,7 +89,10 @@ fn license_issue_get() {
     let user_pk = UserPublicKey {
         user_pk: random_public_key(rng),
     };
-    let license = License { user_pk };
+    let sp_pk = SPPublicKey {
+        sp_pk: random_public_key(rng),
+    };
+    let license = License { user_pk, sp_pk, sig_lic: Signature::default() };
 
     session
         .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)

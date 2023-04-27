@@ -6,6 +6,7 @@
 
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
+use dusk_schnorr::Signature;
 use dusk_jubjub::JubJubAffine;
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -49,4 +50,6 @@ pub struct LicenseSession {
 #[archive_attr(derive(CheckBytes))]
 pub struct License {
     pub user_pk: UserPublicKey,
+    pub sp_pk: SPPublicKey,
+    pub sig_lic: Signature,
 }

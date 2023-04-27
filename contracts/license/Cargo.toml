@@ -11,6 +11,7 @@ rkyv = { version = "0.7", default-features = false }
 bytecheck = { version = "0.6", default-features = false }
 dusk-bls12_381 = { version = "0.11", default-features = false }
 dusk-jubjub = { version = "0.12", default-features = false }
+dusk-schnorr = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.11", default-features = false}
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
 
