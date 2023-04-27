@@ -72,13 +72,29 @@ fn request_set_get() {
         )
         .expect("Requesting license should succeed");
 
-    let _license_request = session
-        .query::<SPPublicKey, LicenseRequest>(
-            LICENSE_CONTRACT_ID,
-            "get_license_request",
-            &sp_pk,
-        )
-        .expect("Querying the license request should succeed");
+    assert!(
+        session
+            .query::<SPPublicKey, Option<LicenseRequest>>(
+                LICENSE_CONTRACT_ID,
+                "get_license_request",
+                &sp_pk,
+            )
+            .expect("Querying the license request should succeed")
+            .is_some(),
+        "First call to getting a license request should return some"
+    );
+
+    assert_eq!(
+        session
+            .query::<SPPublicKey, Option<LicenseRequest>>(
+                LICENSE_CONTRACT_ID,
+                "get_license_request",
+                &sp_pk,
+            )
+            .expect("Querying the license request should succeed"),
+        None,
+        "Second call to getting a license request should return none"
+    );
 }
 
 #[test]

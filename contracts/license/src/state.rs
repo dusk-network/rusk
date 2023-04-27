@@ -41,8 +41,10 @@ impl LicensesData {
         self.requests.push(request);
     }
 
+    /// Returns and removes first found license request for a given SP.
+    /// If not such license request is found, returns None.
     pub fn get_license_request(
-        &self,
+        &mut self,
         sp_public_key: SPPublicKey,
     ) -> Option<LicenseRequest> {
         rusk_abi::debug!(
@@ -51,8 +53,8 @@ impl LicensesData {
         );
         self.requests
             .iter()
-            .find(|e| e.sp_public_key == sp_public_key)
-            .cloned()
+            .position(|e| e.sp_public_key == sp_public_key)
+            .map(|index| self.requests.swap_remove(index))
     }
 
     pub fn issue_license(&mut self, license: License) {
