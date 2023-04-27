@@ -105,7 +105,6 @@ impl StakeDataWrapper {
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     stakes: BTreeMap<[u8; PublicKey::SIZE], StakeDataWrapper>,
-    allowlist: BTreeSet<[u8; PublicKey::SIZE]>,
     owners: BTreeSet<[u8; PublicKey::SIZE]>,
 }
 
@@ -113,7 +112,6 @@ impl StakeState {
     pub const fn new() -> Self {
         Self {
             stakes: BTreeMap::new(),
-            allowlist: BTreeSet::new(),
             owners: BTreeSet::new(),
         }
     }
@@ -123,16 +121,14 @@ impl StakeState {
             panic!("Can only be called from the transfer contract!");
         }
 
-        if !self.is_allowlisted(&stake.public_key) {
-            panic!("The address is not allowed!");
-        }
-
         if stake.value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
 
         // allot a stake to the given key and increment the signature counter
-        let loaded_stake = self.load_stake_mut(&stake.public_key);
+        let loaded_stake = self
+            .load_stake_mut(&stake.public_key)
+            .expect("The address is not allowed");
 
         let counter = loaded_stake.counter();
 
@@ -278,7 +274,7 @@ impl StakeState {
         }
 
         // increment the signature counter
-        let owner_stake = self.load_stake_mut(&allow.owner);
+        let owner_stake = self.load_or_create_stake_mut(&allow.owner);
 
         let owner_counter = owner_stake.counter();
         owner_stake.increment_counter();
@@ -318,7 +314,7 @@ impl StakeState {
     /// Gets a mutable reference to the stake of a given key. If said stake
     /// doesn't exist, a default one is inserted and a mutable reference
     /// returned.
-    pub(crate) fn load_stake_mut(
+    pub(crate) fn load_or_create_stake_mut(
         &mut self,
         pk: &PublicKey,
     ) -> &mut StakeDataWrapper {
@@ -337,10 +333,18 @@ impl StakeState {
         self.stakes.get_mut(&pk.to_bytes()).unwrap()
     }
 
+    /// Gets a mutable reference to the stake of a given key.
+    pub(crate) fn load_stake_mut(
+        &mut self,
+        pk: &PublicKey,
+    ) -> Option<&mut StakeDataWrapper> {
+        self.stakes.get_mut(&pk.to_bytes())
+    }
+
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
-        let stake = self.load_stake_mut(public_key);
+        let stake = self.load_or_create_stake_mut(public_key);
         stake.increase_reward(value);
     }
 
@@ -354,9 +358,9 @@ impl StakeState {
 
     /// Gets a vector of all allowlisted keys.
     pub fn stakers_allowlist(&self) -> Vec<PublicKey> {
-        self.allowlist
+        self.stakes
             .iter()
-            .map(|e| PublicKey::from_bytes(e).unwrap())
+            .map(|(key, _)| PublicKey::from_bytes(key).unwrap())
             .collect()
     }
 
@@ -380,11 +384,16 @@ impl StakeState {
 
     pub fn insert_allowlist(&mut self, staker: PublicKey) {
         if !self.is_allowlisted(&staker) {
-            self.allowlist.insert(staker.to_bytes());
+            let stake = StakeDataWrapper(StakeData {
+                amount: None,
+                reward: 0,
+                counter: 0,
+            });
+            self.stakes.insert(staker.to_bytes(), stake);
         }
     }
 
     pub fn is_allowlisted(&self, staker: &PublicKey) -> bool {
-        self.allowlist.get(&staker.to_bytes()).is_some()
+        self.stakes.get(&staker.to_bytes()).is_some()
     }
 }
