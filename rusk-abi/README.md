@@ -4,6 +4,6 @@
 
 ## Rusk ABI
 
-The ABI to develop Rusk's specific Contracts
+The ABI to develop Rusk specific smart-contracts
 
 License: MPL-2.0

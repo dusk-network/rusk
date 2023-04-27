@@ -13,16 +13,12 @@ use rusk::services::version::RuskVersionLayer;
 use std::path::Path;
 use tokio::net::UnixListener;
 
-use tonic::body::BoxBody;
-use tonic::codegen::http::{Request, Response};
-use tonic::codegen::Service;
 use tonic::transport::server::Router;
-use tonic::transport::{Body, NamedService};
-type TonicError = Box<dyn std::error::Error + Send + Sync>;
+use tower::layer::util::{Identity, Stack};
 
 #[cfg(not(target_os = "windows"))]
-pub(crate) async fn startup_with_uds<S, A>(
-    router: Router<S, A, RuskVersionLayer>,
+pub(crate) async fn startup_with_uds(
+    router: Router<Stack<RuskVersionLayer, Identity>>,
     socket: &str,
 ) -> Result<(), Error>
 where
@@ -53,8 +49,8 @@ where
     Ok(())
 }
 
-pub(crate) async fn startup_with_tcp_ip<S, A>(
-    router: Router<S, A, RuskVersionLayer>,
+pub(crate) async fn startup_with_tcp_ip(
+    router: Router<Stack<RuskVersionLayer, Identity>>,
     host: &str,
     port: &str,
 ) -> Result<(), Error>

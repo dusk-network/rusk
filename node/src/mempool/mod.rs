@@ -4,20 +4,52 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::data::Topics;
-use crate::utils::PendingQueue;
-use crate::{data, database, Network};
-use crate::{LongLivedService, Message};
+use crate::database::{Ledger, Mempool};
+use crate::{database, vm, LongLivedService, Message, Network};
+use anyhow::{anyhow, bail};
 use async_trait::async_trait;
+use dusk_bytes::Serializable;
+use node_data::ledger::Transaction;
+use node_data::message::AsyncQueue;
+use node_data::message::Payload;
+use node_data::message::Topics;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use std::sync::Arc;
+const TOPICS: &[u8] = &[Topics::Tx as u8];
 
-const TOPICS: &[u8] = &[data::Topics::Tx as u8];
+#[derive(Debug)]
+enum TxAcceptanceError {
+    AlreadyExistsInMempool,
+    AlreadyExistsInLedger,
+    NullifierExistsInMempool,
+    VerificationFailed,
+}
+
+impl std::error::Error for TxAcceptanceError {}
+
+impl std::fmt::Display for TxAcceptanceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AlreadyExistsInMempool => {
+                write!(f, "this transaction exists in the mempool")
+            }
+            Self::AlreadyExistsInLedger => {
+                write!(f, "this transaction exists in the ledger")
+            }
+            Self::VerificationFailed => {
+                write!(f, "this transaction is invalid")
+            }
+            Self::NullifierExistsInMempool => {
+                write!(f, "this transaction's input(s) exists in the mempool")
+            }
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct MempoolSrv {
-    inbound: PendingQueue<Message>,
+    inbound: AsyncQueue<Message>,
 }
 
 pub struct TxFilter {}
@@ -31,13 +63,16 @@ impl crate::Filter for TxFilter {
 }
 
 #[async_trait]
-impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution>
+    LongLivedService<N, DB, VM> for MempoolSrv
+{
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
-        LongLivedService::<N, DB>::add_routes(
+        LongLivedService::<N, DB, VM>::add_routes(
             self,
             TOPICS,
             self.inbound.clone(),
@@ -47,9 +82,9 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 
         // Add a filter that will discard any transactions invalid to the actual
         // mempool, blockchain state.
-        LongLivedService::<N, DB>::add_filter(
+        LongLivedService::<N, DB, VM>::add_filter(
             self,
-            data::Topics::Tx.into(),
+            Topics::Tx.into(),
             Box::new(TxFilter {}),
             &network,
         )
@@ -57,14 +92,18 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 
         loop {
             if let Ok(msg) = self.inbound.recv().await {
-                match msg.topic {
-                    Topics::Tx => {
-                        if self.handle_tx(&msg).is_ok() {
-                            network.read().await.repropagate(&msg, 0).await;
+                match &msg.payload {
+                    Payload::Transaction(tx) => {
+                        if let Err(e) =
+                            self.accept_tx::<DB, VM>(&db, &vm, tx).await
+                        {
+                            tracing::error!("{}", e);
+                        } else {
+                            network.read().await.broadcast(&msg).await;
                         }
                     }
-                    _ => todo!(),
-                };
+                    _ => tracing::error!("invalid inbound message payload"),
+                }
             }
         }
     }
@@ -76,10 +115,53 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for MempoolSrv {
 }
 
 impl MempoolSrv {
-    fn handle_tx(&mut self, msg: &Message) -> anyhow::Result<()> {
-        // TODO: Preverify
+    async fn accept_tx<DB: database::DB, VM: vm::VMExecution>(
+        &mut self,
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        tx: &Transaction,
+    ) -> anyhow::Result<()> {
+        let hash = tx.hash();
 
-        // TODO: Put in mempool storage
+        // Perform basic checks on the transaction
+        db.read().await.view(|view| {
+            // ensure transaction does not exist in the mempool
+            if Mempool::get_tx_exists(&view, hash)? {
+                return Err(anyhow!(TxAcceptanceError::AlreadyExistsInMempool));
+            }
+
+            let nullifiers = tx
+                .inner
+                .inputs()
+                .iter()
+                .map(|nullifier| nullifier.to_bytes())
+                .collect();
+
+            // ensure nullifiers do not exist in the mempool
+            if Mempool::get_any_nullifier_exists(&view, nullifiers) {
+                return Err(anyhow!(
+                    TxAcceptanceError::NullifierExistsInMempool
+                ));
+            }
+
+            // ensure transaction does not exist in the blockchain
+            if Ledger::get_ledger_tx_exists(&view, &hash)? {
+                return Err(anyhow!(TxAcceptanceError::AlreadyExistsInLedger));
+            }
+
+            Ok(())
+        })?;
+
+        // VM Preverify call
+        vm.read().await.preverify(tx)?;
+
+        tracing::debug!("accepted transaction {:?}", hex::encode(hash));
+
+        // Add transaction to the mempool
+        db.read()
+            .await
+            .update(|update| Mempool::add_tx(update, tx))?;
+
         Ok(())
     }
 }

@@ -5,19 +5,22 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
-use canonical_derive::Canon;
 
-#[derive(Clone, Canon, Debug)]
+#[derive(Debug, Clone)]
 pub struct Map<K, V> {
     data: Vec<(K, V)>,
 }
 
-#[derive(Clone, Canon, Debug)]
+#[derive(Debug, Clone)]
 pub struct Set<V> {
     data: Vec<V>,
 }
 
 impl<K: PartialEq, V: PartialEq> Map<K, V> {
+    pub const fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
     #[allow(dead_code)]
     pub fn get(&self, key: &K) -> Option<&V> {
         self.data.iter().find_map(|(k, v)| (k == key).then_some(v))
@@ -45,6 +48,10 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
 
 #[allow(dead_code)]
 impl<V: PartialEq> Set<V> {
+    pub const fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
     pub fn get(&self, value: &V) -> Option<&V> {
         self.data.iter().find(|&v| v == value)
     }

@@ -51,8 +51,10 @@ where
         let data = bs58::decode(s)
             .into_vec()
             .map_err(|_| serde::de::Error::custom("invalid base58"))?;
-        let data = T::from_slice(&data[..])
-            .map_err(|_| serde::de::Error::custom("invalid address"))?;
+        let data = T::from_slice(&data[..]).map_err(|_| {
+            let err = format!("Invalid {}", std::any::type_name::<T>());
+            serde::de::Error::custom(err)
+        })?;
         Ok(Self(data))
     }
 }

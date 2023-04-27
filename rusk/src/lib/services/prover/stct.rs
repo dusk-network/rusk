@@ -6,6 +6,9 @@
 
 use super::*;
 
+use dusk_plonk::prelude::Prover;
+use rand::rngs::OsRng;
+
 const STCT_INPUT_LEN: usize = Fee::SIZE
     + Crossover::SIZE
     + u64::SIZE
@@ -13,12 +16,13 @@ const STCT_INPUT_LEN: usize = Fee::SIZE
     + BlsScalar::SIZE
     + Signature::SIZE;
 
-pub static STCT_PROVER_KEY: Lazy<ProverKey> = Lazy::new(|| {
-    let keys = keys_for(&SendToContractTransparentCircuit::CIRCUIT_ID)
-        .expect("keys to be available");
-    let pk = keys.get_prover().expect("prover to be available");
-    ProverKey::from_slice(&pk).expect("prover key to be valid")
-});
+pub static STCT_PROVER: Lazy<Prover<SendToContractTransparentCircuit>> =
+    Lazy::new(|| {
+        let keys = keys_for(SendToContractTransparentCircuit::circuit_id())
+            .expect("keys to be available");
+        let pk = keys.get_prover().expect("prover to be available");
+        Prover::try_from_bytes(pk).expect("prover key to be valid")
+    });
 
 impl RuskProver {
     pub(crate) fn prove_stct(
@@ -58,7 +62,7 @@ impl RuskProver {
             Status::invalid_argument("Failed deserializing signature")
         })?;
 
-        let mut circ = SendToContractTransparentCircuit::new(
+        let circ = SendToContractTransparentCircuit::new(
             &fee,
             &crossover,
             crossover_value,
@@ -67,11 +71,9 @@ impl RuskProver {
             signature,
         );
 
-        let proof = circ
-            .prove(&crate::PUB_PARAMS, &STCT_PROVER_KEY, b"dusk-network")
-            .map_err(|e| {
-                Status::internal(format!("Failed proving the circuit: {}", e))
-            })?;
+        let (proof, _) = STCT_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
+            Status::internal(format!("Failed proving the circuit: {e}"))
+        })?;
         let proof = proof.to_bytes().to_vec();
 
         Ok(Response::new(StctProverResponse { proof }))

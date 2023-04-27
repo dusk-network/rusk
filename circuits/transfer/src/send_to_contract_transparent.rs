@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::gadgets;
+use dusk_bytes::ParseHexStr;
 
 use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
 use dusk_plonk::error::Error as PlonkError;
@@ -34,7 +35,34 @@ pub struct SendToContractTransparentCircuit {
     signature: Signature,
 }
 
+impl Default for SendToContractTransparentCircuit {
+    fn default() -> Self {
+        // This signature, while still being valid, is *totally bogus*. Since
+        // `Circuit` requires the `Default` trait we have to come up with a
+        // "default signature"
+        let signature =
+            Signature::from_hex_str("40c83c7f8125fbf66ef33d30b0906eff3c23486a3cae720e16508e1fc30a110133d5d74ddf0f80803d545ae0a7cfe3156c2705aab52c27e4cdd8766bf01d218e")
+                .unwrap();
+
+        Self {
+            signature,
+            value: BlsScalar::default(),
+            blinder: JubJubScalar::default(),
+            commitment: JubJubExtended::default(),
+            nonce: BlsScalar::default(),
+            cipher: [BlsScalar::default(); PoseidonCipher::cipher_size()],
+            pk_r: JubJubExtended::default(),
+            address: BlsScalar::default(),
+            message: BlsScalar::default(),
+        }
+    }
+}
+
 impl SendToContractTransparentCircuit {
+    pub const fn circuit_id() -> &'static [u8; 32] {
+        &Self::CIRCUIT_ID
+    }
+
     pub fn sign_message(
         crossover: &Crossover,
         value: u64,
@@ -120,20 +148,16 @@ impl SendToContractTransparentCircuit {
     }
 }
 
-#[code_hasher::hash(CIRCUIT_ID, version = "0.1.0")]
+#[allow(clippy::option_map_unit_fn)]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
 impl Circuit for SendToContractTransparentCircuit {
-    fn gadget(
-        &mut self,
-        composer: &mut TurboComposer,
-    ) -> Result<(), PlonkError> {
-        let zero = TurboComposer::constant_zero();
-
+    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         // Witnesses
 
         let blinder = composer.append_witness(self.blinder);
         let nonce = composer.append_witness(self.nonce);
 
-        let mut cipher = [zero; PoseidonCipher::cipher_size()];
+        let mut cipher = [C::ZERO; PoseidonCipher::cipher_size()];
         self.cipher
             .iter()
             .zip(cipher.iter_mut())
@@ -145,15 +169,15 @@ impl Circuit for SendToContractTransparentCircuit {
         // Public inputs
 
         let commitment = composer.append_public_point(self.commitment);
-        let value = composer.append_public_witness(self.value);
+        let value = composer.append_public(self.value);
         let pk_r = composer.append_public_point(self.pk_r);
-        let message = composer.append_public_witness(self.message);
+        let _ = composer.append_public(self.message);
 
         // 1. commitment(Cc,Cv,Cb,64)
-        gadgets::commitment(composer, commitment, value, blinder, 64);
+        gadgets::commitment(composer, commitment, value, blinder, 64)?;
 
         // 2. S == H(Cc,Cn,Cψ,Cv,A)
-        let mut s = [zero; MESSAGE_SIZE];
+        let mut s = [C::ZERO; MESSAGE_SIZE];
         let mut i_s = s.iter_mut();
 
         i_s.next().map(|s| *s = *commitment.x());
@@ -170,24 +194,8 @@ impl Circuit for SendToContractTransparentCircuit {
         // 3. schnorr(σ,Fa,S)
         gadgets::schnorr_single_key_verify(
             composer, schnorr_u, schnorr_r, pk_r, s,
-        );
+        )?;
 
         Ok(())
-    }
-
-    fn public_inputs(&self) -> Vec<PublicInputValue> {
-        // 1. commitment(Cc,Cv,Cb,64)
-        let commitment = self.commitment.into();
-        let value = self.value.into();
-
-        // 3. 3. schnorr(σ,Fa,S)
-        let pk_r = self.pk_r.into();
-        let message = self.message.into();
-
-        vec![commitment, value, pk_r, message]
-    }
-
-    fn padded_gates(&self) -> usize {
-        1 << 13
     }
 }

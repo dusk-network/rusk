@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use transfer_circuits::{SendToContractTransparentCircuit, TRANSCRIPT_LABEL};
+use transfer_circuits::SendToContractTransparentCircuit;
 
 use dusk_pki::SecretSpendKey;
 use phoenix_core::Note;
@@ -45,23 +45,18 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 #[test]
 fn send_to_contract_transparent() {
     let rng = &mut StdRng::seed_from_u64(8586);
+    let circuit_id = SendToContractTransparentCircuit::circuit_id();
 
-    let (pp, pk, vd) = keys::circuit_keys::<SendToContractTransparentCircuit>()
-        .expect("Failed to generate circuit!");
+    let (prover, verifier) =
+        keys::circuit_keys(circuit_id).expect("Failed to generate circuit!");
 
-    let mut circuit = create_random_circuit(rng);
+    let circuit = create_random_circuit(rng);
 
-    let proof = circuit
-        .prove(&pp, &pk, TRANSCRIPT_LABEL)
-        .expect("Failed to prove circuit");
-    let pi = circuit.public_inputs();
+    let (proof, public_inputs) = prover
+        .prove(rng, &circuit)
+        .expect("Proving the circuit should be successful");
 
-    SendToContractTransparentCircuit::verify(
-        &pp,
-        &vd,
-        &proof,
-        pi.as_slice(),
-        TRANSCRIPT_LABEL,
-    )
-    .expect("Failed to verify");
+    verifier
+        .verify(&proof, &public_inputs)
+        .expect("Verifying the circuit should succeed");
 }

@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rusk_abi::dusk::Dusk;
 use std::{fmt, io};
-use tonic::Status;
+
+use dusk_bls12_381::BlsScalar;
+use rusk_abi::dusk::Dusk;
 
 #[derive(Debug)]
 pub enum Error {
@@ -14,6 +15,12 @@ pub enum Error {
     BackendRegistrationFailed,
     /// Failed to restore a network state from disk
     RestoreFailed,
+    /// Proof verification failure
+    ProofVerification,
+    /// Out of gas in block execution
+    OutOfGas,
+    /// Repeated nullifier in transaction verification
+    RepeatingNullifiers(Vec<BlsScalar>),
     /// Failed to build a Rusk instance
     BuilderInvalidState,
     /// Failed to fetch opening
@@ -24,8 +31,8 @@ pub enum Error {
     Serialization(dusk_bytes::Error),
     /// Originating from Phoenix.
     Phoenix(phoenix_core::Error),
-    /// Rusk VM internal Errors
-    Vm(rusk_vm::VMError),
+    /// Piecrust VM internal Errors
+    Vm(piecrust::Error),
     /// IO Errors
     Io(io::Error),
     /// Address Parsing error
@@ -42,6 +49,8 @@ pub enum Error {
     Transport(tonic::transport::Error),
     /// Canonical Errors
     Canonical(canonical::CanonError),
+    /// Tonic Status Errors
+    Status(tonic::Status),
     /// Bad block height in coinbase (got, expected)
     CoinbaseBlockHeight(u64, u64),
     /// Bad dusk spent in coinbase (got, expected).
@@ -58,8 +67,8 @@ impl From<Box<dyn std::error::Error>> for Error {
     }
 }
 
-impl From<rusk_vm::VMError> for Error {
-    fn from(err: rusk_vm::VMError) -> Self {
+impl From<piecrust::Error> for Error {
+    fn from(err: piecrust::Error) -> Self {
         Error::Vm(err)
     }
 }
@@ -79,24 +88,6 @@ impl From<phoenix_core::Error> for Error {
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
         Error::Io(err)
-    }
-}
-
-impl From<microkelvin::PersistError> for Error {
-    fn from(err: microkelvin::PersistError) -> Self {
-        Error::Persistence(err)
-    }
-}
-
-impl From<stake_contract::Error> for Error {
-    fn from(err: stake_contract::Error) -> Self {
-        Error::StakeContract(err)
-    }
-}
-
-impl From<transfer_contract::Error> for Error {
-    fn from(err: transfer_contract::Error) -> Self {
-        Error::TransferContract(err)
     }
 }
 
@@ -137,10 +128,10 @@ impl fmt::Display for Error {
                 write!(f, "Failed to build a Rusk instance")
             }
             Error::OpeningPositionNotFound(pos) => {
-                write!(f, "Failed to fetch opening of position {}", pos)
+                write!(f, "Failed to fetch opening of position {pos}")
             }
             Error::OpeningNoteUndefined(pos) => {
-                write!(f, "Note {} not found, opening of position", pos)
+                write!(f, "Note {pos} not found, opening of position")
             }
             Error::Serialization(err) => {
                 write!(f, "Serialization Error: {:?}", err)
@@ -164,62 +155,26 @@ impl fmt::Display for Error {
             Error::Canonical(err) => write!(f, "Canonical Error: {:?}", err),
             Error::Phoenix(err) => write!(f, "Phoenix error: {}", err),
             Error::Other(err) => write!(f, "Other error: {}", err),
+                write!(f, "Serialization Error: {err:?}")
+            }
             Error::CoinbaseBlockHeight(got, expected) => write!(
                 f,
-                "Coinbase has block height {}, expected {}",
-                got, expected
+                "Coinbase has block height {got}, expected {expected}"
             ),
             Error::CoinbaseDuskSpent(got, expected) => {
-                write!(
-                    f,
-                    "Coinbase has dusk spent {}, expected {}",
-                    got, expected
-                )
+                write!(f, "Coinbase has dusk spent {got}, expected {expected}")
+            }
+            Error::ProofVerification => write!(f, "Proof verification failure"),
+            Error::OutOfGas => write!(f, "Out of gas"),
+            Error::RepeatingNullifiers(n) => {
+                write!(f, "Nullifiers repeat: {n:?}")
             }
         }
     }
 }
 
-impl From<Error> for Status {
+impl From<Error> for tonic::Status {
     fn from(err: Error) -> Self {
-        Status::internal(format!("{}", err))
-    }
-}
-
-impl From<Error> for rusk_schema::executed_transaction::Error {
-    fn from(err: Error) -> Self {
-        use rusk_schema::executed_transaction::error::Code;
-
-        let (code, contract_id, data) = match err {
-            Error::Vm(e) => match e {
-                rusk_vm::VMError::UnknownContract(id) => {
-                    (Code::UnknownContract, id, format!("{}", e))
-                }
-                rusk_vm::VMError::ContractPanic(id, data) => {
-                    (Code::ContractPanic, id, data)
-                }
-                rusk_vm::VMError::OutOfGas => (
-                    Code::OutOfGas,
-                    rusk_abi::transfer_contract(),
-                    format!("{}", e),
-                ),
-                _ => (
-                    Code::Other,
-                    rusk_abi::transfer_contract(),
-                    format!("{}", e),
-                ),
-            },
-            _ => (
-                Code::Other,
-                rusk_abi::transfer_contract(),
-                format!("{}", err),
-            ),
-        };
-
-        Self {
-            code: code.into(),
-            contract_id: contract_id.as_bytes().to_vec(),
-            data,
-        }
+        tonic::Status::internal(format!("{err}"))
     }
 }
