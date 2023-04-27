@@ -8,8 +8,13 @@ mod consensus;
 mod genesis;
 
 use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, Network};
+use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
+use anyhow::{anyhow, bail, Result};
+
+use dusk_consensus::user::committee::CommitteeSet;
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
@@ -17,7 +22,7 @@ use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{Block, Hash};
+use node_data::ledger::{self, Block, Hash, Header};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -25,7 +30,6 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 
 use std::any;
-use std::sync::Arc;
 
 use self::consensus::Task;
 
@@ -58,14 +62,17 @@ impl Drop for ChainSrv {
 }
 
 #[async_trait]
-impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
+impl<N: Network, DB: database::DB, VM: vm::VMExecution>
+    LongLivedService<N, DB, VM> for ChainSrv
+{
     async fn execute(
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
+        vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         // Register routes
-        LongLivedService::<N, DB>::add_routes(
+        LongLivedService::<N, DB, VM>::add_routes(
             self,
             TOPICS,
             self.inbound.clone(),
@@ -73,7 +80,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
         )
         .await?;
 
-        self.init::<N, DB>(&network, &db).await?;
+        self.init::<N, DB, VM>(&network, &db, &vm).await?;
 
         loop {
             tokio::select! {
@@ -82,7 +89,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                     if let Ok(res) = recv {
                         match res {
                             Ok(blk) => {
-                                if let Err(e) = self.accept_block::<DB>( &db, &blk).await {
+                                if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
                                     tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.
@@ -101,7 +108,7 @@ impl<N: Network, DB: database::DB> LongLivedService<N, DB> for ChainSrv {
                     if let Ok(mut msg) = recv {
                         match &msg.payload {
                             Payload::Block(b) => {
-                                if let Err(e) = self.accept_block::<DB>(&db, b).await {
+                                if let Err(e) = self.accept_block::<DB, VM>(&db, &vm, b).await {
                                     tracing::error!("failed to accept block: {}", e);
                                 } else {
                                     network.read().await.broadcast(&msg).await;
@@ -145,10 +152,11 @@ impl ChainSrv {
         }
     }
 
-    async fn init<N: Network, DB: database::DB>(
+    async fn init<N: Network, DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         (self.most_recent_block, self.eligible_provisioners) =
             genesis::generate_state();
@@ -157,24 +165,44 @@ impl ChainSrv {
             &self.most_recent_block.header,
             &self.eligible_provisioners,
             db,
+            vm,
         );
 
         anyhow::Ok(0)
     }
 
-    async fn accept_block<DB: database::DB>(
+    async fn accept_block<DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
         blk: &Block,
     ) -> anyhow::Result<()> {
+        // Verify Block Header
+        self.verify_block_header(
+            db,
+            &self.most_recent_block.header,
+            &blk.header,
+        )
+        .await?;
+
         // Reset Consensus
-        self.upper.abort();
+        self.upper.abort().await;
 
-        // TODO: Ensure block is valid
-        // TODO: Call ExecuteStateTransition
+        // Persist block in consistency with the VM state update
+        {
+            let vm = vm.read().await;
+            db.read().await.update(|t| {
+                t.store_block(blk, true)?;
 
-        // Persist block
-        db.read().await.update(|t| t.store_block(blk, true))?;
+                // Accept block transactions into the VM
+                if blk.header.cert.step == 3 {
+                    return vm.finalize(blk);
+                }
+
+                vm.accept(blk)
+            })
+        }?;
+
         self.most_recent_block = blk.clone();
 
         // Delete from mempool any transaction already included in the block
@@ -199,7 +227,100 @@ impl ChainSrv {
             &self.most_recent_block.header,
             &self.eligible_provisioners,
             db,
+            vm,
         );
+
+        Ok(())
+    }
+
+    async fn verify_block_header<DB: database::DB>(
+        &self,
+        db: &Arc<RwLock<DB>>,
+        prev_block_header: &ledger::Header,
+        blk_header: &ledger::Header,
+    ) -> anyhow::Result<()> {
+        if blk_header.version > 0 {
+            return Err(anyhow!("unsupported block version"));
+        }
+
+        if blk_header.height != prev_block_header.height + 1 {
+            return Err(anyhow!("invalid block height"));
+        }
+
+        if blk_header.prev_block_hash != prev_block_header.hash {
+            return Err(anyhow!("invalid previous block hash"));
+        }
+
+        if blk_header.timestamp <= prev_block_header.timestamp {
+            return Err(anyhow!("invalid block timestamp"));
+        }
+
+        // Ensure block is not already in the ledger
+        db.read().await.view(|view| {
+            if Ledger::get_block_exists(&view, &blk_header.hash)? {
+                return Err(anyhow!("block already exists"));
+            }
+
+            Ok(())
+        })?;
+
+        // Verify Certificate
+        self.verify_block_cert(
+            blk_header.hash,
+            blk_header.height,
+            &prev_block_header.seed,
+            &blk_header.cert,
+        )
+        .await
+    }
+
+    async fn verify_block_cert(
+        &self,
+        block_hash: [u8; 32],
+        height: u64,
+        seed: &ledger::Seed,
+        cert: &ledger::Certificate,
+    ) -> anyhow::Result<()> {
+        let (_, public_key) = &self.upper.keys;
+
+        let committee = Arc::new(Mutex::new(CommitteeSet::new(
+            public_key.clone(),
+            self.eligible_provisioners.clone(),
+        )));
+
+        let hdr = node_data::message::Header {
+            topic: 0,
+            pubkey_bls: public_key.clone(),
+            round: height,
+            step: cert.step,
+            block_hash,
+        };
+
+        // Verify first reduction
+        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+            &cert.first_reduction,
+            &committee,
+            *seed,
+            &hdr,
+            0,
+        )
+        .await
+        {
+            return Err(anyhow!("invalid first reduction votes"));
+        }
+
+        // Verify second reduction
+        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+            &cert.second_reduction,
+            &committee,
+            *seed,
+            &hdr,
+            1,
+        )
+        .await
+        {
+            return Err(anyhow!("invalid second reduction votes"));
+        }
 
         Ok(())
     }

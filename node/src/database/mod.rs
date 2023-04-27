@@ -47,6 +47,7 @@ pub trait Ledger {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()>;
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
+    fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
 
     fn get_ledger_tx_by_hash(
         &self,

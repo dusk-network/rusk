@@ -3,6 +3,7 @@ killall rusk-node
 
 # Determines how many pre-loaded provisioners will be in use.
 PROV_NUM=$1
+MODE=$2
 BOOTSTRAP_ADDR="127.0.0.1:7000"
 
 # DUSK_WALLET_DIR is the path to the directory containing a set of consensus keys files.
@@ -23,6 +24,27 @@ fi
 echo "test harness folder:$TEMPD"
 
 run_node() {
+  if [ "$MODE" = "--with_telemetry" ]; then
+    run_node_with_telemetry "$@"
+  else
+    run_node_debug_mode "$@"
+  fi
+}
+
+run_node_debug_mode() {
+  local BOOTSTRAP_ADDR="$1"
+  local PUBLIC_ADDR="$2"
+  local LOG_LEVEL="$3"
+  local KEYS_PATH="$4"
+  local ID="$5"
+  local TEMPD="$6"
+
+  echo "starting node $ID ..."
+  cargo run --bin rusk-node -- --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
+}
+
+## Use ~/.cargo/bin/tokio-console --retain-for 0s http://127.0.0.1:10000 to connect console to first node
+run_node_with_telemetry() {
   local BOOTSTRAP_ADDR="$1"
   local PUBLIC_ADDR="$2"
   local LOG_LEVEL="$3"
@@ -30,9 +52,16 @@ run_node() {
   local ID="$5"
   local TEMPD="$6"
   
+  T_BIND_PORT=$((10000+$ID))
+
   echo "starting node $ID ..."
-  cargo run --bin rusk-node -- --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
+
+  RUST_LOG="info" TOKIO_CONSOLE_BIND="127.0.0.1:$T_BIND_PORT" \
+  cargo --config 'build.rustflags = ["--cfg", "tokio_unstable"]' run --features with_telemetry --bin rusk-node --\
+  --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" \
+  --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
 }
+
 
 # Spawn N (up to 9) nodes
 for (( i=0; i<$PROV_NUM; i++ ))

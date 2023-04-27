@@ -228,14 +228,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(())
     }
 
-    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
-        if let Some(blob) = self.snapshot.get_cf(self.ledger_cf, hash)? {
-            let b = ledger::Block::read(&mut &blob[..])?;
-            return Ok(Some(b));
-        }
+    fn get_block_exists(&self, hash: &[u8]) -> Result<bool> {
+        Ok(self.snapshot.get_cf(self.ledger_cf, hash)?.is_some())
+    }
 
-        // Block not found
-        Ok(None)
+    fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
+        let blk = self
+            .snapshot
+            .get_cf(self.ledger_cf, hash)?
+            .map(|blob| ledger::Block::read(&mut &blob[..]))
+            .transpose()?;
+
+        Ok(blk)
     }
 
     fn get_ledger_tx_by_hash(

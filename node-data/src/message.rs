@@ -187,7 +187,10 @@ impl Message {
 
     pub fn new_with_block(payload: Box<ledger::Block>) -> Message {
         Self {
-            header: Header::default(),
+            header: Header {
+                topic: Topics::Block as u8,
+                ..Default::default()
+            },
             payload: Payload::Block(payload),
             ..Default::default()
         }
@@ -409,7 +412,11 @@ pub mod payload {
         fn eq(&self, other: &Self) -> bool {
             self.prev_hash.eq(&other.prev_hash)
                 && self.signed_hash.eq(&other.signed_hash)
-                && self.candidate.header.hash.eq(&other.candidate.header.hash)
+                && self
+                    .candidate
+                    .header()
+                    .hash
+                    .eq(&other.candidate.header().hash)
         }
     }
 
