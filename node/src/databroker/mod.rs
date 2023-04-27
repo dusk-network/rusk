@@ -24,16 +24,18 @@ use node_data::ledger::{self, Block, Hash, Header};
 use node_data::message::{payload, AsyncQueue, Metadata};
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
-use tokio::sync::{oneshot, Mutex, RwLock};
+use tokio::sync::{oneshot, Mutex, RwLock, Semaphore};
 use tokio::task::JoinHandle;
 
 use std::any;
 
+const MAX_ONGOING_REQUESTS: usize = 100;
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
+    Topics::GetMempool as u8,
+    Topics::GetInv as u8,
     Topics::GetData as u8,
     Topics::GetCandidate as u8,
-    Topics::GetMempool as u8,
 ];
 
 struct Response {
@@ -41,11 +43,24 @@ struct Response {
     recv_peer: SocketAddr,
 }
 
-#[derive(Default)]
 pub struct DataBrokerSrv {
     /// A queue of pending requests to process.
     /// Request here is literally a GET message
     requests: AsyncQueue<Message>,
+
+    /// Limits the number of ongoing requests.
+    limit_ongoing_requests: Arc<Semaphore>,
+}
+
+impl Default for DataBrokerSrv {
+    fn default() -> Self {
+        Self {
+            requests: AsyncQueue::default(),
+            limit_ongoing_requests: Arc::new(Semaphore::new(
+                MAX_ONGOING_REQUESTS,
+            )),
+        }
+    }
 }
 
 #[async_trait]
@@ -70,29 +85,36 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         tracing::info!("data broker service started");
 
         loop {
-            tokio::select! {
-                // Receives inbound wire messages.
-                recv = &mut self.requests.recv() => {
-                    if let Ok(msg) = recv {
+            /// Wait until we can process a new request. We limit the number of
+            /// concurrent requests to mitigate a DoS attack.
+            let permit =
+                self.limit_ongoing_requests.clone().acquire_owned().await?;
 
-                        let network = network.clone();
-                        let db = db.clone();
+            // Wait for a request to process.
+            let msg = self.requests.recv().await?;
 
-                        tokio::spawn(async move {
-                            match Self::handle_request(&network, &db, &msg).await {
-                                Ok(resp) => {
-                                    // Send response
-                                    network.read().await.
-                                        send_to_peer(&resp.msg, resp.recv_peer).await;
-                                },
-                                Err(e) => {
-                                    tracing::warn!("error handling msg: {:?}", e);
-                                }
-                            }
-                        });
+            let network = network.clone();
+            let db = db.clone();
+
+            // Spawn a task to handle the request asynchronously.
+            tokio::spawn(async move {
+                match Self::handle_request(&network, &db, &msg).await {
+                    Ok(resp) => {
+                        // Send response
+                        network
+                            .read()
+                            .await
+                            .send_to_peer(&resp.msg, resp.recv_peer)
+                            .await;
                     }
-                },
-            }
+                    Err(e) => {
+                        tracing::warn!("error handling msg: {:?}", e);
+                    }
+                };
+
+                // Release the permit.
+                drop(permit);
+            });
         }
     }
 
@@ -144,13 +166,11 @@ impl DataBrokerSrv {
                 anyhow::anyhow!("could not fetch candidate block: {:?}", e)
             })?;
 
-        match res {
-            Some(block) => {
-                Ok(Message::new_candidate_resp(payload::CandidateResp {
-                    candidate: block,
-                }))
-            }
-            None => Err(anyhow::anyhow!("could not find candidate block")),
-        }
+        let block =
+            res.ok_or_else(|| anyhow::anyhow!("could not find block"))?;
+
+        Ok(Message::new_candidate_resp(payload::CandidateResp {
+            candidate: block,
+        }))
     }
 }
