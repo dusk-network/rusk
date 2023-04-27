@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 pub struct LicensesData {
     pub requests: Vec<LicenseRequest>,
     pub sessions: Map<LicenseNullifier, LicenseSession>,
-    pub licenses: Map<UserPublicKey, License>, /* todo: key is has to allow multiple licenses per user */
+    pub licenses: Vec<License>,
 }
 
 #[allow(dead_code)]
@@ -25,7 +25,7 @@ impl LicensesData {
         Self {
             requests: Vec::new(),
             sessions: Map::new(),
-            licenses: Map::new(),
+            licenses: Vec::new(),
         }
     }
 
@@ -36,6 +36,7 @@ impl LicensesData {
 
 #[allow(dead_code)]
 impl LicensesData {
+    /// Inserts a given license request in a collection of requests.
     pub fn request_license(&mut self, request: LicenseRequest) {
         rusk_abi::debug!("License contract: request_license");
         self.requests.push(request);
@@ -57,18 +58,27 @@ impl LicensesData {
             .map(|index| self.requests.swap_remove(index))
     }
 
+    /// Inserts a given license in a collection of licenses
     pub fn issue_license(&mut self, license: License) {
         rusk_abi::debug!("License contract: issue_license");
-        self.licenses.insert(license.user_pk, license);
+        self.licenses.push(license);
     }
 
-    pub fn get_license(&self, user_pk: UserPublicKey) -> Option<License> {
+    /// Returns and removes first found license for a given user.
+    /// If not such license is found, returns None.
+    pub fn get_license(&mut self, user_pk: UserPublicKey) -> Option<License> {
         rusk_abi::debug!("License contract: get_license");
-        self.licenses.get(&user_pk).cloned()
+        self.licenses
+            .iter()
+            .position(|e| e.user_pk == user_pk)
+            .map(|index| self.licenses.swap_remove(index))
     }
 
+    /// Verifies the proof of a given license, if successful,
+    /// creates a session with the corresponding nullifier.
     pub fn use_license(&mut self) {}
 
+    /// Returns session containing a given license nullifier.
     pub fn get_session(
         &self,
         nullifier: LicenseNullifier,

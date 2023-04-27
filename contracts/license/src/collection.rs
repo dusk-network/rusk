@@ -30,6 +30,7 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
             .find_map(|(k, v)| (k == key).then_some(v))
     }
 
+    #[allow(dead_code)]
     pub fn insert(&mut self, key: K, value: V) {
         if let Some(pos) = self.data.iter().position(|(k, _)| k == &key) {
             self.data[pos] = (key, value)

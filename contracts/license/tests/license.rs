@@ -118,13 +118,29 @@ fn license_issue_get() {
         .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
         .expect("Issuing license should succeed");
 
-    let _license = session
-        .query::<UserPublicKey, License>(
-            LICENSE_CONTRACT_ID,
-            "get_license",
-            &user_pk,
-        )
-        .expect("Querying the license should succeed");
+    assert!(
+        session
+            .query::<UserPublicKey, Option<License>>(
+                LICENSE_CONTRACT_ID,
+                "get_license",
+                &user_pk,
+            )
+            .expect("Querying the license should succeed")
+            .is_some(),
+        "First call to getting a license request should return some"
+    );
+
+    assert_eq!(
+        session
+            .query::<UserPublicKey, Option<License>>(
+                LICENSE_CONTRACT_ID,
+                "get_license",
+                &user_pk,
+            )
+            .expect("Querying the license should succeed"),
+        None,
+        "First call to getting a license request should return none"
+    );
 }
 
 #[test]
