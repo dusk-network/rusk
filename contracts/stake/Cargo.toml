@@ -1,45 +1,27 @@
 [package]
 name = "stake-contract"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-canonical = "0.7"
-canonical_derive = "0.7"
-dusk-abi = "0.11"
-dusk-jubjub = { version = "0.11", default-features = false }
-dusk-bls12_381 = { version = "0.9", default-features = false, features = ["canon"] }
-dusk-bls12_381-sign = { version = "0.3.0-rc", features = ["canon"] }
+dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-microkelvin = "0.15.0-rc"
-dusk-hamt = { version = "0.10.0-rc", default-features = false }
-dusk-pki = { version = "0.10.0-rc", default-features = false }
-dusk-plonk = { version = "0.10", optional = true }
-dusk-schnorr = { version = "0.10.0-rc", default-features = false, features = ["canon"] }
-lazy_static = { version = "1.4", optional = true }
-phoenix-core = { version = "0.16.0-rc", default-features = false, features = ["canon"] }
-rusk-profile = { path = "../../rusk-profile", optional = true }
-rusk-abi = { path = "../../rusk-abi", features = ["module"] }
-transfer-circuits = { path = "../../circuits/transfer", optional = true }
-transfer-contract = { path = "../transfer", default-features = false, features = ["no-bridge"] }
+dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.28", default-features = false, features = ["rkyv-impl", "alloc"] }
+phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl", "alloc"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
+dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
-stake-contract = { path = ".", features = ["transaction"] }
-transfer-circuits = { path = "../../circuits/transfer" }
-transfer-wrapper = { path = "../../test-utils/transfer-wrapper" }
+piecrust = "0.1"
+rusk-profile = { version = "0.6", path = "../../rusk-profile" }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
+transfer-circuits = { version = "0.5", path = "../../circuits/transfer", features = ["builder"] }
+rkyv = { version = "0.7", default-features = false }
+hex = "0.4"
 rand = "0.8"
-
-[features]
-default = ["transfer-contract/circuits"]
-no-bridge = []
-std = []
-transaction = [
-    "dusk-plonk",
-    "lazy_static",
-    "rusk-profile",
-    "std",
-    "transfer-circuits"
-]

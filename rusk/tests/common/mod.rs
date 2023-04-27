@@ -6,6 +6,7 @@
 
 pub mod encoding;
 pub mod keys;
+pub mod state;
 #[cfg(not(target_os = "windows"))]
 pub mod unix;
 
@@ -16,7 +17,7 @@ use std::path::PathBuf;
 use std::task::{Context, Poll};
 use tempfile::tempdir;
 
-use futures::TryFutureExt;
+use futures::{Stream, TryFutureExt};
 use rusk::Result;
 use tokio::net::{UnixListener, UnixStream};
 use tokio::runtime::Handle;
@@ -48,12 +49,10 @@ pub fn logger() {
     let filter = EnvFilter::new(directive);
     let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
 }
+
 pub async fn setup() -> (
     Channel,
-    async_stream::AsyncStream<
-        Result<unix::UnixStream, std::io::Error>,
-        impl futures::Future<Output = ()>,
-    >,
+    impl Stream<Item = Result<unix::UnixStream, io::Error>>,
 ) where {
     logger();
     // Creates a temporary file for the socket

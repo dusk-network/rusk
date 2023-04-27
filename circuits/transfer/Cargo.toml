@@ -1,30 +1,29 @@
 [package]
 name = "transfer-circuits"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 [dependencies]
 rand_core = "0.6"
 
 dusk-bytes = "0.1"
-dusk-bls12_381 = "0.9"
-dusk-jubjub = "0.11"
-dusk-plonk = "0.10"
-dusk-poseidon = { version = "0.25.0-rc", features = ["canon"] }
-dusk-pki ="0.10.0-rc"
-dusk-schnorr = "0.10.0-rc"
-phoenix-core = { version = "0.16.0-rc", features = ["canon"] }
-canonical = "0.7"
-canonical_derive = { version = "0.7", optional = true }
+dusk-bls12_381 = "0.11"
+dusk-jubjub = "0.12"
+dusk-plonk = "0.13"
+dusk-poseidon = "0.28"
+nstack = "0.16"
+dusk-pki ="0.11"
+dusk-schnorr = "0.12"
+phoenix-core = "0.18"
 
-code-hasher = { path = "../../macros/code-hasher" }
-rusk-profile = { path = "../../rusk-profile", optional = true }
+code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
+rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
 
 [features]
-builder = ["rusk-profile", "canonical_derive"]
+builder = ["rusk-profile"]
 
 [[test]]
 name = "test-execute"

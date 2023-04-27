@@ -4,26 +4,26 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::Error;
-
 use std::ops::Deref;
 
-use canonical_derive::Canon;
 use dusk_bytes::{Error as BytesError, Serializable};
-use dusk_wallet_core::Transaction;
+use phoenix_core::Transaction;
+use rusk_abi::ModuleError;
+
+use rusk_schema::executed_transaction::error::Code;
+use rusk_schema::executed_transaction::Error;
 use rusk_schema::{TX_TYPE_TRANSFER, TX_VERSION};
-use rusk_vm::GasMeter;
 
 /// The payload for a transfer transaction.
 ///
 /// Transfer transactions are the main type of transaction in the network.
 /// They can be used to transfer funds, call contracts, and even both at the
 /// same time.
-#[derive(Debug, Clone, Canon)]
-pub struct TransferPayload(dusk_wallet_core::Transaction);
+#[derive(Debug, Clone)]
+pub struct TransferPayload(Transaction);
 
 impl Deref for TransferPayload {
-    type Target = dusk_wallet_core::Transaction;
+    type Target = Transaction;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -36,11 +36,11 @@ impl TransferPayload {
     }
 
     pub fn from_slice(buf: &[u8]) -> Result<Self, BytesError> {
-        Ok(Self(dusk_wallet_core::Transaction::from_slice(buf)?))
+        Ok(Self(Transaction::from_slice(buf)?))
     }
 }
 
-impl From<dusk_wallet_core::Transaction> for TransferPayload {
+impl From<Transaction> for TransferPayload {
     fn from(tx: Transaction) -> Self {
         Self(tx)
     }
@@ -58,37 +58,43 @@ impl From<TransferPayload> for rusk_schema::Transaction {
     }
 }
 
-/// The payload of a coinbase transaction.
-///
-/// Coinbase transactions are meant to award the block generator with the Dusk
-/// spent in a block. They're not processed through the virtual machine. Instead
-/// they are used to directly mutate the stake contract, incrementing the reward
-/// for the given generator.
-
-pub struct SpentTransaction(
-    pub TransferPayload,
-    pub GasMeter,
-    pub Option<Error>,
-);
+pub struct SpentTransaction(pub Transaction, pub u64, pub Option<ModuleError>);
 
 impl SpentTransaction {
-    pub fn into_inner(self) -> (TransferPayload, GasMeter, Option<Error>) {
+    pub fn into_inner(self) -> (Transaction, u64, Option<ModuleError>) {
         (self.0, self.1, self.2)
     }
 }
 
 impl From<SpentTransaction> for rusk_schema::ExecutedTransaction {
     fn from(spent_tx: SpentTransaction) -> Self {
-        let (transaction, gas_meter, error) = spent_tx.into_inner();
-        let tx_hash = transaction.hash().to_bytes().to_vec();
-        let gas_spent = gas_meter.spent();
+        let (transaction, gas_spent, error) = spent_tx.into_inner();
 
-        let error = error.map(|e| e.into());
+        let tx_hash_input_bytes = transaction.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
+
+        let error = error.map(|e| match e {
+            ModuleError::Panic => Error {
+                code: Code::ContractPanic.into(),
+                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
+                data: String::from(""),
+            },
+            ModuleError::OutOfGas => Error {
+                code: Code::OutOfGas.into(),
+                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
+                data: String::from(""),
+            },
+            ModuleError::Other(_) => Error {
+                code: Code::Other.into(),
+                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
+                data: String::from(""),
+            },
+        });
 
         rusk_schema::ExecutedTransaction {
             error,
             tx: Some(transaction.into()),
-            tx_hash,
+            tx_hash: tx_hash.to_bytes().to_vec(),
             gas_spent,
         }
     }

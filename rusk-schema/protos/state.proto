@@ -65,16 +65,6 @@ message GetStateRootResponse {
     bytes state_root = 1;
 }
 
-message GetNotesOwnedByRequest {
-    uint64 height = 1 [deprecated=true];
-    bytes vk = 2 [deprecated=true];
-}
-
-message GetNotesOwnedByResponse {
-    repeated bytes notes = 1;
-    uint64 height = 2;
-}
-
 message GetNotesRequest {
     uint64 height = 1;
     bytes vk = 2;
@@ -144,7 +134,6 @@ service State {
     rpc Persist(PersistRequest) returns (PersistResponse) {}
     rpc GetProvisioners(GetProvisionersRequest) returns (GetProvisionersResponse) {}
     rpc GetStateRoot(GetStateRootRequest) returns (GetStateRootResponse) {}
-    rpc GetNotesOwnedBy(GetNotesOwnedByRequest) returns (GetNotesOwnedByResponse) {}
 
     // Streams notes from a given block height, optionally filtered by the
     // given view key. If the view key is not present, *all* notes will be

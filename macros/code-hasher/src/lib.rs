@@ -9,57 +9,91 @@
 //! [![Documentation](https://img.shields.io/badge/docs-code--hasher-blue?logo=rust)](https://docs.rs/code-hasher/)
 //! # code-hasher
 //!
-//! Tiny proc macro library designed to hash a code block generating a unique
-//! identifier for it which will get written into a `const` inside of the code
-//! block.
+//! Tiny proc macro library designed to hash an impl block and generate a unique
+//! identifier for it which will get written into an associated `const` of the
+//! same type the impl block targets.
 //!
 //! ## Example
 //! ```rust
-//! #[code_hasher::hash(SOME_CONST_NAME, version = "0.1.0")]
-//! pub mod testing_module {
+//! struct MyStruct;
 //!
+//! #[code_hasher::hash(name = "SOME_CONST_NAME", version = "0.1.0")]
+//! impl MyStruct {
 //!     pub fn this_does_something() -> [u8; 32] {
-//!         SOME_CONST_NAME
+//!         Self::SOME_CONST_NAME
 //!     }
 //! }
 //! ```
 //!
 //! Here, `SOME_CONST_NAME` has assigned as value the resulting hash of:
-//! - The code contained inside `testing_module`.
-//! - The version passed by the user (is optional). Not adding it will basically
-//!   not hash this attribute and **WILL NOT** use any default alternatives.
+//! - The `impl MyStruct` code block.
+//! - The version passed by the user. The only value that is mixed in the hash
+//!   is the major version number - if larger than 0 - or the minor version
+//!   number.
 //!
 //! ## Licensing
 //! This code is licensed under Mozilla Public License Version 2.0 (MPL-2.0).
 //! Please see [LICENSE](https://github.com/dusk-network/rusk/tree/master/macros/code-hasher/LICENSE) for further info.
 
 use blake3::Hasher;
+use darling::FromMeta;
 use proc_macro::TokenStream;
+use quote::quote;
+use semver::Version;
+use syn::{parse_macro_input, AttributeArgs, ItemImpl};
+
+#[derive(Debug, FromMeta)]
+struct MacroArgs {
+    name: proc_macro2::Ident,
+    version: Option<String>,
+}
 
 #[proc_macro_attribute]
-pub fn hash(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn hash(args: TokenStream, input: TokenStream) -> TokenStream {
+    let input_string = input.to_string();
+
+    let args = parse_macro_input!(args as AttributeArgs);
+    let input = parse_macro_input!(input as ItemImpl);
+
+    let args = match MacroArgs::from_list(&args) {
+        Ok(v) => v,
+        Err(e) => {
+            return TokenStream::from(e.write_errors());
+        }
+    };
+
+    // If the version changed in a "major way" the hash should also change
+    let mut version = String::from("undefined");
+    if let Some(v) = args.version {
+        let v = match Version::parse(&v) {
+            Ok(v) => v,
+            Err(e) => panic!("version should be valid semver: {e}"),
+        };
+
+        if v.major == 0 {
+            version = format!("0.{}.0", v.minor);
+        } else {
+            version = format!("{}.0.0", v.major);
+        }
+    }
+
     let mut hasher = Hasher::new();
-    let input_string = format!("{:?}", input);
 
-    // We need to `let` this otherways it gets freed while borrowed.
-    let attrs_string = attr.to_string();
-    let attrs_split: Vec<&str> = attrs_string.split(',').collect();
-
-    // Add the code version (passed as attribute) to the hasher.
-    hasher.update(attrs_split.get(1).unwrap_or(&"").as_bytes());
-    // Add code-block to the hasher.
     hasher.update(input_string.as_bytes());
+    hasher.update(version.as_bytes());
 
-    let id = *hasher.finalize().as_bytes();
-    let mut token_stream = input.to_string();
-    token_stream.pop();
-    token_stream.push_str(&format!(
-        "    const {}: [u8; 32] = {:?};",
-        attrs_split.first().expect("Missing const name"),
-        id
-    ));
-    token_stream.push_str(" }");
-    token_stream.parse().expect(
-        "Error parsing the output of the code-hasher macro as TokenStream",
-    )
+    let hash: [u8; 32] = hasher.finalize().into();
+
+    let const_name = args.name;
+    let type_name = input.self_ty.clone();
+
+    let output = quote! {
+        impl #type_name {
+            const #const_name: [u8; 32] = [#(#hash),*];
+        }
+
+        #input
+    };
+
+    output.into()
 }

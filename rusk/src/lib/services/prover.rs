@@ -12,7 +12,7 @@ mod stct;
 mod wfco;
 mod wfct;
 
-use crate::{Result, PUB_PARAMS};
+use crate::Result;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
@@ -35,10 +35,11 @@ pub use rusk_schema::{
 };
 
 use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
-    SendToContractObfuscatedCircuit, SendToContractTransparentCircuit,
-    StcoCrossover, StcoMessage, WfoChange, WfoCommitment,
-    WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
+    CircuitInput, CircuitInputSignature, CircuitOutput, DeriveKey,
+    ExecuteCircuit, SendToContractObfuscatedCircuit,
+    SendToContractTransparentCircuit, StcoCrossover, StcoMessage, WfoChange,
+    WfoCommitment, WithdrawFromObfuscatedCircuit,
+    WithdrawFromTransparentCircuit,
 };
 
 macro_rules! handle {
@@ -65,10 +66,11 @@ pub struct RuskProver {}
 
 impl RuskProver {
     pub fn preverify(tx: &Transaction) -> Result<bool> {
-        let tx_hash = tx.hash();
-        let inputs = tx.inputs();
-        let outputs = tx.outputs();
-        let proof = tx.proof();
+        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
+
+        let inputs = &tx.nullifiers;
+        let outputs = &tx.outputs;
+        let proof = &tx.proof;
 
         let circuit = circuit_from_numbers(inputs.len(), outputs.len())
             .ok_or_else(|| {
@@ -83,7 +85,7 @@ impl RuskProver {
             Vec::with_capacity(9 + inputs.len());
 
         pi.push(tx_hash.into());
-        pi.push(tx.anchor().into());
+        pi.push(tx.anchor.into());
         pi.extend(inputs.iter().map(|n| n.into()));
 
         pi.push(
@@ -100,15 +102,15 @@ impl RuskProver {
         pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
         pi.extend(
             (0usize..2usize.saturating_sub(outputs.len()))
-                .map(|_| ExecuteCircuit::ZERO_COMMITMENT.into()),
+                .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
         );
 
-        let keys = rusk_profile::keys_for(circuit.circuit_id())?;
-        let vd = &keys.get_verifier()?;
+        let keys = keys_for(circuit.circuit_id())?;
+        let vd = keys.get_verifier()?;
 
         // Maybe we want to handle internal serialization error too, currently
         // they map to `false`.
-        Ok(rusk_abi::verify_proof(&PUB_PARAMS, proof, vd, pi).unwrap_or(false))
+        Ok(rusk_abi::verify_proof(vd, proof.clone(), pi))
     }
 }
 
@@ -157,12 +159,10 @@ fn circuit_from_numbers(
     use ExecuteCircuit::*;
 
     match num_inputs {
-        1 if num_outputs < 3 => Some(ExecuteCircuitOneTwo(Default::default())),
-        2 if num_outputs < 3 => Some(ExecuteCircuitTwoTwo(Default::default())),
-        3 if num_outputs < 3 => {
-            Some(ExecuteCircuitThreeTwo(Default::default()))
-        }
-        4 if num_outputs < 3 => Some(ExecuteCircuitFourTwo(Default::default())),
+        1 if num_outputs < 3 => Some(OneTwo(Default::default())),
+        2 if num_outputs < 3 => Some(TwoTwo(Default::default())),
+        3 if num_outputs < 3 => Some(ThreeTwo(Default::default())),
+        4 if num_outputs < 3 => Some(FourTwo(Default::default())),
         _ => None,
     }
 }

@@ -1,0 +1,20 @@
+[package]
+name = "governance-contract"
+version = "0.12.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
+dusk-bytes = "0.1"
+dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
+rkyv = { version = "0.7", default-features = false }
+
+[dev-dependencies]
+piecrust = "0.1"
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
+rand = "0.8"

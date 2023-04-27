@@ -8,6 +8,15 @@ The Dusk's Smart Contract Platform.
 _Unstable_ : No guarantees can be made regarding the API stability, the project
 is in development.
 
+## Build
+
+To build rusk:
+
+```
+source .env
+make all
+```
+
 ## Tests
 
 To run tests:

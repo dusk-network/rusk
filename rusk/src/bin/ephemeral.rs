@@ -5,14 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use clap::{value_parser, Arg, Command};
-use std::{
-    env,
-    fs::{self, File},
-    io::{BufReader, Read, Result},
-    path::{Path, PathBuf},
-};
+use rusk_recovery_tools::state::tar;
+use std::env;
+use std::fs::File;
+use std::io::{Read, Result};
+use std::path::PathBuf;
 use tempfile::TempDir;
-use zip::ZipArchive;
 
 pub(crate) fn inject_args(command: Command) -> Command {
     command.arg(
@@ -29,31 +27,19 @@ pub(crate) fn inject_args(command: Command) -> Command {
 
 pub(crate) fn configure(state_zip: &PathBuf) -> Result<Option<TempDir>> {
     let tmpdir = tempfile::tempdir()?;
-    unzip(state_zip, tmpdir.path())?;
+
+    let mut f = File::open(state_zip)?;
+    let mut data = Vec::new();
+    f.read_to_end(&mut data)?;
+
+    let unarchive = tar::unarchive(&data[..], tmpdir.path());
+
+    if let Err(e) = unarchive {
+        tracing::error!("Invalid state input {}", e);
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""));
+    }
 
     env::set_var("RUSK_STATE_PATH", tmpdir.as_ref().as_os_str());
 
     Ok(Some(tmpdir))
-}
-
-/// Unzip a file into the output directory.
-fn unzip(zipfile: &PathBuf, output: &Path) -> Result<()> {
-    let f = File::open(zipfile)?;
-    let reader = BufReader::new(f);
-    let mut zip = ZipArchive::new(reader)?;
-
-    for i in 0..zip.len() {
-        let mut entry = zip.by_index(i)?;
-        let entry_path = output.join(entry.name());
-
-        if entry.is_dir() {
-            let _ = fs::create_dir_all(entry_path);
-        } else {
-            let mut buffer = Vec::with_capacity(entry.size() as usize);
-            entry.read_to_end(&mut buffer)?;
-            fs::write(entry_path, buffer)?;
-        }
-    }
-
-    Ok(())
 }

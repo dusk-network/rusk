@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
+use rand::rngs::OsRng;
 
 impl RuskProver {
     pub(crate) fn prove_execute(
@@ -16,12 +17,16 @@ impl RuskProver {
                 Status::invalid_argument("Failed parsing unproven TX")
             })?;
 
-        let mut circ = ExecuteCircuit::default();
+        let mut circ =
+            circuit_from_numbers(utx.inputs().len(), utx.outputs().len())
+                .ok_or(Status::invalid_argument(
+                    "No circuit for the number of inputs and outputs",
+                ))?;
 
         for input in utx.inputs() {
             let cis = CircuitInputSignature::from(input.signature());
             let cinput = CircuitInput::new(
-                input.opening().clone(),
+                *input.opening(),
                 *input.note(),
                 input.pk_r_prime().into(),
                 input.value(),
@@ -30,23 +35,11 @@ impl RuskProver {
                 cis,
             );
 
-            circ.add_input(cinput).map_err(|e| {
-                Status::internal(format!(
-                    "Failed adding input to circuit: {}",
-                    e
-                ))
-            })?;
+            circ.add_input(cinput);
         }
 
         for (note, value, blinder) in utx.outputs() {
-            circ.add_output_with_data(*note, *value, *blinder).map_err(
-                |e| {
-                    Status::internal(format!(
-                        "Failed adding output to circuit: {}",
-                        e
-                    ))
-                },
-            )?;
+            circ.add_output_with_data(*note, *value, *blinder);
         }
 
         circ.set_tx_hash(utx.hash());
@@ -54,20 +47,14 @@ impl RuskProver {
         if let Some((crossover, value, blinder)) = utx.crossover() {
             circ.set_fee_crossover(utx.fee(), crossover, *value, *blinder);
         } else {
-            circ.set_fee(utx.fee()).map_err(|e| {
-                Status::invalid_argument(format!("Failed setting fee: {}", e))
-            })?;
+            circ.set_fee(utx.fee());
         }
 
-        let keys = rusk_profile::keys_for(circ.circuit_id())?;
+        let keys = keys_for(circ.circuit_id())?;
         let pk = &keys.get_prover()?;
-        let pk = ProverKey::from_slice(pk).unwrap();
 
-        let proof = circ.prove(&crate::PUB_PARAMS, &pk).map_err(|e| {
-            Status::invalid_argument(format!(
-                "Failed proving transaction: {}",
-                e
-            ))
+        let (proof, _) = circ.prove(&mut OsRng, pk).map_err(|e| {
+            Status::internal(format!("Failed proving the circuit: {e}"))
         })?;
 
         Ok(Response::new(ExecuteProverResponse {

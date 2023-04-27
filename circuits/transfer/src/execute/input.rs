@@ -71,9 +71,9 @@ impl CircuitInput {
         &self.nullifier
     }
 
-    pub fn to_witness(
+    pub fn to_witness<C: Composer>(
         &self,
-        composer: &mut TurboComposer,
+        composer: &mut C,
     ) -> Result<WitnessInput, Error> {
         let nullifier = self.nullifier;
 

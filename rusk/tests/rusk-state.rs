@@ -6,55 +6,36 @@
 
 pub mod common;
 use crate::common::*;
+
+use std::path::Path;
+
+use dusk_bls12_381::BlsScalar;
 use dusk_pki::SecretSpendKey;
+use parking_lot::MutexGuard;
+use phoenix_core::Note;
 use rand::prelude::*;
 use rand::rngs::StdRng;
-use rusk::{Result, Rusk, RuskState};
-
-use microkelvin::{BackendCtor, DiskBackend};
-
+use rusk::{Result, Rusk, RuskInner};
+use tempfile::tempdir;
 use tracing::info;
 
-use phoenix_core::Note;
+use crate::common::state::new_state;
 
 const BLOCK_HEIGHT: u64 = 1;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
-// Function used to creates a temporary diskbackend for Rusk
-fn testbackend() -> BackendCtor<DiskBackend> {
-    BackendCtor::new(DiskBackend::ephemeral)
-}
-
 // Creates the Rusk initial state for the tests below
-fn initial_state() -> Result<Rusk> {
+fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     let snapshot = toml::from_str(include_str!("./config/rusk-state.toml"))
         .expect("Cannot deserialize config");
 
-    let state_id =
-        rusk_recovery_tools::state::deploy(&snapshot, &testbackend())?;
-
-    let rusk = Rusk::builder(testbackend).id(state_id).build()?;
-
-    let mut state = rusk.state()?;
-    let transfer = state.transfer_contract()?;
-
-    assert!(
-        transfer.get_note(0)?.is_some(),
-        "Expect to have one note at the genesis state",
-    );
-
-    assert!(
-        transfer.get_note(1)?.is_none(),
-        "Expect to have ONLY one note at the genesis state",
-    );
-
-    state.accept();
-    state.finalize();
-
-    Ok(rusk)
+    new_state(dir, &snapshot)
 }
 
-fn push_note(rusk_state: &mut RuskState) -> Result<()> {
+fn push_note<'a, F, T>(rusk: &'a Rusk, after_push: F) -> T
+where
+    F: FnOnce(MutexGuard<'a, RuskInner>) -> T,
+{
     info!("Generating a note");
     let mut rng = StdRng::seed_from_u64(0xdead);
 
@@ -63,19 +44,27 @@ fn push_note(rusk_state: &mut RuskState) -> Result<()> {
 
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
-    let mut transfer = rusk_state.transfer_contract()?;
+    rusk.with_inner(|mut inner| {
+        let mut session = inner
+            .vm
+            .session(inner.current_commit)
+            .expect("current commit should exist");
 
-    transfer.push_note(BLOCK_HEIGHT, note)?;
+        session.set_point_limit(u64::MAX);
+        rusk_abi::set_block_height(&mut session, BLOCK_HEIGHT);
 
-    transfer.update_root()?;
+        let _: Note = session
+            .transact(rusk_abi::transfer_module(), "push_note", &note)
+            .expect("Pushing note should succeed");
+        let _: BlsScalar = session
+            .transact(rusk_abi::transfer_module(), "update_root", &())
+            .expect("Updating root should succeed");
 
-    info!("Updating the new transfer contract state");
-    unsafe {
-        rusk_state
-            .set_contract_state(&rusk_abi::transfer_contract(), &transfer)?;
-    };
+        let commit_id = session.commit().expect("Committing should succeed");
+        inner.current_commit = commit_id;
 
-    Ok(())
+        after_push(inner)
+    })
 }
 
 #[test]
@@ -83,20 +72,28 @@ pub fn rusk_state_accepted() -> Result<()> {
     // Setup the logger
     logger();
 
-    let rusk = initial_state()?;
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp)?;
 
-    let mut state = rusk.state()?;
-    push_note(&mut state)?;
+    push_note(&rusk, |_inner| {});
 
-    let transfer = state.transfer_contract()?;
+    let leaves = rusk.leaves_in_range(0..1)?;
 
-    assert!(transfer.get_note(1)?.is_some(), "Note added");
+    assert_eq!(
+        leaves.len(),
+        2,
+        "There should be two notes in the state now"
+    );
 
-    state.accept();
-    state.revert();
+    rusk.revert()?;
+    let leaves = rusk.leaves_in_range(0..1)?;
 
-    let transfer = state.transfer_contract()?;
-    assert!(transfer.get_note(1)?.is_none(), "Note removed");
+    assert_eq!(
+        leaves.len(),
+        1,
+        "The new note should no longer be there after reversion"
+    );
+
     Ok(())
 }
 
@@ -105,82 +102,29 @@ pub fn rusk_state_finalized() -> Result<()> {
     // Setup the logger
     logger();
 
-    let rusk = initial_state()?;
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp)?;
 
-    let mut state = rusk.state()?;
-    push_note(&mut state)?;
+    push_note(&rusk, |mut inner| {
+        inner.base_commit = inner.current_commit;
+    });
 
-    let transfer = state.transfer_contract()?;
+    let leaves = rusk.leaves_in_range(0..1)?;
 
-    assert!(transfer.get_note(1)?.is_some(), "Note added");
+    assert_eq!(
+        leaves.len(),
+        2,
+        "There should be two notes in the state now"
+    );
 
-    state.finalize();
-    state.revert();
+    rusk.revert()?;
+    let leaves = rusk.leaves_in_range(0..1)?;
 
-    assert!(transfer.get_note(1)?.is_some(), "Note still present");
-    Ok(())
-}
-
-#[test]
-pub fn rusk_state_ephemeral() -> Result<()> {
-    // Setup the logger
-    logger();
-
-    let rusk = initial_state()?;
-
-    // The state is dropped at the end of the block, all changes that are not
-    // accepted / finalized are lost
-    {
-        let mut state = rusk.state()?;
-
-        push_note(&mut state)?;
-        state.finalize();
-
-        push_note(&mut state)?;
-        state.accept();
-
-        push_note(&mut state)?;
-
-        let transfer = state.transfer_contract()?;
-
-        assert!(transfer.get_note(1)?.is_some(), "Note added");
-        assert!(transfer.get_note(2)?.is_some(), "Note added");
-        assert!(transfer.get_note(3)?.is_some(), "Note added");
-
-        // Testing that cloning the current state is not affecting either the
-        // current scope or the outer scope.
-
-        let mut state_cloned = state.clone();
-
-        state_cloned.revert();
-
-        let transfer = state_cloned.transfer_contract()?;
-
-        assert!(transfer.get_note(1)?.is_some(), "Note still present");
-        assert!(transfer.get_note(2)?.is_none(), "Note removed");
-        assert!(transfer.get_note(3)?.is_none(), "Note removed");
-
-        // The original state didn't change
-        let transfer = state.transfer_contract()?;
-
-        assert!(transfer.get_note(1)?.is_some(), "Note added");
-        assert!(transfer.get_note(2)?.is_some(), "Note added");
-        assert!(transfer.get_note(3)?.is_some(), "Note added");
-    }
-
-    let mut state = rusk.state()?;
-    let transfer = state.transfer_contract()?;
-
-    assert!(transfer.get_note(1)?.is_some(), "Note still present");
-    assert!(transfer.get_note(2)?.is_some(), "Note still present");
-    assert!(transfer.get_note(3)?.is_none(), "Note removed");
-
-    state.revert();
-    let transfer = state.transfer_contract()?;
-
-    assert!(transfer.get_note(1)?.is_some(), "Note still present");
-    assert!(transfer.get_note(2)?.is_none(), "Note removed");
-    assert!(transfer.get_note(3)?.is_none(), "Note removed");
+    assert_eq!(
+        leaves.len(),
+        2,
+        "The new note should still be there after reversion"
+    );
 
     Ok(())
 }

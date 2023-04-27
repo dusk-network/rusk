@@ -100,7 +100,7 @@ impl Config {
             Some(log_level) => log_level,
         };
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
-            panic!("Invalid log-level specified '{}' - {}", log_level, e)
+            panic!("Invalid log-level specified '{log_level}' - {e}")
         })
     }
 }
