@@ -9,20 +9,21 @@ use crate::{
     License, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey,
     UserPublicKey,
 };
+use alloc::vec::Vec;
 
 /// License contract.
 #[derive(Debug, Clone)]
 pub struct LicensesData {
-    pub requests: Map<SPPublicKey, LicenseRequest>,
+    pub requests: Vec<LicenseRequest>,
     pub sessions: Map<LicenseNullifier, LicenseSession>,
-    pub licenses: Map<UserPublicKey, License>,
+    pub licenses: Map<UserPublicKey, License>, /* todo: key is has to allow multiple licenses per user */
 }
 
 #[allow(dead_code)]
 impl LicensesData {
     pub const fn new() -> Self {
         Self {
-            requests: Map::new(),
+            requests: Vec::new(),
             sessions: Map::new(),
             licenses: Map::new(),
         }
@@ -37,7 +38,7 @@ impl LicensesData {
 impl LicensesData {
     pub fn request_license(&mut self, request: LicenseRequest) {
         rusk_abi::debug!("License contract: request_license");
-        self.requests.insert(request.sp_public_key, request);
+        self.requests.push(request);
     }
 
     pub fn get_license_request(
@@ -48,7 +49,10 @@ impl LicensesData {
             "License contract: get_license_request {:?}",
             sp_public_key
         );
-        self.requests.get(&sp_public_key).cloned()
+        self.requests
+            .iter()
+            .find(|e| e.sp_public_key == sp_public_key)
+            .cloned()
     }
 
     pub fn issue_license(&mut self, license: License) {

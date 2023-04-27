@@ -6,8 +6,8 @@
 
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
-use dusk_schnorr::Signature;
 use dusk_jubjub::JubJubAffine;
+use dusk_schnorr::Signature;
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// SP Public Key.

@@ -92,7 +92,11 @@ fn license_issue_get() {
     let sp_pk = SPPublicKey {
         sp_pk: random_public_key(rng),
     };
-    let license = License { user_pk, sp_pk, sig_lic: Signature::default() };
+    let license = License {
+        user_pk,
+        sp_pk,
+        sig_lic: Signature::default(),
+    };
 
     session
         .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
@@ -124,4 +128,9 @@ fn get_session_none() {
         .expect("Querying the session should succeed");
 
     assert_eq!(None::<LicenseSession>, license_session);
+}
+
+#[test]
+fn use_license() {
+    let mut _session = initialize();
 }
