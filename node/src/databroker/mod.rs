@@ -10,6 +10,7 @@ use crate::{LongLivedService, Message};
 use anyhow::{anyhow, bail, Result};
 
 use dusk_consensus::user::committee::CommitteeSet;
+use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -39,8 +40,22 @@ const TOPICS: &[u8] = &[
 ];
 
 struct Response {
-    msg: Message,
+    /// A response usually consists of a single message. However in case of
+    /// GetMempool and GetBlocks we may need to send multiple messages in
+    /// response to a single request.
+    msgs: SmallVec<[Message; 1]>,
+
+    /// Destination address of the response.
     recv_peer: SocketAddr,
+}
+
+impl Response {
+    fn new_from_msg(msg: Message, recv_peer: SocketAddr) -> Self {
+        Self {
+            msgs: SmallVec::from_buf([msg]),
+            recv_peer,
+        }
+    }
 }
 
 pub struct DataBrokerSrv {
@@ -101,11 +116,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 match Self::handle_request(&network, &db, &msg).await {
                     Ok(resp) => {
                         // Send response
-                        network
-                            .read()
-                            .await
-                            .send_to_peer(&resp.msg, resp.recv_peer)
-                            .await;
+                        for msg in resp.msgs {
+                            network
+                                .read()
+                                .await
+                                .send_to_peer(&msg, resp.recv_peer)
+                                .await;
+                        }
                     }
                     Err(e) => {
                         tracing::warn!("error handling msg: {:?}", e);
@@ -144,7 +161,7 @@ impl DataBrokerSrv {
             Payload::GetCandidate(m) => {
                 let msg =
                     Self::handle_get_candidate(network, db, m.clone()).await?;
-                Ok(Response { msg, recv_peer })
+                Ok(Response::new_from_msg(msg, recv_peer))
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
