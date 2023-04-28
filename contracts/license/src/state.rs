@@ -6,8 +6,8 @@
 
 use crate::collection::Map;
 use crate::{
-    License, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey,
-    UserPublicKey,
+    ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession,
+    SPPublicKey, UserPublicKey,
 };
 use alloc::vec::Vec;
 
@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 pub struct LicensesData {
     pub requests: Vec<LicenseRequest>,
     pub sessions: Map<LicenseNullifier, LicenseSession>,
-    pub licenses: Vec<License>,
+    pub licenses: Vec<ContractLicense>,
 }
 
 #[allow(dead_code)]
@@ -59,14 +59,17 @@ impl LicensesData {
     }
 
     /// Inserts a given license in a collection of licenses
-    pub fn issue_license(&mut self, license: License) {
+    pub fn issue_license(&mut self, license: ContractLicense) {
         rusk_abi::debug!("License contract: issue_license");
         self.licenses.push(license);
     }
 
     /// Returns and removes first found license for a given user.
     /// If not such license is found, returns None.
-    pub fn get_license(&mut self, user_pk: UserPublicKey) -> Option<License> {
+    pub fn get_license(
+        &mut self,
+        user_pk: UserPublicKey,
+    ) -> Option<ContractLicense> {
         rusk_abi::debug!("License contract: get_license");
         self.licenses
             .iter()
@@ -76,7 +79,9 @@ impl LicensesData {
 
     /// Verifies the proof of a given license, if successful,
     /// creates a session with the corresponding nullifier.
-    pub fn use_license(&mut self) {}
+    pub fn use_license(&mut self) {
+        // todo: place the verification code here
+    }
 
     /// Returns session containing a given license nullifier.
     pub fn get_session(

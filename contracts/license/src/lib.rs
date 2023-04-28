@@ -57,7 +57,7 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn use_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.use_license())
+        rusk_abi::wrap_transaction(arg_len, |()| STATE.use_license())
     }
 
     #[no_mangle]

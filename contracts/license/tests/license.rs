@@ -11,14 +11,19 @@ extern crate alloc;
 mod license_types;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
+use dusk_jubjub::{
+    JubJubAffine, GENERATOR_EXTENDED,
+};
 use dusk_pki::SecretKey;
+use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
+use zk_citadel::gadget;
+use zk_citadel::license::License;
+
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
 use license_types::*;
-
 use piecrust::{ModuleId, Session, VM};
 
 const LICENSE_CONTRACT_ID: ModuleId = {
@@ -29,9 +34,26 @@ const LICENSE_CONTRACT_ID: ModuleId = {
 
 const POINT_LIMIT: u64 = 0x10000000;
 
+static LABEL: &[u8; 12] = b"dusk-network";
+const CAPACITY: usize = 17; // capacity required for the setup
+
 fn random_public_key<R: RngCore + CryptoRng>(rng: &mut R) -> JubJubAffine {
     let sk = SecretKey::random(rng);
     JubJubAffine::from(GENERATOR_EXTENDED * sk.as_ref())
+}
+
+fn random_license_user_pk<R: RngCore + CryptoRng>(rng: &mut R) -> (ContractLicense, UserPublicKey) {
+    let user_pk = UserPublicKey {
+        user_pk: random_public_key(rng),
+    };
+    let sp_pk = SPPublicKey {
+        sp_pk: random_public_key(rng),
+    };
+    (ContractLicense {
+        user_pk,
+        sp_pk,
+        sig_lic: Signature::default(),
+    }, user_pk)
 }
 
 fn initialize() -> Session {
@@ -102,25 +124,19 @@ fn license_issue_get() {
     let rng = &mut StdRng::seed_from_u64(0xcafe);
     let mut session = initialize();
 
-    let user_pk = UserPublicKey {
-        user_pk: random_public_key(rng),
-    };
-    let sp_pk = SPPublicKey {
-        sp_pk: random_public_key(rng),
-    };
-    let license = License {
-        user_pk,
-        sp_pk,
-        sig_lic: Signature::default(),
-    };
+    let (license, user_pk) = random_license_user_pk(rng);
 
     session
-        .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
+        .transact::<ContractLicense, ()>(
+            LICENSE_CONTRACT_ID,
+            "issue_license",
+            &license,
+        )
         .expect("Issuing license should succeed");
 
     assert!(
         session
-            .query::<UserPublicKey, Option<License>>(
+            .query::<UserPublicKey, Option<ContractLicense>>(
                 LICENSE_CONTRACT_ID,
                 "get_license",
                 &user_pk,
@@ -132,7 +148,7 @@ fn license_issue_get() {
 
     assert_eq!(
         session
-            .query::<UserPublicKey, Option<License>>(
+            .query::<UserPublicKey, Option<ContractLicense>>(
                 LICENSE_CONTRACT_ID,
                 "get_license",
                 &user_pk,
@@ -162,7 +178,54 @@ fn get_session_none() {
     assert_eq!(None::<LicenseSession>, license_session);
 }
 
+#[derive(Default, Debug)]
+pub struct Citadel {
+    license: License,
+}
+
+impl Citadel {
+    pub fn new(license: License) -> Self {
+        Self { license }
+    }
+}
+
+impl Circuit for Citadel {
+    fn circuit<C>(&self, composer: &mut C) -> Result<(), Error>
+    where
+        C: Composer,
+    {
+        gadget::nullify_license(composer, &self.license)?;
+        Ok(())
+    }
+}
+
 #[test]
 fn use_license() {
-    let mut _session = initialize();
+    let rng = &mut StdRng::seed_from_u64(0xcafe);
+    let mut session = initialize();
+
+    let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
+    let (l, _) = random_license_user_pk(rng); // todo, eliminate me
+    let license = License::random(rng);
+
+    let (prover, _verifier) = Compiler::compile::<Citadel>(&pp, LABEL)
+        .expect("Compiling circuit should succeed");
+
+    let (proof, public_inputs) = prover
+        .prove(rng, &Citadel::new(license.clone()))
+        .expect("Proving should succeed");
+
+    let use_license_request = UseLicenseRequest {
+        proof,
+        public_inputs,
+        license: l, // todo, replace with real license
+    };
+
+    session
+        .transact::<UseLicenseRequest, ()>(
+            LICENSE_CONTRACT_ID,
+            "use_license",
+            &use_license_request,
+        )
+        .expect("Use license should succeed");
 }

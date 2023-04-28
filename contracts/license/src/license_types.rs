@@ -4,11 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use alloc::vec::Vec;
 use bytecheck::CheckBytes;
+use rkyv::{Archive, Deserialize, Serialize};
+
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubAffine;
+use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use rkyv::{Archive, Deserialize, Serialize};
 
 /// SP Public Key.
 #[derive(Debug, Clone, Copy, PartialEq, Archive, Serialize, Deserialize)]
@@ -48,8 +51,17 @@ pub struct LicenseSession {
 /// License.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct License {
+pub struct ContractLicense {
     pub user_pk: UserPublicKey,
     pub sp_pk: SPPublicKey,
     pub sig_lic: Signature,
+}
+
+/// Use License Request.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct UseLicenseRequest {
+    pub proof: Proof,
+    pub public_inputs: Vec<BlsScalar>,
+    pub license: ContractLicense,
 }
