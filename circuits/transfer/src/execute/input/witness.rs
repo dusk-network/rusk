@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_poseidon::cipher::PoseidonCipher;
-
 use dusk_plonk::prelude::*;
 
 /// Coupled code
@@ -31,30 +29,21 @@ pub struct WitnessInput {
     pub schnorr_u: Witness,
     pub schnorr_r: WitnessPoint,
     pub schnorr_r_p: WitnessPoint,
-    pub r: WitnessPoint,
     pub pos: Witness,
-    pub nonce: Witness,
-    pub cipher: [Witness; PoseidonCipher::cipher_size()],
     pub note_hash: Witness,
     pub nullifier: BlsScalar,
 }
 
 impl WitnessInput {
     #[allow(clippy::wrong_self_convention)]
-    pub fn to_hash_inputs(&self) -> [Witness; 12] {
+    pub fn to_hash_inputs(&self) -> [Witness; 6] {
         [
             self.note_type,
             *self.value_commitment.x(),
             *self.value_commitment.y(),
-            self.nonce,
             *self.pk_r.x(),
             *self.pk_r.y(),
-            *self.r.x(),
-            *self.r.y(),
             self.pos,
-            self.cipher[0],
-            self.cipher[1],
-            self.cipher[2],
         ]
     }
 }
