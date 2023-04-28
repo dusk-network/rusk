@@ -39,5 +39,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#38]: https://github.com/dusk-network/consensus/issues/38
 
 <!-- VERSIONS -->
-[Unreleased]: https://github.com/dusk-network/piecrust/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/dusk-network/piecrust/releases/tag/v0.1.0
+[Unreleased]: https://github.com/dusk-network/consensus/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/dusk-network/consensus/releases/tag/v0.1.0
