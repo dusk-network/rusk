@@ -51,7 +51,8 @@ impl Task {
     /// Creates a new consensus task with the given keys encrypted with password
     /// from env var DUSK_CONSENSUS_KEYS_PASS.
     pub(crate) fn new_with_keys(path: String) -> Self {
-        let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS").unwrap();
+        let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
+            .expect("DUSK_CONSENSUS_KEYS_PASS not set");
         let keys = node_data::bls::load_keys(path, pwd);
 
         tracing::info!("Loaded consensus keys: {:?}", keys.1);
