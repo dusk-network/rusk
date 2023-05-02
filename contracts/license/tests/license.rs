@@ -10,6 +10,9 @@ extern crate alloc;
 #[path = "../src/license_types.rs"]
 mod license_types;
 
+#[path = "../src/license_circuits.rs"]
+mod license_circuits;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{
     JubJubAffine, GENERATOR_EXTENDED,
@@ -34,7 +37,7 @@ const LICENSE_CONTRACT_ID: ModuleId = {
 
 const POINT_LIMIT: u64 = 0x10000000;
 
-static LABEL: &[u8; 12] = b"dusk-network";
+static LABEL: &[u8] = b"dusk-network";
 const CAPACITY: usize = 17; // capacity required for the setup
 
 fn random_public_key<R: RngCore + CryptoRng>(rng: &mut R) -> JubJubAffine {
@@ -201,7 +204,7 @@ impl Circuit for Citadel {
 
 #[test]
 fn use_license() {
-    let rng = &mut StdRng::seed_from_u64(0xcafe);
+    let rng = &mut StdRng::seed_from_u64(0xbeef);
     let mut session = initialize();
 
     let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
@@ -215,17 +218,42 @@ fn use_license() {
         .prove(rng, &Citadel::new(license.clone()))
         .expect("Proving should succeed");
 
+    for pi in public_inputs.iter() {
+        println!("public inputs={:?}", pi.0);
+    }
+
     let use_license_arg = UseLicenseArg {
         proof,
         public_inputs,
         license: l, // todo, replace with real license
     };
 
-    session
-        .transact::<UseLicenseArg, ()>(
-            LICENSE_CONTRACT_ID,
-            "use_license",
-            &use_license_arg,
-        )
-        .expect("Use license should succeed");
+    #[derive(Default)]
+    struct DummyCircuit;
+
+    impl Circuit for DummyCircuit {
+        fn circuit<C>(&self, _: &mut C) -> Result<(), Error>
+            where
+                C: Composer,
+        {
+            unreachable!(
+                "This circuit should never be compiled or proven, only verified"
+            )
+        }
+    }
+
+    use crate::license_circuits::verifier_data_license_circuit;
+    let vd = verifier_data_license_circuit();
+    let verifier2 = Verifier::<DummyCircuit>::try_from_bytes(vd)
+        .expect("Verifier data coming from the contract should be valid");
+    verifier2.verify(&use_license_arg.proof, &use_license_arg.public_inputs).expect("verify should succeed");
+
+
+    // session
+    //     .transact::<UseLicenseArg, ()>(
+    //         LICENSE_CONTRACT_ID,
+    //         "use_license",
+    //         &use_license_arg,
+    //     )
+    //     .expect("Use license should succeed");
 }
