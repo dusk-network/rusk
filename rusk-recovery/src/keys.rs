@@ -141,6 +141,7 @@ pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
             &ExecuteTwoTwoCircuitLoader {},
             &ExecuteThreeTwoCircuitLoader {},
             &ExecuteFourTwoCircuitLoader {},
+            &LicenseCircuitLoader {},
         ],
     )?;
 

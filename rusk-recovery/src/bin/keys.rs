@@ -35,6 +35,7 @@ struct Cli {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("here we go mm");
     let args = Cli::parse();
     task::run(
         || rusk_recovery_tools::keys::exec(args.keep),
