@@ -5,18 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use core::fmt;
-use phoenix_core::Error as PhoenixError;
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Phoenix(PhoenixError),
     ProofVerificationError,
-}
-
-impl From<PhoenixError> for Error {
-    fn from(e: PhoenixError) -> Self {
-        Self::Phoenix(e)
-    }
 }
 
 impl fmt::Display for Error {

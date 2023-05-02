@@ -9,6 +9,7 @@
 
 extern crate alloc;
 
+mod license_circuits;
 mod collection;
 mod license_types;
 mod state;

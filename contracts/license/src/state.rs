@@ -9,6 +9,10 @@ use crate::error::Error;
 use crate::{ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey, UseLicenseArg, UserPublicKey};
 use alloc::vec::Vec;
 use rusk_abi::PublicInput;
+use dusk_bytes::Serializable;
+// use dusk_plonk::prelude::*;
+
+use crate::license_circuits::verifier_data_license_circuit;
 
 /// License contract.
 #[derive(Debug, Clone)]
@@ -83,6 +87,7 @@ impl LicensesData {
         for scalar in use_license_arg.public_inputs {
             pi.push(PublicInput::BlsScalar(scalar))
         }
+        let vd = verifier_data_license_circuit();
         Self::assert_proof(vd, use_license_arg.proof.to_bytes().to_vec(), pi)
             .expect("Provided proof should succeed!");
     }
