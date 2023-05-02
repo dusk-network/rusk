@@ -1,0 +1,37 @@
+[package]
+name = "license-circuits"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand_core = "0.6"
+
+dusk-bytes = "0.1"
+dusk-bls12_381 = "0.11"
+dusk-jubjub = "0.12"
+dusk-plonk = "0.13"
+dusk-poseidon = "0.28"
+nstack = "0.16"
+dusk-pki ="0.11"
+dusk-schnorr = "0.12"
+phoenix-core = "0.18"
+zk-citadel = "0.1.0"
+
+code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
+rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
+
+[dev-dependencies]
+rand = "0.8"
+
+[features]
+builder = ["rusk-profile"]
+
+#[[test]]
+#name = "test-execute"
+#path = "tests/execute.rs"
+#required-features = ["builder"]
+
+[[test]]
+name = "test-license"
+path = "tests/prove_verify_license_circuit.rs"
+required-features = ["rusk-profile"]

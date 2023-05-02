@@ -6,6 +6,8 @@
 
 mod transfer;
 use transfer::*;
+mod license;
+use license::*;
 
 use crate::theme::Theme;
 use dusk_plonk::prelude::*;
