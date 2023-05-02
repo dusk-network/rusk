@@ -215,17 +215,17 @@ fn use_license() {
         .prove(rng, &Citadel::new(license.clone()))
         .expect("Proving should succeed");
 
-    let use_license_request = UseLicenseRequest {
+    let use_license_arg = UseLicenseArg {
         proof,
         public_inputs,
         license: l, // todo, replace with real license
     };
 
     session
-        .transact::<UseLicenseRequest, ()>(
+        .transact::<UseLicenseArg, ()>(
             LICENSE_CONTRACT_ID,
             "use_license",
-            &use_license_request,
+            &use_license_arg,
         )
         .expect("Use license should succeed");
 }

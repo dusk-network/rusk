@@ -5,11 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::collection::Map;
-use crate::{
-    ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession,
-    SPPublicKey, UserPublicKey,
-};
+use crate::error::Error;
+use crate::{ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey, UseLicenseArg, UserPublicKey};
 use alloc::vec::Vec;
+use rusk_abi::PublicInput;
 
 /// License contract.
 #[derive(Debug, Clone)]
@@ -79,8 +78,13 @@ impl LicensesData {
 
     /// Verifies the proof of a given license, if successful,
     /// creates a session with the corresponding nullifier.
-    pub fn use_license(&mut self) {
-        // todo: place the verification code here
+    pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
+        let mut pi = Vec::new();
+        for scalar in use_license_arg.public_inputs {
+            pi.push(PublicInput::BlsScalar(scalar))
+        }
+        Self::assert_proof(vd, use_license_arg.proof.to_bytes().to_vec(), pi)
+            .expect("Provided proof should succeed!");
     }
 
     /// Returns session containing a given license nullifier.
@@ -90,5 +94,15 @@ impl LicensesData {
     ) -> Option<LicenseSession> {
         rusk_abi::debug!("License contract: get_session {:?}", nullifier);
         self.sessions.get(&nullifier).cloned()
+    }
+
+    fn assert_proof(
+        verifier_data: &[u8],
+        proof: Vec<u8>,
+        public_inputs: Vec<PublicInput>,
+    ) -> Result<(), Error> {
+        rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
+            .then(|| ())
+            .ok_or(Error::ProofVerificationError)
     }
 }

@@ -60,7 +60,7 @@ pub struct ContractLicense {
 /// Use License Request.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
-pub struct UseLicenseRequest {
+pub struct UseLicenseArg {
     pub proof: Proof,
     pub public_inputs: Vec<BlsScalar>,
     pub license: ContractLicense,

@@ -12,6 +12,7 @@ extern crate alloc;
 mod collection;
 mod license_types;
 mod state;
+mod error;
 use license_types::*;
 
 #[cfg(target_family = "wasm")]
@@ -57,7 +58,7 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn use_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |()| STATE.use_license())
+        rusk_abi::wrap_transaction(arg_len, |use_license_arg| STATE.use_license(use_license_arg))
     }
 
     #[no_mangle]
