@@ -10,6 +10,7 @@ use crate::{LongLivedService, Message};
 use anyhow::{anyhow, bail, Result};
 
 use dusk_consensus::user::committee::CommitteeSet;
+use node_data::message::payload::InvType;
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -22,8 +23,8 @@ use dusk_consensus::contract_state::{
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{self, Block, Hash, Header};
+use node_data::message::{self, Payload, Topics};
 use node_data::message::{payload, AsyncQueue, Metadata};
-use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock, Semaphore};
 use tokio::task::JoinHandle;
@@ -50,6 +51,14 @@ struct Response {
 }
 
 impl Response {
+    fn new(msgs: Vec<Message>, recv_peer: SocketAddr) -> Self {
+        Self {
+            msgs: SmallVec::from_vec(msgs),
+            recv_peer,
+        }
+    }
+
+    /// Creates a new response from a single message.
     fn new_from_msg(msg: Message, recv_peer: SocketAddr) -> Self {
         Self {
             msgs: SmallVec::from_buf([msg]),
@@ -57,7 +66,16 @@ impl Response {
         }
     }
 }
-
+/// Implements a request-for-data service.
+///
+/// The data broker acts as an intermediary between data producers (such as
+/// Ledger, Candidates and Mempool databases ) and data consumers which could be
+/// any node in the network that needs to recover any state.
+///
+/// Similar to a HTTP Server, the DataBroker service processes each request in
+/// a separate tokio::task.
+///
+/// It also limits the number of concurrent requests.
 pub struct DataBrokerSrv {
     /// A queue of pending requests to process.
     /// Request here is literally a GET message
@@ -159,18 +177,40 @@ impl DataBrokerSrv {
         match &msg.payload {
             // Handle GetCandidate requests
             Payload::GetCandidate(m) => {
-                let msg =
-                    Self::handle_get_candidate(network, db, m.clone()).await?;
+                let msg = Self::handle_get_candidate(network, db, m).await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
+            }
+            // Handle GetBlocks requests
+            Payload::GetBlocks(m) => {
+                let msg = Self::handle_get_blocks(network, db, m).await?;
+                Ok(Response::new_from_msg(msg, recv_peer))
+            }
+            // Handle GetMempool requests
+            Payload::GetMempool(m) => {
+                let msg = Self::handle_get_mempool(network, db, m).await?;
+                Ok(Response::new_from_msg(msg, recv_peer))
+            }
+            // Handle GetInv requests
+            Payload::GetInv(m) => {
+                let msg = Self::handle_inv(network, db, m).await?;
+                Ok(Response::new_from_msg(msg, recv_peer))
+            }
+            // Handle GetData requests
+            Payload::GetData(m) => {
+                let msgs = Self::handle_get_data(network, db, m).await?;
+                Ok(Response::new(msgs, recv_peer))
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
         }
     }
 
+    /// Handles GetCandidate requests.
+    ///
+    /// Message flow: GetCandidate -> CandidateResp
     async fn handle_get_candidate<N: Network, DB: database::DB>(
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
-        m: node_data::message::payload::GetCandidate,
+        m: &payload::GetCandidate,
     ) -> Result<Message> {
         let mut res = Option::None;
         db.read()
@@ -189,5 +229,153 @@ impl DataBrokerSrv {
         Ok(Message::new_candidate_resp(payload::CandidateResp {
             candidate: block,
         }))
+    }
+
+    /// Handles GetMempool requests.
+    /// Message flow: GetMempool -> Inv -> GetData -> Tx
+    async fn handle_get_mempool<N: Network, DB: database::DB>(
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+        _m: &payload::GetMempool,
+    ) -> Result<Message> {
+        let mut inv = payload::Inv::default();
+
+        db.read()
+            .await
+            .view(|t| {
+                for hash in t.get_txs_ids()? {
+                    inv.add_tx_hash(hash);
+                }
+
+                if inv.inv_list.is_empty() {
+                    return Err(anyhow::anyhow!("mempool is empty"));
+                }
+
+                Ok(())
+            })
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        Ok(Message::new_inv(inv))
+    }
+
+    /// Handles GetBlocks message request.
+    ///
+    ///  Message flow: GetBlocks -> Inv -> GetData -> Block
+    async fn handle_get_blocks<N: Network, DB: database::DB>(
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+        m: &payload::GetBlocks,
+    ) -> Result<Message> {
+        let mut inv = payload::Inv::default();
+        db.read()
+            .await
+            .view(|t| {
+                let mut locator = t
+                    .fetch_block(&m.locator)?
+                    .ok_or_else(|| anyhow::anyhow!("could not find block"))?
+                    .header
+                    .height;
+
+                loop {
+                    locator += 1;
+                    match t.fetch_block_hash_by_height(locator)? {
+                        Some(bh) => {
+                            inv.add_block_hash(bh);
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+                }
+
+                if inv.inv_list.is_empty() {
+                    return Err(anyhow::anyhow!("no blocks found"));
+                }
+
+                Ok(())
+            })
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        Ok(Message::new_inv(inv))
+    }
+
+    /// Handles inventory message request.
+    ///
+    /// This takes an inventory message (topics.Inv), checks it for any
+    /// items that the node state is missing, puts these items in a GetData
+    /// wire message, and sends it back to request the items in full.
+    ///
+    /// An item is a block or a transaction.
+    async fn handle_inv<N: Network, DB: database::DB>(
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+        m: &node_data::message::payload::Inv,
+    ) -> Result<Message> {
+        let mut inv = payload::Inv::default();
+
+        db.read()
+            .await
+            .view(|t| {
+                for i in &m.inv_list {
+                    match i.inv_type {
+                        InvType::Block => {
+                            if Ledger::fetch_block(&t, &i.hash)?.is_none() {
+                                inv.add_block_hash(i.hash);
+                            }
+                        }
+                        InvType::MempoolTx => {
+                            if Mempool::get_tx(&t, i.hash)?.is_none() {
+                                inv.add_tx_hash(i.hash);
+                            }
+                        }
+                    }
+                }
+
+                Ok(())
+            })
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        if inv.inv_list.is_empty() {
+            return Err(anyhow::anyhow!("no items to fetch"));
+        }
+
+        Ok(Message::new_get_data(inv))
+    }
+
+    /// Handles GetData message request.
+    ///
+    /// The response to a GetData message is a vector of messages, each of which
+    /// could be either topics.Block or topics.Tx.
+    async fn handle_get_data<N: Network, DB: database::DB>(
+        network: &Arc<RwLock<N>>,
+        db: &Arc<RwLock<DB>>,
+        m: &node_data::message::payload::GetData,
+    ) -> Result<Vec<Message>> {
+        let mut messages = Vec::new();
+
+        db.read()
+            .await
+            .view(|t| {
+                messages = m
+                    .inner
+                    .inv_list
+                    .iter()
+                    .filter_map(|i| match i.inv_type {
+                        InvType::Block => Ledger::fetch_block(&t, &i.hash)
+                            .ok()
+                            .flatten()
+                            .map(|blk| Message::new_block(Box::new(blk))),
+                        InvType::MempoolTx => Mempool::get_tx(&t, i.hash)
+                            .ok()
+                            .flatten()
+                            .map(|tx| Message::new_transaction(Box::new(tx))),
+                    })
+                    .collect();
+
+                Ok(())
+            })
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        Ok(messages)
     }
 }
