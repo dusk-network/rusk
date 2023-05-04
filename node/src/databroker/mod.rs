@@ -152,13 +152,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 .send_to_peer(&msg, resp.recv_peer)
                                 .await;
 
-                            // tokio sleep 1s
-                            tokio::time::sleep(
-                                std::time::Duration::from_millis(
-                                    conf.delay_on_resp_msg,
-                                ),
-                            )
-                            .await;
+                            // Mitigate pressure on UDP buffers.
+                            // Needed only in localnet.
+                            if conf.delay_on_resp_msg > 0 {
+                                tokio::time::sleep(
+                                    std::time::Duration::from_millis(
+                                        conf.delay_on_resp_msg,
+                                    ),
+                                )
+                                .await;
+                            }
                         }
                     }
                     Err(e) => {
@@ -273,7 +276,7 @@ impl DataBrokerSrv {
         db.read()
             .await
             .view(|t| {
-                for hash in t.get_txs_ids()? {
+                for hash in t.get_txs_hashes()? {
                     inv.add_tx_hash(hash);
                 }
 

@@ -47,6 +47,11 @@ pub trait Ledger {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()>;
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
+    fn fetch_block_hash_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<[u8; 32]>>;
+
     fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
 
     fn get_ledger_tx_by_hash(
@@ -89,6 +94,9 @@ pub trait Mempool {
         &self,
         max_gas_limit: u64,
     ) -> Result<Vec<ledger::Transaction>>;
+
+    /// Get all transactions hashes.
+    fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>>;
 }
 
 pub trait Persist: Ledger + Candidate + Mempool + core::fmt::Debug {
