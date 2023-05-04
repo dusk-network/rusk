@@ -17,10 +17,7 @@ use dusk_bls12_381_sign::{
 };
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
-use rusk_abi::{ModuleId, PaymentInfo, PublicInput, State};
-
-#[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
+use rusk_abi::{PaymentInfo, PublicInput, State};
 
 static mut STATE: State<HostFnTest> = State::new(HostFnTest);
 

@@ -18,13 +18,24 @@ use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{Session, VM};
+use piecrust::{Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
-/// Set the block height for the given session.
-pub fn set_block_height(session: &mut Session, block_height: u64) {
-    session.set_meta(Metadata::BLOCK_HEIGHT, block_height);
+/// Creates a [`Session`]  with all necessary metadata.
+pub fn session(
+    vm: &VM,
+    base: Option<[u8; 32]>,
+    block_height: u64,
+) -> Result<Session, piecrust::Error> {
+    let mut data = SessionData::builder();
+
+    data = data.insert(Metadata::BLOCK_HEIGHT, block_height);
+    if let Some(base) = base {
+        data = data.base(base);
+    }
+
+    vm.session(data)
 }
 
 /// Register the host queries offered by the ABI with the VM.

@@ -15,11 +15,11 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{Session, VM};
+use piecrust::{ModuleData, Session, VM};
 use piecrust_uplink::ModuleId;
 use rand_core::OsRng;
 use rusk_abi::hash::Hasher;
-use rusk_abi::{set_block_height, PublicInput};
+use rusk_abi::PublicInput;
 
 #[test]
 fn hash_host() {
@@ -45,19 +45,28 @@ fn hash_host() {
     );
 }
 
-fn instantiate(vm: &mut VM) -> (Session, ModuleId) {
+const TEST_OWNER: [u8; 32] = [0; 32];
+const POINT_LIMIT: u64 = 0x20000;
+
+fn instantiate(vm: &mut VM, height: u64) -> (Session, ModuleId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
     rusk_abi::register_host_queries(vm);
 
-    let mut session = vm.genesis_session();
-    session.set_point_limit(0x20000);
+    let mut session = rusk_abi::session(vm, None, 0)
+        .expect("Instantiating a genesis session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     let module_id = session
-        .deploy(bytecode)
+        .deploy(bytecode, ModuleData::builder(TEST_OWNER))
         .expect("Deploying module should succeed");
+
+    let root = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::session(vm, Some(root), height)
+        .expect("Instantiating a session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     (session, module_id)
 }
@@ -65,7 +74,7 @@ fn instantiate(vm: &mut VM) -> (Session, ModuleId) {
 #[test]
 fn hash() {
     let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let (mut session, module_id) = instantiate(&mut vm, 0);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -96,7 +105,7 @@ fn hash() {
 #[test]
 fn poseidon_hash() {
     let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let (mut session, module_id) = instantiate(&mut vm, 0);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -122,7 +131,7 @@ fn poseidon_hash() {
 #[test]
 fn schnorr_signature() {
     let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let (mut session, module_id) = instantiate(&mut vm, 0);
 
     let sk = SecretKey::random(&mut OsRng);
     let message = BlsScalar::random(&mut OsRng);
@@ -151,7 +160,7 @@ fn schnorr_signature() {
 #[test]
 fn bls_signature() {
     let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let (mut session, module_id) = instantiate(&mut vm, 0);
 
     let message = b"some-message".to_vec();
 
@@ -213,7 +222,7 @@ impl Circuit for TestCircuit {
 #[test]
 fn plonk_proof() {
     let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let (mut session, module_id) = instantiate(&mut vm, 0);
 
     let pp = include_bytes!("./pp_test.bin");
     let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
@@ -265,12 +274,10 @@ fn plonk_proof() {
 
 #[test]
 fn block_height() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
-
     const HEIGHT: u64 = 123;
 
-    set_block_height(&mut session, HEIGHT);
+    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
+    let (mut session, module_id) = instantiate(&mut vm, HEIGHT);
 
     let height: u64 = session
         .query(module_id, "block_height", &())
