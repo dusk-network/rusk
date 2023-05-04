@@ -15,11 +15,8 @@ mod error;
 mod state;
 mod tree;
 
-use rusk_abi::{ModuleId, State};
+use rusk_abi::State;
 use state::TransferState;
-
-#[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
 
 static mut STATE: State<TransferState> = State::new(TransferState::new());
 

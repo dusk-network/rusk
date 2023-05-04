@@ -20,7 +20,7 @@ rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
-piecrust = "0.1"
+piecrust = "0.3"
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
 transfer-circuits = { version = "0.5", path = "../../circuits/transfer" }
