@@ -26,8 +26,8 @@ impl LicenseCircuit {
 #[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
 impl Circuit for LicenseCircuit {
     fn circuit<C>(&self, composer: &mut C) -> Result<(), Error>
-        where
-            C: Composer,
+    where
+        C: Composer,
     {
         gadget::nullify_license(composer, &self.license)?;
         Ok(())

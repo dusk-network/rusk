@@ -18,7 +18,7 @@ dusk-pki = { version = "0.11", default-features = false}
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
 
 [dev-dependencies]
-piecrust = "0.1"
+piecrust = "0.3"
 rand = "0.8"
 zk-citadel = "0.1.0"
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }

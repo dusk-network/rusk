@@ -7,9 +7,9 @@
 use crate::keys::PUB_PARAMS;
 use crate::keys::{CircuitLoader, TRANSCRIPT_LABEL};
 use dusk_plonk::prelude::*;
+use license_circuits::*;
 use rand::rngs::OsRng;
 use transfer_circuits::*;
-use license_circuits::*;
 
 // todo: remove duplication
 macro_rules! loader_impl {
@@ -73,11 +73,7 @@ macro_rules! loader_impl_execute {
     };
 }
 
-loader_impl!(
-    LicenseCircuitLoader,
-    LicenseCircuit,
-    "LicenseCircuit"
-);
+loader_impl!(LicenseCircuitLoader, LicenseCircuit, "LicenseCircuit");
 // loader_impl_execute!(
 //     ExecuteOneTwoCircuitLoader,
 //     ExecuteCircuitOneTwo,

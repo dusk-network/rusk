@@ -7,5 +7,5 @@
 mod error;
 mod license_circuit;
 
-pub use license_circuit::LicenseCircuit;
 pub use error::Error;
+pub use license_circuit::LicenseCircuit;

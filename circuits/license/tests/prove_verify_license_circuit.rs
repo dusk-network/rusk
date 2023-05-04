@@ -11,7 +11,6 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 
 use zk_citadel::license::License;
 
-
 mod keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
@@ -26,8 +25,8 @@ fn prove_verify_license_circuit() {
     let rng = &mut StdRng::seed_from_u64(8586);
     let circuit_id = LicenseCircuit::circuit_id();
 
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Circuit generation should succeed");
+    let (prover, verifier) = keys::circuit_keys(circuit_id)
+        .expect("Circuit generation should succeed");
 
     let circuit = create_random_circuit(rng);
 

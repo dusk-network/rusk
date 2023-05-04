@@ -14,9 +14,7 @@ mod license_types;
 mod license_circuits;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{
-    JubJubAffine, GENERATOR_EXTENDED,
-};
+use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
 use dusk_pki::SecretKey;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
@@ -27,7 +25,7 @@ use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
 use license_types::*;
-use piecrust::{ModuleId, Session, VM};
+use piecrust::{ModuleData, ModuleId, Session, VM};
 
 const LICENSE_CONTRACT_ID: ModuleId = {
     let mut bytes = [0u8; 32];
@@ -36,6 +34,7 @@ const LICENSE_CONTRACT_ID: ModuleId = {
 };
 
 const POINT_LIMIT: u64 = 0x10000000;
+const TEST_OWNER: [u8; 32] = [0; 32];
 
 static LABEL: &[u8] = b"dusk-network";
 const CAPACITY: usize = 17; // capacity required for the setup
@@ -45,18 +44,23 @@ fn random_public_key<R: RngCore + CryptoRng>(rng: &mut R) -> JubJubAffine {
     JubJubAffine::from(GENERATOR_EXTENDED * sk.as_ref())
 }
 
-fn random_license_user_pk<R: RngCore + CryptoRng>(rng: &mut R) -> (ContractLicense, UserPublicKey) {
+fn random_license_user_pk<R: RngCore + CryptoRng>(
+    rng: &mut R,
+) -> (ContractLicense, UserPublicKey) {
     let user_pk = UserPublicKey {
         user_pk: random_public_key(rng),
     };
     let sp_pk = SPPublicKey {
         sp_pk: random_public_key(rng),
     };
-    (ContractLicense {
+    (
+        ContractLicense {
+            user_pk,
+            sp_pk,
+            sig_lic: Signature::default(),
+        },
         user_pk,
-        sp_pk,
-        sig_lic: Signature::default(),
-    }, user_pk)
+    )
 }
 
 fn initialize() -> Session {
@@ -67,12 +71,16 @@ fn initialize() -> Session {
         "../../../target/wasm32-unknown-unknown/release/license.wasm"
     );
 
-    let mut session = vm.genesis_session();
+    let mut session = rusk_abi::session(&vm, None, 0)
+        .expect("Instantiating a genesis session should succeed");
 
     session.set_point_limit(POINT_LIMIT);
 
     session
-        .deploy_with_id(LICENSE_CONTRACT_ID, bytecode)
+        .deploy(
+            bytecode,
+            ModuleData::builder(TEST_OWNER).module_id(LICENSE_CONTRACT_ID),
+        )
         .expect("Deploying the license contract should succeed");
 
     session

@@ -6,10 +6,13 @@
 
 use crate::collection::Map;
 use crate::error::Error;
-use crate::{ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession, SPPublicKey, UseLicenseArg, UserPublicKey};
+use crate::{
+    ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession,
+    SPPublicKey, UseLicenseArg, UserPublicKey,
+};
 use alloc::vec::Vec;
-use rusk_abi::PublicInput;
 use dusk_bytes::Serializable;
+use rusk_abi::PublicInput;
 
 use crate::license_circuits::verifier_data_license_circuit;
 
