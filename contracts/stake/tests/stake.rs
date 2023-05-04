@@ -13,7 +13,7 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
-use piecrust::Error;
+use piecrust::{Error, ModuleData};
 use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -26,6 +26,7 @@ use transfer_circuits::{
     SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
 };
 
+const TEST_OWNER: [u8; 32] = [0; 32];
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
 
@@ -48,17 +49,23 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::session(vm, None, 0)
+        .expect("Instantiating a genesis session should succeed");
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(rusk_abi::transfer_module(), transfer_bytecode)
+        .deploy(
+            transfer_bytecode,
+            ModuleData::builder(TEST_OWNER)
+                .module_id(rusk_abi::transfer_module()),
+        )
         .expect("Deploying the transfer contract should succeed");
 
     session
-        .deploy_with_id(rusk_abi::stake_module(), stake_bytecode)
+        .deploy(
+            stake_bytecode,
+            ModuleData::builder(TEST_OWNER).module_id(rusk_abi::stake_module()),
+        )
         .expect("Deploying the stake contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
@@ -85,8 +92,11 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .transact(rusk_abi::stake_module(), "insert_allowlist", pk)
         .expect("Inserting APK into allowlist should succeed");
 
+    let root = session.commit().expect("Committing should succeed");
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let mut session = rusk_abi::session(vm, Some(root), 1)
+        .expect("Instantiating a session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
@@ -157,9 +167,9 @@ fn stake_withdraw_unstake() {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let session = &mut instantiate(rng, vm, &psk, &pk);
+    let mut session = instantiate(rng, vm, &psk, &pk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_in_range(&mut session, 0..1)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -258,7 +268,7 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening = opening(session, *input_note.pos())
+    let input_opening = opening(&mut session, *input_note.pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -268,7 +278,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
@@ -362,7 +372,7 @@ fn stake_withdraw_unstake() {
 
     // Start withdrawing the reward just given to our key
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_in_range(&mut session, 1..2)
         .expect("Getting the notes should succeed");
 
     let input_notes =
@@ -442,10 +452,10 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening_0 = opening(session, *input_notes[0].pos())
+    let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_1 = opening(session, *input_notes[1].pos())
+    let input_opening_1 = opening(&mut session, *input_notes[1].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -457,7 +467,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
@@ -514,9 +524,13 @@ fn stake_withdraw_unstake() {
         call,
     };
 
+    let base = session.commit().expect("Committing should suceed");
+
     // set different block height so that the new notes are easily located and
     // filtered
-    rusk_abi::set_block_height(session, 2);
+    let mut session = rusk_abi::session(vm, Some(base), 2)
+        .expect("Instantiating a session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session
@@ -542,7 +556,7 @@ fn stake_withdraw_unstake() {
 
     // Start unstaking the previously staked amount
 
-    let leaves = leaves_in_range(session, 2..3)
+    let leaves = leaves_in_range(&mut session, 2..3)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -638,13 +652,13 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening_0 = opening(session, *input_notes[0].pos())
+    let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_1 = opening(session, *input_notes[1].pos())
+    let input_opening_1 = opening(&mut session, *input_notes[1].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_2 = opening(session, *input_notes[2].pos())
+    let input_opening_2 = opening(&mut session, *input_notes[2].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -658,7 +672,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[
@@ -735,9 +749,13 @@ fn stake_withdraw_unstake() {
         call,
     };
 
+    let base = session.commit().expect("Committing should suceed");
+
     // set different block height so that the new notes are easily located and
     // filtered
-    rusk_abi::set_block_height(session, 3);
+    let mut session = rusk_abi::session(vm, Some(base), 3)
+        .expect("Instantiating a session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
     let _: Option<Result<RawResult, ModuleError>> = session

@@ -19,10 +19,7 @@ use state::StakeState;
 pub const MINIMUM_STAKE: Dusk = dusk(1_000.0);
 
 use dusk_bls12_381_sign::PublicKey;
-use rusk_abi::{ModuleId, PaymentInfo, State};
-
-#[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
+use rusk_abi::{PaymentInfo, State};
 
 static mut STATE: State<StakeState> = State::new(StakeState::new());
 
