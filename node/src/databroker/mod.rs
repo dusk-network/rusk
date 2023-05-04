@@ -154,11 +154,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                             // Mitigate pressure on UDP buffers.
                             // Needed only in localnet.
-                            if conf.delay_on_resp_msg > 0 {
+                            if let Some(milli_sec) = conf.delay_on_resp_msg {
                                 tokio::time::sleep(
-                                    std::time::Duration::from_millis(
-                                        conf.delay_on_resp_msg,
-                                    ),
+                                    std::time::Duration::from_millis(milli_sec),
                                 )
                                 .await;
                             }
