@@ -10,7 +10,6 @@ use crate::{ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession, S
 use alloc::vec::Vec;
 use rusk_abi::PublicInput;
 use dusk_bytes::Serializable;
-// use dusk_plonk::prelude::*;
 
 use crate::license_circuits::verifier_data_license_circuit;
 
@@ -85,7 +84,7 @@ impl LicensesData {
     pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
         let mut pi = Vec::new();
         for scalar in use_license_arg.public_inputs {
-            pi.push(PublicInput::BlsScalar(scalar))
+            pi.push(PublicInput::BlsScalar(scalar.neg()))
         }
         let vd = verifier_data_license_circuit();
         Self::assert_proof(vd, use_license_arg.proof.to_bytes().to_vec(), pi)

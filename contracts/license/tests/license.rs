@@ -60,7 +60,8 @@ fn random_license_user_pk<R: RngCore + CryptoRng>(rng: &mut R) -> (ContractLicen
 }
 
 fn initialize() -> Session {
-    let vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    rusk_abi::register_host_queries(&mut vm);
 
     let bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/license.wasm"
@@ -228,32 +229,11 @@ fn use_license() {
         license: l, // todo, replace with real license
     };
 
-    #[derive(Default)]
-    struct DummyCircuit;
-
-    impl Circuit for DummyCircuit {
-        fn circuit<C>(&self, _: &mut C) -> Result<(), Error>
-            where
-                C: Composer,
-        {
-            unreachable!(
-                "This circuit should never be compiled or proven, only verified"
-            )
-        }
-    }
-
-    use crate::license_circuits::verifier_data_license_circuit;
-    let vd = verifier_data_license_circuit();
-    let verifier2 = Verifier::<DummyCircuit>::try_from_bytes(vd)
-        .expect("Verifier data coming from the contract should be valid");
-    verifier2.verify(&use_license_arg.proof, &use_license_arg.public_inputs).expect("verify should succeed");
-
-
-    // session
-    //     .transact::<UseLicenseArg, ()>(
-    //         LICENSE_CONTRACT_ID,
-    //         "use_license",
-    //         &use_license_arg,
-    //     )
-    //     .expect("Use license should succeed");
+    session
+        .transact::<UseLicenseArg, ()>(
+            LICENSE_CONTRACT_ID,
+            "use_license",
+            &use_license_arg,
+        )
+        .expect("Use license should succeed");
 }
