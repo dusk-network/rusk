@@ -15,11 +15,9 @@ mod msg;
 mod state;
 
 use msg::*;
-use rusk_abi::{ModuleId, State};
+use rusk_abi::State;
 use state::GovernanceState;
 
-#[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
 static mut STATE: State<GovernanceState> = State::new(GovernanceState::new());
 
 // Transactions

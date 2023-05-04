@@ -16,7 +16,7 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_pki::{PublicKey, SecretKey};
-use piecrust::{ModuleId, Session, VM};
+use piecrust::{ModuleData, ModuleId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -26,6 +26,7 @@ const GOVERNANCE_ID: ModuleId = {
     ModuleId::from_bytes(bytes)
 };
 
+const TEST_OWNER: [u8; 32] = [0; 32];
 const POINT_LIMIT: u64 = 0x10000000;
 const TIMESTAMP: u64 = 946681200; // 2000.01.01 00:00
 
@@ -42,13 +43,15 @@ fn instantiate(
         "../../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::session(vm, None, 0)
+        .expect("Instantiating a genesis session should succeed");
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(GOVERNANCE_ID, governance_bytecode)
+        .deploy(
+            governance_bytecode,
+            ModuleData::builder(TEST_OWNER).module_id(GOVERNANCE_ID),
+        )
         .expect("Deploying the stake contract should succeed");
 
     // Set the broker and the authority of the governance contract
@@ -60,8 +63,11 @@ fn instantiate(
         .transact(GOVERNANCE_ID, "set_authority", authority)
         .expect("Setting the authority should succeed");
 
+    let root = session.commit().expect("Committing should succeed");
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let mut session = rusk_abi::session(vm, Some(root), 1)
+        .expect("Instantiating a session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
