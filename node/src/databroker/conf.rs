@@ -16,7 +16,7 @@ pub struct Params {
 
     /// delay_on_resp_msg is in milliseconds. It mitigates stress on UDP
     /// buffers when network latency is 0 (localnet network only)
-    pub delay_on_resp_msg: u64,
+    pub delay_on_resp_msg: Option<u64>,
 }
 
 impl Default for Params {
@@ -24,7 +24,7 @@ impl Default for Params {
         Self {
             max_inv_entries: 100,
             max_ongoing_requests: 1000,
-            delay_on_resp_msg: 0,
+            delay_on_resp_msg: None,
         }
     }
 }
@@ -33,8 +33,8 @@ impl std::fmt::Display for &Params {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "max_inv_entries: {}, max_ongoing_requests: {} delay_on_resp_msg: {}",
-            self.max_inv_entries, self.max_ongoing_requests, self.delay_on_resp_msg,
+            "max_inv_entries: {}, max_ongoing_requests: {}",
+            self.max_inv_entries, self.max_ongoing_requests,
         )
     }
 }
@@ -71,7 +71,7 @@ impl Params {
         if let Some(delay_on_resp_msg) = matches.value_of("delay_on_resp_msg") {
             match delay_on_resp_msg.parse() {
                 Ok(delay_on_resp_msg) => {
-                    self.delay_on_resp_msg = delay_on_resp_msg;
+                    self.delay_on_resp_msg = Some(delay_on_resp_msg);
                 }
                 Err(e) => {
                     tracing::error!(

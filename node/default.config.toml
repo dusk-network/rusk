@@ -36,3 +36,4 @@ cache_prune_every = '5m'
 [databroker]
 max_inv_entries = 500
 max_ongoing_requests = 100
+delay_on_resp_msg = 500
