@@ -12,7 +12,7 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
-use piecrust::Error;
+use piecrust::{Error, ModuleData};
 use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -27,6 +27,7 @@ use transfer_circuits::{
     WithdrawFromObfuscatedCircuit, WithdrawFromTransparentCircuit,
 };
 
+const TEST_OWNER: [u8; 32] = [0; 32];
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
 
@@ -62,22 +63,31 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::session(vm, None, 0)
+        .expect("Instantiating a genesis session should succeed");
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(rusk_abi::transfer_module(), transfer_bytecode)
+        .deploy(
+            transfer_bytecode,
+            ModuleData::builder(TEST_OWNER)
+                .module_id(rusk_abi::transfer_module()),
+        )
         .expect("Deploying the transfer contract should succeed");
 
     session
-        .deploy_with_id(ALICE_ID, alice_bytecode)
+        .deploy(
+            alice_bytecode,
+            ModuleData::builder(TEST_OWNER).module_id(ALICE_ID),
+        )
         .expect("Deploying the alice contract should succeed");
 
     session
-        .deploy_with_id(BOB_ID, bob_bytecode)
-        .expect("Deploying the bob contract should succeed");
+        .deploy(
+            bob_bytecode,
+            ModuleData::builder(TEST_OWNER).module_id(BOB_ID),
+        )
+        .expect("Deploying the alice contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
@@ -94,8 +104,12 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .transact(rusk_abi::transfer_module(), "update_root", &())
         .expect("Updating the root should succeed");
 
+    let base = session.commit().expect("Committing should succeeed");
+
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let mut session = rusk_abi::session(vm, Some(base), 1)
+        .expect("Instantiating a genesis session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
