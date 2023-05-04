@@ -17,10 +17,7 @@ use state::Alice;
 mod wasm {
     use super::*;
 
-    use rusk_abi::{ModuleId, PaymentInfo, State};
-
-    #[no_mangle]
-    static SELF_ID: ModuleId = ModuleId::uninitialized();
+    use rusk_abi::{PaymentInfo, State};
 
     static mut STATE: State<Alice> = State::new(Alice);
 
