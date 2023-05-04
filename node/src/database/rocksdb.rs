@@ -37,6 +37,7 @@ enum TxType {
 
 const CF_LEDGER: &str = "cf_ledger";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
+const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
@@ -90,6 +91,11 @@ impl Backend {
             .cf_handle(CF_MEMPOOL_FEES)
             .expect("CF_MEMPOOL_FEES column family must exist");
 
+        let ledger_height_cf = self
+            .rocksdb
+            .cf_handle(CF_LEDGER_HEIGHT)
+            .expect("CF_LEDGER_HEIGHT column family must exist");
+
         let snapshot = self.rocksdb.snapshot();
 
         DBTransaction::<'_, OptimisticTransactionDB> {
@@ -101,6 +107,7 @@ impl Backend {
             mempool_cf,
             nullifiers_cf,
             fees_cf,
+            ledger_height_cf,
             snapshot,
         }
     }
@@ -136,6 +143,7 @@ impl DB for Backend {
         let cfs = vec![
             ColumnFamilyDescriptor::new(CF_LEDGER, Options::default()),
             ColumnFamilyDescriptor::new(CF_LEDGER_TXS, Options::default()),
+            ColumnFamilyDescriptor::new(CF_LEDGER_HEIGHT, Options::default()),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
@@ -189,9 +197,16 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     inner: rocksdb_lib::Transaction<'db, DB>,
     access_type: TxType,
 
+    // TODO: pack all column families into a single array
+    // Candidates column family
     candidates_cf: &'db ColumnFamily,
+
+    // Ledger column families
     ledger_cf: &'db ColumnFamily,
     ledger_txs_cf: &'db ColumnFamily,
+    ledger_height_cf: &'db ColumnFamily,
+
+    // Mempool column families
     mempool_cf: &'db ColumnFamily,
     nullifiers_cf: &'db ColumnFamily,
     fees_cf: &'db ColumnFamily,
@@ -214,6 +229,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         self.inner
             .put_cf(self.ledger_cf, b.header.hash, serialized)?;
 
+        self.inner.put_cf(
+            self.ledger_height_cf,
+            b.header.height.to_le_bytes(),
+            b.header.hash,
+        )?;
+
         Ok(())
     }
 
@@ -224,6 +245,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
+
+        self.inner
+            .delete_cf(self.ledger_height_cf, b.header.height.to_le_bytes())?;
 
         Ok(())
     }
@@ -240,6 +264,20 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             .transpose()?;
 
         Ok(blk)
+    }
+
+    fn fetch_block_hash_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<[u8; 32]>> {
+        Ok(self
+            .snapshot
+            .get_cf(self.ledger_height_cf, height.to_le_bytes())?
+            .map(|h| {
+                let mut hash = [0u8; 32];
+                hash.copy_from_slice(h.as_slice());
+                hash
+            }))
     }
 
     fn get_ledger_tx_by_hash(
@@ -450,6 +488,25 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
                 } else {
                     tracing::error!("get_txs_sorted_by_fee tx: not found");
                 }
+            }
+
+            iter.prev();
+        }
+
+        Ok(txs_list)
+    }
+
+    fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>> {
+        let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
+        iter.seek_to_last();
+
+        let mut txs_list = vec![];
+        while iter.valid() {
+            if let Some(key) = iter.key() {
+                let (read_gp, tx_hash) =
+                    deserialize_fee_key(&mut &key.to_vec()[..])?;
+
+                txs_list.push(tx_hash);
             }
 
             iter.prev();
@@ -769,6 +826,37 @@ mod tests {
                         .expect("should find a transaction")
                         .eq(&t));
                 }
+
+                Ok(())
+            });
+        });
+    }
+
+    #[test]
+    fn test_fetch_block_hash_by_height() {
+        let t = TestWrapper {
+            path: "test_get_ledger_tx_by_hash",
+        };
+
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            let mut b: ledger::Block = Faker.fake();
+
+            // Store a block
+            assert!(db
+                .update(|txn| {
+                    txn.store_block(&b, false)?;
+                    Ok(())
+                })
+                .is_ok());
+
+            // Assert block hash is accessible by height.
+            db.view(|v| {
+                assert!(v
+                    .fetch_block_hash_by_height(b.header.height)
+                    .expect("should not return error")
+                    .expect("should find a block")
+                    .eq(&b.header.hash));
 
                 Ok(())
             });
