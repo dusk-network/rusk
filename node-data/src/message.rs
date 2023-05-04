@@ -10,6 +10,7 @@ use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::{bls, ledger, Serializable};
 use std::io::{self, Read, Write};
+use std::net::SocketAddr;
 
 use async_channel::TrySendError;
 
@@ -55,13 +56,17 @@ pub struct Message {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Metadata {
     pub height: u8,
-    pub src_addr: String,
+    pub src_addr: SocketAddr,
 }
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&[self.header.topic])?;
-        self.header.write(w)?;
+
+        // Optional header fields used only for consensus messages
+        if is_consensus_msg(self.header.topic) {
+            self.header.write(w)?;
+        }
 
         match &self.payload {
             Payload::NewBlock(p) => p.write(w),
@@ -70,8 +75,15 @@ impl Serializable for Message {
             Payload::AggrAgreement(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
-            _ => Ok(()), /* non-serializable messages are those which are not
-                          * sent on the wire. */
+            Payload::GetCandidate(p) => p.write(w),
+            Payload::CandidateResp(p) => p.write(w),
+            Payload::GetMempool(p) => p.write(w),
+            Payload::GetInv(p) => p.write(w),
+            Payload::GetBlocks(p) => p.write(w),
+            Payload::GetData(p) => p.write(w),
+            Payload::Empty
+            | Payload::StepVotes(_)
+            | Payload::StepVotesWithCandidate(_) => Ok(()), /* interal message, not sent on the wire */
         }
     }
 
@@ -92,7 +104,11 @@ impl Serializable for Message {
         }
 
         // Decode message header only if the topic is supported
-        let mut header = Header::read(r)?;
+        let mut header = Header::default();
+        if is_consensus_msg(buf[0]) {
+            header = Header::read(r)?;
+        }
+
         header.topic = buf[0];
 
         let payload = match topic {
@@ -112,7 +128,21 @@ impl Serializable for Message {
             Topics::Tx => {
                 Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
             }
-            _ => Payload::Empty,
+            Topics::Candidate => {
+                Payload::CandidateResp(payload::CandidateResp::read(r)?)
+            }
+            Topics::GetCandidate => {
+                Payload::GetCandidate(payload::GetCandidate::read(r)?)
+            }
+            Topics::GetData => Payload::GetData(payload::GetData::read(r)?),
+            Topics::GetBlocks => {
+                Payload::GetBlocks(payload::GetBlocks::read(r)?)
+            }
+            Topics::GetMempool => {
+                Payload::GetMempool(payload::GetMempool::read(r)?)
+            }
+            Topics::GetInv => Payload::GetInv(payload::Inv::read(r)?),
+            Topics::Unknown => Payload::Empty,
         };
 
         Ok(Message {
@@ -136,6 +166,7 @@ impl MessageTrait for Message {
 }
 
 impl Message {
+    /// Creates topics.NewBlock message
     pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
         Self {
             header,
@@ -144,14 +175,7 @@ impl Message {
         }
     }
 
-    pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
-        Self {
-            header: Header::default(),
-            payload: Payload::StepVotesWithCandidate(Box::new(p)),
-            ..Default::default()
-        }
-    }
-
+    /// Creates topics.Reduction message
     pub fn new_reduction(
         header: Header,
         payload: payload::Reduction,
@@ -163,6 +187,7 @@ impl Message {
         }
     }
 
+    /// Creates topics.Agreement message
     pub fn new_agreement(
         header: Header,
         payload: payload::Agreement,
@@ -174,6 +199,7 @@ impl Message {
         }
     }
 
+    /// Creates topics.AggrAgreement message
     pub fn new_aggr_agreement(
         header: Header,
         payload: payload::AggrAgreement,
@@ -185,17 +211,80 @@ impl Message {
         }
     }
 
-    pub fn new_with_block(payload: Box<ledger::Block>) -> Message {
+    /// Creates topics.Block message
+    pub fn new_block(payload: Box<ledger::Block>) -> Message {
         Self {
-            header: Header {
-                topic: Topics::Block as u8,
-                ..Default::default()
-            },
+            header: Header::new(Topics::Block),
             payload: Payload::Block(payload),
             ..Default::default()
         }
     }
 
+    /// Creates topics.GetCandidate message
+    pub fn new_get_candidate(p: payload::GetCandidate) -> Message {
+        Self {
+            header: Header::new(Topics::GetCandidate),
+            payload: Payload::GetCandidate(p),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.Candidate message
+    pub fn new_candidate_resp(p: payload::CandidateResp) -> Message {
+        Self {
+            header: Header::new(Topics::Candidate),
+            payload: Payload::CandidateResp(p),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.Inv (inventory) message
+    pub fn new_inv(p: payload::Inv) -> Message {
+        Self {
+            header: Header::new(Topics::GetInv),
+            payload: Payload::GetInv(p),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.GetData  message
+    pub fn new_get_data(p: payload::Inv) -> Message {
+        Self {
+            header: Header::new(Topics::GetData),
+            payload: Payload::GetInv(p),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.GetBlocks  message
+    pub fn new_get_blocks(p: payload::GetBlocks) -> Message {
+        Self {
+            header: Header::new(Topics::GetBlocks),
+            payload: Payload::GetBlocks(p),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.Tx  message
+    pub fn new_transaction(tx: Box<ledger::Transaction>) -> Message {
+        Self {
+            header: Header::new(Topics::Tx),
+            payload: Payload::Transaction(tx),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a message with a step votes payload
+    /// This is never sent on the wire, but used internally
+    pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
+        Self {
+            header: Header::default(),
+            payload: Payload::StepVotesWithCandidate(Box::new(p)),
+            ..Default::default()
+        }
+    }
+
+    /// Creates a unknown message with empty payload
     pub fn empty() -> Message {
         Self {
             header: Header::default(),
@@ -207,6 +296,16 @@ impl Message {
     pub fn topic(&self) -> Topics {
         Topics::from(self.header.topic)
     }
+}
+
+fn is_consensus_msg(topic: u8) -> bool {
+    matches!(
+        Topics::from(topic),
+        Topics::NewBlock
+            | Topics::Reduction
+            | Topics::Agreement
+            | Topics::AggrAgreement
+    )
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -275,6 +374,13 @@ impl Serializable for Header {
 }
 
 impl Header {
+    pub fn new(topic: Topics) -> Self {
+        Self {
+            topic: topic as u8,
+            ..Default::default()
+        }
+    }
+
     pub fn compare(&self, round: u64, step: u8) -> Status {
         if self.round == round {
             if self.step == step {
@@ -285,17 +391,11 @@ impl Header {
                 return Status::Future;
             }
 
-            if self.step < step {
-                return Status::Past;
-            }
+            return Status::Past;
         }
 
         if self.round > round {
             return Status::Future;
-        }
-
-        if self.round < round {
-            return Status::Past;
         }
 
         Status::Past
@@ -350,6 +450,12 @@ pub enum Payload {
     AggrAgreement(payload::AggrAgreement),
     Block(Box<ledger::Block>),
     Transaction(Box<ledger::Transaction>),
+    GetCandidate(payload::GetCandidate),
+    GetMempool(payload::GetMempool),
+    GetInv(payload::Inv),
+    GetBlocks(payload::GetBlocks),
+    GetData(payload::GetData),
+    CandidateResp(payload::CandidateResp),
 
     #[default]
     Empty,
@@ -566,6 +672,185 @@ pub mod payload {
             }
         }
     }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct GetCandidate {
+        pub hash: [u8; 32],
+    }
+
+    impl Serializable for GetCandidate {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.hash[..])?;
+
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut result = GetCandidate::default();
+            r.read_exact(&mut result.hash[..])?;
+
+            Ok(result)
+        }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct CandidateResp {
+        pub candidate: Block,
+    }
+
+    impl Serializable for CandidateResp {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            self.candidate.write(w)
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            Ok(CandidateResp {
+                candidate: Block::read(r)?,
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct GetMempool {}
+
+    impl Serializable for GetMempool {
+        fn write<W: Write>(&self, _w: &mut W) -> io::Result<()> {
+            Ok(())
+        }
+
+        fn read<R: Read>(_r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            Ok(GetMempool::default())
+        }
+    }
+
+    #[derive(Clone, Default, Debug, Copy)]
+    pub enum InvType {
+        MempoolTx,
+        #[default]
+        Block,
+    }
+
+    #[derive(Default, Debug, Clone, Copy)]
+    pub struct InvVect {
+        pub inv_type: InvType,
+        pub hash: [u8; 32],
+    }
+
+    #[derive(Default, Debug, Clone)]
+    pub struct Inv {
+        pub inv_list: Vec<InvVect>,
+    }
+
+    impl Inv {
+        pub fn add_tx_hash(&mut self, hash: [u8; 32]) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::MempoolTx,
+                hash,
+            });
+        }
+
+        pub fn add_block_hash(&mut self, hash: [u8; 32]) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::Block,
+                hash,
+            });
+        }
+    }
+
+    impl Serializable for Inv {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            let step_votes_len = self.inv_list.len() as u64;
+            w.write_all(&step_votes_len.to_le_bytes())?;
+
+            for item in &self.inv_list {
+                w.write_all(&[item.inv_type as u8])?;
+                w.write_all(&item.hash[..])?;
+            }
+
+            Ok(())
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut items_len_buf = [0u8; 8];
+            r.read_exact(&mut items_len_buf)?;
+
+            let items_len = u64::from_le_bytes(items_len_buf);
+
+            let mut inv = Inv::default();
+            for _ in 0..items_len {
+                let mut inv_type_buf = [0u8; 1];
+                r.read_exact(&mut inv_type_buf)?;
+
+                let inv_type = match inv_type_buf[0] {
+                    0 => InvType::MempoolTx,
+                    1 => InvType::Block,
+                    _ => {
+                        return Err(io::Error::from(io::ErrorKind::InvalidData))
+                    }
+                };
+
+                let mut hash = [0u8; 32];
+                r.read_exact(&mut hash)?;
+
+                inv.inv_list.push(InvVect { inv_type, hash });
+            }
+
+            Ok(inv)
+        }
+    }
+
+    #[derive(Debug, Clone, Default)]
+    pub struct GetBlocks {
+        pub locator: [u8; 32],
+    }
+
+    impl Serializable for GetBlocks {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            w.write_all(&self.locator[..])
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            let mut result = GetBlocks::default();
+            r.read_exact(&mut result.locator[..])?;
+
+            Ok(result)
+        }
+    }
+
+    #[derive(Default, Debug, Clone)]
+    pub struct GetData {
+        pub inner: Inv,
+    }
+
+    impl Serializable for GetData {
+        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            self.inner.write(w)
+        }
+
+        fn read<R: Read>(r: &mut R) -> io::Result<Self>
+        where
+            Self: Sized,
+        {
+            Ok(GetData {
+                inner: Inv::read(r)?,
+            })
+        }
+    }
 }
 
 macro_rules! map_topic {
@@ -581,10 +866,13 @@ pub enum Topics {
     // Data exchange topics.
     GetData = 8,
     GetBlocks = 9,
+    GetMempool = 13, // NB: This is aliased as Mempool in the golang impl
+    GetInv = 14,     // NB: This is aliased as Inv in the golang impl
+    GetCandidate = 46,
+
+    // Fire-and-forget messaging
     Tx = 10,
     Block = 11,
-    MemPool = 13,
-    Inv = 14,
 
     // Consensus main loop topics
     Candidate = 15,
@@ -605,9 +893,10 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::GetBlocks);
         map_topic!(v, Topics::Tx);
         map_topic!(v, Topics::Block);
-        map_topic!(v, Topics::MemPool);
-        map_topic!(v, Topics::Inv);
+        map_topic!(v, Topics::GetMempool);
+        map_topic!(v, Topics::GetInv);
         map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::GetCandidate);
         map_topic!(v, Topics::NewBlock);
         map_topic!(v, Topics::Reduction);
         map_topic!(v, Topics::Agreement);
