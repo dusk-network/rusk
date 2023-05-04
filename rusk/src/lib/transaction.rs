@@ -74,17 +74,17 @@ impl From<SpentTransaction> for rusk_schema::ExecutedTransaction {
         let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
         let error = error.map(|e| match e {
-            ModuleError::Panic => Error {
+            ModuleError::PANIC => Error {
                 code: Code::ContractPanic.into(),
                 contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
                 data: String::from(""),
             },
-            ModuleError::OutOfGas => Error {
+            ModuleError::OUTOFGAS => Error {
                 code: Code::OutOfGas.into(),
                 contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
                 data: String::from(""),
             },
-            ModuleError::Other(_) => Error {
+            ModuleError::OTHER(_) => Error {
                 code: Code::Other.into(),
                 contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
                 data: String::from(""),

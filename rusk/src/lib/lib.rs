@@ -104,8 +104,11 @@ impl Rusk {
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
         let inner = self.inner.lock();
 
-        let mut session = inner.vm.session(inner.current_commit)?;
-        rusk_abi::set_block_height(&mut session, block_height);
+        let mut session = rusk_abi::session(
+            &inner.vm,
+            Some(inner.current_commit),
+            block_height,
+        )?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -190,7 +193,12 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let mut session = rusk_abi::session(
+            &inner.vm,
+            Some(inner.current_commit),
+            block_height,
+        )?;
 
         accept(&mut session, block_height, block_gas_limit, generator, txs)
     }
@@ -204,7 +212,12 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let mut session = rusk_abi::session(
+            &inner.vm,
+            Some(inner.current_commit),
+            block_height,
+        )?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -229,7 +242,12 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let mut session = rusk_abi::session(
+            &inner.vm,
+            Some(inner.current_commit),
+            block_height,
+        )?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -386,12 +404,11 @@ impl Rusk {
     {
         let inner = self.inner.lock();
 
-        let mut session = inner.vm.session(inner.current_commit)?;
-
         // For queries we set a point limit of effectively infinite and a block
-        // height of zero since this doesn't affect the result.
+        // height of zero since this shouldn't affect the result.
+        let mut session =
+            rusk_abi::session(&inner.vm, Some(inner.current_commit), 0)?;
         session.set_point_limit(u64::MAX);
-        rusk_abi::set_block_height(&mut session, 0);
 
         Ok(session.query(module_id, call_name, call_arg)?)
     }
@@ -404,8 +421,6 @@ fn accept(
     generator: BlsPublicKey,
     txs: Vec<Transaction>,
 ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
-    rusk_abi::set_block_height(session, block_height);
-
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
