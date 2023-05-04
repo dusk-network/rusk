@@ -7,15 +7,17 @@
 use dusk_plonk::prelude::*;
 
 use zk_citadel::{gadget, license::License};
+use zk_citadel::license::{LicenseProverParameters, SessionCookie};
 
 #[derive(Default, Debug)]
 pub struct LicenseCircuit {
-    license: License,
+    lpp: LicenseProverParameters,
+    sc: SessionCookie,
 }
 
 impl LicenseCircuit {
-    pub fn new(license: License) -> Self {
-        Self { license }
+    pub fn new(lpp: &LicenseProverParameters, sc: &SessionCookie) -> Self {
+        Self { lpp: *lpp, sc: *sc }
     }
 
     pub const fn circuit_id() -> &'static [u8; 32] {
@@ -29,7 +31,7 @@ impl Circuit for LicenseCircuit {
     where
         C: Composer,
     {
-        gadget::nullify_license(composer, &self.license)?;
+        gadget::use_license(composer, &self.lpp, &self.sc)?;
         Ok(())
     }
 }

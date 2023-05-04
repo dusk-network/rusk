@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/b6ec670023d4be069ef4f63cf532cc8bb1dd02aa96e12566337a562a6a564e38.vd"));
+const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/96307c3549c2b6edb7812357e3df12fb190fb799f0a71c1e74da38c649e8c6da.vd"));
 
 /// Verifier data for the `License` circuit.
 #[allow(dead_code)]

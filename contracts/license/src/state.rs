@@ -42,6 +42,7 @@ impl LicensesData {
 #[allow(dead_code)]
 impl LicensesData {
     /// Inserts a given license request in a collection of requests.
+    /// Method intended to be called by the user.
     pub fn request_license(&mut self, request: LicenseRequest) {
         rusk_abi::debug!("License contract: request_license");
         self.requests.push(request);
@@ -49,6 +50,7 @@ impl LicensesData {
 
     /// Returns and removes first found license request for a given SP.
     /// If not such license request is found, returns None.
+    /// Method intended to be called by the License Provider.
     pub fn get_license_request(
         &mut self,
         sp_public_key: SPPublicKey,
@@ -64,13 +66,15 @@ impl LicensesData {
     }
 
     /// Inserts a given license in a collection of licenses
+    /// Method intended to be called by the License Provider.
     pub fn issue_license(&mut self, license: ContractLicense) {
         rusk_abi::debug!("License contract: issue_license");
         self.licenses.push(license);
     }
 
     /// Returns and removes first found license for a given user.
-    /// If not such license is found, returns None.
+    /// If not no license is found, returns None.
+    /// Method intended to be called by the user.
     pub fn get_license(
         &mut self,
         user_pk: UserPublicKey,
@@ -84,6 +88,7 @@ impl LicensesData {
 
     /// Verifies the proof of a given license, if successful,
     /// creates a session with the corresponding nullifier.
+    /// Method intended to be called by the user.
     pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
         let mut pi = Vec::new();
         for scalar in use_license_arg.public_inputs {
@@ -95,6 +100,7 @@ impl LicensesData {
     }
 
     /// Returns session containing a given license nullifier.
+    /// Method intended to be called by the Session Provider.
     pub fn get_session(
         &self,
         nullifier: LicenseNullifier,

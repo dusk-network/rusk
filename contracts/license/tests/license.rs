@@ -15,11 +15,11 @@ mod license_circuits;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
-use dusk_pki::SecretKey;
+use dusk_pki::{SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use zk_citadel::gadget;
-use zk_citadel::license::License;
+use zk_citadel::license::{License, LicenseProverParameters, Request, SessionCookie};
 
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -61,6 +61,35 @@ fn random_license_user_pk<R: RngCore + CryptoRng>(
         },
         user_pk,
     )
+}
+
+fn compute_random_license<R: RngCore + CryptoRng>(
+    rng: &mut R,
+) -> (License, LicenseProverParameters, SessionCookie) {
+    // These are the keys of the user
+    let ssk = SecretSpendKey::random(rng);
+    let psk = ssk.public_spend_key();
+
+    // These are the keys of the LP
+    let ssk_lp = SecretSpendKey::random(rng);
+    let psk_lp = ssk_lp.public_spend_key();
+
+    // First, the user computes these values and requests a License
+    let lsa = psk.gen_stealth_address(&JubJubScalar::random(rng));
+    let k_lic = JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::from(123456u64));
+    let req = Request::new(&psk_lp, &lsa, &k_lic, rng);
+
+    // Second, the LP computes these values and grants the License
+    let attr = JubJubScalar::from(112233445566778899u64);
+    let lic = License::new(&attr, &ssk_lp, &req, rng);
+
+    // Third, the user computes these values to generate the ZKP later on
+    let c = JubJubScalar::from(20221126u64);
+    let (lpp, sc) = LicenseProverParameters::compute_parameters(
+        &lsa, &ssk, &lic, &psk_lp, &psk_lp, &k_lic, &c, rng,
+    );
+
+    (lic, lpp, sc)
 }
 
 fn initialize() -> Session {
@@ -192,12 +221,13 @@ fn get_session_none() {
 
 #[derive(Default, Debug)]
 pub struct Citadel {
-    license: License,
+    lpp: LicenseProverParameters,
+    sc: SessionCookie,
 }
 
 impl Citadel {
-    pub fn new(license: License) -> Self {
-        Self { license }
+    pub fn new(lpp: &LicenseProverParameters, sc: &SessionCookie) -> Self {
+        Self { lpp: *lpp, sc: *sc }
     }
 }
 
@@ -206,7 +236,7 @@ impl Circuit for Citadel {
     where
         C: Composer,
     {
-        gadget::nullify_license(composer, &self.license)?;
+        gadget::use_license(composer, &self.lpp, &self.sc)?;
         Ok(())
     }
 }
@@ -218,13 +248,15 @@ fn use_license() {
 
     let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
     let (l, _) = random_license_user_pk(rng); // todo, eliminate me
-    let license = License::random(rng);
+    // let license = License::random(rng);
 
     let (prover, _verifier) = Compiler::compile::<Citadel>(&pp, LABEL)
         .expect("Compiling circuit should succeed");
 
+    let (_lic, lpp, sc) = compute_random_license(rng);
+
     let (proof, public_inputs) = prover
-        .prove(rng, &Citadel::new(license.clone()))
+        .prove(rng, &Citadel::new(&lpp, &sc))
         .expect("Proving should succeed");
 
     for pi in public_inputs.iter() {
@@ -236,6 +268,32 @@ fn use_license() {
         public_inputs,
         license: l, // todo, replace with real license
     };
+
+
+
+    //========================================================
+    // #[derive(Default)]
+    // struct DummyCircuit;
+    //
+    // impl Circuit for DummyCircuit {
+    //     fn circuit<C>(&self, _: &mut C) -> Result<(), Error>
+    //         where
+    //             C: Composer,
+    //     {
+    //         unreachable!(
+    //             "This circuit should never be compiled or proven, only verified"
+    //         )
+    //     }
+    // }
+    //
+    // use crate::license_circuits::verifier_data_license_circuit;
+    // let vd = verifier_data_license_circuit();
+    // let verifier2 = Verifier::<DummyCircuit>::try_from_bytes(vd)
+    //     .expect("Verifier data coming from the contract should be valid");
+    // verifier2.verify(&use_license_arg.proof, &use_license_arg.public_inputs).expect("verify should succeed");
+    //========================================================
+
+
 
     session
         .transact::<UseLicenseArg, ()>(

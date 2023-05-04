@@ -20,5 +20,6 @@ rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_
 [dev-dependencies]
 piecrust = "0.3"
 rand = "0.8"
-zk-citadel = "0.1.0"
+#zk-citadel = "0.1.0"
+zk-citadel = {path = "../../../citadel"}
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }

@@ -15,7 +15,7 @@ nstack = "0.16"
 dusk-pki ="0.11"
 dusk-schnorr = "0.12"
 phoenix-core = "0.18"
-zk-citadel = "0.1.0"
+zk-citadel = { path = "../../../citadel" }
 
 code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
@@ -25,11 +25,6 @@ rand = "0.8"
 
 [features]
 builder = ["rusk-profile"]
-
-#[[test]]
-#name = "test-execute"
-#path = "tests/execute.rs"
-#required-features = ["builder"]
 
 [[test]]
 name = "test-license"
