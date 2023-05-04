@@ -13,7 +13,7 @@ use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
-use piecrust::{ModuleId, Session, VM};
+use piecrust::{ModuleData, ModuleId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
@@ -32,6 +32,7 @@ mod zip;
 
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
+const DUSK_OWNER: [u8; 32] = [0; 32];
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
 pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
@@ -60,7 +61,11 @@ fn deploy_governance_contract(
         governance.name,
         hex::encode(module_id)
     );
-    session.deploy_with_id(module_id, bytecode)?;
+
+    session.deploy(
+        bytecode,
+        ModuleData::builder(DUSK_OWNER).module_id(module_id),
+    )?;
 
     // Set the broker and the authority of the governance contract
     session.transact(module_id, "set_broker", governance.broker())?;
@@ -177,9 +182,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let mut vm = VM::new(state_dir)?;
     rusk_abi::register_host_queries(&mut vm);
 
-    let mut session = vm.genesis_session();
-
-    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
+    let mut session = rusk_abi::session(&vm, None, GENESIS_BLOCK_HEIGHT)?;
     session.set_point_limit(u64::MAX);
 
     let transfer_code = include_bytes!(
@@ -191,10 +194,16 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
-    session.deploy_with_id(rusk_abi::transfer_module(), transfer_code)?;
+    session.deploy(
+        transfer_code,
+        ModuleData::builder(DUSK_OWNER).module_id(rusk_abi::transfer_module()),
+    )?;
 
     info!("{} Genesis Stake Contract", theme.action("Deploying"));
-    session.deploy_with_id(rusk_abi::stake_module(), stake_code)?;
+    session.deploy(
+        stake_code,
+        ModuleData::builder(DUSK_OWNER).module_id(rusk_abi::stake_module()),
+    )?;
 
     let _: () = session
         .transact(
@@ -234,9 +243,8 @@ pub fn deploy<P: AsRef<Path>>(
         None => generate_empty_state(state_dir),
     }?;
 
-    let mut session = vm.session(old_commit_id)?;
-
-    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
+    let mut session =
+        rusk_abi::session(&vm, Some(old_commit_id), GENESIS_BLOCK_HEIGHT)?;
     session.set_point_limit(u64::MAX);
 
     generate_transfer_state(&mut session, snapshot)?;
