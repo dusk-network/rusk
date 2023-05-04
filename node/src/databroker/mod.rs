@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod conf;
+
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
@@ -31,7 +33,6 @@ use tokio::task::JoinHandle;
 
 use std::any;
 
-const MAX_ONGOING_REQUESTS: usize = 100;
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
     Topics::GetMempool as u8,
@@ -83,14 +84,19 @@ pub struct DataBrokerSrv {
 
     /// Limits the number of ongoing requests.
     limit_ongoing_requests: Arc<Semaphore>,
+
+    conf: conf::Params,
 }
 
-impl Default for DataBrokerSrv {
-    fn default() -> Self {
+impl DataBrokerSrv {
+    pub fn new(conf: &conf::Params) -> Self {
+        tracing::info!("DataBrokerSrv::new with conf: {}", conf);
+
         Self {
+            conf: conf.clone(),
             requests: AsyncQueue::default(),
             limit_ongoing_requests: Arc::new(Semaphore::new(
-                MAX_ONGOING_REQUESTS,
+                conf.max_ongoing_requests,
             )),
         }
     }
@@ -106,6 +112,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         db: Arc<RwLock<DB>>,
         vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
+        if self.conf.max_ongoing_requests == 0 {
+            return Err(anyhow!("max_ongoing_requests must be greater than 0"));
+        }
+
         // Register routes
         LongLivedService::<N, DB, VM>::add_routes(
             self,
@@ -115,7 +125,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        tracing::info!("data broker service started");
+        tracing::info!("data_broker service started");
 
         loop {
             /// Wait until we can process a new request. We limit the number of
@@ -128,10 +138,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
             let network = network.clone();
             let db = db.clone();
+            let conf = self.conf.clone();
 
             // Spawn a task to handle the request asynchronously.
             tokio::spawn(async move {
-                match Self::handle_request(&network, &db, &msg).await {
+                match Self::handle_request(&network, &db, &msg, &conf).await {
                     Ok(resp) => {
                         // Send response
                         for msg in resp.msgs {
@@ -140,6 +151,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 .await
                                 .send_to_peer(&msg, resp.recv_peer)
                                 .await;
+
+                            // tokio sleep 1s
+                            tokio::time::sleep(
+                                std::time::Duration::from_millis(
+                                    conf.delay_on_resp_msg,
+                                ),
+                            )
+                            .await;
                         }
                     }
                     Err(e) => {
@@ -165,6 +184,7 @@ impl DataBrokerSrv {
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
         msg: &Message,
+        conf: &conf::Params,
     ) -> anyhow::Result<Response> {
         /// source address of the request becomes the receiver address of the
         /// response
@@ -182,7 +202,13 @@ impl DataBrokerSrv {
             }
             // Handle GetBlocks requests
             Payload::GetBlocks(m) => {
-                let msg = Self::handle_get_blocks(network, db, m).await?;
+                let msg = Self::handle_get_blocks(
+                    network,
+                    db,
+                    m,
+                    conf.max_inv_entries,
+                )
+                .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetMempool requests
@@ -192,12 +218,16 @@ impl DataBrokerSrv {
             }
             // Handle GetInv requests
             Payload::GetInv(m) => {
-                let msg = Self::handle_inv(network, db, m).await?;
+                let msg =
+                    Self::handle_inv(network, db, m, conf.max_inv_entries)
+                        .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetData requests
             Payload::GetData(m) => {
-                let msgs = Self::handle_get_data(network, db, m).await?;
+                let msgs =
+                    Self::handle_get_data(network, db, m, conf.max_inv_entries)
+                        .await?;
                 Ok(Response::new(msgs, recv_peer))
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
@@ -265,6 +295,7 @@ impl DataBrokerSrv {
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
         m: &payload::GetBlocks,
+        max_entries: usize,
     ) -> Result<Message> {
         let mut inv = payload::Inv::default();
         db.read()
@@ -285,6 +316,11 @@ impl DataBrokerSrv {
                         None => {
                             break;
                         }
+                    }
+
+                    //limit to the number of blocks to fetch
+                    if inv.inv_list.len() >= max_entries {
+                        break;
                     }
                 }
 
@@ -310,6 +346,7 @@ impl DataBrokerSrv {
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
+        max_entries: usize,
     ) -> Result<Message> {
         let mut inv = payload::Inv::default();
 
@@ -328,6 +365,10 @@ impl DataBrokerSrv {
                                 inv.add_tx_hash(i.hash);
                             }
                         }
+                    }
+
+                    if inv.inv_list.len() >= max_entries {
+                        break;
                     }
                 }
 
@@ -350,6 +391,7 @@ impl DataBrokerSrv {
         network: &Arc<RwLock<N>>,
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::GetData,
+        max_entries: usize,
     ) -> Result<Vec<Message>> {
         let mut messages = Vec::new();
 
@@ -370,6 +412,7 @@ impl DataBrokerSrv {
                             .flatten()
                             .map(|tx| Message::new_transaction(Box::new(tx))),
                     })
+                    .take(max_entries)
                     .collect();
 
                 Ok(())

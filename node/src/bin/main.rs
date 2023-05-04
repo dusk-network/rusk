@@ -48,7 +48,7 @@ pub fn main() -> anyhow::Result<()> {
             let service_list: Vec<Box<Services>> = vec![
                 Box::<MempoolSrv>::default(),
                 Box::new(ChainSrv::new(config.consensus_keys_path())),
-                Box::<DataBrokerSrv>::default(),
+                Box::new(DataBrokerSrv::new(config.databroker())),
             ];
 
             let db = rocksdb::Backend::create_or_open(config.db_path());
