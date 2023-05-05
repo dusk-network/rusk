@@ -121,9 +121,12 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
         });
     });
 }
-
-pub trait Database: Send {
+#[async_trait::async_trait]
+pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);
-    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<Block>;
+    async fn get_candidate_block_by_hash(
+        &self,
+        h: &Hash,
+    ) -> anyhow::Result<Block>;
     fn delete_candidate_blocks(&mut self);
 }

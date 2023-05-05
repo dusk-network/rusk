@@ -294,18 +294,17 @@ impl<D: Database> Executor<D> {
         );
 
         // Retrieve winning block from local storage
-        let mut block = self
-            .db
-            .lock()
-            .await
-            .get_candidate_block_by_hash(hash)
-            .or_else(|| {
-                tracing::error!("couldn't get candidate block");
+        match self.db.lock().await.get_candidate_block_by_hash(hash).await {
+            Ok(mut block) => {
+                info!("winning block retrieved");
+                block.header.cert = cert.clone();
+                Some(block)
+            }
+
+            Err(e) => {
+                error!("failed to retrieve winning block err: {:?}", e);
                 None
-            })?;
-
-        block.header.cert = cert.clone();
-
-        Some(block)
+            }
+        }
     }
 }
