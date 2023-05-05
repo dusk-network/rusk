@@ -835,7 +835,7 @@ mod tests {
     #[test]
     fn test_fetch_block_hash_by_height() {
         let t = TestWrapper {
-            path: "test_get_ledger_tx_by_hash",
+            path: "test_fetch_block_hash_by_height",
         };
 
         t.run(|path| {
