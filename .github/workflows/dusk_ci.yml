@@ -5,29 +5,23 @@ name: Continuous integration
 jobs:
   analyze:
     name: Dusk Analyzer
-    runs-on: core
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          profile: minimal
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --git https://github.com/dusk-network/cargo-dusk-analyzer
-      - uses: actions-rs/cargo@v1
-        with:
-          command: dusk-analyzer
+          components: clippy, rustfmt
+      - run: cargo install --git https://github.com/dusk-network/cargo-dusk-analyzer
+      - run: cargo dusk-analyzer
 
   test_nightly:
     name: Nightly tests
-    runs-on: core
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          profile: minimal
+          components: clippy, rustfmt
       - run: rustup component add rustfmt
       - run: rustup target add wasm32-unknown-unknown
       - run: rustup component add rust-src
@@ -38,28 +32,23 @@ jobs:
           RUSK_FORCE_STATE="1"
           make test
       - name: "Clippy check release"
-        uses: actions-rs/clippy-check@v1
-        env:
+        run: cargo clippy
+        env: --all-features --release --exclude host_fn --exclude alice --exclude bob --workspace -- -D warnings
           RUSK_PROFILE_PATH: "/var/opt/build-cache"
-        with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --release --exclude host_fn --exclude alice --exclude bob --workspace -- -D warnings
       - name: "Upload Rusk Artifact"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: rusk-artifact
           path: ./target/release/rusk
           retention-days: 5
+
   fmt:
     name: Rustfmt
-    runs-on: core
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          profile: minimal
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+          components: clippy, rustfmt
+      - run: cargo fmt --all -- --check
