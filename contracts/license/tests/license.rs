@@ -14,9 +14,10 @@ mod license_types;
 mod license_circuits;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
-use dusk_pki::{SecretKey, SecretSpendKey};
+use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED, dhke};
+use dusk_pki::{PublicSpendKey, SecretKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::prelude::*;
+use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_schnorr::Signature;
 use zk_citadel::gadget;
 use zk_citadel::license::{License, LicenseProverParameters, Request, SessionCookie};
@@ -51,7 +52,7 @@ fn random_license_user_pk<R: RngCore + CryptoRng>(
         user_pk: random_public_key(rng),
     };
     let sp_pk = SPPublicKey {
-        sp_pk: random_public_key(rng),
+        sp_pk: 0xbabe, // todo, I am not sure what type it is gonna be
     };
     (
         ContractLicense {
@@ -92,6 +93,40 @@ fn compute_random_license<R: RngCore + CryptoRng>(
     (lic, lpp, sc)
 }
 
+pub fn crate_test_request<R: RngCore + CryptoRng>(
+    psk_lp: &PublicSpendKey,
+    lsa: &StealthAddress,
+    k_lic: &JubJubAffine,
+    rng: &mut R,
+) -> Request {
+    let nonce_1 = BlsScalar::random(rng);
+    let nonce_2 = BlsScalar::random(rng);
+    let nonce_3 = BlsScalar::random(rng);
+
+    let lpk = JubJubAffine::from(*lsa.pk_r().as_ref());
+    let r = JubJubAffine::from(*lsa.R());
+
+    let r_dh = JubJubScalar::random(rng);
+    let rsa = psk_lp.gen_stealth_address(&r_dh);
+    let k_dh = dhke(&r_dh, psk_lp.A());
+
+    let enc_1 = PoseidonCipher::encrypt(&[lpk.get_x(), lpk.get_y()], &k_dh, &nonce_1);
+
+    let enc_2 = PoseidonCipher::encrypt(&[r.get_x(), r.get_y()], &k_dh, &nonce_2);
+
+    let enc_3 = PoseidonCipher::encrypt(&[k_lic.get_x(), k_lic.get_y()], &k_dh, &nonce_3);
+
+    Request {
+        rsa,
+        enc_1,
+        nonce_1,
+        enc_2,
+        nonce_2,
+        enc_3,
+        nonce_3,
+    }
+}
+
 fn initialize() -> Session {
     let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
     rusk_abi::register_host_queries(&mut vm);
@@ -120,24 +155,30 @@ fn request_set_get() {
     let rng = &mut StdRng::seed_from_u64(0xcafe);
     let mut session = initialize();
 
-    let sp_pk = SPPublicKey {
-        sp_pk: random_public_key(rng),
-    };
-    let license_request = LicenseRequest {
-        sp_public_key: sp_pk,
-    };
+    // user
+    let ssk = SecretSpendKey::random(rng);
+    let psk = ssk.public_spend_key();
+    // license provider
+    let ssk_lp = SecretSpendKey::random(rng);
+    let psk_lp = ssk_lp.public_spend_key();
+    //
+    let lsa = psk.gen_stealth_address(&JubJubScalar::random(rng));
+    let k_lic = JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::from(123456u64));
+    let request = crate_test_request(&psk_lp, &lsa, &k_lic, rng);
+
+    let sp_pk = SPPublicKey { sp_pk: 0xbabe }; // todo
 
     session
-        .transact::<LicenseRequest, ()>(
+        .transact::<Request, ()>(
             LICENSE_CONTRACT_ID,
             "request_license",
-            &license_request,
+            &request,
         )
         .expect("Requesting license should succeed");
 
     assert!(
         session
-            .query::<SPPublicKey, Option<LicenseRequest>>(
+            .query::<SPPublicKey, Option<Request>>(
                 LICENSE_CONTRACT_ID,
                 "get_license_request",
                 &sp_pk,
@@ -147,15 +188,15 @@ fn request_set_get() {
         "First call to getting a license request should return some"
     );
 
-    assert_eq!(
+    assert!(
         session
-            .query::<SPPublicKey, Option<LicenseRequest>>(
+            .query::<SPPublicKey, Option<Request>>(
                 LICENSE_CONTRACT_ID,
                 "get_license_request",
                 &sp_pk,
             )
-            .expect("Querying the license request should succeed"),
-        None,
+            .expect("Querying the license request should succeed")
+            .is_none(),
         "Second call to getting a license request should return none"
     );
 }

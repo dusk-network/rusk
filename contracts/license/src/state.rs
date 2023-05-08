@@ -6,10 +6,7 @@
 
 use crate::collection::Map;
 use crate::error::Error;
-use crate::{
-    ContractLicense, LicenseNullifier, LicenseRequest, LicenseSession,
-    SPPublicKey, UseLicenseArg, UserPublicKey,
-};
+use crate::{ContractLicense, LicenseNullifier, LicenseSession, Request, SPPublicKey, UseLicenseArg, UserPublicKey};
 use alloc::vec::Vec;
 use dusk_bytes::Serializable;
 use rusk_abi::PublicInput;
@@ -19,7 +16,7 @@ use crate::license_circuits::verifier_data_license_circuit;
 /// License contract.
 #[derive(Debug, Clone)]
 pub struct LicensesData {
-    pub requests: Vec<LicenseRequest>,
+    pub requests: Vec<Request>,
     pub sessions: Map<LicenseNullifier, LicenseSession>,
     pub licenses: Vec<ContractLicense>,
 }
@@ -43,7 +40,7 @@ impl LicensesData {
 impl LicensesData {
     /// Inserts a given license request in a collection of requests.
     /// Method intended to be called by the user.
-    pub fn request_license(&mut self, request: LicenseRequest) {
+    pub fn request_license(&mut self, request: Request) {
         rusk_abi::debug!("License contract: request_license");
         self.requests.push(request);
     }
@@ -54,14 +51,14 @@ impl LicensesData {
     pub fn get_license_request(
         &mut self,
         sp_public_key: SPPublicKey,
-    ) -> Option<LicenseRequest> {
+    ) -> Option<Request> {
         rusk_abi::debug!(
             "License contract: get_license_request {:?}",
             sp_public_key
         );
         self.requests
             .iter()
-            .position(|e| e.sp_public_key == sp_public_key)
+            .position(|_e| true /*e.sp_public_key == sp_public_key*/)
             .map(|index| self.requests.swap_remove(index))
     }
 

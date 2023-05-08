@@ -15,6 +15,7 @@ dusk-jubjub = { version = "0.12", default-features = false }
 dusk-schnorr = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-pki = { version = "0.11", default-features = false}
+dusk-poseidon = { version = "0.28", default-features = false, features = ["rkyv-impl", "alloc"] }
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
 
 [dev-dependencies]
