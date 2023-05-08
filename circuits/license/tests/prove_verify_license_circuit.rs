@@ -4,14 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_jubjub::{GENERATOR_EXTENDED, JubJubAffine, JubJubScalar};
+use dusk_jubjub::{JubJubAffine, JubJubScalar, GENERATOR_EXTENDED};
 use dusk_pki::SecretSpendKey;
 use license_circuits::LicenseCircuit;
 
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 
-use zk_citadel::license::{License, LicenseProverParameters, Request, SessionCookie};
+use zk_citadel::license::{
+    License, LicenseProverParameters, Request, SessionCookie,
+};
 
 mod keys;
 
@@ -29,7 +31,8 @@ fn compute_random_license<R: RngCore + CryptoRng>(
 
     // First, the user computes these values and requests a License
     let lsa = psk.gen_stealth_address(&JubJubScalar::random(rng));
-    let k_lic = JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::from(123456u64));
+    let k_lic =
+        JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::from(123456u64));
     let req = Request::new(&psk_lp, &lsa, &k_lic, rng);
 
     // Second, the LP computes these values and grants the License

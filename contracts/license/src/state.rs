@@ -6,9 +6,11 @@
 
 use crate::collection::Map;
 use crate::error::Error;
-use crate::{ContractLicense, LicenseNullifier, LicenseSession, Request, SPPublicKey, UseLicenseArg, UserPublicKey};
+use crate::{License, Request, Session, SessionId, UseLicenseArg};
 use alloc::vec::Vec;
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
+use dusk_pki::{StealthAddress, ViewKey};
 use rusk_abi::PublicInput;
 
 use crate::license_circuits::verifier_data_license_circuit;
@@ -17,8 +19,8 @@ use crate::license_circuits::verifier_data_license_circuit;
 #[derive(Debug, Clone)]
 pub struct LicensesData {
     pub requests: Vec<Request>,
-    pub sessions: Map<LicenseNullifier, LicenseSession>,
-    pub licenses: Vec<ContractLicense>,
+    pub sessions: Map<BlsScalar, Session>,
+    pub licenses: Vec<License>,
 }
 
 #[allow(dead_code)]
@@ -41,31 +43,32 @@ impl LicensesData {
     /// Inserts a given license request in a collection of requests.
     /// Method intended to be called by the user.
     pub fn request_license(&mut self, request: Request) {
-        rusk_abi::debug!("License contract: request_license");
         self.requests.push(request);
     }
 
-    /// Returns and removes first found license request for a given SP.
-    /// If not such license request is found, returns None.
+    /**
+     * FIXME: Note that we base the querying for a license on ViewKey,
+     * which is not optimal from the privacy point of view.
+     * We rely on this solution until a streaming infrastructure
+     * for contracts is available, so that we can move the filtering
+     * part to the license provider, for proper anonymization.
+     * */
+    /// Returns and removes first found license request for a given License
+    /// Provider. Returns None if not such license request is found.
     /// Method intended to be called by the License Provider.
     pub fn get_license_request(
         &mut self,
-        sp_public_key: SPPublicKey,
+        view_key: ViewKey,
     ) -> Option<Request> {
-        rusk_abi::debug!(
-            "License contract: get_license_request {:?}",
-            sp_public_key
-        );
         self.requests
             .iter()
-            .position(|_e| true /*e.sp_public_key == sp_public_key*/)
+            .position(|r| view_key.owns(r))
             .map(|index| self.requests.swap_remove(index))
     }
 
-    /// Inserts a given license in a collection of licenses
+    /// Inserts a given license in the collection of licenses
     /// Method intended to be called by the License Provider.
-    pub fn issue_license(&mut self, license: ContractLicense) {
-        rusk_abi::debug!("License contract: issue_license");
+    pub fn issue_license(&mut self, license: License) {
         self.licenses.push(license);
     }
 
@@ -74,36 +77,39 @@ impl LicensesData {
     /// Method intended to be called by the user.
     pub fn get_license(
         &mut self,
-        user_pk: UserPublicKey,
-    ) -> Option<ContractLicense> {
-        rusk_abi::debug!("License contract: get_license");
+        stealth_address: StealthAddress,
+    ) -> Option<License> {
         self.licenses
             .iter()
-            .position(|e| e.user_pk == user_pk)
+            .position(|l| l.lsa == stealth_address)
             .map(|index| self.licenses.swap_remove(index))
     }
 
     /// Verifies the proof of a given license, if successful,
-    /// creates a session with the corresponding nullifier.
+    /// creates a session with the corresponding session id.
     /// Method intended to be called by the user.
-    pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
+    pub fn use_license(&mut self, use_license_arg: UseLicenseArg) -> SessionId {
         let mut pi = Vec::new();
-        for scalar in use_license_arg.public_inputs {
+        for scalar in use_license_arg.public_inputs.iter() {
             pi.push(PublicInput::BlsScalar(scalar.neg()))
         }
         let vd = verifier_data_license_circuit();
         Self::assert_proof(vd, use_license_arg.proof.to_bytes().to_vec(), pi)
             .expect("Provided proof should succeed!");
+
+        // after a successful proof verification we can add a session to a
+        // shared list of sessions
+        let license_session =
+            Session::from(use_license_arg.public_inputs.as_slice());
+        self.sessions
+            .insert(license_session.session_id, license_session.clone());
+        SessionId::new(license_session.session_id)
     }
 
-    /// Returns session containing a given license nullifier.
-    /// Method intended to be called by the Session Provider.
-    pub fn get_session(
-        &self,
-        nullifier: LicenseNullifier,
-    ) -> Option<LicenseSession> {
-        rusk_abi::debug!("License contract: get_session {:?}", nullifier);
-        self.sessions.get(&nullifier).cloned()
+    /// Returns session with a given session id.
+    /// Method intended to be called by the Service Provider.
+    pub fn get_session(&self, session_id: SessionId) -> Option<Session> {
+        self.sessions.get(&session_id.inner()).cloned()
     }
 
     fn assert_proof(

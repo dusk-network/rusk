@@ -6,7 +6,7 @@
 
 use dusk_plonk::prelude::*;
 
-use zk_citadel::{gadget, license::License};
+use zk_citadel::gadget;
 use zk_citadel::license::{LicenseProverParameters, SessionCookie};
 
 #[derive(Default, Debug)]
