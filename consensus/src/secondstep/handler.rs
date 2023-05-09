@@ -6,6 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
 use tracing::error;
@@ -20,6 +21,7 @@ pub struct Reduction {
     pub(crate) first_step_votes: StepVotes,
 }
 
+#[async_trait]
 impl MsgHandler<Message> for Reduction {
     fn verify(
         &mut self,
@@ -43,7 +45,7 @@ impl MsgHandler<Message> for Reduction {
     }
 
     /// Collect the reduction message.
-    fn collect(
+    async fn collect(
         &mut self,
         msg: Message,
         ru: &RoundUpdate,

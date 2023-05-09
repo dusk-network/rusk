@@ -155,12 +155,10 @@ impl<'a> ExecutionCtx<'a> {
             }
         }
 
-        match phase.collect(
-            msg.clone(),
-            &self.round_update,
-            self.step,
-            committee,
-        ) {
+        match phase
+            .collect(msg.clone(), &self.round_update, self.step, committee)
+            .await
+        {
             // Fully valid state reached on this step. Return it as an output.
             // Populate next step with it.
             Ok(output) => {
@@ -215,6 +213,7 @@ impl<'a> ExecutionCtx<'a> {
                 ) {
                     if let Ok(HandleMsgOutput::FinalResult(msg)) = phase
                         .collect(msg, &self.round_update, self.step, committee)
+                        .await
                     {
                         return Some(msg);
                     }

@@ -5,10 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, Signature, StepVotes};
-
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
@@ -25,12 +25,19 @@ macro_rules! empty_result {
     };
 }
 
+fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
+    HandleMsgOutput::FinalResult(Message::from_stepvotes(
+        payload::StepVotesWithCandidate { sv, candidate },
+    ))
+}
+
 #[derive(Default)]
 pub struct Reduction {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
 }
 
+#[async_trait]
 impl MsgHandler<Message> for Reduction {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
@@ -54,7 +61,7 @@ impl MsgHandler<Message> for Reduction {
     }
 
     /// Collects the reduction message.
-    fn collect(
+    async fn collect(
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
@@ -75,22 +82,21 @@ impl MsgHandler<Message> for Reduction {
             if hash == [0u8; 32] {
                 tracing::warn!("votes converged for an empty hash");
                 // TODO: increase timeout
-                return Ok(empty_result!());
+
+                return Ok(final_result(
+                    StepVotes::default(),
+                    ledger::Block::default(),
+                ));
             }
 
             if hash != self.candidate.header.hash {
                 tracing::warn!("request candidate block from peers");
-                // TODO: Fetch Candidate procedure
+
                 return Ok(empty_result!());
             }
 
             // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
-            return Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
-                payload::StepVotesWithCandidate {
-                    sv,
-                    candidate: self.candidate.clone(),
-                },
-            )));
+            return Ok(final_result(sv, self.candidate.clone()));
         }
 
         Ok(HandleMsgOutput::Result(msg))

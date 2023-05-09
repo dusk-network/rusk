@@ -7,6 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
+use async_trait::async_trait;
 use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -16,6 +17,7 @@ pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
 }
 
+#[async_trait]
 impl<D: Database> MsgHandler<Message> for Selection<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
@@ -31,7 +33,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
     }
 
     /// Collects а new_block message.
-    fn collect(
+    async fn collect(
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
@@ -39,14 +41,11 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
-        if let Payload::NewBlock(p) = msg.clone().payload {
-            _ = self.db.try_lock().map(|mut d| {
-                tracing::info!(
-                    "candidate block with hash {} stored",
-                    hex::ToHex::encode_hex::<String>(&p.candidate.header.hash),
-                );
-                d.store_candidate_block(p.candidate.clone())
-            });
+        if let Payload::NewBlock(p) = &msg.payload {
+            self.db
+                .lock()
+                .await
+                .store_candidate_block(p.candidate.clone());
 
             return Ok(HandleMsgOutput::FinalResult(msg));
         }
@@ -67,7 +66,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
 impl<D: Database> Selection<D> {
     fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
         //  Verify new_block msg signature
-        if let Payload::NewBlock(p) = msg.clone().payload {
+        if let Payload::NewBlock(p) = &msg.payload {
             if msg.header.verify_signature(&p.signed_hash).is_err() {
                 return Err(ConsensusError::InvalidSignature);
             }
