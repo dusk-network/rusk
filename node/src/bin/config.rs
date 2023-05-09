@@ -73,7 +73,9 @@ impl From<&ArgMatches> for Config {
 
 impl Config {
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
-        let command = KadcastConfig::inject_args(command);
+        let mut command = KadcastConfig::inject_args(command);
+        command = node::databroker::conf::inject_args(command);
+
         command
             .arg(
                 Arg::new("log-level")

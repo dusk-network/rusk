@@ -6,7 +6,7 @@
 
 use std::fmt::Formatter;
 
-use clap::ArgMatches;
+use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -41,33 +41,6 @@ impl std::fmt::Display for &Params {
 
 impl Params {
     pub fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(max_inv_entries) = matches.value_of("max_inv_entries") {
-            match max_inv_entries.parse() {
-                Ok(max_inv_entries) => {
-                    self.max_inv_entries = max_inv_entries;
-                }
-                Err(e) => {
-                    tracing::error!("Failed to parse max_inv_entries: {:?}", e);
-                }
-            }
-        };
-
-        if let Some(max_ongoing_requests) =
-            matches.value_of("max_ongoing_requests")
-        {
-            match max_ongoing_requests.parse() {
-                Ok(max_ongoing_requests) => {
-                    self.max_ongoing_requests = max_ongoing_requests;
-                }
-                Err(e) => {
-                    tracing::error!(
-                        "Failed to parse max_ongoing_requests: {:?}",
-                        e
-                    );
-                }
-            }
-        };
-
         if let Some(delay_on_resp_msg) = matches.value_of("delay_on_resp_msg") {
             match delay_on_resp_msg.parse() {
                 Ok(delay_on_resp_msg) => {
@@ -82,4 +55,15 @@ impl Params {
             }
         };
     }
+}
+
+pub fn inject_args(command: Command<'_>) -> Command<'_> {
+    command.arg(
+        Arg::new("delay_on_resp_msg")
+            .long("delay_on_resp_msg")
+            .help("Delay in milliseconds to mitigate UDP drops for DataBroker service in localnet")
+            .env("DELAY_ON_RESP_MSG")
+            .takes_value(true)
+            .required(false),
+    )
 }
