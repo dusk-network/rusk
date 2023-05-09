@@ -104,12 +104,17 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             }
 
             if hash != self.candidate.header.hash {
-                tracing::warn!("request candidate block from peers");
-                // TODO: Fetch Candidate procedure
+                // If the block generator is behind this node, we'll miss the candidate block.
+                if let Some(block) =
+                    self.db.lock().await.get_candidate_block_by_hash(&hash)
+                {
+                    return Ok(final_result(sv, block));
+                }
+
+                tracing::error!("Failed to retrieve candidate block.");
                 return Ok(empty_result!());
             }
 
-            // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
             return Ok(final_result(sv, self.candidate.clone()));
         }
 
