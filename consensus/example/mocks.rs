@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use anyhow::bail;
 use dusk_consensus::commons::Database;
 use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
@@ -54,6 +55,7 @@ pub struct SimpleDB {
     candidates: std::collections::BTreeMap<Hash, Block>,
 }
 
+#[async_trait::async_trait]
 impl Database for SimpleDB {
     fn store_candidate_block(&mut self, b: Block) {
         if b.header.hash == Hash::default() {
@@ -64,11 +66,15 @@ impl Database for SimpleDB {
         self.candidates.entry(b.header.hash).or_insert(b);
     }
 
-    fn get_candidate_block_by_hash(&self, h: &Hash) -> Option<Block> {
+    async fn get_candidate_block_by_hash(
+        &self,
+        h: &Hash,
+    ) -> anyhow::Result<Block> {
         if let Some(v) = self.candidates.get_key_value(h) {
-            return Some(v.1.clone());
+            return Ok(v.1.clone());
         }
-        None
+
+        bail!("not found")
     }
 
     fn delete_candidate_blocks(&mut self) {

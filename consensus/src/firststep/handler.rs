@@ -10,12 +10,14 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use async_trait::async_trait;
 use node_data::ledger;
-use node_data::ledger::{Block, Signature, StepVotes};
+use node_data::ledger::{Block, StepVotes};
 use tokio::sync::Mutex;
 
 use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
 use node_data::message::{payload, Message, Payload};
+
+const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
 
 macro_rules! empty_result {
     (  ) => {
@@ -63,7 +65,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signed_hash),
-            Payload::Empty => Ok(Signature::default().0),
+            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
@@ -84,7 +86,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signed_hash),
-            Payload::Empty => Ok(Signature::default().0),
+            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
@@ -105,8 +107,12 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
 
             if hash != self.candidate.header.hash {
                 // If the block generator is behind this node, we'll miss the candidate block.
-                if let Some(block) =
-                    self.db.lock().await.get_candidate_block_by_hash(&hash)
+                if let Ok(block) = self
+                    .db
+                    .lock()
+                    .await
+                    .get_candidate_block_by_hash(&hash)
+                    .await
                 {
                     return Ok(final_result(sv, block));
                 }

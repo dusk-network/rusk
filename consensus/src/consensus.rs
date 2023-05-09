@@ -113,18 +113,18 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         let result;
         tokio::select! {
             recv = &mut agreement_task_handle => {
-                result = recv.expect("wrong agreement_task handle");
+                result = recv.map_err(|_| ConsensusError::Canceled)?;
                 tracing::trace!("agreement result: {:?}", result);
             },
             recv = &mut main_task_handle => {
-               result = recv.expect("wrong main_task handle");
+                result = recv.map_err(|_| ConsensusError::Canceled)?;
                 tracing::trace!("main_loop result: {:?}", result);
             },
             // Canceled from outside.
             // This could be triggered by Synchronizer or on node termination.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
-                 tracing::trace!("consensus canceled");
+                tracing::trace!("consensus canceled");
             }
         }
 
