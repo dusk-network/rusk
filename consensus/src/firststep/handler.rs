@@ -6,13 +6,15 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use node_data::ledger;
-use node_data::ledger::{Block, Signature, StepVotes};
+use node_data::ledger::{Block, StepVotes};
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 
 use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
 use node_data::message::{payload, Message, Payload};
+
+const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
 
 macro_rules! empty_result {
     (  ) => {
@@ -42,7 +44,7 @@ impl MsgHandler<Message> for Reduction {
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signed_hash),
-            Payload::Empty => Ok(Signature::default().0),
+            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
@@ -63,7 +65,7 @@ impl MsgHandler<Message> for Reduction {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signed_hash),
-            Payload::Empty => Ok(Signature::default().0),
+            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 

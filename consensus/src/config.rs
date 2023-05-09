@@ -19,7 +19,7 @@ pub const FIRST_REDUCTION_COMMITTEE_SIZE: usize = 64;
 pub const SECOND_REDUCTION_COMMITTEE_SIZE: usize = 64;
 
 /// Artifical delay on each selection step.
-pub const CONSENSUS_DELAY_MS: u64 = 3000;
+pub const CONSENSUS_DELAY_MS: u64 = 1000;
 /// Default number of workers to process agreements.
 pub const ACCUMULATOR_WORKERS_AMOUNT: usize = 6;
 pub const ACCUMULATOR_QUEUE_CAP: usize = 100;
