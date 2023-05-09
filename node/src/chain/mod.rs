@@ -86,51 +86,49 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             tokio::select! {
                 // Receives results from the upper layer
                 recv = &mut self.upper.result.recv() => {
-                    if let Ok(res) = recv {
-                        match res {
-                            Ok(blk) => {
-                                if let Err(e) = self.accept_block::<DB, VM>( &db, &vm, &blk).await {
-                                    tracing::error!("failed to accept block: {}", e);
-                                } else {
-                                    network.read().await.
-                                        broadcast(&Message::new_with_block(Box::new(blk))).await;
-                                }
-                            }
-                            Err(e) => {
-                                tracing::error!("consensus halted due to: {:?}", e);
+                    let res = recv?;
+                    match res {
+                        Ok(blk) => {
+                            if let Err(e) = self.accept_block::<DB, VM, N>( &db, &vm, &network, &blk).await {
+                                tracing::error!("failed to accept block: {}", e);
+                            } else {
+                                network.read().await.
+                                    broadcast(&Message::new_block(Box::new(blk))).await;
                             }
                         }
+                        Err(e) => {
+                            tracing::error!("consensus halted due to: {:?}", e);
+                        }
                     }
+
                 },
                 // Receives inbound wire messages.
                 // Component should either process it or re-route it to the next upper layer
                 recv = &mut self.inbound.recv() => {
-                    if let Ok(mut msg) = recv {
-                        match &msg.payload {
-                            Payload::Block(b) => {
-                                if let Err(e) = self.accept_block::<DB, VM>(&db, &vm, b).await {
-                                    tracing::error!("failed to accept block: {}", e);
-                                } else {
-                                    network.read().await.broadcast(&msg).await;
-                                }
+                    let msg = recv?;
+                    match &msg.payload {
+                        Payload::Block(b) => {
+                            if let Err(e) = self.accept_block::<DB, VM, N>(&db, &vm, &network, b).await {
+                                tracing::error!("failed to accept block: {}", e);
+                            } else {
+                                network.read().await.broadcast(&msg).await;
                             }
-
-                            // Re-route message to upper layer (in this case it is the Consensus layer)
-                            Payload::NewBlock(_) |  Payload::Reduction(_) => {
-                                self.upper.main_inbound.try_send(msg);
-                            }
-                            Payload::Agreement(_) | Payload::AggrAgreement(_) => {
-                                self.upper.agreement_inbound.try_send(msg);
-                            }
-                            _ => tracing::warn!("invalid inbound message"),
                         }
+
+                        // Re-route message to upper layer (in this case it is the Consensus layer)
+                        Payload::NewBlock(_) |  Payload::Reduction(_) => {
+                            self.upper.main_inbound.try_send(msg);
+                        }
+                        Payload::Agreement(_) | Payload::AggrAgreement(_) => {
+                            self.upper.agreement_inbound.try_send(msg);
+                        }
+                        _ => tracing::warn!("invalid inbound message"),
                     }
                 },
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
                 recv = &mut self.upper.outbound.recv() => {
-                    if let Ok(msg) = recv {
-                        network.read().await.broadcast(&msg).await;
-                    }
+                    let msg = recv?;
+                    network.read().await.broadcast(&msg).await;
                 },
             }
         }
@@ -152,6 +150,29 @@ impl ChainSrv {
         }
     }
 
+    /// Requests missing blocks by sending GetBlocks wire message to N alive
+    /// peers.
+    async fn request_missing_blocks<N: Network, DB: database::DB>(
+        db: &Arc<RwLock<DB>>,
+        network: &Arc<RwLock<N>>,
+        locator: [u8; 32],
+        peers_count: usize,
+    ) -> anyhow::Result<()> {
+        // GetBlocks
+        let msg =
+            Message::new_get_blocks(node_data::message::payload::GetBlocks {
+                locator,
+            });
+
+        network
+            .read()
+            .await
+            .send_to_alive_peers(&msg, peers_count)
+            .await;
+
+        Ok(())
+    }
+
     async fn init<N: Network, DB: database::DB, VM: vm::VMExecution>(
         &mut self,
         network: &Arc<RwLock<N>>,
@@ -166,15 +187,34 @@ impl ChainSrv {
             &self.eligible_provisioners,
             db,
             vm,
+            network,
         );
+
+        // Store genesis block
+        db.read()
+            .await
+            .update(|t| t.store_block(&self.most_recent_block, true));
+
+        // Always request missing blocks on startup.
+        //
+        // Instead of waiting for next block to be produced and delivered, we
+        // request missing blocks from randomly selected the network nodes.
+        Self::request_missing_blocks(
+            db,
+            network,
+            self.most_recent_block.header.hash,
+            3,
+        )
+        .await?;
 
         anyhow::Ok(0)
     }
 
-    async fn accept_block<DB: database::DB, VM: vm::VMExecution>(
+    async fn accept_block<DB: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
+        network: &Arc<RwLock<N>>,
         blk: &Block,
     ) -> anyhow::Result<()> {
         // Verify Block Header
@@ -228,6 +268,7 @@ impl ChainSrv {
             &self.eligible_provisioners,
             db,
             vm,
+            network,
         );
 
         Ok(())
@@ -244,7 +285,11 @@ impl ChainSrv {
         }
 
         if blk_header.height != prev_block_header.height + 1 {
-            return Err(anyhow!("invalid block height"));
+            return Err(anyhow!(
+                "invalid block height block_height: {:?}, curr_height: {:?}",
+                blk_header.height,
+                prev_block_header.height,
+            ));
         }
 
         if blk_header.prev_block_hash != prev_block_header.hash {

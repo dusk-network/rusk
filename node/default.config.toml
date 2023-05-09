@@ -8,7 +8,7 @@ consensus_keys_path = '/tmp/consensus_bls.keys'
 public_address = '127.0.0.1:9000'
 # listen_address = '127.0.0.1:9000'
 bootstrapping_nodes = []
-auto_propagate = true
+auto_propagate = false
 channel_size = 1000
 recursive_discovery = true
 
@@ -32,3 +32,8 @@ fec_redundancy = 0.15
 [network.fec.decoder]
 cache_ttl = '1m'
 cache_prune_every = '5m'
+
+[databroker]
+max_inv_entries = 500
+max_ongoing_requests = 100
+delay_on_resp_msg = 500
