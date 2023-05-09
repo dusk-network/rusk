@@ -17,14 +17,19 @@ fn test_deterministic_sortition_1() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
+    let committee_size = 64;
+
     // Execute sortition with specific config
     let cfg = Config::new(Seed::default(), 1, 1, 64);
     p.update_eligibility_flag(cfg.round);
 
+    let committee = Committee::new(PublicKey::default(), &mut p, cfg);
+
     assert_eq!(
-        vec![1, 2, 1],
-        Committee::new(PublicKey::default(), &mut p, cfg).get_occurrences()
+        committee_size,
+        committee.get_occurrences().iter().sum::<usize>()
     );
+    assert_eq!(vec![7, 23, 13, 21], committee.get_occurrences());
 }
 
 #[test]
@@ -32,10 +37,15 @@ fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
     let mut p = generate_provisioners(5);
 
-    let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, 45);
+    let committee_size = 45;
+    let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size);
 
     let committee = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(vec![2, 2], committee.get_occurrences());
+    assert_eq!(
+        committee_size,
+        committee.get_occurrences().iter().sum::<usize>()
+    );
+    assert_eq!(vec![5, 13, 14, 13], committee.get_occurrences());
 }
 
 #[test]
@@ -47,19 +57,7 @@ fn test_quorum() {
     p.update_eligibility_flag(cfg.round);
 
     let c = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(c.quorum(), 3);
-}
-
-#[test]
-fn test_quorum_max_size() {
-    // Create provisioners with bls keys read from an external file.
-    let mut p = generate_provisioners(5);
-
-    let cfg = Config::new(Seed::default(), 7777, 8, 4);
-    p.update_eligibility_flag(cfg.round);
-
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
-    assert_eq!(c.quorum(), 3);
+    assert_eq!(c.quorum(), 43);
 }
 
 #[test]
