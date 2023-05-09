@@ -118,15 +118,6 @@ impl Provisioners {
             .for_each(|m| m.update_eligibility_flag(round));
     }
 
-    /// Returns number of provisioners that owns at least one eligibile stake.
-    pub fn get_eligible_size(&self, max_size: usize) -> usize {
-        self.members
-            .iter()
-            .filter(|(_, m)| m.stakes.iter().any(|(_, elegible)| *elegible))
-            .take(max_size)
-            .count()
-    }
-
     /// Returns a member of Provisioner list by public key.
     pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
         self.members.get(key)
@@ -140,7 +131,6 @@ impl Provisioners {
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
-        let committee_size = self.get_eligible_size(cfg.max_committee_size);
 
         // Restore intermediate value of all stakes.
         for (_, member) in self.members.iter_mut() {
@@ -153,7 +143,7 @@ impl Provisioners {
         let mut counter: u32 = 0;
         loop {
             if total_amount_stake.eq(&BigInt::from(0))
-                || committee.len() == committee_size
+                || committee.len() == cfg.committee_size
             {
                 break;
             }
