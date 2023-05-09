@@ -163,6 +163,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 )),
                 Phase::Reduction1(firststep::step::Reduction::new(
                     executor.clone(),
+                    db.clone(),
                 )),
                 Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];

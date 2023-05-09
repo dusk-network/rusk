@@ -4,11 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use std::sync::Arc;
+
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, Signature, StepVotes};
+use tokio::sync::Mutex;
 
 use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
@@ -32,13 +35,24 @@ fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
 }
 
 #[derive(Default)]
-pub struct Reduction {
+pub struct Reduction<DB: Database> {
+    pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
 }
 
+impl<DB: Database> Reduction<DB> {
+    pub(crate) fn new(db: Arc<Mutex<DB>>) -> Self {
+        Self {
+            db,
+            aggr: Aggregator::default(),
+            candidate: Block::default(),
+        }
+    }
+}
+
 #[async_trait]
-impl MsgHandler<Message> for Reduction {
+impl<D: Database> MsgHandler<Message> for Reduction<D> {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
@@ -91,7 +105,7 @@ impl MsgHandler<Message> for Reduction {
 
             if hash != self.candidate.header.hash {
                 tracing::warn!("request candidate block from peers");
-
+                // TODO: Fetch Candidate procedure
                 return Ok(empty_result!());
             }
 
@@ -108,11 +122,6 @@ impl MsgHandler<Message> for Reduction {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
-            payload::StepVotesWithCandidate {
-                sv: ledger::StepVotes::default(),
-                candidate: self.candidate.clone(),
-            },
-        )))
+        Ok(final_result(StepVotes::default(), self.candidate.clone()))
     }
 }
