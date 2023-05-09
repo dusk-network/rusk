@@ -4,11 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use std::sync::Arc;
+
+use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
-
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use tokio::sync::Mutex;
 
 use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
@@ -27,13 +30,31 @@ macro_rules! empty_result {
     };
 }
 
+fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
+    HandleMsgOutput::FinalResult(Message::from_stepvotes(
+        payload::StepVotesWithCandidate { sv, candidate },
+    ))
+}
+
 #[derive(Default)]
-pub struct Reduction {
+pub struct Reduction<DB: Database> {
+    pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
 }
 
-impl MsgHandler<Message> for Reduction {
+impl<DB: Database> Reduction<DB> {
+    pub(crate) fn new(db: Arc<Mutex<DB>>) -> Self {
+        Self {
+            db,
+            aggr: Aggregator::default(),
+            candidate: Block::default(),
+        }
+    }
+}
+
+#[async_trait]
+impl<D: Database> MsgHandler<Message> for Reduction<D> {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
@@ -56,7 +77,7 @@ impl MsgHandler<Message> for Reduction {
     }
 
     /// Collects the reduction message.
-    fn collect(
+    async fn collect(
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
@@ -77,22 +98,30 @@ impl MsgHandler<Message> for Reduction {
             if hash == [0u8; 32] {
                 tracing::warn!("votes converged for an empty hash");
                 // TODO: increase timeout
-                return Ok(empty_result!());
+
+                return Ok(final_result(
+                    StepVotes::default(),
+                    ledger::Block::default(),
+                ));
             }
 
             if hash != self.candidate.header.hash {
-                tracing::warn!("request candidate block from peers");
-                // TODO: Fetch Candidate procedure
+                // If the block generator is behind this node, we'll miss the candidate block.
+                if let Ok(block) = self
+                    .db
+                    .lock()
+                    .await
+                    .get_candidate_block_by_hash(&hash)
+                    .await
+                {
+                    return Ok(final_result(sv, block));
+                }
+
+                tracing::error!("Failed to retrieve candidate block.");
                 return Ok(empty_result!());
             }
 
-            // At that point, we have reached a quorum for 1th_reduction on an empty on non-empty block
-            return Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
-                payload::StepVotesWithCandidate {
-                    sv,
-                    candidate: self.candidate.clone(),
-                },
-            )));
+            return Ok(final_result(sv, self.candidate.clone()));
         }
 
         Ok(HandleMsgOutput::Result(msg))
@@ -104,11 +133,6 @@ impl MsgHandler<Message> for Reduction {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::FinalResult(Message::from_stepvotes(
-            payload::StepVotesWithCandidate {
-                sv: ledger::StepVotes::default(),
-                candidate: self.candidate.clone(),
-            },
-        )))
+        Ok(final_result(StepVotes::default(), self.candidate.clone()))
     }
 }

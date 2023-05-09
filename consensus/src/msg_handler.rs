@@ -6,6 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::user::committee::Committee;
+use async_trait::async_trait;
 use hex::ToHex;
 use node_data::message::{Message, MessageTrait, Status};
 use std::fmt::Debug;
@@ -17,6 +18,7 @@ pub enum HandleMsgOutput {
 
 /// MsgHandler must be implemented by any step that needs to handle an external
 /// message within event_loop life-cycle.
+#[async_trait]
 pub trait MsgHandler<T: Debug + MessageTrait> {
     /// is_valid checks a new message is valid in the first place.
     ///
@@ -61,7 +63,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     ) -> Result<T, ConsensusError>;
 
     /// collect allows each Phase to process a verified inbound message.
-    fn collect(
+    async fn collect(
         &mut self,
         msg: T,
         ru: &RoundUpdate,

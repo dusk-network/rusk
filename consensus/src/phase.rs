@@ -41,7 +41,7 @@ macro_rules! call_phase {
 
 pub enum Phase<T: Operations, D: Database> {
     Selection(selection::step::Selection<T, D>),
-    Reduction1(firststep::step::Reduction<T>),
+    Reduction1(firststep::step::Reduction<T, D>),
     Reduction2(secondstep::step::Reduction<T>),
 }
 

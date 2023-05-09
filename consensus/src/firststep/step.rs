@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_send_reduction, ConsensusError};
+use crate::commons::{spawn_send_reduction, ConsensusError, Database};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
@@ -16,17 +16,17 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[allow(unused)]
-pub struct Reduction<T> {
+pub struct Reduction<T, DB: Database> {
     timeout_millis: u64,
-    handler: handler::Reduction,
+    handler: handler::Reduction<DB>,
     executor: Arc<Mutex<T>>,
 }
 
-impl<T: Operations + 'static> Reduction<T> {
-    pub fn new(executor: Arc<Mutex<T>>) -> Self {
+impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
+    pub fn new(executor: Arc<Mutex<T>>, db: Arc<Mutex<DB>>) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Reduction::default(),
+            handler: handler::Reduction::new(db),
             executor,
         }
     }

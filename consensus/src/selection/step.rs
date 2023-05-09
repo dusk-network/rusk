@@ -55,12 +55,16 @@ impl<T: Operations, D: Database> Selection<T, D> {
                 }
 
                 // register new candidate in local state
-                match self.handler.collect(
-                    msg.clone(),
-                    &ctx.round_update,
-                    ctx.step,
-                    &committee,
-                ) {
+                match self
+                    .handler
+                    .collect(
+                        msg.clone(),
+                        &ctx.round_update,
+                        ctx.step,
+                        &committee,
+                    )
+                    .await
+                {
                     Ok(f) => {
                         if let HandleMsgOutput::FinalResult(msg) = f {
                             return Ok(msg);
