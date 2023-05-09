@@ -69,7 +69,7 @@ impl NetworkListen for Reader {
                 let mut msg = decoded.get_msg().clone();
                 msg.metadata = Some(Metadata {
                     height: md.height(),
-                    src_addr: md.src().to_string(),
+                    src_addr: md.src(),
                 });
 
                 // Dispatch message to the proper queue for further processing
