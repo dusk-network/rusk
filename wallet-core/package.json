@@ -1,0 +1,9 @@
+{
+  "name": "@dusk-network/wallet-core",
+  "version": "0.0.1",
+  "files": ["mod.wasm"],
+  "repository": "git://github.com/dusk-network/wallet-core",
+  "publishConfig": {
+    "@dusk-network:registry": "https://npm.pkg.github.com"
+  }
+}
