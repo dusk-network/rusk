@@ -7,6 +7,7 @@
 use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
 use node::chain::ChainSrv;
 use node::database::{rocksdb, DB};
+use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::vm::Config as VMConfig;
@@ -47,6 +48,7 @@ pub fn main() -> anyhow::Result<()> {
             let service_list: Vec<Box<Services>> = vec![
                 Box::<MempoolSrv>::default(),
                 Box::new(ChainSrv::new(config.consensus_keys_path())),
+                Box::new(DataBrokerSrv::new(config.databroker())),
             ];
 
             let db = rocksdb::Backend::create_or_open(config.db_path());

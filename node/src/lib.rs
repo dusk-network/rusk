@@ -8,6 +8,7 @@
 
 pub mod chain;
 pub mod database;
+pub mod databroker;
 pub mod mempool;
 pub mod network;
 pub mod vm;
@@ -15,6 +16,7 @@ pub mod vm;
 use async_trait::async_trait;
 use node_data::message::AsyncQueue;
 use node_data::message::Message;
+use node_data::message::Topics;
 use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
@@ -38,9 +40,28 @@ pub trait Network: Send + Sync + 'static {
     /// Broadcasts a message.
     async fn broadcast(&self, msg: &Message) -> anyhow::Result<()>;
 
-    /// Sends a message to specified peers.
-    async fn send(&self, msg: &Message, dst: Vec<String>)
-        -> anyhow::Result<()>;
+    /// Sends a message to a specified peer.
+    async fn send_to_peer(
+        &self,
+        msg: &Message,
+        peer_addr: std::net::SocketAddr,
+    ) -> anyhow::Result<()>;
+
+    /// Sends to random set of alive peers.
+    async fn send_to_alive_peers(
+        &self,
+        msg: &Message,
+        amount: usize,
+    ) -> anyhow::Result<()>;
+
+    /// Sends a Get message and waits for a response with timeout
+    async fn send_and_wait(
+        &mut self,
+        request_msg: &Message,
+        response_msg_topic: Topics,
+        timeout_millis: u64,
+        recv_peers_count: usize,
+    ) -> anyhow::Result<Message>;
 
     /// Routes any message of the specified type to this queue.
     async fn add_route(

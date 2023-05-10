@@ -20,6 +20,8 @@ pub(crate) struct Config {
     pub(crate) network: KadcastConfig,
     db_path: Option<PathBuf>,
     consensus_keys_path: Option<PathBuf>,
+
+    databroker: node::databroker::conf::Params,
 }
 
 /// Default log_level.
@@ -64,13 +66,16 @@ impl From<&ArgMatches> for Config {
         }
 
         config.network.merge(matches);
+        config.databroker.merge(matches);
         config
     }
 }
 
 impl Config {
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
-        let command = KadcastConfig::inject_args(command);
+        let mut command = KadcastConfig::inject_args(command);
+        command = node::databroker::conf::inject_args(command);
+
         command
             .arg(
                 Arg::new("log-level")
@@ -148,5 +153,9 @@ impl Config {
             .as_path()
             .display()
             .to_string()
+    }
+
+    pub(crate) fn databroker(&self) -> &node::databroker::conf::Params {
+        &self.databroker
     }
 }
