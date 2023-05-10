@@ -375,6 +375,7 @@ fn license_issue_get() {
     let ssk_user = SecretSpendKey::random(rng);
     let psk_user = ssk_user.public_spend_key();
     let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
+    let view_key_user = ViewKey::from(ssk_user);
 
     // license provider
     let ssk_lp = SecretSpendKey::random(rng);
@@ -393,10 +394,10 @@ fn license_issue_get() {
 
     assert!(
         session
-            .query::<StealthAddress, Option<License>>(
+            .query::<ViewKey, Option<License>>(
                 LICENSE_CONTRACT_ID,
                 "get_license",
-                &license.lsa,
+                &view_key_user,
             )
             .expect("Querying the license should succeed")
             .is_some(),
@@ -405,19 +406,19 @@ fn license_issue_get() {
 
     assert_eq!(
         session
-            .query::<StealthAddress, Option<License>>(
+            .query::<ViewKey, Option<License>>(
                 LICENSE_CONTRACT_ID,
                 "get_license",
-                &license.lsa,
+                &view_key_user,
             )
             .expect("Querying the license should succeed"),
         None,
-        "First call to getting a license request should return none"
+        "Second call to getting a license request should return none"
     );
 }
 
 #[test]
-fn get_session_none() {
+fn session_not_found() {
     const SESSION_ID: u64 = 7u64;
     let mut session = initialize();
     let session_id = SessionId::new(BlsScalar::from(SESSION_ID));

@@ -8,9 +8,8 @@ use crate::collection::Map;
 use crate::error::Error;
 use crate::{License, Request, Session, SessionId, UseLicenseArg};
 use alloc::vec::Vec;
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_pki::{StealthAddress, ViewKey};
+use dusk_pki::ViewKey;
 use rusk_abi::PublicInput;
 
 use crate::license_circuits::verifier_data_license_circuit;
@@ -19,7 +18,7 @@ use crate::license_circuits::verifier_data_license_circuit;
 #[derive(Debug, Clone)]
 pub struct LicensesData {
     pub requests: Vec<Request>,
-    pub sessions: Map<BlsScalar, Session>,
+    pub sessions: Map<SessionId, Session>,
     pub licenses: Vec<License>,
 }
 
@@ -75,13 +74,10 @@ impl LicensesData {
     /// Returns and removes first found license for a given user.
     /// If not no license is found, returns None.
     /// Method intended to be called by the user.
-    pub fn get_license(
-        &mut self,
-        stealth_address: StealthAddress,
-    ) -> Option<License> {
+    pub fn get_license(&mut self, view_key: ViewKey) -> Option<License> {
         self.licenses
             .iter()
-            .position(|l| l.lsa == stealth_address)
+            .position(|l| view_key.owns(l))
             .map(|index| self.licenses.swap_remove(index))
     }
 
@@ -102,14 +98,14 @@ impl LicensesData {
         let license_session =
             Session::from(use_license_arg.public_inputs.as_slice());
         self.sessions
-            .insert(license_session.session_id, license_session.clone());
-        SessionId::new(license_session.session_id)
+            .insert(license_session.session_id(), license_session.clone());
+        license_session.session_id()
     }
 
     /// Returns session with a given session id.
     /// Method intended to be called by the Service Provider.
     pub fn get_session(&self, session_id: SessionId) -> Option<Session> {
-        self.sessions.get(&session_id.inner()).cloned()
+        self.sessions.get(&session_id).cloned()
     }
 
     fn assert_proof(

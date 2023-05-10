@@ -23,7 +23,6 @@ pub struct DataLeaf {
     pos: u64,
 }
 
-// Keyed needs to be implemented for a leaf type and the tree key.
 impl Keyed<()> for DataLeaf {
     fn key(&self) -> &() {
         &()
@@ -32,12 +31,6 @@ impl Keyed<()> for DataLeaf {
 
 #[allow(dead_code)]
 impl DataLeaf {
-    // pub fn random<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
-    //     let license_hash = BlsScalar::random(rng);
-    //     let pos = 0;
-    //
-    //     Self { license_hash, pos }
-    // }
     pub fn new(hash: BlsScalar, n: u64) -> DataLeaf {
         DataLeaf {
             license_hash: hash,
@@ -95,22 +88,18 @@ impl SessionId {
     pub fn new(id: BlsScalar) -> SessionId {
         SessionId { id }
     }
-
-    pub fn inner(&self) -> BlsScalar {
-        self.id
-    }
 }
 
 /// Session.
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 #[archive_attr(derive(CheckBytes))]
 pub struct Session {
-    pub session_hash: BlsScalar,
-    pub session_id: BlsScalar,
+    session_hash: BlsScalar,
+    session_id: BlsScalar,
 
-    pub com_0: BlsScalar,      // Hash commitment 0
-    pub com_1: JubJubExtended, // Pedersen Commitment 1
-    pub com_2: JubJubExtended, // Pedersen Commitment 2
+    com_0: BlsScalar,      // Hash commitment 0
+    com_1: JubJubExtended, // Pedersen Commitment 1
+    com_2: JubJubExtended, // Pedersen Commitment 2
 }
 
 impl Session {
@@ -160,6 +149,12 @@ pub struct License {
     pub nonce_2: BlsScalar, // IV for the encryption
     pub pos: BlsScalar,     /* position of the license in the Merkle tree of
                              * licenses */
+}
+
+impl Ownable for License {
+    fn stealth_address(&self) -> &StealthAddress {
+        &self.lsa
+    }
 }
 
 /// Use License Request.
