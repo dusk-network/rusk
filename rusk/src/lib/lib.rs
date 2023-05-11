@@ -133,31 +133,31 @@ impl Rusk {
             let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
             session.set_point_limit(gas_limit);
 
-            let call_result: Option<Result<RawResult, ModuleError>> =
-                match session.transact(
-                    rusk_abi::transfer_module(),
-                    "execute",
-                    &tx,
-                ) {
-                    Ok(call_result) => call_result,
-                    Err(err) => match err {
-                        piecrust::Error::OutOfPoints => {
-                            // If the transaction would have been out of points
-                            // with its own gas limit, it is invalid and should
-                            // be discarded.
-                            if gas_limit == tx.fee.gas_limit {
-                                discarded_txs.push(tx);
-                            }
-                            continue;
-                        }
-                        _ => {
+            let (gas_spent, call_result): (
+                u64,
+                Option<Result<RawResult, ModuleError>>,
+            ) = match session.transact(
+                rusk_abi::transfer_module(),
+                "execute",
+                &tx,
+            ) {
+                Ok(call_result) => call_result,
+                Err(err) => match err {
+                    piecrust::Error::OutOfPoints => {
+                        // If the transaction would have been out of points
+                        // with its own gas limit, it is invalid and should
+                        // be discarded.
+                        if gas_limit == tx.fee.gas_limit {
                             discarded_txs.push(tx);
-                            continue;
                         }
-                    },
-                };
-
-            let gas_spent = session.spent();
+                        continue;
+                    }
+                    _ => {
+                        discarded_txs.push(tx);
+                        continue;
+                    }
+                },
+            };
 
             block_gas_left -= gas_spent;
             dusk_spent += gas_spent * tx.fee.gas_price;
@@ -423,10 +423,10 @@ fn accept(
         let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
         session.set_point_limit(gas_limit);
 
-        let call_result: Option<Result<RawResult, ModuleError>> =
-            session.transact(rusk_abi::transfer_module(), "execute", &tx)?;
-
-        let gas_spent = session.spent();
+        let (gas_spent, call_result): (
+            u64,
+            Option<Result<RawResult, ModuleError>>,
+        ) = session.transact(rusk_abi::transfer_module(), "execute", &tx)?;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
         block_gas_left = block_gas_left
