@@ -292,10 +292,12 @@ impl TransferState {
         true
     }
 
+    /// Executes a transaction, returning the gas consumed, and the result of a
+    /// possible contract call.
     pub fn execute(
         self: &mut State<Self>,
         tx: Transaction,
-    ) -> Option<Result<RawResult, ModuleError>> {
+    ) -> (u64, Option<Result<RawResult, ModuleError>>) {
         // Constant for a pedersen commitment with zero value.
         //
         // Calculated as `G^0 · G'^0`
@@ -385,12 +387,13 @@ impl TransferState {
         // 16. N_p^*←encode(N_p^t)
         // 17. N↦.append((N_p^t.R, N_p^t.pk))
         // 18. Notes.append(N_p^*)
-        self.push_fee_crossover(tx.fee)
+        let spent = self
+            .push_fee_crossover(tx.fee)
             .expect("Failed to append the fee and the crossover to the state!");
 
         self.update_root();
 
-        res
+        (spent, res)
     }
 
     /// Push a note to the contract's state with the given block height
@@ -486,10 +489,11 @@ impl TransferState {
         false
     }
 
-    fn push_fee_crossover(&mut self, fee: Fee) -> Result<(), Error> {
+    fn push_fee_crossover(&mut self, fee: Fee) -> Result<u64, Error> {
         let block_height = rusk_abi::block_height();
+        let spent = rusk_abi::spent();
 
-        let remainder = fee.gen_remainder(fee.gas_limit - rusk_abi::spent());
+        let remainder = fee.gen_remainder(fee.gas_limit - spent);
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
         if remainder_value > 0 {
@@ -501,7 +505,7 @@ impl TransferState {
             self.push_note(block_height, note);
         }
 
-        Ok(())
+        Ok(spent)
     }
 
     /// Minimum accepted price per unit of gas.
