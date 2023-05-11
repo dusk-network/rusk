@@ -313,7 +313,7 @@ fn stake_withdraw_unstake() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -519,7 +519,7 @@ fn stake_withdraw_unstake() {
     rusk_abi::set_block_height(session, 2);
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -740,7 +740,7 @@ fn stake_withdraw_unstake() {
     rusk_abi::set_block_height(session, 3);
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -894,7 +894,7 @@ fn allow() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
