@@ -22,6 +22,6 @@ rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_
 [dev-dependencies]
 piecrust = "0.3"
 rand = "0.8"
-zk-citadel = {path = "../../../citadel"}
+zk-citadel = { git="https://github.com/dusk-network/citadel.git", branch="main" }
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
 license-circuits = { version = "0.1", path = "../../circuits/license", features=["builder"] }
