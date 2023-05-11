@@ -14,8 +14,8 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
 use dusk_pki::PublicKey;
 
-use contract_helpers::{Map, Set};
 use crate::Transfer;
+use contract_helpers::{Map, Set};
 
 #[derive(Debug)]
 pub struct GovernanceState {

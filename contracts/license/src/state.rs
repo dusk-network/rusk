@@ -7,10 +7,10 @@
 use crate::error::Error;
 use crate::{License, Request, Session, SessionId, UseLicenseArg};
 use alloc::vec::Vec;
+use contract_helpers::Map;
 use dusk_bytes::Serializable;
 use dusk_pki::ViewKey;
 use rusk_abi::PublicInput;
-use contract_helpers::Map;
 
 use crate::license_circuits::verifier_data_license_circuit;
 
