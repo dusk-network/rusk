@@ -3,6 +3,8 @@ members = [
     "circuits/transfer",
     "circuits/license",
 
+    "contract-helpers",
+
     "contracts/alice",
     "contracts/bob",
     "contracts/stake",

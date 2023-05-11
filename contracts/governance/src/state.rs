@@ -14,7 +14,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
 use dusk_pki::PublicKey;
 
-use crate::collection::{Map, Set};
+use contract_helpers::{Map, Set};
 use crate::Transfer;
 
 #[derive(Debug)]
