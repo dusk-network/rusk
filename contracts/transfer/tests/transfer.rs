@@ -269,7 +269,7 @@ fn transfer() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -384,7 +384,7 @@ fn alice_ping() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -563,7 +563,7 @@ fn send_and_withdraw_transparent() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -740,7 +740,7 @@ fn send_and_withdraw_transparent() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -942,7 +942,7 @@ fn send_and_withdraw_obfuscated() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
@@ -1170,7 +1170,7 @@ fn send_and_withdraw_obfuscated() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: Option<Result<RawResult, ModuleError>> = session
+    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
         .transact(rusk_abi::transfer_module(), "execute", &tx)
         .expect("Transacting should succeed");
 
