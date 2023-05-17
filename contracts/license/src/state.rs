@@ -5,14 +5,16 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::{License, Request, Session, SessionId, UseLicenseArg};
+use crate::{DataLeaf, License, Request, Session, SessionId, UseLicenseArg};
 use alloc::vec::Vec;
 use contract_helpers::Map;
 use dusk_bytes::Serializable;
 use dusk_pki::ViewKey;
+use dusk_poseidon::tree::PoseidonTree;
 use rusk_abi::PublicInput;
 
 use crate::license_circuits::verifier_data_license_circuit;
+const DEPTH: usize = 17; // depth of the 4-ary Merkle tree
 
 /// License contract.
 #[derive(Debug, Clone)]
@@ -20,6 +22,7 @@ pub struct LicensesData {
     pub requests: Vec<Request>,
     pub sessions: Map<SessionId, Session>,
     pub licenses: Vec<License>,
+    pub tree: PoseidonTree<DataLeaf, (), DEPTH>,
 }
 
 #[allow(dead_code)]
@@ -29,6 +32,7 @@ impl LicensesData {
             requests: Vec::new(),
             sessions: Map::new(),
             licenses: Vec::new(),
+            tree: PoseidonTree::<DataLeaf, (), DEPTH>::new(),
         }
     }
 

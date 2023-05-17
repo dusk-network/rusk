@@ -441,22 +441,6 @@ fn use_license_get_session() {
 
     let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
 
-    // user
-    let ssk_user = SecretSpendKey::random(rng);
-    let psk_user = ssk_user.public_spend_key();
-    let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
-
-    // license provider
-    let ssk_lp = SecretSpendKey::random(rng);
-    let psk_lp = ssk_lp.public_spend_key();
-    let k_lic =
-        JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
-
-    let attr = JubJubScalar::from(USER_ATTRIBUTES);
-
-    let license =
-        create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
-
     let (prover, _verifier) = Compiler::compile::<LicenseCircuit>(&pp, LABEL)
         .expect("Compiling circuit should succeed");
 
@@ -469,7 +453,6 @@ fn use_license_get_session() {
     let use_license_arg = UseLicenseArg {
         proof,
         public_inputs,
-        license,
     };
 
     let session_id = session

@@ -163,7 +163,6 @@ impl Ownable for License {
 pub struct UseLicenseArg {
     pub proof: Proof,
     pub public_inputs: Vec<BlsScalar>,
-    pub license: License,
 }
 
 #[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
