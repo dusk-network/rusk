@@ -50,9 +50,9 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn get_license(arg_len: u32) -> u32 {
+    unsafe fn get_licenses(arg_len: u32) -> u32 {
         rusk_abi::wrap_query(arg_len, |user_public_key| {
-            STATE.get_license(user_public_key)
+            STATE.get_licenses(user_public_key)
         })
     }
 

@@ -392,15 +392,62 @@ fn license_issue_get() {
         .transact::<License, ()>(LICENSE_CONTRACT_ID, "issue_license", &license)
         .expect("Issuing license should succeed");
 
-    assert!(
+    assert_eq!(
         session
-            .query::<ViewKey, Option<License>>(
+            .query::<ViewKey, Vec<License>>(
                 LICENSE_CONTRACT_ID,
-                "get_license",
+                "get_licenses",
                 &view_key_user,
             )
             .expect("Querying the license should succeed")
-            .is_some(),
+            .len(),
+        1,
+        "Call to getting a license request should return some licenses"
+    );
+}
+
+#[test]
+fn multiple_licenses_issue_get() {
+    let rng = &mut StdRng::seed_from_u64(0xcafe);
+    let mut session = initialize();
+
+    // user
+    let ssk_user = SecretSpendKey::random(rng);
+    let psk_user = ssk_user.public_spend_key();
+    let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
+    let view_key_user = ViewKey::from(ssk_user);
+
+    // license provider
+    let ssk_lp = SecretSpendKey::random(rng);
+    let psk_lp = ssk_lp.public_spend_key();
+
+    let attr = JubJubScalar::from(USER_ATTRIBUTES);
+
+    const NUM_LICENSES: usize = 2;
+    for _ in 0..NUM_LICENSES {
+        let k_lic =
+            JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
+        let license =
+            create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
+        session
+            .transact::<License, ()>(
+                LICENSE_CONTRACT_ID,
+                "issue_license",
+                &license,
+            )
+            .expect("Issuing license should succeed");
+    }
+
+    assert_eq!(
+        session
+            .query::<ViewKey, Vec<License>>(
+                LICENSE_CONTRACT_ID,
+                "get_licenses",
+                &view_key_user,
+            )
+            .expect("Querying the license should succeed")
+            .len(),
+        NUM_LICENSES,
         "Call to getting a license request should return some licenses"
     );
 }

@@ -72,15 +72,24 @@ impl LicensesData {
     /// Inserts a given license in the collection of licenses
     /// Method intended to be called by the License Provider.
     pub fn issue_license(&mut self, license: License) {
+        rusk_abi::debug!("issuing license (contract) at pos {}", license.pos);
+        // todo: fixme: remove the code below and take 'pos' from 'license'
+        let temp = self.licenses.len() + 1; // we need to make pos unique eventually
+                                            // self.licenses.insert(license.pos, license);
+        self.licenses.insert(temp as u64, license);
         // insert License into the tree at position `license.pos`
-        self.licenses.insert(license.pos, license);
+        // self.licenses.insert(license.pos, license);
     }
 
-    /// Returns first found license for a given user.
-    /// If not no license is found, returns None.
+    /// Returns licenses for a given user.
+    /// Returns an empty collection if no licenses are found.
     /// Method intended to be called by the user.
-    pub fn get_license(&mut self, view_key: ViewKey) -> Option<License> {
-        self.licenses.find(|l| view_key.owns(l)).cloned()
+    pub fn get_licenses(&mut self, view_key: ViewKey) -> Vec<License> {
+        self.licenses
+            .filter(|l| view_key.owns(l))
+            .into_iter()
+            .cloned()
+            .collect()
     }
 
     /// Returns merkle proof for a given position in the merkle tree of license

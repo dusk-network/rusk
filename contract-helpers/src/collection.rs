@@ -22,6 +22,10 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
         Self { data: Vec::new() }
     }
 
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
     pub fn get(&self, key: &K) -> Option<&V> {
         self.data.iter().find_map(|(k, v)| (k == key).then_some(v))
     }
@@ -46,9 +50,19 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
 
     pub fn find<F>(&self, f: F) -> Option<&V>
     where
-        F: Fn(&V) -> bool
+        F: Fn(&V) -> bool,
     {
         self.data.iter().find_map(|(_, v)| f(v).then_some(v))
+    }
+
+    pub fn filter<F>(&self, f: F) -> Vec<&V>
+    where
+        F: Fn(&V) -> bool,
+    {
+        self.data
+            .iter()
+            .filter_map(|(_, v)| f(v).then_some(v))
+            .collect()
     }
 }
 
