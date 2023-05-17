@@ -21,7 +21,7 @@ const DEPTH: usize = 17; // depth of the 4-ary Merkle tree
 pub struct LicensesData {
     pub requests: Vec<Request>,
     pub sessions: Map<SessionId, Session>,
-    pub licenses: Vec<License>,
+    pub licenses: Vec<License>, // eliminate as licenses are kept in tree
     pub tree: PoseidonTree<DataLeaf, (), DEPTH>,
 }
 
@@ -72,7 +72,8 @@ impl LicensesData {
     /// Inserts a given license in the collection of licenses
     /// Method intended to be called by the License Provider.
     pub fn issue_license(&mut self, license: License) {
-        self.licenses.push(license);
+        // insert License into the tree at position `license.pos`
+        self.licenses.push(license); // eliminate licenses
     }
 
     /// Returns and removes first found license for a given user.
