@@ -57,6 +57,13 @@ mod wasm {
     }
 
     #[no_mangle]
+    unsafe fn get_merkle_proof(arg_len: u32) -> u32 {
+        rusk_abi::wrap_query(arg_len, |position| {
+            STATE.get_merkle_proof(position)
+        })
+    }
+
+    #[no_mangle]
     unsafe fn use_license(arg_len: u32) -> u32 {
         rusk_abi::wrap_transaction(arg_len, |use_license_arg| {
             STATE.use_license(use_license_arg)

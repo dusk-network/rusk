@@ -147,7 +147,7 @@ pub struct License {
     pub enc_2: PoseidonCipher, /* encryption of the license signature and
                              * attributes */
     pub nonce_2: BlsScalar, // IV for the encryption
-    pub pos: BlsScalar,     /* position of the license in the Merkle tree of
+    pub pos: u64,           /* position of the license in the Merkle tree of
                              * licenses */
 }
 

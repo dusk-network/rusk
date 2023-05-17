@@ -153,7 +153,7 @@ fn create_test_license_from_request<R: RngCore + CryptoRng>(
         &nonce_2,
     );
 
-    let pos = BlsScalar::from(1u64);
+    let pos = 1u64;
 
     License {
         lsa: StealthAddress::from_raw_unchecked(
@@ -401,19 +401,7 @@ fn license_issue_get() {
             )
             .expect("Querying the license should succeed")
             .is_some(),
-        "First call to getting a license request should return some"
-    );
-
-    assert_eq!(
-        session
-            .query::<ViewKey, Option<License>>(
-                LICENSE_CONTRACT_ID,
-                "get_license",
-                &view_key_user,
-            )
-            .expect("Querying the license should succeed"),
-        None,
-        "Second call to getting a license request should return none"
+        "Call to getting a license request should return some licenses"
     );
 }
 

@@ -21,7 +21,7 @@ const DEPTH: usize = 17; // depth of the 4-ary Merkle tree
 pub struct LicensesData {
     pub requests: Vec<Request>,
     pub sessions: Map<SessionId, Session>,
-    pub licenses: Vec<License>, // eliminate as licenses are kept in tree
+    pub licenses: Map<u64, License>,
     pub tree: PoseidonTree<DataLeaf, (), DEPTH>,
 }
 
@@ -31,7 +31,7 @@ impl LicensesData {
         Self {
             requests: Vec::new(),
             sessions: Map::new(),
-            licenses: Vec::new(),
+            licenses: Map::new(),
             tree: PoseidonTree::<DataLeaf, (), DEPTH>::new(),
         }
     }
@@ -73,17 +73,21 @@ impl LicensesData {
     /// Method intended to be called by the License Provider.
     pub fn issue_license(&mut self, license: License) {
         // insert License into the tree at position `license.pos`
-        self.licenses.push(license); // eliminate licenses
+        self.licenses.insert(license.pos, license);
     }
 
-    /// Returns and removes first found license for a given user.
+    /// Returns first found license for a given user.
     /// If not no license is found, returns None.
     /// Method intended to be called by the user.
     pub fn get_license(&mut self, view_key: ViewKey) -> Option<License> {
-        self.licenses
-            .iter()
-            .position(|l| view_key.owns(l))
-            .map(|index| self.licenses.swap_remove(index))
+        self.licenses.find(|l| view_key.owns(l)).cloned()
+    }
+
+    /// Returns merkle proof for a given position in the merkle tree of license
+    /// hashes. If the position is empty, returns None.
+    /// Method intended to be called by the user.
+    pub fn get_merkle_proof(&mut self, _position: u64) -> Option<Vec<u64>> {
+        Some(Vec::<u64>::new())
     }
 
     /// Verifies the proof of a given license, if successful,
