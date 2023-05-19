@@ -19,7 +19,6 @@ pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     this_member_key: PublicKey,
     cfg: sortition::Config,
-    total: usize,
 }
 
 #[allow(unused)]
@@ -38,25 +37,17 @@ impl Committee {
         provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
-        let max_committee_size = cfg.max_committee_size;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
             cfg,
-            total: 0,
         };
 
         for member_key in res {
             *committee.members.entry(member_key).or_insert(0) += 1;
-            committee.total += 1;
         }
-
-        debug_assert!(
-            committee.total
-                == provisioners.get_eligible_size(max_committee_size)
-        );
 
         committee
     }
@@ -92,8 +83,8 @@ impl Committee {
 
     /// Returns target quorum for the generated committee.
     pub fn quorum(&self) -> usize {
-        let size = self.total as f64;
-        (size * config::CONSENSUS_QUORUM_THRESHOLD).ceil() as usize
+        (self.cfg.committee_size as f64 * config::CONSENSUS_QUORUM_THRESHOLD)
+            .ceil() as usize
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {

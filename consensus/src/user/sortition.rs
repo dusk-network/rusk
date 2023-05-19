@@ -16,7 +16,7 @@ pub struct Config {
     pub seed: Seed,
     pub round: u64,
     pub step: u8,
-    pub max_committee_size: usize,
+    pub committee_size: usize,
 }
 
 impl Config {
@@ -24,13 +24,13 @@ impl Config {
         seed: Seed,
         round: u64,
         step: u8,
-        max_committee_size: usize,
+        committee_size: usize,
     ) -> Config {
         Self {
             seed,
             round,
             step,
-            max_committee_size,
+            committee_size,
         }
     }
 }
