@@ -2,7 +2,7 @@
 name = "dusk-consensus"
 version = "0.1.1-rc.3"
 edition = "2021"
-repository = "https://github.com/dusk-network/consensus"
+repository = "https://github.com/dusk-network/rusk"
 description = "An implementation of Succinct Attestation consensus protocol"
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 keywords = ["consensus", "dusk", "cryptocurrency", "blockchain"]
