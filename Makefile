@@ -34,6 +34,8 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk/ $@
+	$(MAKE) -C ./node-data $@
+	$(MAKE) -C ./consensus $@
 	$(MAKE) -C ./node $@
 
 run: keys state ## Run the server
