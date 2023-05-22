@@ -46,7 +46,8 @@ pub(super) async fn verify(
     Ok(())
 }
 
-/// Aggregates a list of agreement messages and creates a Message with AggrAgreement payload.
+/// Aggregates a list of agreement messages and creates a Message with
+/// AggrAgreement payload.
 pub(super) async fn aggregate(
     ru: &RoundUpdate,
     committees_set: Arc<Mutex<CommitteeSet>>,

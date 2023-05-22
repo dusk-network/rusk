@@ -63,7 +63,8 @@ pub fn generate_sortition_score(
 }
 
 // The set of active stakes consists of tuples ,
-// where  is the amount staked and  is the BLS public key corresponding to the stake.
+// where  is the amount staked and  is the BLS public key corresponding to the
+// stake.
 
 #[cfg(test)]
 mod tests {

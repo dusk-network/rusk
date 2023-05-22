@@ -70,7 +70,8 @@ impl Agreement {
     }
 }
 
-/// Executor implements life-cycle loop of a single agreement instance. This should be started with each new round and dropped on round termination.
+/// Executor implements life-cycle loop of a single agreement instance. This
+/// should be started with each new round and dropped on round termination.
 struct Executor<D: Database> {
     ru: RoundUpdate,
 
@@ -203,7 +204,8 @@ impl<D: Database> Executor<D> {
         acc.process(msg.clone()).await;
     }
 
-    /// Collects accumulator output (a list of agreements) and publishes  AggrAgreement.
+    /// Collects accumulator output (a list of agreements) and publishes
+    /// AggrAgreement.
     ///
     /// Returns the winning block.
     async fn collect_votes(

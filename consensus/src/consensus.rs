@@ -50,10 +50,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// # Arguments
     ///
     /// * `inbound` - a queue of input messages consumed by main loop
-    /// * `outbound` - a queue of output messages that  main loop broadcasts to the outside world
+    /// * `outbound` - a queue of output messages that  main loop broadcasts to
+    ///   the outside world
     ///
-    /// * `agr_inbound_queue` - a queue of input messages consumed solely by Agreement loop
-    /// * `agr_outbound_queue` - a queue of output messages that Agreement loop broadcasts to the outside world
+    /// * `agr_inbound_queue` - a queue of input messages consumed solely by
+    ///   Agreement loop
+    /// * `agr_outbound_queue` - a queue of output messages that Agreement loop
+    ///   broadcasts to the outside world
     pub fn new(
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
@@ -75,15 +78,19 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         }
     }
 
-    /// Spins the consensus state machine. The consensus runs for the whole round until either a new round is produced or the node needs to re-sync.
+    /// Spins the consensus state machine. The consensus runs for the whole
+    /// round until either a new round is produced or the node needs to re-sync.
     ///
-    /// The Agreement loop (acting roundwise) runs concurrently with the generation-selection-reduction loop (acting step-wise).
+    /// The Agreement loop (acting roundwise) runs concurrently with the
+    /// generation-selection-reduction loop (acting step-wise).
     ///
     /// # Arguments
     ///
-    /// * `provisioner` - a list of the provisioners based on the most recent contract state.
+    /// * `provisioner` - a list of the provisioners based on the most recent
+    ///   contract state.
     ///
-    /// * `cancel_rx` - a chan that allows the client to drop consensus execution on demand.
+    /// * `cancel_rx` - a chan that allows the client to drop consensus
+    ///   execution on demand.
     pub async fn spin(
         &mut self,
         ru: RoundUpdate,
@@ -179,7 +186,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 for phase in phases.iter_mut() {
                     step += 1;
 
-                    // Initialize new phase with message returned by previous phase.
+                    // Initialize new phase with message returned by previous
+                    // phase.
                     phase.initialize(&msg, ru.round, step);
 
                     // Construct phase execution context
@@ -194,8 +202,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                     // Execute a phase.
                     // An error returned here terminates consensus
-                    // round. This normally happens if consensus channel is cancelled by
-                    // agreement loop on finding the winning block for this round.
+                    // round. This normally happens if consensus channel is
+                    // cancelled by agreement loop on
+                    // finding the winning block for this round.
                     msg = phase
                         .run(ctx)
                         .instrument(tracing::info_span!(

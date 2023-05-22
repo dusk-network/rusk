@@ -23,12 +23,15 @@ pub struct Committee {
 
 #[allow(unused)]
 impl Committee {
-    /// Generates a new committee from the given provisioners state and sortition config.
+    /// Generates a new committee from the given provisioners state and
+    /// sortition config.
     ///
     /// It executes deterministic sortition algorithm.
     ///
     /// # Arguments
-    /// * `pubkey_bls` - This is the BLS public key of the (this node) provisioner running the consensus. It is mainly used in `am_member` method.
+    /// * `pubkey_bls` - This is the BLS public key of the (this node)
+    ///   provisioner running the consensus. It is mainly used in `am_member`
+    ///   method.
     pub fn new(
         pubkey_bls: PublicKey,
         provisioners: &mut Provisioners,
@@ -38,7 +41,8 @@ impl Committee {
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
 
-        // Turn the raw vector into a hashmap where we map a pubkey to its occurrences.
+        // Turn the raw vector into a hashmap where we map a pubkey to its
+        // occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
@@ -105,7 +109,8 @@ impl Committee {
         bits
     }
 
-    /// Intersects the bit representation of a VotingCommittee subset with the whole VotingCommittee set.
+    /// Intersects the bit representation of a VotingCommittee subset with the
+    /// whole VotingCommittee set.
     pub fn intersect(&self, bitset: u64) -> Cluster<PublicKey> {
         if bitset == 0 {
             return Cluster::<PublicKey>::new();
@@ -134,8 +139,9 @@ impl Committee {
 
 /// Implements a cache of generated committees so that they can be reused.
 ///
-/// This is useful in Agreement step where messages from different steps per a single round are concurrently processed.
-/// A committee is uniquely represented by sortition::Config.
+/// This is useful in Agreement step where messages from different steps per a
+/// single round are concurrently processed. A committee is uniquely represented
+/// by sortition::Config.
 pub struct CommitteeSet {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: Provisioners,

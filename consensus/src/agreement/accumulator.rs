@@ -63,13 +63,15 @@ impl Accumulator {
         }
     }
 
-    /// Spawns a set of tokio tasks that process agreement verifications concurrently.
+    /// Spawns a set of tokio tasks that process agreement verifications
+    /// concurrently.
     ///
     /// # Arguments
     ///
     /// * `workers_amount` - Number of workers to spawn. Must be > 0
     ///
-    /// * `output_chan` - If successful, the final result of workers pool is written into output_chan
+    /// * `output_chan` - If successful, the final result of workers pool is
+    ///   written into output_chan
     pub fn spawn_workers_pool(
         &mut self,
         workers_amount: usize,

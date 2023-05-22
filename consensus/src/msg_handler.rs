@@ -22,7 +22,8 @@ pub enum HandleMsgOutput {
 pub trait MsgHandler<T: Debug + MessageTrait> {
     /// is_valid checks a new message is valid in the first place.
     ///
-    /// Only if the message has correct round and step and is signed by a committee member then we delegate it to Phase::verify.
+    /// Only if the message has correct round and step and is signed by a
+    /// committee member then we delegate it to Phase::verify.
     fn is_valid(
         &mut self,
         msg: T,
@@ -46,7 +47,8 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
                 }
 
                 // Delegate message final verification to the phase instance.
-                // It is the phase that knows what message type to expect and if it is valid or not.
+                // It is the phase that knows what message type to expect and if
+                // it is valid or not.
                 self.verify(msg, ru, step, committee)
             }
             Status::Future => Err(ConsensusError::FutureEvent),

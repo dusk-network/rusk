@@ -66,8 +66,10 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         let size = call_phase!(self, get_committee_size());
 
         // Perform deterministic_sortition to generate committee of size=N.
-        // The extracted members are the provisioners eligible to vote on this particular round and step.
-        // In the context of Selection phase, the extracted member is the one eligible to generate the candidate block.
+        // The extracted members are the provisioners eligible to vote on this
+        // particular round and step. In the context of Selection phase,
+        // the extracted member is the one eligible to generate the candidate
+        // block.
         let step_committee = Committee::new(
             ctx.round_update.pubkey_bls.clone(),
             ctx.provisioners,

@@ -62,8 +62,9 @@ impl MsgHandler<Message> for Reduction {
         if let Some((block_hash, second_step_votes)) =
             self.aggr.collect_vote(committee, &msg.header, &signed_hash)
         {
-            // At that point, we have reached a quorum for 2th_reduction on an empty on non-empty block.
-            // Return an empty message as this iteration terminates here.
+            // At that point, we have reached a quorum for 2th_reduction on an
+            // empty on non-empty block. Return an empty message as
+            // this iteration terminates here.
             return Ok(HandleMsgOutput::FinalResult(self.build_agreement_msg(
                 ru,
                 step,

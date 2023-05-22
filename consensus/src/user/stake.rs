@@ -8,11 +8,13 @@
 #[allow(unused)]
 pub struct Stake {
     // Value should be initialized only at constructor.
-    // It's later used to restore intermediate_value on each new sortition execution.
-    // In that way, we don't need to perform a deep copy of all provisioners members and their stakes as it used to be.
+    // It's later used to restore intermediate_value on each new sortition
+    // execution. In that way, we don't need to perform a deep copy of all
+    // provisioners members and their stakes as it used to be.
     value: u64,
 
-    // TODO: Move intermediate_value to member struct so that we keep stake definition lean.
+    // TODO: Move intermediate_value to member struct so that we keep stake
+    // definition lean.
     pub intermediate_value: u64,
     pub reward: u64,
     pub counter: u64,

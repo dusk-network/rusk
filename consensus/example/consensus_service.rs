@@ -69,7 +69,8 @@ pub fn run_main_loop(
     );
 }
 
-/// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
+/// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single
+/// instance of consensus.
 fn spawn_consensus_in_thread_pool(
     keys: (SecretKey, node_data::bls::PublicKey),
     p: Provisioners,
@@ -199,7 +200,8 @@ pub fn fetch_blskeys_from_file(
     Some((pk, sk))
 }
 
-/// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded consensus keys.
+/// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded
+/// consensus keys.
 ///
 /// It reads RUSK_WALLET_PWD var to unlock wallet files.
 fn load_provisioners_keys(

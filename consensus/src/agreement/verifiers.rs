@@ -34,7 +34,9 @@ impl From<dusk_bls12_381_sign::Error> for Error {
     }
 }
 
-/// verify_agreement performs all three-steps verification of an agreement message. It is intended to be used in a context of tokio::spawn as per that it tries to yield before any CPU-bound operation.
+/// verify_agreement performs all three-steps verification of an agreement
+/// message. It is intended to be used in a context of tokio::spawn as per that
+/// it tries to yield before any CPU-bound operation.
 pub async fn verify_agreement(
     msg: Message,
     committees_set: Arc<Mutex<CommitteeSet>>,

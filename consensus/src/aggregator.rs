@@ -27,8 +27,9 @@ impl Aggregator {
         header: &Header,
         signed_hash: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
-        // Get weight for this pubkey bls. If it is 0, it means the key is not a committee member,
-        // respectively we should not process a vote from it.
+        // Get weight for this pubkey bls. If it is 0, it means the key is not a
+        // committee member, respectively we should not process a vote
+        // from it.
         if let Some(weight) = committee.votes_for(&header.pubkey_bls) {
             let hash: Hash = header.block_hash;
 
@@ -38,10 +39,11 @@ impl Aggregator {
                 .or_insert((AggrSignature::default(), Cluster::new()));
 
             // Each committee has 64 slots. If a Provisioner is extracted into
-            // multiple slots, then he/she only needs to send one vote which can be
-            // taken account as a vote for all his/her slots. Otherwise, if a
-            // Provisioner is only extracted to one slot per committee, then a single
-            // vote is taken into account (if more votes for the same slot are
+            // multiple slots, then he/she only needs to send one vote which can
+            // be taken account as a vote for all his/her slots.
+            // Otherwise, if a Provisioner is only extracted to one
+            // slot per committee, then a single vote is taken into
+            // account (if more votes for the same slot are
             // propagated, those are discarded).
             if cluster.contains_key(&header.pubkey_bls) {
                 warn!("discarding duplicated votes from a provisioner");
@@ -190,7 +192,8 @@ mod tests {
 
             let signature = header.sign(&sk, header.pubkey_bls.inner());
 
-            // Message headers to be used in test for voting for hash: block_hash
+            // Message headers to be used in test for voting for hash:
+            // block_hash
             input.push((signature, header));
         }
 
@@ -230,7 +233,8 @@ mod tests {
         let (signature, h) = input.get(5).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
 
-        // this provisioner has weight of 1. Total should be sum of weights of all prior votes.
+        // this provisioner has weight of 1. Total should be sum of weights of
+        // all prior votes.
         assert_eq!(a.get_total(block_hash), Some(4));
 
         // Ensure a duplicated vote is discarded
@@ -246,7 +250,8 @@ mod tests {
 
         let (signature, h) = input.get(8).expect("invalid index");
         assert!(a.collect_vote(&c, h, signature).is_none());
-        // this provisioner vote has weight of 0. Quorum threshold still not reached
+        // this provisioner vote has weight of 0. Quorum threshold still not
+        // reached
         assert_eq!(a.get_total(block_hash), Some(4));
 
         let (signature, h) = input.get(9).expect("invalid index");

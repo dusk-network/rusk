@@ -21,7 +21,8 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{error, trace};
 
-/// ExecutionCtx encapsulates all data needed by a single step to be fully executed.
+/// ExecutionCtx encapsulates all data needed by a single step to be fully
+/// executed.
 pub struct ExecutionCtx<'a> {
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
@@ -61,7 +62,8 @@ impl<'a> ExecutionCtx<'a> {
     /// It accepts an instance of MsgHandler impl (phase var) and calls its
     /// methods based on the occurred event.
     ///
-    /// In an event of timeout, it also increases the step timeout value accordingly.
+    /// In an event of timeout, it also increases the step timeout value
+    /// accordingly.
     ///
     /// By design, the loop is terminated by aborting the consensus task.
     pub async fn event_loop<C: MsgHandler<Message>>(
@@ -107,9 +109,11 @@ impl<'a> ExecutionCtx<'a> {
         }
     }
 
-    /// Delegates the received message to the Phase handler for further processing.
+    /// Delegates the received message to the Phase handler for further
+    /// processing.
     ///
-    /// Returning Option::Some here is interpreted as FinalMessage by event_loop.
+    /// Returning Option::Some here is interpreted as FinalMessage by
+    /// event_loop.
     async fn process_inbound_msg<C: MsgHandler<Message>>(
         &mut self,
         committee: &Committee,
@@ -136,7 +140,8 @@ impl<'a> ExecutionCtx<'a> {
                     ConsensusError::FutureEvent => {
                         trace!("future msg {:?}", msg);
                         // This is a message from future round or step.
-                        // Save it in future_msgs to be processed when we reach same round/step.
+                        // Save it in future_msgs to be processed when we reach
+                        // same round/step.
                         self.future_msgs.lock().await.put_event(
                             msg.header.round,
                             msg.header.step,
@@ -176,7 +181,8 @@ impl<'a> ExecutionCtx<'a> {
         None
     }
 
-    /// Delegates the received event of timeout to the Phase handler for further processing.
+    /// Delegates the received event of timeout to the Phase handler for further
+    /// processing.
     fn process_timeout_event<C: MsgHandler<Message>>(
         &mut self,
         phase: &mut C,
@@ -190,7 +196,8 @@ impl<'a> ExecutionCtx<'a> {
         Ok(Message::empty())
     }
 
-    /// Handles all messages stored in future_msgs queue that belongs to the current round and step.
+    /// Handles all messages stored in future_msgs queue that belongs to the
+    /// current round and step.
     ///
     /// Returns Some(msg) if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler<Message>>(

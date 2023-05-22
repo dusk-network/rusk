@@ -25,7 +25,8 @@ pub async fn run_main_loop(
 
     let peer = Peer::new(conf, r);
 
-    // Broadcast outbound messages with a priority to the messages from agreement loop
+    // Broadcast outbound messages with a priority to the messages from
+    // agreement loop
     loop {
         tokio::select! {
             biased;

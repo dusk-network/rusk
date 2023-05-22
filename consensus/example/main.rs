@@ -73,7 +73,8 @@ async fn perform_basic_run() {
         let aggr_inbound = AsyncQueue::default();
         let aggr_outbound = AsyncQueue::default();
 
-        // Spawn a node which simulates a provisioner running its own consensus instance.
+        // Spawn a node which simulates a provisioner running its own consensus
+        // instance.
         spawn_node(
             key,
             provisioners.clone(),
@@ -83,7 +84,8 @@ async fn perform_basic_run() {
             aggr_outbound.clone(),
         );
 
-        // Bridge all so that provisioners can exchange messages in a single-process setup.
+        // Bridge all so that provisioners can exchange messages in a
+        // single-process setup.
         all_to_inbound.push(inbound);
         agr_to_inbound.push(aggr_inbound);
 
@@ -143,7 +145,8 @@ async fn perform_basic_run() {
     time::sleep(Duration::from_secs(12000)).await;
 }
 
-/// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single instance of consensus.
+/// spawn_node runs a separate thread-pool (tokio::runtime) that drives a single
+/// instance of consensus.
 fn spawn_node(
     keys: (SecretKey, PublicKey),
     p: Provisioners,

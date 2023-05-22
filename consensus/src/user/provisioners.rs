@@ -123,7 +123,8 @@ impl Provisioners {
         self.members.get(key)
     }
 
-    /// Runs the deterministic sortition algorithm which determines the committee members for a given round, step and seed.
+    /// Runs the deterministic sortition algorithm which determines the
+    /// committee members for a given round, step and seed.
     ///
     /// Returns a vector of provisioners public keys.
     pub fn create_committee(
@@ -199,7 +200,8 @@ impl Provisioners {
             for member in self.members.values_mut() {
                 let total_stake = member.get_total_eligible_stake();
                 if total_stake >= score {
-                    // Subtract 1 DUSK from the value extracted and rebalance accordingly.
+                    // Subtract 1 DUSK from the value extracted and rebalance
+                    // accordingly.
                     let subtracted_stake =
                         BigInt::from(member.subtract_from_stake(DUSK));
 
