@@ -28,7 +28,7 @@ bytes = "0.6.0"
 async-channel = "1.7.1"
 async-trait = "0.1"
 anyhow = "1.0"
-node-data = { git = "https://github.com/dusk-network/rusk/", version = "0.1" }
+node-data = { version = "0.1", path = "../node-data" }
 
 
 [dev-dependencies]
