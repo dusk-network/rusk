@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
 
         Server::builder()
-            .layer(RuskVersionLayer::default())
+            .layer(RuskVersionLayer)
             .add_service(network)
             .add_service(state)
             .add_service(prover)

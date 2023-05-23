@@ -85,7 +85,7 @@ pub fn hash(args: TokenStream, input: TokenStream) -> TokenStream {
     let hash: [u8; 32] = hasher.finalize().into();
 
     let const_name = args.name;
-    let type_name = input.self_ty.clone();
+    let type_name = &input.self_ty;
 
     let output = quote! {
         impl #type_name {
