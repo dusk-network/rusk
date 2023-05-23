@@ -1,3 +1,5 @@
+all: wasm
+
 wasm: ## Generate the optimized WASM for the contract given
 	@RUSTFLAGS="$(RUSTFLAGS) --remap-path-prefix $(HOME)= -C link-args=-zstack-size=65536" \
     	cargo build \
@@ -8,3 +10,5 @@ wasm: ## Generate the optimized WASM for the contract given
     		--target wasm32-unknown-unknown
 
 test:
+
+.PHONY: all test wasm
