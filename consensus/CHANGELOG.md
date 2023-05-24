@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `iteration` to block header [#848]
 - Add CHANGELOG. [#54]
 - Add `get_mempool_txs`. [#47]
 - Add node-data crate. [#44]
@@ -17,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Expose `verify_step_votes`. [#50]
+
+### Removed
+
+- Remove `step` from header's certificate [#848]
 
 ### Fixed
 
@@ -28,7 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First `consensus` release
 
-<!-- ISSUES -->
+
+[#848]: https://github.com/dusk-network/rusk/issues/848
+
+<!-- OLD CONSENSUS REPO ISSUES -->
 [#54]: https://github.com/dusk-network/consensus/issues/54
 [#53]: https://github.com/dusk-network/consensus/issues/53
 [#51]: https://github.com/dusk-network/consensus/issues/51
