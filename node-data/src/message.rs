@@ -974,6 +974,7 @@ mod tests {
                     second_reduction: ledger::StepVotes::new([7; 48], 3333333),
                     step: 234,
                 },
+                iteration: 1,
             },
             txs: vec![],
         };
