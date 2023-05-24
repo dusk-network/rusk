@@ -126,7 +126,6 @@ impl Serializable for Certificate {
             &self.second_reduction.signature.inner()[..],
         )?;
 
-        w.write_all(&self.step.to_le_bytes())?;
         w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
         w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
 
@@ -145,10 +144,6 @@ impl Serializable for Certificate {
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-        let step = buf[0];
-
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
         let first_red_bitset = u64::from_le_bytes(buf);
@@ -166,7 +161,6 @@ impl Serializable for Certificate {
                 bitset: sec_red_bitset,
                 signature: Signature(second_red_signature),
             },
-            step,
         })
     }
 }

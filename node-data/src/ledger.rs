@@ -95,7 +95,6 @@ impl Transaction {
 pub struct Certificate {
     pub first_reduction: StepVotes,
     pub second_reduction: StepVotes,
-    pub step: u8,
 }
 
 impl Header {
