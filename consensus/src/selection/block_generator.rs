@@ -34,6 +34,7 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
+        let iteration = step / 3 + 1;
         // Sign seed
         let seed = ru
             .secret_key
@@ -47,6 +48,7 @@ impl<T: Operations> Generator<T> {
                 Seed::from(seed),
                 ru.hash,
                 ru.timestamp,
+                iteration,
             )
             .await?;
 
@@ -78,6 +80,7 @@ impl<T: Operations> Generator<T> {
         seed: Seed,
         prev_block_hash: [u8; 32],
         prev_block_timestamp: i64,
+        iteration: u8,
     ) -> Result<Block, crate::contract_state::Error> {
         // Delay next iteration execution so we avoid consensus-split situation.
         tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS))
@@ -111,6 +114,7 @@ impl<T: Operations> Generator<T> {
             state_hash: result.state_root,
             hash: [0; 32],
             cert: Certificate::default(),
+            iteration,
         };
 
         Ok(Block::new(blk_header, result.txs).expect("block should be valid"))

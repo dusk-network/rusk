@@ -235,7 +235,7 @@ impl ChainSrv {
                 t.store_block(blk, true)?;
 
                 // Accept block transactions into the VM
-                if blk.header.cert.step == 3 {
+                if blk.header.iteration == 1 {
                     return vm.finalize(blk);
                 }
 
@@ -315,6 +315,7 @@ impl ChainSrv {
             blk_header.height,
             &prev_block_header.seed,
             &blk_header.cert,
+            blk_header.iteration,
         )
         .await
     }
@@ -325,6 +326,7 @@ impl ChainSrv {
         height: u64,
         seed: &ledger::Seed,
         cert: &ledger::Certificate,
+        iteration: u8,
     ) -> anyhow::Result<()> {
         let (_, public_key) = &self.upper.keys;
 
@@ -337,7 +339,7 @@ impl ChainSrv {
             topic: 0,
             pubkey_bls: public_key.clone(),
             round: height,
-            step: cert.step,
+            step: iteration * 3,
             block_hash,
         };
 

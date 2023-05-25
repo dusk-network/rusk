@@ -225,12 +225,10 @@ impl<D: Database> Executor<D> {
             self.publish(msg).await;
         }
 
-        let (cert, hash) = agreements.into_iter().next().map(|a| {
-            (
-                a.payload.generate_certificate(a.header.step),
-                a.header.block_hash,
-            )
-        })?;
+        let (cert, hash) = agreements
+            .into_iter()
+            .next()
+            .map(|a| (a.payload.generate_certificate(), a.header.block_hash))?;
 
         // Create winning block
         self.create_winning_block(&hash, &cert).await
@@ -255,7 +253,7 @@ impl<D: Database> Executor<D> {
             self.publish(msg.clone()).await;
 
             // Generate certificate from an agreement
-            let cert = aggr.agreement.generate_certificate(msg.header.step);
+            let cert = aggr.agreement.generate_certificate();
 
             return self
                 .create_winning_block(&msg.header.block_hash, &cert)

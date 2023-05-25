@@ -616,11 +616,10 @@ pub mod payload {
 
     impl Agreement {
         /// Generates a certificate from agreement.
-        pub fn generate_certificate(&self, step: u8) -> Certificate {
+        pub fn generate_certificate(&self) -> Certificate {
             Certificate {
                 first_reduction: self.first_step.clone(),
                 second_reduction: self.second_step.clone(),
-                step,
             }
         }
     }
@@ -972,8 +971,8 @@ mod tests {
                 cert: Certificate {
                     first_reduction: ledger::StepVotes::new([6; 48], 22222222),
                     second_reduction: ledger::StepVotes::new([7; 48], 3333333),
-                    step: 234,
                 },
+                iteration: 1,
             },
             txs: vec![],
         };
