@@ -70,21 +70,24 @@ impl<const H: usize> BinaryMerkle<H> {
     }
 
     /// Returns the root of the smallest inner tree
-    fn shrunken_root(&self, position: u64) -> [u8; 32] {
-        let openings = self.tree.opening(position).unwrap();
-        for (idx, op) in openings.branch().into_iter().enumerate() {
-            if op[0].0 != EMPTY_NODE.0 && op[1].0 != EMPTY_NODE.0 {
-                return match idx {
-                    0 => self.tree.root().0,
-                    i => openings.branch()[i - 1][0].0,
-                };
-            }
+    fn shrunken_root(&self) -> [u8; 32] {
+        if self.tree.is_empty() {
+            return EMPTY_NODE.0;
         }
 
-        // If we are here, at each level there is only one child.
-        // This means that the tree only holds one leaf and the parent of that
-        // leaf is the smallest root
-        openings.branch()[H - 2][0].0
+        let inner_tree_height =
+            (self.tree.len() as f64 - 1f64).sqrt().floor() as usize + 1;
+
+        if inner_tree_height == H {
+            return self.tree.root().0;
+        }
+
+        let opening = self
+            .tree
+            .opening(0)
+            .expect("Opening to exists if tree is not empty");
+
+        opening.branch()[H - inner_tree_height - 1][0].0
     }
 
     fn root_from_values<N: Into<Hash> + Copy>(values: &[N]) -> [u8; 32] {
@@ -92,9 +95,10 @@ impl<const H: usize> BinaryMerkle<H> {
         for &val in values {
             tree.insert(val.into())
         }
-        tree.shrunken_root((values.len() - 1) as u64)
+        tree.shrunken_root()
     }
 }
+
 /// Calculate the root of a dynamic merkle tree (containing up to 2^15 elements)
 /// in the same way of how dusk-blockchain does
 ///
@@ -128,6 +132,8 @@ mod tests {
 
         // Test merkle tree againt same vectors used by
         // https://github.com/dusk-network/dusk-crypto/blob/more_fixtures/merkletree/merkletree_test.go
+        test_vectors.push((vec![], EMPTY_NODE.0));
+
         test_vectors.push((
             vec![
                 HashableStr("Hello"),
@@ -177,6 +183,7 @@ mod tests {
                 227, 107, 3, 178, 119,
             ],
         ));
+
         test_vectors.push((
             vec![
                 HashableStr("Bella"),
@@ -191,6 +198,7 @@ mod tests {
                 47, 130, 228, 238,
             ],
         ));
+
         test_vectors.push((
             vec![
                 HashableStr("Bella"),
