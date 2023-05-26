@@ -257,9 +257,9 @@ impl DataBrokerSrv {
         let block =
             res.ok_or_else(|| anyhow::anyhow!("could not find block"))?;
 
-        Ok(Message::new_candidate_resp(payload::CandidateResp {
-            candidate: block,
-        }))
+        Ok(Message::new_candidate_resp(Box::new(
+            payload::CandidateResp { candidate: block },
+        )))
     }
 
     /// Handles GetMempool requests.
