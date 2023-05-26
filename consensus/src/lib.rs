@@ -23,5 +23,7 @@ mod queue;
 mod secondstep;
 mod selection;
 
+pub mod merkle;
+
 #[cfg(test)]
 mod tests {}
