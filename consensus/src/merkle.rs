@@ -69,8 +69,22 @@ impl<const H: usize> BinaryMerkle<H> {
         self.tree.insert(self.tree.len(), val);
     }
 
-    fn root(&self) -> [u8; 32] {
-        self.tree.root().0
+    /// Returns the root of the smallest inner tree
+    fn shrunken_root(&self, position: u64) -> [u8; 32] {
+        let openings = self.tree.opening(position).unwrap();
+        for (idx, op) in openings.branch().into_iter().enumerate() {
+            if op[0].0 != EMPTY_NODE.0 && op[1].0 != EMPTY_NODE.0 {
+                return match idx {
+                    0 => self.tree.root().0,
+                    i => openings.branch()[i - 1][0].0,
+                };
+            }
+        }
+
+        // If we are here, at each level there is only one child.
+        // This means that the tree only holds one leaf and the parent of that
+        // leaf is the smallest root
+        openings.branch()[H - 2][0].0
     }
 
     fn root_from_values<N: Into<Hash> + Copy>(values: &[N]) -> [u8; 32] {
@@ -78,37 +92,18 @@ impl<const H: usize> BinaryMerkle<H> {
         for &val in values {
             tree.insert(val.into())
         }
-        tree.root()
+        tree.shrunken_root((values.len() - 1) as u64)
     }
 }
-/// Caluclate the root of a dynamic merkle tree (containing up to 2^15 elements)
+/// Calculate the root of a dynamic merkle tree (containing up to 2^15 elements)
 /// in the same way of how dusk-blockchain does
 ///
 /// For reference impl check here https://github.com/dusk-network/dusk-crypto/blob/master/merkletree/merkletree.go
 pub fn merkle_root<N: Into<Hash> + Copy>(values: &[N]) -> [u8; 32] {
-    let tree_height = match values.len() {
-        0 => return EMPTY_NODE.0,
-        v => (v as f64 - 1f64).sqrt().floor() as u64 + 1,
-    };
-
-    match tree_height {
-        1 => BinaryMerkle::<1>::root_from_values(values),
-        2 => BinaryMerkle::<2>::root_from_values(values),
-        3 => BinaryMerkle::<3>::root_from_values(values),
-        4 => BinaryMerkle::<4>::root_from_values(values),
-        5 => BinaryMerkle::<5>::root_from_values(values),
-        6 => BinaryMerkle::<6>::root_from_values(values),
-        7 => BinaryMerkle::<7>::root_from_values(values),
-        8 => BinaryMerkle::<8>::root_from_values(values),
-        9 => BinaryMerkle::<9>::root_from_values(values),
-        10 => BinaryMerkle::<10>::root_from_values(values),
-        11 => BinaryMerkle::<11>::root_from_values(values),
-        12 => BinaryMerkle::<12>::root_from_values(values),
-        13 => BinaryMerkle::<13>::root_from_values(values),
-        14 => BinaryMerkle::<14>::root_from_values(values),
-        15 => BinaryMerkle::<15>::root_from_values(values),
-        _ => panic!("unsupported"),
+    if values.is_empty() {
+        return EMPTY_NODE.0;
     }
+    BinaryMerkle::<15>::root_from_values(values)
 }
 
 #[cfg(test)]
