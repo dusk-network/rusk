@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
 use async_trait::async_trait;
@@ -69,6 +70,13 @@ impl<D: Database> Selection<D> {
         if let Payload::NewBlock(p) = &msg.payload {
             if msg.header.verify_signature(&p.signed_hash).is_err() {
                 return Err(ConsensusError::InvalidSignature);
+            }
+
+            let tx_hashes: Vec<[u8; 32]> =
+                p.candidate.txs().iter().map(|t| t.hash()).collect();
+            let tx_root = merkle_root(&tx_hashes[..]);
+            if tx_root != p.candidate.header.txroot {
+                return Err(ConsensusError::InvalidBlock);
             }
 
             // TODO: Verify newblock candidate

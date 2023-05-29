@@ -32,6 +32,7 @@ pub struct Header {
     pub seed: Seed,
     pub state_hash: Hash,
     pub generator_bls_pubkey: bls::PublicKeyBytes,
+    pub txroot: Hash,
     pub gas_limit: u64,
     pub iteration: u8,
 
@@ -121,6 +122,7 @@ impl Header {
 
         w.write_all(&self.state_hash[..])?;
         w.write_all(&self.generator_bls_pubkey.inner()[..])?;
+        w.write_all(&self.txroot[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
         w.write_all(&self.iteration.to_le_bytes())?;
 
@@ -154,6 +156,9 @@ impl Header {
         let mut generator_bls_pubkey = [0u8; 96];
         r.read_exact(&mut generator_bls_pubkey[..])?;
 
+        let mut txroot = [0u8; 32];
+        r.read_exact(&mut txroot[..])?;
+
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
         let gas_limit = u64::from_le_bytes(buf);
@@ -172,6 +177,7 @@ impl Header {
             generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
             iteration,
             state_hash,
+            txroot,
             hash: [0; 32],
             cert: Default::default(),
         })
