@@ -135,10 +135,6 @@ impl StakeState {
         loaded_stake.increment_counter();
         loaded_stake.insert_amount(stake.value, rusk_abi::block_height());
 
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
-
         // verify the signature is over the correct digest
         let digest = stake_signature_message(counter, stake.value).to_vec();
 
@@ -175,10 +171,6 @@ impl StakeState {
 
         let (value, _) = loaded_stake.remove_amount();
         loaded_stake.increment_counter();
-
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
 
         // verify signature
         let digest = unstake_signature_message(counter, unstake.note).to_vec();
@@ -223,10 +215,6 @@ impl StakeState {
 
         loaded_stake.deplete_reward();
         loaded_stake.increment_counter();
-
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
 
         // verify signature
         let digest = withdraw_signature_message(
@@ -278,8 +266,6 @@ impl StakeState {
 
         let owner_counter = owner_stake.counter();
         owner_stake.increment_counter();
-
-        drop(owner_stake);
 
         // verify signature
         let digest =
