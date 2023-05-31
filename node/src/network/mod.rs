@@ -15,6 +15,7 @@ use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
 
@@ -30,12 +31,15 @@ pub struct Listener<const N: usize> {
 
 impl<const N: usize> Listener<N> {
     fn reroute(&self, topic: u8, msg: Message) -> anyhow::Result<()> {
-        match self.routes.try_read()?.get(topic as usize) {
-            Some(Some(queue)) => queue.try_send(msg).map_err(|e| e.into()),
-            _ => {
-                anyhow::bail!("route not registered for {:?} topic", topic)
-            }
-        }
+        let routes = self.routes.clone();
+
+        tokio::spawn(async move {
+            if let Some(Some(queue)) = routes.read().await.get(topic as usize) {
+                queue.send(msg.clone()).await;
+            };
+        });
+
+        Ok(())
     }
 
     fn call_filters(
@@ -92,6 +96,8 @@ pub struct Kadcast<const N: usize> {
     routes: Arc<RwLock<RoutesList<N>>>,
     filters: Arc<RwLock<FilterList<N>>>,
     conf: Config,
+
+    counter: AtomicU64,
 }
 
 impl<const N: usize> Kadcast<N> {
@@ -108,6 +114,7 @@ impl<const N: usize> Kadcast<N> {
             peer: Peer::new(conf.clone(), Listener { routes, filters })
                 .unwrap(),
             conf,
+            counter: AtomicU64::new(0),
         }
     }
 
@@ -136,7 +143,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             None => None,
         };
 
-        let encoded = frame::Pdu::encode(msg).map_err(|err| {
+        let encoded = frame::Pdu::encode(msg, 0).map_err(|err| {
             tracing::error!("could not encode message {:?}: {}", msg, err);
             anyhow::anyhow!("failed to broadcast: {}", err)
         })?;
@@ -153,11 +160,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(msg).map_err(|err| {
-            anyhow::anyhow!("failed to send_to_peer: {}", err)
-        })?;
+        let encoded = frame::Pdu::encode(
+            msg,
+            self.counter.fetch_add(1, Ordering::SeqCst),
+        )
+        .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {}", err))?;
 
-        tracing::trace!(
+        tracing::info!(
             "sending msg ({:?}) to peer {:?}",
             msg.header.topic,
             recv_addr
@@ -174,7 +183,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         amount: usize,
     ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(msg)
+        let encoded = frame::Pdu::encode(msg, 0)
             .map_err(|err| anyhow::anyhow!("failed to encode: {}", err))?;
 
         for recv_addr in self.peer.alive_nodes(amount).await {
