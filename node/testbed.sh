@@ -13,6 +13,7 @@ fi
 
 # Create a temporary directory.
 TEMPD=/tmp/rust-harness/
+rm -fr $TEMPD
 mkdir $TEMPD
 
 # Exit if the temp directory wasn't created successfully.
@@ -40,7 +41,7 @@ run_node_debug_mode() {
   local TEMPD="$6"
 
   echo "starting node $ID ..."
-  cargo run --release --bin rusk-node -- --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --delay_on_resp_msg=500 --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
+  cargo run --release --bin rusk-node -- --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --delay_on_resp_msg=10 --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
 }
 
 ## Use ~/.cargo/bin/tokio-console --retain-for 0s http://127.0.0.1:10000 to connect console to first node
