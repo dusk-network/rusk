@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+mod acceptor;
 mod consensus;
+mod fsm;
 mod genesis;
 
 use crate::database::{Candidate, Ledger, Mempool};
@@ -13,7 +15,9 @@ use crate::{LongLivedService, Message};
 use anyhow::{anyhow, bail, Result};
 
 use dusk_consensus::user::committee::CommitteeSet;
+use std::rc::Rc;
 use std::sync::Arc;
+use tracing::{debug, error, warn};
 
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
@@ -31,7 +35,9 @@ use tokio::task::JoinHandle;
 
 use std::any;
 
+use self::acceptor::Acceptor;
 use self::consensus::Task;
+use self::fsm::SimpleFSM;
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
@@ -44,21 +50,7 @@ const TOPICS: &[u8] = &[
 pub struct ChainSrv {
     /// Inbound wire messages queue
     inbound: AsyncQueue<Message>,
-
-    /// Most recently accepted block
-    most_recent_block: Block,
-
-    /// List of eligible provisioners of actual round
-    eligible_provisioners: Provisioners,
-
-    /// Upper layer consensus task
-    upper: consensus::Task,
-}
-
-impl Drop for ChainSrv {
-    fn drop(&mut self) {
-        self.upper.abort();
-    }
+    keys_path: String,
 }
 
 #[async_trait]
@@ -80,53 +72,70 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        self.init::<N, DB, VM>(&network, &db, &vm).await?;
+        // Restore/Load most recent block
+        let (mrb, provisioners_list) =
+            Self::load_most_recent_block(db.clone()).await?;
 
+        // Initialize Acceptor and trigger consensus task
+        let acc = Arc::new(RwLock::new(
+            Acceptor::new_with_run(
+                &self.keys_path,
+                &mrb,
+                &provisioners_list,
+                db.clone(),
+                network.clone(),
+                vm.clone(),
+            )
+            .await,
+        ));
+
+        // Start-up FSM instance
+        let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
+
+        let outbound_chan = acc.read().await.get_outbound_chan().await;
+        let result_chan = acc.read().await.get_result_chan().await;
+
+        // Message loop for Chain context
         loop {
             tokio::select! {
                 // Receives results from the upper layer
-                recv = &mut self.upper.result.recv() => {
-                    let res = recv?;
-                    match res {
+                recv = &mut result_chan.recv() => {
+                    match recv? {
                         Ok(blk) => {
-                            if let Err(e) = self.accept_block::<DB, VM, N>( &db, &vm, &network, &blk).await {
-                                tracing::error!("failed to accept block: {}", e);
-                            } else {
-                                network.read().await.
-                                    broadcast(&Message::new_block(Box::new(blk))).await;
-                            }
+                            fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone())))
+                                .await
+                                .map_err(|e| error!("failed to process block: {}", e));
                         }
                         Err(e) => {
-                            tracing::error!("consensus halted due to: {:?}", e);
+                             warn!("consensus err: {:?}", e);
                         }
                     }
-
                 },
                 // Receives inbound wire messages.
                 // Component should either process it or re-route it to the next upper layer
                 recv = &mut self.inbound.recv() => {
                     let msg = recv?;
                     match &msg.payload {
-                        Payload::Block(b) => {
-                            if let Err(e) = self.accept_block::<DB, VM, N>(&db, &vm, &network, b).await {
-                                tracing::error!("failed to accept block: {}", e);
-                            } else {
-                                network.read().await.broadcast(&msg).await;
-                            }
+                        Payload::Block(blk) => {
+                            debug!("received block {:?}", blk);
+
+                            fsm.on_event(blk, &msg)
+                                .await
+                                .map_err(|e| error!("failed to process block: {}", e));
                         }
 
-                        // Re-route message to upper layer (in this case it is the Consensus layer)
-                        Payload::NewBlock(_) |  Payload::Reduction(_) => {
-                            self.upper.main_inbound.try_send(msg);
+                        // Re-route message to the acceptor
+                        Payload::NewBlock(_)
+                        | Payload::Reduction(_)
+                        | Payload::Agreement(_)
+                        | Payload::AggrAgreement(_) => {
+                            acc.read().await.reroute_msg(msg).await;
                         }
-                        Payload::Agreement(_) | Payload::AggrAgreement(_) => {
-                            self.upper.agreement_inbound.try_send(msg);
-                        }
-                        _ => tracing::warn!("invalid inbound message"),
+                        _ => warn!("invalid inbound message"),
                     }
                 },
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
-                recv = &mut self.upper.outbound.recv() => {
+                recv = &mut outbound_chan.recv() => {
                     let msg = recv?;
                     network.read().await.broadcast(&msg).await;
                 },
@@ -144,231 +153,20 @@ impl ChainSrv {
     pub fn new(keys_path: String) -> Self {
         Self {
             inbound: Default::default(),
-            upper: Task::new_with_keys(keys_path),
-            most_recent_block: Block::default(),
-            eligible_provisioners: Provisioners::default(),
+            keys_path,
         }
     }
 
-    /// Requests missing blocks by sending GetBlocks wire message to N alive
-    /// peers.
-    async fn request_missing_blocks<N: Network, DB: database::DB>(
-        db: &Arc<RwLock<DB>>,
-        network: &Arc<RwLock<N>>,
-        locator: [u8; 32],
-        peers_count: usize,
-    ) -> anyhow::Result<()> {
-        // GetBlocks
-        let msg =
-            Message::new_get_blocks(node_data::message::payload::GetBlocks {
-                locator,
-            });
+    async fn load_most_recent_block<DB: database::DB>(
+        db: Arc<RwLock<DB>>,
+    ) -> Result<(Block, Provisioners)> {
+        let (mrb, provisioners_list) = genesis::generate_state();
 
-        network
-            .read()
-            .await
-            .send_to_alive_peers(&msg, peers_count)
-            .await;
-
-        Ok(())
-    }
-
-    async fn init<N: Network, DB: database::DB, VM: vm::VMExecution>(
-        &mut self,
-        network: &Arc<RwLock<N>>,
-        db: &Arc<RwLock<DB>>,
-        vm: &Arc<RwLock<VM>>,
-    ) -> anyhow::Result<usize> {
-        (self.most_recent_block, self.eligible_provisioners) =
-            genesis::generate_state();
-
-        self.upper.spawn(
-            &self.most_recent_block.header,
-            &self.eligible_provisioners,
-            db,
-            vm,
-            network,
-        );
+        // TODO: load mrb from db
 
         // Store genesis block
-        db.read()
-            .await
-            .update(|t| t.store_block(&self.most_recent_block, true));
+        db.read().await.update(|t| t.store_block(&mrb, true));
 
-        // Always request missing blocks on startup.
-        //
-        // Instead of waiting for next block to be produced and delivered, we
-        // request missing blocks from randomly selected the network nodes.
-        Self::request_missing_blocks(
-            db,
-            network,
-            self.most_recent_block.header.hash,
-            3,
-        )
-        .await?;
-
-        anyhow::Ok(0)
-    }
-
-    async fn accept_block<DB: database::DB, VM: vm::VMExecution, N: Network>(
-        &mut self,
-        db: &Arc<RwLock<DB>>,
-        vm: &Arc<RwLock<VM>>,
-        network: &Arc<RwLock<N>>,
-        blk: &Block,
-    ) -> anyhow::Result<()> {
-        // Verify Block Header
-        self.verify_block_header(
-            db,
-            &self.most_recent_block.header,
-            &blk.header,
-        )
-        .await?;
-
-        // Reset Consensus
-        self.upper.abort().await;
-
-        // Persist block in consistency with the VM state update
-        {
-            let vm = vm.read().await;
-            db.read().await.update(|t| {
-                t.store_block(blk, true)?;
-
-                // Accept block transactions into the VM
-                if blk.header.iteration == 1 {
-                    return vm.finalize(blk);
-                }
-
-                vm.accept(blk)
-            })
-        }?;
-
-        self.most_recent_block = blk.clone();
-
-        // Delete from mempool any transaction already included in the block
-        db.read().await.update(|update| {
-            for tx in blk.txs.iter() {
-                database::Mempool::delete_tx(update, tx.hash());
-            }
-            Ok(())
-        })?;
-
-        tracing::info!(
-            "block accepted height:{} hash:{} txs_count: {}",
-            blk.header.height,
-            hex::encode(blk.header.hash),
-            blk.txs.len(),
-        );
-
-        // Restart Consensus.
-        // NB. This will be moved out of accept_block when Synchronizer is
-        // implemented.
-        self.upper.spawn(
-            &self.most_recent_block.header,
-            &self.eligible_provisioners,
-            db,
-            vm,
-            network,
-        );
-
-        Ok(())
-    }
-
-    async fn verify_block_header<DB: database::DB>(
-        &self,
-        db: &Arc<RwLock<DB>>,
-        prev_block_header: &ledger::Header,
-        blk_header: &ledger::Header,
-    ) -> anyhow::Result<()> {
-        if blk_header.version > 0 {
-            return Err(anyhow!("unsupported block version"));
-        }
-
-        if blk_header.height != prev_block_header.height + 1 {
-            return Err(anyhow!(
-                "invalid block height block_height: {:?}, curr_height: {:?}",
-                blk_header.height,
-                prev_block_header.height,
-            ));
-        }
-
-        if blk_header.prev_block_hash != prev_block_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
-        }
-
-        if blk_header.timestamp <= prev_block_header.timestamp {
-            return Err(anyhow!("invalid block timestamp"));
-        }
-
-        // Ensure block is not already in the ledger
-        db.read().await.view(|view| {
-            if Ledger::get_block_exists(&view, &blk_header.hash)? {
-                return Err(anyhow!("block already exists"));
-            }
-
-            Ok(())
-        })?;
-
-        // Verify Certificate
-        self.verify_block_cert(
-            blk_header.hash,
-            blk_header.height,
-            &prev_block_header.seed,
-            &blk_header.cert,
-            blk_header.iteration,
-        )
-        .await
-    }
-
-    async fn verify_block_cert(
-        &self,
-        block_hash: [u8; 32],
-        height: u64,
-        seed: &ledger::Seed,
-        cert: &ledger::Certificate,
-        iteration: u8,
-    ) -> anyhow::Result<()> {
-        let (_, public_key) = &self.upper.keys;
-
-        let committee = Arc::new(Mutex::new(CommitteeSet::new(
-            public_key.clone(),
-            self.eligible_provisioners.clone(),
-        )));
-
-        let hdr = node_data::message::Header {
-            topic: 0,
-            pubkey_bls: public_key.clone(),
-            round: height,
-            step: iteration * 3,
-            block_hash,
-        };
-
-        // Verify first reduction
-        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
-            &cert.first_reduction,
-            &committee,
-            *seed,
-            &hdr,
-            0,
-        )
-        .await
-        {
-            return Err(anyhow!("invalid first reduction votes"));
-        }
-
-        // Verify second reduction
-        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
-            &cert.second_reduction,
-            &committee,
-            *seed,
-            &hdr,
-            1,
-        )
-        .await
-        {
-            return Err(anyhow!("invalid second reduction votes"));
-        }
-
-        Ok(())
+        Ok((mrb, provisioners_list))
     }
 }
