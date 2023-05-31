@@ -135,10 +135,6 @@ impl StakeState {
         loaded_stake.increment_counter();
         loaded_stake.insert_amount(stake.value, rusk_abi::block_height());
 
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
-
         // verify the signature is over the correct digest
         let digest = stake_signature_message(counter, stake.value).to_vec();
 
@@ -175,10 +171,6 @@ impl StakeState {
 
         let (value, _) = loaded_stake.remove_amount();
         loaded_stake.increment_counter();
-
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
 
         // verify signature
         let digest = unstake_signature_message(counter, unstake.note).to_vec();
@@ -223,10 +215,6 @@ impl StakeState {
 
         loaded_stake.deplete_reward();
         loaded_stake.increment_counter();
-
-        // required since we're holding a mutable reference to a stake and
-        // `dusk_abi::transact_raw` requires a mutable reference to the state
-        drop(loaded_stake);
 
         // verify signature
         let digest = withdraw_signature_message(
@@ -278,8 +266,6 @@ impl StakeState {
 
         let owner_counter = owner_stake.counter();
         owner_stake.increment_counter();
-
-        drop(owner_stake);
 
         // verify signature
         let digest =
@@ -348,12 +334,18 @@ impl StakeState {
         stake.increase_reward(value);
     }
 
-    /// Gets a vector of all public keys and stakes.
-    pub fn stakes(&self) -> Vec<(PublicKey, StakeData)> {
-        self.stakes
-            .iter()
-            .map(|(k, v)| (PublicKey::from_bytes(k).unwrap(), v.clone().0))
-            .collect()
+    /// Gets a vector of all public keys and stakes, `skip`ping the given number
+    /// of stakes and getting the given `max`imum number.
+    pub fn stakes(
+        &self,
+        max: usize,
+        skip: usize,
+    ) -> Vec<(PublicKey, StakeData)> {
+        let mut stakes = Vec::with_capacity(max);
+        for (k, v) in self.stakes.iter().skip(skip).take(max) {
+            stakes.push((PublicKey::from_bytes(k).unwrap(), v.clone().0));
+        }
+        stakes
     }
 
     /// Gets a vector of all allowlisted keys.

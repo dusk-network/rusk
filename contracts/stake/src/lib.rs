@@ -59,7 +59,7 @@ unsafe fn get_stake(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn stakes(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.stakes())
+    rusk_abi::wrap_query(arg_len, |(max, skip)| STATE.stakes(max, skip))
 }
 
 #[no_mangle]
