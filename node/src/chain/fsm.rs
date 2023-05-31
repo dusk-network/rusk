@@ -4,25 +4,25 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{
-    acceptor::BlockAcceptor, consensus, genesis, sequencer::Sequencer,
-};
+use super::{acceptor::Acceptor, consensus, genesis};
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{self, Block, Hash, Transaction};
+use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
+use std::collections::HashMap;
 use std::time::Duration;
-use std::{
-    cell::RefCell, marker::PhantomData, rc::Rc, sync::Arc, time::SystemTime,
-};
+use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
-type SharedBlock = Rc<RefCell<Block>>;
+const MAX_BLOCKS_TO_REQUEST: i16 = 50;
+const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 
 enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
     InSync(InSyncImpl<DB, VM, N>),
-    OutOfSync(OutOfSyncImpl),
+    OutOfSync(OutOfSyncImpl<DB, VM, N>),
     InFallback,
 }
 
@@ -30,89 +30,54 @@ enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
 /// InFallback states.
 pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
     curr: State<N, DB, VM>,
-
-    /// Most recently accepted block a.k.a blockchain tip
-    mrb: SharedBlock,
-
-    /// List of eligible provisioners of actual round
-    eligible_provisioners: Provisioners,
-
-    /// Upper layer consensus task
-    upper: super::consensus::Task,
-
+    acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
-    db: Arc<RwLock<DB>>,
-    vm: Arc<RwLock<VM>>,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
-    fn new(
-        keys_path: String,
+    pub fn new(
+        acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
         network: Arc<RwLock<N>>,
-        db: Arc<RwLock<DB>>,
-        vm: Arc<RwLock<VM>>,
     ) -> Self {
         Self {
-            curr: State::InSync(InSyncImpl::<DB, VM, N>::default()),
-            mrb: Rc::new(RefCell::new(Block::default())),
-            eligible_provisioners: Provisioners::default(),
-            upper: consensus::Task::new_with_keys(keys_path),
+            curr: State::InSync(InSyncImpl::<DB, VM, N>::new(
+                acc.clone(),
+                network.clone(),
+            )),
+            acc,
             network,
-            db,
-            vm,
         }
     }
 
-    async fn init(&mut self, vm: &Arc<RwLock<VM>>) -> anyhow::Result<usize> {
-        let (genesis_block, eligible_provisioners) = genesis::generate_state();
-
-        *self.mrb.borrow_mut() = genesis_block;
-        self.eligible_provisioners = eligible_provisioners;
-
-        self.upper.spawn(
-            &(*self.mrb.borrow()).header,
-            &self.eligible_provisioners,
-            &self.db,
-            &self.vm,
-            &self.network,
-        );
-
-        // Store genesis block
-        self.db
-            .read()
-            .await
-            .update(|t| t.store_block(&self.mrb.borrow(), true));
-
-        // Always request missing blocks on startup.
-        //
-        // Instead of waiting for next block to be produced and delivered, we
-        // request missing blocks from randomly selected the network nodes.
-        self.request_missing_blocks(3).await?;
-
-        anyhow::Ok(0)
-    }
-
-    pub async fn on_event(&mut self, blk: Block) -> anyhow::Result<()> {
+    pub async fn on_event(
+        &mut self,
+        blk: &Block,
+        msg: &Message,
+    ) -> anyhow::Result<()> {
         match &mut self.curr {
             State::InSync(ref mut curr) => {
-                if curr.on_event(&blk).await? {
+                if curr.on_event(blk, msg).await? {
                     /// Transition from InSync to OutOfSync state
                     curr.on_exiting();
 
                     // Enter new state
-                    let mut next = OutOfSyncImpl::new(self.mrb.clone());
-                    next.on_entering(&blk).await;
+                    let mut next = OutOfSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                    );
+                    next.on_entering(blk, msg).await;
                     self.curr = State::OutOfSync(next);
                 }
             }
             State::OutOfSync(ref mut curr) => {
-                if curr.on_event(&blk).await? {
-                    /// Transition from OutOfSync to InSync  state
+                if curr.on_event(blk, msg).await? {
+                    /// Transition from OutOfSync to InSync state
                     curr.on_exiting();
 
                     // Enter new state
-                    let mut next = InSyncImpl::new(self.mrb.clone());
-                    next.on_entering(&blk).await;
+                    let mut next =
+                        InSyncImpl::new(self.acc.clone(), self.network.clone());
+                    next.on_entering(blk).await;
                     self.curr = State::InSync(next);
                 }
             }
@@ -120,142 +85,192 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                 // TODO: This will be handled with another issue
             }
         }
-
-        Ok(())
-    }
-
-    /// Requests missing blocks by sending GetBlocks wire message to N alive
-    /// peers.
-    async fn request_missing_blocks(
-        &self,
-        peers_count: usize,
-    ) -> anyhow::Result<()> {
-        let locator = self.mrb.borrow().header.hash;
-        // GetBlocks
-        let msg =
-            Message::new_get_blocks(node_data::message::payload::GetBlocks {
-                locator,
-            });
-
-        self.network
-            .read()
-            .await
-            .send_to_alive_peers(&msg, peers_count)
-            .await;
-
         Ok(())
     }
 }
 
 struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
-    acceptor: BlockAcceptor<DB, VM, N>,
-    mrb: SharedBlock,
+    acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
+    network: Arc<RwLock<N>>,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
-    fn new(mrb: SharedBlock, acc: BlockAcceptor<DB, VM, N>) -> Self {
-        Self { mrb }
+    fn new(
+        acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
+        network: Arc<RwLock<N>>,
+    ) -> Self {
+        Self { acc, network }
     }
 
     /// performed when entering the state
-    async fn on_entering(&mut self, blk: &Block) {
-        let h = blk.header.height;
+    async fn on_entering(&mut self, blk: &Block) -> anyhow::Result<()> {
+        let acc = self.acc.write().await;
+        let curr_h = acc.get_curr_height().await;
 
-        // Try accepting consecutive block
-        if h == self.mrb.borrow().header.height + 1 {
-            /* TODO:
-            self.accept_block::<DB, VM, N>(&db, &vm, &network, blk)
-                .await?;
-
-            network.read().await.broadcast(msg).await;
-            */
+        if blk.header.height == curr_h + 1 {
+            acc.try_accept_block(blk, true).await?;
         }
+
+        info!("entering in-sync at {}", curr_h,);
+
+        Ok(())
     }
 
-    ///  performed when exiting the state
+    /// performed when exiting the state
     async fn on_exiting(&mut self) {}
 
-    async fn on_event(&mut self, blk: &Block) -> anyhow::Result<bool> {
+    async fn on_event(
+        &mut self,
+        blk: &Block,
+        msg: &Message,
+    ) -> anyhow::Result<bool> {
+        let acc = self.acc.write().await;
         let h = blk.header.height;
+        let curr_h = acc.get_curr_height().await;
 
-        if h <= self.mrb.borrow().header.height {
-            // Surpress errros for now.
+        if h <= curr_h {
             return Ok(false);
         }
 
         // Try accepting consecutive block
-        if h == self.mrb.borrow().header.height + 1 {
-            /* TODO:
-            self.accept_block::<DB, VM, N>(&db, &vm, &network, blk)
-                .await?;
+        if h == curr_h + 1 {
+            acc.try_accept_block(blk, true).await?;
 
-            network.read().await.broadcast(msg).await;
-            */
+            // When accepting block from the wire in inSync state, we
+            // rebroadcast it
+            self.network.write().await.broadcast(msg).await;
 
-            *self.mrb.borrow_mut() = Block::default(); // TODO:
             return Ok(false);
         }
 
-        /// TODO: If the block certficate is verifiable, verify it
-        Ok(true)
+        // Transition to OutOfSync
+        Ok(self.allow_transition(msg).is_ok())
+    }
+
+    fn allow_transition(&self, msg: &Message) -> anyhow::Result<()> {
+        let recv_peer = msg
+            .metadata
+            .as_ref()
+            .map(|m| m.src_addr)
+            .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
+
+        // TODO: Consider verifying certificate here
+
+        Ok(())
     }
 }
 
-struct OutOfSyncImpl {
-    mrb: SharedBlock,
+struct OutOfSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
     range: (u64, u64),
     start_time: SystemTime,
+    pool: HashMap<u64, Block>,
 
-    pool: Sequencer,
+    acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
+    network: Arc<RwLock<N>>,
 }
 
-impl<'a> OutOfSyncImpl {
-    fn new(mrb: SharedBlock) -> Self {
-        let curr_height = mrb.borrow().header.height;
+impl<DB: database::DB, VM: vm::VMExecution, N: Network>
+    OutOfSyncImpl<DB, VM, N>
+{
+    fn new(
+        acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
+        network: Arc<RwLock<N>>,
+    ) -> Self {
         Self {
             start_time: SystemTime::now(),
-            mrb,
-            range: (curr_height, curr_height + 500), // TODO: 500
-            pool: Sequencer::default(),
+            range: (0, 0),
+            pool: HashMap::new(),
+            acc,
+            network,
         }
     }
-    ///  performed when entering the state
-    async fn on_entering(&mut self, blk: &Block) {
-        // request missing blocks
-        // GetBlocks message
+    /// performed when entering the OutOfSync state
+    async fn on_entering(&mut self, blk: &Block, msg: &Message) {
+        let (curr_height, locator) = {
+            let acc = self.acc.read().await;
+            (acc.get_curr_height().await, acc.get_curr_hash().await)
+        };
 
-        // TODO:  use source address here
-        // Self::request_missing_blocks(self.most_recent_block.header.hash, 5);
+        let dest_addr = msg.metadata.as_ref().unwrap().src_addr;
 
-        // add to sequencer
-        self.pool.add(blk.clone());
+        self.range = (
+            curr_height,
+            std::cmp::min(
+                curr_height + MAX_BLOCKS_TO_REQUEST as u64,
+                blk.header.height,
+            ),
+        );
+
+        // Request missing blocks from source peer
+        let gb_msg = Message::new_get_blocks(GetBlocks { locator });
+
+        self.network
+            .write()
+            .await
+            .send_to_peer(&gb_msg, dest_addr)
+            .await;
+
+        // add to the pool
+        let key = blk.header.height;
+        self.pool.insert(key, blk.clone());
+
+        info!(
+            "entering out-of-sync with range: {:?} peer: {:?}",
+            self.range, dest_addr,
+        );
     }
 
-    ///  performed when exiting the state
-    async fn on_exiting(&mut self) {}
+    /// performed when exiting the state
+    async fn on_exiting(&mut self) {
+        self.pool.clear();
+    }
 
-    async fn on_event(&mut self, blk: &Block) -> anyhow::Result<bool> {
+    pub async fn on_event(
+        &mut self,
+        blk: &Block,
+        msg: &Message,
+    ) -> anyhow::Result<bool> {
+        let acc = self.acc.write().await;
         let h = blk.header.height;
 
-        if h <= self.mrb.borrow().header.height {
-            // TODO: warning
+        if self
+            .start_time
+            .checked_add(Duration::from_millis(EXPIRY_TIMEOUT_MILLIS as u64))
+            .unwrap()
+            <= SystemTime::now()
+        {
+            // Timeout-ed sync-up
+            // Transit back to InSync mode
+            return Ok(true);
+        }
+
+        if h <= acc.get_curr_height().await {
             return Ok(false);
         }
 
         // Try accepting consecutive block
-        if h == self.mrb.borrow().header.height + 1 {
-            //self.accept_block::<DB, VM, N>(&db, &vm, &network, blk)
-            //    .await?;
+        if h == acc.get_curr_height().await + 1 {
+            acc.try_accept_block(blk, (h == self.range.1)).await?;
 
-            // TODO: Try to accept other consecutive blocks, if available
-            for b in &self.pool.iter() {
+            self.start_time = SystemTime::now();
 
-                //self.accept_block::<DB, VM, N>(&db, &vm, &network, blk)
-                //    .await?;
+            // Try to accept other consecutive blocks from the pool, if
+            // available
+            for height in (h + 1)..(self.range.1 + 1) {
+                let enable_consensus = (height == self.range.1);
+
+                if let Some(blk) = self.pool.get(&height) {
+                    acc.try_accept_block(blk, enable_consensus).await?;
+                } else {
+                    break;
+                }
             }
 
-            // If target height is reached the switch to InSync mode
-            if h == self.range.1 {
+            // Check target height is reached
+            if acc.get_curr_height().await == self.range.1 {
+                // Block sync-up procedure manages to download all requested
+                // blocks
+
                 // Transit to InSync mode
                 return Ok(true);
             }
@@ -263,19 +278,9 @@ impl<'a> OutOfSyncImpl {
             return Ok(false);
         }
 
-        if self
-            .start_time
-            .checked_add(Duration::from_millis(1500))
-            .unwrap()
-            > SystemTime::now()
-        {
-            // Timeout-ed sync-up
-            // Transit back to InSync mode
-            return Ok(true);
-        }
-
-        /// add block to sequencer
-        self.pool.add(blk.clone());
+        // add block to the pool
+        let key = blk.header.height;
+        self.pool.insert(key, blk.clone());
 
         Ok(false)
     }
