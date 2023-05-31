@@ -22,70 +22,120 @@ use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
+use tracing::warn;
 
 use std::any;
 
+use super::consensus::Task;
+use super::genesis;
+
 /// Implements block acceptance procedure. This includes block header,
 /// certificate and transactions full verifications.
-pub(crate) struct BlockAcceptor<
-    DB: database::DB,
-    VM: vm::VMExecution,
-    N: Network,
-> {
+/// Acceptor also manages the initialization and lifespan of Consensus task.
+pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
-    mrb: RefCell<Block>,
+    mrb: RwLock<Block>,
 
-    /// List of eligible provisioners of actual round
-    eligible_provisioners: RefCell<Provisioners>,
+    /// List of provisioners of actual round
+    provisioners_list: RwLock<Provisioners>,
+
+    /// Upper layer consensus task
+    task: RwLock<super::consensus::Task>,
 
     db: Arc<RwLock<DB>>,
     vm: Arc<RwLock<VM>>,
     network: Arc<RwLock<N>>,
-
-    /// Upper layer consensus task
-    upper: RefCell<super::consensus::Task>,
 }
 
-impl<DB: database::DB, VM: vm::VMExecution, N: Network>
-    BlockAcceptor<DB, VM, N>
+impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
+    for Acceptor<N, DB, VM>
 {
+    fn drop(&mut self) {
+        if let Ok(mut t) = self.task.try_write() {
+            t.abort()
+        }
+    }
+}
+
+impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
+    pub async fn new_with_run(
+        keys_path: &str,
+        mrb: &Block,
+        provisioners_list: &Provisioners,
+        db: Arc<RwLock<DB>>,
+        network: Arc<RwLock<N>>,
+        vm: Arc<RwLock<VM>>,
+    ) -> Self {
+        let mut acc = Self {
+            mrb: RwLock::new(mrb.clone()),
+            provisioners_list: RwLock::new(provisioners_list.clone()),
+            db: db.clone(),
+            vm: vm.clone(),
+            network: network.clone(),
+            task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
+        };
+
+        acc.task.write().await.spawn(
+            &mrb.header,
+            &provisioners_list.clone(),
+            &db,
+            &vm,
+            &network,
+        );
+
+        acc
+    }
+    // Re-route message to consensus task
+    pub(crate) async fn reroute_msg(&self, msg: Message) {
+        match &msg.payload {
+            Payload::NewBlock(_) | Payload::Reduction(_) => {
+                self.task.read().await.main_inbound.send(msg).await;
+            }
+            Payload::Agreement(_) | Payload::AggrAgreement(_) => {
+                self.task.read().await.agreement_inbound.send(msg).await;
+            }
+            _ => warn!("invalid inbound message"),
+        }
+    }
+
     pub(crate) async fn try_accept_block(
-        &mut self,
+        &self,
         blk: &Block,
+        enable_consensus: bool,
     ) -> anyhow::Result<()> {
-        let (_, public_key) = &self.upper.borrow().keys;
+        let mut task = self.task.write().await;
+        let (_, public_key) = task.keys.clone();
 
         // Verify Block Header
-        self.verify_block_header(
-            &public_key,
-            &self.eligible_provisioners.borrow(),
-            &self.mrb.borrow().header,
-            &blk.header,
-        )
-        .await?;
+        self.verify_block_header(&public_key, &blk.header).await?;
+
+        let mut mrb = self.mrb.write().await;
+        let mut provisioners_list = self.provisioners_list.write().await;
 
         // Reset Consensus
-        self.upper.borrow_mut().abort().await;
+        task.abort_with_wait().await;
 
         // Persist block in consistency with the VM state update
         {
-            let vm = self.vm.read().await;
+            let vm = self.vm.write().await;
             self.db.read().await.update(|t| {
                 t.store_block(blk, true)?;
 
                 // Accept block transactions into the VM
-                if blk.header.cert.step == 3 {
+                if blk.header.iteration == 1 {
                     return vm.finalize(blk);
                 }
 
+                //TODO: Retrieve eligible_provisioners
                 vm.accept(blk)
             })
         }?;
 
-        *self.mrb.borrow_mut() = blk.clone();
+        *mrb = blk.clone();
 
         // Delete from mempool any transaction already included in the block
         self.db.read().await.update(|update| {
@@ -103,15 +153,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         );
 
         // Restart Consensus.
-        // NB. This will be moved out of accept_block when Synchronizer is
-        // implemented.
-        self.upper.borrow_mut().spawn(
-            &self.mrb.borrow().header,
-            &self.eligible_provisioners.borrow(),
-            &self.db,
-            &self.vm,
-            &self.network,
-        );
+        if enable_consensus {
+            task.spawn(
+                &mrb.header,
+                &provisioners_list,
+                &self.db,
+                &self.vm,
+                &self.network,
+            );
+        }
 
         Ok(())
     }
@@ -119,27 +169,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
     pub(crate) async fn verify_block_header(
         &self,
         public_key: &node_data::bls::PublicKey,
-        eligible_provisioners: &Provisioners,
-        prev_block_header: &ledger::Header,
         blk_header: &ledger::Header,
     ) -> anyhow::Result<()> {
         if blk_header.version > 0 {
             return Err(anyhow!("unsupported block version"));
         }
 
-        if blk_header.height != prev_block_header.height + 1 {
+        let curr_header = self.mrb.read().await.header.clone();
+
+        if blk_header.height != curr_header.height + 1 {
             return Err(anyhow!(
                 "invalid block height block_height: {:?}, curr_height: {:?}",
                 blk_header.height,
-                prev_block_header.height,
+                curr_header.height,
             ));
         }
 
-        if blk_header.prev_block_hash != prev_block_header.hash {
+        if blk_header.prev_block_hash != curr_header.hash {
             return Err(anyhow!("invalid previous block hash"));
         }
 
-        if blk_header.timestamp <= prev_block_header.timestamp {
+        if blk_header.timestamp <= curr_header.timestamp {
             return Err(anyhow!("invalid block timestamp"));
         }
 
@@ -153,25 +203,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         })?;
 
         // Verify Certificate
-        Self::verify_block_cert(
+        self.verify_block_cert(
             public_key,
-            eligible_provisioners,
             blk_header.hash,
             blk_header.height,
-            &prev_block_header.seed,
             &blk_header.cert,
+            blk_header.iteration,
         )
         .await
     }
 
     async fn verify_block_cert(
+        &self,
         public_key: &node_data::bls::PublicKey,
-        eligible_provisioners: &Provisioners,
         block_hash: [u8; 32],
         height: u64,
-        seed: &ledger::Seed,
         cert: &ledger::Certificate,
+        iteration: u8,
     ) -> anyhow::Result<()> {
+        let mut mrb = self.mrb.write().await;
+        let mut eligible_provisioners = self.provisioners_list.write().await;
+
         let committee = Arc::new(Mutex::new(CommitteeSet::new(
             public_key.clone(),
             eligible_provisioners.clone(),
@@ -181,15 +233,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             topic: 0,
             pubkey_bls: public_key.clone(),
             round: height,
-            step: cert.step,
+            step: iteration * 3,
             block_hash,
         };
+
+        let seed = mrb.header.seed;
 
         // Verify first reduction
         if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
             &cert.first_reduction,
             &committee,
-            *seed,
+            seed,
             &hdr,
             0,
         )
@@ -202,7 +256,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
             &cert.second_reduction,
             &committee,
-            *seed,
+            seed,
             &hdr,
             1,
         )
@@ -212,5 +266,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         Ok(())
+    }
+
+    pub(crate) async fn get_curr_height(&self) -> u64 {
+        self.mrb.read().await.header.height
+    }
+
+    pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
+        self.mrb.read().await.header.hash
+    }
+
+    pub(crate) async fn get_curr_timestamp(&self) -> i64 {
+        self.mrb.read().await.header.timestamp
+    }
+
+    pub(crate) async fn get_result_chan(
+        &self,
+    ) -> AsyncQueue<Result<Block, ConsensusError>> {
+        self.task.read().await.result.clone()
+    }
+
+    pub(crate) async fn get_outbound_chan(&self) -> AsyncQueue<Message> {
+        self.task.read().await.outbound.clone()
     }
 }
