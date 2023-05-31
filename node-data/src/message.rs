@@ -926,7 +926,7 @@ impl<M: Clone> Default for AsyncQueue<M> {
 }
 
 impl<M: Clone> AsyncQueue<M> {
-    pub fn send(&mut self, msg: M) -> async_channel::Send<'_, M> {
+    pub fn send(&self, msg: M) -> async_channel::Send<'_, M> {
         self.sender.send(msg)
     }
 
