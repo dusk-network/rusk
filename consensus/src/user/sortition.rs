@@ -76,11 +76,11 @@ mod tests {
     };
 
     #[test]
-    pub fn test_sortition_hash() {        
+    pub fn test_sortition_hash() {
         let hash = [
             134, 22, 162, 136, 186, 35, 16, 207, 237, 50, 11, 236, 74, 189, 37,
-            137, 101, 205, 53, 161, 248, 199, 195, 228, 68, 68, 95, 223, 239, 199,
-            1, 7,
+            137, 101, 205, 53, 161, 248, 199, 195, 228, 68, 68, 95, 223, 239,
+            199, 1, 7,
         ];
 
         assert_eq!(
@@ -94,8 +94,10 @@ mod tests {
 
     #[test]
     pub fn test_generate_sortition_score() {
-        let dataset =
-            vec![([3; 48], 123342342, 66422677), ([4; 48], 44443333, 22757716)];
+        let dataset = vec![
+            ([3; 48], 123342342, 66422677),
+            ([4; 48], 44443333, 22757716),
+        ];
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
