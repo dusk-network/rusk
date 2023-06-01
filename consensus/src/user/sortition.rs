@@ -43,10 +43,10 @@ pub fn create_sortition_hash(cfg: &Config, counter: u32) -> [u8; 32] {
     let mut hasher = Sha3_256::new();
 
     // write input message
-    hasher.update(cfg.round.to_le_bytes());
-    hasher.update(counter.to_le_bytes());
-    hasher.update(cfg.step.to_le_bytes());
     hasher.update(&cfg.seed.inner()[..]);
+    hasher.update(cfg.round.to_le_bytes());
+    hasher.update(cfg.step.to_le_bytes());
+    hasher.update(counter.to_le_bytes());
 
     // read hash digest
     let reader = hasher.finalize();
@@ -76,12 +76,13 @@ mod tests {
     };
 
     #[test]
-    pub fn test_sortition_hash() {
+    pub fn test_sortition_hash() {        
         let hash = [
-            56, 81, 125, 39, 109, 105, 243, 20, 138, 196, 236, 197, 7, 155, 41,
-            26, 217, 150, 9, 226, 76, 174, 67, 1, 230, 187, 81, 107, 192, 5,
-            13, 73,
+            134, 22, 162, 136, 186, 35, 16, 207, 237, 50, 11, 236, 74, 189, 37,
+            137, 101, 205, 53, 161, 248, 199, 195, 228, 68, 68, 95, 223, 239, 199,
+            1, 7,
         ];
+
         assert_eq!(
             create_sortition_hash(
                 &Config::new(Seed::from([3; 48]), 10, 3, 0),
@@ -94,7 +95,7 @@ mod tests {
     #[test]
     pub fn test_generate_sortition_score() {
         let dataset =
-            vec![([3; 48], 123342342, 78899961), ([4; 48], 44443333, 5505832)];
+            vec![([3; 48], 123342342, 66422677), ([4; 48], 44443333, 22757716)];
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
