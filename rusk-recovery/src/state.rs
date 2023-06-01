@@ -75,7 +75,9 @@ fn generate_transfer_state(
 ) -> Result<(), Box<dyn Error>> {
     let theme = Theme::default();
 
+    let mut update_root = false;
     snapshot.transfers().enumerate().for_each(|(idx, balance)| {
+        update_root = true;
         info!("{} balance #{}", theme.action("Generating"), idx,);
 
         let mut rng = match balance.seed {
@@ -94,30 +96,11 @@ fn generate_transfer_state(
                 .expect("Genesis note to be pushed to the state");
         });
     });
-
-    let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", &())
-        .expect("Root to be updated after pushing genesis note");
-
-    let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
-
-    let _: u64 = session
-        .query(
-            rusk_abi::transfer_module(),
-            "module_balance",
-            &rusk_abi::stake_module(),
-        )
-        .expect("Stake contract balance query should succeed");
-
-    let m: ModuleId = rusk_abi::stake_module();
-    let _: () = session
-        .transact(
-            rusk_abi::transfer_module(),
-            "add_module_balance",
-            &(m, stake_balance),
-        )
-        .expect("Stake contract balance to be set with provisioner stakes");
-
+    if update_root {
+        let _: BlsScalar = session
+            .transact(rusk_abi::transfer_module(), "update_root", &())
+            .expect("Root to be updated after pushing genesis note");
+    }
     Ok(())
 }
 
@@ -163,6 +146,17 @@ fn generate_stake_state(
             .expect("provisioner to be inserted into the allowlist");
     });
 
+    let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
+    if stake_balance > 0 {
+        let m: ModuleId = rusk_abi::stake_module();
+        let _: () = session
+            .transact(
+                rusk_abi::transfer_module(),
+                "add_module_balance",
+                &(m, stake_balance),
+            )
+            .expect("Stake contract balance to be set with provisioner stakes");
+    }
     Ok(())
 }
 
@@ -250,8 +244,10 @@ pub fn deploy<P: AsRef<Path>>(
     let commit_id = session.commit()?;
     fs::write(state_id_path, commit_id)?;
 
-    vm.delete_commit(old_commit_id)?;
-    vm.squash_commit(commit_id)?;
+    if old_commit_id != commit_id {
+        vm.delete_commit(old_commit_id)?;
+        vm.squash_commit(commit_id)?;
+    }
 
     info!("{} {}", theme.action("Init Root"), hex::encode(commit_id));
 

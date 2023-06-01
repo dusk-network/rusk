@@ -136,9 +136,8 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
 
     if let Some(output) = config.output_file {
         let state_folder = rusk_profile::get_rusk_state_dir()?;
-        let input = state_folder.parent().expect("state dir not equal to root");
         info!("{} state into the output file", theme.info("Zipping"),);
-        tar::archive(input, &output)?;
+        tar::archive(&state_folder, &output)?;
     }
 
     Ok(())

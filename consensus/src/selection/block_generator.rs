@@ -10,6 +10,7 @@ use node_data::ledger::{Block, Certificate, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
+use crate::merkle::merkle_root;
 
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
@@ -101,6 +102,9 @@ impl<T: Operations> Generator<T> {
             },
         )?;
 
+        let tx_hashes: Vec<_> = result.txs.iter().map(|t| t.hash()).collect();
+        let txroot = merkle_root(&tx_hashes[..]);
+
         let blk_header = ledger::Header {
             version: 0,
             height: round,
@@ -114,6 +118,7 @@ impl<T: Operations> Generator<T> {
             state_hash: result.state_root,
             hash: [0; 32],
             cert: Certificate::default(),
+            txroot,
             iteration,
         };
 

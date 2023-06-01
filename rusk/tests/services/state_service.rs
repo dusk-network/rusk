@@ -19,6 +19,7 @@ use rusk::services::state::{
 };
 use rusk::{Result, Rusk};
 use rusk_schema::state_client::StateClient;
+use rusk_schema::GetProvisionersRequest;
 use tempfile::tempdir;
 use tonic::transport::Server;
 use tracing::info;
@@ -248,6 +249,38 @@ pub async fn test_fetch_stake() -> Result<()> {
     assert_eq!(stake.amount, response_amount);
     assert_eq!(stake.reward, response.reward);
     assert_eq!(stake.counter, response.counter);
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn test_get_provisioners() -> Result<()> {
+    let (channel, incoming) = setup().await;
+
+    let tmp = tempdir().expect("Creating temporary directory should succeed");
+    let rusk =
+        initial_state(&tmp).expect("Creating initial state should succeed");
+
+    let rusk_server = rusk.clone();
+
+    tokio::spawn(async move {
+        Server::builder()
+            .add_service(StateServer::new(rusk_server))
+            .serve_with_incoming(incoming)
+            .await
+    });
+
+    let mut client = StateClient::new(channel);
+
+    let request = tonic::Request::new(GetProvisionersRequest {});
+
+    let response = client.get_provisioners(request).await?.into_inner();
+
+    let response_amount = response.provisioners.len();
+
+    // `state_service.toml` is configured to have more than 8 provisioners
+    // (actually 9) to properly test the query_seq with MAX=8
+    assert_eq!(9, response_amount);
 
     Ok(())
 }

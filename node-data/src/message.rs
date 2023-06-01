@@ -128,9 +128,9 @@ impl Serializable for Message {
             Topics::Tx => {
                 Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
             }
-            Topics::Candidate => {
-                Payload::CandidateResp(payload::CandidateResp::read(r)?)
-            }
+            Topics::Candidate => Payload::CandidateResp(Box::new(
+                payload::CandidateResp::read(r)?,
+            )),
             Topics::GetCandidate => {
                 Payload::GetCandidate(payload::GetCandidate::read(r)?)
             }
@@ -230,7 +230,7 @@ impl Message {
     }
 
     /// Creates topics.Candidate message
-    pub fn new_candidate_resp(p: payload::CandidateResp) -> Message {
+    pub fn new_candidate_resp(p: Box<payload::CandidateResp>) -> Message {
         Self {
             header: Header::new(Topics::Candidate),
             payload: Payload::CandidateResp(p),
@@ -455,7 +455,7 @@ pub enum Payload {
     GetInv(payload::Inv),
     GetBlocks(payload::GetBlocks),
     GetData(payload::GetData),
-    CandidateResp(payload::CandidateResp),
+    CandidateResp(Box<payload::CandidateResp>),
 
     #[default]
     Empty,
@@ -968,6 +968,7 @@ mod tests {
                 generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
                 state_hash: [4; 32],
                 hash: [5; 32],
+                txroot: [6; 32],
                 cert: Certificate {
                     first_reduction: ledger::StepVotes::new([6; 48], 22222222),
                     second_reduction: ledger::StepVotes::new([7; 48], 3333333),

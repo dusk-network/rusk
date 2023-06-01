@@ -359,7 +359,29 @@ impl Rusk {
 
     /// Returns the stakes.
     pub fn provisioners(&self) -> Result<Vec<(BlsPublicKey, StakeData)>> {
-        self.query(rusk_abi::stake_module(), "stakes", &())
+        const MAX: usize = 8; // maximum number of stakes per call
+        let mut skip = 0;
+
+        let mut provisioners = Vec::new();
+
+        self.query_seq(
+            rusk_abi::stake_module(),
+            "stakes",
+            &(MAX, skip),
+            |r: Vec<(BlsPublicKey, StakeData)>| {
+                let n_stakes = r.len();
+                provisioners.extend(r);
+
+                skip += n_stakes;
+                if n_stakes == 0 {
+                    None
+                } else {
+                    Some((MAX, skip))
+                }
+            },
+        )?;
+
+        Ok(provisioners)
     }
 
     /// Returns the keys allowed to stake.
@@ -384,6 +406,28 @@ impl Rusk {
         R::Archived: Deserialize<R, Infallible>
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
+        let mut results = Vec::with_capacity(1);
+        self.query_seq(module_id, call_name, call_arg, |r| {
+            results.push(r);
+            None
+        })?;
+        Ok(results.pop().unwrap())
+    }
+
+    fn query_seq<A, R, F>(
+        &self,
+        module_id: ModuleId,
+        call_name: &str,
+        call_arg: &A,
+        mut closure: F,
+    ) -> Result<()>
+    where
+        F: FnMut(R) -> Option<A>,
+        A: for<'b> Serialize<StandardBufSerializer<'b>>,
+        R: Archive,
+        R::Archived: Deserialize<R, Infallible>
+            + for<'b> CheckBytes<DefaultValidator<'b>>,
+    {
         let inner = self.inner.lock();
 
         let mut session = inner.vm.session(inner.current_commit)?;
@@ -392,6 +436,12 @@ impl Rusk {
         // height of zero since this doesn't affect the result.
         session.set_point_limit(u64::MAX);
         rusk_abi::set_block_height(&mut session, 0);
+
+        let mut result = session.query(module_id, call_name, call_arg)?;
+
+        while let Some(call_arg) = closure(result) {
+            result = session.query(module_id, call_name, &call_arg)?;
+        }
 
         Ok(session.query(module_id, call_name, call_arg)?)
     }
