@@ -157,16 +157,37 @@ impl ChainSrv {
         }
     }
 
+    /// Load most recent block from persisted ledger.
+    ///
+    /// Panics
+    ///
+    /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
     ) -> Result<(Block, Provisioners)> {
-        let (mrb, provisioners_list) = genesis::generate_state();
+        let mut mrb = Block::default();
 
-        // TODO: load mrb from db
+        db.read().await.update(|t| {
+            mrb = {
+                if let Some(r) = t.get_register()? {
+                    t.fetch_block(&r.mrb_hash)?.unwrap()
+                } else {
+                    // No register is considered malformed or empty database
+                    let genesis_blk = genesis::generate_state();
 
-        // Store genesis block
-        db.read().await.update(|t| t.store_block(&mrb, true));
+                    /// Persist gensis block
+                    t.store_block(&genesis_blk, true);
+                    genesis_blk
+                }
+            };
 
-        Ok((mrb, provisioners_list))
+            Ok(())
+        });
+
+        tracing::info!("loaded block height: {}", mrb.header.height);
+
+        // TODO: Until Rusk API is integrated, the list of eligible provisioners
+        // is always hard-coded.
+        Ok((mrb, genesis::get_mocked_provisioners()))
     }
 }
