@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, Ledger, Persist, Registry, DB};
+use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::{Context, Result};
 
 use node_data::encoding::*;
@@ -44,6 +44,7 @@ const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
+const REGISTER_KEY: &[u8; 8] = b"register";
 
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
@@ -235,6 +236,15 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             b.header.hash,
         )?;
 
+        // Overwrite the register record
+        let mut data = vec![];
+        Register {
+            mrb_hash: b.header.hash,
+            state_hash: b.header.state_hash,
+        }
+        .write(&mut data)?;
+        self.inner.put_cf(self.ledger_cf, REGISTER_KEY, data)?;
+
         Ok(())
     }
 
@@ -245,6 +255,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
+        self.inner.delete_cf(self.ledger_cf, REGISTER_KEY)?;
 
         self.inner
             .delete_cf(self.ledger_height_cf, b.header.height.to_le_bytes())?;
@@ -300,6 +311,17 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     /// ledger without unmarshalling the transaction
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)?.is_some())
+    }
+
+    /// Returns stored register data
+    fn get_register(&self) -> Result<Option<Register>> {
+        if let Some(mut data) =
+            self.snapshot.get_cf(self.ledger_cf, REGISTER_KEY)?
+        {
+            return Ok(Some(Register::read(&mut &data[..])?));
+        }
+
+        Ok(None)
     }
 }
 
