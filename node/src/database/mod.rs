@@ -4,12 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::path::Path;
+use std::{
+    io::{self, Read, Write},
+    path::Path,
+};
 
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_data::ledger;
+use node_data::{ledger, Serializable};
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -60,6 +63,7 @@ pub trait Ledger {
     ) -> Result<Option<ledger::Transaction>>;
 
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
+    fn get_register(&self) -> Result<Option<Register>>;
 }
 
 pub trait Candidate {
@@ -107,7 +111,32 @@ pub trait Persist: Ledger + Candidate + Mempool + core::fmt::Debug {
 }
 
 #[derive(Default)]
-pub struct Registry {
-    pub tip_hash: [u8; 32],
-    pub persisted_hash: [u8; 32],
+/// Introduces the value schema in a special database key-value record that
+/// provides chain metadata.
+pub struct Register {
+    pub mrb_hash: [u8; 32],
+    pub state_hash: [u8; 32],
+}
+
+impl Serializable for Register {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(&self.mrb_hash[..])?;
+        w.write_all(&self.state_hash[..])
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut mrb_hash = [0u8; 32];
+        r.read_exact(&mut mrb_hash[..])?;
+
+        let mut state_hash = [0u8; 32];
+        r.read_exact(&mut state_hash[..])?;
+
+        Ok(Self {
+            mrb_hash,
+            state_hash,
+        })
+    }
 }
