@@ -136,8 +136,10 @@ fn wallet_transfer(
     let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     info!("Tx ID: {}", hex::encode(tx_hash.to_bytes()));
-    generator_procedure(channel.clone(), &tx, block_height)
+    let gas_spent = generator_procedure(channel.clone(), &tx, block_height)
         .expect("generator procedure to succeed");
+    info!("Gas spent: {gas_spent}");
+
     empty_block(channel, block_height + 1)
         .expect("empty block generator procedure to succeed");
 
@@ -157,31 +159,25 @@ fn wallet_transfer(
         .expect("Failed to get the balance")
         .value;
     let fee = tx.fee();
-    let fee = fee.gas_limit * fee.gas_price;
+    let fee = gas_spent * fee.gas_price;
 
-    assert!(
-        sender_initial_balance - amount - fee <= sender_final_balance,
-        "Final sender balance {} should be greater or equal than {}",
+    assert_eq!(
+        sender_initial_balance - amount - fee,
         sender_final_balance,
-        sender_initial_balance - amount - fee
-    );
-
-    assert!(
-        sender_initial_balance - amount >= sender_final_balance,
-        "Final sender balance {} should be lesser or equal than {}",
-        sender_final_balance,
-        sender_initial_balance - amount
+        "Final sender balance mismatch"
     );
 }
 
 /// Executes the procedure a block generator will go through to generate a block
 /// including a single transfer transaction, checking the outputs are as
 /// expected.
+///
+/// Return the gas spent by `tx`
 fn generator_procedure(
     channel: tonic::transport::Channel,
     tx: &Transaction,
     block_height: u64,
-) -> Result<()> {
+) -> Result<u64> {
     let tx_hash_input_bytes = tx.to_hash_input_bytes();
     let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
@@ -305,7 +301,7 @@ fn generator_procedure(
         "Root should be equal"
     );
 
-    Ok(())
+    Ok(response.txs.first().unwrap().gas_spent)
 }
 
 /// Executes the procedure a block generator will go through to generate a block

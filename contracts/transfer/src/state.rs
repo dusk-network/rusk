@@ -493,7 +493,7 @@ impl TransferState {
         let block_height = rusk_abi::block_height();
         let spent = rusk_abi::spent();
 
-        let remainder = fee.gen_remainder(fee.gas_limit - spent);
+        let remainder = fee.gen_remainder(spent);
         let remainder = Note::from(remainder);
         let remainder_value = remainder.value(None)?;
         if remainder_value > 0 {
