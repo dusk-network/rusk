@@ -32,7 +32,9 @@ pub struct Header {
     pub seed: Seed,
     pub state_hash: Hash,
     pub generator_bls_pubkey: bls::PublicKeyBytes,
+    pub txroot: Hash,
     pub gas_limit: u64,
+    pub iteration: u8,
 
     // Block hash
     pub hash: Hash,
@@ -94,7 +96,6 @@ impl Transaction {
 pub struct Certificate {
     pub first_reduction: StepVotes,
     pub second_reduction: StepVotes,
-    pub step: u8,
 }
 
 impl Header {
@@ -121,7 +122,9 @@ impl Header {
 
         w.write_all(&self.state_hash[..])?;
         w.write_all(&self.generator_bls_pubkey.inner()[..])?;
+        w.write_all(&self.txroot[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
+        w.write_all(&self.iteration.to_le_bytes())?;
 
         Ok(())
     }
@@ -153,9 +156,16 @@ impl Header {
         let mut generator_bls_pubkey = [0u8; 96];
         r.read_exact(&mut generator_bls_pubkey[..])?;
 
+        let mut txroot = [0u8; 32];
+        r.read_exact(&mut txroot[..])?;
+
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
         let gas_limit = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+        let iteration = buf[0];
 
         Ok(Header {
             version,
@@ -165,7 +175,9 @@ impl Header {
             prev_block_hash,
             seed: Seed::from(seed),
             generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
+            iteration,
             state_hash,
+            txroot,
             hash: [0; 32],
             cert: Default::default(),
         })

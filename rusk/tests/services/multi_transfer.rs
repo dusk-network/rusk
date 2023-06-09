@@ -49,7 +49,7 @@ use crate::common::*;
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
 // perfectly good transaction.
-const BLOCK_GAS_LIMIT: u64 = 400_000_000;
+const BLOCK_GAS_LIMIT: u64 = 250_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below

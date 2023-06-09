@@ -47,7 +47,7 @@ http_req = "0.8"
 zip = "0.5"
 url = "2.3"
 flate2 = "1"
-tar = "=0.4.15"
+tar = "0.4"
 
 serde_derive = { version = "1", optional = true }
 serde = { version = "1", optional = true }
