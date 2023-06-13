@@ -17,6 +17,7 @@ mod governance;
 mod stake;
 mod wrapper;
 
+use crate::state;
 use acl::Acl;
 pub use stake::GenesisStake;
 use wrapper::Wrapper;
@@ -41,6 +42,7 @@ impl Balance {
 pub struct Snapshot {
     base_state: Option<String>,
     acl: Acl,
+    owner: Option<Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
@@ -70,6 +72,12 @@ impl Snapshot {
     /// Returns an iterator of the stakes included in this snapshot.
     pub fn stakes(&self) -> impl Iterator<Item = &GenesisStake> {
         self.stake.iter()
+    }
+
+    /// Return the owner of the smart contract.
+    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
+        let dusk = Wrapper::from(*state::DUSK_KEY);
+        self.owner.as_ref().unwrap_or(&dusk).to_bytes()
     }
 
     /// Returns an iterator of the owners of the staking contract
@@ -135,6 +143,7 @@ mod tests {
             acl: Acl {
                 stake: Users { allowlist, owners },
             },
+            owner: None,
             governance: vec![],
         }
     }
@@ -172,6 +181,7 @@ mod tests {
             acl: Acl {
                 stake: Users { allowlist, owners },
             },
+            owner: None,
             governance: vec![],
         }
     }

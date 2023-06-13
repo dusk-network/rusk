@@ -13,10 +13,11 @@ use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
-use piecrust::{ModuleId, Session, VM};
+use piecrust::{ContractData, ContractId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
+use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -48,7 +49,7 @@ fn deploy_governance_contract(
     session: &mut Session,
     governance: &Governance,
 ) -> Result<(), Box<dyn Error>> {
-    let module_id = governance.contract();
+    let contract_id = governance.contract();
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
     );
@@ -58,13 +59,16 @@ fn deploy_governance_contract(
         "{} {} governance to {}",
         theme.action("Deploying"),
         governance.name,
-        hex::encode(module_id)
+        hex::encode(contract_id)
     );
-    session.deploy_with_id(module_id, bytecode)?;
+    session.deploy(
+        bytecode,
+        ContractData::builder(governance.owner()).contract_id(contract_id),
+    )?;
 
     // Set the broker and the authority of the governance contract
-    session.transact(module_id, "set_broker", governance.broker())?;
-    session.transact(module_id, "set_authority", governance.authority())?;
+    session.call(contract_id, "set_broker", governance.broker())?;
+    session.call(contract_id, "set_authority", governance.authority())?;
 
     Ok(())
 }
@@ -88,8 +92,8 @@ fn generate_transfer_state(
         balance.notes.iter().for_each(|&amount| {
             let note = Note::transparent(&mut rng, balance.address(), amount);
             let _: Note = session
-                .transact(
-                    rusk_abi::transfer_module(),
+                .call(
+                    TRANSFER_CONTRACT,
                     "push_note",
                     &(GENESIS_BLOCK_HEIGHT, note),
                 )
@@ -98,7 +102,7 @@ fn generate_transfer_state(
     });
     if update_root {
         let _: BlsScalar = session
-            .transact(rusk_abi::transfer_module(), "update_root", &())
+            .call(TRANSFER_CONTRACT, "update_root", &())
             .expect("Root to be updated after pushing genesis note");
     }
     Ok(())
@@ -120,41 +124,29 @@ fn generate_stake_state(
             counter: 0,
         };
         let _: () = session
-            .transact(
-                rusk_abi::stake_module(),
-                "insert_stake",
-                &(*staker.address(), stake),
-            )
+            .call(STAKE_CONTRACT, "insert_stake", &(*staker.address(), stake))
             .expect("stake to be inserted into the state");
         let _: () = session
-            .transact(
-                rusk_abi::stake_module(),
-                "insert_allowlist",
-                staker.address(),
-            )
+            .call(STAKE_CONTRACT, "insert_allowlist", staker.address())
             .expect("staker to be inserted into the allowlist");
     });
     snapshot.owners().for_each(|provisioner| {
         let _: () = session
-            .transact(rusk_abi::stake_module(), "add_owner", provisioner)
+            .call(STAKE_CONTRACT, "add_owner", provisioner)
             .expect("owner to be added into the state");
     });
 
     snapshot.allowlist().for_each(|provisioner| {
         let _: () = session
-            .transact(rusk_abi::stake_module(), "insert_allowlist", provisioner)
+            .call(STAKE_CONTRACT, "insert_allowlist", provisioner)
             .expect("provisioner to be inserted into the allowlist");
     });
 
     let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
     if stake_balance > 0 {
-        let m: ModuleId = rusk_abi::stake_module();
+        let m: ContractId = STAKE_CONTRACT;
         let _: () = session
-            .transact(
-                rusk_abi::transfer_module(),
-                "add_module_balance",
-                &(m, stake_balance),
-            )
+            .call(TRANSFER_CONTRACT, "add_module_balance", &(m, stake_balance))
             .expect("Stake contract balance to be set with provisioner stakes");
     }
     Ok(())
@@ -162,18 +154,16 @@ fn generate_stake_state(
 
 fn generate_empty_state<P: AsRef<Path>>(
     state_dir: P,
+    snapshot: &Snapshot,
 ) -> Result<(VM, [u8; 32]), Box<dyn Error>> {
     let theme = Theme::default();
     info!("{} new network state", theme.action("Generating"));
 
     let state_dir = state_dir.as_ref();
 
-    let mut vm = VM::new(state_dir)?;
-    rusk_abi::register_host_queries(&mut vm);
+    let vm = rusk_abi::new_vm(state_dir)?;
+    let mut session = rusk_abi::new_genesis_session(&vm);
 
-    let mut session = vm.genesis_session();
-
-    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
     session.set_point_limit(u64::MAX);
 
     let transfer_code = include_bytes!(
@@ -185,25 +175,31 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
-    session.deploy_with_id(rusk_abi::transfer_module(), transfer_code)?;
+    session.deploy(
+        transfer_code,
+        ContractData::builder(snapshot.owner()).contract_id(TRANSFER_CONTRACT),
+    )?;
 
     info!("{} Genesis Stake Contract", theme.action("Deploying"));
-    session.deploy_with_id(rusk_abi::stake_module(), stake_code)?;
+    session.deploy(
+        stake_code,
+        ContractData::builder(snapshot.owner()).contract_id(STAKE_CONTRACT),
+    )?;
 
     let _: () = session
-        .transact(
-            rusk_abi::transfer_module(),
+        .call(
+            TRANSFER_CONTRACT,
             "add_module_balance",
-            &(rusk_abi::stake_module(), 0u64),
+            &(STAKE_CONTRACT, 0u64),
         )
         .expect("stake contract balance to be set with provisioner stakes");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", &())
+        .call(TRANSFER_CONTRACT, "update_root", &())
         .expect("root to be updated after pushing genesis note");
 
     let _: Option<StakeData> = session
-        .query(rusk_abi::stake_module(), "get_stake", &*DUSK_BLS_KEY)
+        .call(STAKE_CONTRACT, "get_stake", &*DUSK_BLS_KEY)
         .expect("Querying a stake should succeed");
 
     let commit_id = session.commit()?;
@@ -225,12 +221,11 @@ pub fn deploy<P: AsRef<Path>>(
 
     let (vm, old_commit_id) = match snapshot.base_state() {
         Some(state) => load_state(state_dir, state),
-        None => generate_empty_state(state_dir),
+        None => generate_empty_state(state_dir, snapshot),
     }?;
 
-    let mut session = vm.session(old_commit_id)?;
-
-    rusk_abi::set_block_height(&mut session, GENESIS_BLOCK_HEIGHT);
+    let mut session =
+        rusk_abi::new_session(&vm, old_commit_id, GENESIS_BLOCK_HEIGHT)?;
     session.set_point_limit(u64::MAX);
 
     generate_transfer_state(&mut session, snapshot)?;
@@ -276,9 +271,7 @@ pub fn restore_state<P: AsRef<Path>>(
     let mut commit_id = [0u8; 32];
     commit_id.copy_from_slice(&commit_id_bytes);
 
-    let mut vm = VM::new(state_dir)?;
-    rusk_abi::register_host_queries(&mut vm);
-
+    let vm = rusk_abi::new_vm(state_dir)?;
     Ok((vm, commit_id))
 }
 
