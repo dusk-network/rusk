@@ -17,41 +17,37 @@ use state::Alice;
 mod wasm {
     use super::*;
 
-    use rusk_abi::{ModuleId, PaymentInfo, State};
+    use rusk_abi::{ContractId, PaymentInfo};
 
     #[no_mangle]
-    static SELF_ID: ModuleId = ModuleId::uninitialized();
+    static SELF_ID: ContractId = ContractId::uninitialized();
 
-    static mut STATE: State<Alice> = State::new(Alice);
+    static mut STATE: Alice = Alice;
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.ping())
+        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
     }
 
     #[no_mangle]
     unsafe fn withdraw(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |arg| STATE.withdraw(arg))
+        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
     }
 
     #[no_mangle]
     unsafe fn withdraw_obfuscated(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |arg| {
-            STATE.withdraw_obfuscated(arg)
-        })
+        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw_obfuscated(arg))
     }
 
     #[no_mangle]
     unsafe fn withdraw_to_contract(arg_len: u32) -> u32 {
-        rusk_abi::wrap_transaction(arg_len, |arg| {
-            STATE.withdraw_to_contract(arg)
-        })
+        rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw_to_contract(arg))
     }
 
     const PAYMENT_INFO: PaymentInfo = PaymentInfo::Any(None);
 
     #[no_mangle]
     fn payment_info(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |_: ()| PAYMENT_INFO)
+        rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
     }
 }
