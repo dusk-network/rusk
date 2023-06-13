@@ -32,7 +32,10 @@ use piecrust::{Session, VM};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
-use rusk_abi::{ModuleError, ModuleId, RawResult, StandardBufSerializer};
+use rusk_abi::{
+    ContractError, ContractId, RawResult, StandardBufSerializer,
+    STAKE_CONTRACT, TRANSFER_CONTRACT,
+};
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
 
@@ -79,8 +82,7 @@ impl Rusk {
         let mut base_commit = [0u8; 32];
         base_commit.copy_from_slice(&base_commit_bytes);
 
-        let mut vm = VM::new(dir)?;
-        rusk_abi::register_host_queries(&mut vm);
+        let vm = rusk_abi::new_vm(dir)?;
 
         let inner = Arc::new(Mutex::new(RuskInner {
             current_commit: base_commit,
@@ -104,8 +106,9 @@ impl Rusk {
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
         let inner = self.inner.lock();
 
-        let mut session = inner.vm.session(inner.current_commit)?;
-        rusk_abi::set_block_height(&mut session, block_height);
+        let current_commit = inner.current_commit;
+        let mut session =
+            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
         let mut block_gas_left = block_gas_limit;
 
@@ -135,12 +138,8 @@ impl Rusk {
 
             let (gas_spent, call_result): (
                 u64,
-                Option<Result<RawResult, ModuleError>>,
-            ) = match session.transact(
-                rusk_abi::transfer_module(),
-                "execute",
-                &tx,
-            ) {
+                Option<Result<RawResult, ContractError>>,
+            ) = match session.call(TRANSFER_CONTRACT, "execute", &tx) {
                 Ok(call_result) => call_result,
                 Err(err) => match err {
                     piecrust::Error::OutOfPoints => {
@@ -190,7 +189,10 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let current_commit = inner.current_commit;
+        let mut session =
+            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
         accept(&mut session, block_height, block_gas_limit, generator, txs)
     }
@@ -204,7 +206,10 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let current_commit = inner.current_commit;
+        let mut session =
+            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -229,7 +234,10 @@ impl Rusk {
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
-        let mut session = inner.vm.session(inner.current_commit)?;
+
+        let current_commit = inner.current_commit;
+        let mut session =
+            rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
         let (spent_txs, state_root) = accept(
             &mut session,
@@ -309,7 +317,7 @@ impl Rusk {
 
     /// Returns the leaves of the transfer tree in the given range.
     pub fn leaves_in_range(&self, range: Range<u64>) -> Result<Vec<TreeLeaf>> {
-        self.query(rusk_abi::transfer_module(), "leaves_in_range", &range)
+        self.query(TRANSFER_CONTRACT, "leaves_in_range", &range)
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -318,16 +326,12 @@ impl Rusk {
         &self,
         nullifiers: &Vec<BlsScalar>,
     ) -> Result<Vec<BlsScalar>> {
-        self.query(
-            rusk_abi::transfer_module(),
-            "existing_nullifiers",
-            nullifiers,
-        )
+        self.query(TRANSFER_CONTRACT, "existing_nullifiers", nullifiers)
     }
 
     /// Returns the root of the transfer tree.
     pub fn tree_root(&self) -> Result<BlsScalar> {
-        self.query(rusk_abi::transfer_module(), "root", &())
+        self.query(TRANSFER_CONTRACT, "root", &())
     }
 
     /// Returns the opening of the transfer tree at the given position.
@@ -335,26 +339,26 @@ impl Rusk {
         &self,
         pos: u64,
     ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
-        self.query(rusk_abi::transfer_module(), "opening", &pos)
+        self.query(TRANSFER_CONTRACT, "opening", &pos)
     }
 
     /// Returns the "transparent" balance of the given module.
-    pub fn module_balance(&self, module: ModuleId) -> Result<u64> {
-        self.query(rusk_abi::transfer_module(), "module_balance", &module)
+    pub fn module_balance(&self, contract: ContractId) -> Result<u64> {
+        self.query(TRANSFER_CONTRACT, "module_balance", &contract)
     }
 
     /// Returns the message mapped to the given module and public key.
     pub fn module_message(
         &self,
-        module: ModuleId,
+        contract: ContractId,
         pk: PublicKey,
     ) -> Result<Option<Message>> {
-        self.query(rusk_abi::transfer_module(), "message", &(module, pk))
+        self.query(TRANSFER_CONTRACT, "message", &(contract, pk))
     }
 
     /// Returns data about the stake of the given key.
     pub fn stake(&self, pk: BlsPublicKey) -> Result<Option<StakeData>> {
-        self.query(rusk_abi::stake_module(), "get_stake", &pk)
+        self.query(STAKE_CONTRACT, "get_stake", &pk)
     }
 
     /// Returns the stakes.
@@ -365,7 +369,7 @@ impl Rusk {
         let mut provisioners = Vec::new();
 
         self.query_seq(
-            rusk_abi::stake_module(),
+            STAKE_CONTRACT,
             "stakes",
             &(MAX, skip),
             |r: Vec<(BlsPublicKey, StakeData)>| {
@@ -386,17 +390,17 @@ impl Rusk {
 
     /// Returns the keys allowed to stake.
     pub fn stake_allowlist(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(rusk_abi::stake_module(), "allowlist", &())
+        self.query(STAKE_CONTRACT, "allowlist", &())
     }
 
     /// Returns the keys that own the stake contract.
     pub fn stake_owners(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(rusk_abi::stake_module(), "owners", &())
+        self.query(STAKE_CONTRACT, "owners", &())
     }
 
     fn query<A, R>(
         &self,
-        module_id: ModuleId,
+        contract_id: ContractId,
         call_name: &str,
         call_arg: &A,
     ) -> Result<R>
@@ -407,7 +411,7 @@ impl Rusk {
             + for<'b> CheckBytes<DefaultValidator<'b>>,
     {
         let mut results = Vec::with_capacity(1);
-        self.query_seq(module_id, call_name, call_arg, |r| {
+        self.query_seq(contract_id, call_name, call_arg, |r| {
             results.push(r);
             None
         })?;
@@ -416,7 +420,7 @@ impl Rusk {
 
     fn query_seq<A, R, F>(
         &self,
-        module_id: ModuleId,
+        contract_id: ContractId,
         call_name: &str,
         call_arg: &A,
         mut closure: F,
@@ -430,20 +434,19 @@ impl Rusk {
     {
         let inner = self.inner.lock();
 
-        let mut session = inner.vm.session(inner.current_commit)?;
-
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
+        let current_commit = inner.current_commit;
+        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
         session.set_point_limit(u64::MAX);
-        rusk_abi::set_block_height(&mut session, 0);
 
-        let mut result = session.query(module_id, call_name, call_arg)?;
+        let mut result = session.call(contract_id, call_name, call_arg)?;
 
         while let Some(call_arg) = closure(result) {
-            result = session.query(module_id, call_name, &call_arg)?;
+            result = session.call(contract_id, call_name, &call_arg)?;
         }
 
-        Ok(session.query(module_id, call_name, call_arg)?)
+        Ok(session.call(contract_id, call_name, call_arg)?)
     }
 }
 
@@ -454,8 +457,6 @@ fn accept(
     generator: BlsPublicKey,
     txs: Vec<Transaction>,
 ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
-    rusk_abi::set_block_height(session, block_height);
-
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
@@ -475,8 +476,8 @@ fn accept(
 
         let (gas_spent, call_result): (
             u64,
-            Option<Result<RawResult, ModuleError>>,
-        ) = session.transact(rusk_abi::transfer_module(), "execute", &tx)?;
+            Option<Result<RawResult, ContractError>>,
+        ) = session.call(TRANSFER_CONTRACT, "execute", &tx)?;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
         block_gas_left = block_gas_left
@@ -505,17 +506,9 @@ fn reward(
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
-    session.transact(
-        rusk_abi::stake_module(),
-        "reward",
-        &(*DUSK_KEY, dusk_value),
-    )?;
+    session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
 
-    session.transact(
-        rusk_abi::stake_module(),
-        "reward",
-        &(generator, generator_value),
-    )?;
+    session.call(STAKE_CONTRACT, "reward", &(generator, generator_value))?;
 
     Ok(())
 }
