@@ -15,18 +15,18 @@ mod msg;
 mod state;
 
 use msg::*;
-use rusk_abi::{ModuleId, State};
+use rusk_abi::ContractId;
 use state::GovernanceState;
 
 #[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
-static mut STATE: State<GovernanceState> = State::new(GovernanceState::new());
+static SELF_ID: ContractId = ContractId::uninitialized();
+static mut STATE: GovernanceState = GovernanceState::new();
 
 // Transactions
 
 #[no_mangle]
 unsafe fn transfer(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed, batch)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed, batch)| {
         let msg = transfer_msg(seed, &batch);
         STATE.assert_signature(signature, seed, msg);
         STATE.transfer(batch)
@@ -35,7 +35,7 @@ unsafe fn transfer(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn fee(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed, batch)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed, batch)| {
         let msg = fee_msg(seed, &batch);
         STATE.assert_signature(signature, seed, msg);
         STATE.fee(batch)
@@ -44,7 +44,7 @@ unsafe fn fee(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn mint(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed, address, amount)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed, address, amount)| {
         let msg = mint_msg(seed, address, amount);
         STATE.assert_signature(signature, seed, msg);
         STATE.mint(address, amount)
@@ -53,7 +53,7 @@ unsafe fn mint(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn burn(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed, address, amount)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed, address, amount)| {
         let msg = burn_msg(seed, address, amount);
         STATE.assert_signature(signature, seed, msg);
         STATE.burn(address, amount)
@@ -62,7 +62,7 @@ unsafe fn burn(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn pause(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed)| {
         let msg = pause_msg(seed);
         STATE.assert_signature(signature, seed, msg);
         STATE.pause()
@@ -71,7 +71,7 @@ unsafe fn pause(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn unpause(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(signature, seed)| {
+    rusk_abi::wrap_call(arg_len, |(signature, seed)| {
         let msg = unpause_msg(seed);
         STATE.assert_signature(signature, seed, msg);
         STATE.unpause()
@@ -82,29 +82,29 @@ unsafe fn unpause(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |address| STATE.balance(&address))
+    rusk_abi::wrap_call(arg_len, |address| STATE.balance(&address))
 }
 
 #[no_mangle]
 unsafe fn total_supply(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.total_supply())
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.total_supply())
 }
 
 #[no_mangle]
 unsafe fn authority(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.get_authority())
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_authority())
 }
 
 #[no_mangle]
 unsafe fn broker(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.get_broker())
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_broker())
 }
 
 // "Management" transactions
 
 #[no_mangle]
 unsafe fn set_authority(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |authority| {
+    rusk_abi::wrap_call(arg_len, |authority| {
         assert_external_caller();
         STATE.set_authority(authority)
     })
@@ -112,7 +112,7 @@ unsafe fn set_authority(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn set_broker(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |broker| {
+    rusk_abi::wrap_call(arg_len, |broker| {
         assert_external_caller();
         STATE.set_broker(broker)
     })
