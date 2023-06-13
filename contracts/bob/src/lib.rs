@@ -17,20 +17,20 @@ use state::Bob;
 mod wasm {
     use super::*;
 
-    use rusk_abi::{PaymentInfo, State};
+    use rusk_abi::PaymentInfo;
 
     #[no_mangle]
-    static mut STATE: State<Bob> = State::new(Bob::new());
+    static mut STATE: Bob = Bob::new();
 
     #[no_mangle]
     unsafe fn ping(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |()| STATE.ping())
+        rusk_abi::wrap_call(arg_len, |()| STATE.ping())
     }
 
     const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
 
     #[no_mangle]
     fn payment_info(arg_len: u32) -> u32 {
-        rusk_abi::wrap_query(arg_len, |_: ()| PAYMENT_INFO)
+        rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
     }
 }
