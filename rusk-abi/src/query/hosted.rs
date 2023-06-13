@@ -14,7 +14,7 @@ use dusk_bls12_381_sign::{
 };
 use dusk_pki::{PublicKey, PublicSpendKey};
 use dusk_schnorr::Signature;
-use piecrust_uplink::{ModuleError, ModuleId};
+use piecrust_uplink::{ContractError, ContractId};
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -71,6 +71,8 @@ pub fn block_height() -> u64 {
 }
 
 /// Query a contract for the types of payment it accepts.
-pub fn payment_info(module: ModuleId) -> Result<PaymentInfo, ModuleError> {
-    piecrust_uplink::query(module, "payment_info", &())
+pub fn payment_info(
+    contract: ContractId,
+) -> Result<PaymentInfo, ContractError> {
+    piecrust_uplink::call(contract, "payment_info", &())
 }
