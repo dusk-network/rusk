@@ -34,15 +34,10 @@ pub const POSEIDON_TREE_DEPTH: usize = 17;
 /// and verifier.
 pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
-/// Module ID of the genesis transfer contract
-pub const fn transfer_module() -> ContractId {
-    reserved(0x1)
-}
-
-/// Module ID of the genesis stake contract
-pub const fn stake_module() -> ContractId {
-    reserved(0x2)
-}
+/// ID of the genesis transfer contract
+pub const TRANSFER_CONTRACT: ContractId = reserved(0x1);
+/// ID of the genesis stake contract
+pub const STAKE_CONTRACT: ContractId = reserved(0x2);
 
 #[inline]
 const fn reserved(b: u8) -> ContractId {
@@ -53,7 +48,7 @@ const fn reserved(b: u8) -> ContractId {
 
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
-pub fn gen_module_id(bytes: &[u8]) -> ContractId {
+pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
     let mut hasher = Hasher::new();
     hasher.update(bytes);
     ContractId::from_bytes(hasher.output())
@@ -63,7 +58,7 @@ pub fn gen_module_id(bytes: &[u8]) -> ContractId {
 ///
 /// This cannot fail since the contract id should be generated always using
 /// `rusk_abi::gen_module_id` that ensures the bytes are inside the BLS field.
-pub fn module_to_scalar(module_id: &ContractId) -> BlsScalar {
+pub fn contract_to_scalar(module_id: &ContractId) -> BlsScalar {
     BlsScalar::from_slice(module_id.as_bytes())
         .expect("Something went REALLY wrong if a contract id is not a scalar")
 }
