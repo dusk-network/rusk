@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use async_trait::async_trait;
+use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Transaction};
 
 #[derive(Default)]
@@ -24,4 +25,6 @@ pub trait VMExecution: Send + Sync + 'static {
     fn accept(&self, blk: &Block) -> anyhow::Result<()>;
     fn finalize(&self, blk: &Block) -> anyhow::Result<()>;
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
+
+    fn get_provisioners(&self) -> anyhow::Result<Provisioners>;
 }

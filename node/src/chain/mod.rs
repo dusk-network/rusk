@@ -73,8 +73,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         .await?;
 
         // Restore/Load most recent block
-        let (mrb, provisioners_list) =
-            Self::load_most_recent_block(db.clone()).await?;
+        let mrb = Self::load_most_recent_block(db.clone()).await?;
+        let provisioners_list = vm.read().await.get_provisioners()?;
 
         // Initialize Acceptor and trigger consensus task
         let acc = Arc::new(RwLock::new(
@@ -164,7 +164,7 @@ impl ChainSrv {
     /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
-    ) -> Result<(Block, Provisioners)> {
+    ) -> Result<Block> {
         let mut mrb = Block::default();
 
         db.read().await.update(|t| {
@@ -186,8 +186,6 @@ impl ChainSrv {
 
         tracing::info!("loaded block height: {}", mrb.header.height);
 
-        // TODO: Until Rusk API is integrated, the list of eligible provisioners
-        // is always hard-coded.
-        Ok((mrb, genesis::get_mocked_provisioners()))
+        Ok(mrb)
     }
 }

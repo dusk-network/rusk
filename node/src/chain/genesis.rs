@@ -14,16 +14,3 @@ pub(crate) fn generate_state() -> Block {
     // TBD
     Block::default()
 }
-
-pub(crate) fn get_mocked_provisioners() -> Provisioners {
-    // Load provisioners keys from external consensus keys files.
-    let keys = node_data::bls::load_provisioners_keys(4);
-    let mut provisioners = Provisioners::new();
-
-    for (_, (_, pk)) in keys.iter().enumerate() {
-        tracing::info!("Adding provisioner: {:#?}", pk);
-        provisioners.add_member_with_value(pk.clone(), 1000 * DUSK * 10);
-    }
-
-    provisioners
-}

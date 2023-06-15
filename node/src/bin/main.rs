@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::vm::VMExecutionImpl;
 use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
 use node::chain::ChainSrv;
 use node::database::{rocksdb, DB};
@@ -11,7 +12,6 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::vm::Config as VMConfig;
-use crate::vm::VMExecutionImpl;
 use node::{LongLivedService, Node};
 
 use clap::{Arg, ArgMatches, Command};
