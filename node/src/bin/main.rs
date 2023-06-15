@@ -11,7 +11,7 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::vm::Config as VMConfig;
-use node::vm::VMExecutionImpl;
+use crate::vm::VMExecutionImpl;
 use node::{LongLivedService, Node};
 
 use clap::{Arg, ArgMatches, Command};
@@ -22,6 +22,7 @@ use crate::config::Config;
 
 mod config;
 mod version;
+mod vm;
 
 pub fn main() -> anyhow::Result<()> {
     let args = args();
