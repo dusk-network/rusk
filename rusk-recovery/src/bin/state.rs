@@ -8,7 +8,6 @@ mod task;
 mod version;
 
 use clap::Parser;
-use piecrust::VM;
 use rusk_recovery_tools::theme::Theme;
 use std::error::Error;
 use std::{env, io};
@@ -99,8 +98,7 @@ pub fn exec(config: ExecConfig) -> Result<(), Box<dyn Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     let state_id_path = rusk_profile::to_rusk_state_id_path(&state_dir);
 
-    let mut vm = VM::new(&state_dir)?;
-    rusk_abi::register_host_queries(&mut vm);
+    let _ = rusk_abi::new_vm(&state_dir)?;
 
     // if the state already exists in the expected path, stop early.
     if state_dir.exists() && state_id_path.exists() {

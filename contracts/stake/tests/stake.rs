@@ -13,12 +13,12 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
-use piecrust::Error;
+use piecrust::{ContractData, Error};
 use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ModuleError, RawResult};
+use rusk_abi::{ContractError, RawResult, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
@@ -31,16 +31,16 @@ const POINT_LIMIT: u64 = 0x10000000;
 
 type Result<T, E = Error> = core::result::Result<T, E>;
 
+const OWNER: [u8; 32] = [0; 32];
+
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    vm: &mut VM,
+    vm: &VM,
     psk: &PublicSpendKey,
     pk: &PublicKey,
 ) -> Session {
-    rusk_abi::register_host_queries(vm);
-
     let transfer_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     );
@@ -48,45 +48,48 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::new_genesis_session(vm);
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(rusk_abi::transfer_module(), transfer_bytecode)
+        .deploy(
+            transfer_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+        )
         .expect("Deploying the transfer contract should succeed");
 
     session
-        .deploy_with_id(rusk_abi::stake_module(), stake_bytecode)
+        .deploy(
+            stake_bytecode,
+            ContractData::builder(OWNER).contract_id(STAKE_CONTRACT),
+        )
         .expect("Deploying the stake contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
     // push genesis note to the contract
     let _: Note = session
-        .transact(
-            rusk_abi::transfer_module(),
-            "push_note",
-            &(0u64, genesis_note),
-        )
+        .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", &())
+        .call(TRANSFER_CONTRACT, "update_root", &())
         .expect("Updating the root should succeed");
 
     let _: () = session
-        .transact(rusk_abi::stake_module(), "add_owner", pk)
+        .call(STAKE_CONTRACT, "add_owner", pk)
         .expect("Inserting APK into owners list should suceeed");
 
     // allow given public key to stake
     let _: () = session
-        .transact(rusk_abi::stake_module(), "insert_allowlist", pk)
+        .call(STAKE_CONTRACT, "insert_allowlist", pk)
         .expect("Inserting APK into allowlist should succeed");
 
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let base = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
@@ -95,22 +98,22 @@ fn leaves_in_range(
     session: &mut Session,
     range: Range<u64>,
 ) -> Result<Vec<TreeLeaf>> {
-    session.query(
-        rusk_abi::transfer_module(),
+    session.call(
+        TRANSFER_CONTRACT,
         "leaves_in_range",
         &(range.start, range.end),
     )
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.query(rusk_abi::transfer_module(), "root", &())
+    session.call(TRANSFER_CONTRACT, "root", &())
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
-    session.query(rusk_abi::transfer_module(), "opening", &pos)
+    session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
 fn prover_verifier<C: Circuit>(
@@ -148,7 +151,8 @@ fn stake_withdraw_unstake() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     let vk = ssk.view_key();
@@ -157,9 +161,9 @@ fn stake_withdraw_unstake() {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let session = &mut instantiate(rng, vm, &psk, &pk);
+    let mut session = instantiate(rng, vm, &psk, &pk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_in_range(&mut session, 0..1)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -197,7 +201,7 @@ fn stake_withdraw_unstake() {
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
     // Prove the STCT circuit.
-    let stct_address = rusk_abi::module_to_scalar(&rusk_abi::stake_module());
+    let stct_address = rusk_abi::contract_to_scalar(&STAKE_CONTRACT);
     let stct_signature = SendToContractTransparentCircuit::sign(
         rng,
         &ssk,
@@ -237,7 +241,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module().to_bytes(),
+        STAKE_CONTRACT.to_bytes(),
         String::from("stake"),
         stake_bytes,
     ));
@@ -258,7 +262,7 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening = opening(session, *input_note.pos())
+    let input_opening = opening(&mut session, *input_note.pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -268,7 +272,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifier],
@@ -313,14 +317,14 @@ fn stake_withdraw_unstake() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("STAKE   : {} gas", session.spent());
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", &pk)
+        .call(STAKE_CONTRACT, "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -339,11 +343,11 @@ fn stake_withdraw_unstake() {
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
     let _: () = session
-        .transact(rusk_abi::stake_module(), "reward", &(pk, REWARD_AMOUNT))
+        .call(STAKE_CONTRACT, "reward", &(pk, REWARD_AMOUNT))
         .expect("Rewarding a key should succeed");
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", &pk)
+        .call(STAKE_CONTRACT, "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -362,7 +366,7 @@ fn stake_withdraw_unstake() {
 
     // Start withdrawing the reward just given to our key
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_in_range(&mut session, 1..2)
         .expect("Getting the notes should succeed");
 
     let input_notes =
@@ -426,7 +430,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module().to_bytes(),
+        STAKE_CONTRACT.to_bytes(),
         String::from("withdraw"),
         withdraw_bytes,
     ));
@@ -442,10 +446,10 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening_0 = opening(session, *input_notes[0].pos())
+    let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_1 = opening(session, *input_notes[1].pos())
+    let input_opening_1 = opening(&mut session, *input_notes[1].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -457,7 +461,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[input_nullifiers[0], input_nullifiers[1]],
@@ -516,17 +520,19 @@ fn stake_withdraw_unstake() {
 
     // set different block height so that the new notes are easily located and
     // filtered
-    rusk_abi::set_block_height(session, 2);
+    let base = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::new_session(vm, base, 2)
+        .expect("Instantiating new session should succeed");
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("WITHDRAW: {} gas", session.spent());
 
     let stake_data: Option<StakeData> = session
-        .transact(rusk_abi::stake_module(), "get_stake", &pk)
+        .call(STAKE_CONTRACT, "get_stake", &pk)
         .expect("Getting the stake should succeed");
     let stake_data = stake_data.expect("The stake should exist");
 
@@ -542,7 +548,7 @@ fn stake_withdraw_unstake() {
 
     // Start unstaking the previously staked amount
 
-    let leaves = leaves_in_range(session, 2..3)
+    let leaves = leaves_in_range(&mut session, 2..3)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -621,7 +627,7 @@ fn stake_withdraw_unstake() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module().to_bytes(),
+        STAKE_CONTRACT.to_bytes(),
         String::from("unstake"),
         unstake_bytes,
     ));
@@ -638,13 +644,13 @@ fn stake_withdraw_unstake() {
         change_blinder,
     );
 
-    let input_opening_0 = opening(session, *input_notes[0].pos())
+    let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_1 = opening(session, *input_notes[1].pos())
+    let input_opening_1 = opening(&mut session, *input_notes[1].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
-    let input_opening_2 = opening(session, *input_notes[2].pos())
+    let input_opening_2 = opening(&mut session, *input_notes[2].pos())
         .expect("Querying the opening for the given position should succeed")
         .expect("An opening should exist for a note in the tree");
 
@@ -658,7 +664,7 @@ fn stake_withdraw_unstake() {
 
     // The transaction hash must be computed before signing
     let anchor =
-        root(session).expect("Getting the anchor should be successful");
+        root(&mut session).expect("Getting the anchor should be successful");
 
     let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
         &[
@@ -737,11 +743,14 @@ fn stake_withdraw_unstake() {
 
     // set different block height so that the new notes are easily located and
     // filtered
-    rusk_abi::set_block_height(session, 3);
+    // sets the block height for all subsequent operations to 1
+    let base = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::new_session(vm, base, 3)
+        .expect("Instantiating new session should succeed");
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("UNSTAKE : {} gas", session.spent());
@@ -753,7 +762,8 @@ fn allow() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     // let vk = ssk.view_key();
@@ -818,7 +828,7 @@ fn allow() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::stake_module().to_bytes(),
+        STAKE_CONTRACT.to_bytes(),
         String::from("allow"),
         allow_bytes,
     ));
@@ -894,14 +904,14 @@ fn allow() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("ALLOW   : {} gas", session.spent());
 
     let is_allowed: bool = session
-        .query(rusk_abi::stake_module(), "is_allowlisted", &allow_pk)
+        .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk)
         .expect("Querying the allowlist should succeed");
 
     assert!(is_allowed, "The new public key should now be allowed");

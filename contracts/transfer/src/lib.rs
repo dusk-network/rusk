@@ -15,57 +15,53 @@ mod error;
 mod state;
 mod tree;
 
-use rusk_abi::{ModuleId, State};
+use rusk_abi::ContractId;
 use state::TransferState;
 
 #[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
+static SELF_ID: ContractId = ContractId::uninitialized();
 
-static mut STATE: State<TransferState> = State::new(TransferState::new());
+static mut STATE: TransferState = TransferState::new();
 
 // Transactions
 
 #[no_mangle]
 unsafe fn execute(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| STATE.execute(arg))
+    rusk_abi::wrap_call(arg_len, |arg| STATE.execute(arg))
 }
 
 #[no_mangle]
 unsafe fn mint(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| STATE.mint(arg))
+    rusk_abi::wrap_call(arg_len, |arg| STATE.mint(arg))
 }
 
 #[no_mangle]
 unsafe fn stct(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| {
-        STATE.send_to_contract_transparent(arg)
-    })
+    rusk_abi::wrap_call(arg_len, |arg| STATE.send_to_contract_transparent(arg))
 }
 
 #[no_mangle]
 unsafe fn wfct(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| {
+    rusk_abi::wrap_call(arg_len, |arg| {
         STATE.withdraw_from_contract_transparent(arg)
     })
 }
 
 #[no_mangle]
 unsafe fn stco(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| {
-        STATE.send_to_contract_obfuscated(arg)
-    })
+    rusk_abi::wrap_call(arg_len, |arg| STATE.send_to_contract_obfuscated(arg))
 }
 
 #[no_mangle]
 unsafe fn wfco(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| {
+    rusk_abi::wrap_call(arg_len, |arg| {
         STATE.withdraw_from_contract_obfuscated(arg)
     })
 }
 
 #[no_mangle]
 unsafe fn wfctc(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |arg| {
+    rusk_abi::wrap_call(arg_len, |arg| {
         STATE.withdraw_from_contract_transparent_to_contract(arg)
     })
 }
@@ -74,34 +70,34 @@ unsafe fn wfctc(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn root(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.root())
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.root())
 }
 
 #[no_mangle]
 unsafe fn leaves_in_range(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(start, end)| {
+    rusk_abi::wrap_call(arg_len, |(start, end)| {
         STATE.leaves_in_range(start..end)
     })
 }
 
 #[no_mangle]
 unsafe fn module_balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |module| STATE.balance(&module))
+    rusk_abi::wrap_call(arg_len, |module| STATE.balance(&module))
 }
 
 #[no_mangle]
 unsafe fn message(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(module, pk)| STATE.message(&module, &pk))
+    rusk_abi::wrap_call(arg_len, |(module, pk)| STATE.message(&module, &pk))
 }
 
 #[no_mangle]
 unsafe fn opening(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |pos| STATE.opening(pos))
+    rusk_abi::wrap_call(arg_len, |pos| STATE.opening(pos))
 }
 
 #[no_mangle]
 unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |nullifiers| {
+    rusk_abi::wrap_call(arg_len, |nullifiers| {
         STATE.existing_nullifiers(nullifiers)
     })
 }
@@ -110,7 +106,7 @@ unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn push_note(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(block_height, note)| {
+    rusk_abi::wrap_call(arg_len, |(block_height, note)| {
         assert_external_caller();
         STATE.push_note(block_height, note)
     })
@@ -118,7 +114,7 @@ unsafe fn push_note(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn update_root(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |_: ()| {
+    rusk_abi::wrap_call(arg_len, |_: ()| {
         assert_external_caller();
         STATE.update_root()
     })
@@ -126,7 +122,7 @@ unsafe fn update_root(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn add_module_balance(arg_len: u32) -> u32 {
-    rusk_abi::wrap_transaction(arg_len, |(module, value)| {
+    rusk_abi::wrap_call(arg_len, |(module, value)| {
         assert_external_caller();
         STATE.add_balance(module, value)
     })

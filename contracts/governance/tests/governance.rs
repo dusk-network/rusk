@@ -16,52 +16,55 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_pki::{PublicKey, SecretKey};
-use piecrust::{ModuleId, Session, VM};
+use piecrust::{ContractData, ContractId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-const GOVERNANCE_ID: ModuleId = {
+const GOVERNANCE_ID: ContractId = {
     let mut bytes = [0u8; 32];
     bytes[0] = 0xf0;
-    ModuleId::from_bytes(bytes)
+    ContractId::from_bytes(bytes)
 };
 
 const POINT_LIMIT: u64 = 0x10000000;
 const TIMESTAMP: u64 = 946681200; // 2000.01.01 00:00
+const OWNER: [u8; 32] = [0; 32];
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
 fn instantiate(
-    vm: &mut VM,
+    vm: &VM,
     authority: &BlsPublicKey,
     broker: &PublicKey,
 ) -> Session {
-    rusk_abi::register_host_queries(vm);
-
     let governance_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/governance_contract.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::new_genesis_session(vm);
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(GOVERNANCE_ID, governance_bytecode)
-        .expect("Deploying the stake contract should succeed");
+        .deploy(
+            governance_bytecode,
+            ContractData::builder(OWNER).contract_id(GOVERNANCE_ID),
+        )
+        .expect("Deploying the governance contract should succeed");
 
     // Set the broker and the authority of the governance contract
     let _: () = session
-        .transact(GOVERNANCE_ID, "set_broker", broker)
+        .call(GOVERNANCE_ID, "set_broker", broker)
         .expect("Setting the broker should succeed");
 
     let _: () = session
-        .transact(GOVERNANCE_ID, "set_authority", authority)
+        .call(GOVERNANCE_ID, "set_authority", authority)
         .expect("Setting the authority should succeed");
 
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let base = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
@@ -69,20 +72,21 @@ fn instantiate(
 /// Query the total supply in the governance contract.
 fn total_supply(session: &mut Session) -> u64 {
     session
-        .query(GOVERNANCE_ID, "total_supply", &())
+        .call(GOVERNANCE_ID, "total_supply", &())
         .expect("Querying the total supply should succeed")
 }
 
 fn balance(session: &mut Session, pk: &PublicKey) -> u64 {
     session
-        .query(GOVERNANCE_ID, "balance", pk)
+        .call(GOVERNANCE_ID, "balance", pk)
         .expect("Querying the total supply should succeed")
 }
 
 #[test]
 fn balance_overflow() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let authority_sk = BlsSecretKey::random(rng);
     let authority = BlsPublicKey::from(&authority_sk);
@@ -92,7 +96,7 @@ fn balance_overflow() {
     let alice = PublicKey::from(&SecretKey::random(rng));
     let bob = PublicKey::from(&SecretKey::random(rng));
 
-    let session = &mut instantiate(&mut vm, &authority, &broker);
+    let session = &mut instantiate(vm, &authority, &broker);
 
     assert_eq!(total_supply(session), 0);
     assert_eq!(balance(session, &alice), 0);
@@ -104,7 +108,7 @@ fn balance_overflow() {
     let signature = authority_sk.sign(&authority, &msg);
 
     let _: () = session
-        .transact(GOVERNANCE_ID, "mint", &(signature, seed, alice, u64::MAX))
+        .call(GOVERNANCE_ID, "mint", &(signature, seed, alice, u64::MAX))
         .expect("Minting should succeed");
 
     assert_eq!(total_supply(session), u64::MAX);
@@ -120,7 +124,7 @@ fn balance_overflow() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
         .expect_err("The transaction should fail due to overflow");
 
     assert_eq!(total_supply(session), u64::MAX);
@@ -131,56 +135,59 @@ fn balance_overflow() {
 #[test]
 fn same_seed() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let authority_sk = BlsSecretKey::random(rng);
     let authority = BlsPublicKey::from(&authority_sk);
 
     let broker = PublicKey::from(&SecretKey::random(rng));
 
-    let session = &mut instantiate(&mut vm, &authority, &broker);
+    let session = &mut instantiate(vm, &authority, &broker);
 
     let seed = BlsScalar::random(rng);
     let msg = pause_msg(seed);
     let signature = authority_sk.sign(&authority, &msg);
 
     let _: () = session
-        .transact(GOVERNANCE_ID, "pause", &(signature, seed))
+        .call(GOVERNANCE_ID, "pause", &(signature, seed))
         .expect("Pausing the contract should succeed");
 
     let msg = unpause_msg(seed);
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "unpause", &(signature, seed))
+        .call::<_, ()>(GOVERNANCE_ID, "unpause", &(signature, seed))
         .expect_err("Unpausing the contract with the same seed error");
 }
 
 #[test]
 fn wrong_signature() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let authority_sk = BlsSecretKey::random(rng);
     let authority = BlsPublicKey::from(&authority_sk);
 
     let broker = PublicKey::from(&SecretKey::random(rng));
 
-    let session = &mut instantiate(&mut vm, &authority, &broker);
+    let session = &mut instantiate(vm, &authority, &broker);
 
     let seed = BlsScalar::random(rng);
     let wrong_message = vec![1, 0, 1, 0, 1, 0];
     let wrong_sig = authority_sk.sign(&authority, &wrong_message);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "pause", &(wrong_sig, seed))
+        .call::<_, ()>(GOVERNANCE_ID, "pause", &(wrong_sig, seed))
         .expect_err("Pausing the contract with a wrong signature should error");
 }
 
 #[test]
 fn mint_burn_transfer() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let authority_sk = BlsSecretKey::random(rng);
     let authority = BlsPublicKey::from(&authority_sk);
@@ -190,7 +197,7 @@ fn mint_burn_transfer() {
     let alice = PublicKey::from(&SecretKey::random(rng));
     let bob = PublicKey::from(&SecretKey::random(rng));
 
-    let session = &mut instantiate(&mut vm, &authority, &broker);
+    let session = &mut instantiate(vm, &authority, &broker);
 
     assert_eq!(total_supply(session), 0);
     assert_eq!(balance(session, &alice), 0);
@@ -202,7 +209,7 @@ fn mint_burn_transfer() {
     let signature = authority_sk.sign(&authority, &msg);
 
     let _: () = session
-        .transact(GOVERNANCE_ID, "mint", &(signature, seed, alice, 100))
+        .call(GOVERNANCE_ID, "mint", &(signature, seed, alice, 100))
         .expect("Minting should succeed");
 
     assert_eq!(total_supply(session), 100);
@@ -218,7 +225,7 @@ fn mint_burn_transfer() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
         .expect("The transaction should succeed");
 
     assert_eq!(total_supply(session), 200);
@@ -234,7 +241,7 @@ fn mint_burn_transfer() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
         .expect("The transaction should succeed");
 
     assert_eq!(total_supply(session), 200);
@@ -245,7 +252,8 @@ fn mint_burn_transfer() {
 #[test]
 fn fee() {
     let rng = &mut StdRng::seed_from_u64(0xbeef);
-    let mut vm = VM::ephemeral().expect("Creating a VM should succeed");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let authority_sk = BlsSecretKey::random(rng);
     let authority = BlsPublicKey::from(&authority_sk);
@@ -255,7 +263,7 @@ fn fee() {
     let alice = PublicKey::from(&SecretKey::random(rng));
     let bob = PublicKey::from(&SecretKey::random(rng));
 
-    let session = &mut instantiate(&mut vm, &authority, &broker);
+    let session = &mut instantiate(vm, &authority, &broker);
 
     assert_eq!(total_supply(session), 0);
     assert_eq!(balance(session, &alice), 0);
@@ -273,7 +281,7 @@ fn fee() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "fee", &(signature, seed, batch))
+        .call::<_, ()>(GOVERNANCE_ID, "fee", &(signature, seed, batch))
         .expect("The fee payment should succeed");
 
     assert_eq!(total_supply(session), 250);
@@ -294,7 +302,7 @@ fn fee() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .transact::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
         .expect("The batch processing should succeed");
 
     assert_eq!(total_supply(session), 260);

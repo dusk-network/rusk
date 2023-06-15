@@ -11,9 +11,9 @@ use alloc::vec::Vec;
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
-use rusk_abi::State;
 
 use phoenix_core::transaction::*;
+use rusk_abi::TRANSFER_CONTRACT;
 
 type BlockHeight = u64;
 
@@ -116,8 +116,8 @@ impl StakeState {
         }
     }
 
-    pub fn stake(self: &mut State<Self>, stake: Stake) {
-        if rusk_abi::caller() != rusk_abi::transfer_module() {
+    pub fn stake(&mut self, stake: Stake) {
+        if rusk_abi::caller() != TRANSFER_CONTRACT {
             panic!("Can only be called from the transfer contract!");
         }
 
@@ -144,7 +144,7 @@ impl StakeState {
 
         // make call to transfer contract to transfer balance from the user to
         // this contract
-        let transfer_module = rusk_abi::transfer_module();
+        let transfer_module = TRANSFER_CONTRACT;
 
         let stct = Stct {
             module: rusk_abi::self_id().to_bytes(),
@@ -152,13 +152,12 @@ impl StakeState {
             proof: stake.proof,
         };
 
-        let _: bool = self
-            .transact(transfer_module, "stct", &stct)
+        let _: bool = rusk_abi::call(transfer_module, "stct", &stct)
             .expect("Sending note to contract should succeed");
     }
 
-    pub fn unstake(self: &mut State<Self>, unstake: Unstake) {
-        if rusk_abi::caller() != rusk_abi::transfer_module() {
+    pub fn unstake(&mut self, unstake: Unstake) {
+        if rusk_abi::caller() != TRANSFER_CONTRACT {
             panic!("Can only be called from the transfer contract!");
         }
 
@@ -182,22 +181,21 @@ impl StakeState {
 
         // make call to transfer contract to withdraw a note from this contract
         // containing the value of the stake
-        let transfer_module = rusk_abi::transfer_module();
-        let _: bool = self
-            .transact(
-                transfer_module,
-                "wfct",
-                &Wfct {
-                    value,
-                    note: unstake.note,
-                    proof: unstake.proof,
-                },
-            )
-            .expect("Withdrawing note from contract should be successful");
+        let transfer_module = TRANSFER_CONTRACT;
+        let _: bool = rusk_abi::call(
+            transfer_module,
+            "wfct",
+            &Wfct {
+                value,
+                note: unstake.note,
+                proof: unstake.proof,
+            },
+        )
+        .expect("Withdrawing note from contract should be successful");
     }
 
-    pub fn withdraw(self: &mut State<Self>, withdraw: Withdraw) {
-        if rusk_abi::caller() != rusk_abi::transfer_module() {
+    pub fn withdraw(&mut self, withdraw: Withdraw) {
+        if rusk_abi::caller() != TRANSFER_CONTRACT {
             panic!("Can only be called from the transfer contract!");
         }
 
@@ -234,22 +232,21 @@ impl StakeState {
 
         // make call to transfer contract to mint the reward to the given
         // address
-        let transfer_module = rusk_abi::transfer_module();
-        let _: bool = self
-            .transact(
-                transfer_module,
-                "mint",
-                &Mint {
-                    address: withdraw.address,
-                    value: reward,
-                    nonce: withdraw.nonce,
-                },
-            )
-            .expect("Minting a reward note should succeed");
+        let transfer_module = TRANSFER_CONTRACT;
+        let _: bool = rusk_abi::call(
+            transfer_module,
+            "mint",
+            &Mint {
+                address: withdraw.address,
+                value: reward,
+                nonce: withdraw.nonce,
+            },
+        )
+        .expect("Minting a reward note should succeed");
     }
 
     pub fn allow(&mut self, allow: Allow) {
-        if rusk_abi::caller() != rusk_abi::transfer_module() {
+        if rusk_abi::caller() != TRANSFER_CONTRACT {
             panic!("Can only be called from the transfer contract!");
         }
 

@@ -16,11 +16,11 @@ microkelvin = { version = "0.17", default-features = false }
 nstack = { version = "0.16", default-features = false }
 ranno = "0.1"
 phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["wee_alloc"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
 dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
-piecrust = "0.1"
+piecrust = "0.5"
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
 transfer-circuits = { version = "0.5", path = "../../circuits/transfer" }

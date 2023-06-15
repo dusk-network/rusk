@@ -23,8 +23,8 @@ use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::dusk::{Dusk, LUX};
 use rusk_abi::{
-    ModuleError, ModuleId, PaymentInfo, PublicInput, RawResult, RawTransaction,
-    State,
+    ContractError, ContractId, PaymentInfo, PublicInput, RawCall, RawResult,
+    STAKE_CONTRACT,
 };
 
 #[derive(Debug, Clone)]
@@ -32,10 +32,10 @@ pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
     roots: BTreeSet<BlsScalar>,
-    balances: BTreeMap<ModuleId, u64>,
+    balances: BTreeMap<ContractId, u64>,
     message_mapping:
-        BTreeMap<ModuleId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
-    message_mapping_set: BTreeMap<ModuleId, StealthAddress>,
+        BTreeMap<ContractId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
+    message_mapping_set: BTreeMap<ContractId, StealthAddress>,
     var_crossover: Option<Crossover>,
     var_crossover_pk: Option<PublicKey>,
 }
@@ -76,7 +76,7 @@ impl TransferState {
         // Only the stake contract can mint notes to a particular stealth
         // address. This happens when the reward for staking and participating
         // in the consensus is withdrawn.
-        if rusk_abi::caller() != rusk_abi::stake_module() {
+        if rusk_abi::caller() != STAKE_CONTRACT {
             panic!("Can only be called by the stake contract!")
         }
 
@@ -94,7 +94,7 @@ impl TransferState {
             .expect("The crossover is mandatory for STCT!");
 
         let address =
-            rusk_abi::module_to_scalar(&ModuleId::from_bytes(stct.module));
+            rusk_abi::contract_to_scalar(&ContractId::from_bytes(stct.module));
 
         let message =
             stct_signature_message(&crossover, stct.value, address).to_vec();
@@ -109,12 +109,12 @@ impl TransferState {
 
         //  1. v < 2^64
         //  2. B_a↦ = B_a↦ + v
-        let module = ModuleId::from_bytes(stct.module);
-        self.add_balance(module, stct.value);
+        let contract_id = ContractId::from_bytes(stct.module);
+        self.add_balance(contract_id, stct.value);
 
         //  3. if a.isPayable() ↦ true then continue
-        let module = ModuleId::from_bytes(stct.module);
-        match rusk_abi::payment_info(module)
+        let contract_id = ContractId::from_bytes(stct.module);
+        match rusk_abi::payment_info(contract_id)
             .expect("Querying the payment info should succeed")
         {
             PaymentInfo::Transparent(_) | PaymentInfo::Any(_) => (),
@@ -162,15 +162,15 @@ impl TransferState {
             .take_crossover()
             .expect("The crossover is mandatory for STCO!");
 
-        let module_id = ModuleId::from_bytes(stco.module);
-        let module = rusk_abi::module_to_scalar(&module_id);
+        let contract_id = ContractId::from_bytes(stco.module);
+        let module = rusk_abi::contract_to_scalar(&contract_id);
 
         let sign_message =
             stco_signature_message(&crossover, &stco.message, module).to_vec();
         let sign_message = rusk_abi::poseidon_hash(sign_message);
 
         let (message_psk_a, message_psk_b) =
-            match rusk_abi::payment_info(module_id)
+            match rusk_abi::payment_info(contract_id)
                 .expect("Querying the payment info should succeed")
             {
                 PaymentInfo::Obfuscated(Some(k))
@@ -200,7 +200,7 @@ impl TransferState {
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
-        self.push_message(module_id, stco.message_address, stco.message);
+        self.push_message(contract_id, stco.message_address, stco.message);
 
         //  3. if a.isPayable() → true, obf, psk_a? then continue
         //  4. verify(C.c, M, pk, π)
@@ -286,7 +286,7 @@ impl TransferState {
         );
 
         //  3. B_to↦ = B_to↦ + v
-        let module = ModuleId::from_bytes(wfctc.module);
+        let module = ContractId::from_bytes(wfctc.module);
         self.add_balance(module, wfctc.value);
 
         true
@@ -295,9 +295,9 @@ impl TransferState {
     /// Executes a transaction, returning the gas consumed, and the result of a
     /// possible contract call.
     pub fn execute(
-        self: &mut State<Self>,
+        &mut self,
         tx: Transaction,
-    ) -> (u64, Option<Result<RawResult, ModuleError>>) {
+    ) -> (u64, Option<Result<RawResult, ContractError>>) {
         // Constant for a pedersen commitment with zero value.
         //
         // Calculated as `G^0 · G'^0`
@@ -374,10 +374,10 @@ impl TransferState {
         self.var_crossover_pk
             .replace((*tx.fee.stealth_address().pk_r().as_ref()).into());
 
-        let res = tx.call.map(|(module, fn_name, data)| {
-            let module = ModuleId::from_bytes(module);
-            let raw_tx = RawTransaction::from_parts(&fn_name, data);
-            self.transact_raw(module, &raw_tx)
+        let res = tx.call.map(|(contract_id, fn_name, data)| {
+            let contract_id = ContractId::from_bytes(contract_id);
+            let raw_tx = RawCall::from_parts(&fn_name, data);
+            rusk_abi::call_raw(contract_id, &raw_tx)
         });
 
         // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)
@@ -447,13 +447,13 @@ impl TransferState {
     }
 
     /// Return the balance of a given contract.
-    pub fn balance(&self, module_id: &ModuleId) -> u64 {
-        self.balances.get(module_id).copied().unwrap_or_default()
+    pub fn balance(&self, contract_id: &ContractId) -> u64 {
+        self.balances.get(contract_id).copied().unwrap_or_default()
     }
 
     /// Add balance to the given contract
-    pub fn add_balance(&mut self, module: ModuleId, value: u64) {
-        match self.balances.entry(module) {
+    pub fn add_balance(&mut self, contract: ContractId, value: u64) {
+        match self.balances.entry(contract) {
             Entry::Vacant(ve) => {
                 ve.insert(value);
             }
@@ -466,10 +466,10 @@ impl TransferState {
 
     pub fn message(
         &self,
-        module: &ModuleId,
+        contract: &ContractId,
         pk: &PublicKey,
     ) -> Option<Message> {
-        let map = self.message_mapping.get(module)?;
+        let map = self.message_mapping.get(contract)?;
         let message = map.get(&pk.to_bytes())?;
 
         Some(*message)
@@ -515,11 +515,11 @@ impl TransferState {
 
     fn take_message_from_address_key(
         &mut self,
-        module: &ModuleId,
+        contract: &ContractId,
         pk: &PublicKey,
     ) -> Result<Message, Error> {
         self.message_mapping
-            .get_mut(module)
+            .get_mut(contract)
             .ok_or(Error::MessageNotFound)?
             .remove(&pk.to_bytes())
             .ok_or(Error::MessageNotFound)
@@ -548,7 +548,7 @@ impl TransferState {
 
     fn sub_balance(
         &mut self,
-        address: &ModuleId,
+        address: &ContractId,
         value: u64,
     ) -> Result<(), Error> {
         match self.balances.get_mut(address) {
@@ -570,7 +570,7 @@ impl TransferState {
 
     fn push_message(
         &mut self,
-        address: ModuleId,
+        address: ContractId,
         message_address: StealthAddress,
         message: Message,
     ) {

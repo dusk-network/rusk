@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use phoenix_core::transaction::*;
-use rusk_abi::State;
+use rusk_abi::TRANSFER_CONTRACT;
 
 /// Alice contract.
 #[derive(Debug, Clone)]
@@ -16,21 +16,18 @@ impl Alice {
         // no-op
     }
 
-    pub fn withdraw(self: &mut State<Self>, wfct: Wfct) {
-        let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfct", &wfct)
+    pub fn withdraw(&mut self, wfct: Wfct) {
+        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfct", &wfct)
             .expect("Transparent withdrawal transaction should succeed");
     }
 
-    pub fn withdraw_obfuscated(self: &mut State<Self>, wfco: Wfco) {
-        let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfco", &wfco)
+    pub fn withdraw_obfuscated(&mut self, wfco: Wfco) {
+        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfco", &wfco)
             .expect("Obfuscated withdrawal transaction should succeed");
     }
 
-    pub fn withdraw_to_contract(self: &mut State<Self>, wfctc: Wfctc) {
-        let _: bool = self
-            .transact(rusk_abi::transfer_module(), "wfctc", &wfctc)
-            .expect("Obfuscated withdrawal transaction should succeed");
+    pub fn withdraw_to_contract(&mut self, wfctc: Wfctc) {
+        let _: bool = rusk_abi::call(TRANSFER_CONTRACT, "wfctc", &wfctc)
+            .expect("Withdrawal tco contract transaction should succeed");
     }
 }

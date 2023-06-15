@@ -8,7 +8,7 @@ use std::ops::Deref;
 
 use dusk_bytes::{Error as BytesError, Serializable};
 use phoenix_core::Transaction;
-use rusk_abi::ModuleError;
+use rusk_abi::{ContractError, TRANSFER_CONTRACT};
 
 use rusk_schema::executed_transaction::error::Code;
 use rusk_schema::executed_transaction::Error;
@@ -58,10 +58,14 @@ impl From<TransferPayload> for rusk_schema::Transaction {
     }
 }
 
-pub struct SpentTransaction(pub Transaction, pub u64, pub Option<ModuleError>);
+pub struct SpentTransaction(
+    pub Transaction,
+    pub u64,
+    pub Option<ContractError>,
+);
 
 impl SpentTransaction {
-    pub fn into_inner(self) -> (Transaction, u64, Option<ModuleError>) {
+    pub fn into_inner(self) -> (Transaction, u64, Option<ContractError>) {
         (self.0, self.1, self.2)
     }
 }
@@ -74,20 +78,20 @@ impl From<SpentTransaction> for rusk_schema::ExecutedTransaction {
         let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
         let error = error.map(|e| match e {
-            ModuleError::Panic => Error {
+            ContractError::PANIC => Error {
                 code: Code::ContractPanic.into(),
-                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
-                data: String::from(""),
+                contract_id: TRANSFER_CONTRACT.to_bytes().to_vec(),
+                data: String::from("PANIC"),
             },
-            ModuleError::OutOfGas => Error {
+            ContractError::OUTOFGAS => Error {
                 code: Code::OutOfGas.into(),
-                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
-                data: String::from(""),
+                contract_id: TRANSFER_CONTRACT.to_bytes().to_vec(),
+                data: String::from("OUT_OF_GAS"),
             },
-            ModuleError::Other(_) => Error {
+            ContractError::OTHER(code) => Error {
                 code: Code::Other.into(),
-                contract_id: rusk_abi::transfer_module().to_bytes().to_vec(),
-                data: String::from(""),
+                contract_id: TRANSFER_CONTRACT.to_bytes().to_vec(),
+                data: format!("OTHER: {code}"),
             },
         });
 

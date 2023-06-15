@@ -6,14 +6,17 @@
 
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
-use dusk_pki::PublicKey;
-use rusk_abi::ModuleId;
+use dusk_pki::{PublicKey, PublicSpendKey};
+use rusk_abi::ContractId;
 use serde_derive::{Deserialize, Serialize};
 
 use super::wrapper::Wrapper;
+use crate::state;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct Governance {
+    pub(crate) contract_owner:
+        Option<Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>>,
     pub contract_address: u64,
     pub name: String,
     pub(crate) authority: Wrapper<BlsPublicKey, { BlsPublicKey::SIZE }>,
@@ -21,6 +24,11 @@ pub struct Governance {
 }
 
 impl Governance {
+    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
+        let dusk = Wrapper::from(*state::DUSK_KEY);
+        self.contract_owner.as_ref().unwrap_or(&dusk).to_bytes()
+    }
+
     pub fn authority(&self) -> &BlsPublicKey {
         &self.authority
     }
@@ -28,10 +36,10 @@ impl Governance {
         &self.broker
     }
 
-    pub fn contract(&self) -> ModuleId {
+    pub fn contract(&self) -> ContractId {
         let mut data = [0u8; 32];
         let address = self.contract_address.to_be_bytes();
         data[24..].copy_from_slice(&address);
-        ModuleId::from(data)
+        ContractId::from(data)
     }
 }

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use alloc::vec::Vec;
+use std::path::{Path, PathBuf};
 
 use crate::hash::Hasher;
 use crate::query::*;
@@ -16,19 +17,51 @@ use dusk_bls12_381_sign::{
 };
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
+use dusk_plonk::error::Error as PlonkError;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{Session, VM};
+use piecrust::{Error, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
-/// Set the block height for the given session.
-pub fn set_block_height(session: &mut Session, block_height: u64) {
-    session.set_meta(Metadata::BLOCK_HEIGHT, block_height);
+/// Create a new session based on the given `vm`. The vm *must* have been
+/// created using [`new_vm`] or [`new_ephemeral_vm`].
+pub fn new_session(
+    vm: &VM,
+    base: [u8; 32],
+    block_height: u64,
+) -> Result<Session, Error> {
+    vm.session(
+        SessionData::builder()
+            .base(base)
+            .insert(Metadata::BLOCK_HEIGHT, block_height),
+    )
 }
 
-/// Register the host queries offered by the ABI with the VM.
-pub fn register_host_queries(vm: &mut VM) {
+/// Create a new genesis session based on the given `vm`. The vm *must* have
+/// been created using [`new_vm`] or [`new_ephemeral_vm`].
+pub fn new_genesis_session(vm: &VM) -> Session {
+    vm.session(SessionData::builder().insert(Metadata::BLOCK_HEIGHT, 0))
+        .expect("Creating a genesis session should always succeed")
+}
+
+/// Create a new [`VM`] compliant with Dusk's specification.
+pub fn new_vm<P: AsRef<Path> + Into<PathBuf>>(
+    root_dir: P,
+) -> Result<VM, Error> {
+    let mut vm = VM::new(root_dir)?;
+    register_host_queries(&mut vm);
+    Ok(vm)
+}
+
+/// Creates a new [`VM`] with a temporary directory.
+pub fn new_ephemeral_vm() -> Result<VM, Error> {
+    let mut vm = VM::ephemeral()?;
+    register_host_queries(&mut vm);
+    Ok(vm)
+}
+
+fn register_host_queries(vm: &mut VM) {
     vm.register_host_query(Query::HASH, host_hash);
     vm.register_host_query(Query::POSEIDON_HASH, host_poseidon_hash);
     vm.register_host_query(Query::VERIFY_PROOF, host_verify_proof);
@@ -143,7 +176,7 @@ pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
 struct DummyCircuit;
 
 impl Circuit for DummyCircuit {
-    fn circuit<C>(&self, _: &mut C) -> Result<(), Error>
+    fn circuit<C>(&self, _: &mut C) -> Result<(), PlonkError>
     where
         C: Composer,
     {

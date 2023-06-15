@@ -17,12 +17,12 @@ use dusk_bls12_381_sign::{
 };
 use dusk_pki::PublicKey;
 use dusk_schnorr::Signature;
-use rusk_abi::{ModuleId, PaymentInfo, PublicInput, State};
+use rusk_abi::{ContractId, PaymentInfo, PublicInput};
 
 #[no_mangle]
-static SELF_ID: ModuleId = ModuleId::uninitialized();
+static SELF_ID: ContractId = ContractId::uninitialized();
 
-static mut STATE: State<HostFnTest> = State::new(HostFnTest);
+static mut STATE: HostFnTest = HostFnTest;
 
 #[derive(Clone, Debug, Default)]
 pub struct HostFnTest;
@@ -70,43 +70,43 @@ impl HostFnTest {
 
 #[no_mangle]
 unsafe fn hash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |scalars| STATE.hash(scalars))
+    rusk_abi::wrap_call(arg_len, |scalars| STATE.hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn poseidon_hash(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |scalars| STATE.poseidon_hash(scalars))
+    rusk_abi::wrap_call(arg_len, |scalars| STATE.poseidon_hash(scalars))
 }
 
 #[no_mangle]
 unsafe fn verify_proof(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(verifier_data, proof, public_inputs)| {
+    rusk_abi::wrap_call(arg_len, |(verifier_data, proof, public_inputs)| {
         STATE.verify_proof(verifier_data, proof, public_inputs)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_schnorr(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(msg, pk, sig)| {
+    rusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
         STATE.verify_schnorr(msg, pk, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn verify_bls(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |(msg, pk, sig)| {
+    rusk_abi::wrap_call(arg_len, |(msg, pk, sig)| {
         STATE.verify_bls(msg, pk, sig)
     })
 }
 
 #[no_mangle]
 unsafe fn block_height(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| STATE.block_height())
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.block_height())
 }
 
 const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);
 
 #[no_mangle]
 fn payment_info(arg_len: u32) -> u32 {
-    rusk_abi::wrap_query(arg_len, |_: ()| PAYMENT_INFO)
+    rusk_abi::wrap_call(arg_len, |_: ()| PAYMENT_INFO)
 }

@@ -12,12 +12,12 @@ use dusk_plonk::prelude::*;
 use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
-use piecrust::Error;
+use piecrust::{ContractData, Error};
 use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ModuleError, ModuleId, RawResult};
+use rusk_abi::{ContractError, ContractId, RawResult, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
@@ -30,28 +30,28 @@ use transfer_circuits::{
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
 
-const ALICE_ID: ModuleId = {
+const ALICE_ID: ContractId = {
     let mut bytes = [0u8; 32];
     bytes[0] = 0xFA;
-    ModuleId::from_bytes(bytes)
+    ContractId::from_bytes(bytes)
 };
-const BOB_ID: ModuleId = {
+const BOB_ID: ContractId = {
     let mut bytes = [0u8; 32];
     bytes[0] = 0xFB;
-    ModuleId::from_bytes(bytes)
+    ContractId::from_bytes(bytes)
 };
 
 type Result<T, E = Error> = core::result::Result<T, E>;
+
+const OWNER: [u8; 32] = [0; 32];
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
 fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
-    vm: &mut VM,
+    vm: &VM,
     psk: &PublicSpendKey,
 ) -> Session {
-    rusk_abi::register_host_queries(vm);
-
     let transfer_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
     );
@@ -62,40 +62,46 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         "../../../target/wasm32-unknown-unknown/release/alice.wasm"
     );
 
-    let mut session = vm.genesis_session();
-
+    let mut session = rusk_abi::new_genesis_session(vm);
     session.set_point_limit(POINT_LIMIT);
-    rusk_abi::set_block_height(&mut session, 0);
 
     session
-        .deploy_with_id(rusk_abi::transfer_module(), transfer_bytecode)
+        .deploy(
+            transfer_bytecode,
+            ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+        )
         .expect("Deploying the transfer contract should succeed");
 
     session
-        .deploy_with_id(ALICE_ID, alice_bytecode)
+        .deploy(
+            alice_bytecode,
+            ContractData::builder(OWNER).contract_id(ALICE_ID),
+        )
         .expect("Deploying the alice contract should succeed");
 
     session
-        .deploy_with_id(BOB_ID, bob_bytecode)
+        .deploy(
+            bob_bytecode,
+            ContractData::builder(OWNER).contract_id(BOB_ID),
+        )
         .expect("Deploying the bob contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
     // push genesis note to the contract
     let _: Note = session
-        .transact(
-            rusk_abi::transfer_module(),
-            "push_note",
-            &(0u64, genesis_note),
-        )
+        .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
     let _: BlsScalar = session
-        .transact(rusk_abi::transfer_module(), "update_root", &())
+        .call(TRANSFER_CONTRACT, "update_root", &())
         .expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
-    rusk_abi::set_block_height(&mut session, 1);
+    let base = session.commit().expect("Committing should succeed");
+    let mut session = rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed");
+    session.set_point_limit(POINT_LIMIT);
 
     session
 }
@@ -104,34 +110,34 @@ fn leaves_in_range(
     session: &mut Session,
     range: Range<u64>,
 ) -> Result<Vec<TreeLeaf>> {
-    session.query(
-        rusk_abi::transfer_module(),
+    session.call(
+        TRANSFER_CONTRACT,
         "leaves_in_range",
         &(range.start, range.end),
     )
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.query(rusk_abi::transfer_module(), "root", &())
+    session.call(TRANSFER_CONTRACT, "root", &())
 }
 
-fn module_balance(session: &mut Session, module: ModuleId) -> Result<u64> {
-    session.query(rusk_abi::transfer_module(), "module_balance", &module)
+fn module_balance(session: &mut Session, contract: ContractId) -> Result<u64> {
+    session.call(TRANSFER_CONTRACT, "module_balance", &contract)
 }
 
 fn message(
     session: &mut Session,
-    module: ModuleId,
+    contract: ContractId,
     pk: PublicKey,
 ) -> Result<Option<Message>> {
-    session.query(rusk_abi::transfer_module(), "message", &(module, pk))
+    session.call(TRANSFER_CONTRACT, "message", &(contract, pk))
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
-    session.query(rusk_abi::transfer_module(), "opening", &pos)
+    session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
 fn prover_verifier<C: Circuit>(
@@ -167,7 +173,8 @@ fn transfer() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     let psk = PublicSpendKey::from(&ssk);
@@ -269,8 +276,8 @@ fn transfer() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_1_2 : {} gas", session.spent());
@@ -290,7 +297,8 @@ fn alice_ping() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     let psk = PublicSpendKey::from(&ssk);
@@ -384,8 +392,8 @@ fn alice_ping() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_PING: {} gas", session.spent());
@@ -406,7 +414,8 @@ fn send_and_withdraw_transparent() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     let vk = ssk.view_key();
@@ -452,7 +461,7 @@ fn send_and_withdraw_transparent() {
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
     // Prove the STCT circuit.
-    let stct_address = rusk_abi::module_to_scalar(&ALICE_ID);
+    let stct_address = rusk_abi::contract_to_scalar(&ALICE_ID);
     let stct_signature = SendToContractTransparentCircuit::sign(
         rng,
         &ssk,
@@ -488,7 +497,7 @@ fn send_and_withdraw_transparent() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::transfer_module().to_bytes(),
+        TRANSFER_CONTRACT.to_bytes(),
         String::from("stct"),
         stct_bytes,
     ));
@@ -563,8 +572,8 @@ fn send_and_withdraw_transparent() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_STCT: {} gas", session.spent());
@@ -740,8 +749,8 @@ fn send_and_withdraw_transparent() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_WFCT: {} gas", session.spent());
@@ -761,7 +770,8 @@ fn send_and_withdraw_obfuscated() {
 
     let rng = &mut StdRng::seed_from_u64(0xfeeb);
 
-    let vm = &mut VM::ephemeral().expect("Creating ephemeral VM should work");
+    let vm = &mut rusk_abi::new_ephemeral_vm()
+        .expect("Creating ephemeral VM should work");
 
     let ssk = SecretSpendKey::random(rng);
     let vk = ssk.view_key();
@@ -808,7 +818,7 @@ fn send_and_withdraw_obfuscated() {
 
     // Prove the STCO circuit.
 
-    let stco_address = rusk_abi::module_to_scalar(&ALICE_ID);
+    let stco_address = rusk_abi::contract_to_scalar(&ALICE_ID);
 
     let stco_m_r = JubJubScalar::random(rng);
     let stco_m = Message::new(rng, &stco_m_r, &psk, crossover_value);
@@ -867,7 +877,7 @@ fn send_and_withdraw_obfuscated() {
         .to_vec();
 
     let call = Some((
-        rusk_abi::transfer_module().to_bytes(),
+        TRANSFER_CONTRACT.to_bytes(),
         String::from("stco"),
         stco_bytes,
     ));
@@ -942,8 +952,8 @@ fn send_and_withdraw_obfuscated() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_STCO: {} gas", session.spent());
@@ -1170,8 +1180,8 @@ fn send_and_withdraw_obfuscated() {
     };
 
     session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ModuleError>>) = session
-        .transact(rusk_abi::transfer_module(), "execute", &tx)
+    let _: (u64, Option<Result<RawResult, ContractError>>) = session
+        .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
 
     println!("EXECUTE_WFCO: {} gas", session.spent());

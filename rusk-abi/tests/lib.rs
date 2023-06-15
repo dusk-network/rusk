@@ -15,11 +15,13 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{Session, VM};
-use piecrust_uplink::ModuleId;
+use piecrust::{ContractData, Session, VM};
+use piecrust_uplink::ContractId;
 use rand_core::OsRng;
 use rusk_abi::hash::Hasher;
-use rusk_abi::{set_block_height, PublicInput};
+use rusk_abi::PublicInput;
+
+const OWNER: [u8; 32] = [0; 32];
 
 #[test]
 fn hash_host() {
@@ -45,27 +47,31 @@ fn hash_host() {
     );
 }
 
-fn instantiate(vm: &mut VM) -> (Session, ModuleId) {
+fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let bytecode = include_bytes!(
         "../../target/wasm32-unknown-unknown/release/host_fn.wasm"
     );
 
-    rusk_abi::register_host_queries(vm);
+    let mut session = rusk_abi::new_genesis_session(vm);
 
-    let mut session = vm.genesis_session();
-    session.set_point_limit(0x20000);
-
-    let module_id = session
-        .deploy(bytecode)
+    let contract_id = session
+        .deploy(bytecode, ContractData::builder(OWNER))
         .expect("Deploying module should succeed");
 
-    (session, module_id)
+    let base = session.commit().expect("Committing should succeed");
+
+    let mut session = rusk_abi::new_session(vm, base, height)
+        .expect("Instantiating new session should succeed");
+    session.set_point_limit(0x20000);
+
+    (session, contract_id)
 }
 
 #[test]
 fn hash() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -84,7 +90,7 @@ fn hash() {
     }
 
     let scalar: BlsScalar = session
-        .query(module_id, "hash", &input)
+        .call(contract_id, "hash", &input)
         .expect("Querying should succeed");
 
     assert_eq!(
@@ -95,8 +101,9 @@ fn hash() {
 
 #[test]
 fn poseidon_hash() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
 
     let test_inputs = [
         "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
@@ -110,7 +117,7 @@ fn poseidon_hash() {
         .collect();
 
     let scalar: BlsScalar = session
-        .query(module_id, "poseidon_hash", &test_inputs)
+        .call(contract_id, "poseidon_hash", &test_inputs)
         .expect("Querying should succeed");
 
     assert_eq!(
@@ -121,8 +128,9 @@ fn poseidon_hash() {
 
 #[test]
 fn schnorr_signature() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
 
     let sk = SecretKey::random(&mut OsRng);
     let message = BlsScalar::random(&mut OsRng);
@@ -133,7 +141,7 @@ fn schnorr_signature() {
     assert!(sign.verify(&pk, message));
 
     let valid: bool = session
-        .query(module_id, "verify_schnorr", &(message, pk, sign))
+        .call(contract_id, "verify_schnorr", &(message, pk, sign))
         .expect("Querying should succeed");
 
     assert!(valid, "Signature verification expected to succeed");
@@ -142,7 +150,7 @@ fn schnorr_signature() {
     let pk = PublicKey::from(&wrong_sk);
 
     let valid: bool = session
-        .query(module_id, "verify_schnorr", &(message, pk, sign))
+        .call(contract_id, "verify_schnorr", &(message, pk, sign))
         .expect("Querying should succeed");
 
     assert!(!valid, "Signature verification expected to fail");
@@ -150,8 +158,9 @@ fn schnorr_signature() {
 
 #[test]
 fn bls_signature() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
 
     let message = b"some-message".to_vec();
 
@@ -162,7 +171,7 @@ fn bls_signature() {
 
     let arg = (message, pk, sign);
     let valid: bool = session
-        .query(module_id, "verify_bls", &arg)
+        .call(contract_id, "verify_bls", &arg)
         .expect("Query should succeed");
 
     assert!(valid, "BLS Signature verification expected to succeed");
@@ -172,7 +181,7 @@ fn bls_signature() {
 
     let arg = (arg.0, wrong_pk, arg.2);
     let valid: bool = session
-        .query(module_id, "verify_bls", &arg)
+        .call(contract_id, "verify_bls", &arg)
         .expect("Query should succeed");
 
     assert!(!valid, "BLS Signature verification expected to fail");
@@ -212,8 +221,9 @@ impl Circuit for TestCircuit {
 
 #[test]
 fn plonk_proof() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
 
     let pp = include_bytes!("./pp_test.bin");
     let pp = unsafe { PublicParameters::from_slice_unchecked(&pp[..]) };
@@ -246,7 +256,7 @@ fn plonk_proof() {
 
     let arg = (verifier, proof, public_inputs);
     let valid: bool = session
-        .query(module_id, "verify_proof", &arg)
+        .call(contract_id, "verify_proof", &arg)
         .expect("Query should succeed");
 
     assert!(valid, "The proof should be valid");
@@ -257,7 +267,7 @@ fn plonk_proof() {
 
     let arg = (arg.0, arg.1, wrong_public_inputs);
     let valid: bool = session
-        .query(module_id, "verify_proof", &arg)
+        .call(contract_id, "verify_proof", &arg)
         .expect("Query should succeed");
 
     assert!(!valid, "The proof should be invalid");
@@ -265,15 +275,14 @@ fn plonk_proof() {
 
 #[test]
 fn block_height() {
-    let mut vm = VM::ephemeral().expect("Instantiating VM should succeed");
-    let (mut session, module_id) = instantiate(&mut vm);
-
     const HEIGHT: u64 = 123;
 
-    set_block_height(&mut session, HEIGHT);
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, HEIGHT);
 
     let height: u64 = session
-        .query(module_id, "block_height", &())
+        .call(contract_id, "block_height", &())
         .expect("Query should succeed");
 
     assert_eq!(height, HEIGHT);

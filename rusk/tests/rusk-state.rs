@@ -16,6 +16,7 @@ use phoenix_core::Note;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk, RuskInner};
+use rusk_abi::TRANSFER_CONTRACT;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -45,19 +46,18 @@ where
     let note = Note::transparent(&mut rng, &psk, INITIAL_BALANCE);
 
     rusk.with_inner(|mut inner| {
-        let mut session = inner
-            .vm
-            .session(inner.current_commit)
-            .expect("current commit should exist");
+        let current_commit = inner.current_commit;
+        let mut session =
+            rusk_abi::new_session(&inner.vm, current_commit, BLOCK_HEIGHT)
+                .expect("current commit should exist");
 
         session.set_point_limit(u64::MAX);
-        rusk_abi::set_block_height(&mut session, BLOCK_HEIGHT);
 
         let _: Note = session
-            .transact(rusk_abi::transfer_module(), "push_note", &note)
+            .call(TRANSFER_CONTRACT, "push_note", &note)
             .expect("Pushing note should succeed");
         let _: BlsScalar = session
-            .transact(rusk_abi::transfer_module(), "update_root", &())
+            .call(TRANSFER_CONTRACT, "update_root", &())
             .expect("Updating root should succeed");
 
         let commit_id = session.commit().expect("Committing should succeed");
