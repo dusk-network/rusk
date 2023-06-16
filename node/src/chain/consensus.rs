@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::chain::genesis::DUSK;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
