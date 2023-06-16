@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, Ledger, Persist, Registry, DB};
+use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::{Context, Result};
 
 use node_data::encoding::*;
@@ -22,10 +22,13 @@ use rocksdb_lib::{
     WriteOptions,
 };
 
+use std::io;
 use std::io::Read;
+use std::io::Write;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
+use std::vec;
 use tokio::io::AsyncWriteExt;
 
 use tracing::info;
@@ -35,7 +38,7 @@ enum TxType {
     ReadOnly,
 }
 
-const CF_LEDGER: &str = "cf_ledger";
+const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
 const CF_LEDGER_HEIGHT: &str = "cf_ledger_height";
 const CF_CANDIDATES: &str = "cf_candidates";
@@ -44,6 +47,7 @@ const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
+const REGISTER_KEY: &[u8; 8] = b"register";
 
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
@@ -63,8 +67,8 @@ impl Backend {
         // Borrow column families
         let ledger_cf = self
             .rocksdb
-            .cf_handle(CF_LEDGER)
-            .expect("ledger column family must exist");
+            .cf_handle(CF_LEDGER_HEADER)
+            .expect("ledger_header column family must exist");
 
         let ledger_txs_cf = self
             .rocksdb
@@ -141,7 +145,7 @@ impl DB for Backend {
         mp_opts.set_disable_auto_compactions(true);
 
         let cfs = vec![
-            ColumnFamilyDescriptor::new(CF_LEDGER, Options::default()),
+            ColumnFamilyDescriptor::new(CF_LEDGER_HEADER, Options::default()),
             ColumnFamilyDescriptor::new(CF_LEDGER_TXS, Options::default()),
             ColumnFamilyDescriptor::new(CF_LEDGER_HEIGHT, Options::default()),
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
@@ -216,19 +220,49 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
-        let mut serialized = vec![];
-        b.write(&mut serialized)?;
+        // COLUMN FAMILY: CF_LEDGER_HEADER
+        // It consists of one record per block - Header record
+        // It also includes single record to store metadata - Register record
+        {
+            let cf = self.ledger_cf;
 
-        // store all block transactions in a separate column family
-        for tx in &b.txs {
-            let mut d = vec![];
-            tx.write(&mut d)?;
-            self.inner.put_cf(self.ledger_txs_cf, tx.hash(), d)?;
+            let mut buf = vec![];
+            HeaderRecord {
+                header: b.header.clone(),
+                transactions_ids: b
+                    .txs
+                    .iter()
+                    .map(|t| t.hash())
+                    .collect::<Vec<[u8; 32]>>(),
+            }
+            .write(&mut buf);
+
+            self.inner.put_cf(cf, b.header.hash, buf)?;
+
+            // Overwrite the Register record
+            let mut buf = vec![];
+            Register {
+                mrb_hash: b.header.hash,
+                state_hash: b.header.state_hash,
+            }
+            .write(&mut buf)?;
+            self.inner.put_cf(cf, REGISTER_KEY, buf)?;
         }
 
-        self.inner
-            .put_cf(self.ledger_cf, b.header.hash, serialized)?;
+        // COLUMN FAMILY: CF_LEDGER_TXS
+        {
+            let cf = self.ledger_txs_cf;
 
+            // store all block transactions
+            for tx in &b.txs {
+                let mut d = vec![];
+                tx.write(&mut d)?;
+                self.inner.put_cf(cf, tx.hash(), d)?;
+            }
+        }
+
+        // CF: HEIGHT
+        // Relation: Map block height to block hash
         self.inner.put_cf(
             self.ledger_height_cf,
             b.header.height.to_le_bytes(),
@@ -245,6 +279,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         let key = b.header.hash;
         self.inner.delete_cf(self.ledger_cf, key)?;
+        self.inner.delete_cf(self.ledger_cf, REGISTER_KEY)?;
 
         self.inner
             .delete_cf(self.ledger_height_cf, b.header.height.to_le_bytes())?;
@@ -257,13 +292,33 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>> {
-        let blk = self
-            .snapshot
-            .get_cf(self.ledger_cf, hash)?
-            .map(|blob| ledger::Block::read(&mut &blob[..]))
-            .transpose()?;
+        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+            Some(blob) => {
+                let record = HeaderRecord::read(&mut &blob[..])?;
 
-        Ok(blk)
+                // Retrieve all transactions buffers with single call
+                let txs_buffers = self.snapshot.multi_get_cf(
+                    record
+                        .transactions_ids
+                        .iter()
+                        .map(|id| (self.ledger_txs_cf, id))
+                        .collect::<Vec<(&ColumnFamily, &[u8; 32])>>(),
+                );
+
+                let mut txs = vec![];
+                for buf in txs_buffers {
+                    let mut buf = buf?.unwrap();
+                    let tx = ledger::Transaction::read(&mut &buf.to_vec()[..])?;
+                    txs.push(tx);
+                }
+
+                Ok(Some(ledger::Block {
+                    header: record.header,
+                    txs,
+                }))
+            }
+            None => Ok(None),
+        }
     }
 
     fn fetch_block_hash_by_height(
@@ -300,6 +355,17 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     /// ledger without unmarshalling the transaction
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)?.is_some())
+    }
+
+    /// Returns stored register data
+    fn get_register(&self) -> Result<Option<Register>> {
+        if let Some(mut data) =
+            self.snapshot.get_cf(self.ledger_cf, REGISTER_KEY)?
+        {
+            return Ok(Some(Register::read(&mut &data[..])?));
+        }
+
+        Ok(None)
     }
 }
 
@@ -578,6 +644,57 @@ fn deserialize_fee_key<R: Read>(r: &mut R) -> Result<(u64, [u8; 32])> {
     Ok((fee, hash))
 }
 
+struct HeaderRecord {
+    header: ledger::Header,
+    transactions_ids: Vec<[u8; 32]>,
+}
+
+impl Serializable for HeaderRecord {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        // Write block header
+        self.header.write(w)?;
+
+        // Write transactions count
+        let len = self.transactions_ids.len() as u32;
+        w.write_all(&len.to_le_bytes())?;
+
+        // Write transactions hashes
+        for tx_id in &self.transactions_ids {
+            w.write_all(tx_id)?;
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        // Read block header
+        let header = ledger::Header::read(r)?;
+
+        // Read transactions count
+        let mut buf = [0u8; 4];
+        r.read_exact(&mut buf)?;
+
+        let len = u32::from_le_bytes(buf);
+
+        // Read transactions hashes
+        let mut transactions_ids = vec![];
+        for pos in 0..len {
+            let mut tx_id = [0u8; 32];
+            r.read_exact(&mut tx_id[..])?;
+
+            transactions_ids.push(tx_id);
+        }
+
+        Ok(Self {
+            header,
+            transactions_ids,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -597,6 +714,8 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
+            assert!(b.txs.len() > 0);
+
             let hash = b.header.hash;
 
             assert!(db
@@ -607,10 +726,16 @@ mod tests {
                 .is_ok());
 
             db.view(|txn| {
-                assert_eq!(
-                    txn.fetch_block(&hash)?.unwrap().header.hash,
-                    b.header.hash
-                );
+                // Assert block header is fully fetched from ledger
+                let db_blk = txn.fetch_block(&hash)?.unwrap();
+                assert_eq!(db_blk.header.hash, b.header.hash);
+
+                // Assert all transactions are fully fetched from ledger as
+                // well.
+                for pos in (0..b.txs.len()) {
+                    assert_eq!(db_blk.txs[pos].hash(), b.txs[pos].hash());
+                }
+
                 Ok(())
             });
 

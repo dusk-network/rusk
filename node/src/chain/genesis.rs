@@ -9,12 +9,13 @@ use node_data::ledger::Block;
 
 pub const DUSK: u64 = 100_000_000;
 
-/// Generates the genesis state for the chain per specified network type.
-///
-/// NB. For now it should return a hard-coded list of eligible provisioners.
-pub(crate) fn generate_state() -> (Block, Provisioners) {
-    let mut block = Block::default();
+/// Generates the genesis state for the chain per specified network type
+pub(crate) fn generate_state() -> Block {
+    // TBD
+    Block::default()
+}
 
+pub(crate) fn get_mocked_provisioners() -> Provisioners {
     // Load provisioners keys from external consensus keys files.
     let keys = node_data::bls::load_provisioners_keys(4);
     let mut provisioners = Provisioners::new();
@@ -24,5 +25,5 @@ pub(crate) fn generate_state() -> (Block, Provisioners) {
         provisioners.add_member_with_value(pk.clone(), 1000 * DUSK * 10);
     }
 
-    (block, provisioners)
+    provisioners
 }
