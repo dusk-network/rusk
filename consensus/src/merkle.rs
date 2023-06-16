@@ -20,8 +20,8 @@ impl<I: Into<[u8; 32]>> From<I> for Hash {
 
 pub const EMPTY_NODE: Hash = Hash([0; 32]);
 
-impl<const H: usize> Aggregate<H, ARITY> for Hash {
-    const EMPTY_SUBTREES: [Self; H] = [EMPTY_NODE; H];
+impl Aggregate<ARITY> for Hash {
+    const EMPTY_SUBTREE: Self = EMPTY_NODE;
 
     /// old golang implementation duplicates the missing leaf
     ///
@@ -36,11 +36,7 @@ impl<const H: usize> Aggregate<H, ARITY> for Hash {
     /// 1 2 3 4 5 6
     /// it creates
     /// 1 2 3 4 5 6 5 6
-    fn aggregate<'a, I>(items: I) -> Self
-    where
-        Self: 'a,
-        I: Iterator<Item = &'a Self>,
-    {
+    fn aggregate(items: [&Self; ARITY]) -> Self {
         let mut hasher = Sha3_256::new();
         let mut prev = &[0u8; 32];
         for item in items {
@@ -69,33 +65,13 @@ impl<const H: usize> BinaryMerkle<H> {
         self.tree.insert(self.tree.len(), val);
     }
 
-    /// Returns the root of the smallest inner tree
-    fn shrunken_root(&self) -> [u8; 32] {
-        if self.tree.is_empty() {
-            return EMPTY_NODE.0;
-        }
-
-        let inner_tree_height =
-            (self.tree.len() as f64 - 1f64).sqrt().floor() as usize + 1;
-
-        if inner_tree_height == H {
-            return self.tree.root().0;
-        }
-
-        let opening = self
-            .tree
-            .opening(0)
-            .expect("Opening to exists if tree is not empty");
-
-        opening.branch()[H - inner_tree_height - 1][0].0
-    }
-
     fn root_from_values<N: Into<Hash> + Copy>(values: &[N]) -> [u8; 32] {
         let mut tree = Self::new();
         for &val in values {
             tree.insert(val.into())
         }
-        tree.shrunken_root()
+        let (shrunken_root, _) = tree.tree.smallest_subtree();
+        shrunken_root.0
     }
 }
 
