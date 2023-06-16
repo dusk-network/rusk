@@ -221,7 +221,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
-        // It consists of one record per a block - Header record
+        // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
         {
             let cf = self.ledger_cf;

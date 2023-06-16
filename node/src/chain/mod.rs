@@ -175,7 +175,7 @@ impl ChainSrv {
                     // either malformed or empty.
                     let genesis_blk = genesis::generate_state();
 
-                    /// Persist gensis block
+                    /// Persist genesis block
                     t.store_block(&genesis_blk, true);
                     genesis_blk
                 }
