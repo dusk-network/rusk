@@ -163,7 +163,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         }
                     }
                     Err(e) => {
-                        tracing::warn!("error handling msg: {:?}", e);
+                        tracing::warn!("error on handling msg: {}", e);
                     }
                 };
 
@@ -255,7 +255,7 @@ impl DataBrokerSrv {
             })?;
 
         let block =
-            res.ok_or_else(|| anyhow::anyhow!("could not find block"))?;
+            res.ok_or_else(|| anyhow::anyhow!("could not find candidate"))?;
 
         Ok(Message::new_candidate_resp(Box::new(
             payload::CandidateResp { candidate: block },
@@ -304,7 +304,9 @@ impl DataBrokerSrv {
             .view(|t| {
                 let mut locator = t
                     .fetch_block(&m.locator)?
-                    .ok_or_else(|| anyhow::anyhow!("could not find block"))?
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("could not find locator block")
+                    })?
                     .header
                     .height;
 

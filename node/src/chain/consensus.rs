@@ -69,14 +69,6 @@ impl Task {
         }
     }
 
-    /// Aborts the running consensus task
-    pub(crate) async fn abort(&mut self) {
-        if let Some((handle, cancel_chan)) = self.running_task.take() {
-            cancel_chan.send(0);
-            handle.await;
-        }
-    }
-
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         most_recent_block: &node_data::ledger::Header,
@@ -122,6 +114,20 @@ impl Task {
             }),
             cancel_tx,
         ));
+    }
+
+    /// Aborts the running consensus task and waits for its termination.
+    pub(crate) async fn abort_with_wait(&mut self) {
+        if let Some((handle, cancel_chan)) = self.running_task.take() {
+            cancel_chan.send(0);
+            handle.await;
+        }
+    }
+
+    pub(crate) fn abort(&mut self) {
+        if let Some((handle, cancel_chan)) = self.running_task.take() {
+            cancel_chan.send(0);
+        }
     }
 }
 

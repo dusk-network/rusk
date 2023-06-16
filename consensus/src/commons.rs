@@ -82,8 +82,8 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     pubkey: PublicKey,
     ru: RoundUpdate,
     step: u8,
-    mut outbound: AsyncQueue<Message>,
-    mut inbound: AsyncQueue<Message>,
+    outbound: AsyncQueue<Message>,
+    inbound: AsyncQueue<Message>,
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {

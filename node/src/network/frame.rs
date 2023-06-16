@@ -26,7 +26,7 @@ pub struct Header {
 }
 
 impl Pdu {
-    pub fn encode(msg: &Message) -> io::Result<Vec<u8>> {
+    pub fn encode(msg: &Message, reserved: u64) -> io::Result<Vec<u8>> {
         let mut payload_buf = vec![];
         msg.write(&mut payload_buf)?;
 
@@ -34,7 +34,7 @@ impl Pdu {
         Header {
             checksum: calc_checksum(&payload_buf[..]),
             version: RROTOCOL_VERSION,
-            reserved: 0,
+            reserved,
         }
         .write(&mut header_buf)?;
 

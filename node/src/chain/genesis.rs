@@ -16,7 +16,7 @@ pub(crate) fn generate_state() -> (Block, Provisioners) {
     let mut block = Block::default();
 
     // Load provisioners keys from external consensus keys files.
-    let keys = node_data::bls::load_provisioners_keys(7);
+    let keys = node_data::bls::load_provisioners_keys(4);
     let mut provisioners = Provisioners::new();
 
     for (_, (_, pk)) in keys.iter().enumerate() {
