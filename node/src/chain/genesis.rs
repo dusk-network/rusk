@@ -7,7 +7,6 @@
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::Block;
 
-pub const DUSK: u64 = 100_000_000;
 
 /// Generates the genesis state for the chain per specified network type
 pub(crate) fn generate_state() -> Block {
