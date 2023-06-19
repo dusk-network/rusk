@@ -7,7 +7,7 @@
 pub mod grpc;
 pub mod kadcast;
 
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,12 @@ use self::{grpc::GrpcConfig, kadcast::KadcastConfig};
 pub(crate) struct Config {
     log_level: Option<String>,
     log_type: Option<String>,
+
+    db_path: Option<PathBuf>,
+    consensus_keys_path: Option<PathBuf>,
+
+    databroker: node::databroker::conf::Params,
+
     pub(crate) kadcast_test: bool,
     pub(crate) grpc: GrpcConfig,
     pub(crate) kadcast: KadcastConfig,
@@ -49,6 +55,19 @@ impl From<&ArgMatches> for Config {
         // Overwrite config log-type
         if let Some(log_type) = matches.value_of("log-type") {
             rusk_config.log_type = Some(log_type.into());
+        }
+
+        // Overwrite config consensus-keys-path
+        if let Some(consensus_keys_path) =
+            matches.value_of("consensus-keys-path")
+        {
+            rusk_config.consensus_keys_path =
+                Some(PathBuf::from(consensus_keys_path));
+        }
+
+        // Overwrite config db-path
+        if let Some(db_path) = matches.value_of("db-path") {
+            rusk_config.db_path = Some(PathBuf::from(db_path));
         }
 
         rusk_config.grpc.merge(matches);
@@ -85,6 +104,20 @@ impl Config {
                 .takes_value(false)
                 .required(false),
         )
+        .arg(
+            Arg::new("consensus-keys-path")
+                .long("consensus-keys-path")
+                .value_name("CONSENSUS_KEYS_PATH")
+                .help("path to encrypted BLS keys")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::new("db-path")
+                .long("db-path")
+                .value_name("DB_PATH")
+                .help("path to blockchain database")
+                .takes_value(true),
+        )
     }
 
     pub(crate) fn log_type(&self) -> String {
@@ -102,5 +135,34 @@ impl Config {
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
             panic!("Invalid log-level specified '{log_level}' - {e}")
         })
+    }
+
+
+    pub(crate) fn db_path(&self) -> PathBuf {
+        self.db_path.clone().unwrap_or_else(|| {
+            let mut path = dirs::home_dir().expect("OS not supported");
+            path.push(".dusk");
+            path.push(env!("CARGO_BIN_NAME"));
+            path
+        })
+    }
+
+    pub(crate) fn consensus_keys_path(&self) -> String {
+        self.consensus_keys_path
+            .clone()
+            .unwrap_or_else(|| {
+                let mut path = dirs::home_dir().expect("OS not supported");
+                path.push(".dusk");
+                path.push(env!("CARGO_BIN_NAME"));
+                path.push("consensus.keys");
+                path
+            })
+            .as_path()
+            .display()
+            .to_string()
+    }
+
+    pub(crate) fn databroker(&self) -> &node::databroker::conf::Params {
+        &self.databroker
     }
 }

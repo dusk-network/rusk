@@ -59,6 +59,12 @@ rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", features = ["host"] }
 rusk-schema = { version = "0.5", path = "../rusk-schema" }
 
+
+node = { version = "*", path = "../node"}
+dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus"  }
+node-data = { version = "0.1", path = "../node-data" }
+dirs = "4"
+
 [dev-dependencies]
 test-context = "0.1"
 async-trait = "0.1"
