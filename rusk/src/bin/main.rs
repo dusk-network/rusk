@@ -7,6 +7,7 @@
 mod config;
 mod ephemeral;
 mod services;
+mod vm;
 #[cfg(not(target_os = "windows"))]
 mod unix;
 mod version;
@@ -14,6 +15,9 @@ mod version;
 use std::path::PathBuf;
 
 use clap::{Arg, Command};
+use node::LongLivedService;
+use node::database::DB;
+use node::database::rocksdb;
 use rusk::services::network::KadcastDispatcher;
 use rusk::services::network::NetworkServer;
 use rusk::services::prover::{ProverServer, RuskProver};
@@ -26,6 +30,16 @@ use version::show_version;
 
 use services::startup_with_tcp_ip;
 use services::startup_with_uds;
+
+
+use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
+use node::mempool::MempoolSrv;
+use node::chain::ChainSrv;
+use node::databroker::DataBrokerSrv;
+use node::database::rocksdb::Backend;
+use node::network::Kadcast;
+use node::Node;
+
 
 use crate::config::Config;
 
@@ -107,6 +121,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .add_service(state)
             .add_service(prover)
     };
+
+
+    tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2 + ACCUMULATOR_WORKERS_AMOUNT)
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            // Set up a node where:
+            // transport layer is Kadcast with message ids from 0 to 255
+            // persistence layer is rocksdb
+            type Services = dyn LongLivedService<
+                Kadcast<255>,
+                rocksdb::Backend,
+                vm::VMExecutionImpl,
+            >;
+
+            // Select list of services to enable
+            let service_list: Vec<Box<Services>> = vec![
+                Box::<MempoolSrv>::default(),
+                Box::new(ChainSrv::new(config.consensus_keys_path())),
+                Box::new(DataBrokerSrv::new(config.databroker())),
+            ];
+
+            let db = rocksdb::Backend::create_or_open(config.db_path());
+            let net = Kadcast::new(config.clone().kadcast.into());
+            let vm = vm::VMExecutionImpl::new(node::vm::Config::default());
+
+            // node spawn_all is the entry point
+            if let Err(e) = Node::new(net, db, vm).spawn_all(service_list).await
+            {
+                tracing::error!("node terminated with err: {}", e);
+                Err(e)
+            } else {
+                Ok(())
+            }
+        });
+
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
