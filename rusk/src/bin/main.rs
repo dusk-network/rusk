@@ -21,7 +21,6 @@ use version::show_version;
 
 use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
 use node::chain::ChainSrv;
-use node::database::rocksdb::Backend;
 use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
@@ -86,32 +85,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     tracing::info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
-    let router = {
-        // let rusk = Rusk::new(rusk_profile::get_rusk_state_dir()?)?;
-
-        // let kadcast = KadcastDispatcher::new(
-        //     config.kadcast.clone().into(),
-        //     config.kadcast_test,
-        // )?;
-
-        // let network =
-        //     NetworkServer::with_interceptor(kadcast,
-        // CompatibilityInterceptor);
-        // let state = StateServer::with_interceptor(
-        //     rusk.clone(),
-        //     CompatibilityInterceptor,
-        // );
-        // let prover = ProverServer::with_interceptor(
-        //     RuskProver::default(),
-        //     CompatibilityInterceptor,
-        // );
-
-        // Server::builder()
-        //     .layer(RuskVersionLayer)
-        //     // .add_service(network)
-        //     .add_service(state)
-        //     .add_service(prover)
-    };
 
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2 + ACCUMULATOR_WORKERS_AMOUNT)
@@ -153,38 +126,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         })?;
 
-    // Match the desired IPC method. Or set the default one depending on the OS
-    // used. Then startup rusk with the final values.
-    // match config.grpc.ipc_method.as_deref() {
-    //     Some(method) => match (cfg!(windows), method) {
-    //         (_, "tcp_ip") => {
-    //             startup_with_tcp_ip(
-    //                 router,
-    //                 &config.grpc.host,
-    //                 &config.grpc.port,
-    //             )
-    //             .await
-    //         }
-    //         (true, "uds") => {
-    //             panic!("Windows does not support Unix Domain Sockets");
-    //         }
-    //         (false, "uds") => {
-    //             startup_with_uds(router, &config.grpc.socket).await
-    //         }
-    //         (_, _) => unreachable!(),
-    //     },
-    //     None => {
-    //         if cfg!(windows) {
-    //             startup_with_tcp_ip(
-    //                 router,
-    //                 &config.grpc.host,
-    //                 &config.grpc.port,
-    //             )
-    //             .await
-    //         } else {
-    //             startup_with_uds(router, &config.grpc.socket).await
-    //         }
-    //     }
-    // }
     Ok(())
 }
