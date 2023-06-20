@@ -281,6 +281,10 @@ impl TransferState {
         &mut self,
         tx: Transaction,
     ) -> (u64, Option<Result<RawResult, ContractError>>) {
+        if !rusk_abi::caller().is_uninitialized() {
+            panic!("`execute` can only be called directly from the node");
+        }
+
         // Constant for a pedersen commitment with zero value.
         //
         // Calculated as `G^0 · G'^0`
