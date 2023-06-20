@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::user::committee::Committee;
-use crate::util::cluster::Cluster;
+use crate::user::cluster::Cluster;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::ledger::{Hash, Signature, StepVotes};

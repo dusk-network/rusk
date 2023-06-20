@@ -8,3 +8,4 @@ pub mod committee;
 pub mod provisioners;
 pub mod sortition;
 pub mod stake;
+pub mod cluster;

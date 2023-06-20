@@ -8,7 +8,7 @@ use crate::aggregator::AggrSignature;
 use crate::commons::RoundUpdate;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
-use crate::util::cluster::Cluster;
+use crate::user::cluster::Cluster;
 use node_data::message::payload::AggrAgreement;
 use node_data::message::{payload, Header, Message, Topics};
 use std::sync::Arc;
