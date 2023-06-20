@@ -12,14 +12,14 @@ use rusk_abi::ContractError;
 /// Transfer transactions are the main type of transaction in the network.
 /// They can be used to transfer funds, call contracts, and even both at the
 /// same time.
-pub struct SpentTransaction(
-    pub Transaction,
-    pub u64,
-    pub Option<ContractError>,
-);
+pub struct SpentTransaction {
+    pub tx: Transaction,
+    pub gas_spent: u64,
+    pub error: Option<ContractError>,
+}
 
 impl SpentTransaction {
     pub fn into_inner(self) -> (Transaction, u64, Option<ContractError>) {
-        (self.0, self.1, self.2)
+        (self.tx, self.gas_spent, self.error)
     }
 }
