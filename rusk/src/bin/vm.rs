@@ -55,9 +55,9 @@ impl VMExecution for VMExecutionImpl {
         let txs = txs
             .into_iter()
             .map(|tx| Transaction {
-                gas_spent: Some(tx.1),
-                inner: tx.0,
-                err: tx.2.map(|e| format!("{e:?}")),
+                gas_spent: Some(tx.gas_spent),
+                inner: tx.tx,
+                err: tx.error.map(|e| format!("{e:?}")),
             })
             .collect();
 
@@ -128,9 +128,9 @@ impl VMExecution for VMExecutionImpl {
         let txs = txs
             .into_iter()
             .map(|tx| Transaction {
-                gas_spent: Some(tx.1),
-                inner: tx.0,
-                err: tx.2.map(|e| format!("{e:?}")),
+                gas_spent: Some(tx.gas_spent),
+                inner: tx.tx,
+                err: tx.error.map(|e| format!("{e:?}")),
             })
             .collect();
 
@@ -166,9 +166,9 @@ impl VMExecution for VMExecutionImpl {
         let txs = txs
             .into_iter()
             .map(|tx| Transaction {
-                gas_spent: Some(tx.1),
-                inner: tx.0,
-                err: tx.2.map(|e| format!("{e:?}")),
+                gas_spent: Some(tx.gas_spent),
+                inner: tx.tx,
+                err: tx.error.map(|e| format!("{e:?}")),
             })
             .collect();
 
