@@ -59,7 +59,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::util::cluster::Cluster;
+    use crate::user::cluster::Cluster;
 
     #[test]
     pub fn test_set_weight() {
