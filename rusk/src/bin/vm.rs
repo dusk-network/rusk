@@ -8,7 +8,7 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_consensus::{
     contract_state::CallParams,
     user::{
-        provisioners::{Member, Provisioners, DUSK},
+        provisioners::{Member, Provisioners},
         stake::Stake,
     },
 };
@@ -104,7 +104,7 @@ impl VMExecution for VMExecutionImpl {
         blk: &Block,
     ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])> {
         info!("Received accept request");
-        let generator = blk.header.generator_bls_pubkey.clone();
+        let generator = blk.header.generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
@@ -142,7 +142,7 @@ impl VMExecution for VMExecutionImpl {
         blk: &Block,
     ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])> {
         info!("Received finalize request");
-        let generator = blk.header.generator_bls_pubkey.clone();
+        let generator = blk.header.generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
