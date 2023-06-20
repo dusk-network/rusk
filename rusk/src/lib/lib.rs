@@ -21,8 +21,6 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::PublicKey;
-use dusk_plonk::prelude::PublicParameters;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::*;
 use phoenix_core::Message;
@@ -41,15 +39,6 @@ use transfer_circuits::ExecuteCircuit;
 const A: usize = 4;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
-
-pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
-    let pp = rusk_profile::get_common_reference_string()
-        .expect("Failed to get common reference string");
-
-    PublicParameters::from_slice_unchecked(pp.as_slice())
-});
-
-const STREAM_BUF_SIZE: usize = 64;
 
 /// The gas grace is a magic number denoting the amount of gas that is spent by
 /// a transaction after the charging code has been executed.
@@ -75,7 +64,6 @@ pub struct RuskInner {
 pub struct Rusk {
     inner: Arc<Mutex<RuskInner>>,
     dir: PathBuf,
-    stream_buffer_size: usize,
 }
 
 impl Rusk {
@@ -108,7 +96,6 @@ impl Rusk {
         Ok(Self {
             inner,
             dir: dir.into(),
-            stream_buffer_size: STREAM_BUF_SIZE,
         })
     }
 
@@ -636,7 +623,7 @@ const fn emission_amount(block_height: u64) -> Dusk {
 fn circuit_from_numbers(
     num_inputs: usize,
     num_outputs: usize,
-) -> Option<ExecuteCircuit> {
+) -> Option<ExecuteCircuit<(), TRANSFER_TREE_DEPTH, A>> {
     use ExecuteCircuit::*;
 
     match num_inputs {
