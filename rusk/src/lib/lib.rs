@@ -147,11 +147,11 @@ impl Rusk {
             block_gas_left -= gas_spent;
             dusk_spent += gas_spent * tx.fee.gas_price;
 
-            spent_txs.push(SpentTransaction(
+            spent_txs.push(SpentTransaction {
                 tx,
                 gas_spent,
-                call_result.and_then(|result| result.err()),
-            ));
+                error: call_result.and_then(|result| result.err()),
+            });
 
             // No need to keep executing if there is no gas left in the
             // block
@@ -515,11 +515,11 @@ fn accept(
             .checked_sub(gas_spent)
             .ok_or(Error::OutOfGas)?;
 
-        spent_txs.push(SpentTransaction(
+        spent_txs.push(SpentTransaction {
             tx,
             gas_spent,
-            call_result.and_then(|result| result.err()),
-        ));
+            error: call_result.and_then(|result| result.err()),
+        });
     }
 
     reward(session, block_height, dusk_spent, generator)?;
