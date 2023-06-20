@@ -20,9 +20,7 @@ use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_pki::PublicKey;
-use dusk_plonk::prelude::PublicParameters;
 use dusk_poseidon::tree::PoseidonBranch;
-use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::*;
 use phoenix_core::Message;
@@ -40,15 +38,6 @@ use transfer_circuits::ExecuteCircuit;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
-    let pp = rusk_profile::get_common_reference_string()
-        .expect("Failed to get common reference string");
-
-    PublicParameters::from_slice_unchecked(pp.as_slice())
-});
-
-const STREAM_BUF_SIZE: usize = 64;
-
 pub struct RuskInner {
     pub current_commit: [u8; 32],
     pub base_commit: [u8; 32],
@@ -59,7 +48,6 @@ pub struct RuskInner {
 pub struct Rusk {
     inner: Arc<Mutex<RuskInner>>,
     dir: PathBuf,
-    stream_buffer_size: usize,
 }
 
 impl Rusk {
@@ -92,7 +80,6 @@ impl Rusk {
         Ok(Self {
             inner,
             dir: dir.into(),
-            stream_buffer_size: STREAM_BUF_SIZE,
         })
     }
 
