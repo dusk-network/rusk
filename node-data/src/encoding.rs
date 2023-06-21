@@ -145,14 +145,8 @@ impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // In order to be aligned with golang impl,
         // we cannot use here StepVotes::write for now.
-        Self::write_var_le_bytes(
-            w,
-            &self.first_reduction.signature.inner()[..],
-        )?;
-        Self::write_var_le_bytes(
-            w,
-            &self.second_reduction.signature.inner()[..],
-        )?;
+        Self::write_var_bytes(w, &self.first_reduction.signature.inner()[..])?;
+        Self::write_var_bytes(w, &self.second_reduction.signature.inner()[..])?;
 
         w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
         w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
@@ -164,11 +158,11 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let first_red_signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let first_red_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let second_red_signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let second_red_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -196,7 +190,7 @@ impl Serializable for Certificate {
 impl Serializable for StepVotes {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.bitset.to_le_bytes())?;
-        Self::write_var_le_bytes(w, &self.signature.inner()[..])?;
+        Self::write_var_bytes(w, &self.signature.inner()[..])?;
 
         Ok(())
     }
@@ -207,7 +201,7 @@ impl Serializable for StepVotes {
     {
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
-        let signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
