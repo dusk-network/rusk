@@ -1,4 +1,4 @@
-base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/rusk-state/piecrust-state-20230609"
+base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/rusk-state/piecrust-state-20230621"
 
 [acl.stake]
 owners = []
