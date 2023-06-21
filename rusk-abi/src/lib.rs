@@ -22,7 +22,14 @@ extern crate alloc;
 use crate::hash::Hasher;
 
 // re-export `piecrust-uplink` such that `rusk-abi` is the only crate
-pub use piecrust_uplink::*;
+// TODO
+pub use piecrust_uplink::{
+    bufwriter, call, call_raw, call_raw_with_limit, call_with_limit, caller,
+    debug, emit, height, host_query, limit, meta_data, self_id, snap, spent,
+    wrap_call, ArchivedRawCall, ArchivedRawResult, ContractError, ContractId,
+    ContractIdResolver, RawCall, RawCallResolver, RawResult, RawResultResolver,
+    StandardBufSerializer, ARGBUF_LEN, MODULE_ID_BYTES, SCRATCH_BUF_BYTES,
+};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;

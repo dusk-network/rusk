@@ -15,7 +15,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
-use dusk_pki::PublicKey;
+use dusk_pki::{PublicKey, PublicSpendKey};
 use dusk_schnorr::Signature;
 use rusk_abi::{ContractId, PaymentInfo, PublicInput};
 
@@ -66,6 +66,10 @@ impl HostFnTest {
     pub fn block_height(&self) -> u64 {
         rusk_abi::block_height()
     }
+
+    pub fn owner(&self) -> PublicSpendKey {
+        rusk_abi::owner()
+    }
 }
 
 #[no_mangle]
@@ -102,6 +106,11 @@ unsafe fn verify_bls(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn block_height(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |_: ()| STATE.block_height())
+}
+
+#[no_mangle]
+unsafe fn contract_owner(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owner())
 }
 
 const PAYMENT_INFO: PaymentInfo = PaymentInfo::Transparent(None);

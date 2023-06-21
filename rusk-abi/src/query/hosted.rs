@@ -17,6 +17,7 @@ use dusk_schnorr::Signature;
 use piecrust_uplink::{ContractError, ContractId};
 
 use bytecheck::CheckBytes;
+use dusk_bytes::Serializable;
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// Enum representing all possible payment configurations.
@@ -30,6 +31,12 @@ pub enum PaymentInfo {
     Obfuscated(Option<PublicSpendKey>),
     /// Any type of note is accepted.
     Any(Option<PublicSpendKey>),
+}
+
+/// Returns the owner of the contract
+pub fn owner() -> PublicSpendKey {
+    let bytes = piecrust_uplink::owner::<64>();
+    PublicSpendKey::from_bytes(&bytes).unwrap()
 }
 
 /// Compute the blake2b hash of the given bytes, returning the resulting scalar.
