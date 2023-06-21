@@ -10,5 +10,10 @@ use node_data::ledger::Block;
 /// Generates the genesis state for the chain per specified network type
 pub(crate) fn generate_state() -> Block {
     // TBD
-    Block::default()
+   let mut b = Block::default();
+   // March 9, 2022 16:10:22 GMT
+   b.header.timestamp=1646842222;
+   b.calculate_hash();
+   b
+
 }
