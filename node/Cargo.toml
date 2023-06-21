@@ -24,7 +24,7 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 async-channel = "1.7"
 
-rocksdb_lib = { package = "rocksdb", version = "0.19.0", default-features = false }
+rocksdb_lib = { package = "rocksdb", version = "0.21", default-features = false }
 dusk-bytes = "^0.1"
 node-data = { version = "0.1", path = "../node-data" }
 rustc_tools_util = "=0.2.0"
