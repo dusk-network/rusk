@@ -118,7 +118,7 @@ impl Header {
         if fixed_size_seed {
             w.write_all(&self.seed.inner()[..])?;
         } else {
-            Self::write_var_le_bytes(w, &self.seed.inner()[..])?;
+            Self::write_var_bytes(w, &self.seed.inner()[..])?;
         }
 
         w.write_all(&self.state_hash[..])?;
@@ -146,7 +146,7 @@ impl Header {
         let mut prev_block_hash = [0u8; 32];
         r.read_exact(&mut prev_block_hash[..])?;
 
-        let value = Self::read_var_le_bytes(r)?;
+        let value = Self::read_var_bytes(r)?;
         let seed: [u8; 48] = value
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
