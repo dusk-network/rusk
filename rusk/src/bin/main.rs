@@ -19,7 +19,6 @@ use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
 use version::show_version;
 
-use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
 use node::chain::ChainSrv;
 use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
@@ -28,8 +27,10 @@ use node::Node;
 
 use crate::config::Config;
 
-// #[tokio::main]
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+// Number of workers should be at least `ACCUMULATOR_WORKERS_AMOUNT` from
+// `dusk_consensus::config`.
+#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
     let crate_name = &crate_info.crate_name.to_string();
     let version = show_version(crate_info);
@@ -86,46 +87,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
 
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2 + ACCUMULATOR_WORKERS_AMOUNT)
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            // Set up a node where:
-            // transport layer is Kadcast with message ids from 0 to 255
-            // persistence layer is rocksdb
-            type Services = dyn LongLivedService<
-                Kadcast<255>,
-                rocksdb::Backend,
-                vm::VMExecutionImpl,
-            >;
+    // Set up a node where:
+    // transport layer is Kadcast with message ids from 0 to 255
+    // persistence layer is rocksdb
+    type Services = dyn LongLivedService<
+        Kadcast<255>,
+        rocksdb::Backend,
+        vm::VMExecutionImpl,
+    >;
 
-            // Select list of services to enable
-            let service_list: Vec<Box<Services>> = vec![
-                Box::<MempoolSrv>::default(),
-                Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
-                Box::new(DataBrokerSrv::new(config.databroker())),
-            ];
+    // Select list of services to enable
+    let service_list: Vec<Box<Services>> = vec![
+        Box::<MempoolSrv>::default(),
+        Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
+        Box::new(DataBrokerSrv::new(config.databroker())),
+    ];
 
-            let db_path = tempdir.as_ref().map_or_else(
-                || config.chain.db_path(),
-                |t| t.path().to_path_buf(),
-            );
-            let db = rocksdb::Backend::create_or_open(db_path);
-            let net = Kadcast::new(config.clone().kadcast.into());
-            let vm =
-                vm::VMExecutionImpl::new(node::vm::Config::default(), rusk);
+    let db_path = tempdir
+        .as_ref()
+        .map_or_else(|| config.chain.db_path(), |t| t.path().to_path_buf());
+    let db = rocksdb::Backend::create_or_open(db_path);
+    let net = Kadcast::new(config.clone().kadcast.into());
+    let vm = vm::VMExecutionImpl::new(node::vm::Config::default(), rusk);
 
-            // node spawn_all is the entry point
-            if let Err(e) = Node::new(net, db, vm).spawn_all(service_list).await
-            {
-                tracing::error!("node terminated with err: {}", e);
-                Err(e)
-            } else {
-                Ok(())
-            }
-        })?;
-
-    Ok(())
+    // node spawn_all is the entry point
+    if let Err(e) = Node::new(net, db, vm).spawn_all(service_list).await {
+        tracing::error!("node terminated with err: {}", e);
+        Err(e.into())
+    } else {
+        Ok(())
+    }
 }
