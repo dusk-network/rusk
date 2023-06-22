@@ -40,12 +40,22 @@ impl Serializable for Block {
 
 impl Serializable for Transaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        //Write version
+        w.write_all(&1u32.to_le_bytes())?;
+
+        //Write TxType
+        w.write_all(&1u32.to_le_bytes())?;
+
         let data = self.inner.to_var_bytes();
 
         // Write inner transaction
         let len = data.len() as u32;
         w.write_all(&len.to_le_bytes())?;
         w.write_all(&data)?;
+
+        if self.gas_spent.is_none(){
+            return Ok(());
+        }
 
         // Write gas_spent
         match self.gas_spent {
@@ -77,16 +87,25 @@ impl Serializable for Transaction {
     {
         let mut buf = [0u8; 4];
         r.read_exact(&mut buf)?;
+        let _version = u32::from_le_bytes(buf);
 
-        let len = u32::from_le_bytes(buf);
-        let mut buf = vec![0u8; len as usize];
+        let mut buf = [0u8; 4];
         r.read_exact(&mut buf)?;
+        let _tx_type = u32::from_le_bytes(buf);
 
-        let inner = phoenix_core::Transaction::from_slice(&buf[..])
+        let tx_payload = Self::read_var_le_bytes32(r)?;
+        let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         let mut optional = [0u8; 1];
-        r.read_exact(&mut optional)?;
+        let result = r.read_exact(&mut optional);
+        if result.is_err() {
+            return Ok(Self {
+                inner,
+                gas_spent: None,
+                err: None,
+            });
+        }
 
         let gas_spent = if optional[0] != 0 {
             let mut buf = [0u8; 8];
