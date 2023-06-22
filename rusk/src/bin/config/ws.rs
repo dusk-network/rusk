@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct WsConfig {
+    #[serde(default = "bool::default")]
     pub listen: bool,
     listen_address: Option<String>,
 }

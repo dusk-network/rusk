@@ -26,6 +26,7 @@ pub(crate) struct Config {
 
     pub(crate) kadcast: KadcastConfig,
     pub(crate) chain: ChainConfig,
+    #[serde(default = "WsConfig::default")]
     pub(crate) ws: WsConfig,
 }
 
