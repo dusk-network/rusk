@@ -12,23 +12,13 @@ use dusk_consensus::{
         stake::Stake,
     },
 };
-use node::vm::{Config, VMExecution};
+use node::vm::VMExecution;
 use node_data::ledger::{Block, Transaction};
-use rusk::Rusk;
 use tracing::info;
 
-/// Empty Placeholder for VMExecution
-pub struct VMExecutionImpl {
-    inner: Rusk,
-}
+use crate::Rusk;
 
-impl VMExecutionImpl {
-    pub fn new(_conf: Config, rusk: Rusk) -> Self {
-        Self { inner: rusk }
-    }
-}
-
-impl VMExecution for VMExecutionImpl {
+impl VMExecution for Rusk {
     fn execute_state_transition(
         &self,
         params: &CallParams,
@@ -41,7 +31,6 @@ impl VMExecution for VMExecutionImpl {
         let txs = params.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (txs, discarded_txs, state_root) = self
-            .inner
             .execute_transactions(
                 params.round,
                 params.block_gas_limit,
@@ -85,7 +74,6 @@ impl VMExecution for VMExecutionImpl {
         let txs = params.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (_, state_root) = self
-            .inner
             .verify_transactions(
                 params.round,
                 params.block_gas_limit,
@@ -114,7 +102,6 @@ impl VMExecution for VMExecutionImpl {
         let txs = blk.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (txs, state_root) = self
-            .inner
             .accept_transactions(
                 blk.header.height,
                 blk.header.gas_limit,
@@ -152,7 +139,6 @@ impl VMExecution for VMExecutionImpl {
         let txs = blk.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (txs, state_root) = self
-            .inner
             .finalize_transactions(
                 blk.header.height,
                 blk.header.gas_limit,
@@ -181,7 +167,6 @@ impl VMExecution for VMExecutionImpl {
     fn get_provisioners(&self) -> Result<Provisioners, anyhow::Error> {
         info!("Received get_provisioners request");
         let provisioners = self
-            .inner
             .provisioners()
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .into_iter()
@@ -213,13 +198,13 @@ impl VMExecution for VMExecutionImpl {
             ret.add_member_with_stake(
                 p.public_key().clone(),
                 first_stake.clone(),
-            )
+            );
         }
 
         Ok(ret)
     }
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
-        Ok(self.inner.state_root())
+        Ok(self.state_root())
     }
 }

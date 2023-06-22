@@ -7,7 +7,6 @@
 mod config;
 mod ephemeral;
 mod version;
-mod vm;
 
 use std::path::PathBuf;
 
@@ -90,11 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Set up a node where:
     // transport layer is Kadcast with message ids from 0 to 255
     // persistence layer is rocksdb
-    type Services = dyn LongLivedService<
-        Kadcast<255>,
-        rocksdb::Backend,
-        vm::VMExecutionImpl,
-    >;
+    type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
 
     // Select list of services to enable
     let service_list: Vec<Box<Services>> = vec![
@@ -108,10 +103,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_or_else(|| config.chain.db_path(), |t| t.path().to_path_buf());
     let db = rocksdb::Backend::create_or_open(db_path);
     let net = Kadcast::new(config.clone().kadcast.into());
-    let vm = vm::VMExecutionImpl::new(node::vm::Config::default(), rusk);
 
     // node spawn_all is the entry point
-    if let Err(e) = Node::new(net, db, vm).spawn_all(service_list).await {
+    if let Err(e) = Node::new(net, db, rusk).spawn_all(service_list).await {
         tracing::error!("node terminated with err: {}", e);
         Err(e.into())
     } else {
