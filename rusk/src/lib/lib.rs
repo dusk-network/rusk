@@ -15,6 +15,7 @@ use std::{cmp, fs, io};
 
 pub mod error;
 pub mod transaction;
+mod vm;
 
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
