@@ -12,8 +12,7 @@ impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header().write(w)?;
 
-        let txs_num = self.txs.len() as u8;
-        w.write_all(&txs_num.to_le_bytes())?;
+        Self::write_varint(w, self.txs().len() as u64)?;
 
         for t in self.txs.iter() {
             t.write(w)?;
@@ -29,10 +28,9 @@ impl Serializable for Block {
         let header = Header::read(r)?;
 
         // Read transactions count
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
+        let txlen = Self::read_varint(r)?;
 
-        let txs = (0..buf[0] as usize)
+        let txs = (0..txlen)
             .map(|_| Transaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
