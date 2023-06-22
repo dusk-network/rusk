@@ -11,7 +11,7 @@ use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
+use dusk_consensus::consensus::{self, Consensus};
 use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
@@ -102,6 +102,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
+    pub fn needs_update(blk: &Block) -> bool {
+        //TODO Remove hardcoded epoch
+        if blk.header().height % 2160 == 0 {
+            return true;
+        }
+        blk.txs.iter().filter(|t| t.err.is_none()).any(|t| {
+            match &t.inner.call {
+                //TODO Check for contractId too
+                Some((_, method, _)) if method == "stake" => true,
+                Some((_, method, _)) if method == "unstake" => true,
+                _ => false,
+            }
+        })
+    }
+
     pub(crate) async fn try_accept_block(
         &self,
         blk: &Block,
@@ -120,7 +135,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         // Persist block in consistency with the VM state update
-        let provisioners = {
+        let updated_provisioners = {
             let vm = self.vm.write().await;
             self.db.read().await.update(|t| {
                 t.store_block(blk, true)?;
@@ -129,17 +144,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 if blk.header.iteration == 1 {
                     vm.finalize(blk)?;
                     return Ok(());
-                    // return vm.finalize(blk);
                 }
 
                 //TODO: Retrieve eligible_provisioners
                 vm.accept(blk)?;
                 Ok(())
             });
-            vm.get_provisioners()
-        }?;
+            Self::needs_update(blk).then(|| vm.get_provisioners())
+        };
 
-        *provisioners_list = provisioners;
+        if let Some(updated_prov) = updated_provisioners {
+            *provisioners_list = updated_prov?;
+        }
 
         *mrb = blk.clone();
 
