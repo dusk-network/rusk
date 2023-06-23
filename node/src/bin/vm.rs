@@ -58,4 +58,7 @@ impl VMExecution for VMExecutionImpl {
     fn get_provisioners(&self) -> Result<Provisioners, anyhow::Error> {
         Ok(VMExecutionImpl::get_mocked_provisioners())
     }
+    fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
+        Ok([0u8;32])
+    }
 }

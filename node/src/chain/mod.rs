@@ -74,6 +74,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
         // Restore/Load most recent block
         let mrb = Self::load_most_recent_block(db.clone()).await?;
+
+        let vm_root = vm.read().await.get_state_root()?;
+
+        if mrb.header().height > 0 {
+            assert_eq!(mrb.header().state_hash, vm_root, "Invalid state root");
+        }
+
         let provisioners_list = vm.read().await.get_provisioners()?;
 
         // Initialize Acceptor and trigger consensus task
