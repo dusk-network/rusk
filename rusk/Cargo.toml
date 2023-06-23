@@ -47,6 +47,7 @@ dusk-wallet-core = "0.16.0-piecrust.0.5"
 phoenix-core = "0.18"
 piecrust = "0.5"
 kadcast = "0.5.0-rc"
+tokio-tungstenite = { version = "0.19", default-features = false, features = ["handshake"] }
 
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = [
   "state",

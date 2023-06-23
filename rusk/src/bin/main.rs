@@ -23,6 +23,7 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
+use rusk::ws::WsServer;
 
 use crate::config::Config;
 
@@ -104,8 +105,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = rocksdb::Backend::create_or_open(db_path);
     let net = Kadcast::new(config.clone().kadcast.into());
 
+    let node = Node::new(net, db, rusk.clone());
+
+    let mut _ws_server = None;
+    if config.ws.listen {
+        _ws_server = Some(
+            WsServer::bind(rusk, node.clone(), config.ws.listen_addr()).await?,
+        );
+    }
+
     // node spawn_all is the entry point
-    if let Err(e) = Node::new(net, db, rusk).spawn_all(service_list).await {
+    if let Err(e) = node.spawn_all(service_list).await {
         tracing::error!("node terminated with err: {}", e);
         Err(e.into())
     } else {
