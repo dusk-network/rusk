@@ -21,10 +21,10 @@ pub trait Serializable {
     fn write_varint<W: Write>(w: &mut W, v: u64) -> io::Result<()> {
         if v < 0xfd {
             w.write_all(&[v as u8])?
-        } else if v <= 1 << 16 - 1 {
+        } else if v <= 1 << (16 - 1) {
             w.write_all(&[0xfd])?;
             w.write_all(&(v as u16).to_le_bytes())?;
-        } else if v <= 1 << 32 - 1 {
+        } else if v <= 1 << (32 - 1) {
             w.write_all(&[0xfe])?;
             w.write_all(&(v as u32).to_le_bytes())?;
         } else {

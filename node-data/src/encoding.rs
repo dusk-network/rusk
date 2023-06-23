@@ -53,7 +53,7 @@ impl Serializable for Transaction {
         w.write_all(&len.to_le_bytes())?;
         w.write_all(&data)?;
 
-        if self.gas_spent.is_none(){
+        if self.gas_spent.is_none() {
             return Ok(());
         }
 
