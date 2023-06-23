@@ -80,7 +80,7 @@ impl std::fmt::Debug for Header {
 pub struct Transaction {
     pub inner: phoenix_core::Transaction,
     pub gas_spent: Option<u64>,
-    pub err: Option<String>
+    pub err: Option<String>,
 }
 
 impl Transaction {
@@ -342,7 +342,7 @@ pub mod faker {
             inner: phoenix_core::Transaction::from_slice(&utx_bytes)
                 .expect("should be valid"),
             gas_spent: None,
-            err: None
+            err: None,
         }
     }
 }
