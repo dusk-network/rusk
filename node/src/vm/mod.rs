@@ -29,7 +29,7 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         blk: &Block,
     ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])>;
-    
+
     fn finalize(
         &self,
         blk: &Block,
