@@ -95,11 +95,16 @@ fn get_rusk_keys_dir() -> Result<PathBuf, io::Error> {
 pub fn get_rusk_state_dir() -> Result<PathBuf, io::Error> {
     env::var("RUSK_STATE_PATH")
         .map_or_else(
-            |_| get_rusk_profile_dir().ok(),
+            |_| {
+                get_rusk_profile_dir().ok().map(|mut p| {
+                    p.push("state");
+                    p
+                })
+            },
             |e| Some(PathBuf::from(e)),
         )
-        .and_then(|mut p| {
-            p.push("state");
+        .and_then(|p| {
+            // p.push("state");
             fs::create_dir_all(&p).map(|_| p).ok()
         })
         .ok_or_else(|| {
