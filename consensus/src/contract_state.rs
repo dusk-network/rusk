@@ -29,6 +29,7 @@ pub struct Output {
     pub txs: Vec<Transaction>,
     pub state_root: StateRoot,
     pub provisioners: Provisioners,
+    pub discarded_txs: Vec<Transaction>,
 }
 pub trait Operations: Send + Sync {
     fn verify_state_transition(
@@ -45,8 +46,8 @@ pub trait Operations: Send + Sync {
         &self,
         params: CallParams,
     ) -> Result<Output, Error>;
-    fn accept(&self, params: CallParams) -> Result<Output, Error>;
-    fn finalize(&self, params: CallParams) -> Result<Output, Error>;
+    // fn accept(&self, params: CallParams) -> Result<Output, Error>;
+    // fn finalize(&self, params: CallParams) -> Result<Output, Error>;
 
-    fn get_state_root(&self) -> Result<StateRoot, Error>;
+    // fn get_state_root(&self) -> Result<StateRoot, Error>;
 }
