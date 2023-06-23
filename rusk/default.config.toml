@@ -1,12 +1,11 @@
 # log_level = 'info'
 # log_type = 'coloured'
-kadcast_test = false
 
-[grpc]
-socket = '/tmp/rusk_listener'
-host = '0.0.0.0'
-port = '8585'
-ipc_method = 'tcp_ip'
+[chain]
+
+[databroker]
+max_inv_entries = 100
+max_ongoing_requests = 1000
 
 [kadcast]
 public_address = '127.0.0.1:9000'
