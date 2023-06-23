@@ -7,8 +7,8 @@
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 
-use crate::config;
 use super::cluster::Cluster;
+use crate::config;
 use node_data::bls::PublicKey;
 use std::collections::{BTreeMap, HashMap};
 use std::mem;
