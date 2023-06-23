@@ -51,9 +51,9 @@ impl KadcastConfig {
             Arg::new("kadcast_listen_address")
                 .long("kadcast_listen_address")
                 .long_help("This address is the one bound for the incoming connections. 
-    Use this argument if your host is not publicly reachable from other peer in the network 
-    (Eg: if you are behind a NAT)
-    If this is not specified, the public address will be used for binding incoming connection")
+    Use this argument if your host is not publicly reachable from other peer in
+    the network (Eg: if you are behind a NAT)
+    If this is not specified, the public address is used for binding incoming connection")
                 .help("Optional internal address to listen incoming connections. Eg: 127.0.0.1:9999")
                 .env("KADCAST_LISTEN_ADDRESS")
                 .takes_value(true)
@@ -73,14 +73,6 @@ impl KadcastConfig {
                 .long("kadcast_autobroadcast")
                 .env("KADCAST_AUTOBROADCAST")
                 .help("If used then the received messages are automatically re-broadcasted")
-                .takes_value(false)
-                .required(false),
-        )
-        .arg(
-            Arg::new("kadcast_test")
-                .long("kadcast_test")
-                .env("KADCAST_TEST")
-                .help("If used then the received messages is a blake2b 256hash")
                 .takes_value(false)
                 .required(false),
         )

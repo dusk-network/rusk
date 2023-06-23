@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => unreachable!(),
     };
 
-    let _tempdir = match args.get_one::<PathBuf>("state_zip_file") {
+    let tempdir = match args.get_one::<PathBuf>("state_file") {
         Some(state_zip) => ephemeral::configure(state_zip)?,
         None => None,
     };
@@ -104,13 +104,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Select list of services to enable
             let service_list: Vec<Box<Services>> = vec![
                 Box::<MempoolSrv>::default(),
-                Box::new(ChainSrv::new(config.consensus_keys_path())),
+                Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
                 Box::new(DataBrokerSrv::new(config.databroker())),
             ];
 
-            let db_path = _tempdir
-                .as_ref()
-                .map_or_else(|| config.db_path(), |t| t.path().to_path_buf());
+            let db_path = tempdir.as_ref().map_or_else(
+                || config.chain.db_path(),
+                |t| t.path().to_path_buf(),
+            );
             let db = rocksdb::Backend::create_or_open(db_path);
             let net = Kadcast::new(config.clone().kadcast.into());
             let vm =

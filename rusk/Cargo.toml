@@ -13,11 +13,7 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tokio = { version = "1.15", features = [
-  "rt-multi-thread",
-  "fs",
-  "macros",
-] }
+tokio = { version = "1.15", features = ["rt-multi-thread", "fs", "macros"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3.0", features = [
   "fmt",
