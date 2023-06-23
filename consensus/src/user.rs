@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+pub mod cluster;
 pub mod committee;
 pub mod provisioners;
 pub mod sortition;
 pub mod stake;
-pub mod cluster;
