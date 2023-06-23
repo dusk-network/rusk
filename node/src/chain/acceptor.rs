@@ -120,20 +120,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         // Persist block in consistency with the VM state update
-        {
+        let provisioners = {
             let vm = self.vm.write().await;
             self.db.read().await.update(|t| {
                 t.store_block(blk, true)?;
 
                 // Accept block transactions into the VM
                 if blk.header.iteration == 1 {
-                    return vm.finalize(blk);
+                    vm.finalize(blk)?;
+                    return Ok(());
+                    // return vm.finalize(blk);
                 }
 
                 //TODO: Retrieve eligible_provisioners
-                vm.accept(blk)
-            })
+                vm.accept(blk)?;
+                Ok(())
+            });
+            vm.get_provisioners()
         }?;
+
+        *provisioners_list = provisioners;
 
         *mrb = blk.clone();
 

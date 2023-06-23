@@ -27,6 +27,7 @@ use std::io::Read;
 use std::io::Write;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::vec;
 use tokio::io::AsyncWriteExt;
@@ -124,10 +125,8 @@ impl DB for Backend {
     where
         T: AsRef<Path>,
     {
-        info!(
-            "Opening database in {:?}",
-            path.as_ref().to_str().unwrap_or_default()
-        );
+        let path = path.as_ref().join("chain.db");
+        info!("Opening database in {path:?}");
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -447,7 +446,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         // Add Secondary indexes //
         // Nullifiers
-        for n in tx.inner.inputs().iter() {
+        for n in tx.inner.nullifiers().iter() {
             let key = n.to_bytes();
             self.inner.put_cf(self.nullifiers_cf, key, vec![0])?;
         }
@@ -487,7 +486,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
             // Delete Secondary indexes
             // Delete Nullifiers
-            for n in tx.inner.inputs().iter() {
+            for n in tx.inner.nullifiers().iter() {
                 let key = n.to_bytes();
                 self.inner.delete_cf(self.nullifiers_cf, key)?;
             }

@@ -132,7 +132,7 @@ impl MempoolSrv {
 
             let nullifiers = tx
                 .inner
-                .inputs()
+                .nullifiers()
                 .iter()
                 .map(|nullifier| nullifier.to_bytes())
                 .collect();
