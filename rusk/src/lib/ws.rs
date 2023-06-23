@@ -113,7 +113,7 @@ fn parse_len(
     bytes: &[u8],
 ) -> Result<(usize, &[u8]), Box<dyn std::error::Error>> {
     if bytes.len() < 4 {
-        return Err(format!("not enough bytes").into());
+        return Err("not enough bytes".to_string().into());
     }
 
     let len =
@@ -123,12 +123,8 @@ fn parse_len(
     Ok((len, left))
 }
 
-fn parse_header(
-    bytes: &[u8],
-) -> Result<
-    (serde_json::Map<String, serde_json::Value>, &[u8]),
-    Box<dyn std::error::Error>,
-> {
+type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
+fn parse_header(bytes: &[u8]) -> Result<Header, Box<dyn std::error::Error>> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
         return Err(format!("not enough bytes for parsed len {len}").into());
@@ -143,8 +139,8 @@ fn parse_header(
 fn parse_target_type(
     bytes: &[u8],
 ) -> Result<(u8, &[u8]), Box<dyn std::error::Error>> {
-    if bytes.len() < 1 {
-        return Err(format!("not enough bytes for target type").into());
+    if bytes.is_empty() {
+        return Err("not enough bytes for target type".to_string().into());
     }
 
     let (target_type_bytes, bytes) = bytes.split_at(1);
@@ -164,7 +160,7 @@ fn parse_string(
     let (string_bytes, bytes) = bytes.split_at(len);
     let string = String::from_utf8(string_bytes.to_vec())?;
 
-    return Ok((string, bytes));
+    Ok((string, bytes))
 }
 
 #[allow(unused)]
