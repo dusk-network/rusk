@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::services::prover::RuskProver;
 use crate::transaction::SpentTransaction;
 
 use std::collections::BTreeSet;
@@ -15,7 +14,6 @@ use std::sync::Arc;
 use std::{cmp, fs, io};
 
 pub mod error;
-pub mod services;
 pub mod transaction;
 
 use bytecheck::CheckBytes;
@@ -38,6 +36,7 @@ use rusk_abi::{
 };
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
+use transfer_circuits::ExecuteCircuit;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -280,14 +279,59 @@ impl Rusk {
         Ok(inner.current_commit)
     }
 
-    pub fn pre_verify(&self, tx: &Transaction) -> Result<()> {
-        let existing_nullifiers = self.existing_nullifiers(&tx.nullifiers)?;
+    pub fn preverify(&self, tx: &Transaction) -> Result<()> {
+        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
+
+        let inputs = &tx.nullifiers;
+        let outputs = &tx.outputs;
+        let proof = &tx.proof;
+
+        let existing_nullifiers = self.existing_nullifiers(inputs)?;
 
         if !existing_nullifiers.is_empty() {
             return Err(Error::RepeatingNullifiers(existing_nullifiers));
         }
 
-        if !RuskProver::preverify(tx)? {
+        // if !RuskProver::preverify(tx)? {
+        //     return Err(Error::ProofVerification);
+        // }
+
+        let circuit = circuit_from_numbers(inputs.len(), outputs.len())
+            .ok_or_else(|| {
+                Error::InvalidCircuitArguments(inputs.len(), outputs.len())
+            })?;
+
+        let mut pi: Vec<rusk_abi::PublicInput> =
+            Vec::with_capacity(9 + inputs.len());
+
+        pi.push(tx_hash.into());
+        pi.push(tx.anchor.into());
+        pi.extend(inputs.iter().map(|n| n.into()));
+
+        pi.push(
+            tx.crossover()
+                .copied()
+                .unwrap_or_default()
+                .value_commitment()
+                .into(),
+        );
+
+        let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
+
+        pi.push(fee_value.into());
+        pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
+        pi.extend(
+            (0usize..2usize.saturating_sub(outputs.len())).map(|_| {
+                transfer_circuits::CircuitOutput::ZERO_COMMITMENT.into()
+            }),
+        );
+
+        let keys = rusk_profile::keys_for(circuit.circuit_id())?;
+        let vd = keys.get_verifier()?;
+
+        // Maybe we want to handle internal serialization error too, currently
+        // they map to `false`.
+        if !rusk_abi::verify_proof(vd, proof.clone(), pi) {
             return Err(Error::ProofVerification);
         }
 
@@ -538,5 +582,20 @@ const fn emission_amount(block_height: u64) -> Dusk {
         43_750_001..=50_000_000 => dusk(3.2),
         50_000_001..=62_500_000 => dusk(1.6),
         _ => dusk(0.0),
+    }
+}
+
+fn circuit_from_numbers(
+    num_inputs: usize,
+    num_outputs: usize,
+) -> Option<ExecuteCircuit> {
+    use ExecuteCircuit::*;
+
+    match num_inputs {
+        1 if num_outputs < 3 => Some(OneTwo(Default::default())),
+        2 if num_outputs < 3 => Some(TwoTwo(Default::default())),
+        3 if num_outputs < 3 => Some(ThreeTwo(Default::default())),
+        4 if num_outputs < 3 => Some(FourTwo(Default::default())),
+        _ => None,
     }
 }

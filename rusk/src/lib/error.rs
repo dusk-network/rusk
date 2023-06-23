@@ -21,6 +21,8 @@ pub enum Error {
     OutOfGas,
     /// Repeated nullifier in transaction verification
     RepeatingNullifiers(Vec<BlsScalar>),
+    /// Wrong inputs and/or outputs in the transaction verification
+    InvalidCircuitArguments(usize, usize),
     /// Failed to build a Rusk instance
     BuilderInvalidState,
     /// Failed to fetch opening
@@ -35,8 +37,6 @@ pub enum Error {
     Vm(piecrust::Error),
     /// IO Errors
     Io(io::Error),
-    /// Tonic Status Errors
-    Status(tonic::Status),
     /// Bad block height in coinbase (got, expected)
     CoinbaseBlockHeight(u64, u64),
     /// Bad dusk spent in coinbase (got, expected).
@@ -77,12 +77,6 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<tonic::Status> for Error {
-    fn from(err: tonic::Status) -> Self {
-        Error::Status(err)
-    }
-}
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -106,7 +100,6 @@ impl fmt::Display for Error {
             }
             Error::Vm(err) => write!(f, "VM Error: {err}"),
             Error::Io(err) => write!(f, "IO Error: {err}"),
-            Error::Status(err) => write!(f, "Status Error: {err}"),
             Error::Phoenix(err) => write!(f, "Phoenix error: {err}"),
             Error::Other(err) => write!(f, "Other error: {err}"),
             Error::CoinbaseBlockHeight(got, expected) => write!(
@@ -121,12 +114,9 @@ impl fmt::Display for Error {
             Error::RepeatingNullifiers(n) => {
                 write!(f, "Nullifiers repeat: {n:?}")
             }
+            Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
+                write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
+            }
         }
-    }
-}
-
-impl From<Error> for tonic::Status {
-    fn from(err: Error) -> Self {
-        tonic::Status::internal(format!("{err}"))
     }
 }
