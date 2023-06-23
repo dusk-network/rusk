@@ -50,6 +50,7 @@ const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 const REGISTER_KEY: &[u8; 8] = b"register";
 
+#[derive(Clone)]
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
 }

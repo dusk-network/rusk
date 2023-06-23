@@ -123,10 +123,23 @@ pub trait LongLivedService<N: Network, DB: database::DB, VM: vm::VMExecution>:
     fn name(&self) -> &'static str;
 }
 
+#[derive(Debug)]
 pub struct Node<N: Network, DB: database::DB, VM: vm::VMExecution> {
     network: Arc<RwLock<N>>,
     database: Arc<RwLock<DB>>,
     vm_handler: Arc<RwLock<VM>>,
+}
+
+impl<N: Network, DB: database::DB, VM: vm::VMExecution> Clone
+    for Node<N, DB, VM>
+{
+    fn clone(&self) -> Self {
+        Self {
+            network: self.network.clone(),
+            database: self.database.clone(),
+            vm_handler: self.vm_handler.clone(),
+        }
+    }
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
