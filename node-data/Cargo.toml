@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-phoenix-core = "0.18"
+phoenix-core = { version ="0.18", features = ["alloc"] }
 dusk-bytes = "^0.1"
 bytes = "0.6"
 sha3 = { version = "0.10" }
