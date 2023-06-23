@@ -279,7 +279,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         // proper results.
         Ok(Output {
             txs: executed_txs,
-            state_root: state_root,
+            state_root,
             discarded_txs,
             provisioners: Provisioners::default(),
         })

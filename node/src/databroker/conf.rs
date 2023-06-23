@@ -55,15 +55,15 @@ impl Params {
             }
         };
     }
-}
 
-pub fn inject_args(command: Command<'_>) -> Command<'_> {
-    command.arg(
-        Arg::new("delay_on_resp_msg")
-            .long("delay_on_resp_msg")
-            .help("Delay in milliseconds to mitigate UDP drops for DataBroker service in localnet")
-            .env("DELAY_ON_RESP_MSG")
-            .takes_value(true)
-            .required(false),
-    )
+    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+        command.arg(
+            Arg::new("delay_on_resp_msg")
+                .long("delay_on_resp_msg")
+                .help("Delay in milliseconds to mitigate UDP drops for DataBroker service in localnet")
+                .env("DELAY_ON_RESP_MSG")
+                .takes_value(true)
+                .required(false),
+        )
+    }
 }
