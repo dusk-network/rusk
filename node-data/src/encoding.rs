@@ -59,6 +59,16 @@ impl Serializable for Transaction {
                 w.write_all(&0_u8.to_le_bytes())?;
             }
         }
+        match &self.err {
+            Some(e) => {
+                let b = e.as_bytes();
+                w.write_all(&(b.len() as u64).to_le_bytes())?;
+                w.write_all(b)?;
+            }
+            None => {
+                w.write_all(&0_u64.to_le_bytes())?;
+            }
+        }
 
         Ok(())
     }
@@ -74,7 +84,7 @@ impl Serializable for Transaction {
         let mut buf = vec![0u8; len as usize];
         r.read_exact(&mut buf)?;
 
-        let inner = dusk_wallet_core::Transaction::from_slice(&buf[..])
+        let inner = phoenix_core::Transaction::from_slice(&buf[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         let mut optional = [0u8; 1];
@@ -89,7 +99,25 @@ impl Serializable for Transaction {
             None
         };
 
-        Ok(Self { inner, gas_spent })
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+
+        let len = u64::from_le_bytes(buf);
+
+        let err = if len > 0 {
+            let mut buf = vec![0u8; len as usize];
+            r.read_exact(&mut buf[..])?;
+
+            Some(String::from_utf8(buf).expect("Cannot from_utf8"))
+        } else {
+            None
+        };
+
+        Ok(Self {
+            inner,
+            gas_spent,
+            err,
+        })
     }
 }
 

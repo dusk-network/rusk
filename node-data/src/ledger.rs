@@ -78,13 +78,14 @@ impl std::fmt::Debug for Header {
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
-    pub inner: dusk_wallet_core::Transaction,
+    pub inner: phoenix_core::Transaction,
     pub gas_spent: Option<u64>,
+    pub err: Option<String>
 }
 
 impl Transaction {
     pub fn hash(&self) -> [u8; 32] {
-        self.inner.hash().to_bytes()
+        rusk_abi::hash(self.inner.to_hash_input_bytes()).to_bytes()
     }
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price
@@ -338,9 +339,10 @@ pub mod faker {
         .expect("decodable data");
 
         Transaction {
-            inner: dusk_wallet_core::Transaction::from_slice(&utx_bytes)
+            inner: phoenix_core::Transaction::from_slice(&utx_bytes)
                 .expect("should be valid"),
             gas_spent: None,
+            err: None
         }
     }
 }
