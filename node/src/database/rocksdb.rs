@@ -707,7 +707,7 @@ mod tests {
     #[test]
     fn test_store_block() {
         let t = TestWrapper {
-            path: "_test_store_block",
+            path: "testdata/_test_store_block",
         };
 
         t.run(|path| {
@@ -756,7 +756,7 @@ mod tests {
     #[test]
     fn test_read_only() {
         let t = TestWrapper {
-            path: "_test_read_only",
+            path: "testdata/_test_read_only",
         };
 
         t.run(|path| {
@@ -779,7 +779,7 @@ mod tests {
     #[test]
     fn test_transaction_isolation() {
         let t = TestWrapper {
-            path: "_test_transaction_isolation",
+            path: "testdata/_test_transaction_isolation",
         };
 
         t.run(|path| {
@@ -822,7 +822,7 @@ mod tests {
     #[test]
     fn test_add_mempool_tx() {
         let t = TestWrapper {
-            path: "test_add_tx",
+            path: "testdata/test_add_tx",
         };
 
         t.run(|path| {
@@ -856,7 +856,7 @@ mod tests {
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
         let t = TestWrapper {
-            path: "test_mempool_txs_sorted_by_fee",
+            path: "testdata/test_mempool_txs_sorted_by_fee",
         };
 
         t.run(|path| {
@@ -896,7 +896,7 @@ mod tests {
     #[test]
     fn test_max_gas_limit() {
         let t = TestWrapper {
-            path: "test_block_size_limit",
+            path: "testdata/test_block_size_limit",
         };
 
         t.run(|path| {
@@ -925,7 +925,7 @@ mod tests {
     #[test]
     fn test_get_ledger_tx_by_hash() {
         let t = TestWrapper {
-            path: "test_get_ledger_tx_by_hash",
+            path: "testdata/test_get_ledger_tx_by_hash",
         };
 
         t.run(|path| {
@@ -960,7 +960,7 @@ mod tests {
     #[test]
     fn test_fetch_block_hash_by_height() {
         let t = TestWrapper {
-            path: "test_fetch_block_hash_by_height",
+            path: "testdata/test_fetch_block_hash_by_height",
         };
 
         t.run(|path| {
