@@ -137,7 +137,6 @@ impl Config {
         })
     }
 
-
     pub(crate) fn db_path(&self) -> PathBuf {
         self.db_path.clone().unwrap_or_else(|| {
             let mut path = dirs::home_dir().expect("OS not supported");

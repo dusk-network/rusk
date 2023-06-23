@@ -6,45 +6,31 @@
 
 mod config;
 mod ephemeral;
-mod services;
-mod vm;
-#[cfg(not(target_os = "windows"))]
-mod unix;
 mod version;
+mod vm;
 
 use std::path::PathBuf;
 
 use clap::{Arg, Command};
-use node::LongLivedService;
-use node::database::DB;
 use node::database::rocksdb;
-use rusk::services::network::KadcastDispatcher;
-use rusk::services::network::NetworkServer;
-use rusk::services::prover::{ProverServer, RuskProver};
-use rusk::services::state::StateServer;
-use rusk::services::version::{CompatibilityInterceptor, RuskVersionLayer};
+use node::database::DB;
+use node::LongLivedService;
 use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
-use tonic::transport::Server;
 use version::show_version;
 
-use services::startup_with_tcp_ip;
-use services::startup_with_uds;
-
-
 use dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT;
-use node::mempool::MempoolSrv;
 use node::chain::ChainSrv;
-use node::databroker::DataBrokerSrv;
 use node::database::rocksdb::Backend;
+use node::databroker::DataBrokerSrv;
+use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
 
-
 use crate::config::Config;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// #[tokio::main]
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
     let crate_name = &crate_info.crate_name.to_string();
     let version = show_version(crate_info);
@@ -97,31 +83,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(state_zip) => ephemeral::configure(state_zip)?,
         None => None,
     };
-
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    tracing::info!("Using state from {state_dir:?}");
+    let rusk = Rusk::new(state_dir)?;
     let router = {
-        let rusk = Rusk::new(rusk_profile::get_rusk_state_dir()?)?;
+        // let rusk = Rusk::new(rusk_profile::get_rusk_state_dir()?)?;
 
-        let kadcast = KadcastDispatcher::new(
-            config.kadcast.clone().into(),
-            config.kadcast_test,
-        )?;
+        // let kadcast = KadcastDispatcher::new(
+        //     config.kadcast.clone().into(),
+        //     config.kadcast_test,
+        // )?;
 
-        let network =
-            NetworkServer::with_interceptor(kadcast, CompatibilityInterceptor);
-        let state =
-            StateServer::with_interceptor(rusk, CompatibilityInterceptor);
-        let prover = ProverServer::with_interceptor(
-            RuskProver::default(),
-            CompatibilityInterceptor,
-        );
+        // let network =
+        //     NetworkServer::with_interceptor(kadcast,
+        // CompatibilityInterceptor);
+        // let state = StateServer::with_interceptor(
+        //     rusk.clone(),
+        //     CompatibilityInterceptor,
+        // );
+        // let prover = ProverServer::with_interceptor(
+        //     RuskProver::default(),
+        //     CompatibilityInterceptor,
+        // );
 
-        Server::builder()
-            .layer(RuskVersionLayer)
-            .add_service(network)
-            .add_service(state)
-            .add_service(prover)
+        // Server::builder()
+        //     .layer(RuskVersionLayer)
+        //     // .add_service(network)
+        //     .add_service(state)
+        //     .add_service(prover)
     };
-
 
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2 + ACCUMULATOR_WORKERS_AMOUNT)
@@ -145,9 +135,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Box::new(DataBrokerSrv::new(config.databroker())),
             ];
 
-            let db = rocksdb::Backend::create_or_open(config.db_path());
+            let db_path = _tempdir
+                .as_ref()
+                .map_or_else(|| config.db_path(), |t| t.path().to_path_buf());
+            let db = rocksdb::Backend::create_or_open(db_path);
             let net = Kadcast::new(config.clone().kadcast.into());
-            let vm = vm::VMExecutionImpl::new(node::vm::Config::default());
+            let vm =
+                vm::VMExecutionImpl::new(node::vm::Config::default(), rusk);
 
             // node spawn_all is the entry point
             if let Err(e) = Node::new(net, db, vm).spawn_all(service_list).await
@@ -157,40 +151,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 Ok(())
             }
-        });
-
+        })?;
 
     // Match the desired IPC method. Or set the default one depending on the OS
     // used. Then startup rusk with the final values.
-    match config.grpc.ipc_method.as_deref() {
-        Some(method) => match (cfg!(windows), method) {
-            (_, "tcp_ip") => {
-                startup_with_tcp_ip(
-                    router,
-                    &config.grpc.host,
-                    &config.grpc.port,
-                )
-                .await
-            }
-            (true, "uds") => {
-                panic!("Windows does not support Unix Domain Sockets");
-            }
-            (false, "uds") => {
-                startup_with_uds(router, &config.grpc.socket).await
-            }
-            (_, _) => unreachable!(),
-        },
-        None => {
-            if cfg!(windows) {
-                startup_with_tcp_ip(
-                    router,
-                    &config.grpc.host,
-                    &config.grpc.port,
-                )
-                .await
-            } else {
-                startup_with_uds(router, &config.grpc.socket).await
-            }
-        }
-    }
+    // match config.grpc.ipc_method.as_deref() {
+    //     Some(method) => match (cfg!(windows), method) {
+    //         (_, "tcp_ip") => {
+    //             startup_with_tcp_ip(
+    //                 router,
+    //                 &config.grpc.host,
+    //                 &config.grpc.port,
+    //             )
+    //             .await
+    //         }
+    //         (true, "uds") => {
+    //             panic!("Windows does not support Unix Domain Sockets");
+    //         }
+    //         (false, "uds") => {
+    //             startup_with_uds(router, &config.grpc.socket).await
+    //         }
+    //         (_, _) => unreachable!(),
+    //     },
+    //     None => {
+    //         if cfg!(windows) {
+    //             startup_with_tcp_ip(
+    //                 router,
+    //                 &config.grpc.host,
+    //                 &config.grpc.port,
+    //             )
+    //             .await
+    //         } else {
+    //             startup_with_uds(router, &config.grpc.socket).await
+    //         }
+    //     }
+    // }
+    Ok(())
 }
