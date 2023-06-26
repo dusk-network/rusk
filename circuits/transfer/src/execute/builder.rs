@@ -11,60 +11,33 @@ use super::{
 
 use crate::error::Error;
 use crate::execute::ExecuteCircuit;
-use crate::POSEIDON_TREE_DEPTH;
+
+use dusk_merkle::poseidon::{Item, Tree};
+use dusk_merkle::Aggregate;
 
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use dusk_poseidon::tree::{PoseidonLeaf, PoseidonTree};
-use nstack::annotation::Keyed;
 use phoenix_core::Note;
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
 
-#[derive(Debug, Clone)]
-pub struct NoteLeaf(Note);
+struct WrappedNote(Note);
 
-impl AsRef<Note> for NoteLeaf {
-    fn as_ref(&self) -> &Note {
-        &self.0
-    }
-}
-
-impl From<Note> for NoteLeaf {
-    fn from(note: Note) -> NoteLeaf {
-        NoteLeaf(note)
-    }
-}
-
-impl From<NoteLeaf> for Note {
-    fn from(leaf: NoteLeaf) -> Note {
-        leaf.0
-    }
-}
-
-impl PoseidonLeaf for NoteLeaf {
-    fn poseidon_hash(&self) -> BlsScalar {
-        self.0.hash()
-    }
-
-    fn pos(&self) -> &u64 {
-        self.0.pos()
-    }
-
-    fn set_pos(&mut self, pos: u64) {
-        self.0.set_pos(pos)
-    }
-}
-
-impl Keyed<u64> for NoteLeaf {
-    fn key(&self) -> &u64 {
-        self.pos()
+impl<T> From<WrappedNote> for Item<T>
+where
+    T: Default,
+{
+    fn from(note: WrappedNote) -> Self {
+        Self {
+            hash: dusk_poseidon::sponge::hash(&note.0.hash_inputs()),
+            data: T::default(),
+        }
     }
 }
 
 macro_rules! execute_circuit_variant {
-    ($ty:ident, $i:literal, $o:literal) => {
-        impl $ty {
+    ($ty:ident<T, H, A>, $i:literal, $o:literal) => {
+        impl<T, const H: usize, const A: usize> $ty<T, H, A> {
             pub fn create_dummy_note<R: RngCore + CryptoRng>(
                 rng: &mut R,
                 psk: &PublicSpendKey,
@@ -84,12 +57,14 @@ macro_rules! execute_circuit_variant {
                 rng: &mut R,
                 use_crossover: bool,
                 tx_hash: BlsScalar,
-            ) -> Result<Self, Error> {
+            ) -> Result<Self, Error>
+            where
+                T: Clone + Default + Aggregate<A>,
+            {
                 let inputs = $i;
                 let outputs = $o;
 
-                let mut tree =
-                    PoseidonTree::<NoteLeaf, u64, POSEIDON_TREE_DEPTH>::new();
+                let mut tree = Tree::<T, H, A>::new();
 
                 let mut circuit = Self::default();
 
@@ -101,19 +76,23 @@ macro_rules! execute_circuit_variant {
                 let mut inputs_sum = 0;
                 let mut input_data = vec![];
 
+                let mut data_blocks = Vec::with_capacity($i);
+
                 // Generate the notes and mutate the global tree state
-                for _ in 0..inputs {
+                for pos in 0..inputs {
                     let ssk = SecretSpendKey::random(rng);
                     let psk = ssk.public_spend_key();
 
-                    let note = Self::create_dummy_note(
+                    let mut note = Self::create_dummy_note(
                         rng,
                         &psk,
                         transparent,
                         input_value,
                     );
 
-                    let pos = tree.push(note.into());
+                    note.set_pos(pos);
+                    data_blocks.push(note);
+                    tree.insert(pos, WrappedNote(note));
 
                     input_data.push((ssk, pos));
 
@@ -122,7 +101,7 @@ macro_rules! execute_circuit_variant {
                 }
 
                 for (ssk, pos) in input_data.into_iter() {
-                    let note = tree.get(pos).unwrap();
+                    let note = data_blocks[pos as usize];
                     let input = ExecuteCircuit::input(
                         rng,
                         &ssk,
@@ -191,7 +170,10 @@ macro_rules! execute_circuit_variant {
             ) -> Result<
                 (Self, Prover<Self>, Verifier<Self>, Proof, Vec<BlsScalar>),
                 Error,
-            > {
+            >
+            where
+                T: Clone + Default + Aggregate<A>,
+            {
                 let circuit = Self::create_dummy_circuit::<R>(
                     rng,
                     use_crossover,
@@ -213,7 +195,7 @@ macro_rules! execute_circuit_variant {
     };
 }
 
-execute_circuit_variant!(ExecuteCircuitOneTwo, 1, 2);
-execute_circuit_variant!(ExecuteCircuitTwoTwo, 2, 2);
-execute_circuit_variant!(ExecuteCircuitThreeTwo, 3, 2);
-execute_circuit_variant!(ExecuteCircuitFourTwo, 4, 2);
+execute_circuit_variant!(ExecuteCircuitOneTwo<T, H, A>, 1, 2);
+execute_circuit_variant!(ExecuteCircuitTwoTwo<T, H, A>, 2, 2);
+execute_circuit_variant!(ExecuteCircuitThreeTwo<T, H, A>, 3, 2);
+execute_circuit_variant!(ExecuteCircuitFourTwo<T, H, A>, 4, 2);

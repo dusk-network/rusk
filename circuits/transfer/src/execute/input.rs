@@ -4,11 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::POSEIDON_TREE_DEPTH;
-
+use dusk_merkle::poseidon::Opening;
 use dusk_pki::Ownable;
 use dusk_poseidon::cipher::PoseidonCipher;
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::Note;
 
 use dusk_plonk::prelude::*;
@@ -20,8 +18,8 @@ pub use signature::CircuitInputSignature;
 pub use witness::WitnessInput;
 
 #[derive(Debug, Clone)]
-pub struct CircuitInput {
-    branch: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+pub struct CircuitInput<T, const H: usize, const A: usize> {
+    branch: Opening<T, H, A>,
     note: Note,
     pk_r: JubJubAffine,
     pk_r_p: JubJubAffine,
@@ -31,9 +29,9 @@ pub struct CircuitInput {
     signature: CircuitInputSignature,
 }
 
-impl CircuitInput {
+impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
     pub fn new(
-        branch: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+        branch: Opening<T, H, A>,
         note: Note,
         pk_r_p: JubJubAffine,
         value: u64,
@@ -63,7 +61,7 @@ impl CircuitInput {
         &self.note
     }
 
-    pub const fn branch(&self) -> &PoseidonBranch<POSEIDON_TREE_DEPTH> {
+    pub const fn branch(&self) -> &Opening<T, H, A> {
         &self.branch
     }
 

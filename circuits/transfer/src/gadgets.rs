@@ -4,14 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::POSEIDON_TREE_DEPTH;
-
 use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
+use dusk_merkle::Aggregate;
+use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher;
 use dusk_poseidon::sponge::truncated;
-use dusk_poseidon::tree::{self, PoseidonBranch};
 
-use dusk_plonk::prelude::*;
+use dusk_merkle::poseidon::Opening;
 
 pub use dusk_schnorr::gadgets::double_key_verify as schnorr_double_key_verify;
 pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
@@ -43,15 +42,17 @@ pub fn commitment<C: Composer>(
 /// matches.
 ///
 /// `opening(b, r, l) → O(b) ∧ (b0, b|b|) == (l, r)`
-pub fn merkle_opening<C: Composer>(
+pub fn merkle_opening<T, C, const H: usize, const A: usize>(
     composer: &mut C,
-    branch: &PoseidonBranch<POSEIDON_TREE_DEPTH>,
+    branch: &Opening<T, H, A>,
     anchor: Witness,
     leaf: Witness,
-) {
+) where
+    T: Clone + Aggregate<A>,
+    C: Composer,
+{
     // The gadget asserts the leaf is the expected
-    let root = tree::merkle_opening(composer, branch, leaf);
-
+    let root = branch.gadget(composer, leaf);
     composer.assert_equal(anchor, root);
 }
 
