@@ -19,6 +19,9 @@ use tracing::{info, warn};
 /// and verifier.
 const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 
+const H: usize = phoenix_core::transaction::TRANSFER_TREE_DEPTH;
+const A: usize = 4;
+
 static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();
     info!("{} CRS from cache", theme.action("Fetching"));
@@ -135,10 +138,10 @@ pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
             &StcoCircuitLoader {},
             &WfctCircuitLoader {},
             &WfcoCircuitLoader {},
-            &ExecuteOneTwoCircuitLoader {},
-            &ExecuteTwoTwoCircuitLoader {},
-            &ExecuteThreeTwoCircuitLoader {},
-            &ExecuteFourTwoCircuitLoader {},
+            &ExecuteOneTwoCircuitLoader::<(), H, A>::new(),
+            &ExecuteTwoTwoCircuitLoader::<(), H, A>::new(),
+            &ExecuteThreeTwoCircuitLoader::<(), H, A>::new(),
+            &ExecuteFourTwoCircuitLoader::<(), H, A>::new(),
         ],
     )?;
 
