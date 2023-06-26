@@ -723,11 +723,7 @@ mod tests {
 
     #[test]
     fn test_store_block() {
-        let t = TestWrapper {
-            path: "testdata/_test_store_block",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_store_block").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
@@ -772,11 +768,7 @@ mod tests {
 
     #[test]
     fn test_read_only() {
-        let t = TestWrapper {
-            path: "testdata/_test_read_only",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_read_only").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             assert!(db
@@ -795,11 +787,7 @@ mod tests {
 
     #[test]
     fn test_transaction_isolation() {
-        let t = TestWrapper {
-            path: "testdata/_test_transaction_isolation",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_transaction_isolation").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
@@ -838,11 +826,7 @@ mod tests {
 
     #[test]
     fn test_add_mempool_tx() {
-        let t = TestWrapper {
-            path: "testdata/test_add_tx",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_add_tx").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let t: ledger::Transaction = Faker.fake();
 
@@ -872,11 +856,7 @@ mod tests {
 
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
-        let t = TestWrapper {
-            path: "testdata/test_mempool_txs_sorted_by_fee",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_mempool_txs_sorted_by_fee").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             // Populate mempool with N contract calls
             let mut rng = rand::thread_rng();
@@ -912,11 +892,7 @@ mod tests {
 
     #[test]
     fn test_max_gas_limit() {
-        let t = TestWrapper {
-            path: "testdata/test_block_size_limit",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_block_size_limit").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             db.update(|txn| {
@@ -941,11 +917,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_tx_by_hash() {
-        let t = TestWrapper {
-            path: "testdata/test_get_ledger_tx_by_hash",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             assert!(b.txs.len() > 0);
@@ -966,6 +938,7 @@ mod tests {
                         .get_ledger_tx_by_hash(&t.hash())
                         .expect("should not return error")
                         .expect("should find a transaction")
+                        .inner
                         .eq(&t));
                 }
 
@@ -976,11 +949,7 @@ mod tests {
 
     #[test]
     fn test_fetch_block_hash_by_height() {
-        let t = TestWrapper {
-            path: "testdata/test_fetch_block_hash_by_height",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_fetch_block_hash_by_height").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
 
@@ -1005,24 +974,18 @@ mod tests {
         });
     }
 
-    struct TestWrapper {
-        path: &'static str,
-    }
+    struct TestWrapper(&'static str);
 
     impl TestWrapper {
         pub fn run<F>(&self, test_func: F)
         where
             F: FnOnce(&str),
         {
-            // Destroy/deletion of a database can happen only before creating
-            let opts = Options::default();
-            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+            let dir = tempdir::TempDir::new(self.0)
+                .expect("Temporardy directory to be created");
+            let path = dir.path();
 
-            test_func(self.path);
-
-            // Destroy/deletion of a database can happen only after dropping DB.
-            let opts = Options::default();
-            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+            test_func(self.0);
         }
     }
 }
