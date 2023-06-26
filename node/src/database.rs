@@ -60,7 +60,9 @@ pub trait Ledger {
     fn get_ledger_tx_by_hash(
         &self,
         tx_hash: &[u8],
-    ) -> Result<Option<ledger::Transaction>>;
+    ) -> Result<Option<ledger::SpentTransaction>>;
+
+    fn store_txs(&self, txs: &[ledger::SpentTransaction]) -> Result<()>;
 
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
     fn get_register(&self) -> Result<Option<Register>>;

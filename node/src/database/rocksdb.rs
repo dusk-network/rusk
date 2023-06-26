@@ -8,7 +8,7 @@ use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::{Context, Result};
 
 use node_data::encoding::*;
-use node_data::ledger;
+use node_data::ledger::{self, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -219,7 +219,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
+    fn store_block(&self, b: &ledger::Block, _persisted: bool) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
@@ -255,9 +255,14 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             // store all block transactions
             for tx in &b.txs {
+                let tx = SpentTransaction {
+                    err: None,
+                    gas_spent: 0,
+                    inner: tx.clone(),
+                };
                 let mut d = vec![];
                 tx.write(&mut d)?;
-                self.inner.put_cf(cf, tx.hash(), d)?;
+                self.inner.put_cf(cf, tx.inner.hash(), d)?;
             }
         }
 
@@ -338,11 +343,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn get_ledger_tx_by_hash(
         &self,
         tx_hash: &[u8],
-    ) -> Result<Option<ledger::Transaction>> {
+    ) -> Result<Option<ledger::SpentTransaction>> {
         let tx = self
             .snapshot
             .get_cf(self.ledger_txs_cf, tx_hash)?
-            .map(|blob| ledger::Transaction::read(&mut &blob[..]))
+            .map(|blob| ledger::SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
 
         Ok(tx)
@@ -366,6 +371,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
 
         Ok(None)
+    }
+
+    fn store_txs(&self, txs: &[ledger::SpentTransaction]) -> Result<()> {
+        let cf = self.ledger_txs_cf;
+
+        // store all block transactions
+        for tx in txs {
+            let mut d = vec![];
+            tx.write(&mut d)?;
+            self.inner.put_cf(cf, tx.inner.hash(), d)?;
+        }
+        Ok(())
     }
 }
 
