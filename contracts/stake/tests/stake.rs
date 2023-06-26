@@ -8,9 +8,9 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
+use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
 use piecrust::{ContractData, Error};
@@ -32,6 +32,9 @@ const POINT_LIMIT: u64 = 0x10000000;
 type Result<T, E = Error> = core::result::Result<T, E>;
 
 const OWNER: [u8; 32] = [0; 32];
+
+const H: usize = TRANSFER_TREE_DEPTH;
+const A: usize = 4;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
@@ -112,7 +115,7 @@ fn root(session: &mut Session) -> Result<BlsScalar> {
 fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+) -> Result<Option<PoseidonOpening<(), H, A>>> {
     session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
@@ -301,7 +304,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -503,7 +506,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input_1);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -722,7 +725,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input_2);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitThreeTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitThreeTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -888,7 +891,7 @@ fn allow() {
     execute_circuit.add_input(circuit_input);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
