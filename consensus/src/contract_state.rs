@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::user::provisioners::Provisioners;
-use node_data::ledger::Transaction;
+use node_data::ledger::{SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];
 
@@ -26,7 +26,7 @@ pub struct CallParams {
 #[allow(unused)]
 #[derive(Default)]
 pub struct Output {
-    pub txs: Vec<Transaction>,
+    pub txs: Vec<SpentTransaction>,
     pub state_root: StateRoot,
     pub provisioners: Provisioners,
     pub discarded_txs: Vec<Transaction>,
