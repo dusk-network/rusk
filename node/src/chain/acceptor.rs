@@ -210,7 +210,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             return Err(anyhow!("invalid previous block hash"));
         }
 
-        if blk_header.timestamp <= curr_header.timestamp {
+        if blk_header.timestamp < curr_header.timestamp {
             return Err(anyhow!("invalid block timestamp"));
         }
 
