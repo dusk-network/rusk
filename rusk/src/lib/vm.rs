@@ -104,8 +104,10 @@ impl VMExecution for Rusk {
         Ok((txs, state_root))
     }
 
-    fn preverify(&self, _tx: &Transaction) -> anyhow::Result<()> {
-        Ok(())
+    fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
+        info!("Received preverify request");
+        self.preverify(&tx.inner)
+            .map_err(|e| anyhow::anyhow!("Preverification failed: {e}"))
     }
 
     fn get_provisioners(&self) -> Result<Provisioners, anyhow::Error> {
