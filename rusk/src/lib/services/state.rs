@@ -387,9 +387,11 @@ impl State for Rusk {
             .tree_opening(*note.pos())?
             .ok_or(Status::invalid_argument("No such opening"))?;
 
-        Ok(Response::new(GetOpeningResponse {
-            branch: branch.to_bytes().to_vec(),
-        }))
+        let branch = rkyv::to_bytes::<_, 256>(&branch)
+            .expect("Serializing opening should always succeed")
+            .to_vec();
+
+        Ok(Response::new(GetOpeningResponse { branch }))
     }
 
     async fn get_stake(

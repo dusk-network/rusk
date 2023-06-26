@@ -14,6 +14,8 @@ mod wfct;
 
 use crate::Result;
 
+const A: usize = 4;
+
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
 use once_cell::sync::Lazy;
@@ -23,6 +25,7 @@ use tracing::{error, info};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{Transaction, UnprovenTransaction};
+use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 pub use rusk_schema::prover_client::ProverClient;
@@ -155,7 +158,7 @@ impl Prover for RuskProver {
 fn circuit_from_numbers(
     num_inputs: usize,
     num_outputs: usize,
-) -> Option<ExecuteCircuit> {
+) -> Option<ExecuteCircuit<(), TRANSFER_TREE_DEPTH, A>> {
     use ExecuteCircuit::*;
 
     match num_inputs {

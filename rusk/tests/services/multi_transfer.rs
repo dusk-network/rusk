@@ -8,11 +8,12 @@ use std::path::Path;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
+use dusk_bytes::Error::InvalidData;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
+use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::proof_system::Proof;
-use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
@@ -49,7 +50,8 @@ use crate::common::*;
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
 // perfectly good transaction.
-const BLOCK_GAS_LIMIT: u64 = 250_000_000;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000;
+const GAS_LIMIT: u64 = 350_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below
@@ -145,7 +147,7 @@ fn wallet_transfer(
                 &refunds[i as usize],
                 &receiver,
                 amount,
-                1_000_000_000,
+                GAS_LIMIT,
                 1,
                 nonce,
             )
@@ -415,7 +417,7 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
+    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
 
         let request = tonic::Request::new(GetOpeningRequest {
@@ -425,7 +427,8 @@ impl wallet::StateClient for TestStateClient {
         let response = client.get_opening(request).wait()?;
         let response = response.into_inner();
 
-        Ok(PoseidonBranch::from_slice(&response.branch)?)
+        Ok(rkyv::from_bytes(&response.branch)
+            .map_err(|_| Error::Serialization(InvalidData))?)
     }
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
