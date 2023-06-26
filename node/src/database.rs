@@ -36,9 +36,9 @@ pub trait DB: Send + Sync + 'static {
     ///
     /// Transaction commit will happen only if no error is returned by `fn`
     /// and no panic is raised on `fn` execution.
-    fn update<F>(&self, f: F) -> Result<()>
+    fn update<F, T>(&self, f: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<()>;
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>;
 
     fn close(&mut self);
 }

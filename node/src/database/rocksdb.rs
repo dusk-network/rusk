@@ -177,21 +177,21 @@ impl DB for Backend {
         Ok(())
     }
 
-    fn update<F>(&self, execute: F) -> Result<()>
+    fn update<F, T>(&self, execute: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<()>,
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
     {
         // Create read-write transaction
         let tx = self.begin_tx(TxType::ReadWrite);
 
         // If f returns err, no commit will be applied into backend
         // storage
-        execute(&tx)?;
+        let ret = execute(&tx)?;
 
         // Apply changes in atomic way
         tx.commit()?;
 
-        Ok(())
+        Ok(ret)
     }
 
     fn close(&mut self) {}
