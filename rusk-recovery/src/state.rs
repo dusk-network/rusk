@@ -6,7 +6,6 @@
 
 use crate::theme::Theme;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
@@ -101,7 +100,7 @@ fn generate_transfer_state(
         });
     });
     if update_root {
-        let _: BlsScalar = session
+        let _: () = session
             .call(TRANSFER_CONTRACT, "update_root", &())
             .expect("Root to be updated after pushing genesis note");
     }
@@ -194,7 +193,7 @@ fn generate_empty_state<P: AsRef<Path>>(
         )
         .expect("stake contract balance to be set with provisioner stakes");
 
-    let _: BlsScalar = session
+    let _: () = session
         .call(TRANSFER_CONTRACT, "update_root", &())
         .expect("root to be updated after pushing genesis note");
 
