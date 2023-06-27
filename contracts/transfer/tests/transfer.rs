@@ -96,9 +96,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
-    let _: BlsScalar = session
-        .call(TRANSFER_CONTRACT, "update_root", &())
-        .expect("Updating the root should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
@@ -118,6 +116,10 @@ fn leaves_in_range(
         "leaves_in_range",
         &(range.start, range.end),
     )
+}
+
+fn update_root(session: &mut Session) -> Result<()> {
+    session.call(TRANSFER_CONTRACT, "update_root", &())
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
@@ -283,6 +285,7 @@ fn transfer() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_1_2 : {} gas", session.spent());
 
@@ -400,6 +403,7 @@ fn alice_ping() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_PING: {} gas", session.spent());
 
@@ -581,6 +585,7 @@ fn send_and_withdraw_transparent() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_STCT: {} gas", session.spent());
 
@@ -759,6 +764,7 @@ fn send_and_withdraw_transparent() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_WFCT: {} gas", session.spent());
 
@@ -963,6 +969,7 @@ fn send_and_withdraw_obfuscated() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_STCO: {} gas", session.spent());
 
@@ -1192,6 +1199,7 @@ fn send_and_withdraw_obfuscated() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_WFCO: {} gas", session.spent());
 

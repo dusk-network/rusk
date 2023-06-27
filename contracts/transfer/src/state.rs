@@ -41,24 +41,6 @@ pub struct TransferState {
     var_crossover_pk: Option<PublicKey>,
 }
 
-impl TryFrom<Note> for TransferState {
-    type Error = Error;
-
-    /// This implementation is intended for test purposes to initialize the
-    /// state with the provided note
-    ///
-    /// To avoid abuse, the block_height will always be `0`
-    fn try_from(note: Note) -> Result<Self, Self::Error> {
-        let mut transfer = Self::new();
-
-        let block_height = 0;
-        transfer.push_note(block_height, note);
-        transfer.update_root();
-
-        Ok(transfer)
-    }
-}
-
 impl TransferState {
     pub const fn new() -> TransferState {
         TransferState {
@@ -392,8 +374,6 @@ impl TransferState {
             .push_fee_crossover(tx.fee)
             .expect("Failed to append the fee and the crossover to the state!");
 
-        self.update_root();
-
         (spent, res)
     }
 
@@ -413,10 +393,9 @@ impl TransferState {
     }
 
     /// Update the root for of the tree.
-    pub fn update_root(&mut self) -> BlsScalar {
+    pub fn update_root(&mut self) {
         let root = self.tree.root();
         self.roots.insert(root);
-        root
     }
 
     /// Get the root of the tree.
