@@ -75,9 +75,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
-    let _: BlsScalar = session
-        .call(TRANSFER_CONTRACT, "update_root", &())
-        .expect("Updating the root should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     let _: () = session
         .call(STAKE_CONTRACT, "add_owner", pk)
@@ -106,6 +104,9 @@ fn leaves_in_range(
         "leaves_in_range",
         &(range.start, range.end),
     )
+}
+fn update_root(session: &mut Session) -> Result<()> {
+    session.call(TRANSFER_CONTRACT, "update_root", &())
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
@@ -323,6 +324,7 @@ fn stake_withdraw_unstake() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("STAKE   : {} gas", session.spent());
 
@@ -531,6 +533,7 @@ fn stake_withdraw_unstake() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("WITHDRAW: {} gas", session.spent());
 
@@ -755,6 +758,7 @@ fn stake_withdraw_unstake() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     println!("UNSTAKE : {} gas", session.spent());
 }
@@ -910,6 +914,7 @@ fn allow() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("ALLOW   : {} gas", session.spent());
 
