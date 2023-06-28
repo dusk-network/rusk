@@ -180,7 +180,7 @@ impl Rusk {
                         u64,
                         Option<Result<RawResult, ContractError>>,
                     ) =
-                    session.call(TRANSFER_CONTRACT, "execute", &spent_tx.0)
+                    session.call(TRANSFER_CONTRACT, "execute", &spent_tx.tx)
                         .expect("Re-execution of spent transactions should never fail");
                 }
 
