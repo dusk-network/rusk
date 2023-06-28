@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-/// Constant depth of the merkle tree that provides the opening proofs.
-pub const POSEIDON_TREE_DEPTH: usize = 17;
-
 mod error;
 mod execute;
 mod gadgets;

@@ -21,9 +21,9 @@ pub mod transaction;
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::PublicKey;
 use dusk_plonk::prelude::PublicParameters;
-use dusk_poseidon::tree::PoseidonBranch;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::*;
@@ -39,6 +39,8 @@ use rusk_abi::{
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
 
+const A: usize = 4;
+
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
@@ -49,6 +51,20 @@ pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
 });
 
 const STREAM_BUF_SIZE: usize = 64;
+
+/// The gas grace is a magic number denoting the amount of gas that is spent by
+/// a transaction after the charging code has been executed.
+const GAS_GRACE: u64 = 24_858_000;
+
+/// Computes the gas limit to apply to a transaction, given the limit imposed by
+/// the fee limit and the block gas limit.
+///
+/// The result will be the minimum between the block gas limit and the fee limit
+/// plus the [`GAS_GRACE`].
+fn compute_gas_limit(fee_limit: u64, block_limit: u64) -> u64 {
+    let min = cmp::min(fee_limit, block_limit);
+    min + GAS_GRACE
+}
 
 pub struct RuskInner {
     pub current_commit: [u8; 32],
@@ -112,7 +128,7 @@ impl Rusk {
 
         let mut block_gas_left = block_gas_limit;
 
-        let mut spent_txs = Vec::with_capacity(txs.len());
+        let mut spent_txs = Vec::<SpentTransaction>::with_capacity(txs.len());
         let mut discarded_txs = Vec::with_capacity(txs.len());
 
         let mut dusk_spent = 0;
@@ -133,7 +149,7 @@ impl Rusk {
 
             // The gas limit set for a transaction is either the limit it sets,
             // or the gas left in the block, whichever is smallest.
-            let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
+            let gas_limit = compute_gas_limit(tx.fee.gas_limit, block_gas_left);
             session.set_point_limit(gas_limit);
 
             let (gas_spent, call_result): (
@@ -143,10 +159,13 @@ impl Rusk {
                 Ok(call_result) => call_result,
                 Err(err) => match err {
                     piecrust::Error::OutOfPoints => {
+                        let fee_limit =
+                            compute_gas_limit(tx.fee.gas_limit, u64::MAX);
+
                         // If the transaction would have been out of points
                         // with its own gas limit, it is invalid and should
                         // be discarded.
-                        if gas_limit == tx.fee.gas_limit {
+                        if gas_limit == fee_limit {
                             discarded_txs.push(tx);
                         }
                         continue;
@@ -157,6 +176,28 @@ impl Rusk {
                     }
                 },
             };
+
+            // If the gas spent is larger that the remaining block gas, then we
+            // re-execute the transactions with a new session. We can ignore the
+            // results since we know they will be valid.
+            if gas_spent > block_gas_left {
+                session = rusk_abi::new_session(
+                    &inner.vm,
+                    current_commit,
+                    block_height,
+                )?;
+
+                for spent_tx in &spent_txs {
+                    let _: (
+                        u64,
+                        Option<Result<RawResult, ContractError>>,
+                    ) =
+                    session.call(TRANSFER_CONTRACT, "execute", &spent_tx.0)
+                        .expect("Re-execution of spent transactions should never fail");
+                }
+
+                continue;
+            }
 
             block_gas_left -= gas_spent;
             dusk_spent += gas_spent * tx.fee.gas_price;
@@ -174,7 +215,12 @@ impl Rusk {
             }
         }
 
-        reward(&mut session, block_height, dusk_spent, generator)?;
+        reward_and_update_root(
+            &mut session,
+            block_height,
+            dusk_spent,
+            generator,
+        )?;
         let state_root = session.root();
 
         Ok((spent_txs, discarded_txs, state_root))
@@ -338,7 +384,7 @@ impl Rusk {
     pub fn tree_opening(
         &self,
         pos: u64,
-    ) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+    ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>>> {
         self.query(TRANSFER_CONTRACT, "opening", &pos)
     }
 
@@ -471,7 +517,7 @@ fn accept(
             }
         }
 
-        let gas_limit = cmp::min(tx.fee.gas_limit, block_gas_left);
+        let gas_limit = compute_gas_limit(tx.fee.gas_limit, block_gas_left);
         session.set_point_limit(gas_limit);
 
         let (gas_spent, call_result): (
@@ -491,13 +537,13 @@ fn accept(
         ));
     }
 
-    reward(session, block_height, dusk_spent, generator)?;
+    reward_and_update_root(session, block_height, dusk_spent, generator)?;
     let state_root = session.root();
 
     Ok((spent_txs, state_root))
 }
 
-fn reward(
+fn reward_and_update_root(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
@@ -506,9 +552,11 @@ fn reward(
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
-    session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
+    session.set_point_limit(u64::MAX);
 
+    session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
     session.call(STAKE_CONTRACT, "reward", &(generator, generator_value))?;
+    session.call(TRANSFER_CONTRACT, "update_root", &())?;
 
     Ok(())
 }

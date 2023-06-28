@@ -31,7 +31,7 @@ dusk-pki ="0.11"
 phoenix-core = { version = "0.18", features = ["rkyv-impl", "alloc"] }
 rand = "0.8"
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", features=["builder"] }
-microkelvin = "0.17"
+dusk-merkle = "0.4.1-rc.0"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", features = ["host"] }
 once_cell = "1.13"

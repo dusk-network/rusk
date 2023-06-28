@@ -4,189 +4,72 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::borrow::Borrow;
 use core::ops::Range;
 
+use alloc::vec::Vec;
+
 use dusk_bls12_381::BlsScalar;
-use dusk_poseidon::tree::{PoseidonBranch, PoseidonLeaf, PoseidonTree};
-use microkelvin::{Child, Compound, Step, Walk, Walker};
-use nstack::annotation::{Keyed, MaxKey};
 use phoenix_core::transaction::*;
-use phoenix_core::Note;
-use ranno::Annotation;
 
-#[derive(Debug, Clone)]
-struct TreeLeafWrapper(TreeLeaf);
+use dusk_merkle::poseidon::{
+    Item as PoseidonItem, Opening as PoseidonOpening, Tree as PoseidonTree,
+};
 
-impl PoseidonLeaf for TreeLeafWrapper {
-    fn poseidon_hash(&self) -> BlsScalar {
-        rusk_abi::poseidon_hash(self.0.note.hash_inputs().into())
-    }
+use crate::state::A;
 
-    fn pos(&self) -> &u64 {
-        self.0.note.pos()
-    }
-
-    fn set_pos(&mut self, pos: u64) {
-        self.0.note.set_pos(pos);
-    }
-}
-
-impl Keyed<u64> for TreeLeafWrapper {
-    fn key(&self) -> &u64 {
-        &self.0.block_height
-    }
-}
-
-impl AsRef<Note> for TreeLeafWrapper {
-    fn as_ref(&self) -> &Note {
-        &self.0.note
-    }
-}
-
-impl Borrow<u64> for TreeLeafWrapper {
-    fn borrow(&self) -> &u64 {
-        self.0.note.pos()
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct Tree {
-    tree: PoseidonTree<TreeLeafWrapper, u64, TRANSFER_TREE_DEPTH>,
+    tree: PoseidonTree<(), TRANSFER_TREE_DEPTH, A>,
+    // Since `dusk-merkle` does not include data blocks with the tree, we do it
+    // here.
+    leaves: Vec<TreeLeaf>,
 }
 
 impl Tree {
     pub const fn new() -> Self {
         Self {
             tree: PoseidonTree::new(),
+            leaves: Vec::new(),
         }
     }
 
     pub fn get(&self, pos: u64) -> Option<TreeLeaf> {
-        self.tree.get(pos).map(|l| l.0)
+        self.leaves.get(pos as usize).cloned()
     }
 
-    pub fn push(&mut self, leaf: TreeLeaf) -> u64 {
-        self.tree.push(TreeLeafWrapper(leaf))
+    pub fn push(&mut self, mut leaf: TreeLeaf) -> u64 {
+        // update the position before computing the hash
+        let pos = self.leaves.len() as u64;
+        leaf.note.set_pos(pos);
+
+        // compute the item that goes in the leaf of the tree
+        let hash = rusk_abi::poseidon_hash(leaf.note.hash_inputs().to_vec());
+        let item = PoseidonItem { hash, data: () };
+
+        self.tree.insert(pos, item);
+        self.leaves.push(leaf);
+
+        pos
     }
 
     pub fn root(&self) -> BlsScalar {
-        self.tree.root()
+        self.tree.root().hash
     }
 
-    pub fn leaves(
-        &self,
-        range: Range<u64>,
-    ) -> Option<impl Iterator<Item = &TreeLeaf>> {
-        self.tree
-            .annotated_iter_walk(HeightRangeWalker(range))
-            .map(|v| v.into_iter().map(|lw| &lw.0))
+    pub fn leaves(&self, range: Range<u64>) -> impl Iterator<Item = &TreeLeaf> {
+        // We can do this since we know the leaves are strictly increasing in
+        // block height. If this ever changes - such as in the case of a
+        // sparsely populated tree - we should annotate the tree and use
+        // `Tree::walk` instead.
+        self.leaves
+            .iter()
+            .skip_while(move |leaf| leaf.block_height < range.start)
+            .take_while(move |leaf| leaf.block_height < range.end)
     }
 
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
-        self.tree.branch(pos)
-    }
-}
-
-/// Walker to find the leaves that are between two block heights.
-pub struct HeightRangeWalker(Range<u64>);
-
-impl<C, A> Walker<C, A> for HeightRangeWalker
-where
-    C: Compound<A>,
-    C::Leaf: Keyed<u64>,
-    A: Annotation<C> + Borrow<MaxKey<u64>>,
-{
-    fn walk(&mut self, walk: Walk<C, A>) -> Step {
-        for i in 0.. {
-            match walk.child(i) {
-                Child::Leaf(l) => {
-                    if self.0.contains(l.key()) {
-                        return Step::Found(i);
-                    }
-                }
-                Child::Node(n) => {
-                    let max_node_block_height = match *(*n.anno()).borrow() {
-                        MaxKey::NegativeInfinity => return Step::Abort,
-                        MaxKey::Maximum(max) => max,
-                    };
-
-                    if max_node_block_height >= self.0.start {
-                        return Step::Into(i);
-                    }
-                }
-                Child::Empty => {}
-                Child::EndOfNode => return Step::Advance,
-            }
-        }
-        unreachable!()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::HeightRangeWalker;
-
-    use dusk_bls12_381::BlsScalar;
-    use dusk_poseidon::tree::{PoseidonLeaf, PoseidonTree};
-    use nstack::annotation::Keyed;
-
-    const TRANSFER_TREE_DEPTH: usize = 17;
-
-    #[derive(Debug, Clone, Copy)]
-    pub struct Leaf {
-        pub block_height: u64,
-        pub pos: u64,
-    }
-
-    impl Keyed<u64> for Leaf {
-        fn key(&self) -> &u64 {
-            &self.block_height
-        }
-    }
-
-    impl PoseidonLeaf for Leaf {
-        fn poseidon_hash(&self) -> BlsScalar {
-            BlsScalar::zero()
-        }
-
-        fn pos(&self) -> &u64 {
-            &self.pos
-        }
-
-        fn set_pos(&mut self, pos: u64) {
-            self.pos = pos;
-        }
-    }
-
-    type Tree = PoseidonTree<Leaf, u64, TRANSFER_TREE_DEPTH>;
-
-    #[test]
-    fn walk() {
-        let mut tree = Tree::new();
-
-        for i in 0..64 {
-            tree.push(Leaf {
-                block_height: i / 4,
-                pos: 0,
-            });
-        }
-
-        let (from_height, until_height) = (2, 5);
-        let range = from_height..until_height;
-
-        let walk = tree
-            .annotated_iter_walk(HeightRangeWalker(range.clone()))
-            .expect("There should be a walker");
-
-        for leaf in walk
-            .into_iter()
-            .take_while(move |item| item.block_height < until_height)
-        {
-            assert!(range.contains(&leaf.block_height));
-        }
+    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
+        self.tree.opening(pos)
     }
 }

@@ -9,7 +9,6 @@ use crate::common::*;
 
 use std::path::Path;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_pki::SecretSpendKey;
 use parking_lot::MutexGuard;
 use phoenix_core::Note;
@@ -56,7 +55,7 @@ where
         let _: Note = session
             .call(TRANSFER_CONTRACT, "push_note", &note)
             .expect("Pushing note should succeed");
-        let _: BlsScalar = session
+        let _: () = session
             .call(TRANSFER_CONTRACT, "update_root", &())
             .expect("Updating root should succeed");
 

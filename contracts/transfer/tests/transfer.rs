@@ -7,9 +7,9 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
+use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
 use piecrust::{ContractData, Error};
@@ -44,6 +44,9 @@ const BOB_ID: ContractId = {
 type Result<T, E = Error> = core::result::Result<T, E>;
 
 const OWNER: [u8; 32] = [0; 32];
+
+const H: usize = TRANSFER_TREE_DEPTH;
+const A: usize = 4;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
@@ -93,9 +96,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
-    let _: BlsScalar = session
-        .call(TRANSFER_CONTRACT, "update_root", &())
-        .expect("Updating the root should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
@@ -117,6 +118,10 @@ fn leaves_in_range(
     )
 }
 
+fn update_root(session: &mut Session) -> Result<()> {
+    session.call(TRANSFER_CONTRACT, "update_root", &())
+}
+
 fn root(session: &mut Session) -> Result<BlsScalar> {
     session.call(TRANSFER_CONTRACT, "root", &())
 }
@@ -136,7 +141,7 @@ fn message(
 fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, 4>>> {
     session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
@@ -248,7 +253,7 @@ fn transfer() {
 
     let circuit_input_signature =
         CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
-    let circuit_input = CircuitInput::new(
+    let circuit_input = CircuitInput::<(), H, A>::new(
         opening,
         input_note,
         pk_r_p.into(),
@@ -260,7 +265,8 @@ fn transfer() {
 
     circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (proof, _) = circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -279,6 +285,7 @@ fn transfer() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_1_2 : {} gas", session.spent());
 
@@ -376,7 +383,8 @@ fn alice_ping() {
 
     circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (proof, _) = circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -395,6 +403,7 @@ fn alice_ping() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_PING: {} gas", session.spent());
 
@@ -556,7 +565,8 @@ fn send_and_withdraw_transparent() {
 
     execute_circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -575,6 +585,7 @@ fn send_and_withdraw_transparent() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_STCT: {} gas", session.spent());
 
@@ -733,7 +744,8 @@ fn send_and_withdraw_transparent() {
     execute_circuit.add_input(circuit_input_0);
     execute_circuit.add_input(circuit_input_1);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -752,6 +764,7 @@ fn send_and_withdraw_transparent() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_WFCT: {} gas", session.spent());
 
@@ -936,7 +949,8 @@ fn send_and_withdraw_obfuscated() {
 
     execute_circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -955,6 +969,7 @@ fn send_and_withdraw_obfuscated() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_STCO: {} gas", session.spent());
 
@@ -1164,7 +1179,8 @@ fn send_and_withdraw_obfuscated() {
     execute_circuit.add_input(circuit_input_0);
     execute_circuit.add_input(circuit_input_1);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -1183,6 +1199,7 @@ fn send_and_withdraw_obfuscated() {
     let _: (u64, Option<Result<RawResult, ContractError>>) = session
         .call(TRANSFER_CONTRACT, "execute", &tx)
         .expect("Transacting should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
     println!("EXECUTE_WFCO: {} gas", session.spent());
 

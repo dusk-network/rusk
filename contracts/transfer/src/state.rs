@@ -10,15 +10,14 @@ use crate::tree::Tree;
 
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
-use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::Range;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
+use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use rusk_abi::dusk::{Dusk, LUX};
@@ -27,7 +26,9 @@ use rusk_abi::{
     STAKE_CONTRACT,
 };
 
-#[derive(Debug, Clone)]
+/// Arity of the transfer tree.
+pub const A: usize = 4;
+
 pub struct TransferState {
     tree: Tree,
     nullifiers: BTreeSet<BlsScalar>,
@@ -38,24 +39,6 @@ pub struct TransferState {
     message_mapping_set: BTreeMap<ContractId, StealthAddress>,
     var_crossover: Option<Crossover>,
     var_crossover_pk: Option<PublicKey>,
-}
-
-impl TryFrom<Note> for TransferState {
-    type Error = Error;
-
-    /// This implementation is intended for test purposes to initialize the
-    /// state with the provided note
-    ///
-    /// To avoid abuse, the block_height will always be `0`
-    fn try_from(note: Note) -> Result<Self, Self::Error> {
-        let mut transfer = Self::new();
-
-        let block_height = 0;
-        transfer.push_note(block_height, note);
-        transfer.update_root();
-
-        Ok(transfer)
-    }
 }
 
 impl TransferState {
@@ -391,8 +374,6 @@ impl TransferState {
             .push_fee_crossover(tx.fee)
             .expect("Failed to append the fee and the crossover to the state!");
 
-        self.update_root();
-
         (spent, res)
     }
 
@@ -408,17 +389,13 @@ impl TransferState {
 
     /// Return the leaves in a given block height range.
     pub fn leaves_in_range(&self, range: Range<u64>) -> Vec<TreeLeaf> {
-        match self.tree.leaves(range) {
-            Some(leaves) => leaves.cloned().collect(),
-            None => vec![],
-        }
+        self.tree.leaves(range).cloned().collect()
     }
 
     /// Update the root for of the tree.
-    pub fn update_root(&mut self) -> BlsScalar {
+    pub fn update_root(&mut self) {
         let root = self.tree.root();
         self.roots.insert(root);
-        root
     }
 
     /// Get the root of the tree.
@@ -430,7 +407,7 @@ impl TransferState {
     pub fn opening(
         &self,
         pos: u64,
-    ) -> Option<PoseidonBranch<TRANSFER_TREE_DEPTH>> {
+    ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
         self.tree.opening(pos)
     }
 

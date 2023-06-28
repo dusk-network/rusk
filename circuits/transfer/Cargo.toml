@@ -10,11 +10,11 @@ dusk-bytes = "0.1"
 dusk-bls12_381 = "0.11"
 dusk-jubjub = "0.12"
 dusk-plonk = "0.13"
-dusk-poseidon = "0.28"
-nstack = "0.16"
+dusk-poseidon = "0.29.1-rc.0"
+dusk-merkle = { version = "0.4.1-rc.0", features = ["poseidon", "zk"] }
 dusk-pki ="0.11"
 dusk-schnorr = "0.12"
-phoenix-core = "0.18"
+phoenix-core = { version = "0.18", features = ["alloc"] }
 
 code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
