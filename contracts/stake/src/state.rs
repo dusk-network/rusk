@@ -117,10 +117,6 @@ impl StakeState {
     }
 
     pub fn stake(&mut self, stake: Stake) {
-        if rusk_abi::caller() != TRANSFER_CONTRACT {
-            panic!("Can only be called from the transfer contract!");
-        }
-
         if stake.value < MINIMUM_STAKE {
             panic!("The staked value is lower than the minimum amount!");
         }
@@ -157,10 +153,6 @@ impl StakeState {
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
-        if rusk_abi::caller() != TRANSFER_CONTRACT {
-            panic!("Can only be called from the transfer contract!");
-        }
-
         // remove the stake from a key and increment the signature counter
         let loaded_stake = self
             .get_stake_mut(&unstake.public_key)
@@ -195,10 +187,6 @@ impl StakeState {
     }
 
     pub fn withdraw(&mut self, withdraw: Withdraw) {
-        if rusk_abi::caller() != TRANSFER_CONTRACT {
-            panic!("Can only be called from the transfer contract!");
-        }
-
         // deplete the stake from a key and increment the signature counter
         let loaded_stake = self
             .get_stake_mut(&withdraw.public_key)
@@ -246,10 +234,6 @@ impl StakeState {
     }
 
     pub fn allow(&mut self, allow: Allow) {
-        if rusk_abi::caller() != TRANSFER_CONTRACT {
-            panic!("Can only be called from the transfer contract!");
-        }
-
         if self.is_allowlisted(&allow.public_key) {
             panic!("Address already allowed!");
         }
