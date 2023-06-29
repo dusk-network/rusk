@@ -40,4 +40,6 @@ pub trait VMExecution: Send + Sync + 'static {
     fn get_provisioners(&self) -> anyhow::Result<Provisioners>;
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;
+
+    fn revert(&self) -> anyhow::Result<[u8; 32]>;
 }
