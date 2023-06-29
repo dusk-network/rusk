@@ -6,6 +6,7 @@
 
 mod acceptor;
 mod consensus;
+mod fallback;
 mod fsm;
 mod genesis;
 
