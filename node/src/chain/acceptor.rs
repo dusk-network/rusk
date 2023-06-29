@@ -46,8 +46,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Upper layer consensus task
     task: RwLock<super::consensus::Task>,
 
-    db: Arc<RwLock<DB>>,
-    vm: Arc<RwLock<VM>>,
+    pub(crate) db: Arc<RwLock<DB>>,
+    pub(crate) vm: Arc<RwLock<VM>>,
     network: Arc<RwLock<N>>,
 }
 
@@ -117,6 +117,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })
     }
 
+    /// Injects a block in ledger database without updating VM state.
+    ///
+    /// It also updates mrb and provisioners list accordingly.
+    ///
+    /// Injecting block is applicable only in case of the fallback procedure
+    /// execution.
+    pub(crate) async fn inject_block(&self, blk: &Block) -> anyhow::Result<()> {
+        let mut task = self.task.write().await;
+        let (_, public_key) = task.keys.clone();
+
+        let mut mrb = self.mrb.write().await;
+        let mut provisioners_list = self.provisioners_list.write().await;
+
+        // Reset Consensus
+        task.abort_with_wait().await;
+
+        // Persist a block without VM execution
+        self.db.read().await.update(|t| t.store_block(blk, true))?;
+
+        *provisioners_list = self.vm.read().await.get_provisioners()?;
+        *mrb = blk.clone();
+
+        Ok(())
+    }
+
     pub(crate) async fn try_accept_block(
         &self,
         blk: &Block,
@@ -125,11 +150,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut task = self.task.write().await;
         let (_, public_key) = task.keys.clone();
 
-        // Verify Block Header
-        self.verify_block_header(&public_key, &blk.header).await?;
-
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
+
+        // Verify Block Header
+        self.verify_block_header(&mrb.header, &public_key, &blk.header)
+            .await?;
 
         // Reset Consensus
         task.abort_with_wait().await;
@@ -189,14 +215,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn verify_block_header(
         &self,
+        curr_header: &ledger::Header,
         public_key: &node_data::bls::PublicKey,
         blk_header: &ledger::Header,
     ) -> anyhow::Result<()> {
         if blk_header.version > 0 {
             return Err(anyhow!("unsupported block version"));
         }
-
-        let curr_header = self.mrb.read().await.header.clone();
 
         if blk_header.height != curr_header.height + 1 {
             return Err(anyhow!(
@@ -299,6 +324,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_curr_timestamp(&self) -> i64 {
         self.mrb.read().await.header.timestamp
+    }
+
+    pub(crate) async fn get_curr_iteration(&self) -> u8 {
+        self.mrb.read().await.header.iteration
     }
 
     pub(crate) async fn get_result_chan(
