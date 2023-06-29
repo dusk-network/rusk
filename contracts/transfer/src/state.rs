@@ -20,11 +20,7 @@ use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
-use rusk_abi::dusk::{Dusk, LUX};
-use rusk_abi::{
-    ContractError, ContractId, PaymentInfo, PublicInput, RawCall, RawResult,
-    STAKE_CONTRACT,
-};
+use rusk_abi::{ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -38,7 +34,7 @@ pub struct TransferState {
         BTreeMap<ContractId, BTreeMap<[u8; PublicKey::SIZE], Message>>,
     message_mapping_set: BTreeMap<ContractId, StealthAddress>,
     var_crossover: Option<Crossover>,
-    var_crossover_pk: Option<PublicKey>,
+    var_crossover_addr: Option<StealthAddress>,
 }
 
 impl TransferState {
@@ -51,7 +47,7 @@ impl TransferState {
             message_mapping: BTreeMap::new(),
             message_mapping_set: BTreeMap::new(),
             var_crossover: None,
-            var_crossover_pk: None,
+            var_crossover_addr: None,
         }
     }
 
@@ -72,9 +68,8 @@ impl TransferState {
     }
 
     pub fn send_to_contract_transparent(&mut self, stct: Stct) -> bool {
-        let (crossover, pk) = self
-            .take_crossover()
-            .expect("The crossover is mandatory for STCT!");
+        let (crossover, stealth_addr) =
+            self.take_crossover().expect("Crossover not present");
 
         let address =
             rusk_abi::contract_to_scalar(&ContractId::from_bytes(stct.module));
@@ -87,7 +82,7 @@ impl TransferState {
 
         pi.push(crossover.value_commitment().into());
         pi.push(stct.value.into());
-        pi.push(pk.as_ref().into());
+        pi.push(stealth_addr.pk_r().as_ref().into());
         pi.push(message.into());
 
         //  1. v < 2^64
@@ -141,7 +136,7 @@ impl TransferState {
     }
 
     pub fn send_to_contract_obfuscated(&mut self, stco: Stco) -> bool {
-        let (crossover, crossover_pk) = self
+        let (crossover, stealth_addr) = self
             .take_crossover()
             .expect("The crossover is mandatory for STCO!");
 
@@ -179,7 +174,7 @@ impl TransferState {
         pi.extend(stco.message.cipher().iter().map(|c| c.into()));
         pi.push(module.into());
         pi.push(sign_message.into());
-        pi.push(crossover_pk.as_ref().into());
+        pi.push(stealth_addr.pk_r().as_ref().into());
 
         //  1. S_a↦.append((pk, R))
         //  2. M_a↦.M_pk↦.append(M)
@@ -275,106 +270,78 @@ impl TransferState {
         true
     }
 
-    /// Executes a transaction, returning the gas consumed, and the result of a
-    /// possible contract call.
-    pub fn execute(
-        &mut self,
-        tx: Transaction,
-    ) -> (u64, Option<Result<RawResult, ContractError>>) {
-        // Constant for a pedersen commitment with zero value.
-        //
-        // Calculated as `G^0 · G'^0`
-        pub const ZERO_COMMITMENT: JubJubAffine =
-            JubJubAffine::from_raw_unchecked(
-                BlsScalar::zero(),
-                BlsScalar::one(),
-            );
-
-        let crossover_commitment = tx
-            .crossover
-            .map(|c| c.value_commitment().clone())
-            .unwrap_or_default();
-        let inputs = tx.nullifiers.len();
-        let outputs = tx.outputs.len();
-
-        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
-
-        let mut pi = Vec::with_capacity(5 + inputs + 2 * outputs);
-
-        pi.push(tx_hash.into());
-        pi.push(tx.anchor.into());
-        pi.extend(tx.nullifiers.iter().map(|n| n.into()));
-        pi.push(crossover_commitment.into());
-
-        let fee_value = tx.fee.gas_limit * tx.fee.gas_price;
-
-        pi.push(fee_value.into());
-        pi.extend(tx.outputs.iter().map(|n| n.value_commitment().into()));
-        pi.extend(
-            (0usize..2usize.saturating_sub(tx.outputs.len()))
-                .map(|_| ZERO_COMMITMENT.into()),
-        );
-
+    /// Spend the inputs and process the outputs, together with the crossover.
+    /// It performs all checks necessary to ensure the transaction is valid -
+    /// hash matches, anchor has been a root of the tree, proof checks out,
+    /// etc...
+    ///
+    /// This will emplace the crossover in the state, if it exists, and expect
+    /// [`refund`] to be called if it succeeds.
+    ///
+    /// # Panics
+    /// Any failure in the checks performed in processing the transaction will
+    /// result in a panic. The contract expects the environment to roll back any
+    /// change in state.
+    ///
+    /// [`refund`]: [`TransferState::refund`]
+    pub fn spend(&mut self, tx: Transaction) {
         //  1. α ∈ R
         if !self.root_exists(&tx.anchor) {
             panic!("Anchor not found in the state!");
         }
 
         //  2. ν[] !∈ Nullifiers
-        if self.any_nullifier_exists(tx.nullifiers.as_slice()) {
+        if self.any_nullifier_exists(&tx.nullifiers) {
             panic!("A provided nullifier already exists!");
         }
 
         //  3. Nullifiers.append(ν[])
-        self.extend_nullifiers(tx.nullifiers);
+        self.nullifiers.extend(&tx.nullifiers);
 
         //  4. if |C|=0 then set C ← (0,0,0)
         //  Crossover is received as option
 
         //  5. N↦.append((No.R[], No.pk[])
         //  6. Notes.append(No[])
-        self.extend_notes(tx.outputs);
+        let block_height = rusk_abi::block_height();
+        self.tree.extend_notes(block_height, tx.outputs.clone());
 
         //  7. g_l < 2^64
         //  8. g_pmin < g_p
         //  9. fee ← g_l ⋅ g_p
-        let minimum_gas_price = Self::minimum_gas_price();
-        if tx.fee.gas_price < minimum_gas_price {
-            panic!(
-                "The gas price is below the minimum `{:?}`!",
-                minimum_gas_price
-            );
-        }
-
         // 10. verify(α, ν[], C.c, No.c[], fee)
-        let vd = verifier_data_execute(inputs)
-            .expect("No circuit available for given number of inputs!");
-        Self::assert_proof(vd, tx.proof, pi)
-            .expect("Failed to verify the provided proof!");
+        if !verify_tx_proof(&tx) {
+            panic!("Invalid transaction proof!");
+        }
 
         // 11. if ∣k∣≠0 then call(k)
         self.var_crossover = tx.crossover;
-        self.var_crossover_pk
-            .replace((*tx.fee.stealth_address().pk_r().as_ref()).into());
+        self.var_crossover_addr.replace(*tx.fee.stealth_address());
+    }
 
-        let res = tx.call.map(|(contract_id, fn_name, data)| {
-            let contract_id = ContractId::from_bytes(contract_id);
-            let raw_tx = RawCall::from_parts(&fn_name, data);
-            rusk_abi::call_raw(contract_id, &raw_tx)
-        });
+    /// Refund the previously performed transaction, taking into account the
+    /// given gas spent. The notes produced will be refunded to the address
+    /// present in the fee structure.
+    ///
+    /// This function guarantees that it will not panic.
+    pub fn refund(&mut self, fee: Fee, gas_spent: u64) {
+        let block_height = rusk_abi::block_height();
 
-        // 12. if C≠(0,0,0) then N_p^o ← constructObfuscatedNote(C, R, pk)
-        // 13. N↦.append((N_p^o.R, N_p^o.pk))
-        // 14. Notes.append(N_p^o)
-        // 15. N_p^t←constructTransparentNote(g, R, pk)
-        // 16. N_p^*←encode(N_p^t)
-        // 17. N↦.append((N_p^t.R, N_p^t.pk))
-        // 18. Notes.append(N_p^*)
-        let spent = self
-            .push_fee_crossover(tx.fee)
-            .expect("Failed to append the fee and the crossover to the state!");
+        let remainder = fee.gen_remainder(gas_spent);
+        let remainder = Note::from(remainder);
 
-        (spent, res)
+        let remainder_value = remainder
+            .value(None)
+            .expect("Should always succeed for a transparent note");
+
+        if remainder_value > 0 {
+            self.push_note(block_height, remainder);
+        }
+
+        if let Some(crossover) = self.var_crossover {
+            let note = Note::from((fee, crossover));
+            self.push_note(block_height, note);
+        }
     }
 
     /// Push a note to the contract's state with the given block height
@@ -466,30 +433,6 @@ impl TransferState {
         false
     }
 
-    fn push_fee_crossover(&mut self, fee: Fee) -> Result<u64, Error> {
-        let block_height = rusk_abi::block_height();
-        let spent = rusk_abi::spent();
-
-        let remainder = fee.gen_remainder(spent);
-        let remainder = Note::from(remainder);
-        let remainder_value = remainder.value(None)?;
-        if remainder_value > 0 {
-            self.push_note(block_height, remainder);
-        }
-
-        if let Some(crossover) = self.var_crossover {
-            let note = Note::from((fee, crossover));
-            self.push_note(block_height, note);
-        }
-
-        Ok(spent)
-    }
-
-    /// Minimum accepted price per unit of gas.
-    const fn minimum_gas_price() -> Dusk {
-        LUX
-    }
-
     fn take_message_from_address_key(
         &mut self,
         contract: &ContractId,
@@ -506,21 +449,9 @@ impl TransferState {
         self.roots.get(root).is_some()
     }
 
-    fn extend_nullifiers(&mut self, nullifiers: Vec<BlsScalar>) {
-        self.nullifiers.extend(nullifiers);
-    }
-
     fn push_note_current_height(&mut self, note: Note) -> Note {
         let block_height = rusk_abi::block_height();
         self.push_note(block_height, note)
-    }
-
-    fn extend_notes(&mut self, notes: Vec<Note>) {
-        let block_height = rusk_abi::block_height();
-
-        for note in notes {
-            self.push_note(block_height, note);
-        }
     }
 
     fn sub_balance(
@@ -574,16 +505,16 @@ impl TransferState {
         self.message_mapping_set.insert(address, message_address);
     }
 
-    fn take_crossover(&mut self) -> Result<(Crossover, PublicKey), Error> {
+    fn take_crossover(&mut self) -> Result<(Crossover, StealthAddress), Error> {
         let crossover =
             self.var_crossover.take().ok_or(Error::CrossoverNotFound)?;
 
-        let pk = self
-            .var_crossover_pk
+        let sa = self
+            .var_crossover_addr
             .take()
             .ok_or(Error::CrossoverNotFound)?;
 
-        Ok((crossover, pk))
+        Ok((crossover, sa))
     }
 
     fn assert_proof(
@@ -595,6 +526,43 @@ impl TransferState {
             .then(|| ())
             .ok_or(Error::ProofVerificationError)
     }
+}
+
+fn verify_tx_proof(tx: &Transaction) -> bool {
+    // Constant for a pedersen commitment with zero value.
+    // Calculated as `G^0 · G'^0`
+    const ZERO_COMMITMENT: JubJubAffine =
+        JubJubAffine::from_raw_unchecked(BlsScalar::zero(), BlsScalar::one());
+
+    let n_nullifiers = tx.nullifiers.len();
+    let n_outputs = tx.outputs.len();
+
+    let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
+    let crossover_commitment = tx
+        .crossover
+        .map(|c| c.value_commitment().clone())
+        .unwrap_or_default();
+    let fee_value = tx.fee.gas_limit * tx.fee.gas_price;
+
+    let mut pis =
+        Vec::<PublicInput>::with_capacity(5 + n_nullifiers + 2 * n_outputs);
+
+    pis.push(tx_hash.into());
+    pis.push(tx.anchor.into());
+    pis.extend(tx.nullifiers.iter().map(Into::into));
+    pis.push(crossover_commitment.into());
+
+    pis.push(fee_value.into());
+    pis.extend(tx.outputs.iter().map(|n| n.value_commitment().into()));
+    pis.extend(
+        (0usize..2usize.saturating_sub(n_outputs))
+            .map(|_| ZERO_COMMITMENT.into()),
+    );
+
+    let vd = verifier_data_execute(n_nullifiers)
+        .expect("No circuit available for given number of inputs!")
+        .to_vec();
+    rusk_abi::verify_proof(vd, tx.proof.clone(), pis)
 }
 
 #[cfg(test)]

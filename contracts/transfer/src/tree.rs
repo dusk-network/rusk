@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
 use phoenix_core::transaction::*;
+use phoenix_core::Note;
 
 use dusk_merkle::poseidon::{
     Item as PoseidonItem, Opening as PoseidonOpening, Tree as PoseidonTree,
@@ -49,6 +50,17 @@ impl Tree {
         self.leaves.push(leaf);
 
         pos
+    }
+
+    pub fn extend_notes<I: IntoIterator<Item = Note>>(
+        &mut self,
+        block_height: u64,
+        notes: I,
+    ) {
+        for note in notes {
+            let leaf = TreeLeaf { block_height, note };
+            self.push(leaf);
+        }
     }
 
     pub fn root(&self) -> BlsScalar {
