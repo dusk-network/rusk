@@ -5,10 +5,11 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{acceptor::Acceptor, consensus, genesis};
+use crate::chain::fallback;
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash};
+use dusk_consensus::user::provisioners::{self, Provisioners};
+use node_data::ledger::{self, Block, Hash, Transaction};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::collections::HashMap;
@@ -23,11 +24,9 @@ const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
     InSync(InSyncImpl<DB, VM, N>),
     OutOfSync(OutOfSyncImpl<DB, VM, N>),
-    InFallback,
 }
 
-/// Implements a finite-state-machine to manage InSync, OutOfSync and
-/// InFallback states.
+/// Implements a finite-state-machine to manage InSync and OutOfSync
 pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
     curr: State<N, DB, VM>,
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
@@ -81,9 +80,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     self.curr = State::InSync(next);
                 }
             }
-            State::InFallback => {
-                // TODO: This will be handled with another issue
-            }
         }
         Ok(())
     }
@@ -127,9 +123,39 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let acc = self.acc.write().await;
         let h = blk.header.height;
         let curr_h = acc.get_curr_height().await;
+        let curr_hash = acc.get_curr_hash().await;
 
-        if h <= curr_h {
+        if h < curr_h {
             return Ok(false);
+        }
+
+        if h == curr_h {
+            if blk.header.hash == curr_hash {
+                // Duplicated block.
+                // Node has already accepted it.
+                return Ok(false);
+            }
+
+            match fallback::WithContext::new(self.acc.clone())
+                .try_execute_fallback(blk)
+                .await
+            {
+                Err(e) => {
+                    // Fallback execution has failed. The block is ignored and
+                    // Node remains in InSync state.
+                    tracing::error!("{}", e);
+                    return Ok(false);
+                }
+                Ok(_) => {
+                    // Fallback has completed successfully. Node has managed to
+                    // fallback to the most recent finalized block and state.
+
+                    // By switching to OutOfSync mode, we trigger the
+                    // sync-up procedure to download all missing ephemeral
+                    // blocks from the correct chain.
+                    return Ok(true);
+                }
+            }
         }
 
         // Try accepting consecutive block
