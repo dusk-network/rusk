@@ -570,16 +570,16 @@ fn execute(
     let mut gas_spent = gas_for_spend;
 
     let block_gas_left = block_gas_left - gas_spent;
-    let tx_gas_left = block_gas_left - gas_spent;
+    let tx_gas_left = tx.fee.gas_limit - gas_spent;
 
     let res = tx
         .call
         .as_ref()
         .map(|(contract_id_bytes, fn_name, fn_data)| {
             let contract_id = ContractId::from_bytes(*contract_id_bytes);
-            let gas_remaining = cmp::min(block_gas_left, tx_gas_left);
+            let gas_left = cmp::min(block_gas_left, tx_gas_left);
 
-            session.set_point_limit(gas_remaining);
+            session.set_point_limit(gas_left);
 
             match session.call_raw(contract_id, fn_name, fn_data.clone()) {
                 Ok(vec) => {
@@ -592,7 +592,7 @@ fn execute(
                         // we're using the block gas remaining as a limit, then
                         // we can't be sure that the transaction would fail if
                         // it was given the full gas it gave as a limit.
-                        if gas_remaining == block_gas_left {
+                        if gas_left == block_gas_left {
                             return Err(TxError::BlockLimitAfter(err));
                         }
 
