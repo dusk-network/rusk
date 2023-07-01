@@ -32,8 +32,8 @@ use rusk::services::state::{
     GetAnchorRequest, GetNotesRequest, GetOpeningRequest, PreverifyRequest,
     StateTransitionRequest, VerifyStateTransitionRequest,
 };
-use rusk::{Result, Rusk};
-use rusk_abi::{ContractId, POSEIDON_TREE_DEPTH};
+use rusk::{Result, Rusk, GAS_PER_INPUT};
+use rusk_abi::{ContractId, POSEIDON_TREE_DEPTH, TRANSFER_CONTRACT};
 use rusk_schema::network_client::NetworkClient;
 use rusk_schema::prover_client::ProverClient;
 use rusk_schema::state_client::StateClient;
@@ -47,9 +47,11 @@ use crate::common::state::new_state;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
-const BLOCK_GAS_LIMIT: u64 = 2_500_000;
-const GAS_LIMIT: u64 = 1_000_000;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
+
+const GAS_LIMIT_0: u64 = 2_000_000;
+const GAS_LIMIT_1: u64 = 100_000_000;
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
@@ -59,59 +61,104 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
     new_state(dir, &snapshot)
 }
 
-const SENDER_INDEX: u64 = 0;
+const SENDER_INDEX_0: u64 = 0;
+const SENDER_INDEX_1: u64 = 1;
 
-/// Execute a transaction that will error during a contract call, and checks
-/// that it was indeed charged the full amount it provides.
-fn erroring_call(
+fn make_transactions(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     channel: tonic::transport::Channel,
 ) {
     // We will refund the transaction to ourselves.
-    let refund = wallet
-        .public_spend_key(SENDER_INDEX)
+    let refund_0 = wallet
+        .public_spend_key(SENDER_INDEX_0)
         .expect("Getting a public spend key should succeed");
 
-    let initial_balance = wallet
-        .get_balance(SENDER_INDEX)
+    let initial_balance_0 = wallet
+        .get_balance(SENDER_INDEX_0)
+        .expect("Getting initial balance should succeed")
+        .value;
+
+    // We will refund the transaction to ourselves.
+    let refund_1 = wallet
+        .public_spend_key(SENDER_INDEX_1)
+        .expect("Getting a public spend key should succeed");
+
+    let initial_balance_1 = wallet
+        .get_balance(SENDER_INDEX_1)
         .expect("Getting initial balance should succeed")
         .value;
 
     assert_eq!(
-        initial_balance, INITIAL_BALANCE,
+        initial_balance_0, INITIAL_BALANCE,
+        "The sender should have the given initial balance"
+    );
+    assert_eq!(
+        initial_balance_1, INITIAL_BALANCE,
         "The sender should have the given initial balance"
     );
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    // The transaction will be a `wallet.execute` to a contract that is not
-    // deployed. This will produce an error in call execution and should
+    // The first transaction will be a `wallet.execute` to a contract that is
+    // not deployed. This will produce an error in call execution and should
     // consume all the gas provided.
-    let tx = wallet
+    let tx_0 = wallet
         .execute(
             &mut rng,
             ContractId::from([0x42; 32]),
             String::from("nonsense"),
             (),
-            SENDER_INDEX,
-            &refund,
-            GAS_LIMIT,
+            SENDER_INDEX_0,
+            &refund_0,
+            GAS_LIMIT_0,
             1,
         )
         .expect("Making the transaction should succeed");
 
-    generator_procedure(channel, tx.clone())
+    // The second transaction will also be a `wallet.execute`, but this time to
+    // the transfer contract, querying for the root of the tree. This will be
+    // tested for gas cost.
+    let tx_1 = wallet
+        .execute(
+            &mut rng,
+            TRANSFER_CONTRACT,
+            String::from("root"),
+            (),
+            SENDER_INDEX_1,
+            &refund_1,
+            GAS_LIMIT_1,
+            1,
+        )
+        .expect("Making the transaction should succeed");
+
+    generator_procedure(channel, tx_0.clone(), tx_1.clone())
         .expect("generator procedure should succeed");
 
-    let final_balance = wallet
-        .get_balance(SENDER_INDEX)
+    let final_balance_0 = wallet
+        .get_balance(SENDER_INDEX_0)
         .expect("Getting final balance should succeed")
         .value;
 
+    let final_balance_1 = wallet
+        .get_balance(SENDER_INDEX_1)
+        .expect("Getting final balance should succeed")
+        .value;
+
+    // The first transaction should consume all gas given, while the second one
+    // should consume a little more due to the root query.
     assert_eq!(
-        final_balance,
-        initial_balance - GAS_LIMIT,
+        final_balance_0,
+        initial_balance_0 - GAS_LIMIT_0,
         "Transaction should consume all the gas"
+    );
+
+    assert!(
+        final_balance_1 < initial_balance_1 - GAS_PER_INPUT,
+        "Transaction should consume more gas than just for one input"
+    );
+    assert!(
+        final_balance_1 > GAS_LIMIT_1,
+        "Transaction should consume less gas than all given"
     );
 }
 
@@ -119,39 +166,47 @@ fn erroring_call(
 /// including the contract call in the block.
 fn generator_procedure(
     channel: tonic::transport::Channel,
-    tx: Transaction,
+    tx_0: Transaction,
+    tx_1: Transaction,
 ) -> Result<()> {
     let mut client = StateClient::new(channel);
 
-    let proto = TransactionProto {
+    let proto_0 = TransactionProto {
         version: 1,
         r#type: 1,
-        payload: tx.to_var_bytes(),
+        payload: tx_0.to_var_bytes(),
+    };
+    let proto_1 = TransactionProto {
+        version: 1,
+        r#type: 1,
+        payload: tx_1.to_var_bytes(),
     };
 
     // Run pre-verification
-    let preverify_response = client
-        .preverify(PreverifyRequest {
-            tx: Some(proto.clone()),
-        })
-        .wait()?
-        .into_inner();
+    for (tx, proto) in [&tx_0, &tx_1].into_iter().zip([&proto_0, &proto_1]) {
+        let preverify_response = client
+            .preverify(PreverifyRequest {
+                tx: Some(proto.clone()),
+            })
+            .wait()?
+            .into_inner();
 
-    let tx_hash_input_bytes = tx.to_hash_input_bytes();
-    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
+        let tx_hash_input_bytes = tx.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
-    assert_eq!(
-        preverify_response.tx_hash,
-        tx_hash.to_bytes().to_vec(),
-        "Transaction hashes should match in pre-verification response"
-    );
+        assert_eq!(
+            preverify_response.tx_hash,
+            tx_hash.to_bytes().to_vec(),
+            "Transaction hashes should match in pre-verification response"
+        );
+    }
 
     // Execute state transition
     let generator = PublicKey::from(&*BLS_SK);
 
     let response = client
         .execute_state_transition(ExecuteStateTransitionRequest {
-            txs: vec![proto],
+            txs: vec![proto_0, proto_1],
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
             generator: generator.to_bytes().to_vec(),
@@ -161,8 +216,8 @@ fn generator_procedure(
 
     assert_eq!(
         response.txs.len(),
-        1,
-        "The transaction should be included in the block"
+        2,
+        "Both transactions should be included in the block"
     );
 
     let transfer_txs: Vec<_> = response
@@ -209,8 +264,8 @@ fn generator_procedure(
 
     assert_eq!(
         response.txs.len(),
-        1,
-        "There should be one transaction in the block"
+        2,
+        "There should be two transactions in the block"
     );
 
     let accept_state_root = response.state_root;
@@ -430,7 +485,7 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    erroring_call(&wallet, channel);
+    make_transactions(&wallet, channel);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
