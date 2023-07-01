@@ -622,9 +622,11 @@ fn execute(
         .unwrap_or(Ok((vec![], gas_spent)))
 }
 
-/// The gas spent per input of a transaction.
+/// The gas charged per input of a transaction.
+pub const GAS_PER_INPUT: u64 = 1_000_000;
+
+/// The gas charged given the number of inputs of a transaction.
 const fn spent_gas_per_input(n_inputs: usize) -> u64 {
-    const GAS_PER_INPUT: u64 = 1_000_000;
     n_inputs as u64 * GAS_PER_INPUT
 }
 
