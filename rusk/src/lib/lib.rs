@@ -54,6 +54,9 @@ pub struct RuskInner {
     pub current_commit: [u8; 32],
     pub base_commit: [u8; 32],
     pub vm: VM,
+
+    // FIXME please remove me
+    pub latest_block_height: u64,
 }
 
 #[derive(Clone)]
@@ -88,6 +91,7 @@ impl Rusk {
             current_commit: base_commit,
             base_commit,
             vm,
+            latest_block_height: 0,
         }));
 
         Ok(Self {
@@ -239,6 +243,7 @@ impl Rusk {
 
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
+        inner.latest_block_height = block_height;
 
         Ok((spent_txs, state_root))
     }
@@ -267,6 +272,7 @@ impl Rusk {
 
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
+        inner.latest_block_height = block_height;
 
         // Delete all commits except the previous base commit, and the current
         // commit
