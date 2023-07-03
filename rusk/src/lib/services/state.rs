@@ -310,6 +310,8 @@ impl State for Rusk {
 
         // Clone rusk and move it to the thread
         let rusk = self.clone();
+        let latest_block_height =
+            rusk.with_inner(|inner| inner.latest_block_height);
 
         // Spawn a task that's responsible for iterating through the leaves of
         // the transfer contract tree and sending them through the sender
@@ -319,18 +321,14 @@ impl State for Rusk {
                 .spawn_pinned(move || async move {
                     const BLOCKS_TO_SEARCH: u64 = 16;
 
-                    let mut start_height = request.height;
+                    let mut needle = request.height;
 
-                    loop {
-                        let end_height = start_height + BLOCKS_TO_SEARCH;
+                    while needle <= latest_block_height {
+                        let range = needle..needle + BLOCKS_TO_SEARCH;
 
                         let leaves = rusk
-                            .leaves_in_range(start_height..end_height)
+                            .leaves_in_range(range)
                             .expect("failed to iterate through leaves");
-
-                        if leaves.is_empty() {
-                            break;
-                        }
 
                         for leaf in leaves {
                             if let Some(vk) = vk {
@@ -344,7 +342,7 @@ impl State for Rusk {
                             }
                         }
 
-                        start_height += BLOCKS_TO_SEARCH;
+                        needle += BLOCKS_TO_SEARCH;
                     }
                 })
                 .await
