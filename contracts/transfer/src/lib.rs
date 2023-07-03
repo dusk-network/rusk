@@ -26,11 +26,6 @@ static mut STATE: TransferState = TransferState::new();
 // Transactions
 
 #[no_mangle]
-unsafe fn execute(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.execute(arg))
-}
-
-#[no_mangle]
 unsafe fn mint(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| STATE.mint(arg))
 }
@@ -103,6 +98,22 @@ unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
 }
 
 // "Management" transactions
+
+#[no_mangle]
+unsafe fn spend(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |tx| {
+        assert_external_caller();
+        STATE.spend(tx)
+    })
+}
+
+#[no_mangle]
+unsafe fn refund(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(fee, gas_spent)| {
+        assert_external_caller();
+        STATE.refund(fee, gas_spent)
+    })
+}
 
 #[no_mangle]
 unsafe fn push_note(arg_len: u32) -> u32 {

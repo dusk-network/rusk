@@ -18,7 +18,7 @@ use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractError, RawResult, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
@@ -27,7 +27,8 @@ use transfer_circuits::{
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
-const POINT_LIMIT: u64 = 0x10000000;
+const POINT_LIMIT: u64 = 0x100000000;
+const GAS_PER_TX: u64 = 10_000;
 
 type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -145,6 +146,33 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter: I,
 ) -> Vec<Note> {
     iter.into_iter().filter(|note| vk.owns(note)).collect()
+}
+
+/// Executes a transaction, returning the gas spent.
+fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
+    session.set_point_limit(u64::MAX);
+    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+
+    let mut gas_spent = GAS_PER_TX;
+    if let Some((contract_id, fn_name, fn_data)) = &tx.call {
+        let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
+        session.set_point_limit(gas_limit);
+
+        let contract_id = ContractId::from_bytes(*contract_id);
+        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
+
+        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
+        println!("{r:?}");
+
+        gas_spent += session.spent();
+    }
+
+    session.set_point_limit(u64::MAX);
+    let _: () = session
+        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+        .expect("Refunding must succeed");
+
+    Ok(gas_spent)
 }
 
 #[test]
@@ -320,13 +348,11 @@ fn stake_withdraw_unstake() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("STAKE   : {} gas", session.spent());
+    println!("STAKE   : {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk)
@@ -529,13 +555,11 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 2)
         .expect("Instantiating new session should succeed");
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("WITHDRAW: {} gas", session.spent());
+    println!("WITHDRAW: {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk)
@@ -754,13 +778,11 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 3)
         .expect("Instantiating new session should succeed");
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
     update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("UNSTAKE : {} gas", session.spent());
+    println!("UNSTAKE : {gas_spent} gas");
 }
 
 #[test]
@@ -910,13 +932,10 @@ fn allow() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("ALLOW   : {} gas", session.spent());
+    println!("ALLOW   : {gas_spent} gas");
 
     let is_allowed: bool = session
         .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk)

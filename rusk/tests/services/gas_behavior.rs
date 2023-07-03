@@ -12,14 +12,13 @@ use dusk_bytes::Error::InvalidData;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_merkle::poseidon::Opening as PoseidonOpening;
-use dusk_pki::{SecretSpendKey, ViewKey};
+use dusk_pki::ViewKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
 };
 use futures::StreamExt;
-use once_cell::sync::Lazy;
 use phoenix_core::{Crossover, Fee, Note};
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -33,8 +32,8 @@ use rusk::services::state::{
     GetAnchorRequest, GetNotesRequest, GetOpeningRequest, PreverifyRequest,
     StateTransitionRequest, VerifyStateTransitionRequest,
 };
-use rusk::{Result, Rusk};
-use rusk_abi::POSEIDON_TREE_DEPTH;
+use rusk::{Result, Rusk, GAS_PER_INPUT};
+use rusk_abi::{ContractId, POSEIDON_TREE_DEPTH, TRANSFER_CONTRACT};
 use rusk_schema::network_client::NetworkClient;
 use rusk_schema::prover_client::ProverClient;
 use rusk_schema::state_client::StateClient;
@@ -48,221 +47,166 @@ use crate::common::state::new_state;
 use crate::common::*;
 
 const BLOCK_HEIGHT: u64 = 1;
-// This is purposefully chosen to be low to trigger the discarding of a
-// perfectly good transaction.
-const BLOCK_GAS_LIMIT: u64 = 2_500_000;
-const GAS_LIMIT: u64 = 1_000_000;
+const BLOCK_GAS_LIMIT: u64 = 1_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
+
+const GAS_LIMIT_0: u64 = 2_000_000;
+const GAS_LIMIT_1: u64 = 100_000_000;
 
 // Creates the Rusk initial state for the tests below
 fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
-    let snapshot =
-        toml::from_str(include_str!("../config/multi_transfer.toml"))
-            .expect("Cannot deserialize config");
+    let snapshot = toml::from_str(include_str!("../config/gas-behavior.toml"))
+        .expect("Cannot deserialize config");
 
     new_state(dir, &snapshot)
 }
 
-static SSK_0: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey #0");
-    TestStore.retrieve_ssk(0).expect("Should not fail in test")
-});
+const SENDER_INDEX_0: u64 = 0;
+const SENDER_INDEX_1: u64 = 1;
 
-static SSK_1: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey #1");
-    TestStore.retrieve_ssk(1).expect("Should not fail in test")
-});
-
-static SSK_2: Lazy<SecretSpendKey> = Lazy::new(|| {
-    info!("Generating SecretSpendKey #2");
-    TestStore.retrieve_ssk(2).expect("Should not fail in test")
-});
-
-/// Executes three different transactions in the same block, expecting only two
-/// to be included due to exceeding the block gas limit
-fn wallet_transfer(
+fn make_transactions(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     channel: tonic::transport::Channel,
-    amount: u64,
 ) {
-    // Sender psk
-    let psk_0 = SSK_0.public_spend_key();
-    let psk_1 = SSK_1.public_spend_key();
-    let psk_2 = SSK_2.public_spend_key();
-
-    let refunds = vec![psk_0, psk_1, psk_2];
-
-    // Generate a receiver psk
-    let receiver = wallet
-        .public_spend_key(3)
-        .expect("Failed to get public spend key");
-
-    let mut rng = StdRng::seed_from_u64(0xdead);
-    let nonce = BlsScalar::random(&mut rng);
+    // We will refund the transaction to ourselves.
+    let refund_0 = wallet
+        .public_spend_key(SENDER_INDEX_0)
+        .expect("Getting a public spend key should succeed");
 
     let initial_balance_0 = wallet
-        .get_balance(0)
-        .expect("Failed to get the balance")
-        .value;
-    let initial_balance_1 = wallet
-        .get_balance(1)
-        .expect("Failed to get the balance")
-        .value;
-    let initial_balance_2 = wallet
-        .get_balance(2)
-        .expect("Failed to get the balance")
+        .get_balance(SENDER_INDEX_0)
+        .expect("Getting initial balance should succeed")
         .value;
 
-    // Check the senders initial balance is correct
+    // We will refund the transaction to ourselves.
+    let refund_1 = wallet
+        .public_spend_key(SENDER_INDEX_1)
+        .expect("Getting a public spend key should succeed");
+
+    let initial_balance_1 = wallet
+        .get_balance(SENDER_INDEX_1)
+        .expect("Getting initial balance should succeed")
+        .value;
+
     assert_eq!(
         initial_balance_0, INITIAL_BALANCE,
-        "Wrong initial balance for the sender"
+        "The sender should have the given initial balance"
     );
     assert_eq!(
         initial_balance_1, INITIAL_BALANCE,
-        "Wrong initial balance for the sender"
-    );
-    assert_eq!(
-        initial_balance_2, INITIAL_BALANCE,
-        "Wrong initial balance for the sender"
+        "The sender should have the given initial balance"
     );
 
-    // Check the receiver initial balance is zero
-    assert_eq!(
-        wallet
-            .get_balance(3)
-            .expect("Failed to get the balance")
-            .value,
-        0,
-        "Wrong initial balance for the receiver"
-    );
+    let mut rng = StdRng::seed_from_u64(0xdead);
 
-    let mut txs = Vec::with_capacity(3);
+    // The first transaction will be a `wallet.execute` to a contract that is
+    // not deployed. This will produce an error in call execution and should
+    // consume all the gas provided.
+    let tx_0 = wallet
+        .execute(
+            &mut rng,
+            ContractId::from([0x42; 32]),
+            String::from("nonsense"),
+            (),
+            SENDER_INDEX_0,
+            &refund_0,
+            GAS_LIMIT_0,
+            1,
+        )
+        .expect("Making the transaction should succeed");
 
-    for i in 0..3 {
-        let tx = wallet
-            .transfer(
-                &mut rng,
-                i,
-                &refunds[i as usize],
-                &receiver,
-                amount,
-                GAS_LIMIT,
-                1,
-                nonce,
-            )
-            .expect("Failed to transfer");
-        txs.push(tx);
-    }
+    // The second transaction will also be a `wallet.execute`, but this time to
+    // the transfer contract, querying for the root of the tree. This will be
+    // tested for gas cost.
+    let tx_1 = wallet
+        .execute(
+            &mut rng,
+            TRANSFER_CONTRACT,
+            String::from("root"),
+            (),
+            SENDER_INDEX_1,
+            &refund_1,
+            GAS_LIMIT_1,
+            1,
+        )
+        .expect("Making the transaction should succeed");
 
-    generator_procedure(channel, txs.clone())
-        .expect("generator procedure to succeed");
-
-    // Check the receiver's balance is changed accordingly
-    assert_eq!(
-        wallet
-            .get_balance(3)
-            .expect("Failed to get the balance")
-            .value,
-        2 * amount,
-        "Wrong resulting balance for the receiver"
-    );
+    generator_procedure(channel, tx_0.clone(), tx_1.clone())
+        .expect("generator procedure should succeed");
 
     let final_balance_0 = wallet
-        .get_balance(0)
-        .expect("Failed to get the balance")
+        .get_balance(SENDER_INDEX_0)
+        .expect("Getting final balance should succeed")
         .value;
-    let fee_0 = txs[0].fee();
-    let fee_0 = fee_0.gas_limit * fee_0.gas_price;
 
     let final_balance_1 = wallet
-        .get_balance(1)
-        .expect("Failed to get the balance")
+        .get_balance(SENDER_INDEX_1)
+        .expect("Getting final balance should succeed")
         .value;
-    let fee_1 = txs[1].fee();
-    let fee_1 = fee_1.gas_limit * fee_1.gas_price;
 
-    assert!(
-        initial_balance_0 - amount - fee_0 <= final_balance_0,
-        "Final sender balance {} should be greater or equal than {}",
-        final_balance_0,
-        initial_balance_0 - amount - fee_0
-    );
-
-    assert!(
-        initial_balance_0 - amount >= final_balance_0,
-        "Final sender balance {} should be lesser or equal than {}",
-        final_balance_0,
-        initial_balance_0 - amount
-    );
-
-    assert!(
-        initial_balance_1 - amount - fee_1 <= final_balance_1,
-        "Final sender balance {} should be greater or equal than {}",
-        final_balance_1,
-        initial_balance_1 - amount - fee_1
-    );
-
-    assert!(
-        initial_balance_1 - amount >= final_balance_1,
-        "Final sender balance {} should be lesser or equal than {}",
-        final_balance_1,
-        initial_balance_1 - amount
-    );
-
-    // Check the discarded transaction didn't change the balance
+    // The first transaction should consume all gas given, while the second one
+    // should consume a little more due to the root query.
     assert_eq!(
-        wallet
-            .get_balance(2)
-            .expect("Failed to get the balance")
-            .value,
-        initial_balance_2,
-        "Wrong resulting balance for discarded TX sender"
+        final_balance_0,
+        initial_balance_0 - GAS_LIMIT_0,
+        "Transaction should consume all the gas"
+    );
+
+    assert!(
+        final_balance_1 < initial_balance_1 - GAS_PER_INPUT,
+        "Transaction should consume more gas than just for one input"
+    );
+    assert!(
+        final_balance_1 > GAS_LIMIT_1,
+        "Transaction should consume less gas than all given"
     );
 }
 
 /// Executes the procedure a block generator will go through to generate a block
-/// including two transfer transactions and discarding the last (3rd) due to it
-/// exceeding the block gas limit, and then checking the outputs are as
-/// expected.
+/// including the contract call in the block.
 fn generator_procedure(
     channel: tonic::transport::Channel,
-    txs: Vec<Transaction>,
+    tx_0: Transaction,
+    tx_1: Transaction,
 ) -> Result<()> {
     let mut client = StateClient::new(channel);
 
-    let protos: Vec<_> = txs
-        .iter()
-        .map(|tx| TransactionProto {
-            version: 1,
-            r#type: 1,
-            payload: tx.to_var_bytes(),
-        })
-        .collect();
+    let proto_0 = TransactionProto {
+        version: 1,
+        r#type: 1,
+        payload: tx_0.to_var_bytes(),
+    };
+    let proto_1 = TransactionProto {
+        version: 1,
+        r#type: 1,
+        payload: tx_1.to_var_bytes(),
+    };
 
-    for (i, tx) in txs.iter().enumerate() {
-        let tx_hash_input_bytes = tx.to_hash_input_bytes();
-        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
-
-        let response = client
+    // Run pre-verification
+    for (tx, proto) in [&tx_0, &tx_1].into_iter().zip([&proto_0, &proto_1]) {
+        let preverify_response = client
             .preverify(PreverifyRequest {
-                tx: Some(protos[i].clone()),
+                tx: Some(proto.clone()),
             })
             .wait()?
             .into_inner();
 
+        let tx_hash_input_bytes = tx.to_hash_input_bytes();
+        let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
+
         assert_eq!(
-            response.tx_hash,
+            preverify_response.tx_hash,
             tx_hash.to_bytes().to_vec(),
-            "Hash mismatch"
+            "Transaction hashes should match in pre-verification response"
         );
     }
 
+    // Execute state transition
     let generator = PublicKey::from(&*BLS_SK);
 
     let response = client
         .execute_state_transition(ExecuteStateTransitionRequest {
-            txs: protos,
+            txs: vec![proto_0, proto_1],
             block_height: BLOCK_HEIGHT,
             block_gas_limit: BLOCK_GAS_LIMIT,
             generator: generator.to_bytes().to_vec(),
@@ -270,7 +214,11 @@ fn generator_procedure(
         .wait()?
         .into_inner();
 
-    assert_eq!(response.txs.len(), 2, "Should have two txs");
+    assert_eq!(
+        response.txs.len(),
+        2,
+        "Both transactions should be included in the block"
+    );
 
     let transfer_txs: Vec<_> = response
         .txs
@@ -278,12 +226,10 @@ fn generator_procedure(
         .filter(|etx| etx.tx.as_ref().unwrap().r#type == 1)
         .collect();
 
-    assert_eq!(transfer_txs.len(), 2, "Two transfer txs");
-
     let execute_state_root = response.state_root.clone();
 
     info!(
-        "execute_state_transition new root: {:?}",
+        "execute_state_transition new root: {}",
         hex::encode(&execute_state_root)
     );
 
@@ -316,10 +262,14 @@ fn generator_procedure(
         .wait()?
         .into_inner();
 
-    assert_eq!(response.txs.len(), 2, "Should have two txs");
+    assert_eq!(
+        response.txs.len(),
+        2,
+        "There should be two transactions in the block"
+    );
 
     let accept_state_root = response.state_root;
-    info!("accept new root: {:?}", hex::encode(&accept_state_root));
+    info!("accept new root: {}", hex::encode(&accept_state_root));
 
     assert_eq!(
         accept_state_root, execute_state_root,
@@ -496,7 +446,7 @@ impl wallet::ProverClient for TestProverClient {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-pub async fn multi_transfer() -> Result<()> {
+pub async fn erroring_tx_charged_full() -> Result<()> {
     // Setup the logger and gRPC channels
     let (channel, incoming) = setup().await;
 
@@ -535,7 +485,7 @@ pub async fn multi_transfer() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    wallet_transfer(&wallet, channel, 1_000);
+    make_transactions(&wallet, channel);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();

@@ -17,7 +17,7 @@ use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractError, ContractId, RawResult, TRANSFER_CONTRACT};
+use rusk_abi::{ContractId, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
@@ -29,6 +29,7 @@ use transfer_circuits::{
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
+const GAS_PER_TX: u64 = 10_000;
 
 const ALICE_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -172,6 +173,33 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter.into_iter().filter(|note| vk.owns(note)).collect()
 }
 
+/// Executes a transaction, returning the gas spent.
+fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
+    session.set_point_limit(u64::MAX);
+    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+
+    let mut gas_spent = GAS_PER_TX;
+    if let Some((contract_id, fn_name, fn_data)) = &tx.call {
+        let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
+        session.set_point_limit(gas_limit);
+
+        let contract_id = ContractId::from_bytes(*contract_id);
+        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
+
+        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
+        println!("{r:?}");
+
+        gas_spent += session.spent();
+    }
+
+    session.set_point_limit(u64::MAX);
+    let _: () = session
+        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+        .expect("Refunding must succeed");
+
+    Ok(gas_spent)
+}
+
 #[test]
 fn transfer() {
     const TRANSFER_FEE: u64 = dusk(1.0);
@@ -281,13 +309,10 @@ fn transfer() {
         call: None,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_1_2 : {} gas", session.spent());
+    println!("EXECUTE_1_2 : {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -399,13 +424,10 @@ fn alice_ping() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_PING: {} gas", session.spent());
+    println!("EXECUTE_PING: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -581,13 +603,10 @@ fn send_and_withdraw_transparent() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_STCT: {} gas", session.spent());
+    println!("EXECUTE_STCT: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -760,13 +779,10 @@ fn send_and_withdraw_transparent() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_WFCT: {} gas", session.spent());
+    println!("EXECUTE_WFCT: {gas_spent} gas");
 
     let alice_balance = module_balance(session, ALICE_ID)
         .expect("Querying the module balance should succeed");
@@ -965,13 +981,10 @@ fn send_and_withdraw_obfuscated() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_STCO: {} gas", session.spent());
+    println!("EXECUTE_STCO: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -1195,13 +1208,10 @@ fn send_and_withdraw_obfuscated() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
     update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_WFCO: {} gas", session.spent());
+    println!("EXECUTE_WFCO: {gas_spent} gas");
 
     // deposited message shouldn't exist after, and only the newly created one
     // should exists with the correct value
