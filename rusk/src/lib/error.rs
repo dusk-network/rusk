@@ -32,7 +32,7 @@ pub enum Error {
     /// Originating from Phoenix.
     Phoenix(phoenix_core::Error),
     /// Piecrust VM internal Errors
-    Vm(piecrust::Error),
+    Vm(rusk_abi::Error),
     /// IO Errors
     Io(io::Error),
     /// Tonic Status Errors
@@ -53,8 +53,8 @@ impl From<Box<dyn std::error::Error>> for Error {
     }
 }
 
-impl From<piecrust::Error> for Error {
-    fn from(err: piecrust::Error) -> Self {
+impl From<rusk_abi::Error> for Error {
+    fn from(err: rusk_abi::Error) -> Self {
         Error::Vm(err)
     }
 }

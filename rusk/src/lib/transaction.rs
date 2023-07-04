@@ -14,7 +14,7 @@ use rusk_schema::executed_transaction::error::Code;
 use rusk_schema::executed_transaction::Error;
 use rusk_schema::{TX_TYPE_TRANSFER, TX_VERSION};
 
-use piecrust::Error as PiecrustError;
+use rusk_abi::Error as PiecrustError;
 
 /// The payload for a transfer transaction.
 ///
