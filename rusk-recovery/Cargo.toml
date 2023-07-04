@@ -23,7 +23,6 @@ required-features = ["state"]
 rustc_tools_util = "=0.2.0"
 
 [dependencies]
-piecrust = "0.5"
 hex = "0.4"
 rustc_tools_util = "0.2"
 dusk-plonk = { version = "0.13", features = ["rkyv-impl"] }
@@ -33,7 +32,7 @@ rand = "0.8"
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", features=["builder"] }
 dusk-merkle = "0.4.1-rc.0"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", features = ["host"] }
+rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", default-features = false, features = ["host"] }
 once_cell = "1.13"
 dusk-bytes = "0.1"
 dusk-bls12_381 = "0.11"
