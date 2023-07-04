@@ -13,11 +13,10 @@ use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
-use piecrust::{ContractData, Error};
-use piecrust::{Session, VM};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
+use rusk_abi::{ContractData, Error, Session, VM};
 use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
