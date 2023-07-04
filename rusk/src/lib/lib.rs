@@ -27,12 +27,12 @@ use once_cell::sync::Lazy;
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::*;
 use phoenix_core::Message;
-use piecrust::{Error as PiecrustError, Session, VM};
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{
-    ContractId, StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT,
+    ContractId, Error as PiecrustError, Session, StandardBufSerializer,
+    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;

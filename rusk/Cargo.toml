@@ -46,9 +46,8 @@ dusk-bls12_381-sign = "0.4"
 dusk-jubjub = "0.12"
 dusk-pki = "0.11"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.17.1-piecrust.0.5"
+dusk-wallet-core = "0.19.0-piecrust.0.6"
 phoenix-core = "0.18"
-piecrust = "0.5"
 kadcast = "0.5.0-rc"
 parking_lot = "0.12"
 rkyv = "0.7"
@@ -57,7 +56,7 @@ bytecheck = "0.6"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.8.0-alpha", path = "../rusk-abi", features = ["host"] }
+rusk-abi = { version = "0.9.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
 rusk-schema = { version = "0.5", path = "../rusk-schema" }
 
 [dev-dependencies]
