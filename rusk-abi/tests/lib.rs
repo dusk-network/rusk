@@ -15,11 +15,10 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, SecretKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{ContractData, Session, VM};
-use piecrust_uplink::ContractId;
 use rand_core::OsRng;
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
+use rusk_abi::{ContractData, ContractId, Session, VM};
 
 const OWNER: [u8; 32] = [0; 32];
 
