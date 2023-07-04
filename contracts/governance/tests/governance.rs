@@ -16,9 +16,9 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_pki::{PublicKey, SecretKey};
-use piecrust::{ContractData, ContractId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use rusk_abi::{ContractData, ContractId, Session, VM};
 
 const GOVERNANCE_ID: ContractId = {
     let mut bytes = [0u8; 32];
