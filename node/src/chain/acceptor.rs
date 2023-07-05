@@ -17,7 +17,9 @@ use dusk_consensus::contract_state::{
 };
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Header, SpentTransaction};
+use node_data::ledger::{
+    self, Block, Hash, Header, Signature, SpentTransaction,
+};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -41,7 +43,7 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     mrb: RwLock<Block>,
 
     /// List of provisioners of actual round
-    provisioners_list: RwLock<Provisioners>,
+    pub(crate) provisioners_list: RwLock<Provisioners>,
 
     /// Upper layer consensus task
     task: RwLock<super::consensus::Task>,
@@ -154,35 +156,48 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mut provisioners_list = self.provisioners_list.write().await;
 
         // Verify Block Header
-        self.verify_block_header(&mrb.header, &public_key, &blk.header)
-            .await?;
+        verify_block_header(
+            self.db.clone(),
+            &mrb.header.clone(),
+            provisioners_list.clone(),
+            &public_key,
+            &blk.header,
+        )
+        .await?;
 
         // Reset Consensus
         task.abort_with_wait().await;
 
         // Persist block in consistency with the VM state update
-        let updated_provisioners = {
+        {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
                 t.store_block(blk, true)?;
 
+                // Accept block transactions into the VM
                 let (txs, _) = match blk.header.iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
+
                 // Update block transactions with Error and GasSpent
                 t.store_txs(&txs)?;
                 Ok(txs)
             })?;
 
-            Self::needs_update(blk, &txs[..]).then(|| vm.get_provisioners())
-        };
+            // Update provisioners list
+            let updated_provisioners = {
+                Self::needs_update(blk, &txs).then(|| vm.get_provisioners())
+            };
 
-        if let Some(updated_prov) = updated_provisioners {
-            *provisioners_list = updated_prov?;
-        }
+            if let Some(updated_prov) = updated_provisioners {
+                *provisioners_list = updated_prov?;
+            };
 
-        *mrb = blk.clone();
+            *mrb = blk.clone();
+
+            anyhow::Ok(())
+        }?;
 
         // Delete from mempool any transaction already included in the block
         self.db.read().await.update(|update| {
@@ -193,8 +208,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         tracing::info!(
-            "block accepted height:{} hash:{} txs_count: {}",
+            "block accepted height/iter:{}/{} hash:{} txs_count: {}",
             blk.header.height,
+            blk.header.iteration,
             hex::encode(blk.header.hash),
             blk.txs.len(),
         );
@@ -208,107 +224,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 &self.vm,
                 &self.network,
             );
-        }
-
-        Ok(())
-    }
-
-    pub(crate) async fn verify_block_header(
-        &self,
-        curr_header: &ledger::Header,
-        public_key: &node_data::bls::PublicKey,
-        blk_header: &ledger::Header,
-    ) -> anyhow::Result<()> {
-        if blk_header.version > 0 {
-            return Err(anyhow!("unsupported block version"));
-        }
-
-        if blk_header.height != curr_header.height + 1 {
-            return Err(anyhow!(
-                "invalid block height block_height: {:?}, curr_height: {:?}",
-                blk_header.height,
-                curr_header.height,
-            ));
-        }
-
-        if blk_header.prev_block_hash != curr_header.hash {
-            return Err(anyhow!("invalid previous block hash"));
-        }
-
-        if blk_header.timestamp < curr_header.timestamp {
-            return Err(anyhow!("invalid block timestamp"));
-        }
-
-        // Ensure block is not already in the ledger
-        self.db.read().await.view(|view| {
-            if Ledger::get_block_exists(&view, &blk_header.hash)? {
-                return Err(anyhow!("block already exists"));
-            }
-
-            Ok(())
-        })?;
-
-        // Verify Certificate
-        self.verify_block_cert(
-            public_key,
-            blk_header.hash,
-            blk_header.height,
-            &blk_header.cert,
-            blk_header.iteration,
-        )
-        .await
-    }
-
-    async fn verify_block_cert(
-        &self,
-        public_key: &node_data::bls::PublicKey,
-        block_hash: [u8; 32],
-        height: u64,
-        cert: &ledger::Certificate,
-        iteration: u8,
-    ) -> anyhow::Result<()> {
-        let mut mrb = self.mrb.write().await;
-        let mut eligible_provisioners = self.provisioners_list.write().await;
-
-        let committee = Arc::new(Mutex::new(CommitteeSet::new(
-            public_key.clone(),
-            eligible_provisioners.clone(),
-        )));
-
-        let hdr = node_data::message::Header {
-            topic: 0,
-            pubkey_bls: public_key.clone(),
-            round: height,
-            step: iteration * 3,
-            block_hash,
-        };
-
-        let seed = mrb.header.seed;
-
-        // Verify first reduction
-        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
-            &cert.first_reduction,
-            &committee,
-            seed,
-            &hdr,
-            0,
-        )
-        .await
-        {
-            return Err(anyhow!("invalid first reduction votes"));
-        }
-
-        // Verify second reduction
-        if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
-            &cert.second_reduction,
-            &committee,
-            seed,
-            &hdr,
-            1,
-        )
-        .await
-        {
-            return Err(anyhow!("invalid second reduction votes"));
         }
 
         Ok(())
@@ -339,4 +254,107 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn get_outbound_chan(&self) -> AsyncQueue<Message> {
         self.task.read().await.outbound.clone()
     }
+}
+
+/// Performs full verification of block header (blk_header) against
+/// local/current state.
+pub(crate) async fn verify_block_header<DB: database::DB>(
+    db: Arc<RwLock<DB>>,
+    curr_header: &ledger::Header,
+    curr_eligible_provisioners: Provisioners,
+    curr_public_key: &node_data::bls::PublicKey,
+    blk_header: &ledger::Header,
+) -> anyhow::Result<()> {
+    if blk_header.version > 0 {
+        return Err(anyhow!("unsupported block version"));
+    }
+
+    if blk_header.height != curr_header.height + 1 {
+        return Err(anyhow!(
+            "invalid block height block_height: {:?}, curr_height: {:?}",
+            blk_header.height,
+            curr_header.height,
+        ));
+    }
+
+    if blk_header.prev_block_hash != curr_header.hash {
+        return Err(anyhow!("invalid previous block hash"));
+    }
+
+    if blk_header.timestamp < curr_header.timestamp {
+        //TODO:
+        return Err(anyhow!("invalid block timestamp"));
+    }
+
+    // Ensure block is not already in the ledger
+    db.read().await.view(|v| {
+        if Ledger::get_block_exists(&v, &blk_header.hash)? {
+            return Err(anyhow!("block already exists"));
+        }
+
+        Ok(())
+    })?;
+
+    // Verify Certificate
+    verify_block_cert(
+        curr_header.seed,
+        curr_eligible_provisioners,
+        curr_public_key,
+        blk_header.hash,
+        blk_header.height,
+        &blk_header.cert,
+        blk_header.iteration,
+    )
+    .await
+}
+
+async fn verify_block_cert(
+    curr_seed: Signature,
+    curr_eligible_provisioners: Provisioners,
+    curr_public_key: &node_data::bls::PublicKey,
+    block_hash: [u8; 32],
+    height: u64,
+    cert: &ledger::Certificate,
+    iteration: u8,
+) -> anyhow::Result<()> {
+    let committee = Arc::new(Mutex::new(CommitteeSet::new(
+        curr_public_key.clone(),
+        curr_eligible_provisioners.clone(),
+    )));
+
+    let hdr = node_data::message::Header {
+        topic: 0,
+        pubkey_bls: curr_public_key.clone(),
+        round: height,
+        step: iteration * 3,
+        block_hash,
+    };
+
+    // Verify first reduction
+    if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+        &cert.first_reduction,
+        &committee,
+        curr_seed,
+        &hdr,
+        0,
+    )
+    .await
+    {
+        return Err(anyhow!("invalid first reduction votes"));
+    }
+
+    // Verify second reduction
+    if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+        &cert.second_reduction,
+        &committee,
+        curr_seed,
+        &hdr,
+        1,
+    )
+    .await
+    {
+        return Err(anyhow!("invalid second reduction votes"));
+    }
+
+    Ok(())
 }
