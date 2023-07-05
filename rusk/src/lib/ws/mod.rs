@@ -6,6 +6,8 @@
 
 #![allow(unused)]
 
+mod request;
+
 use std::borrow::Cow;
 use std::convert::Infallible;
 use std::sync::Arc;
@@ -13,7 +15,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::mpsc;
-use tokio::{io, task};
+use tokio::{io, stream, task};
 
 use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -24,7 +26,10 @@ use futures_util::StreamExt;
 use node::database;
 use node::{Network, Node};
 
+use crate::ws::request::Request;
 use crate::Rusk;
+
+type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
 
 pub struct WsServer {
     shutdown: mpsc::Sender<Infallible>,
@@ -39,6 +44,8 @@ impl WsServer {
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(addr).await?;
         let (shutdown_sender, shutdown_receiver) = mpsc::channel(1);
+
+        tracing::info!("Binded to {:?}", listener.local_addr());
 
         let handle = task::spawn(listening_loop(
             DataSources { rusk, node },
@@ -71,96 +78,25 @@ async fn listening_loop<N: Network, DB: database::DB>(
                 break;
             }
             r = listener.accept() => {
-                if r.is_err() {
-                    break;
-                }
-                let (stream, _) = r.unwrap();
+                tracing::info!("Incoming ws connection");
 
-                task::spawn(handle_stream(sources.clone(), stream));
+                match r {
+                    Ok((stream, addr)) => {
+                        let sources = Arc::clone(&sources);
+
+                        task::spawn(async move {
+                            handle_stream(sources.clone(), stream).await;
+                        });
+                    },
+                    Err(e) => {
+                        tracing::error!("Error accepting connection: {:?}", e);
+
+                        continue;
+                    }
+                }
             }
         }
     }
-}
-
-/// A request sent by the websocket client.
-#[derive(Debug)]
-struct Request {
-    headers: serde_json::Map<String, serde_json::Value>,
-    target_type: u8,
-    target: String,
-    topic: String,
-    data: Vec<u8>,
-}
-
-impl Request {
-    fn parse(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        let (headers, bytes) = parse_header(bytes)?;
-        let (target_type, bytes) = parse_target_type(bytes)?;
-        let (target, bytes) = parse_string(bytes)?;
-        let (topic, bytes) = parse_string(bytes)?;
-        let data = bytes.to_vec();
-        Ok(Self {
-            headers,
-            target_type,
-            target,
-            topic,
-            data,
-        })
-    }
-}
-
-fn parse_len(
-    bytes: &[u8],
-) -> Result<(usize, &[u8]), Box<dyn std::error::Error>> {
-    if bytes.len() < 4 {
-        return Err("not enough bytes".to_string().into());
-    }
-
-    let len =
-        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
-    let (_, left) = bytes.split_at(len);
-
-    Ok((len, left))
-}
-
-type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-fn parse_header(bytes: &[u8]) -> Result<Header, Box<dyn std::error::Error>> {
-    let (len, bytes) = parse_len(bytes)?;
-    if bytes.len() < len {
-        return Err(format!("not enough bytes for parsed len {len}").into());
-    }
-
-    let (header_bytes, bytes) = bytes.split_at(len);
-    let header = serde_json::from_slice(header_bytes)?;
-
-    Ok((header, bytes))
-}
-
-fn parse_target_type(
-    bytes: &[u8],
-) -> Result<(u8, &[u8]), Box<dyn std::error::Error>> {
-    if bytes.is_empty() {
-        return Err("not enough bytes for target type".to_string().into());
-    }
-
-    let (target_type_bytes, bytes) = bytes.split_at(1);
-    let target_type = target_type_bytes[0];
-
-    Ok((target_type, bytes))
-}
-
-fn parse_string(
-    bytes: &[u8],
-) -> Result<(String, &[u8]), Box<dyn std::error::Error>> {
-    let (len, bytes) = parse_len(bytes)?;
-    if bytes.len() < len {
-        return Err(format!("not enough bytes for parsed len {len}").into());
-    }
-
-    let (string_bytes, bytes) = bytes.split_at(len);
-    let string = String::from_utf8(string_bytes.to_vec())?;
-
-    Ok((string, bytes))
 }
 
 #[allow(unused)]
@@ -184,8 +120,11 @@ async fn handle_stream<
             if r.is_err() {
                 break;
             }
+
             let request = r.unwrap();
         }
+
+        tracing::info!("Client disconnected");
 
         let _ = stream
             .close(Some(CloseFrame {

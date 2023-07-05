@@ -41,8 +41,31 @@ pub enum Error {
     CoinbaseBlockHeight(u64, u64),
     /// Bad dusk spent in coinbase (got, expected).
     CoinbaseDuskSpent(Dusk, Dusk),
+    /// Errors while parsing websocket request
+    WebSocketRequest(WsRequestError),
     /// Other
     Other(Box<dyn std::error::Error>),
+}
+
+/// Error while parsing ws request
+#[derive(Debug)]
+pub enum WsRequestError {
+    /// Failed parsing json headers
+    HeadersSerialization(serde_json::error::Category),
+    /// Failed parsing the event
+    Event,
+    /// Provided Header length is wrong
+    HeaderLength,
+    /// Content length header not found
+    ContentLengthHeader,
+    /// Unknown Target type
+    UnknownTargetType,
+    /// Target name is not a string
+    TargetName,
+    /// Topic name is not a string
+    TopicName,
+    /// Data is invalid
+    Data,
 }
 
 impl std::error::Error for Error {}
@@ -74,6 +97,12 @@ impl From<phoenix_core::Error> for Error {
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
         Error::Io(err)
+    }
+}
+
+impl From<WsRequestError> for Error {
+    fn from(err: WsRequestError) -> Self {
+        Error::WebSocketRequest(err)
     }
 }
 
@@ -116,6 +145,9 @@ impl fmt::Display for Error {
             }
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
+            }
+            Error::WebSocketRequest(err) => {
+                write!(f, "Error while parsing websocket request: {:?}", err)
             }
         }
     }
