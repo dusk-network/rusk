@@ -4,16 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_consensus::{
-    contract_state::CallParams,
-    user::{
-        provisioners::{Member, Provisioners},
-        stake::Stake,
-    },
-};
+use dusk_bytes::DeserializableSlice;
+use dusk_consensus::contract_state::CallParams;
+use dusk_consensus::user::provisioners::{Member, Provisioners};
+use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
-use node_data::ledger::{Block, Transaction};
+use node_data::ledger::{Block, SpentTransaction, Transaction};
 use tracing::info;
 
 use crate::Rusk;
@@ -21,43 +17,21 @@ use crate::Rusk;
 impl VMExecution for Rusk {
     fn execute_state_transition(
         &self,
-        params: &CallParams,
-    ) -> anyhow::Result<(Vec<Transaction>, Vec<Transaction>, [u8; 32])> {
+        params: CallParams,
+    ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>
+    {
         info!("Received execute_state_transition request");
-        let generator = params.generator_pubkey.clone();
-
-        // Deserialize transactions, collecting failed ones in the
-        // `discarded_txs`. This is then appended to with failed transactions.
-        let txs = params.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (txs, discarded_txs, state_root) = self
             .execute_transactions(
                 params.round,
                 params.block_gas_limit,
-                *generator.inner(),
-                txs,
+                params.generator_pubkey.inner(),
+                params.txs,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;
-
-        let txs = txs
-            .into_iter()
-            .map(|tx| Transaction {
-                gas_spent: Some(tx.gas_spent),
-                inner: tx.tx,
-                err: tx.error.map(|e| format!("{e:?}")),
-            })
-            .collect();
-
-        let discarded_txs = discarded_txs
-            .into_iter()
-            .map(|t| Transaction {
-                gas_spent: None,
-                inner: t,
-                err: None,
-            })
-            .collect();
 
         Ok((txs, discarded_txs, state_root))
     }
@@ -67,18 +41,13 @@ impl VMExecution for Rusk {
         params: &CallParams,
     ) -> anyhow::Result<[u8; 32]> {
         info!("Received verify_state_transition request");
-        let generator = params.generator_pubkey.clone();
-
-        // Deserialize transactions, collecting failed ones in the
-        // `discarded_txs`. This is then appended to with failed transactions.
-        let txs = params.txs.iter().cloned().map(|t| t.inner).collect();
 
         let (_, state_root) = self
             .verify_transactions(
                 params.round,
                 params.block_gas_limit,
-                *generator.inner(),
-                txs,
+                params.generator_pubkey.inner(),
+                &params.txs[..],
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -90,36 +59,23 @@ impl VMExecution for Rusk {
     fn accept(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])> {
+    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
         info!("Received accept request");
         let generator = blk.header.generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
-        // Deserialize transactions, collecting failed ones in the
-        // `discarded_txs`. This is then appended to with failed transactions.
-        let txs = blk.txs.iter().cloned().map(|t| t.inner).collect();
-
         let (txs, state_root) = self
             .accept_transactions(
                 blk.header.height,
                 blk.header.gas_limit,
                 generator,
-                txs,
+                blk.txs.clone(),
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;
-
-        let txs = txs
-            .into_iter()
-            .map(|tx| Transaction {
-                gas_spent: Some(tx.gas_spent),
-                inner: tx.tx,
-                err: tx.error.map(|e| format!("{e:?}")),
-            })
-            .collect();
 
         Ok((txs, state_root))
     }
@@ -127,43 +83,33 @@ impl VMExecution for Rusk {
     fn finalize(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])> {
+    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
         info!("Received finalize request");
         let generator = blk.header.generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
-        // Deserialize transactions, collecting failed ones in the
-        // `discarded_txs`. This is then appended to with failed transactions.
-        let txs = blk.txs.iter().cloned().map(|t| t.inner).collect();
-
         let (txs, state_root) = self
             .finalize_transactions(
                 blk.header.height,
                 blk.header.gas_limit,
                 generator,
-                txs,
+                blk.txs.clone(),
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;
 
-        let txs = txs
-            .into_iter()
-            .map(|tx| Transaction {
-                gas_spent: Some(tx.gas_spent),
-                inner: tx.tx,
-                err: tx.error.map(|e| format!("{e:?}")),
-            })
-            .collect();
-
         Ok((txs, state_root))
     }
 
-    fn preverify(&self, _tx: &Transaction) -> anyhow::Result<()> {
-        Ok(())
+    fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
+        info!("Received preverify request");
+        self.preverify(&tx.inner)
+            .map_err(|e| anyhow::anyhow!("Preverification failed: {e}"))
     }
+
     fn get_provisioners(&self) -> Result<Provisioners, anyhow::Error> {
         info!("Received get_provisioners request");
         let provisioners = self
@@ -172,22 +118,10 @@ impl VMExecution for Rusk {
             .into_iter()
             .filter_map(|(key, stake)| {
                 stake.amount.map(|(value, eligibility)| {
-                    // let raw_public_key_bls = key.to_raw_bytes().to_vec();
-                    let public_key_bls = key.to_bytes().to_vec();
-
-                    let pk = dusk_bls12_381_sign::PublicKey::from_slice(
-                        &public_key_bls,
-                    )
-                    .expect("Provisioner data to be a valid publickey");
-
-                    let mut m = Member::new(node_data::bls::PublicKey::new(pk));
+                    let mut m =
+                        Member::new(node_data::bls::PublicKey::new(key));
                     m.add_stake(Stake::new(value, stake.reward, eligibility));
                     m
-                    // Provisioner {
-                    //     raw_public_key_bls,
-                    //     public_key_bls,
-                    //     stakes: vec![stake],
-                    // }
                 })
             });
         let mut ret = Provisioners::new();

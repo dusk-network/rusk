@@ -78,8 +78,15 @@ impl std::fmt::Debug for Header {
 
 #[derive(Debug, Clone)]
 pub struct Transaction {
+    pub version: u32,
+    pub r#type: u32,
     pub inner: phoenix_core::Transaction,
-    pub gas_spent: Option<u64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SpentTransaction {
+    pub inner: Transaction,
+    pub gas_spent: u64,
     pub err: Option<String>,
 }
 
@@ -273,11 +280,21 @@ impl Eq for Block {}
 
 impl PartialEq<Self> for Transaction {
     fn eq(&self, other: &Self) -> bool {
-        self.hash() == other.hash() && self.gas_spent == other.gas_spent
+        self.r#type == other.r#type
+            && self.version == other.version
+            && self.hash() == other.hash()
     }
 }
 
 impl Eq for Transaction {}
+
+impl PartialEq<Self> for SpentTransaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner && self.gas_spent == other.gas_spent
+    }
+}
+
+impl Eq for SpentTransaction {}
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {
@@ -291,11 +308,8 @@ pub mod faker {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let txs = vec![
                 gen_dummy_tx(rng.gen()),
-                // TODO: Support multiple txs
-                // See also https://github.com/dusk-network/rusk/issues/930
-
-                // gen_dummy_tx(rng.gen()),
-                // gen_dummy_tx(rng.gen()),
+                gen_dummy_tx(rng.gen()),
+                gen_dummy_tx(rng.gen()),
             ];
             let header: Header = Faker.fake();
 
@@ -306,6 +320,17 @@ pub mod faker {
     impl<T> Dummy<T> for Transaction {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, _rng: &mut R) -> Self {
             gen_dummy_tx(1_000_000)
+        }
+    }
+
+    impl<T> Dummy<T> for SpentTransaction {
+        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, _rng: &mut R) -> Self {
+            let tx = gen_dummy_tx(1_000_000);
+            SpentTransaction {
+                inner: tx,
+                gas_spent: 3,
+                err: Some("error".to_string()),
+            }
         }
     }
 
@@ -345,8 +370,8 @@ pub mod faker {
             .expect("should be valid");
         Transaction {
             inner,
-            gas_spent: None,
-            err: None,
+            version: 1,
+            r#type: 1,
         }
     }
 }

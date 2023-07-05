@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::error::Error;
-use crate::transaction::SpentTransaction;
 
 use std::collections::BTreeSet;
 use std::ops::Range;
@@ -14,7 +13,6 @@ use std::sync::Arc;
 use std::{cmp, fs, io};
 
 pub mod error;
-pub mod transaction;
 mod vm;
 pub mod ws;
 
@@ -23,8 +21,9 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_pki::PublicKey;
 use dusk_poseidon::tree::PoseidonBranch;
+use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
-use phoenix_core::transaction::*;
+use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
 use phoenix_core::Message;
 use piecrust::{Session, VM};
 use rkyv::validation::validators::DefaultValidator;
@@ -89,7 +88,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: BlsPublicKey,
+        generator: &BlsPublicKey,
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
         let inner = self.inner.lock();
@@ -111,10 +110,12 @@ impl Rusk {
         // - Use nullifiers that are already use by previous TXs
         // - Fail for any reason other than out of gas due to hitting the block
         //   gas limit
-        'tx_loop: for tx in txs {
+        'tx_loop: for unspent_tx in txs {
+            // let unspent_tx = tx;
+            let tx = unspent_tx.inner.clone();
             for nullifier in &tx.nullifiers {
                 if !nullifiers.insert(*nullifier) {
-                    discarded_txs.push(tx);
+                    discarded_txs.push(unspent_tx);
                     continue 'tx_loop;
                 }
             }
@@ -135,12 +136,12 @@ impl Rusk {
                         // with its own gas limit, it is invalid and should
                         // be discarded.
                         if gas_limit == tx.fee.gas_limit {
-                            discarded_txs.push(tx);
+                            discarded_txs.push(unspent_tx);
                         }
                         continue;
                     }
                     _ => {
-                        discarded_txs.push(tx);
+                        discarded_txs.push(unspent_tx);
                         continue;
                     }
                 },
@@ -150,9 +151,12 @@ impl Rusk {
             dusk_spent += gas_spent * tx.fee.gas_price;
 
             spent_txs.push(SpentTransaction {
-                tx,
+                inner: unspent_tx.clone(),
                 gas_spent,
-                error: call_result.and_then(|result| result.err()),
+
+                err: call_result
+                    .and_then(|result| result.err())
+                    .map(|e| format!("{e:?}")),
             });
 
             // No need to keep executing if there is no gas left in the
@@ -173,8 +177,8 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: BlsPublicKey,
-        txs: Vec<Transaction>,
+        generator: &BlsPublicKey,
+        txs: &[Transaction],
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let inner = self.inner.lock();
 
@@ -203,8 +207,8 @@ impl Rusk {
             &mut session,
             block_height,
             block_gas_limit,
-            generator,
-            txs,
+            &generator,
+            &txs[..],
         )?;
 
         let commit_id = session.commit()?;
@@ -231,8 +235,8 @@ impl Rusk {
             &mut session,
             block_height,
             block_gas_limit,
-            generator,
-            txs,
+            &generator,
+            &txs[..],
         )?;
 
         let commit_id = session.commit()?;
@@ -268,7 +272,7 @@ impl Rusk {
         Ok(inner.current_commit)
     }
 
-    pub fn preverify(&self, tx: &Transaction) -> Result<()> {
+    pub fn preverify(&self, tx: &phoenix_core::Transaction) -> Result<()> {
         let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
 
         let inputs = &tx.nullifiers;
@@ -280,10 +284,6 @@ impl Rusk {
         if !existing_nullifiers.is_empty() {
             return Err(Error::RepeatingNullifiers(existing_nullifiers));
         }
-
-        // if !RuskProver::preverify(tx)? {
-        //     return Err(Error::ProofVerification);
-        // }
 
         let circuit = circuit_from_numbers(inputs.len(), outputs.len())
             .ok_or_else(|| {
@@ -487,8 +487,8 @@ fn accept(
     session: &mut Session,
     block_height: u64,
     block_gas_limit: u64,
-    generator: BlsPublicKey,
-    txs: Vec<Transaction>,
+    generator: &BlsPublicKey,
+    txs: &[Transaction],
 ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
     let mut block_gas_left = block_gas_limit;
 
@@ -497,7 +497,8 @@ fn accept(
 
     let mut nullifiers = BTreeSet::new();
 
-    for tx in txs {
+    for unspent_tx in txs {
+        let tx = unspent_tx.inner.clone();
         for input in &tx.nullifiers {
             if !nullifiers.insert(*input) {
                 return Err(Error::RepeatingNullifiers(vec![*input]));
@@ -518,9 +519,12 @@ fn accept(
             .ok_or(Error::OutOfGas)?;
 
         spent_txs.push(SpentTransaction {
-            tx,
+            inner: unspent_tx.clone(),
             gas_spent,
-            error: call_result.and_then(|result| result.err()),
+
+            err: call_result
+                .and_then(|result| result.err())
+                .map(|e| format!("{e:?}")),
         });
     }
 
@@ -534,14 +538,14 @@ fn reward(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
-    generator: BlsPublicKey,
+    generator: &BlsPublicKey,
 ) -> Result<()> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
     session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
 
-    session.call(STAKE_CONTRACT, "reward", &(generator, generator_value))?;
+    session.call(STAKE_CONTRACT, "reward", &(*generator, generator_value))?;
 
     Ok(())
 }

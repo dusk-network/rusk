@@ -9,7 +9,7 @@ use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_consensus::{
     contract_state::CallParams, user::provisioners::Provisioners,
 };
-use node_data::ledger::{Block, Transaction};
+use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 #[derive(Default)]
 pub struct Config {}
@@ -17,8 +17,8 @@ pub struct Config {}
 pub trait VMExecution: Send + Sync + 'static {
     fn execute_state_transition(
         &self,
-        params: &CallParams,
-    ) -> anyhow::Result<(Vec<Transaction>, Vec<Transaction>, [u8; 32])>;
+        params: CallParams,
+    ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>;
 
     fn verify_state_transition(
         &self,
@@ -28,12 +28,12 @@ pub trait VMExecution: Send + Sync + 'static {
     fn accept(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])>;
+    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])>;
 
     fn finalize(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<Transaction>, [u8; 32])>;
+    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 

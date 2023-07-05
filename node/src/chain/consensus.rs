@@ -269,7 +269,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         })?;
 
         let (executed_txs, discarded_txs, state_root) =
-            vm.execute_state_transition(&params).map_err(|err| {
+            vm.execute_state_transition(params).map_err(|err| {
                 tracing::error!("failed to call EST {}", err);
                 Error::Failed
             })?;

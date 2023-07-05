@@ -102,7 +102,9 @@ impl<T: Operations> Generator<T> {
             },
         )?;
 
-        let tx_hashes: Vec<_> = result.txs.iter().map(|t| t.hash()).collect();
+        let tx_hashes: Vec<_> =
+            result.txs.iter().map(|t| t.inner.hash()).collect();
+        let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         let txroot = merkle_root(&tx_hashes[..]);
 
         let blk_header = ledger::Header {
@@ -122,7 +124,7 @@ impl<T: Operations> Generator<T> {
             iteration,
         };
 
-        Ok(Block::new(blk_header, result.txs).expect("block should be valid"))
+        Ok(Block::new(blk_header, txs).expect("block should be valid"))
     }
 
     fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {

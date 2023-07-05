@@ -44,6 +44,7 @@ fake = { version = "2.5", features = ['derive'] }
 node-data = { version = "0.1", path = "../node-data", features = ["faker"] }
 rand = "0.8"
 rand_core = "0.6"
+tempdir = "0.3"
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"

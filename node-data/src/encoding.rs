@@ -53,20 +53,38 @@ impl Serializable for Transaction {
         w.write_all(&len.to_le_bytes())?;
         w.write_all(&data)?;
 
-        if self.gas_spent.is_none() {
-            return Ok(());
-        }
+        Ok(())
+    }
 
-        // Write gas_spent
-        match self.gas_spent {
-            Some(gas_spent) => {
-                w.write_all(&1_u8.to_le_bytes())?;
-                w.write_all(&gas_spent.to_le_bytes())?;
-            }
-            None => {
-                w.write_all(&0_u8.to_le_bytes())?;
-            }
-        }
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 4];
+        r.read_exact(&mut buf)?;
+        let version = u32::from_le_bytes(buf);
+
+        let mut buf = [0u8; 4];
+        r.read_exact(&mut buf)?;
+        let tx_type = u32::from_le_bytes(buf);
+
+        let tx_payload = Self::read_var_le_bytes32(r)?;
+        let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
+            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
+        Ok(Self {
+            inner,
+            version,
+            r#type: tx_type,
+        })
+    }
+}
+
+impl Serializable for SpentTransaction {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.inner.write(w)?;
+        w.write_all(&self.gas_spent.to_le_bytes())?;
+
         match &self.err {
             Some(e) => {
                 let b = e.as_bytes();
@@ -85,44 +103,19 @@ impl Serializable for Transaction {
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 4];
+        let inner = Transaction::read(r)?;
+
+        let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        let _version = u32::from_le_bytes(buf);
-
-        let mut buf = [0u8; 4];
-        r.read_exact(&mut buf)?;
-        let _tx_type = u32::from_le_bytes(buf);
-
-        let tx_payload = Self::read_var_le_bytes32(r)?;
-        let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let mut optional = [0u8; 1];
-        let result = r.read_exact(&mut optional);
-        if result.is_err() {
-            return Ok(Self {
-                inner,
-                gas_spent: None,
-                err: None,
-            });
-        }
-
-        let gas_spent = if optional[0] != 0 {
-            let mut buf = [0u8; 8];
-            r.read_exact(&mut buf)?;
-
-            Some(u64::from_le_bytes(buf))
-        } else {
-            None
-        };
+        let gas_spent = u64::from_le_bytes(buf);
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
 
-        let len = u64::from_le_bytes(buf);
+        let error_len = u64::from_le_bytes(buf);
 
-        let err = if len > 0 {
-            let mut buf = vec![0u8; len as usize];
+        let err = if error_len > 0 {
+            let mut buf = vec![0u8; error_len as usize];
             r.read_exact(&mut buf[..])?;
 
             Some(String::from_utf8(buf).expect("Cannot from_utf8"))
@@ -252,6 +245,11 @@ mod tests {
     #[test]
     fn test_encoding_transaction() {
         assert_serializable::<Transaction>();
+    }
+
+    #[test]
+    fn test_encoding_spent_transaction() {
+        assert_serializable::<SpentTransaction>();
     }
 
     #[test]
