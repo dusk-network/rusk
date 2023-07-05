@@ -160,7 +160,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
 
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.
-                for tx in blk.txs().into_iter().skip(1) {
+                for tx in blk.txs().iter().skip(1) {
                     // TODO: Filter out Distribute tx explicitly
                     Mempool::add_tx(t, tx).map_err(|err| {
                         tracing::error!("failed to resubmit transactions")
