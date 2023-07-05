@@ -29,8 +29,6 @@ use node::{Network, Node};
 use crate::ws::request::Request;
 use crate::Rusk;
 
-type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-
 pub struct WsServer {
     shutdown: mpsc::Sender<Infallible>,
     handle: task::JoinHandle<()>,
