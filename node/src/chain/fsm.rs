@@ -12,7 +12,8 @@ use dusk_consensus::user::provisioners::{self, Provisioners};
 use node_data::ledger::{self, Block, Hash, Transaction};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
-use std::collections::HashMap;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
@@ -20,6 +21,8 @@ use tracing::{debug, info};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
+
+type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 
 enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
     InSync(InSyncImpl<DB, VM, N>),
@@ -31,6 +34,8 @@ pub(crate) struct SimpleFSM<N: Network, DB: database::DB, VM: vm::VMExecution> {
     curr: State<N, DB, VM>,
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
+
+    blacklisted_blocks: SharedHashSet,
 }
 
 impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
@@ -38,13 +43,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
         network: Arc<RwLock<N>>,
     ) -> Self {
+        let blacklisted_blocks = Arc::new(RwLock::new(HashSet::new()));
+
         Self {
             curr: State::InSync(InSyncImpl::<DB, VM, N>::new(
                 acc.clone(),
                 network.clone(),
+                blacklisted_blocks.clone(),
             )),
             acc,
             network,
+            blacklisted_blocks,
         }
     }
 
@@ -74,8 +83,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                     curr.on_exiting();
 
                     // Enter new state
-                    let mut next =
-                        InSyncImpl::new(self.acc.clone(), self.network.clone());
+                    let mut next = InSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                        self.blacklisted_blocks.clone(),
+                    );
                     next.on_entering(blk).await;
                     self.curr = State::InSync(next);
                 }
@@ -88,14 +100,21 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
+
+    blacklisted_blocks: SharedHashSet,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     fn new(
         acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
         network: Arc<RwLock<N>>,
+        blacklisted_blocks: SharedHashSet,
     ) -> Self {
-        Self { acc, network }
+        Self {
+            acc,
+            network,
+            blacklisted_blocks,
+        }
     }
 
     /// performed when entering the state
@@ -123,9 +142,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let acc = self.acc.write().await;
         let h = blk.header.height;
         let curr_h = acc.get_curr_height().await;
+        let iter = acc.get_curr_iteration().await;
         let curr_hash = acc.get_curr_hash().await;
 
         if h < curr_h {
+            return Ok(false);
+        }
+
+        // Filter out blocks that have already been marked as
+        // blacklisted upon successful fallback execution.
+        if self
+            .blacklisted_blocks
+            .read()
+            .await
+            .contains(&blk.header.hash)
+        {
             return Ok(false);
         }
 
@@ -135,6 +166,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 // Node has already accepted it.
                 return Ok(false);
             }
+
+            info!(
+                "fallback curr: {}/{}, new: {}/{}",
+                curr_h, iter, blk.header.height, blk.header.iteration
+            );
 
             match fallback::WithContext::new(self.acc.clone())
                 .try_execute_fallback(blk)
@@ -150,6 +186,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // Fallback has completed successfully. Node has managed to
                     // fallback to the most recent finalized block and state.
 
+                    self.blacklisted_blocks
+                        .write()
+                        .await
+                        .insert(blk.header.hash);
+
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing ephemeral
                     // blocks from the correct chain.
@@ -161,6 +202,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         // Try accepting consecutive block
         if h == curr_h + 1 {
             acc.try_accept_block(blk, true).await?;
+
+            // On first finalized block accepted while we're inSync, clear
+            // blacklisted blocks
+            if blk.header.iteration == 1 {
+                self.blacklisted_blocks.write().await.clear();
+            }
 
             // When accepting block from the wire in inSync state, we
             // rebroadcast it
