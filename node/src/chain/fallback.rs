@@ -7,12 +7,16 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
-use node_data::ledger::{self, Block, Hash, Header};
+use node_data::{
+    bls::PublicKey,
+    ledger::{self, Block, Hash, Header},
+};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 use crate::{
-    database::{self, Ledger},
+    chain::acceptor,
+    database::{self, Ledger, Mempool},
     vm, Network,
 };
 
@@ -83,11 +87,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
 
         info!("Verify block header/certificate data");
 
-        // Validate Header/Certificate of the new block upon previous block
-        let empty_public_key = node_data::bls::PublicKey::default();
-        acc.verify_block_header(
+        // Validate Header/Certificate of the new block upon previous block and
+        // provisioners.
+
+        // In an edge case, this may fail on performing fallback between two
+        // epochs.
+        let provisioners_list = acc.provisioners_list.read().await;
+        acceptor::verify_block_header(
+            acc.db.clone(),
             prev_block.header(),
-            &empty_public_key,
+            provisioners_list.clone(),
+            &PublicKey::default(),
             blk.header(),
         )
         .await
@@ -99,11 +109,21 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
         let curr_iteration = acc.get_curr_iteration().await;
 
         info!("Revert VM to last finalized state");
-        let state_root_after_revert = acc.vm.read().await.revert()?;
+        let state_hash_after_revert = acc.vm.read().await.revert()?;
+
+        info!(
+            "Revert completed, finalized_state_hash:{}",
+            hex::ToHex::encode_hex::<String>(&state_hash_after_revert)
+        );
 
         // Delete any ephemeral block until we reach the last finalized block,
         // the VM was reverted to.
         info!("Delete all most recent ephemeral blocks");
+
+        // Thew blockchain tip (most recent block) after reverting to last
+        // finalized state.
+        let mut new_mrb = Block::default();
+
         acc.db.read().await.update(|t| {
             let mut height = curr_height;
             loop {
@@ -120,30 +140,45 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
                 let iteration = chain_blk.header.iteration;
-                if chain_blk.header.state_hash == state_root_after_revert {
+                if chain_blk.header.state_hash == state_hash_after_revert {
                     info!(
-                        "state_root found at height: {}, iter: {}",
+                        "state_hash found at height: {}, iter: {}",
                         height, iteration
                     );
+
+                    new_mrb = chain_blk;
                     break;
                 }
 
                 if iteration == 1 {
-                    /// A sanity check to prove we always never delete a
-                    /// finalized
+                    /// A sanity check to ensure we never delete a finalized
+                    /// block
                     warn!("deleting a block from first iteration");
                 }
 
                 Ledger::delete_block(t, &chain_blk)?;
+
+                // Attempt to resubmit transactions back to mempool.
+                // An error here is not considered critical.
+                for tx in blk.txs().into_iter().skip(1) {
+                    // TODO: Filter out Distribute tx explicitly
+                    Mempool::add_tx(t, tx).map_err(|err| {
+                        tracing::error!("failed to resubmit transactions")
+                    });
+                }
+
                 height -= 1;
             }
 
             Ok(())
         })?;
 
-        // Try to inject the block with the lowest iteration
+        // Try to inject the block with the lowest iteration (new blockchain
+        // tip).
+        // This will update database.REGISTER record together with
+        // in-memory fields acceptor.mrb and acceptor.provisioners_list.
         info!("Inject the new block");
 
-        acc.inject_block(blk).await
+        acc.inject_block(&new_mrb).await
     }
 }
