@@ -54,6 +54,10 @@ pub trait Ledger {
         &self,
         height: u64,
     ) -> Result<Option<[u8; 32]>>;
+    fn fetch_block_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<ledger::Block>>;
 
     fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
 

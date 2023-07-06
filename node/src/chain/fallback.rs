@@ -80,13 +80,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         let prev_block_height = curr_height - 1;
         let mut prev_block = ledger::Block::default();
         acc.db.read().await.view(|v| {
-            let hash =
-                Ledger::fetch_block_hash_by_height(&v, prev_block_height)?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("could not find hash by height")
-                    })?;
-
-            prev_block = Ledger::fetch_block(&v, &hash)?
+            prev_block = Ledger::fetch_block_by_height(&v, prev_block_height)?
                 .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
             Ok(())
@@ -138,12 +132,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
                     break;
                 }
 
-                let hash = Ledger::fetch_block_hash_by_height(t, height)?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("could not find hash by height")
-                    })?;
-
-                let chain_blk = Ledger::fetch_block(t, &hash)?
+                let chain_blk = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
                 let iteration = chain_blk.header.iteration;

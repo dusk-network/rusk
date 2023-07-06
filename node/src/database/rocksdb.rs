@@ -380,6 +380,17 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
         Ok(())
     }
+
+    fn fetch_block_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<ledger::Block>> {
+        let hash = self
+            .fetch_block_hash_by_height(height)?
+            .ok_or_else(|| anyhow::anyhow!("could not find hash by height"))?;
+
+        self.fetch_block(&hash)
+    }
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
