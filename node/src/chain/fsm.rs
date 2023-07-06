@@ -195,7 +195,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing ephemeral
                     // blocks from the correct chain.
-                    return Ok(true);
+                    return Ok(msg.metadata.is_some());
                 }
             }
         }
