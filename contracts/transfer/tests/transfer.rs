@@ -7,11 +7,11 @@
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
+use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
@@ -145,9 +145,7 @@ fn opening(
     session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
-fn prover_verifier<C: Circuit>(
-    circuit_id: &[u8; 32],
-) -> (Prover<C>, Verifier<C>) {
+fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
     let (pk, vd) = prover_verifier_keys(circuit_id);
 
     let prover = Prover::try_from_bytes(pk).unwrap();

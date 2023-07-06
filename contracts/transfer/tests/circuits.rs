@@ -36,35 +36,35 @@ mod tests {
 
         test_circuit!(
             SendToContractTransparentCircuit,
-            "9d267dfe1d1ede4f2ffa35c3609f8662cd84e4df1066b2185a0f3b5b17721c79"
+            "cfebfdcd309a070b44e1b407b7228ca9b900720e7cff283d653400357161899a"
         );
         test_circuit!(
             SendToContractObfuscatedCircuit,
-            "c8c7d7fa2fe8eeabd5505056ae3c00b44c1aa13d9578eeff3a4fc7ddb3035da4"
+            "d7fbe016d385b7d3b44c510225388a0f2a9889d07294ba3e3f9c037801d3148e"
         );
         test_circuit!(
             WithdrawFromTransparentCircuit,
-            "dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47"
+            "d0b52061b33cb2f2ef79448b53cd3d2dbca30819ca4a55e151c8af01e6c7efcd"
         );
         test_circuit!(
             WithdrawFromObfuscatedCircuit,
-            "8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e"
+            "7824ae42a6208eb0eca9f7c5e7ca964efa04a500fc3275e1c89541a26876808a"
         );
         test_circuit!(
             ExecuteCircuitOneTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "4d5e60c2cdb7b3f273649487ad277eb0e380e44dd2f2effb0d2dcb3c1ff615d4"
+            "1aed4ea248e24d6eb71ca40dbc8aca90e1972f0c08cce0666df248e14627d299"
         );
         test_circuit!(
             ExecuteCircuitTwoTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "77d27ac80d397cfec7d621e61af4fa4b7fb4b9e503fa347082c5e1e187e08d48"
+            "90369a00165fcf91b792bf6d64deaf39f5a16603588fe711838e1005e58458a6"
         );
         test_circuit!(
             ExecuteCircuitThreeTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "4fb4e239548c5bdf9f5c6125cd07da64ce70edb99e79478f13140b53f136c441"
+            "942a788cf56d9ef93bda7385e86e8620b127bb47eac46829f81bc48e61bdf00e"
         );
         test_circuit!(
             ExecuteCircuitFourTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "05fb339e4fb471c745c8f90181a349ccf9226d8ee719073d45986fadcde466b4"
+            "076cdf6a1f160432941ac3cb14f8dece2c07da58559af4dfdda32b9be5cca884"
         );
     }
 }

@@ -16,13 +16,12 @@ const STCT_INPUT_LEN: usize = Fee::SIZE
     + BlsScalar::SIZE
     + Signature::SIZE;
 
-pub static STCT_PROVER: Lazy<Prover<SendToContractTransparentCircuit>> =
-    Lazy::new(|| {
-        let keys = keys_for(SendToContractTransparentCircuit::circuit_id())
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        Prover::try_from_bytes(pk).expect("prover key to be valid")
-    });
+pub static STCT_PROVER: Lazy<Prover> = Lazy::new(|| {
+    let keys = keys_for(SendToContractTransparentCircuit::circuit_id())
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    Prover::try_from_bytes(pk).expect("prover key to be valid")
+});
 
 impl RuskProver {
     pub(crate) fn prove_stct(

@@ -37,7 +37,7 @@ impl WithdrawFromTransparentCircuit {
     }
 }
 
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for WithdrawFromTransparentCircuit {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         // Witnesses

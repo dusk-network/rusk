@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_merkle::poseidon::Opening;
 use dusk_pki::Ownable;
-use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::Note;
+use poseidon_merkle::Opening;
 
 use dusk_plonk::prelude::*;
 
@@ -92,22 +91,8 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
         let value_commitment = note.value_commitment();
         let value_commitment = composer.append_point(value_commitment);
 
-        let nonce = hash_inputs[3];
-        let nonce = composer.append_witness(nonce);
-
-        let r = note.stealth_address().R();
-        let r = composer.append_point(r);
-
-        let pos = hash_inputs[8];
+        let pos = hash_inputs[5];
         let pos = composer.append_witness(pos);
-
-        let mut cipher = [pos; PoseidonCipher::cipher_size()];
-        cipher
-            .iter_mut()
-            .zip(hash_inputs[9..].iter())
-            .for_each(|(c, i)| {
-                *c = composer.append_witness(*i);
-            });
 
         let value = composer.append_witness(self.value);
         let blinding_factor = composer.append_witness(self.blinding_factor);
@@ -125,11 +110,7 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
 
             note_type,
             value_commitment,
-            nonce,
-            r,
             pos,
-            cipher,
-
             value,
             blinding_factor,
 
