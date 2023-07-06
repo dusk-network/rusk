@@ -14,4 +14,4 @@ dusk-schnorr = { version = "0.13", default-features = false, features = ["rkyv-i
 dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.8.0-alpha", path = "../../..", features = ["dlmalloc"] }
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../.." }

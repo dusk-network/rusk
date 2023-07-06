@@ -13,13 +13,15 @@ dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
 phoenix-core = { version = "0.20.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
 dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi" }
 
 [dev-dependencies]
-piecrust = "0.5"
 rusk-profile = { version = "0.6", path = "../../rusk-profile" }
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi", default-features = false, features = ["host"] }
 transfer-circuits = { version = "0.5", path = "../../circuits/transfer", features = ["builder"] }
 rkyv = { version = "0.7", default-features = false }
 hex = "0.4"

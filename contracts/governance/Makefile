@@ -21,5 +21,8 @@ wasm: ## Generate the optimized WASM for the contract given
     		-Z build-std=core,alloc,panic_abort \
     		-Z build-std-features=panic_immediate_abort \
     		--target wasm32-unknown-unknown
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: all check test wasm help

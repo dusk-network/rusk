@@ -11,6 +11,8 @@ test: $(SUBDIRS) ## Run all the tests in the subfolder
 
 wasm: $(SUBDIRS) ## Generate the WASM for all the contracts
 
+clippy: $(SUBDIRS) ## Run clippy
+
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
 

@@ -4,10 +4,43 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use bytecheck::CheckBytes;
+#![allow(dead_code)]
+
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
+use dusk_pki::PublicSpendKey;
+
+use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
+
+pub(crate) enum Query {}
+
+impl Query {
+    pub const HASH: &str = "hash";
+    pub const POSEIDON_HASH: &str = "poseidon_hash";
+    pub const VERIFY_PROOF: &str = "verify_proof";
+    pub const VERIFY_SCHNORR: &str = "verify_schnorr";
+    pub const VERIFY_BLS: &str = "verify_bls";
+}
+
+pub(crate) enum Metadata {}
+
+impl Metadata {
+    pub const BLOCK_HEIGHT: &str = "block_height";
+}
+
+/// Enum representing all possible payment configurations.
+#[derive(Debug, Clone, Copy, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+#[repr(C)]
+pub enum PaymentInfo {
+    /// Only transparent notes are accepted.
+    Transparent(Option<PublicSpendKey>),
+    /// Only obfuscated notes are accepted.
+    Obfuscated(Option<PublicSpendKey>),
+    /// Any type of note is accepted.
+    Any(Option<PublicSpendKey>),
+}
 
 /// Enum that represents all possible types of public inputs
 #[derive(Debug, Clone, Archive, Serialize, Deserialize)]

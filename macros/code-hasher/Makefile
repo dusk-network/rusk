@@ -9,5 +9,8 @@ all: ## Build the code-hasher macro
 test: ## Perform the test of the code-hasher macro
 	@cargo test \
 		--release \
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: all test help

@@ -7,21 +7,21 @@
 use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
-use crate::hash::Hasher;
-use crate::query::*;
-use crate::PublicInput;
-
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
 };
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
-use dusk_plonk::prelude::*;
+use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_schnorr::Signature;
-use piecrust::{Error, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+
+pub use piecrust::*;
+
+use crate::hash::Hasher;
+use crate::{Metadata, PublicInput, Query};
 
 /// Create a new session based on the given `vm`. The vm *must* have been
 /// created using [`new_vm`] or [`new_ephemeral_vm`].

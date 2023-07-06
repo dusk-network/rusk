@@ -9,8 +9,5 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 phoenix-core = { version = "0.20.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi", features = ["dlmalloc"] }
 dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
-
-[dev-dependencies]
-piecrust = "0.5"
