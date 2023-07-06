@@ -14,6 +14,7 @@ use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
@@ -172,7 +173,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 curr_h, iter, blk.header.height, blk.header.iteration
             );
 
-            match fallback::WithContext::new(self.acc.clone())
+            match fallback::WithContext::new(acc.deref())
                 .try_execute_fallback(blk)
                 .await
             {

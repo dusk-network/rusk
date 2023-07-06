@@ -22,13 +22,20 @@ use crate::{
 
 use super::acceptor::Acceptor;
 
-pub(crate) struct WithContext<N: Network, DB: database::DB, VM: vm::VMExecution>
-{
-    acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
+/// Wraps up any handlers or data needed by fallback to complete.
+pub(crate) struct WithContext<
+    'a,
+    N: Network,
+    DB: database::DB,
+    VM: vm::VMExecution,
+> {
+    acc: &'a Acceptor<N, DB, VM>,
 }
 
-impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
-    pub(crate) fn new(acc: Arc<RwLock<Acceptor<N, DB, VM>>>) -> Self {
+impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
+    WithContext<'a, N, DB, VM>
+{
+    pub(crate) fn new(acc: &'a Acceptor<N, DB, VM>) -> Self {
         Self { acc }
     }
 
@@ -39,7 +46,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
 
     /// Performs a serias of checks to securely allow fallback execution.
     async fn sanity_checks(&self, blk: &Block) -> Result<()> {
-        let acc = self.acc.read().await;
+        let acc = self.acc;
 
         let curr_height = acc.get_curr_height().await;
         let curr_iteration = acc.get_curr_iteration().await;
@@ -57,7 +64,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
             //
             // we have more than one winner blocks per a single iteration, same
             // round.
-            //
+
             // An invalid block was received.
             return Err(anyhow!("iteration is equal to the current"));
         }
@@ -94,7 +101,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
         // epochs.
         let provisioners_list = acc.provisioners_list.read().await;
         acceptor::verify_block_header(
-            acc.db.clone(),
+            self.acc.db.clone(),
             prev_block.header(),
             provisioners_list.clone(),
             &PublicKey::default(),
@@ -104,7 +111,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> WithContext<N, DB, VM> {
     }
 
     async fn execute_fallback(&self, blk: &Block) -> Result<()> {
-        let acc = self.acc.write().await;
+        let acc = self.acc;
         let curr_height = acc.get_curr_height().await;
         let curr_iteration = acc.get_curr_iteration().await;
 
