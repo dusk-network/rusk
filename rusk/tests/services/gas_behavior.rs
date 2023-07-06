@@ -11,7 +11,6 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Error::InvalidData;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
-use dusk_merkle::poseidon::Opening as PoseidonOpening;
 use dusk_pki::ViewKey;
 use dusk_plonk::proof_system::Proof;
 use dusk_schnorr::Signature;
@@ -20,6 +19,7 @@ use dusk_wallet_core::{
 };
 use futures::StreamExt;
 use phoenix_core::{Crossover, Fee, Note};
+use poseidon_merkle::Opening as PoseidonOpening;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
