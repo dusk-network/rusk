@@ -50,6 +50,8 @@ const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 const REGISTER_KEY: &[u8; 8] = b"register";
 
+const DB_FOLDER_NAME: &str = "chain.db";
+
 #[derive(Clone)]
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
@@ -126,6 +128,9 @@ impl DB for Backend {
     where
         T: AsRef<Path>,
     {
+        let path = path.as_ref().join(DB_FOLDER_NAME);
+        info!("Opening database in {path:?}");
+
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -1057,8 +1062,10 @@ mod tests {
 
     impl TestWrapper {
         fn new(path: &'static str) -> Self {
+            let path_with_suffix = path.as_ref().join(DB_FOLDER_NAME);
+
             Self {
-                path,
+                path: path_with_suffix,
                 destroy_on_drop: true,
             }
         }
