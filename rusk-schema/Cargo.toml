@@ -17,9 +17,9 @@ exclude = [".github/workflows/", ".gitignore"]
 tonic = "0.8"
 prost = "0.11"
 
-dusk-pki = "0.11"
+dusk-pki = "0.12"
 dusk-bytes = "0.1"
-phoenix-core = { version = "0.18", features = ["alloc"] }
+phoenix-core = { version = "0.20.0-rc.0", features = ["alloc"] }
 
 [build-dependencies]
 tonic-build = "0.8"

@@ -7,11 +7,11 @@
 use crate::{error::Error, gadgets};
 
 use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
-use dusk_merkle::poseidon::{Opening, Tree};
 use dusk_merkle::Aggregate;
 use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
 use dusk_poseidon::sponge;
 use phoenix_core::{Crossover, Fee, Note};
+use poseidon_merkle::{Opening, Tree};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::error::Error as PlonkError;
@@ -501,7 +501,7 @@ macro_rules! execute_circuit_variant {
                             composer.assert_equal_constant(
                                 n,
                                 BlsScalar::zero(),
-                                Some(-witness.nullifier),
+                                Some(witness.nullifier),
                             );
 
                             // 1.e commitment(ic,iv,ib,64)
@@ -540,7 +540,7 @@ macro_rules! execute_circuit_variant {
                 composer.assert_equal_constant(
                     crossover.fee_value_witness,
                     BlsScalar::zero(),
-                    Some(-crossover.fee_value),
+                    Some(crossover.fee_value),
                 );
 
                 // 3. ∀(o,v) ∈ O × V | O → V

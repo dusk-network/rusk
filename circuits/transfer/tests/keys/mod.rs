@@ -8,12 +8,7 @@ use transfer_circuits::Error;
 
 use dusk_plonk::prelude::*;
 
-pub fn circuit_keys<C: Circuit>(
-    id: &[u8; 32],
-) -> Result<(Prover<C>, Verifier<C>), Error>
-where
-    C: Circuit,
-{
+pub fn circuit_keys(id: &[u8; 32]) -> Result<(Prover, Verifier), Error> {
     let keys = rusk_profile::keys_for(id)?;
     let pk = keys.get_prover()?;
     let vd = keys.get_verifier()?;

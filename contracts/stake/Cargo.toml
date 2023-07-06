@@ -11,10 +11,10 @@ dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv
 dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
 dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
-dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
-phoenix-core = { version = "0.18", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+phoenix-core = { version = "0.20.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
 rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
-dusk-plonk = { version = "0.13", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
 
 [dev-dependencies]
 piecrust = "0.5"
@@ -24,4 +24,4 @@ transfer-circuits = { version = "0.5", path = "../../circuits/transfer", feature
 rkyv = { version = "0.7", default-features = false }
 hex = "0.4"
 rand = "0.8"
-dusk-merkle = { version = "0.4.1-rc.0", features = ["poseidon", "rkyv-impl"] }
+poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl"] }

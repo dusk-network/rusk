@@ -23,13 +23,12 @@ const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
     + JubJubAffine::SIZE;
 
-pub static WFCO_PROVER: Lazy<Prover<WithdrawFromObfuscatedCircuit>> =
-    Lazy::new(|| {
-        let keys = keys_for(WithdrawFromObfuscatedCircuit::circuit_id())
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        Prover::try_from_bytes(pk).expect("prover key to be valid")
-    });
+pub static WFCO_PROVER: Lazy<Prover> = Lazy::new(|| {
+    let keys = keys_for(WithdrawFromObfuscatedCircuit::circuit_id())
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    Prover::try_from_bytes(pk).expect("prover key to be valid")
+});
 
 impl RuskProver {
     pub(crate) fn prove_wfco(

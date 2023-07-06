@@ -8,7 +8,6 @@ use crate::common::*;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
-use dusk_merkle::poseidon::{Item, Opening as PoseidonOpening, Tree};
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
@@ -19,6 +18,7 @@ use dusk_wallet_core::{
 use parking_lot::Mutex;
 use phoenix_core::{Crossover, Fee};
 use phoenix_core::{Note, NoteType};
+use poseidon_merkle::{Item, Opening as PoseidonOpening, Tree};
 use rand::{CryptoRng, RngCore};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk_schema::prover_client::ProverClient;

@@ -22,13 +22,12 @@ const STCO_INPUT_LEN: usize = u64::SIZE
     + BlsScalar::SIZE
     + Signature::SIZE;
 
-pub static STCO_PROVER: Lazy<Prover<SendToContractObfuscatedCircuit>> =
-    Lazy::new(|| {
-        let keys = keys_for(SendToContractObfuscatedCircuit::circuit_id())
-            .expect("keys to be available");
-        let pk = keys.get_prover().expect("prover to be available");
-        Prover::try_from_bytes(pk).expect("prover key to be valid")
-    });
+pub static STCO_PROVER: Lazy<Prover> = Lazy::new(|| {
+    let keys = keys_for(SendToContractObfuscatedCircuit::circuit_id())
+        .expect("keys to be available");
+    let pk = keys.get_prover().expect("prover to be available");
+    Prover::try_from_bytes(pk).expect("prover key to be valid")
+});
 
 impl RuskProver {
     pub(crate) fn prove_stco(

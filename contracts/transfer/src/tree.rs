@@ -12,7 +12,7 @@ use dusk_bls12_381::BlsScalar;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
 
-use dusk_merkle::poseidon::{
+use poseidon_merkle::{
     Item as PoseidonItem, Opening as PoseidonOpening, Tree as PoseidonTree,
 };
 
