@@ -6,5 +6,8 @@ test: ## Run Rusk tests
 		-vvv \
 		--release \
 		-- --nocapture
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: test help

@@ -15,6 +15,8 @@ dusk-poseidon = { version = "0.30", default-features = false, features = ["alloc
 poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl"] }
 phoenix-core = { version = "0.20.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
 dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi" }

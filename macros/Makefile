@@ -9,7 +9,10 @@ all: $(SUBDIRS) ## Build all in the subfolder
 
 test: $(SUBDIRS) ## Run all the tests in the subfolder
 
+clippy: $(SUBDIRS) ## Run clippy
+
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
+	
 
 .PHONY: all test help $(SUBDIRS)

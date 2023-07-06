@@ -11,4 +11,7 @@ test: ## Run the transfer circuits tests
 	@cargo test --release \
 		--features builder
 
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
+
 .PHONY: all test help
