@@ -9,8 +9,7 @@ use dusk_merkle::Aggregate;
 use dusk_plonk::prelude::*;
 use dusk_poseidon::cipher;
 use dusk_poseidon::sponge::truncated;
-
-use dusk_merkle::poseidon::Opening;
+use poseidon_merkle::{zk::opening_gadget, Opening};
 
 pub use dusk_schnorr::gadgets::double_key_verify as schnorr_double_key_verify;
 pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
@@ -52,7 +51,7 @@ pub fn merkle_opening<T, C, const H: usize, const A: usize>(
     C: Composer,
 {
     // The gadget asserts the leaf is the expected
-    let root = branch.gadget(composer, leaf);
+    let root = opening_gadget(composer, branch, leaf);
     composer.assert_equal(anchor, root);
 }
 

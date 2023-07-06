@@ -12,8 +12,8 @@ use super::{
 use crate::error::Error;
 use crate::execute::ExecuteCircuit;
 
-use dusk_merkle::poseidon::{Item, Tree};
 use dusk_merkle::Aggregate;
+use poseidon_merkle::{Item, Tree};
 
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
 use phoenix_core::Note;
@@ -167,10 +167,7 @@ macro_rules! execute_circuit_variant {
                 rng: &mut R,
                 use_crossover: bool,
                 tx_hash: BlsScalar,
-            ) -> Result<
-                (Self, Prover<Self>, Verifier<Self>, Proof, Vec<BlsScalar>),
-                Error,
-            >
+            ) -> Result<(Self, Prover, Verifier, Proof, Vec<BlsScalar>), Error>
             where
                 T: Clone + Default + Aggregate<A>,
             {
@@ -184,8 +181,8 @@ macro_rules! execute_circuit_variant {
                 let pk = keys.get_prover()?;
                 let vd = keys.get_verifier()?;
 
-                let prover = Prover::<Self>::try_from_bytes(pk.as_slice())?;
-                let verifier = Verifier::<Self>::try_from_bytes(vd.as_slice())?;
+                let prover = Prover::try_from_bytes(pk.as_slice())?;
+                let verifier = Verifier::try_from_bytes(vd.as_slice())?;
 
                 let (proof, pi) = prover.prove(rng, &circuit)?;
 
