@@ -32,7 +32,7 @@ rand = "0.8"
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", features=["builder"] }
 dusk-merkle = "0.5"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.9.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
 once_cell = "1.13"
 dusk-bytes = "0.1"
 dusk-bls12_381 = "0.11"

@@ -13,8 +13,7 @@ use dusk_bls12_381_sign::{
 };
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
-use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::prelude::{Circuit, Composer, Proof, Verifier};
+use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_schnorr::Signature;
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
