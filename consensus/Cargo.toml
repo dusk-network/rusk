@@ -29,7 +29,7 @@ async-channel = "1.7.1"
 async-trait = "0.1"
 anyhow = "1.0"
 node-data = { version = "0.1", path = "../node-data" }
-dusk-merkle = "0.4.1-rc.0"
+dusk-merkle = "0.5"
 
 [dev-dependencies]
 hex-literal = { version = "0.3.4" }
