@@ -6,36 +6,30 @@
 
 //! Prover service implementation for the Rusk server.
 
-// mod execute;
-// mod stco;
-// mod stct;
-// mod wfco;
-// mod wfct;
+mod execute;
+mod stco;
+mod stct;
+mod wfco;
+mod wfct;
 
+pub use stco::STCO_INPUT_LEN;
+pub use stct::STCT_INPUT_LEN;
+pub use wfco::WFCO_INPUT_LEN;
+pub use wfct::WFCT_INPUT_LEN;
+
+use crate::error::Error;
 use crate::Result;
-
-const A: usize = 4;
 
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
-use once_cell::sync::Lazy;
-use tonic::{Request, Response, Status};
-use tracing::{error, info};
-
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{Transaction, UnprovenTransaction};
 use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
-pub use rusk_schema::prover_client::ProverClient;
-pub use rusk_schema::prover_server::{Prover, ProverServer};
-pub use rusk_schema::{
-    ExecuteProverRequest, ExecuteProverResponse, StcoProverRequest,
-    StcoProverResponse, StctProverRequest, StctProverResponse,
-    WfcoProverRequest, WfcoProverResponse, WfctProverRequest,
-    WfctProverResponse,
-};
+
+use tracing::info;
 
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, CircuitOutput, DeriveKey,
@@ -45,27 +39,14 @@ use transfer_circuits::{
     WithdrawFromTransparentCircuit,
 };
 
-macro_rules! handle {
-    ($self: ident, $req: ident, $handler: ident, $name: expr) => {{
-        info!("Received {} request", $name);
-        match $self.$handler(&$req.get_ref()) {
-            Ok(response) => {
-                info!(
-                    "{} was successfully processed. Sending response...",
-                    $name
-                );
-                Ok(response)
-            }
-            Err(e) => {
-                error!("An error occurred processing {}: {:?}", $name, e);
-                Err(e)
-            }
-        }
-    }};
-}
+const A: usize = 4;
 
 #[derive(Debug, Default)]
-pub struct RuskProver {}
+pub struct RuskProver;
+
+fn other_error(e: &str) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::Other, e)
+}
 
 impl RuskProver {
     pub fn preverify(tx: &Transaction) -> Result<bool> {
@@ -77,11 +58,7 @@ impl RuskProver {
 
         let circuit = circuit_from_numbers(inputs.len(), outputs.len())
             .ok_or_else(|| {
-                Status::invalid_argument(format!(
-                    "Expected: 0 < (inputs: {}) < 5, 0 ≤ (outputs: {}) < 3",
-                    inputs.len(),
-                    outputs.len()
-                ))
+                Error::InvalidCircuitArguments(inputs.len(), outputs.len())
             })?;
 
         let mut pi: Vec<rusk_abi::PublicInput> =
@@ -117,45 +94,7 @@ impl RuskProver {
     }
 }
 
-#[tonic::async_trait]
-impl Prover for RuskProver {
-    async fn prove_execute(
-        &self,
-        request: Request<ExecuteProverRequest>,
-    ) -> Result<Response<ExecuteProverResponse>, Status> {
-        return handle!(self, request, prove_execute, "prove_execute");
-    }
-
-    async fn prove_stct(
-        &self,
-        request: Request<StctProverRequest>,
-    ) -> Result<Response<StctProverResponse>, Status> {
-        return handle!(self, request, prove_stct, "prove_stct");
-    }
-
-    async fn prove_stco(
-        &self,
-        request: Request<StcoProverRequest>,
-    ) -> Result<Response<StcoProverResponse>, Status> {
-        return handle!(self, request, prove_stco, "prove_stco");
-    }
-
-    async fn prove_wfct(
-        &self,
-        request: Request<WfctProverRequest>,
-    ) -> Result<Response<WfctProverResponse>, Status> {
-        return handle!(self, request, prove_wfct, "prove_wfct");
-    }
-
-    async fn prove_wfco(
-        &self,
-        request: Request<WfcoProverRequest>,
-    ) -> Result<Response<WfcoProverResponse>, Status> {
-        return handle!(self, request, prove_wfco, "prove_wfco");
-    }
-}
-
-fn circuit_from_numbers(
+pub(crate) fn circuit_from_numbers(
     num_inputs: usize,
     num_outputs: usize,
 ) -> Option<ExecuteCircuit<(), TRANSFER_TREE_DEPTH, A>> {

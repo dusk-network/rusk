@@ -3,3 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
+
+#![feature(lazy_cell)]
+mod common;
+mod services;
