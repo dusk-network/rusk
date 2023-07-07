@@ -11,24 +11,19 @@ use std::sync::{Arc, LazyLock, RwLock};
 use crate::common::logger;
 use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
-use dusk_consensus::contract_state::CallParams;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{
     self as wallet, Store, Transaction as PhoenixTransaction,
 };
-use node::vm::VMExecution;
-use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::SpentTransaction;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
 
-use crate::common::keys::BLS_SK;
-use crate::common::state::new_state;
+use crate::common::state::{generator_procedure, new_state};
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
@@ -112,13 +107,14 @@ fn wallet_transfer(
     let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
 
     info!("Tx ID: {}", hex::encode(tx_hash.to_bytes()));
-    let txs = generator_procedure(rusk, &[tx], block_height)
-        .expect("generator procedure to succeed");
+    let txs: Vec<SpentTransaction> =
+        generator_procedure(rusk, &[tx], block_height, BLOCK_GAS_LIMIT)
+            .expect("generator procedure to succeed");
     let tx = txs.first().expect("tx to be processed");
     let gas_spent = tx.gas_spent;
     info!("Gas spent: {gas_spent}");
 
-    empty_block(rusk, block_height + 1)
+    generator_procedure(rusk, &vec![], block_height + 1, BLOCK_GAS_LIMIT)
         .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly
@@ -145,98 +141,6 @@ fn wallet_transfer(
         "Final sender balance mismatch"
     );
     tx.inner.inner.clone()
-}
-
-/// Executes the procedure a block generator will go through to generate a block
-/// including a single transfer transaction, checking the outputs are as
-/// expected.
-fn empty_block(
-    rusk: &Rusk,
-    block_height: u64,
-) -> anyhow::Result<Vec<SpentTransaction>> {
-    generator_procedure(rusk, &vec![][..], block_height)
-}
-/// Executes the procedure a block generator will go through to generate a block
-/// including a single transfer transaction, checking the outputs are as
-/// expected.
-fn generator_procedure(
-    rusk: &Rusk,
-    txs: &[PhoenixTransaction],
-    block_height: u64,
-) -> anyhow::Result<Vec<SpentTransaction>> {
-    let txs_len = txs.len();
-
-    let txs: Vec<_> = txs
-        .iter()
-        .map(|t| Transaction {
-            inner: t.clone(),
-            r#type: 1,
-            version: 1,
-        })
-        .collect();
-    for tx in &txs {
-        rusk.preverify(tx)?;
-    }
-
-    let generator = PublicKey::from(&*BLS_SK);
-    let generator_pubkey = node_data::bls::PublicKey::new(generator);
-    let generator_pubkey_bytes = PublicKeyBytes(*generator_pubkey.bytes());
-    let round = block_height;
-    // let txs = vec![];
-    let block_gas_limit = BLOCK_GAS_LIMIT;
-
-    let (transfer_txs, discarded, execute_state_root) = rusk
-        .execute_state_transition(CallParams {
-            txs,
-            round,
-            block_gas_limit,
-            generator_pubkey: generator_pubkey.clone(),
-        })
-        .expect("msg");
-
-    assert_eq!(transfer_txs.len(), txs_len, "all txs accepted");
-    assert_eq!(discarded.len(), 0, "no discarded tx");
-
-    info!(
-        "execute_state_transition new root: {:?}",
-        hex::encode(&execute_state_root)
-    );
-
-    let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
-    let verify_param = CallParams {
-        round,
-        txs,
-        block_gas_limit,
-        generator_pubkey,
-    };
-    let verify_root = rusk.verify_state_transition(&verify_param)?;
-    info!(
-        "verify_state_transition new root: {:?}",
-        hex::encode(&verify_root)
-    );
-
-    let mut block = Block::default();
-    block.header.generator_bls_pubkey = generator_pubkey_bytes.clone();
-    block.header.gas_limit = block_gas_limit;
-    block.header.height = block_height;
-    block.txs = verify_param.txs;
-
-    let (accept_txs, accept_state_root) = rusk.accept(&block)?;
-
-    assert_eq!(accept_txs.len(), txs_len, "all txs accepted");
-
-    info!(
-        "accept block {} with new root: {:?}",
-        block_height,
-        hex::encode(&accept_state_root)
-    );
-
-    assert_eq!(
-        accept_state_root, execute_state_root,
-        "Root should be equal"
-    );
-
-    Ok(accept_txs)
 }
 
 #[tokio::test(flavor = "multi_thread")]

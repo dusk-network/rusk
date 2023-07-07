@@ -7,6 +7,6 @@
 // pub mod gas_behavior;
 // pub mod multi_transfer;
 // pub mod prover_service;
-// pub mod stake;
+pub mod stake;
 // pub mod state_service;
 pub mod transfer;

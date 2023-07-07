@@ -26,7 +26,7 @@ use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use phoenix_core::{Crossover, Fee, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::error::Error;
-use rusk::prover::{RuskProver, STCT_INPUT_LEN};
+use rusk::prover::{RuskProver, STCT_INPUT_LEN, WFCT_INPUT_LEN};
 use rusk::{Result, Rusk};
 use tracing::info;
 
@@ -170,13 +170,15 @@ impl wallet::ProverClient for TestProverClient {
     ) -> Result<Proof, Self::Error> {
         let mut buf = [0u8; STCT_INPUT_LEN];
         let mut writer = &mut buf[..];
+
         writer.write_all(&fee.to_bytes())?;
         writer.write_all(&crossover.to_bytes())?;
         writer.write_all(&value.to_bytes())?;
         writer.write_all(&blinder.to_bytes())?;
         writer.write_all(&address.to_bytes())?;
         writer.write_all(&signature.to_bytes())?;
-        let proof = self.prover.prove_stct(&writer)?;
+
+        let proof = self.prover.prove_stct(&buf)?;
         Proof::from_slice(&proof[..]).map_err(Error::Serialization)
     }
 
@@ -187,13 +189,14 @@ impl wallet::ProverClient for TestProverClient {
         value: u64,
         blinder: JubJubScalar,
     ) -> Result<Proof, Self::Error> {
-        let mut buf = [0u8; STCT_INPUT_LEN];
+        let mut buf = [0u8; WFCT_INPUT_LEN];
         let mut writer = &mut buf[..];
 
         writer.write_all(&commitment.to_bytes())?;
         writer.write_all(&value.to_bytes())?;
         writer.write_all(&blinder.to_bytes())?;
-        let proof = self.prover.prove_wfct(&writer)?;
+
+        let proof = self.prover.prove_wfct(&buf)?;
         Proof::from_slice(&proof[..]).map_err(Error::Serialization)
     }
 }
