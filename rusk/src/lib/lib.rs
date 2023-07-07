@@ -15,6 +15,14 @@ pub mod error;
 mod vm;
 pub mod ws;
 
+use dusk_bytes::DeserializableSlice;
+use futures::Stream;
+use std::pin::Pin;
+use tokio::spawn;
+use tokio::sync::mpsc;
+use tokio_util::task::LocalPoolHandle;
+use tracing::info;
+
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
@@ -38,6 +46,10 @@ use transfer_circuits::ExecuteCircuit;
 const A: usize = 4;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+pub type StoredNote = (Note, u64);
+
+pub type GetNotesStream = Pin<Box<dyn Stream<Item = StoredNote> + Send>>;
 
 pub struct RuskInner {
     pub current_commit: [u8; 32],
@@ -505,6 +517,75 @@ impl Rusk {
         }
 
         Ok(session.call(contract_id, call_name, call_arg)?)
+    }
+
+    pub async fn get_notes(
+        &self,
+        vk: &[u8],
+        height: u64,
+    ) -> Result<GetNotesStream, Error> {
+        info!("Received GetNotes request");
+
+        let vk = match vk.is_empty() {
+            false => {
+                let vk =
+                    ViewKey::from_slice(vk).map_err(Error::Serialization)?;
+                Some(vk)
+            }
+            true => None,
+        };
+
+        let (sender, receiver) = mpsc::channel(16);
+
+        // Clone rusk and move it to the thread
+        let rusk = self.clone();
+        let latest_block_height =
+            rusk.with_inner(|inner| inner.latest_block_height);
+
+        // Spawn a task that's responsible for iterating through the leaves of
+        // the transfer contract tree and sending them through the sender
+        spawn(async move {
+            let local_pool = LocalPoolHandle::new(1);
+            local_pool
+                .spawn_pinned(move || async move {
+                    const BLOCKS_TO_SEARCH: u64 = 16;
+
+                    let mut needle = height;
+
+                    while needle <= latest_block_height {
+                        let range = needle..needle + BLOCKS_TO_SEARCH;
+
+                        let leaves = rusk
+                            .leaves_in_range(range)
+                            .expect("failed to iterate through leaves");
+
+                        for leaf in leaves {
+                            if let Some(vk) = vk {
+                                if !vk.owns(&leaf.note) {
+                                    continue;
+                                }
+                            }
+
+                            if sender
+                                .send((leaf.note, leaf.block_height))
+                                .await
+                                .is_err()
+                            {
+                                break;
+                            }
+                        }
+
+                        needle += BLOCKS_TO_SEARCH;
+                    }
+                })
+                .await
+        });
+
+        // Make a stream from the receiver and map the elements to be the
+        // expected output
+        let stream = tokio_stream::wrappers::ReceiverStream::new(receiver);
+
+        Ok(Box::pin(stream) as GetNotesStream)
     }
 }
 
