@@ -108,13 +108,13 @@ fn wallet_transfer(
 
     info!("Tx ID: {}", hex::encode(tx_hash.to_bytes()));
     let txs: Vec<SpentTransaction> =
-        generator_procedure(rusk, &[tx], block_height, BLOCK_GAS_LIMIT)
+        generator_procedure(rusk, &[tx], block_height, BLOCK_GAS_LIMIT, None)
             .expect("generator procedure to succeed");
     let tx = txs.first().expect("tx to be processed");
     let gas_spent = tx.gas_spent;
     info!("Gas spent: {gas_spent}");
 
-    generator_procedure(rusk, &vec![], block_height + 1, BLOCK_GAS_LIMIT)
+    generator_procedure(rusk, &vec![], block_height + 1, BLOCK_GAS_LIMIT, None)
         .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly

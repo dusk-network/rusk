@@ -105,8 +105,14 @@ fn make_transactions(
         )
         .expect("Making the transaction should succeed");
 
-    generator_procedure(rusk, &[tx_0, tx_1], BLOCK_HEIGHT, BLOCK_GAS_LIMIT)
-        .expect("generator procedure should succeed");
+    generator_procedure(
+        rusk,
+        &[tx_0, tx_1],
+        BLOCK_HEIGHT,
+        BLOCK_GAS_LIMIT,
+        None,
+    )
+    .expect("generator procedure should succeed");
 
     let final_balance_0 = wallet
         .get_balance(SENDER_INDEX_0)

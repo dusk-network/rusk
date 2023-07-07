@@ -61,7 +61,7 @@ fn wallet_stake(
     let tx = wallet
         .stake(&mut rng, 0, 2, &psk, value, GAS_LIMIT, 1)
         .expect("Failed to stake");
-    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT)
+    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
         .expect("generator procedure to succeed");
 
     let stake = wallet.get_stake(2).expect("stake to be found");
@@ -74,7 +74,7 @@ fn wallet_stake(
     let tx = wallet
         .unstake(&mut rng, 0, 0, &psk, GAS_LIMIT, 1)
         .expect("Failed to unstake");
-    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT)
+    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
         .expect("generator procedure to succeed");
 
     let stake = wallet.get_stake(0).expect("stake should still be state");
@@ -83,7 +83,7 @@ fn wallet_stake(
     let tx = wallet
         .withdraw(&mut rng, 0, 1, &psk, GAS_LIMIT, 1)
         .expect("failed to withdraw reward");
-    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT)
+    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
         .expect("generator procedure to succeed");
 
     let stake = wallet.get_stake(1).expect("stake should still be state");

@@ -42,16 +42,26 @@ pub fn new_state<P: AsRef<Path>>(dir: P, snapshot: &Snapshot) -> Result<Rusk> {
     Ok(rusk)
 }
 
+pub struct ExecuteResult {
+    pub executed: usize,
+    pub discarded: usize,
+}
+
 /// Executes the procedure a block generator will go through to generate a block
-/// including a single transfer transaction, checking the outputs are as
-/// expected.
+/// including all specified transactions, checking the outputs are as
+/// expected. If not `expected` is specified, all txs must be included in the
+/// block
 pub fn generator_procedure(
     rusk: &Rusk,
     txs: &[PhoenixTransaction],
     block_height: u64,
     block_gas_limit: u64,
+    expected: Option<ExecuteResult>,
 ) -> anyhow::Result<Vec<SpentTransaction>> {
-    let txs_len = txs.len();
+    let expected = expected.unwrap_or(ExecuteResult {
+        executed: txs.len(),
+        discarded: 0,
+    });
 
     let txs: Vec<_> = txs
         .iter()
@@ -80,8 +90,8 @@ pub fn generator_procedure(
         })
         .expect("msg");
 
-    assert_eq!(transfer_txs.len(), txs_len, "all txs accepted");
-    assert_eq!(discarded.len(), 0, "no discarded tx");
+    assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
+    assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
 
     info!(
         "execute_state_transition new root: {:?}",
@@ -109,7 +119,7 @@ pub fn generator_procedure(
 
     let (accept_txs, accept_state_root) = rusk.accept(&block)?;
 
-    assert_eq!(accept_txs.len(), txs_len, "all txs accepted");
+    assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
     info!(
         "accept block {} with new root: {:?}",
