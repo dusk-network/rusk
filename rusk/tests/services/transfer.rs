@@ -8,8 +8,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
-use crate::common::logger;
-use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::SecretSpendKey;
@@ -23,7 +21,9 @@ use rusk::{Result, Rusk};
 use tempfile::tempdir;
 use tracing::info;
 
+use crate::common::logger;
 use crate::common::state::{generator_procedure, new_state};
+use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 
 const BLOCK_GAS_LIMIT: u64 = 100_000_000_000;
 const INITIAL_BALANCE: u64 = 10_000_000_000;
