@@ -12,5 +12,8 @@ debug_with_telemetry: # Build a binary with telemetry enabled. Currently, teleme
 
 clean:
 	@cargo clean
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: test help binary clean

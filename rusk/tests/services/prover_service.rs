@@ -10,7 +10,6 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::{PublicSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     ProverClient as WalletProverClient, StakeInfo, StateClient, Store,
@@ -19,6 +18,7 @@ use dusk_wallet_core::{
 use parking_lot::Mutex;
 use phoenix_core::{Crossover, Fee};
 use phoenix_core::{Note, NoteType};
+use poseidon_merkle::{Item, Opening as PoseidonOpening, Tree};
 use rand::{CryptoRng, RngCore};
 use rusk::services::prover::{ProverServer, RuskProver};
 use rusk_schema::prover_client::ProverClient;
@@ -40,7 +40,17 @@ fn mock_wallet<Rng: RngCore + CryptoRng>(
 
     let notes = new_notes(rng, &psk, note_values);
     let anchor = BlsScalar::random(rng);
-    let opening = Default::default();
+
+    const POS: u64 = 42;
+    let mut tree = Tree::new();
+    tree.insert(
+        POS,
+        Item {
+            hash: BlsScalar::zero(),
+            data: (),
+        },
+    );
+    let opening = tree.opening(POS).unwrap();
 
     let node = TestWalletProverClient::new(client);
     let state = TestStateClient::new(notes, anchor, opening, vec![]);
@@ -153,7 +163,7 @@ impl WalletProverClient for TestWalletProverClient {
 pub struct TestStateClient {
     notes: Vec<Note>,
     anchor: BlsScalar,
-    opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+    opening: PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>,
     nullifiers: Vec<BlsScalar>,
 }
 
@@ -161,7 +171,7 @@ impl TestStateClient {
     fn new(
         notes: Vec<Note>,
         anchor: BlsScalar,
-        opening: PoseidonBranch<POSEIDON_TREE_DEPTH>,
+        opening: PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>,
         nullifiers: Vec<BlsScalar>,
     ) -> Self {
         Self {
@@ -197,7 +207,7 @@ impl StateClient for TestStateClient {
     fn fetch_opening(
         &self,
         _: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
+    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>, Self::Error> {
         Ok(self.opening.clone())
     }
 

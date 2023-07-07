@@ -4,11 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::keys::PUB_PARAMS;
-use crate::keys::{CircuitLoader, TRANSCRIPT_LABEL};
+use std::marker::PhantomData;
+
+use dusk_merkle::Aggregate;
 use dusk_plonk::prelude::*;
 use rand::rngs::OsRng;
 use transfer_circuits::*;
+
+use crate::keys::PUB_PARAMS;
+use crate::keys::{CircuitLoader, TRANSCRIPT_LABEL};
 
 macro_rules! loader_impl {
     ($loader:ident, $circuit:ty, $circuit_name:expr) => {
@@ -37,11 +41,22 @@ macro_rules! loader_impl {
 }
 
 macro_rules! loader_impl_execute {
-    ($loader:ident, $circuit:ty, $circuit_name:expr) => {
-        pub struct $loader;
-        impl CircuitLoader for $loader {
+    ($loader:ident, $circuit:ident, $circuit_name:expr) => {
+        pub struct $loader<T, const H: usize, const A: usize>(PhantomData<T>);
+
+        impl<T, const H: usize, const A: usize> $loader<T, H, A> {
+            pub fn new() -> Self {
+                Self(PhantomData::default())
+            }
+        }
+
+        impl<T, const H: usize, const A: usize> CircuitLoader
+            for $loader<T, H, A>
+        where
+            T: Clone + Default + Aggregate<A>,
+        {
             fn circuit_id(&self) -> &[u8; 32] {
-                <$circuit>::circuit_id()
+                <$circuit<T, H, A>>::circuit_id()
             }
 
             fn circuit_name(&self) -> &'static str {
@@ -52,7 +67,7 @@ macro_rules! loader_impl_execute {
                 &self,
             ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
                 let rng = &mut OsRng;
-                let circuit = <$circuit>::create_dummy_circuit(
+                let circuit = <$circuit<T, H, A>>::create_dummy_circuit(
                     rng,
                     true,
                     BlsScalar::default(),

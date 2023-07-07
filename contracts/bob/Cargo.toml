@@ -8,7 +8,4 @@ resolver = "2"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
-
-[dev-dependencies]
-piecrust = "0.5"
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi", features = ["debug"] }

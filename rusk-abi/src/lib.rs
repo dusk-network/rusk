@@ -17,19 +17,30 @@
 #![deny(clippy::all)]
 #![feature(const_fn_floating_point_arithmetic)]
 
+#[cfg(all(feature = "host", feature = "abi"))]
+compile_error!("features \"host\" and \"abi\" are mutually exclusive");
+
 extern crate alloc;
 
-use crate::hash::Hasher;
+mod types;
+pub use types::*;
+
+mod abi;
+pub use abi::*;
+
+#[cfg(feature = "host")]
+mod host;
+#[cfg(feature = "host")]
+pub use host::*;
+
+pub mod dusk;
+#[doc(hidden)]
+pub mod hash;
+
+use hash::Hasher;
 
 // re-export `piecrust-uplink` such that `rusk-abi` is the only crate
-// TODO
-pub use piecrust_uplink::{
-    bufwriter, call, call_raw, call_raw_with_limit, call_with_limit, caller,
-    debug, emit, height, host_query, limit, meta_data, self_id, snap, spent,
-    wrap_call, ArchivedRawCall, ArchivedRawResult, ContractError, ContractId,
-    ContractIdResolver, RawCall, RawCallResolver, RawResult, RawResultResolver,
-    StandardBufSerializer, ARGBUF_LEN, MODULE_ID_BYTES, SCRATCH_BUF_BYTES,
-};
+pub use piecrust_uplink::*;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
@@ -48,7 +59,7 @@ pub const STAKE_CONTRACT: ContractId = reserved(0x2);
 
 #[inline]
 const fn reserved(b: u8) -> ContractId {
-    let mut bytes = [0u8; MODULE_ID_BYTES];
+    let mut bytes = [0u8; CONTRACT_ID_BYTES];
     bytes[0] = b;
     ContractId::from_bytes(bytes)
 }
@@ -69,10 +80,3 @@ pub fn contract_to_scalar(module_id: &ContractId) -> BlsScalar {
     BlsScalar::from_slice(module_id.as_bytes())
         .expect("Something went REALLY wrong if a contract id is not a scalar")
 }
-
-pub mod dusk;
-#[doc(hidden)]
-pub mod hash;
-
-mod query;
-pub use query::*;

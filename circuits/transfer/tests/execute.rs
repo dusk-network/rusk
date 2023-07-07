@@ -38,7 +38,7 @@ macro_rules! execute {
     };
 }
 
-execute!(execute_1_2, ExecuteCircuitOneTwo);
-execute!(execute_2_2, ExecuteCircuitTwoTwo);
-execute!(execute_3_2, ExecuteCircuitThreeTwo);
-execute!(execute_4_2, ExecuteCircuitFourTwo);
+execute!(execute_1_2, ExecuteCircuitOneTwo<(), 17, 4>);
+execute!(execute_2_2, ExecuteCircuitTwoTwo<(), 17, 4>);
+execute!(execute_3_2, ExecuteCircuitThreeTwo<(), 17, 4>);
+execute!(execute_4_2, ExecuteCircuitFourTwo<(), 17, 4>);

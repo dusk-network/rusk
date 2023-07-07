@@ -19,10 +19,9 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use piecrust::{ContractData, Session, VM};
-use piecrust_uplink::ContractId;
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
+use rusk_abi::{ContractData, ContractId, Session, VM};
 
 #[test]
 fn hash_host() {
@@ -210,8 +209,12 @@ impl Circuit for TestCircuit {
         let a = composer.append_witness(self.a);
         let b = composer.append_witness(self.b);
 
-        let constraint =
-            Constraint::new().left(1).a(a).right(1).b(b).public(-self.c);
+        let constraint = Constraint::new()
+            .left(-BlsScalar::one())
+            .a(a)
+            .right(-BlsScalar::one())
+            .b(b)
+            .public(self.c);
 
         composer.append_gate(constraint);
         composer.append_dummy_gates();
@@ -231,27 +234,32 @@ fn plonk_proof() {
 
     let label = b"dusk-network";
 
-    let (prover, verifier) = Compiler::compile(&pp, label)
+    let (prover, verifier) = Compiler::compile::<TestCircuit>(&pp, label)
         .expect("Circuit should compile successfully");
 
-    let circuit = TestCircuit::new(1, 2);
+    let a = 1u64;
+    let b = 2u64;
+    let expected_pi = vec![BlsScalar::from(a) + BlsScalar::from(b)];
+    let circuit = TestCircuit::new(a, b);
 
-    let (proof, public_inputs) = prover
+    let (proof, prover_pi) = prover
         .prove(&mut OsRng, &circuit)
         .expect("Proving circuit should succeed");
 
+    // Check public inputs
+    assert_eq!(
+        expected_pi, prover_pi,
+        "Prover generates different pi than expected"
+    );
+
     // Integrity check
     verifier
-        .verify(&proof, &public_inputs)
+        .verify(&proof, &expected_pi)
         .expect("Proof should verify successfully");
     let verifier = verifier.to_bytes();
 
-    let public_inputs: Vec<PublicInput> = public_inputs
-        .into_iter()
-        // FIXME: this should only be From::from, but due to the negative PI
-        //  problem we invert them here
-        .map(|pi| From::from(-pi))
-        .collect();
+    let public_inputs: Vec<PublicInput> =
+        expected_pi.into_iter().map(|pi| From::from(pi)).collect();
 
     let proof = proof.to_bytes().to_vec();
 
@@ -303,9 +311,9 @@ fn owner() {
         rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
     let (mut session, contract_id) = instantiate(&vm, 0);
 
-    let owner: PublicSpendKey = session
+    let owner: [u8; 64] = session
         .call(contract_id, "contract_owner", get_owner())
         .expect("Query should succeed");
 
-    assert_eq!(owner, *get_owner());
+    assert_eq!(owner, get_owner().to_bytes());
 }

@@ -9,15 +9,14 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Message, Note};
-use piecrust::{ContractData, Error};
-use piecrust::{Session, VM};
+use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractError, ContractId, RawResult, TRANSFER_CONTRACT};
+use rusk_abi::{ContractData, Error, Session, VM};
+use rusk_abi::{ContractId, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
@@ -29,6 +28,7 @@ use transfer_circuits::{
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
+const GAS_PER_TX: u64 = 10_000;
 
 const ALICE_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -44,6 +44,9 @@ const BOB_ID: ContractId = {
 type Result<T, E = Error> = core::result::Result<T, E>;
 
 const OWNER: [u8; 32] = [0; 32];
+
+const H: usize = TRANSFER_TREE_DEPTH;
+const A: usize = 4;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
@@ -93,9 +96,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
-    let _: BlsScalar = session
-        .call(TRANSFER_CONTRACT, "update_root", &())
-        .expect("Updating the root should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
@@ -117,6 +118,10 @@ fn leaves_in_range(
     )
 }
 
+fn update_root(session: &mut Session) -> Result<()> {
+    session.call(TRANSFER_CONTRACT, "update_root", &())
+}
+
 fn root(session: &mut Session) -> Result<BlsScalar> {
     session.call(TRANSFER_CONTRACT, "root", &())
 }
@@ -136,13 +141,11 @@ fn message(
 fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, 4>>> {
     session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
-fn prover_verifier<C: Circuit>(
-    circuit_id: &[u8; 32],
-) -> (Prover<C>, Verifier<C>) {
+fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
     let (pk, vd) = prover_verifier_keys(circuit_id);
 
     let prover = Prover::try_from_bytes(pk).unwrap();
@@ -165,6 +168,33 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter: I,
 ) -> Vec<Note> {
     iter.into_iter().filter(|note| vk.owns(note)).collect()
+}
+
+/// Executes a transaction, returning the gas spent.
+fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
+    session.set_point_limit(u64::MAX);
+    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+
+    let mut gas_spent = GAS_PER_TX;
+    if let Some((contract_id, fn_name, fn_data)) = &tx.call {
+        let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
+        session.set_point_limit(gas_limit);
+
+        let contract_id = ContractId::from_bytes(*contract_id);
+        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
+
+        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
+        println!("{r:?}");
+
+        gas_spent += session.spent();
+    }
+
+    session.set_point_limit(u64::MAX);
+    let _: () = session
+        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+        .expect("Refunding must succeed");
+
+    Ok(gas_spent)
 }
 
 #[test]
@@ -248,7 +278,7 @@ fn transfer() {
 
     let circuit_input_signature =
         CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
-    let circuit_input = CircuitInput::new(
+    let circuit_input = CircuitInput::<(), H, A>::new(
         opening,
         input_note,
         pk_r_p.into(),
@@ -260,7 +290,8 @@ fn transfer() {
 
     circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (proof, _) = circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -275,12 +306,10 @@ fn transfer() {
         call: None,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_1_2 : {} gas", session.spent());
+    println!("EXECUTE_1_2 : {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -376,7 +405,8 @@ fn alice_ping() {
 
     circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (proof, _) = circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -391,12 +421,10 @@ fn alice_ping() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_PING: {} gas", session.spent());
+    println!("EXECUTE_PING: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -556,7 +584,8 @@ fn send_and_withdraw_transparent() {
 
     execute_circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -571,12 +600,10 @@ fn send_and_withdraw_transparent() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_STCT: {} gas", session.spent());
+    println!("EXECUTE_STCT: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -733,7 +760,8 @@ fn send_and_withdraw_transparent() {
     execute_circuit.add_input(circuit_input_0);
     execute_circuit.add_input(circuit_input_1);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -748,12 +776,10 @@ fn send_and_withdraw_transparent() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_WFCT: {} gas", session.spent());
+    println!("EXECUTE_WFCT: {gas_spent} gas");
 
     let alice_balance = module_balance(session, ALICE_ID)
         .expect("Querying the module balance should succeed");
@@ -936,7 +962,8 @@ fn send_and_withdraw_obfuscated() {
 
     execute_circuit.add_input(circuit_input);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -951,12 +978,10 @@ fn send_and_withdraw_obfuscated() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_STCO: {} gas", session.spent());
+    println!("EXECUTE_STCO: {gas_spent} gas");
 
     let leaves = leaves_in_range(session, 1..2)
         .expect("Getting the notes should succeed");
@@ -1164,7 +1189,8 @@ fn send_and_withdraw_obfuscated() {
     execute_circuit.add_input(circuit_input_0);
     execute_circuit.add_input(circuit_input_1);
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+    let (pk, _) =
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &pk)
         .expect("Proving should be successful");
@@ -1179,12 +1205,10 @@ fn send_and_withdraw_obfuscated() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("EXECUTE_WFCO: {} gas", session.spent());
+    println!("EXECUTE_WFCO: {gas_spent} gas");
 
     // deposited message shouldn't exist after, and only the newly created one
     // should exists with the correct value

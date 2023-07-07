@@ -6,17 +6,16 @@
 
 use crate::theme::Theme;
 
-use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
-use piecrust::{ContractData, ContractId, Session, VM};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
+use rusk_abi::{ContractData, ContractId, Session, VM};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
 use std::fs;
@@ -101,7 +100,7 @@ fn generate_transfer_state(
         });
     });
     if update_root {
-        let _: BlsScalar = session
+        let _: () = session
             .call(TRANSFER_CONTRACT, "update_root", &())
             .expect("Root to be updated after pushing genesis note");
     }
@@ -194,7 +193,7 @@ fn generate_empty_state<P: AsRef<Path>>(
         )
         .expect("stake contract balance to be set with provisioner stakes");
 
-    let _: BlsScalar = session
+    let _: () = session
         .call(TRANSFER_CONTRACT, "update_root", &())
         .expect("root to be updated after pushing genesis note");
 

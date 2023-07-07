@@ -10,11 +10,11 @@ use std::sync::{Arc, RwLock};
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey;
+use dusk_bytes::Error::InvalidData;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubScalar};
 use dusk_pki::{SecretSpendKey, ViewKey};
 use dusk_plonk::proof_system::Proof;
-use dusk_poseidon::tree::PoseidonBranch;
 use dusk_schnorr::Signature;
 use dusk_wallet_core::{
     self as wallet, StakeInfo, Store, Transaction, UnprovenTransaction,
@@ -23,6 +23,7 @@ use futures::StreamExt;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 use phoenix_core::{Crossover, Fee, Note};
+use poseidon_merkle::Opening as PoseidonOpening;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::error::Error;
@@ -512,7 +513,7 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_opening(
         &self,
         note: &Note,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Self::Error> {
+    ) -> Result<PoseidonOpening<(), POSEIDON_TREE_DEPTH, 4>, Self::Error> {
         let mut client = StateClient::new(self.channel.clone());
 
         let request = tonic::Request::new(GetOpeningRequest {
@@ -522,7 +523,8 @@ impl wallet::StateClient for TestStateClient {
         let response = client.get_opening(request).wait()?;
         let response = response.into_inner();
 
-        Ok(PoseidonBranch::from_slice(&response.branch)?)
+        Ok(rkyv::from_bytes(&response.branch)
+            .map_err(|_| Error::Serialization(InvalidData))?)
     }
 
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {

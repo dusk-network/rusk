@@ -15,6 +15,7 @@ use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature,
 };
+use dusk_bytes::Serializable;
 use dusk_pki::{PublicKey, PublicSpendKey};
 use dusk_schnorr::Signature;
 use rusk_abi::{ContractId, PaymentInfo, PublicInput};
@@ -67,7 +68,7 @@ impl HostFnTest {
         rusk_abi::block_height()
     }
 
-    pub fn owner(&self) -> PublicSpendKey {
+    pub fn owner(&self) -> [u8; PublicSpendKey::SIZE] {
         rusk_abi::owner()
     }
 }
