@@ -12,6 +12,7 @@ use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 use tracing::info;
 
+use crate::prover::RuskProver;
 use crate::Rusk;
 
 impl VMExecution for Rusk {
@@ -106,11 +107,23 @@ impl VMExecution for Rusk {
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()> {
         info!("Received preverify request");
-        self.preverify(&tx.inner)
-            .map_err(|e| anyhow::anyhow!("Preverification failed: {e}"))
+        let tx = &tx.inner;
+        let existing_nullifiers = self
+            .existing_nullifiers(&tx.nullifiers)
+            .map_err(|e| anyhow::anyhow!("Cannot check nullifiers: {e}"))?;
+
+        if !existing_nullifiers.is_empty() {
+            let err = crate::Error::RepeatingNullifiers(existing_nullifiers);
+            return Err(anyhow::anyhow!("Invalid tx: {err}"));
+        }
+        match RuskProver::preverify(tx) {
+            Ok(true) => Ok(()),
+            Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
+            Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),
+        }
     }
 
-    fn get_provisioners(&self) -> Result<Provisioners, anyhow::Error> {
+    fn get_provisioners(&self) -> anyhow::Result<Provisioners> {
         info!("Received get_provisioners request");
         let provisioners = self
             .provisioners()

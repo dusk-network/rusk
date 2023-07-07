@@ -4,15 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::sync::LazyLock;
+
 use super::*;
+use crate::error::Error;
 
 use dusk_plonk::prelude::Prover;
 use rand::rngs::OsRng;
 
-const WFCT_INPUT_LEN: usize =
+pub const WFCT_INPUT_LEN: usize =
     JubJubAffine::SIZE + u64::SIZE + JubJubScalar::SIZE;
 
-pub static WFCT_PROVER: Lazy<Prover> = Lazy::new(|| {
+pub static WFCT_PROVER: LazyLock<Prover> = LazyLock::new(|| {
     let keys = keys_for(WithdrawFromTransparentCircuit::circuit_id())
         .expect("keys to be available");
     let pk = keys.get_prover().expect("prover to be available");
@@ -20,42 +23,40 @@ pub static WFCT_PROVER: Lazy<Prover> = Lazy::new(|| {
 });
 
 impl RuskProver {
-    pub(crate) fn prove_wfct(
-        &self,
-        request: &WfctProverRequest,
-    ) -> Result<Response<WfctProverResponse>, Status> {
-        let mut reader = &request.circuit_inputs[..];
+    pub fn prove_wfct(&self, circuit_inputs: &[u8]) -> Result<Vec<u8>, Error> {
+        info!("Received prove_wfct request");
+        let mut reader = circuit_inputs;
 
         if reader.len() != WFCT_INPUT_LEN {
-            return Err(Status::invalid_argument(format!(
-                "Expected length {} got {}",
-                WFCT_INPUT_LEN,
-                reader.len()
-            )));
+            return Err(other_error(
+                format!(
+                    "Expected length {} got {}",
+                    WFCT_INPUT_LEN,
+                    reader.len()
+                )
+                .as_str(),
+            )
+            .into());
         }
 
         let commitment = JubJubAffine::from_reader(&mut reader)
-            .map_err(|_| {
-                Status::invalid_argument("Failed deserializing commitment")
-            })?
+            .map_err(|_| other_error("Failed deserializing commitment"))?
             .into();
 
-        let value = u64::from_reader(&mut reader).map_err(|_| {
-            Status::invalid_argument("Failed deserializing value")
-        })?;
+        let value = u64::from_reader(&mut reader)
+            .map_err(|_| other_error("Failed deserializing value"))?;
 
-        let blinder = JubJubScalar::from_reader(&mut reader).map_err(|_| {
-            Status::invalid_argument("Failed deserializing blinder")
-        })?;
+        let blinder = JubJubScalar::from_reader(&mut reader)
+            .map_err(|_| other_error("Failed deserializing blinder"))?;
 
         let circ =
             WithdrawFromTransparentCircuit::new(commitment, value, blinder);
 
         let (proof, _) = WFCT_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
-            Status::internal(format!("Failed proving the circuit: {e}"))
+            other_error(format!("Failed proving the circuit: {e}").as_str())
         })?;
         let proof = proof.to_bytes().to_vec();
 
-        Ok(Response::new(WfctProverResponse { proof }))
+        Ok(proof)
     }
 }

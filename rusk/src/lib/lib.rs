@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(lazy_cell)]
+
 use crate::error::Error;
 
 use std::ops::Range;
@@ -12,6 +14,7 @@ use std::sync::Arc;
 use std::{cmp, fs, io};
 
 pub mod error;
+pub mod prover;
 mod vm;
 pub mod ws;
 
@@ -26,11 +29,11 @@ use tracing::info;
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
-use dusk_pki::PublicKey;
+use dusk_pki::{PublicKey, ViewKey};
 use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Message, Transaction as PhoenixTransaction};
+use phoenix_core::{Message, Note, Transaction as PhoenixTransaction};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
@@ -41,7 +44,6 @@ use rusk_abi::{
 };
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
-use transfer_circuits::ExecuteCircuit;
 
 const A: usize = 4;
 
@@ -309,61 +311,6 @@ impl Rusk {
         Ok(inner.current_commit)
     }
 
-    pub fn preverify(&self, tx: &phoenix_core::Transaction) -> Result<()> {
-        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
-
-        let inputs = &tx.nullifiers;
-        let outputs = &tx.outputs;
-        let proof = &tx.proof;
-
-        let existing_nullifiers = self.existing_nullifiers(inputs)?;
-
-        if !existing_nullifiers.is_empty() {
-            return Err(Error::RepeatingNullifiers(existing_nullifiers));
-        }
-
-        let circuit = circuit_from_numbers(inputs.len(), outputs.len())
-            .ok_or_else(|| {
-                Error::InvalidCircuitArguments(inputs.len(), outputs.len())
-            })?;
-
-        let mut pi: Vec<rusk_abi::PublicInput> =
-            Vec::with_capacity(9 + inputs.len());
-
-        pi.push(tx_hash.into());
-        pi.push(tx.anchor.into());
-        pi.extend(inputs.iter().map(|n| n.into()));
-
-        pi.push(
-            tx.crossover()
-                .copied()
-                .unwrap_or_default()
-                .value_commitment()
-                .into(),
-        );
-
-        let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
-
-        pi.push(fee_value.into());
-        pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
-        pi.extend(
-            (0usize..2usize.saturating_sub(outputs.len())).map(|_| {
-                transfer_circuits::CircuitOutput::ZERO_COMMITMENT.into()
-            }),
-        );
-
-        let keys = rusk_profile::keys_for(circuit.circuit_id())?;
-        let vd = keys.get_verifier()?;
-
-        // Maybe we want to handle internal serialization error too, currently
-        // they map to `false`.
-        if !rusk_abi::verify_proof(vd, proof.clone(), pi) {
-            return Err(Error::ProofVerification);
-        }
-
-        Ok(())
-    }
-
     /// Perform an action with the underlying data structure.
     pub fn with_inner<'a, F, T>(&'a self, closure: F) -> T
     where
@@ -401,6 +348,7 @@ impl Rusk {
 
     /// Returns the root of the transfer tree.
     pub fn tree_root(&self) -> Result<BlsScalar> {
+        info!("Received tree_root request");
         self.query(TRANSFER_CONTRACT, "root", &())
     }
 
@@ -815,20 +763,5 @@ const fn emission_amount(block_height: u64) -> Dusk {
         43_750_001..=50_000_000 => dusk(3.2),
         50_000_001..=62_500_000 => dusk(1.6),
         _ => dusk(0.0),
-    }
-}
-
-fn circuit_from_numbers(
-    num_inputs: usize,
-    num_outputs: usize,
-) -> Option<ExecuteCircuit<(), TRANSFER_TREE_DEPTH, A>> {
-    use ExecuteCircuit::*;
-
-    match num_inputs {
-        1 if num_outputs < 3 => Some(OneTwo(Default::default())),
-        2 if num_outputs < 3 => Some(TwoTwo(Default::default())),
-        3 if num_outputs < 3 => Some(ThreeTwo(Default::default())),
-        4 if num_outputs < 3 => Some(FourTwo(Default::default())),
-        _ => None,
     }
 }
