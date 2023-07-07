@@ -29,18 +29,6 @@ impl Operations for Executor {
         Ok(Output::default())
     }
 
-    fn accept(&self, _params: CallParams) -> Result<Output, Error> {
-        Ok(Output::default())
-    }
-
-    fn finalize(&self, _params: CallParams) -> Result<Output, Error> {
-        Ok(Output::default())
-    }
-
-    fn get_state_root(&self) -> Result<StateRoot, Error> {
-        Ok([0; 32])
-    }
-
     fn get_mempool_txs(
         &self,
         _block_gas_limit: u64,

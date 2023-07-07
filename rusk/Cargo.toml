@@ -13,29 +13,29 @@ name = "rusk"
 path = "src/bin/main.rs"
 
 [dependencies]
-tonic = "0.8"
-tokio = { version = "1.15", features = ["rt-multi-thread", "time", "fs", "macros"] }
-tokio-stream = "0.1"
-tokio-util = { version = "0.7", features = ["rt"] }
-async-stream = "0.3"
+tokio = { version = "1.15", features = ["rt-multi-thread", "fs", "macros"] }
+futures-util = "0.3"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3.0", features = ["fmt", "env-filter", "json"] }
-hyper = { version = "0.14", features = ["full"] }
+tracing-subscriber = { version = "0.3.0", features = [
+  "fmt",
+  "env-filter",
+  "json",
+] }
 clap = { version = "3.1", features = ["env"] }
-prost = "0.11"
-tower = "0.4"
-futures = "0.3"
 semver = "1.0"
 anyhow = "1.0"
 rustc_tools_util = "0.3"
 rand = "0.8"
-once_cell = "1.9"
-blake2 = "0.10"
 toml = "0.5"
-serde = "1.0"
+serde = "1"
+serde_json = "1"
 bs58 = "0.4"
 hex = "0.4"
 tempfile = "3.2"
+parking_lot = "0.12"
+rkyv = "0.7"
+bytecheck = "0.6"
+dirs = "4"
 
 dusk-schnorr = "0.13"
 dusk-poseidon = "0.30"
@@ -49,15 +49,21 @@ dusk-bytes = "0.1"
 dusk-wallet-core = "0.20.0-piecrust.0.6"
 phoenix-core = "0.20.0-rc.0"
 kadcast = "0.5.0-rc"
-parking_lot = "0.12"
-rkyv = "0.7"
-bytecheck = "0.6"
+tokio-tungstenite = { version = "0.19", default-features = false, features = ["handshake"] }
+futures = "0.3"
+tokio-stream = "0.1"
+tokio-util = { version = "0.7", features = ["rt"] }
 
-rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
+
+rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = [
+  "state",
+] }
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
-rusk-schema = { version = "0.5", path = "../rusk-schema" }
+node = { version = "0.1", path = "../node" }
+dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
+node-data = { version = "0.1", path = "../node-data" }
 
 [dev-dependencies]
 test-context = "0.1"

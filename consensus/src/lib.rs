@@ -9,7 +9,6 @@ extern crate core;
 pub mod commons;
 pub mod consensus;
 pub mod user;
-pub mod util;
 
 mod aggregator;
 pub mod agreement;

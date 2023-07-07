@@ -11,13 +11,13 @@ use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
+use dusk_consensus::consensus::{self, Consensus};
 use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Header};
+use node_data::ledger::{self, Block, Hash, Header, SpentTransaction};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -102,6 +102,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
     }
 
+    pub fn needs_update(blk: &Block, txs: &[SpentTransaction]) -> bool {
+        //TODO Remove hardcoded epoch
+        if blk.header().height % 2160 == 0 {
+            return true;
+        }
+        txs.iter().filter(|t| t.err.is_none()).any(|t| {
+            match &t.inner.inner.call {
+                //TODO Check for contractId too
+                Some((_, method, _)) if method == "stake" => true,
+                Some((_, method, _)) if method == "unstake" => true,
+                _ => false,
+            }
+        })
+    }
+
     pub(crate) async fn try_accept_block(
         &self,
         blk: &Block,
@@ -120,20 +135,26 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         // Persist block in consistency with the VM state update
-        {
+        let updated_provisioners = {
             let vm = self.vm.write().await;
-            self.db.read().await.update(|t| {
+            let txs = self.db.read().await.update(|t| {
                 t.store_block(blk, true)?;
 
-                // Accept block transactions into the VM
-                if blk.header.iteration == 1 {
-                    return vm.finalize(blk);
-                }
+                let (txs, _) = match blk.header.iteration {
+                    1 => vm.finalize(blk)?,
+                    _ => vm.accept(blk)?,
+                };
+                // Update block transactions with Error and GasSpent
+                t.store_txs(&txs)?;
+                Ok(txs)
+            })?;
 
-                //TODO: Retrieve eligible_provisioners
-                vm.accept(blk)
-            })
-        }?;
+            Self::needs_update(blk, &txs[..]).then(|| vm.get_provisioners())
+        };
+
+        if let Some(updated_prov) = updated_provisioners {
+            *provisioners_list = updated_prov?;
+        }
 
         *mrb = blk.clone();
 
@@ -189,7 +210,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             return Err(anyhow!("invalid previous block hash"));
         }
 
-        if blk_header.timestamp <= curr_header.timestamp {
+        if blk_header.timestamp < curr_header.timestamp {
             return Err(anyhow!("invalid block timestamp"));
         }
 

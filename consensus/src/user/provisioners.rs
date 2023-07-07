@@ -29,6 +29,10 @@ impl Member {
         }
     }
 
+    pub fn first_stake(&self) -> Option<&Stake> {
+        self.stakes.first().map(|(s, _)| s)
+    }
+
     pub fn public_key(&self) -> &PublicKey {
         &self.pubkey_bls
     }

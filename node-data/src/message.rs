@@ -320,7 +320,7 @@ pub struct Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_le_bytes(w, &self.pubkey_bls.bytes()[..])?;
+        Self::write_var_bytes(w, &self.pubkey_bls.bytes()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.step])?;
         w.write_all(&self.block_hash[..])?;
@@ -333,7 +333,7 @@ impl Serializable for Header {
         Self: Sized,
     {
         // Read bls pubkey
-        let buf: [u8; 96] = Self::read_var_le_bytes(r)?
+        let buf: [u8; 96] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -473,7 +473,7 @@ pub mod payload {
 
     impl Serializable for Reduction {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_le_bytes(w, &self.signed_hash[..])?;
+            Self::write_var_bytes(w, &self.signed_hash[..])?;
             Ok(())
         }
 
@@ -481,7 +481,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signed_hash: [u8; 48] = Self::read_var_le_bytes(r)?
+            let signed_hash: [u8; 48] = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -532,7 +532,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             w.write_all(&self.prev_hash[..])?;
             self.candidate.write(w)?;
-            Self::write_var_le_bytes(w, &self.signed_hash[..])?;
+            Self::write_var_bytes(w, &self.signed_hash[..])?;
 
             Ok(())
         }
@@ -545,7 +545,7 @@ pub mod payload {
 
             r.read_exact(&mut result.prev_hash[..])?;
             result.candidate = Block::read(r)?;
-            result.signed_hash = Self::read_var_le_bytes(r)?
+            result.signed_hash = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -570,7 +570,7 @@ pub mod payload {
 
     impl Serializable for Agreement {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_le_bytes(w, &self.signature[..])?;
+            Self::write_var_bytes(w, &self.signature[..])?;
 
             // Read this field for backward compatibility
             let step_votes_len = 2u8;
@@ -586,7 +586,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signature = Self::read_var_le_bytes(r)?
+            let signature = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -635,7 +635,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.agreement.write(w)?;
             w.write_all(&self.bitset.to_le_bytes())?;
-            Self::write_var_le_bytes(w, &self.aggr_signature[..])?;
+            Self::write_var_bytes(w, &self.aggr_signature[..])?;
 
             Ok(())
         }
@@ -650,7 +650,7 @@ pub mod payload {
             r.read_exact(&mut buf)?;
             let bitset = u64::from_le_bytes(buf);
 
-            let aggr_signature = Self::read_var_le_bytes(r)?
+            let aggr_signature = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -767,8 +767,7 @@ pub mod payload {
 
     impl Serializable for Inv {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            let step_votes_len = self.inv_list.len() as u64;
-            w.write_all(&step_votes_len.to_le_bytes())?;
+            Self::write_varint(w, self.inv_list.len() as u64)?;
 
             for item in &self.inv_list {
                 w.write_all(&[item.inv_type as u8])?;
@@ -782,10 +781,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let mut items_len_buf = [0u8; 8];
-            r.read_exact(&mut items_len_buf)?;
-
-            let items_len = u64::from_le_bytes(items_len_buf);
+            let items_len = Self::read_varint(r)?;
 
             let mut inv = Inv::default();
             for _ in 0..items_len {
@@ -817,6 +813,7 @@ pub mod payload {
 
     impl Serializable for GetBlocks {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+            Self::write_varint(w, 1)?;
             w.write_all(&self.locator[..])
         }
 
@@ -825,6 +822,7 @@ pub mod payload {
             Self: Sized,
         {
             let mut result = GetBlocks::default();
+            Self::read_varint(r)?;
             r.read_exact(&mut result.locator[..])?;
 
             Ok(result)

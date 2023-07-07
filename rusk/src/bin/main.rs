@@ -6,30 +6,30 @@
 
 mod config;
 mod ephemeral;
-mod services;
-#[cfg(not(target_os = "windows"))]
-mod unix;
 mod version;
 
 use std::path::PathBuf;
 
 use clap::{Arg, Command};
-use rusk::services::network::KadcastDispatcher;
-use rusk::services::network::NetworkServer;
-use rusk::services::prover::{ProverServer, RuskProver};
-use rusk::services::state::StateServer;
-use rusk::services::version::{CompatibilityInterceptor, RuskVersionLayer};
+use node::database::rocksdb;
+use node::database::DB;
+use node::LongLivedService;
 use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
-use tonic::transport::Server;
 use version::show_version;
 
-use services::startup_with_tcp_ip;
-use services::startup_with_uds;
+use node::chain::ChainSrv;
+use node::databroker::DataBrokerSrv;
+use node::mempool::MempoolSrv;
+use node::network::Kadcast;
+use node::Node;
+use rusk::ws::WsServer;
 
 use crate::config::Config;
 
-#[tokio::main]
+// Number of workers should be at least `ACCUMULATOR_WORKERS_AMOUNT` from
+// `dusk_consensus::config`.
+#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_info = get_version_info!();
     let crate_name = &crate_info.crate_name.to_string();
@@ -79,66 +79,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => unreachable!(),
     };
 
-    let _tempdir = match args.get_one::<PathBuf>("state_zip_file") {
+    let tempdir = match args.get_one::<PathBuf>("state_file") {
         Some(state_zip) => ephemeral::configure(state_zip)?,
         None => None,
     };
+    let state_dir = rusk_profile::get_rusk_state_dir()?;
+    tracing::info!("Using state from {state_dir:?}");
+    let rusk = Rusk::new(state_dir)?;
 
-    let router = {
-        let rusk = Rusk::new(rusk_profile::get_rusk_state_dir()?)?;
+    // Set up a node where:
+    // transport layer is Kadcast with message ids from 0 to 255
+    // persistence layer is rocksdb
+    type Services = dyn LongLivedService<Kadcast<255>, rocksdb::Backend, Rusk>;
 
-        let kadcast = KadcastDispatcher::new(
-            config.kadcast.clone().into(),
-            config.kadcast_test,
-        )?;
+    // Select list of services to enable
+    let service_list: Vec<Box<Services>> = vec![
+        Box::<MempoolSrv>::default(),
+        Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
+        Box::new(DataBrokerSrv::new(config.databroker())),
+    ];
 
-        let network =
-            NetworkServer::with_interceptor(kadcast, CompatibilityInterceptor);
-        let state =
-            StateServer::with_interceptor(rusk, CompatibilityInterceptor);
-        let prover = ProverServer::with_interceptor(
-            RuskProver::default(),
-            CompatibilityInterceptor,
+    let db_path = tempdir
+        .as_ref()
+        .map_or_else(|| config.chain.db_path(), |t| t.path().to_path_buf());
+    let db = rocksdb::Backend::create_or_open(db_path);
+    let net = Kadcast::new(config.clone().kadcast.into());
+
+    let node = Node::new(net, db, rusk.clone());
+
+    let mut _ws_server = None;
+    if config.ws.listen {
+        _ws_server = Some(
+            WsServer::bind(rusk, node.clone(), config.ws.listen_addr()).await?,
         );
+    }
 
-        Server::builder()
-            .layer(RuskVersionLayer)
-            .add_service(network)
-            .add_service(state)
-            .add_service(prover)
-    };
-
-    // Match the desired IPC method. Or set the default one depending on the OS
-    // used. Then startup rusk with the final values.
-    match config.grpc.ipc_method.as_deref() {
-        Some(method) => match (cfg!(windows), method) {
-            (_, "tcp_ip") => {
-                startup_with_tcp_ip(
-                    router,
-                    &config.grpc.host,
-                    &config.grpc.port,
-                )
-                .await
-            }
-            (true, "uds") => {
-                panic!("Windows does not support Unix Domain Sockets");
-            }
-            (false, "uds") => {
-                startup_with_uds(router, &config.grpc.socket).await
-            }
-            (_, _) => unreachable!(),
-        },
-        None => {
-            if cfg!(windows) {
-                startup_with_tcp_ip(
-                    router,
-                    &config.grpc.host,
-                    &config.grpc.port,
-                )
-                .await
-            } else {
-                startup_with_uds(router, &config.grpc.socket).await
-            }
-        }
+    // node spawn_all is the entry point
+    if let Err(e) = node.spawn_all(service_list).await {
+        tracing::error!("node terminated with err: {}", e);
+        Err(e.into())
+    } else {
+        Ok(())
     }
 }

@@ -8,7 +8,7 @@ use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::{Context, Result};
 
 use node_data::encoding::*;
-use node_data::ledger;
+use node_data::ledger::{self, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -27,6 +27,7 @@ use std::io::Read;
 use std::io::Write;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::vec;
 use tokio::io::AsyncWriteExt;
@@ -49,6 +50,7 @@ const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 const REGISTER_KEY: &[u8; 8] = b"register";
 
+#[derive(Clone)]
 pub struct Backend {
     rocksdb: Arc<OptimisticTransactionDB>,
 }
@@ -124,10 +126,8 @@ impl DB for Backend {
     where
         T: AsRef<Path>,
     {
-        info!(
-            "Opening database in {:?}",
-            path.as_ref().to_str().unwrap_or_default()
-        );
+        let path = path.as_ref().join("chain.db");
+        info!("Opening database in {path:?}");
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -177,21 +177,21 @@ impl DB for Backend {
         Ok(())
     }
 
-    fn update<F>(&self, execute: F) -> Result<()>
+    fn update<F, T>(&self, execute: F) -> Result<T>
     where
-        F: for<'a> FnOnce(&Self::P<'a>) -> Result<()>,
+        F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
     {
         // Create read-write transaction
         let tx = self.begin_tx(TxType::ReadWrite);
 
         // If f returns err, no commit will be applied into backend
         // storage
-        execute(&tx)?;
+        let ret = execute(&tx)?;
 
         // Apply changes in atomic way
         tx.commit()?;
 
-        Ok(())
+        Ok(ret)
     }
 
     fn close(&mut self) {}
@@ -219,7 +219,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()> {
+    fn store_block(&self, b: &ledger::Block, _persisted: bool) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
@@ -255,9 +255,14 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             // store all block transactions
             for tx in &b.txs {
+                let tx = SpentTransaction {
+                    err: None,
+                    gas_spent: 0,
+                    inner: tx.clone(),
+                };
                 let mut d = vec![];
                 tx.write(&mut d)?;
-                self.inner.put_cf(cf, tx.hash(), d)?;
+                self.inner.put_cf(cf, tx.inner.hash(), d)?;
             }
         }
 
@@ -338,11 +343,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn get_ledger_tx_by_hash(
         &self,
         tx_hash: &[u8],
-    ) -> Result<Option<ledger::Transaction>> {
+    ) -> Result<Option<ledger::SpentTransaction>> {
         let tx = self
             .snapshot
             .get_cf(self.ledger_txs_cf, tx_hash)?
-            .map(|blob| ledger::Transaction::read(&mut &blob[..]))
+            .map(|blob| ledger::SpentTransaction::read(&mut &blob[..]))
             .transpose()?;
 
         Ok(tx)
@@ -366,6 +371,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
 
         Ok(None)
+    }
+
+    fn store_txs(&self, txs: &[ledger::SpentTransaction]) -> Result<()> {
+        let cf = self.ledger_txs_cf;
+
+        // store all block transactions
+        for tx in txs {
+            let mut d = vec![];
+            tx.write(&mut d)?;
+            self.inner.put_cf(cf, tx.inner.hash(), d)?;
+        }
+        Ok(())
     }
 }
 
@@ -447,7 +464,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
         // Add Secondary indexes //
         // Nullifiers
-        for n in tx.inner.inputs().iter() {
+        for n in tx.inner.nullifiers().iter() {
             let key = n.to_bytes();
             self.inner.put_cf(self.nullifiers_cf, key, vec![0])?;
         }
@@ -487,7 +504,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
             // Delete Secondary indexes
             // Delete Nullifiers
-            for n in tx.inner.inputs().iter() {
+            for n in tx.inner.nullifiers().iter() {
                 let key = n.to_bytes();
                 self.inner.delete_cf(self.nullifiers_cf, key)?;
             }
@@ -706,11 +723,7 @@ mod tests {
 
     #[test]
     fn test_store_block() {
-        let t = TestWrapper {
-            path: "_test_store_block",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_store_block").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
@@ -755,11 +768,7 @@ mod tests {
 
     #[test]
     fn test_read_only() {
-        let t = TestWrapper {
-            path: "_test_read_only",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_read_only").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             assert!(db
@@ -778,11 +787,7 @@ mod tests {
 
     #[test]
     fn test_transaction_isolation() {
-        let t = TestWrapper {
-            path: "_test_transaction_isolation",
-        };
-
-        t.run(|path| {
+        TestWrapper("_test_transaction_isolation").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
@@ -821,11 +826,7 @@ mod tests {
 
     #[test]
     fn test_add_mempool_tx() {
-        let t = TestWrapper {
-            path: "test_add_tx",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_add_tx").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let t: ledger::Transaction = Faker.fake();
 
@@ -855,11 +856,7 @@ mod tests {
 
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
-        let t = TestWrapper {
-            path: "test_mempool_txs_sorted_by_fee",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_mempool_txs_sorted_by_fee").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             // Populate mempool with N contract calls
             let mut rng = rand::thread_rng();
@@ -895,11 +892,7 @@ mod tests {
 
     #[test]
     fn test_max_gas_limit() {
-        let t = TestWrapper {
-            path: "test_block_size_limit",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_block_size_limit").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             db.update(|txn| {
@@ -924,11 +917,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_tx_by_hash() {
-        let t = TestWrapper {
-            path: "test_get_ledger_tx_by_hash",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             assert!(b.txs.len() > 0);
@@ -949,6 +938,7 @@ mod tests {
                         .get_ledger_tx_by_hash(&t.hash())
                         .expect("should not return error")
                         .expect("should find a transaction")
+                        .inner
                         .eq(&t));
                 }
 
@@ -959,11 +949,7 @@ mod tests {
 
     #[test]
     fn test_fetch_block_hash_by_height() {
-        let t = TestWrapper {
-            path: "test_fetch_block_hash_by_height",
-        };
-
-        t.run(|path| {
+        TestWrapper("test_fetch_block_hash_by_height").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
 
@@ -988,24 +974,18 @@ mod tests {
         });
     }
 
-    struct TestWrapper {
-        path: &'static str,
-    }
+    struct TestWrapper(&'static str);
 
     impl TestWrapper {
         pub fn run<F>(&self, test_func: F)
         where
-            F: FnOnce(&str),
+            F: FnOnce(&Path),
         {
-            // Destroy/deletion of a database can happen only before creating
-            let opts = Options::default();
-            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+            let dir = tempdir::TempDir::new(self.0)
+                .expect("Temporardy directory to be created");
+            let path = dir.path();
 
-            test_func(self.path);
-
-            // Destroy/deletion of a database can happen only after dropping DB.
-            let opts = Options::default();
-            rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
+            test_func(path);
         }
     }
 }

@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(lazy_cell)]
+
 use crate::error::Error;
-use crate::services::prover::RuskProver;
-use crate::transaction::SpentTransaction;
 
 use std::ops::Range;
 use std::path::{Path, PathBuf};
@@ -14,18 +14,26 @@ use std::sync::Arc;
 use std::{cmp, fs, io};
 
 pub mod error;
-pub mod services;
-pub mod transaction;
+pub mod prover;
+mod vm;
+pub mod ws;
+
+use dusk_bytes::DeserializableSlice;
+use futures::Stream;
+use std::pin::Pin;
+use tokio::spawn;
+use tokio::sync::mpsc;
+use tokio_util::task::LocalPoolHandle;
+use tracing::info;
 
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
-use dusk_pki::PublicKey;
-use dusk_plonk::prelude::PublicParameters;
-use once_cell::sync::Lazy;
+use dusk_pki::{PublicKey, ViewKey};
+use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
-use phoenix_core::transaction::*;
-use phoenix_core::Message;
+use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
+use phoenix_core::{Message, Note, Transaction as PhoenixTransaction};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
@@ -41,14 +49,9 @@ const A: usize = 4;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| unsafe {
-    let pp = rusk_profile::get_common_reference_string()
-        .expect("Failed to get common reference string");
+pub type StoredNote = (Note, u64);
 
-    PublicParameters::from_slice_unchecked(pp.as_slice())
-});
-
-const STREAM_BUF_SIZE: usize = 64;
+pub type GetNotesStream = Pin<Box<dyn Stream<Item = StoredNote> + Send>>;
 
 pub struct RuskInner {
     pub current_commit: [u8; 32],
@@ -63,7 +66,6 @@ pub struct RuskInner {
 pub struct Rusk {
     inner: Arc<Mutex<RuskInner>>,
     dir: PathBuf,
-    stream_buffer_size: usize,
 }
 
 impl Rusk {
@@ -97,7 +99,6 @@ impl Rusk {
         Ok(Self {
             inner,
             dir: dir.into(),
-            stream_buffer_size: STREAM_BUF_SIZE,
         })
     }
 
@@ -105,7 +106,7 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: BlsPublicKey,
+        generator: &BlsPublicKey,
         txs: Vec<Transaction>,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
         let inner = self.inner.lock();
@@ -121,7 +122,8 @@ impl Rusk {
 
         let mut dusk_spent = 0;
 
-        for tx in txs {
+        for unspent_tx in txs {
+            let tx = unspent_tx.inner.clone();
             let (call_result, gas_spent) = match execute(
                 &mut session,
                 &tx,
@@ -132,7 +134,7 @@ impl Rusk {
                 Err(err) => match err {
                     // An unspendable transaction should be discarded
                     TxError::Unspendable(_) => {
-                        discarded_txs.push(tx);
+                        discarded_txs.push(unspent_tx);
                         continue;
                     }
                     // This transaction was given its own gas limit, so it
@@ -160,7 +162,7 @@ impl Rusk {
                         for spent_tx in &spent_txs {
                             let gas_spent = execute(
                                     &mut session,
-                                    &spent_tx.0,
+                                    &spent_tx.inner.inner,
                                     block_gas_left,
                                 )
                                 .map(|(_, gas_spent)| gas_spent)
@@ -182,7 +184,12 @@ impl Rusk {
             block_gas_left -= gas_spent;
             dusk_spent += gas_spent * tx.fee.gas_price;
 
-            spent_txs.push(SpentTransaction(tx, gas_spent, call_result));
+            spent_txs.push(SpentTransaction {
+                inner: unspent_tx.clone(),
+                gas_spent,
+
+                err: call_result.map(|e| format!("{e:?}")),
+            });
 
             // No need to keep executing if there is no gas left in the
             // block
@@ -207,8 +214,8 @@ impl Rusk {
         &self,
         block_height: u64,
         block_gas_limit: u64,
-        generator: BlsPublicKey,
-        txs: Vec<Transaction>,
+        generator: &BlsPublicKey,
+        txs: &[Transaction],
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let inner = self.inner.lock();
 
@@ -237,8 +244,8 @@ impl Rusk {
             &mut session,
             block_height,
             block_gas_limit,
-            generator,
-            txs,
+            &generator,
+            &txs[..],
         )?;
 
         let commit_id = session.commit()?;
@@ -266,8 +273,8 @@ impl Rusk {
             &mut session,
             block_height,
             block_gas_limit,
-            generator,
-            txs,
+            &generator,
+            &txs[..],
         )?;
 
         let commit_id = session.commit()?;
@@ -302,20 +309,6 @@ impl Rusk {
         let mut inner = self.inner.lock();
         inner.current_commit = inner.base_commit;
         Ok(inner.current_commit)
-    }
-
-    pub fn pre_verify(&self, tx: &Transaction) -> Result<()> {
-        let existing_nullifiers = self.existing_nullifiers(&tx.nullifiers)?;
-
-        if !existing_nullifiers.is_empty() {
-            return Err(Error::RepeatingNullifiers(existing_nullifiers));
-        }
-
-        if !RuskProver::preverify(tx)? {
-            return Err(Error::ProofVerification);
-        }
-
-        Ok(())
     }
 
     /// Perform an action with the underlying data structure.
@@ -355,6 +348,7 @@ impl Rusk {
 
     /// Returns the root of the transfer tree.
     pub fn tree_root(&self) -> Result<BlsScalar> {
+        info!("Received tree_root request");
         self.query(TRANSFER_CONTRACT, "root", &())
     }
 
@@ -472,23 +466,93 @@ impl Rusk {
 
         Ok(session.call(contract_id, call_name, call_arg)?)
     }
+
+    pub async fn get_notes(
+        &self,
+        vk: &[u8],
+        height: u64,
+    ) -> Result<GetNotesStream, Error> {
+        info!("Received GetNotes request");
+
+        let vk = match vk.is_empty() {
+            false => {
+                let vk =
+                    ViewKey::from_slice(vk).map_err(Error::Serialization)?;
+                Some(vk)
+            }
+            true => None,
+        };
+
+        let (sender, receiver) = mpsc::channel(16);
+
+        // Clone rusk and move it to the thread
+        let rusk = self.clone();
+        let latest_block_height =
+            rusk.with_inner(|inner| inner.latest_block_height);
+
+        // Spawn a task that's responsible for iterating through the leaves of
+        // the transfer contract tree and sending them through the sender
+        spawn(async move {
+            let local_pool = LocalPoolHandle::new(1);
+            local_pool
+                .spawn_pinned(move || async move {
+                    const BLOCKS_TO_SEARCH: u64 = 16;
+
+                    let mut needle = height;
+
+                    while needle <= latest_block_height {
+                        let range = needle..needle + BLOCKS_TO_SEARCH;
+
+                        let leaves = rusk
+                            .leaves_in_range(range)
+                            .expect("failed to iterate through leaves");
+
+                        for leaf in leaves {
+                            if let Some(vk) = vk {
+                                if !vk.owns(&leaf.note) {
+                                    continue;
+                                }
+                            }
+
+                            if sender
+                                .send((leaf.note, leaf.block_height))
+                                .await
+                                .is_err()
+                            {
+                                break;
+                            }
+                        }
+
+                        needle += BLOCKS_TO_SEARCH;
+                    }
+                })
+                .await
+        });
+
+        // Make a stream from the receiver and map the elements to be the
+        // expected output
+        let stream = tokio_stream::wrappers::ReceiverStream::new(receiver);
+
+        Ok(Box::pin(stream) as GetNotesStream)
+    }
 }
 
 fn accept(
     session: &mut Session,
     block_height: u64,
     block_gas_limit: u64,
-    generator: BlsPublicKey,
-    txs: Vec<Transaction>,
+    generator: &BlsPublicKey,
+    txs: &[Transaction],
 ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
 
-    for tx in txs {
+    for unspent_tx in txs {
+        let tx = &unspent_tx.inner;
         let (call_result, gas_spent) =
-            match execute(session, &tx, block_gas_left) {
+            match execute(session, tx, block_gas_left) {
                 // We're currently ignoring the result of a call.
                 Ok((_ret, gas_spent)) => (None, gas_spent),
                 Err(err) => match err {
@@ -508,7 +572,12 @@ fn accept(
             .checked_sub(gas_spent)
             .ok_or(Error::OutOfGas)?;
 
-        spent_txs.push(SpentTransaction(tx, gas_spent, call_result));
+        spent_txs.push(SpentTransaction {
+            inner: unspent_tx.clone(),
+            gas_spent,
+
+            err: call_result.map(|e| format!("{e:?}")),
+        });
     }
 
     reward_and_update_root(session, block_height, dusk_spent, generator)?;
@@ -550,7 +619,7 @@ fn accept(
 ///    a transaction of its type.
 fn execute(
     session: &mut Session,
-    tx: &Transaction,
+    tx: &PhoenixTransaction,
     block_gas_left: u64,
 ) -> Result<(Vec<u8>, u64), TxError> {
     let gas_for_spend = spent_gas_per_input(tx.nullifiers.len());
@@ -655,7 +724,7 @@ fn reward_and_update_root(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
-    generator: BlsPublicKey,
+    generator: &BlsPublicKey,
 ) -> Result<()> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
@@ -663,7 +732,7 @@ fn reward_and_update_root(
     session.set_point_limit(u64::MAX);
 
     session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
-    session.call(STAKE_CONTRACT, "reward", &(generator, generator_value))?;
+    session.call(STAKE_CONTRACT, "reward", &(*generator, generator_value))?;
     session.call(TRANSFER_CONTRACT, "update_root", &())?;
 
     Ok(())

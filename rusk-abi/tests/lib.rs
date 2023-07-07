@@ -7,20 +7,21 @@
 #![deny(clippy::all)]
 #![cfg(feature = "host")]
 
+use std::sync::OnceLock;
+
+use rand_core::OsRng;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_pki::{PublicKey, SecretKey};
+use dusk_pki::{PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use rand_core::OsRng;
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
-
-const OWNER: [u8; 32] = [0; 32];
 
 #[test]
 fn hash_host() {
@@ -54,14 +55,14 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let mut session = rusk_abi::new_genesis_session(vm);
 
     let contract_id = session
-        .deploy(bytecode, ContractData::builder(OWNER))
+        .deploy(bytecode, ContractData::builder(get_owner().to_bytes()))
         .expect("Deploying module should succeed");
 
     let base = session.commit().expect("Committing should succeed");
 
     let mut session = rusk_abi::new_session(vm, base, height)
         .expect("Instantiating new session should succeed");
-    session.set_point_limit(0x20000);
+    session.set_point_limit(0x700000);
 
     (session, contract_id)
 }
@@ -294,4 +295,25 @@ fn block_height() {
         .expect("Query should succeed");
 
     assert_eq!(height, HEIGHT);
+}
+
+fn get_owner() -> &'static PublicSpendKey {
+    static OWNER: OnceLock<PublicSpendKey> = OnceLock::new();
+    OWNER.get_or_init(|| {
+        let secret = SecretSpendKey::random(&mut OsRng);
+        secret.public_spend_key()
+    })
+}
+
+#[test]
+fn owner() {
+    let vm =
+        rusk_abi::new_ephemeral_vm().expect("Instantiating VM should succeed");
+    let (mut session, contract_id) = instantiate(&vm, 0);
+
+    let owner: [u8; 64] = session
+        .call(contract_id, "contract_owner", get_owner())
+        .expect("Query should succeed");
+
+    assert_eq!(owner, get_owner().to_bytes());
 }

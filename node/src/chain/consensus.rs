@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::chain::genesis::DUSK;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
@@ -250,7 +249,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Error::Failed
         })?;
 
-        vm.verify_state_transition(&params.txs).map_err(|err| {
+        vm.verify_state_transition(&params).map_err(|err| {
             tracing::error!("failed to call VST {}", err);
             Error::Failed
         })?;
@@ -269,34 +268,36 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Error::Failed
         })?;
 
-        vm.execute_state_transition(&params.txs).map_err(|err| {
-            tracing::error!("failed to call EST {}", err);
-            Error::Failed
-        })?;
+        let (executed_txs, discarded_txs, state_root) =
+            vm.execute_state_transition(params).map_err(|err| {
+                tracing::error!("failed to call EST {}", err);
+                Error::Failed
+            })?;
 
         // For now we just return the transactions that were passed to us.
         // Later we will need to actually execute the transactions and return
         // proper results.
         Ok(Output {
-            txs: params.txs,
-            state_root: [0; 32],
+            txs: executed_txs,
+            state_root,
+            discarded_txs,
             provisioners: Provisioners::default(),
         })
     }
 
-    fn accept(&self, _params: CallParams) -> Result<Output, Error> {
-        tracing::info!("accepting new state");
-        Ok(Output::default())
-    }
+    // fn accept(&self, _params: CallParams) -> Result<Output, Error> {
+    //     tracing::info!("accepting new state");
+    //     Ok(Output::default())
+    // }
 
-    fn finalize(&self, _params: CallParams) -> Result<Output, Error> {
-        tracing::info!("finalizing new state");
-        Ok(Output::default())
-    }
+    // fn finalize(&self, _params: CallParams) -> Result<Output, Error> {
+    //     tracing::info!("finalizing new state");
+    //     Ok(Output::default())
+    // }
 
-    fn get_state_root(&self) -> Result<StateRoot, Error> {
-        Ok([0; 32])
-    }
+    // fn get_state_root(&self) -> Result<StateRoot, Error> {
+    //     Ok([0; 32])
+    // }
 
     fn get_mempool_txs(
         &self,

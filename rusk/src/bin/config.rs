@@ -4,23 +4,30 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod grpc;
+pub mod chain;
 pub mod kadcast;
+pub mod ws;
 
 use std::str::FromStr;
 
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
-use self::{grpc::GrpcConfig, kadcast::KadcastConfig};
+use self::{chain::ChainConfig, kadcast::KadcastConfig, ws::WsConfig};
+
+type DataBrokerConfig = node::databroker::conf::Params;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct Config {
     log_level: Option<String>,
     log_type: Option<String>,
-    pub(crate) kadcast_test: bool,
-    pub(crate) grpc: GrpcConfig,
+
+    pub(crate) databroker: DataBrokerConfig,
+
     pub(crate) kadcast: KadcastConfig,
+    pub(crate) chain: ChainConfig,
+    #[serde(default = "WsConfig::default")]
+    pub(crate) ws: WsConfig,
 }
 
 /// Default log_level.
@@ -39,8 +46,6 @@ impl From<&ArgMatches> for Config {
                     toml::from_str(&toml).unwrap()
                 });
 
-        rusk_config.kadcast_test = matches.is_present("kadcast_test");
-
         // Overwrite config log-level
         if let Some(log_level) = matches.value_of("log-level") {
             rusk_config.log_level = Some(log_level.into());
@@ -51,8 +56,10 @@ impl From<&ArgMatches> for Config {
             rusk_config.log_type = Some(log_type.into());
         }
 
-        rusk_config.grpc.merge(matches);
         rusk_config.kadcast.merge(matches);
+        rusk_config.chain.merge(matches);
+        rusk_config.ws.merge(matches);
+        rusk_config.databroker.merge(matches);
         rusk_config
     }
 }
@@ -60,31 +67,28 @@ impl From<&ArgMatches> for Config {
 impl Config {
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
         let command = KadcastConfig::inject_args(command);
-        let command = GrpcConfig::inject_args(command);
-        command.arg(
-            Arg::new("log-level")
-                .long("log-level")
-                .value_name("LOG")
-                .possible_values(["error", "warn", "info", "debug", "trace"])
-                .help("Output log level")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("log-type")
-                .long("log-type")
-                .value_name("LOG_TYPE")
-                .possible_values(["coloured", "plain", "json"])
-                .help("Change the log format accordingly")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("kadcast_test")
-                .long("kadcast_test")
-                .env("KADCAST_TEST")
-                .help("If used then the received messages is a blake2b 256hash")
-                .takes_value(false)
-                .required(false),
-        )
+        let command = ChainConfig::inject_args(command);
+        let command = WsConfig::inject_args(command);
+        let command = DataBrokerConfig::inject_args(command);
+        command
+            .arg(
+                Arg::new("log-level")
+                    .long("log-level")
+                    .value_name("LOG")
+                    .possible_values([
+                        "error", "warn", "info", "debug", "trace",
+                    ])
+                    .help("Output log level")
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::new("log-type")
+                    .long("log-type")
+                    .value_name("LOG_TYPE")
+                    .possible_values(["coloured", "plain", "json"])
+                    .help("Change the log format accordingly")
+                    .takes_value(true),
+            )
     }
 
     pub(crate) fn log_type(&self) -> String {
@@ -102,5 +106,9 @@ impl Config {
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
             panic!("Invalid log-level specified '{log_level}' - {e}")
         })
+    }
+
+    pub(crate) fn databroker(&self) -> &node::databroker::conf::Params {
+        &self.databroker
     }
 }

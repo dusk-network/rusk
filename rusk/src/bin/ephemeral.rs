@@ -14,11 +14,11 @@ use tempfile::TempDir;
 
 pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
     command.arg(
-        Arg::new("state_zip_file")
+        Arg::new("state_file")
             .long("state")
             .short('s')
-            .env("RUSK_STATE_ZIP_FILE")
-            .help("Ephemeral state source path (.zip)")
+            .env("RUSK_STATE_FILE")
+            .help("Ephemeral state file (archive)")
             .takes_value(true)
             .value_parser(value_parser!(PathBuf))
             .required(false),

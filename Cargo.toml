@@ -15,9 +15,8 @@ members = [
     "rusk-abi",
     "rusk-abi/tests/contracts/host_fn",
 
-    "rusk-schema",
     "rusk",
-    
+
     "node-data",
     "consensus",
     "node",

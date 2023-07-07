@@ -12,8 +12,7 @@ impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header().write(w)?;
 
-        let txs_num = self.txs.len() as u8;
-        w.write_all(&txs_num.to_le_bytes())?;
+        Self::write_varint(w, self.txs().len() as u64)?;
 
         for t in self.txs.iter() {
             t.write(w)?;
@@ -29,10 +28,9 @@ impl Serializable for Block {
         let header = Header::read(r)?;
 
         // Read transactions count
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
+        let txlen = Self::read_varint(r)?;
 
-        let txs = (0..buf[0] as usize)
+        let txs = (0..txlen)
             .map(|_| Transaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -42,23 +40,18 @@ impl Serializable for Block {
 
 impl Serializable for Transaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        //Write version
+        w.write_all(&1u32.to_le_bytes())?;
+
+        //Write TxType
+        w.write_all(&1u32.to_le_bytes())?;
+
         let data = self.inner.to_var_bytes();
 
         // Write inner transaction
         let len = data.len() as u32;
         w.write_all(&len.to_le_bytes())?;
         w.write_all(&data)?;
-
-        // Write gas_spent
-        match self.gas_spent {
-            Some(gas_spent) => {
-                w.write_all(&1_u8.to_le_bytes())?;
-                w.write_all(&gas_spent.to_le_bytes())?;
-            }
-            None => {
-                w.write_all(&0_u8.to_le_bytes())?;
-            }
-        }
 
         Ok(())
     }
@@ -69,27 +62,72 @@ impl Serializable for Transaction {
     {
         let mut buf = [0u8; 4];
         r.read_exact(&mut buf)?;
+        let version = u32::from_le_bytes(buf);
 
-        let len = u32::from_le_bytes(buf);
-        let mut buf = vec![0u8; len as usize];
+        let mut buf = [0u8; 4];
         r.read_exact(&mut buf)?;
+        let tx_type = u32::from_le_bytes(buf);
 
-        let inner = dusk_wallet_core::Transaction::from_slice(&buf[..])
+        let tx_payload = Self::read_var_le_bytes32(r)?;
+        let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let mut optional = [0u8; 1];
-        r.read_exact(&mut optional)?;
+        Ok(Self {
+            inner,
+            version,
+            r#type: tx_type,
+        })
+    }
+}
 
-        let gas_spent = if optional[0] != 0 {
-            let mut buf = [0u8; 8];
-            r.read_exact(&mut buf)?;
+impl Serializable for SpentTransaction {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.inner.write(w)?;
+        w.write_all(&self.gas_spent.to_le_bytes())?;
 
-            Some(u64::from_le_bytes(buf))
+        match &self.err {
+            Some(e) => {
+                let b = e.as_bytes();
+                w.write_all(&(b.len() as u64).to_le_bytes())?;
+                w.write_all(b)?;
+            }
+            None => {
+                w.write_all(&0_u64.to_le_bytes())?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let inner = Transaction::read(r)?;
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+        let gas_spent = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
+
+        let error_len = u64::from_le_bytes(buf);
+
+        let err = if error_len > 0 {
+            let mut buf = vec![0u8; error_len as usize];
+            r.read_exact(&mut buf[..])?;
+
+            Some(String::from_utf8(buf).expect("Cannot from_utf8"))
         } else {
             None
         };
 
-        Ok(Self { inner, gas_spent })
+        Ok(Self {
+            inner,
+            gas_spent,
+            err,
+        })
     }
 }
 
@@ -117,14 +155,8 @@ impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // In order to be aligned with golang impl,
         // we cannot use here StepVotes::write for now.
-        Self::write_var_le_bytes(
-            w,
-            &self.first_reduction.signature.inner()[..],
-        )?;
-        Self::write_var_le_bytes(
-            w,
-            &self.second_reduction.signature.inner()[..],
-        )?;
+        Self::write_var_bytes(w, &self.first_reduction.signature.inner()[..])?;
+        Self::write_var_bytes(w, &self.second_reduction.signature.inner()[..])?;
 
         w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
         w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
@@ -136,11 +168,11 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let first_red_signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let first_red_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let second_red_signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let second_red_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -168,7 +200,7 @@ impl Serializable for Certificate {
 impl Serializable for StepVotes {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.bitset.to_le_bytes())?;
-        Self::write_var_le_bytes(w, &self.signature.inner()[..])?;
+        Self::write_var_bytes(w, &self.signature.inner()[..])?;
 
         Ok(())
     }
@@ -179,7 +211,7 @@ impl Serializable for StepVotes {
     {
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
-        let signature: [u8; 48] = Self::read_var_le_bytes(r)?
+        let signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
@@ -213,6 +245,11 @@ mod tests {
     #[test]
     fn test_encoding_transaction() {
         assert_serializable::<Transaction>();
+    }
+
+    #[test]
+    fn test_encoding_spent_transaction() {
+        assert_serializable::<SpentTransaction>();
     }
 
     #[test]

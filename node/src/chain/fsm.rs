@@ -8,7 +8,7 @@ use super::{acceptor::Acceptor, consensus, genesis};
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Transaction};
+use node_data::ledger::{self, Block, Hash};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::collections::HashMap;
