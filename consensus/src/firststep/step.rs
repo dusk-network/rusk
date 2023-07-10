@@ -51,6 +51,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
                 ctx.step,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
+                ctx.verified_candidates.clone(),
                 self.executor.clone(),
             );
         }
