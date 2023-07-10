@@ -33,6 +33,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) state
 	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
+	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./consensus $@
@@ -45,6 +46,7 @@ clippy: ## Run clippy$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -C ./rusk-abi $@
 	$(MAKE) -C ./rusk-profile $@
 	$(MAKE) -C ./rusk-recovery $@
+	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./rusk/ $@
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./consensus $@
