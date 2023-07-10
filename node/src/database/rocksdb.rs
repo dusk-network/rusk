@@ -736,7 +736,7 @@ mod tests {
 
     #[test]
     fn test_store_block() {
-        TestWrapper::new("testdata/test_store_block").run(|path| {
+        TestWrapper::new("test_store_block").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
@@ -781,7 +781,7 @@ mod tests {
 
     #[test]
     fn test_read_only() {
-        TestWrapper::new("testdata/test_read_only").run(|path| {
+        TestWrapper::new("test_read_only").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             assert!(db
@@ -800,7 +800,7 @@ mod tests {
 
     #[test]
     fn test_transaction_isolation() {
-        TestWrapper::new("testdata/test_transaction_isolation").run(|path| {
+        TestWrapper::new("test_transaction_isolation").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             let hash = b.header.hash;
@@ -839,7 +839,7 @@ mod tests {
 
     #[test]
     fn test_add_mempool_tx() {
-        TestWrapper::new("testdata/test_add_tx").run(|path| {
+        TestWrapper::new("test_add_tx").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let t: ledger::Transaction = Faker.fake();
 
@@ -869,45 +869,43 @@ mod tests {
 
     #[test]
     fn test_mempool_txs_sorted_by_fee() {
-        TestWrapper::new("testdata/test_mempool_txs_sorted_by_fee").run(
-            |path| {
-                let db: Backend = Backend::create_or_open(path);
-                // Populate mempool with N contract calls
-                let mut rng = rand::thread_rng();
-                db.update(|txn| {
-                    for i in 0..10u32 {
-                        let t: ledger::Transaction = Faker.fake();
-                        txn.add_tx(&t)?;
-                    }
-                    Ok(())
-                });
+        TestWrapper::new("test_mempool_txs_sorted_by_fee").run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            // Populate mempool with N contract calls
+            let mut rng = rand::thread_rng();
+            db.update(|txn| {
+                for i in 0..10u32 {
+                    let t: ledger::Transaction = Faker.fake();
+                    txn.add_tx(&t)?;
+                }
+                Ok(())
+            });
 
-                // Assert txs are retrieved in descending order sorted by fee
-                let max_gas_limit = u64::MAX - u64::MAX / 10;
-                db.view(|txn| {
-                    let txs = txn
-                        .get_txs_sorted_by_fee(max_gas_limit)
-                        .expect("should return all txs");
+            // Assert txs are retrieved in descending order sorted by fee
+            let max_gas_limit = u64::MAX - u64::MAX / 10;
+            db.view(|txn| {
+                let txs = txn
+                    .get_txs_sorted_by_fee(max_gas_limit)
+                    .expect("should return all txs");
 
-                    assert!(!txs.is_empty());
-                    let mut last_fee = u64::MAX;
-                    for t in txs {
-                        let fee = t.gas_price();
-                        assert!(
-                            fee <= last_fee,
-                            "tx fees are not in decreasing order"
-                        );
-                    }
+                assert!(!txs.is_empty());
+                let mut last_fee = u64::MAX;
+                for t in txs {
+                    let fee = t.gas_price();
+                    assert!(
+                        fee <= last_fee,
+                        "tx fees are not in decreasing order"
+                    );
+                }
 
-                    Ok(())
-                });
-            },
-        );
+                Ok(())
+            });
+        });
     }
 
     #[test]
     fn test_max_gas_limit() {
-        TestWrapper::new("testdata/test_block_size_limit").run(|path| {
+        TestWrapper::new("test_block_size_limit").run(|path| {
             let db: Backend = Backend::create_or_open(path);
 
             db.update(|txn| {
@@ -932,7 +930,7 @@ mod tests {
 
     #[test]
     fn test_get_ledger_tx_by_hash() {
-        TestWrapper::new("testdata/test_get_ledger_tx_by_hash").run(|path| {
+        TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
             assert!(b.txs.len() > 0);
@@ -964,126 +962,100 @@ mod tests {
 
     #[test]
     fn test_fetch_block_hash_by_height() {
-        TestWrapper::new("testdata/test_fetch_block_hash_by_height").run(
-            |path| {
-                let db: Backend = Backend::create_or_open(path);
-                let mut b: ledger::Block = Faker.fake();
+        TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            let mut b: ledger::Block = Faker.fake();
 
-                // Store a block
-                assert!(db
-                    .update(|txn| {
-                        txn.store_block(&b, false)?;
-                        Ok(())
-                    })
-                    .is_ok());
-
-                // Assert block hash is accessible by height.
-                db.view(|v| {
-                    assert!(v
-                        .fetch_block_hash_by_height(b.header.height)
-                        .expect("should not return error")
-                        .expect("should find a block")
-                        .eq(&b.header.hash));
-
+            // Store a block
+            assert!(db
+                .update(|txn| {
+                    txn.store_block(&b, false)?;
                     Ok(())
-                });
-            },
-        );
+                })
+                .is_ok());
+
+            // Assert block hash is accessible by height.
+            db.view(|v| {
+                assert!(v
+                    .fetch_block_hash_by_height(b.header.height)
+                    .expect("should not return error")
+                    .expect("should find a block")
+                    .eq(&b.header.hash));
+
+                Ok(())
+            });
+        });
     }
 
     #[test]
     /// Ensures delete_block fn removes all keys of a single block
     fn test_delete_block() {
-        let path = "./testdata/test_delete_block";
-        {
-            let t = TestWrapper {
-                path,
-                destroy_on_drop: false,
-            };
+        let t = TestWrapper::new("test_fetch_block_hash_by_height");
+        t.run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            let mut b: ledger::Block = Faker.fake();
 
-            t.run(|path| {
-                let db: Backend = Backend::create_or_open(path);
-                let mut b: ledger::Block = Faker.fake();
-
-                assert!(db
-                    .update(|ut| {
-                        ut.store_block(&b, false)?;
-                        Ok(())
-                    })
-                    .is_ok());
-
-                assert!(db
-                    .update(|ut| {
-                        ut.delete_block(&b)?;
-                        Ok(())
-                    })
-                    .is_ok());
-            });
-        }
-
-        {
-            let mut opts = Options::default();
-
-            // Iterate through all items, in all CFs.
-            // Ensure that the only key available after deleting a block is
-            // REGISTER_KEY
-
-            let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
-            assert!(vec.len() > 0);
-
-            let mut db =
-                rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
-
-            vec.into_iter()
-                .map(|cf_name| {
-                    println!("cf_name: {}", cf_name);
-
-                    let cf = db.cf_handle(&cf_name).unwrap();
-                    let iter = db.iterator_cf(cf, IteratorMode::Start);
-
-                    iter.map(Result::unwrap)
-                        .map(|(key, _)| {
-                            assert_eq!(&*key, REGISTER_KEY.as_slice())
-                        })
-                        .collect::<Vec<_>>();
+            assert!(db
+                .update(|ut| {
+                    ut.store_block(&b, false)?;
+                    Ok(())
                 })
-                .collect::<Vec<_>>();
-        }
+                .is_ok());
 
-        // Explicitly remove the temp db
-        let opts = Options::default();
-        rocksdb_lib::DB::destroy(&opts, Path::new(&path));
+            assert!(db
+                .update(|ut| {
+                    ut.delete_block(&b)?;
+                    Ok(())
+                })
+                .is_ok());
+        });
+
+        let path = t.get_path();
+        let mut opts = Options::default();
+
+        // Iterate through all items, in all CFs.
+        // Ensure that the only key available after deleting a block is
+        // REGISTER_KEY
+
+        let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
+        assert!(vec.len() > 0);
+
+        let mut db =
+            rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
+
+        vec.into_iter()
+            .map(|cf_name| {
+                println!("cf_name: {}", cf_name);
+
+                let cf = db.cf_handle(&cf_name).unwrap();
+                let iter = db.iterator_cf(cf, IteratorMode::Start);
+
+                iter.map(Result::unwrap)
+                    .map(|(key, _)| assert_eq!(&*key, REGISTER_KEY.as_slice()))
+                    .collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
     }
 
-    struct TestWrapper {
-        path: &'static str,
-        destroy_on_drop: bool,
-    }
+    struct TestWrapper(tempdir::TempDir);
 
     impl TestWrapper {
         fn new(path: &'static str) -> Self {
-            let path_with_suffix = path.as_ref().join(DB_FOLDER_NAME);
-
-            Self {
-                path: path_with_suffix,
-                destroy_on_drop: true,
-            }
+            Self(
+                tempdir::TempDir::new(path)
+                    .expect("Temp directory to be created"),
+            )
         }
 
         pub fn run<F>(&self, test_func: F)
         where
             F: FnOnce(&Path),
         {
-            let dir = tempdir::TempDir::new(self.0)
-                .expect("Temporardy directory to be created");
-            let path = dir.path();
+            test_func(self.0.path());
+        }
 
-            if self.destroy_on_drop {
-                let opts = Options::default();
-                // Destroy/deletion of a database can happen only after dropping
-                // DB.
-                rocksdb_lib::DB::destroy(&opts, Path::new(&self.path));
-            }
+        pub fn get_path(&self) -> std::path::PathBuf {
+            self.0.path().to_owned().join(DB_FOLDER_NAME)
         }
     }
 }
