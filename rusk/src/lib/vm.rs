@@ -12,7 +12,6 @@ use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 use tracing::info;
 
-use crate::prover::RuskProver;
 use crate::Rusk;
 
 impl VMExecution for Rusk {
@@ -116,7 +115,7 @@ impl VMExecution for Rusk {
             let err = crate::Error::RepeatingNullifiers(existing_nullifiers);
             return Err(anyhow::anyhow!("Invalid tx: {err}"));
         }
-        match RuskProver::preverify(tx) {
+        match crate::prover::verify_proof(tx) {
             Ok(true) => Ok(()),
             Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
             Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),

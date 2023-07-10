@@ -6,92 +6,64 @@
 
 //! Prover service implementation for the Rusk server.
 
-mod execute;
-mod stco;
-mod stct;
-mod wfco;
-mod wfct;
-
-pub use stco::STCO_INPUT_LEN;
-pub use stct::STCT_INPUT_LEN;
-pub use wfco::WFCO_INPUT_LEN;
-pub use wfct::WFCT_INPUT_LEN;
+use rusk_prover::Prover;
 
 use crate::error::Error;
 use crate::Result;
 
-use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::PublicSpendKey;
-use dusk_plonk::prelude::*;
-use dusk_schnorr::Signature;
-use dusk_wallet_core::{Transaction, UnprovenTransaction};
+use dusk_wallet_core::Transaction;
 use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
-use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 
-use tracing::info;
-
-use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, CircuitOutput, DeriveKey,
-    ExecuteCircuit, SendToContractObfuscatedCircuit,
-    SendToContractTransparentCircuit, StcoCrossover, StcoMessage, WfoChange,
-    WfoCommitment, WithdrawFromObfuscatedCircuit,
-    WithdrawFromTransparentCircuit,
-};
+use transfer_circuits::{CircuitOutput, ExecuteCircuit};
 
 const A: usize = 4;
 
 #[derive(Debug, Default)]
-pub struct RuskProver;
+pub struct RuskProver<P: Prover>(P);
 
-fn other_error(e: &str) -> std::io::Error {
-    std::io::Error::new(std::io::ErrorKind::Other, e)
-}
+pub fn verify_proof(tx: &Transaction) -> Result<bool> {
+    let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
 
-impl RuskProver {
-    pub fn preverify(tx: &Transaction) -> Result<bool> {
-        let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
+    let inputs = &tx.nullifiers;
+    let outputs = &tx.outputs;
+    let proof = &tx.proof;
 
-        let inputs = &tx.nullifiers;
-        let outputs = &tx.outputs;
-        let proof = &tx.proof;
+    let circuit = circuit_from_numbers(inputs.len(), outputs.len())
+        .ok_or_else(|| {
+            Error::InvalidCircuitArguments(inputs.len(), outputs.len())
+        })?;
 
-        let circuit = circuit_from_numbers(inputs.len(), outputs.len())
-            .ok_or_else(|| {
-                Error::InvalidCircuitArguments(inputs.len(), outputs.len())
-            })?;
+    let mut pi: Vec<rusk_abi::PublicInput> =
+        Vec::with_capacity(9 + inputs.len());
 
-        let mut pi: Vec<rusk_abi::PublicInput> =
-            Vec::with_capacity(9 + inputs.len());
+    pi.push(tx_hash.into());
+    pi.push(tx.anchor.into());
+    pi.extend(inputs.iter().map(|n| n.into()));
 
-        pi.push(tx_hash.into());
-        pi.push(tx.anchor.into());
-        pi.extend(inputs.iter().map(|n| n.into()));
+    pi.push(
+        tx.crossover()
+            .copied()
+            .unwrap_or_default()
+            .value_commitment()
+            .into(),
+    );
 
-        pi.push(
-            tx.crossover()
-                .copied()
-                .unwrap_or_default()
-                .value_commitment()
-                .into(),
-        );
+    let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
 
-        let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
+    pi.push(fee_value.into());
+    pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
+    pi.extend(
+        (0usize..2usize.saturating_sub(outputs.len()))
+            .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
+    );
 
-        pi.push(fee_value.into());
-        pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
-        pi.extend(
-            (0usize..2usize.saturating_sub(outputs.len()))
-                .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
-        );
+    let keys = keys_for(circuit.circuit_id())?;
+    let vd = keys.get_verifier()?;
 
-        let keys = keys_for(circuit.circuit_id())?;
-        let vd = keys.get_verifier()?;
-
-        // Maybe we want to handle internal serialization error too, currently
-        // they map to `false`.
-        Ok(rusk_abi::verify_proof(vd, proof.clone(), pi))
-    }
+    // Maybe we want to handle internal serialization error too, currently
+    // they map to `false`.
+    Ok(rusk_abi::verify_proof(vd, proof.clone(), pi))
 }
 
 pub(crate) fn circuit_from_numbers(
