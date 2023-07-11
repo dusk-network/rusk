@@ -41,6 +41,8 @@ pub enum Error {
     CoinbaseBlockHeight(u64, u64),
     /// Bad dusk spent in coinbase (got, expected).
     CoinbaseDuskSpent(Dusk, Dusk),
+    /// Proof creation error
+    ProofCreation(rusk_prover::ProverError),
     /// Other
     Other(Box<dyn std::error::Error>),
 }
@@ -56,6 +58,11 @@ impl From<Box<dyn std::error::Error>> for Error {
 impl From<rusk_abi::Error> for Error {
     fn from(err: rusk_abi::Error) -> Self {
         Error::Vm(err)
+    }
+}
+impl From<rusk_prover::ProverError> for Error {
+    fn from(err: rusk_prover::ProverError) -> Self {
+        Error::ProofCreation(err)
     }
 }
 
@@ -116,6 +123,9 @@ impl fmt::Display for Error {
             }
             Error::InvalidCircuitArguments(inputs_len, outputs_len) => {
                 write!(f,"Expected: 0 < (inputs: {inputs_len}) < 5, 0 ≤ (outputs: {outputs_len}) < 3")
+            }
+            Error::ProofCreation(e) => {
+                write!(f, "Proof creation error: {e}")
             }
         }
     }

@@ -26,11 +26,10 @@ use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use phoenix_core::{Crossover, Fee, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk::error::Error;
-use rusk::prover::{RuskProver, STCT_INPUT_LEN, WFCT_INPUT_LEN};
 use rusk::{Result, Rusk};
+use rusk_prover::prover::{A, STCT_INPUT_LEN, WFCT_INPUT_LEN};
+use rusk_prover::{LocalProver, Prover};
 use tracing::info;
-
-const A: usize = 4;
 
 #[derive(Debug, Clone)]
 pub struct TestStore;
@@ -133,7 +132,7 @@ impl wallet::StateClient for TestStateClient {
 
 #[derive(Default)]
 pub struct TestProverClient {
-    pub prover: RuskProver,
+    pub prover: LocalProver,
 }
 
 impl Debug for TestProverClient {
@@ -149,8 +148,9 @@ impl wallet::ProverClient for TestProverClient {
         &self,
         utx: &UnprovenTransaction,
     ) -> Result<PhoenixTransaction, Self::Error> {
-        let proof = self.prover.prove_execute(&utx.to_var_bytes()[..])?;
-
+        let utx_bytes = &utx.to_var_bytes()[..];
+        let proof = self.prover.prove_execute(utx_bytes)?;
+        info!("UTX: {}", hex::encode(utx_bytes));
         let proof = Proof::from_slice(&proof).map_err(Error::Serialization)?;
         let tx = utx.clone().prove(proof);
 

@@ -4,13 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::LazyLock;
-
 use super::*;
-use crate::error::Error;
-
-use dusk_plonk::prelude::Prover;
-use rand::rngs::OsRng;
+use crate::lazy_prover;
 
 pub const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
@@ -26,36 +21,30 @@ pub const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
     + JubJubAffine::SIZE;
 
-pub static WFCO_PROVER: LazyLock<Prover> = LazyLock::new(|| {
-    let keys = keys_for(WithdrawFromObfuscatedCircuit::circuit_id())
-        .expect("keys to be available");
-    let pk = keys.get_prover().expect("prover to be available");
-    Prover::try_from_bytes(pk).expect("prover key to be valid")
-});
+pub static WFCO_PROVER: Lazy<PlonkProver> =
+    lazy_prover!(WithdrawFromObfuscatedCircuit);
 
-impl RuskProver {
-    pub fn prove_wfco(&self, circuit_inputs: &[u8]) -> Result<Vec<u8>, Error> {
-        info!("Received prove_wfco request");
+impl LocalProver {
+    pub(crate) fn local_prove_wfco(
+        &self,
+        circuit_inputs: &[u8],
+    ) -> Result<Vec<u8>, ProverError> {
         let mut reader = circuit_inputs;
 
         if reader.len() != WFCO_INPUT_LEN {
-            return Err(other_error(
-                format!(
-                    "Expected length {} got {}",
-                    WFCO_INPUT_LEN,
-                    reader.len()
-                )
-                .as_str(),
-            )
-            .into());
+            return Err(ProverError::from(format!(
+                "Expected length {} got {}",
+                WFCO_INPUT_LEN,
+                reader.len()
+            )));
         }
 
         let input_value = u64::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing input value"))?;
+            .map_err(|e| ProverError::invalid_data("input_value", e))?;
         let input_blinder = JubJubScalar::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing input blinder"))?;
+            .map_err(|e| ProverError::invalid_data("input_blinder", e))?;
         let input_commitment = JubJubAffine::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing input blinder"))?
+            .map_err(|e| ProverError::invalid_data("input_commitment", e))?
             .into();
 
         let input = WfoCommitment {
@@ -65,21 +54,22 @@ impl RuskProver {
         };
 
         let change_value = u64::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing change value"))?;
-        let change_message = Message::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing change message"))?;
+            .map_err(|e| ProverError::invalid_data("change_value", e))?;
+        let change_message =
+            Message::from_reader(&mut reader).map_err(|e| {
+                ProverError::invalid_data("change_message", e.into())
+            })?;
         let change_blinder = JubJubScalar::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing change blinder"))?;
+            .map_err(|e| ProverError::invalid_data("change_blinder", e))?;
         let r = JubJubScalar::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing change 'r'"))?;
+            .map_err(|e| ProverError::invalid_data("r", e))?;
         let is_public = u64::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing is_public"))?
+            .map_err(|e| ProverError::invalid_data("is_public", e))?
             != 0;
-        let psk = PublicSpendKey::from_reader(&mut reader).map_err(|_| {
-            other_error("Failed deserializing public spend key")
-        })?;
+        let psk = PublicSpendKey::from_reader(&mut reader)
+            .map_err(|e| ProverError::invalid_data("psk", e))?;
         let pk_r = JubJubAffine::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing 'pk_r'"))?
+            .map_err(|e| ProverError::invalid_data("pk_r", e))?
             .into();
 
         let derive_key = DeriveKey::new(is_public, &psk);
@@ -94,11 +84,11 @@ impl RuskProver {
         };
 
         let output_value = u64::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing output value"))?;
+            .map_err(|e| ProverError::invalid_data("output_value", e))?;
         let output_blinder = JubJubScalar::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing output blinder"))?;
+            .map_err(|e| ProverError::invalid_data("output_blinder", e))?;
         let output_commitment = JubJubAffine::from_reader(&mut reader)
-            .map_err(|_| other_error("Failed deserializing output blinder"))?
+            .map_err(|e| ProverError::invalid_data("output_commitment", e))?
             .into();
 
         let output = WfoCommitment {
@@ -114,10 +104,8 @@ impl RuskProver {
         };
 
         let (proof, _) = WFCO_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
-            other_error(format!("Failed proving the circuit: {e}").as_str())
+            ProverError::with_context("Failed proving the circuit", e)
         })?;
-        let proof = proof.to_bytes().to_vec();
-
-        Ok(proof)
+        Ok(proof.to_bytes().to_vec())
     }
 }
