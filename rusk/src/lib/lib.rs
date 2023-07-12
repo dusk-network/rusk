@@ -416,6 +416,29 @@ impl Rusk {
         self.query(STAKE_CONTRACT, "owners", &())
     }
 
+    pub fn query_raw<S, V>(
+        &self,
+        contract_id: ContractId,
+        fn_name: S,
+        fn_arg: V,
+    ) -> Result<Vec<u8>>
+    where
+        S: AsRef<str>,
+        V: Into<Vec<u8>>,
+    {
+        let inner = self.inner.lock();
+
+        // For queries we set a point limit of effectively infinite and a block
+        // height of zero since this doesn't affect the result.
+        let current_commit = inner.current_commit;
+        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+        session.set_point_limit(u64::MAX);
+
+        session
+            .call_raw(contract_id, fn_name.as_ref(), fn_arg)
+            .map_err(Into::into)
+    }
+
     fn query<A, R>(
         &self,
         contract_id: ContractId,
