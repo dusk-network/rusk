@@ -138,15 +138,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let updated_provisioners = {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                t.store_block(blk)?;
-
-                let (txs, _) = match blk.header.iteration {
+                let (txs, state_hash) = match blk.header.iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
 
-                // Update block transactions with Error and GasSpent
-                t.store_txs(&txs)?;
+                assert_eq!(blk.header.state_hash, state_hash);
+
+                // Store block with updated transactions with Error and GasSpent
+                t.store_block(&blk.header, &txs)?;
                 Ok(txs)
             })?;
 
@@ -168,10 +168,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         tracing::info!(
-            "block accepted height:{} hash:{} txs_count: {}",
+            "block accepted height:{} hash:{} txs_count: {} state_hash:{}",
             blk.header.height,
             hex::encode(blk.header.hash),
             blk.txs.len(),
+            hex::encode(blk.header.state_hash)
         );
 
         // Restart Consensus.
