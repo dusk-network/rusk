@@ -9,6 +9,9 @@ members = [
     "contracts/transfer",
 
     "macros/code-hasher",
+    
+    "rusk-prover",
+
     "rusk-recovery",
     "rusk-profile",
 

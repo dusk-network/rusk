@@ -979,13 +979,13 @@ mod tests {
     impl TestWrapper {
         pub fn run<F>(&self, test_func: F)
         where
-            F: FnOnce(&str),
+            F: FnOnce(&Path),
         {
             let dir = tempdir::TempDir::new(self.0)
                 .expect("Temporardy directory to be created");
             let path = dir.path();
 
-            test_func(self.0);
+            test_func(path);
         }
     }
 }

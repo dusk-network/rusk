@@ -6,7 +6,10 @@
 
 #[cfg(test)]
 mod tests {
+    use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
     use transfer_circuits::*;
+
+    const A: usize = 4;
 
     macro_rules! test_circuit {
         ($circuit:ty, $expected_id:literal) => {
@@ -33,35 +36,35 @@ mod tests {
 
         test_circuit!(
             SendToContractTransparentCircuit,
-            "9d267dfe1d1ede4f2ffa35c3609f8662cd84e4df1066b2185a0f3b5b17721c79"
+            "cfebfdcd309a070b44e1b407b7228ca9b900720e7cff283d653400357161899a"
         );
         test_circuit!(
             SendToContractObfuscatedCircuit,
-            "c8c7d7fa2fe8eeabd5505056ae3c00b44c1aa13d9578eeff3a4fc7ddb3035da4"
+            "d7fbe016d385b7d3b44c510225388a0f2a9889d07294ba3e3f9c037801d3148e"
         );
         test_circuit!(
             WithdrawFromTransparentCircuit,
-            "dcc4561c1bbd8a10cd14c9e826d51373567dd41bb2cfd498f92230abc602ed47"
+            "d0b52061b33cb2f2ef79448b53cd3d2dbca30819ca4a55e151c8af01e6c7efcd"
         );
         test_circuit!(
             WithdrawFromObfuscatedCircuit,
-            "8f7301b53f3af3eb14563c7e474a539a6e12c1248e1e9bdb4b07eeb2ef1a8f2e"
+            "7824ae42a6208eb0eca9f7c5e7ca964efa04a500fc3275e1c89541a26876808a"
         );
         test_circuit!(
-            ExecuteCircuitOneTwo,
-            "19c9391f2f03a5206caac2618b8ab32847b6a1e19500fec27a3a96b9a84b200c"
+            ExecuteCircuitOneTwo<(), TRANSFER_TREE_DEPTH, A>,
+            "1aed4ea248e24d6eb71ca40dbc8aca90e1972f0c08cce0666df248e14627d299"
         );
         test_circuit!(
-            ExecuteCircuitTwoTwo,
-            "ea59814e99b4c8789cff85d6623749f823c56383e300761537b3e248c537a033"
+            ExecuteCircuitTwoTwo<(), TRANSFER_TREE_DEPTH, A>,
+            "90369a00165fcf91b792bf6d64deaf39f5a16603588fe711838e1005e58458a6"
         );
         test_circuit!(
-            ExecuteCircuitThreeTwo,
-            "4e03eb1686949f9f17d13d285a4a9c5bc9596a84765f36a3491a981a29135987"
+            ExecuteCircuitThreeTwo<(), TRANSFER_TREE_DEPTH, A>,
+            "942a788cf56d9ef93bda7385e86e8620b127bb47eac46829f81bc48e61bdf00e"
         );
         test_circuit!(
-            ExecuteCircuitFourTwo,
-            "2a34871c45dd993c6217199c5c000aff24621f5953aca3a1755fe052a8e4e7b9"
+            ExecuteCircuitFourTwo<(), TRANSFER_TREE_DEPTH, A>,
+            "076cdf6a1f160432941ac3cb14f8dece2c07da58559af4dfdda32b9be5cca884"
         );
     }
 }

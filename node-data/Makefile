@@ -6,5 +6,8 @@ test: ## Run tests
 
 clean:
 	@cargo clean
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: test help clean

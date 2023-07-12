@@ -15,5 +15,8 @@ test: ## Run Rusk tests
 		--release \
 		-- --nocapture \
 		--test-threads 1
+			
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 .PHONY: keys state test help

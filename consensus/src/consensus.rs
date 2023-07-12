@@ -18,6 +18,7 @@ use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -175,6 +176,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];
 
+            // A list of hashes of candidate blocks already verified
+            let verified_candidates =
+                Arc::new(Mutex::new(HashSet::<[u8; 32]>::new()));
+
             // Consensus loop
             // Initialize and run consensus loop
             let mut step: u8 = 0;
@@ -197,6 +202,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         future_msgs.clone(),
                         &mut provisioners,
                         ru.clone(),
+                        verified_candidates.clone(),
                         step,
                     );
 

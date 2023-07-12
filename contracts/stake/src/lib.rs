@@ -30,22 +30,34 @@ static mut STATE: StakeState = StakeState::new();
 
 #[no_mangle]
 unsafe fn stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.stake(arg))
+    rusk_abi::wrap_call(arg_len, |arg| {
+        assert_external_caller();
+        STATE.stake(arg)
+    })
 }
 
 #[no_mangle]
 unsafe fn unstake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.unstake(arg))
+    rusk_abi::wrap_call(arg_len, |arg| {
+        assert_external_caller();
+        STATE.unstake(arg)
+    })
 }
 
 #[no_mangle]
 unsafe fn withdraw(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.withdraw(arg))
+    rusk_abi::wrap_call(arg_len, |arg| {
+        assert_external_caller();
+        STATE.withdraw(arg)
+    })
 }
 
 #[no_mangle]
 unsafe fn allow(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| STATE.allow(arg))
+    rusk_abi::wrap_call(arg_len, |arg| {
+        assert_external_caller();
+        STATE.allow(arg)
+    })
 }
 
 // Queries

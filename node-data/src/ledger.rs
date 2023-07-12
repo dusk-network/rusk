@@ -6,6 +6,7 @@
 
 use crate::{bls, Serializable};
 use dusk_bytes::Serializable as DuskBytesSerializable;
+use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};
 
@@ -92,7 +93,7 @@ pub struct SpentTransaction {
 
 impl Transaction {
     pub fn hash(&self) -> [u8; 32] {
-        rusk_abi::hash(self.inner.to_hash_input_bytes()).to_bytes()
+        Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
     }
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price

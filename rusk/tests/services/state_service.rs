@@ -207,7 +207,9 @@ pub async fn test_fetch_opening() -> Result<()> {
     let response = client.get_opening(request).await?;
 
     let branch = response.into_inner().branch;
-    let opening = opening.to_bytes().to_vec();
+    let opening = rkyv::to_bytes::<_, 256>(&opening)
+        .expect("Serializing an opening should always succeed")
+        .to_vec();
 
     assert_eq!(branch, opening, "Expected same branch");
 

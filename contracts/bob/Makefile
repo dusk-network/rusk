@@ -11,4 +11,6 @@ wasm: ## Generate the optimized WASM for the contract given
 
 test:
 
+clippy: 
+
 .PHONY: all test wasm

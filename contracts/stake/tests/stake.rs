@@ -10,15 +10,14 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
-use dusk_poseidon::tree::PoseidonBranch;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
-use piecrust::{ContractData, Error};
-use piecrust::{Session, VM};
+use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractError, RawResult, STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{ContractData, Error, Session, VM};
+use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
@@ -27,11 +26,15 @@ use transfer_circuits::{
 };
 
 const GENESIS_VALUE: u64 = dusk(1_000_000.0);
-const POINT_LIMIT: u64 = 0x10000000;
+const POINT_LIMIT: u64 = 0x100000000;
+const GAS_PER_TX: u64 = 10_000;
 
 type Result<T, E = Error> = core::result::Result<T, E>;
 
 const OWNER: [u8; 32] = [0; 32];
+
+const H: usize = TRANSFER_TREE_DEPTH;
+const A: usize = 4;
 
 /// Instantiate the virtual machine with the transfer contract deployed, with a
 /// single note owned by the given public spend key.
@@ -72,9 +75,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
         .expect("Pushing genesis note should succeed");
 
-    let _: BlsScalar = session
-        .call(TRANSFER_CONTRACT, "update_root", &())
-        .expect("Updating the root should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
     let _: () = session
         .call(STAKE_CONTRACT, "add_owner", pk)
@@ -104,6 +105,9 @@ fn leaves_in_range(
         &(range.start, range.end),
     )
 }
+fn update_root(session: &mut Session) -> Result<()> {
+    session.call(TRANSFER_CONTRACT, "update_root", &())
+}
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
     session.call(TRANSFER_CONTRACT, "root", &())
@@ -112,13 +116,11 @@ fn root(session: &mut Session) -> Result<BlsScalar> {
 fn opening(
     session: &mut Session,
     pos: u64,
-) -> Result<Option<PoseidonBranch<TRANSFER_TREE_DEPTH>>> {
+) -> Result<Option<PoseidonOpening<(), H, A>>> {
     session.call(TRANSFER_CONTRACT, "opening", &pos)
 }
 
-fn prover_verifier<C: Circuit>(
-    circuit_id: &[u8; 32],
-) -> (Prover<C>, Verifier<C>) {
+fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
     let (pk, vd) = prover_verifier_keys(circuit_id);
 
     let prover = Prover::try_from_bytes(pk).unwrap();
@@ -141,6 +143,33 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter: I,
 ) -> Vec<Note> {
     iter.into_iter().filter(|note| vk.owns(note)).collect()
+}
+
+/// Executes a transaction, returning the gas spent.
+fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
+    session.set_point_limit(u64::MAX);
+    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+
+    let mut gas_spent = GAS_PER_TX;
+    if let Some((contract_id, fn_name, fn_data)) = &tx.call {
+        let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
+        session.set_point_limit(gas_limit);
+
+        let contract_id = ContractId::from_bytes(*contract_id);
+        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
+
+        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
+        println!("{r:?}");
+
+        gas_spent += session.spent();
+    }
+
+    session.set_point_limit(u64::MAX);
+    let _: () = session
+        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+        .expect("Refunding must succeed");
+
+    Ok(gas_spent)
 }
 
 #[test]
@@ -301,7 +330,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -316,12 +345,11 @@ fn stake_withdraw_unstake() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("STAKE   : {} gas", session.spent());
+    println!("STAKE   : {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk)
@@ -503,7 +531,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input_1);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -524,12 +552,11 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 2)
         .expect("Instantiating new session should succeed");
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("WITHDRAW: {} gas", session.spent());
+    println!("WITHDRAW: {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &pk)
@@ -722,7 +749,7 @@ fn stake_withdraw_unstake() {
     execute_circuit.add_input(circuit_input_2);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitThreeTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitThreeTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -748,12 +775,11 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 3)
         .expect("Instantiating new session should succeed");
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent =
+        execute(&mut session, tx).expect("Executing TX should succeed");
+    update_root(&mut session).expect("Updating the root should succeed");
 
-    println!("UNSTAKE : {} gas", session.spent());
+    println!("UNSTAKE : {gas_spent} gas");
 }
 
 #[test]
@@ -888,7 +914,7 @@ fn allow() {
     execute_circuit.add_input(circuit_input);
 
     let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
+        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
     let (execute_proof, _) = execute_circuit
         .prove(rng, &prover_key)
         .expect("Proving should be successful");
@@ -903,12 +929,10 @@ fn allow() {
         call,
     };
 
-    session.set_point_limit(tx.fee.gas_limit * tx.fee.gas_price);
-    let _: (u64, Option<Result<RawResult, ContractError>>) = session
-        .call(TRANSFER_CONTRACT, "execute", &tx)
-        .expect("Transacting should succeed");
+    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    update_root(session).expect("Updating the root should succeed");
 
-    println!("ALLOW   : {} gas", session.spent());
+    println!("ALLOW   : {gas_spent} gas");
 
     let is_allowed: bool = session
         .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk)

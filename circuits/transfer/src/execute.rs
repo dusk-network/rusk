@@ -4,14 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{error::Error, gadgets, POSEIDON_TREE_DEPTH};
+use crate::{error::Error, gadgets};
 
 use dusk_jubjub::{GENERATOR_EXTENDED, GENERATOR_NUMS_EXTENDED};
+use dusk_merkle::Aggregate;
 use dusk_pki::{Ownable, SecretSpendKey, ViewKey};
 use dusk_poseidon::sponge;
-use dusk_poseidon::tree::{PoseidonBranch, PoseidonLeaf, PoseidonTree};
-use nstack::annotation::Keyed;
 use phoenix_core::{Crossover, Fee, Note};
+use poseidon_merkle::{Opening, Tree};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::error::Error as PlonkError;
@@ -28,14 +28,14 @@ pub use output::{CircuitOutput, WitnessOutput};
 #[cfg(feature = "builder")]
 pub mod builder;
 
-pub enum ExecuteCircuit {
-    OneTwo(ExecuteCircuitOneTwo),
-    TwoTwo(ExecuteCircuitTwoTwo),
-    ThreeTwo(ExecuteCircuitThreeTwo),
-    FourTwo(ExecuteCircuitFourTwo),
+pub enum ExecuteCircuit<T, const H: usize, const A: usize> {
+    OneTwo(ExecuteCircuitOneTwo<T, H, A>),
+    TwoTwo(ExecuteCircuitTwoTwo<T, H, A>),
+    ThreeTwo(ExecuteCircuitThreeTwo<T, H, A>),
+    FourTwo(ExecuteCircuitFourTwo<T, H, A>),
 }
 
-impl ExecuteCircuit {
+impl<T, const H: usize, const A: usize> ExecuteCircuit<T, H, A> {
     /// Create a new circuit with the given number of inputs.
     ///
     /// # Panics
@@ -69,28 +69,26 @@ impl ExecuteCircuit {
         Ok((value, blinding_factor))
     }
 
-    pub fn input_branch<L, K>(
-        tree: &PoseidonTree<L, K, { POSEIDON_TREE_DEPTH }>,
+    pub fn input_branch(
+        tree: &Tree<T, H, A>,
         pos: u64,
-    ) -> Result<PoseidonBranch<POSEIDON_TREE_DEPTH>, Error>
+    ) -> Result<Opening<T, H, A>, Error>
     where
-        L: PoseidonLeaf + Keyed<K> + Into<Note>,
-        K: Clone + PartialOrd,
+        T: Clone + Aggregate<A>,
     {
-        tree.branch(pos).ok_or(Error::NoSuchBranch)
+        tree.opening(pos).ok_or(Error::NoSuchBranch)
     }
 
-    pub fn input<R, L, K>(
+    pub fn input<R>(
         rng: &mut R,
         ssk: &SecretSpendKey,
         tx_hash: BlsScalar,
-        tree: &PoseidonTree<L, K, { POSEIDON_TREE_DEPTH }>,
+        tree: &Tree<T, H, A>,
         note: Note,
-    ) -> Result<CircuitInput, Error>
+    ) -> Result<CircuitInput<T, H, A>, Error>
     where
+        T: Clone + Aggregate<A>,
         R: RngCore + CryptoRng,
-        L: PoseidonLeaf + Keyed<K> + Into<Note>,
-        K: Clone + PartialOrd,
     {
         let signature = Self::input_signature(rng, ssk, &note, tx_hash);
         let nullifier = note.gen_nullifier(ssk);
@@ -123,7 +121,10 @@ impl ExecuteCircuit {
         &mut self,
         rng: &mut Rng,
         prover_key: &[u8],
-    ) -> Result<(Proof, Vec<BlsScalar>), Error> {
+    ) -> Result<(Proof, Vec<BlsScalar>), Error>
+    where
+        T: Clone + Aggregate<A>,
+    {
         self.pad();
 
         Ok(match self {
@@ -148,10 +149,18 @@ impl ExecuteCircuit {
 
     pub fn circuit_id(&self) -> &'static [u8; 32] {
         match self {
-            ExecuteCircuit::OneTwo(_) => ExecuteCircuitOneTwo::circuit_id(),
-            ExecuteCircuit::TwoTwo(_) => ExecuteCircuitTwoTwo::circuit_id(),
-            ExecuteCircuit::ThreeTwo(_) => ExecuteCircuitThreeTwo::circuit_id(),
-            ExecuteCircuit::FourTwo(_) => ExecuteCircuitFourTwo::circuit_id(),
+            ExecuteCircuit::OneTwo(_) => {
+                ExecuteCircuitOneTwo::<T, H, A>::circuit_id()
+            }
+            ExecuteCircuit::TwoTwo(_) => {
+                ExecuteCircuitTwoTwo::<T, H, A>::circuit_id()
+            }
+            ExecuteCircuit::ThreeTwo(_) => {
+                ExecuteCircuitThreeTwo::<T, H, A>::circuit_id()
+            }
+            ExecuteCircuit::FourTwo(_) => {
+                ExecuteCircuitFourTwo::<T, H, A>::circuit_id()
+            }
         }
     }
 
@@ -227,7 +236,7 @@ impl ExecuteCircuit {
         }
     }
 
-    pub fn add_input(&mut self, input: CircuitInput) {
+    pub fn add_input(&mut self, input: CircuitInput<T, H, A>) {
         match self {
             ExecuteCircuit::OneTwo(c) => c.add_input(input),
             ExecuteCircuit::TwoTwo(c) => c.add_input(input),
@@ -240,15 +249,15 @@ impl ExecuteCircuit {
 macro_rules! execute_circuit_variant {
     ($ty:ident) => {
         /// The circuit responsible for creating a zero-knowledge proof
-        #[derive(Debug, Default, Clone)]
-        pub struct $ty {
-            inputs: Vec<CircuitInput>,
+        #[derive(Debug, Clone)]
+        pub struct $ty<T, const H: usize, const A: usize> {
+            inputs: Vec<CircuitInput<T, H, A>>,
             crossover: CircuitCrossover,
             outputs: Vec<CircuitOutput>,
             tx_hash: BlsScalar,
         }
 
-        impl $ty {
+        impl<T, const H: usize, const A: usize> $ty<T, H, A> {
             pub fn add_output_with_data(
                 &mut self,
                 note: Note,
@@ -298,14 +307,14 @@ macro_rules! execute_circuit_variant {
                 self.tx_hash = tx_hash;
             }
 
-            pub fn add_input(&mut self, input: CircuitInput) {
+            pub fn add_input(&mut self, input: CircuitInput<T, H, A>) {
                 self.inputs.push(input);
             }
         }
 
-        impl $ty {
+        impl<T, const H: usize, const A: usize> $ty<T, H, A> {
             pub const fn new(
-                inputs: Vec<CircuitInput>,
+                inputs: Vec<CircuitInput<T, H, A>>,
                 crossover: CircuitCrossover,
                 outputs: Vec<CircuitOutput>,
                 tx_hash: BlsScalar,
@@ -321,11 +330,14 @@ macro_rules! execute_circuit_variant {
             pub fn into_inner(
                 &self,
             ) -> (
-                Vec<CircuitInput>,
+                Vec<CircuitInput<T, H, A>>,
                 CircuitCrossover,
                 Vec<CircuitOutput>,
                 BlsScalar,
-            ) {
+            )
+            where
+                T: Clone,
+            {
                 let inputs = self.inputs.clone();
                 let crossover = self.crossover.clone();
                 let outputs = self.outputs.clone();
@@ -344,15 +356,17 @@ macro_rules! execute_circuit_variant {
             ///
             /// It will return `BlsScalar::default` in case no inputs are
             /// provided to the circuit.
-            pub fn anchor(&self) -> BlsScalar {
+            pub fn anchor(&self) -> BlsScalar
+            where
+                T: Clone + Aggregate<A>,
+            {
                 self.inputs
                     .first()
-                    .map(|i| i.branch().root())
-                    .copied()
+                    .map(|i| i.branch().root().hash)
                     .unwrap_or_default()
             }
 
-            pub fn inputs(&self) -> &[CircuitInput] {
+            pub fn inputs(&self) -> &[CircuitInput<T, H, A>] {
                 self.inputs.as_slice()
             }
 
@@ -366,7 +380,10 @@ macro_rules! execute_circuit_variant {
                 }
             }
 
-            pub fn public_inputs(&self) -> Vec<BlsScalar> {
+            pub fn public_inputs(&self) -> Vec<BlsScalar>
+            where
+                T: Clone + Aggregate<A>,
+            {
                 // 1.a opening(io,A,ih)
                 let mut pi = vec![self.tx_hash.into(), self.anchor().into()];
 
@@ -412,8 +429,22 @@ macro_rules! execute_circuit_variant {
             }
         }
 
+        impl<T, const H: usize, const A: usize> Default for $ty<T, H, A> {
+            fn default() -> Self {
+                Self {
+                    inputs: Vec::new(),
+                    crossover: CircuitCrossover::default(),
+                    outputs: Vec::new(),
+                    tx_hash: BlsScalar::default(),
+                }
+            }
+        }
+
         #[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
-        impl Circuit for $ty {
+        impl<T, const H: usize, const A: usize> Circuit for $ty<T, H, A>
+        where
+            T: Clone + Aggregate<A>,
+        {
             fn circuit<C: Composer>(
                 &self,
                 composer: &mut C,
@@ -470,7 +501,7 @@ macro_rules! execute_circuit_variant {
                             composer.assert_equal_constant(
                                 n,
                                 BlsScalar::zero(),
-                                Some(-witness.nullifier),
+                                Some(witness.nullifier),
                             );
 
                             // 1.e commitment(ic,iv,ib,64)
@@ -509,7 +540,7 @@ macro_rules! execute_circuit_variant {
                 composer.assert_equal_constant(
                     crossover.fee_value_witness,
                     BlsScalar::zero(),
-                    Some(-crossover.fee_value),
+                    Some(crossover.fee_value),
                 );
 
                 // 3. ∀(o,v) ∈ O × V | O → V

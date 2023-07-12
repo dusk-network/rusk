@@ -7,22 +7,21 @@
 use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
-use crate::hash::Hasher;
-use crate::query::*;
-use crate::PublicInput;
-
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
 };
 use dusk_bytes::DeserializableSlice;
 use dusk_pki::PublicKey;
-use dusk_plonk::error::Error as PlonkError;
-use dusk_plonk::prelude::*;
+use dusk_plonk::prelude::{Proof, Verifier};
 use dusk_schnorr::Signature;
-use piecrust::{Error, Session, SessionData, VM};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
+
+pub use piecrust::*;
+
+use crate::hash::Hasher;
+use crate::{Metadata, PublicInput, Query};
 
 /// Create a new session based on the given `vm`. The vm *must* have been
 /// created using [`new_vm`] or [`new_ephemeral_vm`].
@@ -133,7 +132,7 @@ pub fn verify_proof(
     proof: Vec<u8>,
     public_inputs: Vec<PublicInput>,
 ) -> bool {
-    let verifier = Verifier::<DummyCircuit>::try_from_bytes(verifier_data)
+    let verifier = Verifier::try_from_bytes(verifier_data)
         .expect("Verifier data coming from the contract should be valid");
     let proof = Proof::from_slice(&proof).expect("Proof should be valid");
 
@@ -147,14 +146,12 @@ pub fn verify_proof(
 
     let mut pis = Vec::with_capacity(n_pi);
 
-    // FIXME: Plonk seems to be expecting `-pi`s, which is quite strange. Maybe
-    //  some bug in Plonk?
     public_inputs.into_iter().for_each(|pi| match pi {
-        PublicInput::Point(p) => pis.extend([-p.get_x(), -p.get_y()]),
-        PublicInput::BlsScalar(s) => pis.push(-s),
+        PublicInput::Point(p) => pis.extend([p.get_x(), p.get_y()]),
+        PublicInput::BlsScalar(s) => pis.push(s),
         PublicInput::JubJubScalar(s) => {
             let s: BlsScalar = s.into();
-            pis.push(-s)
+            pis.push(s)
         }
     });
 
@@ -170,18 +167,4 @@ pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
 pub fn verify_bls(msg: Vec<u8>, pk: BlsPublicKey, sig: BlsSignature) -> bool {
     let apk = APK::from(&pk);
     apk.verify(&sig, &msg).is_ok()
-}
-
-#[derive(Default)]
-struct DummyCircuit;
-
-impl Circuit for DummyCircuit {
-    fn circuit<C>(&self, _: &mut C) -> Result<(), PlonkError>
-    where
-        C: Composer,
-    {
-        unreachable!(
-            "This circuit should never be compiled or proven, only verified"
-        )
-    }
 }

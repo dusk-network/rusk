@@ -86,9 +86,10 @@ pub fn hash(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let const_name = args.name;
     let type_name = &input.self_ty;
+    let generics = &input.generics;
 
     let output = quote! {
-        impl #type_name {
+        impl #generics #type_name {
             const #const_name: [u8; 32] = [#(#hash),*];
         }
 

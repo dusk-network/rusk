@@ -14,6 +14,9 @@ release:
 
 test: ## Run tests
 	@cargo test --release -- --nocapture
+	
+clippy: ## Run clippy
+	@cargo clippy --all-features --release -- -D warnings
 
 clean:
 	@cargo clean

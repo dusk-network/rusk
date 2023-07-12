@@ -10,11 +10,12 @@ crate-type = ["cdylib", "rlib"]
 dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
 dusk-bls12_381-sign = { version = "0.4", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-dusk-pki = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["dlmalloc"] }
-rkyv = { version = "0.7", default-features = false }
+dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi" }
 
 [dev-dependencies]
-piecrust = "0.5"
-rusk-abi = { version = "0.8.0-alpha", path = "../../rusk-abi", features = ["host"] }
+rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi", default-features = false, features = ["host"] }
 rand = "0.8"

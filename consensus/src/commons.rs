@@ -12,11 +12,13 @@ use crate::contract_state::Operations;
 use node_data::ledger::*;
 use node_data::message;
 
+use crate::contract_state::CallParams;
 use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use node_data::bls::PublicKey;
 use node_data::message::AsyncQueue;
 use node_data::message::Message;
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -28,7 +30,7 @@ pub struct RoundUpdate {
     pub hash: [u8; 32],
     pub timestamp: i64,
     pub pubkey_bls: PublicKey,
-    pub secret_key: SecretKey, // TODO: should be here?? SecretKey
+    pub secret_key: SecretKey,
 }
 
 impl RoundUpdate {
@@ -77,6 +79,7 @@ pub fn marshal_signable_vote(
     msg
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_send_reduction<T: Operations + 'static>(
     candidate: Block,
     pubkey: PublicKey,
@@ -84,21 +87,37 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     step: u8,
     outbound: AsyncQueue<Message>,
     inbound: AsyncQueue<Message>,
+    vc_list: Arc<Mutex<HashSet<[u8; 32]>>>,
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
-        if let Err(e) = executor.lock().await.verify_state_transition(
-            crate::contract_state::CallParams::default(),
-        ) {
-            tracing::error!("verify state transition failed with err: {:?}", e);
-            return;
+        let hash = candidate.header.hash;
+        let already_verified = vc_list.lock().await.contains(&hash);
+
+        if !already_verified {
+            if let Err(e) =
+                executor.lock().await.verify_state_transition(CallParams {
+                    round: ru.round,
+                    txs: candidate.txs.clone(),
+                    block_gas_limit: crate::config::DEFAULT_BLOCK_GAS_LIMIT,
+                    generator_pubkey: pubkey.clone(),
+                })
+            {
+                tracing::error!(
+                    "verify state transition failed with err: {:?}",
+                    e
+                );
+                return;
+            }
         }
+
+        vc_list.lock().await.insert(hash);
 
         let hdr = message::Header {
             pubkey_bls: pubkey,
             round: ru.round,
             step,
-            block_hash: candidate.header.hash,
+            block_hash: hash,
             topic: message::Topics::Reduction as u8,
         };
 

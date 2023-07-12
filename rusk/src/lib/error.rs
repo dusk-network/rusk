@@ -34,7 +34,7 @@ pub enum Error {
     /// Originating from Phoenix.
     Phoenix(phoenix_core::Error),
     /// Piecrust VM internal Errors
-    Vm(piecrust::Error),
+    Vm(rusk_abi::Error),
     /// IO Errors
     Io(io::Error),
     /// Bad block height in coinbase (got, expected)
@@ -43,6 +43,8 @@ pub enum Error {
     CoinbaseDuskSpent(Dusk, Dusk),
     /// Errors while parsing websocket request
     WebSocketRequest(WsRequestError),
+    /// Proof creation error
+    ProofCreation(rusk_prover::ProverError),
     /// Other
     Other(Box<dyn std::error::Error>),
 }
@@ -76,9 +78,14 @@ impl From<Box<dyn std::error::Error>> for Error {
     }
 }
 
-impl From<piecrust::Error> for Error {
-    fn from(err: piecrust::Error) -> Self {
+impl From<rusk_abi::Error> for Error {
+    fn from(err: rusk_abi::Error) -> Self {
         Error::Vm(err)
+    }
+}
+impl From<rusk_prover::ProverError> for Error {
+    fn from(err: rusk_prover::ProverError) -> Self {
+        Error::ProofCreation(err)
     }
 }
 
@@ -148,6 +155,9 @@ impl fmt::Display for Error {
             }
             Error::WebSocketRequest(err) => {
                 write!(f, "Error while parsing websocket request: {:?}", err)
+            }
+            Error::ProofCreation(e) => {
+                write!(f, "Proof creation error: {e}")
             }
         }
     }
