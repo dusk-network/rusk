@@ -219,7 +219,7 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &ledger::Block, _persisted: bool) -> Result<()> {
+    fn store_block(&self, b: &ledger::Block) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
@@ -733,7 +733,7 @@ mod tests {
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b)?;
                     Ok(())
                 })
                 .is_ok());
@@ -773,7 +773,7 @@ mod tests {
             let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b)?;
                     Ok(())
                 })
                 .is_ok());
@@ -797,7 +797,7 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b, false)?;
+                        txn.store_block(&b)?;
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -925,7 +925,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b)?;
                     Ok(())
                 })
                 .is_ok());
@@ -956,7 +956,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b)?;
                     Ok(())
                 })
                 .is_ok());

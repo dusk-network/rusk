@@ -138,12 +138,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let updated_provisioners = {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                t.store_block(blk, true)?;
+                t.store_block(blk)?;
 
                 let (txs, _) = match blk.header.iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
+
                 // Update block transactions with Error and GasSpent
                 t.store_txs(&txs)?;
                 Ok(txs)

@@ -47,7 +47,7 @@ pub trait DB: Send + Sync + 'static {
 
 pub trait Ledger {
     // Read-write transactions
-    fn store_block(&self, b: &ledger::Block, persisted: bool) -> Result<()>;
+    fn store_block(&self, b: &ledger::Block) -> Result<()>;
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
     fn fetch_block_hash_by_height(
