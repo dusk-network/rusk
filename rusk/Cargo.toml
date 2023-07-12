@@ -29,7 +29,6 @@ rand = "0.8"
 toml = "0.5"
 serde = "1"
 serde_json = "1"
-serde_with = { version = "3", features = ["hex"] }
 bs58 = "0.4"
 hex = "0.4"
 tempfile = "3.2"
@@ -68,7 +67,6 @@ dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
 node-data = { version = "0.1", path = "../node-data" }
 
 [dev-dependencies]
-tokio-tungstenite = { version = "0.19", default-features = false, features = ["connect"] }
 test-context = "0.1"
 async-trait = "0.1"
 hex = "0.4"
