@@ -222,7 +222,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     fn store_block(
         &self,
         header: &ledger::Header,
-        txs: &Vec<SpentTransaction>,
+        txs: &[SpentTransaction],
     ) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
@@ -704,6 +704,7 @@ mod tests {
     use node_data::ledger;
 
     use fake::{Dummy, Fake, Faker};
+    use node_data::ledger::Transaction;
     use rand::prelude::*;
     use rand::Rng;
 
@@ -719,7 +720,7 @@ mod tests {
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -759,7 +760,7 @@ mod tests {
             let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
-                    txn.store_block(&b)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -783,7 +784,7 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b)?;
+                        txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -901,6 +902,16 @@ mod tests {
         });
     }
 
+    fn to_spent_txs(txs: &Vec<Transaction>) -> Vec<SpentTransaction> {
+        txs.iter()
+            .map(|t| SpentTransaction {
+                inner: t.clone(),
+                gas_spent: 0,
+                err: None,
+            })
+            .collect()
+    }
+
     #[test]
     fn test_get_ledger_tx_by_hash() {
         TestWrapper("test_get_ledger_tx_by_hash").run(|path| {
@@ -911,7 +922,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -942,7 +953,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());

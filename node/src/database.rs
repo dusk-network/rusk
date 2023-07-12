@@ -51,7 +51,7 @@ pub trait Ledger {
     fn store_block(
         &self,
         header: &ledger::Header,
-        txs: &Vec<SpentTransaction>,
+        txs: &[SpentTransaction],
     ) -> Result<()>;
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
