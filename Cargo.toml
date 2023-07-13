@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "circuits/transfer",
+    "circuits/license",
 
     "contracts/alice",
     "contracts/bob",

@@ -1,0 +1,33 @@
+[package]
+name = "license-circuits"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand_core = "0.6"
+
+dusk-bls12_381 = { version = "0.11", default-features = false, features = ["rkyv-impl"] }
+dusk-bytes = "0.1"
+dusk-jubjub = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.30", default-features = false, features = ["alloc"] }
+dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-schnorr = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
+phoenix-core = { version = "0.20.0-rc.0", features = ["alloc"] }
+poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl"] }
+zk-citadel = { version = "0.4", git = "https://github.com/dusk-network/citadel", tag = "0.4.1-rc.0" }
+hex = "0.4"
+
+code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
+rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
+
+[dev-dependencies]
+rand = "0.8"
+
+[features]
+builder = ["rusk-profile"]
+
+[[test]]
+name = "test-license"
+path = "tests/prove_verify_license_circuit.rs"
+required-features = ["rusk-profile"]
