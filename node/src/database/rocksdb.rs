@@ -372,6 +372,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(None)
     }
 
+    fn set_register(&self, header: &ledger::Header) -> Result<()> {
+        // Overwrite the Register record
+        let mut buf = vec![];
+        Register {
+            mrb_hash: header.hash,
+            state_hash: header.state_hash,
+        }
+        .write(&mut buf)?;
+
+        Ok(self.inner.put_cf(self.ledger_cf, REGISTER_KEY, buf)?)
+    }
+
     fn fetch_block_by_height(
         &self,
         height: u64,
@@ -382,7 +394,6 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         self.fetch_block(&hash)
     }
-
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
@@ -995,7 +1006,7 @@ mod tests {
 
             assert!(db
                 .update(|ut| {
-                    ut.store_block(&b, false)?;
+                    ut.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());

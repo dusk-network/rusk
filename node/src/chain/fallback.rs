@@ -168,12 +168,9 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             Ok(())
         })?;
 
-        // Try to inject the block with the lowest iteration (new blockchain
-        // tip).
-        // This will update database.REGISTER record together with
-        // in-memory fields acceptor.mrb and acceptor.provisioners_list.
-        info!("Inject the new block");
+        // Update blockchain tip to be the one we reverted to.
+        info!("Set new most_recent_block");
 
-        acc.inject_block(&new_mrb).await
+        acc.update_most_recent_block(&new_mrb).await
     }
 }

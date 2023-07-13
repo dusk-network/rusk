@@ -74,6 +74,7 @@ pub trait Ledger {
 
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
     fn get_register(&self) -> Result<Option<Register>>;
+    fn set_register(&self, header: &ledger::Header) -> Result<()>;
 }
 
 pub trait Candidate {

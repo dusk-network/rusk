@@ -119,24 +119,40 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })
     }
 
-    /// Injects a block in ledger database without updating VM state.
+    /// Updates most_recent_block together with provisioners list.
     ///
-    /// It also updates mrb and provisioners list accordingly.
+    /// # Arguments
     ///
-    /// Injecting block is applicable only in case of the fallback procedure
-    /// execution.
-    pub(crate) async fn inject_block(&self, blk: &Block) -> anyhow::Result<()> {
+    /// * `blk` - Block that already exists in ledger
+    pub(crate) async fn update_most_recent_block(
+        &self,
+        blk: &Block,
+    ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
         let (_, public_key) = task.keys.clone();
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
 
+        // Ensure block that will be marked as blockchain tip does exist
+        let exists = self
+            .db
+            .read()
+            .await
+            .update(|t| t.get_block_exists(&blk.header.hash))?;
+
+        if !exists {
+            return Err(anyhow::anyhow!("could not find block"));
+        }
+
         // Reset Consensus
         task.abort_with_wait().await;
 
-        // Persist a block without VM execution
-        self.db.read().await.update(|t| t.store_block(blk, true))?;
+        //  Update register.
+        self.db
+            .read()
+            .await
+            .update(|t| t.set_register(&blk.header))?;
 
         *provisioners_list = self.vm.read().await.get_provisioners()?;
         *mrb = blk.clone();
@@ -172,9 +188,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-              
                 let (txs, state_hash) = match blk.header.iteration {
-
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
@@ -183,7 +197,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 // Store block with updated transactions with Error and GasSpent
                 t.store_block(&blk.header, &txs)?;
-              
+
                 Ok(txs)
             })?;
 
@@ -210,7 +224,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         tracing::info!(
-            "block accepted height/iter:{} hash:{} txs_count: {} state_hash:{}",
+            "block accepted height/iter:{}/{} hash:{} txs_count: {} state_hash:{}",
             blk.header.height,
             blk.header.iteration,
             hex::encode(blk.header.hash),
