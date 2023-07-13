@@ -184,7 +184,7 @@ impl ChainSrv {
                     let genesis_blk = genesis::generate_state();
 
                     /// Persist genesis block
-                    t.store_block(&genesis_blk, true);
+                    t.store_block(&genesis_blk.header, &[]);
                     genesis_blk
                 }
             };

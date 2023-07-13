@@ -222,7 +222,11 @@ pub struct DBTransaction<'db, DB: DBAccess> {
 }
 
 impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
-    fn store_block(&self, b: &ledger::Block, _persisted: bool) -> Result<()> {
+    fn store_block(
+        &self,
+        header: &ledger::Header,
+        txs: &[SpentTransaction],
+    ) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
         // It also includes single record to store metadata - Register record
@@ -231,22 +235,21 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
             let mut buf = vec![];
             HeaderRecord {
-                header: b.header.clone(),
-                transactions_ids: b
-                    .txs
+                header: header.clone(),
+                transactions_ids: txs
                     .iter()
-                    .map(|t| t.hash())
+                    .map(|t| t.inner.hash())
                     .collect::<Vec<[u8; 32]>>(),
             }
             .write(&mut buf);
 
-            self.inner.put_cf(cf, b.header.hash, buf)?;
+            self.inner.put_cf(cf, header.hash, buf)?;
 
             // Overwrite the Register record
             let mut buf = vec![];
             Register {
-                mrb_hash: b.header.hash,
-                state_hash: b.header.state_hash,
+                mrb_hash: header.hash,
+                state_hash: header.state_hash,
             }
             .write(&mut buf)?;
             self.inner.put_cf(cf, REGISTER_KEY, buf)?;
@@ -257,12 +260,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             let cf = self.ledger_txs_cf;
 
             // store all block transactions
-            for tx in &b.txs {
-                let tx = SpentTransaction {
-                    err: None,
-                    gas_spent: 0,
-                    inner: tx.clone(),
-                };
+            for tx in txs {
                 let mut d = vec![];
                 tx.write(&mut d)?;
                 self.inner.put_cf(cf, tx.inner.hash(), d)?;
@@ -273,8 +271,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         // Relation: Map block height to block hash
         self.inner.put_cf(
             self.ledger_height_cf,
-            b.header.height.to_le_bytes(),
-            b.header.hash,
+            header.height.to_le_bytes(),
+            header.hash,
         )?;
 
         Ok(())
@@ -374,18 +372,6 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(None)
     }
 
-    fn store_txs(&self, txs: &[ledger::SpentTransaction]) -> Result<()> {
-        let cf = self.ledger_txs_cf;
-
-        // store all block transactions
-        for tx in txs {
-            let mut d = vec![];
-            tx.write(&mut d)?;
-            self.inner.put_cf(cf, tx.inner.hash(), d)?;
-        }
-        Ok(())
-    }
-
     fn fetch_block_by_height(
         &self,
         height: u64,
@@ -396,6 +382,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
         self.fetch_block(&hash)
     }
+
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
@@ -731,6 +718,7 @@ mod tests {
     use node_data::ledger;
 
     use fake::{Dummy, Fake, Faker};
+    use node_data::ledger::Transaction;
     use rand::prelude::*;
     use rand::Rng;
 
@@ -746,7 +734,7 @@ mod tests {
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -786,7 +774,7 @@ mod tests {
             let b: ledger::Block = Faker.fake();
             assert!(db
                 .view(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -810,7 +798,7 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b, false)?;
+                        txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -928,6 +916,16 @@ mod tests {
         });
     }
 
+    fn to_spent_txs(txs: &Vec<Transaction>) -> Vec<SpentTransaction> {
+        txs.iter()
+            .map(|t| SpentTransaction {
+                inner: t.clone(),
+                gas_spent: 0,
+                err: None,
+            })
+            .collect()
+    }
+
     #[test]
     fn test_get_ledger_tx_by_hash() {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
@@ -938,7 +936,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -969,7 +967,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b, false)?;
+                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());

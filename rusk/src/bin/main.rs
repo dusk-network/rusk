@@ -109,7 +109,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut _ws_server = None;
     if config.ws.listen {
-        _ws_server = Some(WsServer::bind(rusk, config.ws.listen_addr()).await?);
+        _ws_server = Some(
+            WsServer::bind(rusk, node.clone(), config.ws.listen_addr()).await?,
+        );
     }
 
     // node spawn_all is the entry point
