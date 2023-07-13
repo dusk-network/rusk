@@ -5,15 +5,15 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod chain;
+pub mod http;
 pub mod kadcast;
-pub mod ws;
 
 use std::str::FromStr;
 
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
-use self::{chain::ChainConfig, kadcast::KadcastConfig, ws::HttpConfig};
+use self::{chain::ChainConfig, http::HttpConfig, kadcast::KadcastConfig};
 
 type DataBrokerConfig = node::databroker::conf::Params;
 

@@ -505,7 +505,7 @@ mod tests {
         )
         .expect("Response should deserialize successfully");
 
-        assert_eq!(fn_arg, response.data, "Data received should be cool");
+        assert_eq!(fn_arg, response.data, "Data received the same as sent");
     }
 
     #[tokio::test]

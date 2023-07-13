@@ -23,7 +23,7 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
-use rusk::ws::HttpServer;
+use rusk::http::HttpServer;
 
 use crate::config::Config;
 

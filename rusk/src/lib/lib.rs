@@ -14,9 +14,9 @@ use std::sync::Arc;
 use std::{cmp, fs, io};
 
 pub mod error;
+pub mod http;
 pub mod prover;
 mod vm;
-pub mod ws;
 
 use dusk_bytes::DeserializableSlice;
 use futures::Stream;
