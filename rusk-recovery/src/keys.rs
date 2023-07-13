@@ -6,6 +6,8 @@
 
 mod transfer;
 use transfer::*;
+mod license;
+use license::*;
 
 use crate::theme::Theme;
 use dusk_plonk::prelude::*;
@@ -142,6 +144,7 @@ pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
             &ExecuteTwoTwoCircuitLoader::<(), H, A>::new(),
             &ExecuteThreeTwoCircuitLoader::<(), H, A>::new(),
             &ExecuteFourTwoCircuitLoader::<(), H, A>::new(),
+            &LicenseCircuitLoader {},
         ],
     )?;
 

@@ -30,6 +30,7 @@ dusk-pki ="0.12"
 phoenix-core = { version = "0.20.0-rc.0", features = ["rkyv-impl", "alloc"] }
 rand = "0.8"
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", features=["builder"] }
+license-circuits = { version = "0.1", path = "../circuits/license", features=["builder"] }
 dusk-merkle = "0.5"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
