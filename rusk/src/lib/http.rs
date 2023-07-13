@@ -87,8 +87,8 @@ struct DataSources<VM> {
     vm: VM,
 }
 
-/// Accepts incoming streams and passes them to [`handle_stream`], together with
-/// the given data sources.
+/// Accepts incoming streams and passes them to the [`ExecutionService`],
+/// together with the given data sources.
 ///
 /// When all [`mpsc::Sender`]s that are coupled to the `shutdown` receiver are
 /// dropped, the loop will exit and all streams will be closed.
