@@ -8,7 +8,6 @@ use crate::theme::Theme;
 
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
-use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
@@ -26,6 +25,7 @@ use url::Url;
 use crate::provisioners::DUSK_KEY as DUSK_BLS_KEY;
 pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
 
+mod http;
 mod snapshot;
 pub mod tar;
 mod zip;
@@ -306,21 +306,7 @@ fn load_state<P: AsRef<Path>>(
     );
     let url = Url::parse(url)?;
     let buffer = match url.scheme() {
-        "http" | "https" => {
-            let mut buffer = vec![];
-
-            let response = request::get(url, &mut buffer)?;
-
-            // only accept success codes.
-            if !response.status_code().is_success() {
-                return Err(format!(
-                    "State download error: HTTP {}",
-                    response.status_code()
-                )
-                .into());
-            }
-            buffer
-        }
+        "http" | "https" => http::download(url)?,
         "file" => fs::read(url.path())?,
         _ => Err("Unsupported scheme for base state")?,
     };
