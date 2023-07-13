@@ -13,7 +13,7 @@ use std::str::FromStr;
 use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
-use self::{chain::ChainConfig, kadcast::KadcastConfig, ws::WsConfig};
+use self::{chain::ChainConfig, kadcast::KadcastConfig, ws::HttpConfig};
 
 type DataBrokerConfig = node::databroker::conf::Params;
 
@@ -26,8 +26,8 @@ pub(crate) struct Config {
 
     pub(crate) kadcast: KadcastConfig,
     pub(crate) chain: ChainConfig,
-    #[serde(default = "WsConfig::default")]
-    pub(crate) ws: WsConfig,
+    #[serde(default = "HttpConfig::default")]
+    pub(crate) http: HttpConfig,
 }
 
 /// Default log_level.
@@ -58,7 +58,7 @@ impl From<&ArgMatches> for Config {
 
         rusk_config.kadcast.merge(matches);
         rusk_config.chain.merge(matches);
-        rusk_config.ws.merge(matches);
+        rusk_config.http.merge(matches);
         rusk_config.databroker.merge(matches);
         rusk_config
     }
@@ -68,7 +68,7 @@ impl Config {
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
         let command = KadcastConfig::inject_args(command);
         let command = ChainConfig::inject_args(command);
-        let command = WsConfig::inject_args(command);
+        let command = HttpConfig::inject_args(command);
         let command = DataBrokerConfig::inject_args(command);
         command
             .arg(

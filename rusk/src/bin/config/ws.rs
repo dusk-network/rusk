@@ -8,13 +8,13 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
-pub struct WsConfig {
+pub struct HttpConfig {
     #[serde(default = "bool::default")]
     pub listen: bool,
     listen_address: Option<String>,
 }
 
-impl WsConfig {
+impl HttpConfig {
     pub fn listen_addr(&self) -> String {
         self.listen_address
             .clone()

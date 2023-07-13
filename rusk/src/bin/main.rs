@@ -23,7 +23,7 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
-use rusk::ws::WsServer;
+use rusk::ws::HttpServer;
 
 use crate::config::Config;
 
@@ -107,9 +107,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let node = Node::new(net, db, rusk.clone());
 
-    let mut _ws_server = None;
-    if config.ws.listen {
-        _ws_server = Some(WsServer::bind(rusk, config.ws.listen_addr()).await?);
+    let mut _http_server = None;
+    if config.http.listen {
+        _http_server =
+            Some(HttpServer::bind(rusk, config.http.listen_addr()).await?);
     }
 
     // node spawn_all is the entry point

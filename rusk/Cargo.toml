@@ -50,7 +50,8 @@ dusk-bytes = "0.1"
 dusk-wallet-core = "0.20.0-piecrust.0.6"
 phoenix-core = "0.20.0-rc.0"
 kadcast = "0.5.0-rc"
-tokio-tungstenite = { version = "0.19", default-features = false, features = ["handshake"] }
+hyper-tungstenite = "0.10"
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }
 futures = "0.3"
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
@@ -68,6 +69,7 @@ dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
 node-data = { version = "0.1", path = "../node-data" }
 
 [dev-dependencies]
+reqwest = "0.11"
 tokio-tungstenite = { version = "0.19", default-features = false, features = ["connect"] }
 test-context = "0.1"
 async-trait = "0.1"
