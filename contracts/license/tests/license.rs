@@ -62,7 +62,7 @@ fn initialize() -> Session {
         rusk_abi::new_ephemeral_vm().expect("Creating a VM should succeed");
 
     let bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/license.wasm"
+        "../../../target/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
     let mut session = rusk_abi::new_genesis_session(&vm);
