@@ -36,12 +36,7 @@ struct Cli {
     force: bool,
 
     /// Create a state applying the init config specified in this file.
-    #[clap(
-        short,
-        long,
-        parse(from_os_str),
-        value_name = "RUSK_RECOVERY_INPUT"
-    )]
+    #[clap(short, long, parse(from_os_str), env = "RUSK_RECOVERY_INPUT")]
     init: Option<PathBuf>,
 
     /// Sets different levels of verbosity
