@@ -174,7 +174,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
 
     let license_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/license.wasm"
+        "../../target/wasm32-unknown-unknown/release/license_contract.wasm"
     );
 
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
