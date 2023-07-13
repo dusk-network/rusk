@@ -56,6 +56,8 @@ pub const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
 pub const TRANSFER_CONTRACT: ContractId = reserved(0x1);
 /// ID of the genesis stake contract
 pub const STAKE_CONTRACT: ContractId = reserved(0x2);
+/// ID of the genesis license contract
+pub const LICENSE_CONTRACT: ContractId = reserved(0x3);
 
 #[inline]
 const fn reserved(b: u8) -> ContractId {
