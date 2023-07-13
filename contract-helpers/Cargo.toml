@@ -1,0 +1,13 @@
+[package]
+name = "contract-helpers"
+description = """Helper functions for smart contracts"""
+categories = ["wasm", "no-std", "cryptography::cryptocurrencies"]
+keywords = ["virtual", "machine", "smart", "contract", "wasm"]
+
+repository = "https://github.com/dusk-network/rusk"
+version = "0.1.0"
+
+edition = "2021"
+license = "MPL-2.0"
+
+[dependencies]

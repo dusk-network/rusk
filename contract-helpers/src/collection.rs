@@ -16,12 +16,20 @@ pub struct Set<V> {
     data: Vec<V>,
 }
 
+#[allow(dead_code)]
 impl<K: PartialEq, V: PartialEq> Map<K, V> {
     pub const fn new() -> Self {
         Self { data: Vec::new() }
     }
 
-    #[allow(dead_code)]
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn get(&self, key: &K) -> Option<&V> {
         self.data.iter().find_map(|(k, v)| (k == key).then_some(v))
     }
@@ -40,9 +48,25 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn remove(&mut self, key: &K) {
         self.data.retain(|(k, _)| k != key);
+    }
+
+    pub fn find<F>(&self, f: F) -> Option<&V>
+    where
+        F: Fn(&V) -> bool,
+    {
+        self.data.iter().find_map(|(_, v)| f(v).then_some(v))
+    }
+
+    pub fn filter<F>(&self, f: F) -> Vec<&V>
+    where
+        F: Fn(&V) -> bool,
+    {
+        self.data
+            .iter()
+            .filter_map(|(_, v)| f(v).then_some(v))
+            .collect()
     }
 }
 

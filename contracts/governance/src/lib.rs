@@ -10,7 +10,6 @@
 
 extern crate alloc;
 
-mod collection;
 mod msg;
 mod state;
 

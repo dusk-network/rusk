@@ -8,7 +8,6 @@ use crate::theme::Theme;
 
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
-use http_req::request;
 use once_cell::sync::Lazy;
 use phoenix_core::transaction::*;
 use phoenix_core::Note;
@@ -16,7 +15,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{ContractData, ContractId, Session, VM};
-use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
+use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -26,6 +25,7 @@ use url::Url;
 use crate::provisioners::DUSK_KEY as DUSK_BLS_KEY;
 pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
 
+mod http;
 mod snapshot;
 pub mod tar;
 mod zip;
@@ -173,6 +173,10 @@ fn generate_empty_state<P: AsRef<Path>>(
         "../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
     );
 
+    let license_code = include_bytes!(
+        "../../target/wasm32-unknown-unknown/release/license_contract.wasm"
+    );
+
     info!("{} Genesis Transfer Contract", theme.action("Deploying"));
     session.deploy(
         transfer_code,
@@ -183,6 +187,12 @@ fn generate_empty_state<P: AsRef<Path>>(
     session.deploy(
         stake_code,
         ContractData::builder(snapshot.owner()).contract_id(STAKE_CONTRACT),
+    )?;
+
+    info!("{} Genesis License Contract", theme.action("Deploying"));
+    session.deploy(
+        license_code,
+        ContractData::builder(snapshot.owner()).contract_id(LICENSE_CONTRACT),
     )?;
 
     let _: () = session
@@ -200,6 +210,10 @@ fn generate_empty_state<P: AsRef<Path>>(
     let _: Option<StakeData> = session
         .call(STAKE_CONTRACT, "get_stake", &*DUSK_BLS_KEY)
         .expect("Querying a stake should succeed");
+
+    let _: () = session
+        .call(LICENSE_CONTRACT, "noop", &())
+        .expect("license contract noop should succeed");
 
     let commit_id = session.commit()?;
 
@@ -292,21 +306,7 @@ fn load_state<P: AsRef<Path>>(
     );
     let url = Url::parse(url)?;
     let buffer = match url.scheme() {
-        "http" | "https" => {
-            let mut buffer = vec![];
-
-            let response = request::get(url, &mut buffer)?;
-
-            // only accept success codes.
-            if !response.status_code().is_success() {
-                return Err(format!(
-                    "State download error: HTTP {}",
-                    response.status_code()
-                )
-                .into());
-            }
-            buffer
-        }
+        "http" | "https" => http::download(url)?,
         "file" => fs::read(url.path())?,
         _ => Err("Unsupported scheme for base state")?,
     };
