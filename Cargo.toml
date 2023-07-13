@@ -1,12 +1,15 @@
 [workspace]
 members = [
     "circuits/transfer",
+    "circuits/license",
 
+    "contract-helpers",
     "contracts/alice",
     "contracts/bob",
     "contracts/stake",
     "contracts/governance",
     "contracts/transfer",
+    "contracts/license",
 
     "macros/code-hasher",
     
