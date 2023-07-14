@@ -11,8 +11,8 @@ state: ## Build network state
 
 test: ## Run Rusk tests
 	@cargo test \
-		-vvv \
 		--release \
+		--all-features \
 		-- --nocapture \
 		--test-threads 1
 			
