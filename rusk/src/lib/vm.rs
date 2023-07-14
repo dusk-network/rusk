@@ -153,4 +153,12 @@ impl VMExecution for Rusk {
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
         Ok(self.state_root())
     }
+
+    fn revert(&self) -> anyhow::Result<[u8; 32]> {
+        let state_hash = self
+            .revert()
+            .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
+
+        Ok(state_hash)
+    }
 }

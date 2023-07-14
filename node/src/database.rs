@@ -60,6 +60,10 @@ pub trait Ledger {
         &self,
         height: u64,
     ) -> Result<Option<[u8; 32]>>;
+    fn fetch_block_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<ledger::Block>>;
 
     fn get_block_exists(&self, hash: &[u8]) -> Result<bool>;
 
@@ -70,6 +74,7 @@ pub trait Ledger {
 
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
     fn get_register(&self) -> Result<Option<Register>>;
+    fn set_register(&self, header: &ledger::Header) -> Result<()>;
 }
 
 pub trait Candidate {
