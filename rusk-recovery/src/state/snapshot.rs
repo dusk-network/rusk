@@ -115,9 +115,6 @@ mod tests {
     /// Amount of the note inserted in the genesis state.
     const GENESIS_DUSK: Dusk = dusk(1_000.0);
 
-    /// Faucet note value.
-    const FAUCET_DUSK: Dusk = dusk(500_000_000.0);
-
     fn localnet_snapshot() -> Snapshot {
         let users = provisioners::keys(false);
         let owners = users.iter().map(|&p| p.into()).collect();
@@ -148,44 +145,6 @@ mod tests {
         }
     }
 
-    fn testnet_snapshot() -> Snapshot {
-        let seed = Some(0xdead_beef);
-        let users = provisioners::keys(true);
-        let allowlist = users.iter().map(|&p| p.into()).collect();
-        let owners = vec![(*provisioners::DUSK_KEY).into()];
-        let stake = users
-            .iter()
-            .map(|&p| GenesisStake {
-                address: p.into(),
-                amount: dusk(2_000_000.0),
-                eligibility: None,
-                reward: None,
-            })
-            .collect();
-
-        Snapshot {
-            base_state: None,
-            balance: vec![
-                Balance {
-                    address: (*state::DUSK_KEY).into(),
-                    seed,
-                    notes: vec![GENESIS_DUSK],
-                },
-                Balance {
-                    address: (*state::FAUCET_KEY).into(),
-                    seed,
-                    notes: vec![FAUCET_DUSK],
-                },
-            ],
-            stake,
-            acl: Acl {
-                stake: Users { allowlist, owners },
-            },
-            owner: None,
-            governance: vec![],
-        }
-    }
-
     /// Returns a Snapshot compliant with the old hardcode localnet.
     ///
     /// This will be removed in a future version when will be possible to pass a
@@ -206,19 +165,26 @@ mod tests {
         Ok(snapshot)
     }
 
-    #[ignore = "\
-        Fails but can be safely ignored since it is not part of the \
-        normal test suite. It should be removed at some point. \
-    "]
     #[test]
     fn testnet_toml() -> Result<(), Box<dyn Error>> {
-        let testnet = testnet_snapshot();
-        let str = toml::to_string_pretty(&testnet)?;
+        let testnet = testnet_from_file()?;
 
-        let back: Snapshot = toml::from_str(&str)?;
-        assert_eq!(testnet, back);
+        assert_eq!(
+            testnet.owner(),
+            (*state::DUSK_KEY).to_bytes(),
+            "Testnet owner must be dusk"
+        );
+        testnet
+            .balance
+            .iter()
+            .find(|b| b.address().eq(&*state::FAUCET_KEY))
+            .expect("Testnet must have faucet configured");
 
-        assert_eq!(testnet, testnet_from_file()?);
+        testnet
+            .stakes()
+            .next()
+            .expect("Testnet must have at least a provisioner configured");
+
         Ok(())
     }
 
