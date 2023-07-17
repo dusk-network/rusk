@@ -1,0 +1,16 @@
+[acl.stake]
+owners = [
+    'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv',
+]
+allowlist = [
+    'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv',
+]
+
+[[balance]]
+address = '4ZH3oyfTuMHyWD1Rp4e7QKp5yK6wLrWvxHneufAiYBAjvereFvfjtDvTbBcZN5ZCsaoMo49s1LKPTwGpowik6QJG'
+seed = 0xdead_beef
+notes = [100_000_000_000_000]
+
+[[stake]]
+address = 'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv'
+amount = 1_000_000_000_000
