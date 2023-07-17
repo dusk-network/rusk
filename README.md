@@ -8,16 +8,7 @@ The Dusk's Smart Contract Platform.
 _Unstable_ : No guarantees can be made regarding the API stability, the project
 is in development.
 
-## Build
-
-To build rusk:
-
-```
-source .env
-make all
-```
-
-## Tests
+## Build and Tests
 
 To run tests:
 
@@ -30,13 +21,32 @@ That will also compile all the genesis contracts and it's associated circuits.
 
 ## Use
 
-To run the server:
+Prerequisites:
 
 ```
-make run
+# Generate the keys used by the circuits
+make keys
+
+# Compile all the genesis contracts.
+make wasm
+
+# Copy example consensus.keys
+mkdir -p ~/.dusk/rusk
+cp examples/consensus.keys ~/.dusk/rusk/consensus.keys
 ```
 
-That will also compile all the genesis contracts.
+Run a single-node cluster with example's data
+
+```
+# Generate genesis state
+cargo r --release -p rusk-recovery --features state --bin rusk-recovery-state -- --init examples/genesis.toml -o /tmp/example.state
+
+# Launch a local ephemeral node
+DUSK_CONSENSUS_KEYS_PASS=password cargo r --release -p rusk -- -s /tmp/example.state
+```
+
+
+## Contracts compilation
 
 To just compile all the genesis contracts without running the server:
 
