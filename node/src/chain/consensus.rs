@@ -53,6 +53,7 @@ impl Task {
     pub(crate) fn new_with_keys(path: String) -> Self {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
             .expect("DUSK_CONSENSUS_KEYS_PASS not set");
+        tracing::info!("Loading consensus keys from {path}");
         let keys = node_data::bls::load_keys(path, pwd);
 
         tracing::info!("Loaded consensus keys: {:?}", keys.1);
