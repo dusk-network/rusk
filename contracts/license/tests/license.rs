@@ -67,12 +67,11 @@ fn initialize() -> Session {
 
     let mut session = rusk_abi::new_genesis_session(&vm);
 
-    session.set_point_limit(POINT_LIMIT);
-
     session
         .deploy(
             bytecode,
             ContractData::builder(TEST_OWNER).contract_id(LICENSE_CONTRACT_ID),
+            POINT_LIMIT,
         )
         .expect("Deploying the license contract should succeed");
 
@@ -112,6 +111,7 @@ fn license_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "issue_license",
             &(license_blob, license.pos, license_hash),
+            POINT_LIMIT,
         )
         .expect("Issuing license should succeed");
 
@@ -122,8 +122,10 @@ fn license_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
+            POINT_LIMIT,
         )
-        .expect("Querying the licenses should succeed");
+        .expect("Querying the licenses should succeed")
+        .data;
 
     assert_eq!(
         licenses.len(),
@@ -136,8 +138,10 @@ fn license_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &license.pos,
+            POINT_LIMIT,
         )
-        .expect("Querying the merkle opening should succeed");
+        .expect("Querying the merkle opening should succeed")
+        .data;
 
     const EXPECTED_POSITIONS: [usize; DEPTH] =
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
@@ -179,6 +183,7 @@ fn multiple_licenses_issue_get_merkle() {
                 LICENSE_CONTRACT_ID,
                 "issue_license",
                 &(license_blob, license.pos, license_hash),
+                POINT_LIMIT,
             )
             .expect("Issuing license should succeed");
     }
@@ -190,8 +195,10 @@ fn multiple_licenses_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
+            POINT_LIMIT,
         )
-        .expect("Querying the license should succeed");
+        .expect("Querying the license should succeed")
+        .data;
 
     assert_eq!(
         licenses.len(),
@@ -204,8 +211,10 @@ fn multiple_licenses_issue_get_merkle() {
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
             &(NUM_LICENSES as u64),
+            POINT_LIMIT,
         )
-        .expect("Querying the merkle opening should succeed");
+        .expect("Querying the merkle opening should succeed")
+        .data;
 
     assert!(merkle_opening.positions()[DEPTH - 1] > 0);
     assert!(merkle_opening.positions()[DEPTH - 2] > 0);
@@ -224,8 +233,10 @@ fn session_not_found() {
             LICENSE_CONTRACT_ID,
             "get_session",
             &session_id,
+            POINT_LIMIT,
         )
-        .expect("Querying the session should succeed");
+        .expect("Querying the session should succeed")
+        .data;
 
     assert_eq!(None::<LicenseSession>, license_session);
 }
@@ -270,6 +281,7 @@ fn use_license_get_session() {
             LICENSE_CONTRACT_ID,
             "issue_license",
             &(license_blob, license.pos, license_hash),
+            POINT_LIMIT,
         )
         .expect("Issuing license should succeed");
 
@@ -296,8 +308,10 @@ fn use_license_get_session() {
             LICENSE_CONTRACT_ID,
             "use_license",
             &use_license_arg,
+            POINT_LIMIT,
         )
-        .expect("Use license should succeed");
+        .expect("Use license should succeed")
+        .data;
 
     assert!(
         session
@@ -305,8 +319,10 @@ fn use_license_get_session() {
                 LICENSE_CONTRACT_ID,
                 "get_session",
                 &session_id,
+                POINT_LIMIT
             )
             .expect("Get session should succeed")
+            .data
             .is_some(),
         "Call to get session should return a session"
     );
@@ -316,6 +332,6 @@ fn use_license_get_session() {
 fn test_noop() {
     let mut session = initialize();
     session
-        .call::<(), ()>(LICENSE_CONTRACT_ID, "noop", &())
+        .call::<(), ()>(LICENSE_CONTRACT_ID, "noop", &(), POINT_LIMIT)
         .expect("Noop should succeed");
 }
