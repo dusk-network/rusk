@@ -229,7 +229,7 @@ impl Rusk {
     /// Accept the given transactions.
     ///
     ///   * `consistency_check` - represents a state_root, the caller expects to
-    ///   be returned on successful transactions execution. Passing a zero-ed
+    ///   be returned on successful transactions execution. Passing a None
     ///   value disables the check.
     pub fn accept_transactions(
         &self,
@@ -237,7 +237,7 @@ impl Rusk {
         block_gas_limit: u64,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: [u8; 32],
+        consistency_check: Option<[u8; 32]>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
 
@@ -255,8 +255,10 @@ impl Rusk {
 
         // Drop the session if the result state root is inconsistent with the
         // callers one.
-        if consistency_check != [0u8; 32] && consistency_check != state_root {
-            return Err(Error::InconsistentState);
+        if let Some(consistency_check) = consistency_check {
+            if consistency_check != state_root {
+                return Err(Error::InconsistentState(state_root));
+            }
         }
 
         let commit_id = session.commit()?;
@@ -269,15 +271,15 @@ impl Rusk {
     /// Finalize the given transactions.
     ///
     /// * `consistency_check` - represents a state_root, the caller expects to
-    ///   be returned on successful transactions execution. Passing a zero-ed
-    ///   value disables the check.
+    ///   be returned on successful transactions execution. Passing None value
+    ///   disables the check.
     pub fn finalize_transactions(
         &self,
         block_height: u64,
         block_gas_limit: u64,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: [u8; 32],
+        consistency_check: Option<[u8; 32]>,
     ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
         let mut inner = self.inner.lock();
 
@@ -295,8 +297,10 @@ impl Rusk {
 
         // Drop the session if the result state root is inconsistent with the
         // callers one.
-        if consistency_check != [0u8; 32] && consistency_check != state_root {
-            return Err(Error::InconsistentState);
+        if let Some(consistency_check) = consistency_check {
+            if consistency_check != state_root {
+                return Err(Error::InconsistentState(state_root));
+            }
         }
 
         let commit_id = session.commit()?;

@@ -44,7 +44,7 @@ pub enum Error {
     /// Proof creation error
     ProofCreation(rusk_prover::ProverError),
     /// Failed to produce proper state
-    InconsistentState,
+    InconsistentState([u8; 32]),
     /// Other
     Other(Box<dyn std::error::Error>),
 }
@@ -129,7 +129,13 @@ impl fmt::Display for Error {
             Error::ProofCreation(e) => {
                 write!(f, "Proof creation error: {e}")
             }
-            Error::InconsistentState => write!(f, "Inconsistent state root"),
+            Error::InconsistentState(state_root) => {
+                write!(
+                    f,
+                    "Inconsistent state root {}",
+                    hex::ToHex::encode_hex::<String>(state_root)
+                )
+            }
         }
     }
 }
