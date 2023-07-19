@@ -493,9 +493,9 @@ impl Rusk {
                 .data;
         }
 
-        Ok(session
-            .call(contract_id, call_name, call_arg, u64::MAX)?
-            .data)
+        session.call::<_, ()>(contract_id, call_name, call_arg, u64::MAX)?;
+
+        Ok(())
     }
 
     pub async fn get_notes(
