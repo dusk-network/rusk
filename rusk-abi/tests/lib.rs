@@ -23,6 +23,8 @@ use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
 
+const POINT_LIMIT: u64 = 0x700000;
+
 #[test]
 fn hash_host() {
     let test_inputs = [
@@ -55,14 +57,17 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let mut session = rusk_abi::new_genesis_session(vm);
 
     let contract_id = session
-        .deploy(bytecode, ContractData::builder(get_owner().to_bytes()))
+        .deploy(
+            bytecode,
+            ContractData::builder(get_owner().to_bytes()),
+            POINT_LIMIT,
+        )
         .expect("Deploying module should succeed");
 
     let base = session.commit().expect("Committing should succeed");
 
     let mut session = rusk_abi::new_session(vm, base, height)
         .expect("Instantiating new session should succeed");
-    session.set_point_limit(0x700000);
 
     (session, contract_id)
 }
@@ -90,8 +95,9 @@ fn hash() {
     }
 
     let scalar: BlsScalar = session
-        .call(contract_id, "hash", &input)
-        .expect("Querying should succeed");
+        .call(contract_id, "hash", &input, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
 
     assert_eq!(
         "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
@@ -117,8 +123,9 @@ fn poseidon_hash() {
         .collect();
 
     let scalar: BlsScalar = session
-        .call(contract_id, "poseidon_hash", &test_inputs)
-        .expect("Querying should succeed");
+        .call(contract_id, "poseidon_hash", &test_inputs, POINT_LIMIT)
+        .expect("Querying should succeed")
+        .data;
 
     assert_eq!(
         "0xe36f4ea9b858d5c85b02770823c7c5d8253c28787d17f283ca348b906dca8528",
@@ -141,8 +148,14 @@ fn schnorr_signature() {
     assert!(sign.verify(&pk, message));
 
     let valid: bool = session
-        .call(contract_id, "verify_schnorr", &(message, pk, sign))
-        .expect("Querying should succeed");
+        .call(
+            contract_id,
+            "verify_schnorr",
+            &(message, pk, sign),
+            POINT_LIMIT,
+        )
+        .expect("Querying should succeed")
+        .data;
 
     assert!(valid, "Signature verification expected to succeed");
 
@@ -150,8 +163,14 @@ fn schnorr_signature() {
     let pk = PublicKey::from(&wrong_sk);
 
     let valid: bool = session
-        .call(contract_id, "verify_schnorr", &(message, pk, sign))
-        .expect("Querying should succeed");
+        .call(
+            contract_id,
+            "verify_schnorr",
+            &(message, pk, sign),
+            POINT_LIMIT,
+        )
+        .expect("Querying should succeed")
+        .data;
 
     assert!(!valid, "Signature verification expected to fail");
 }
@@ -171,8 +190,9 @@ fn bls_signature() {
 
     let arg = (message, pk, sign);
     let valid: bool = session
-        .call(contract_id, "verify_bls", &arg)
-        .expect("Query should succeed");
+        .call(contract_id, "verify_bls", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert!(valid, "BLS Signature verification expected to succeed");
 
@@ -181,8 +201,9 @@ fn bls_signature() {
 
     let arg = (arg.0, wrong_pk, arg.2);
     let valid: bool = session
-        .call(contract_id, "verify_bls", &arg)
-        .expect("Query should succeed");
+        .call(contract_id, "verify_bls", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert!(!valid, "BLS Signature verification expected to fail");
 }
@@ -265,8 +286,9 @@ fn plonk_proof() {
 
     let arg = (verifier, proof, public_inputs);
     let valid: bool = session
-        .call(contract_id, "verify_proof", &arg)
-        .expect("Query should succeed");
+        .call(contract_id, "verify_proof", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert!(valid, "The proof should be valid");
 
@@ -276,8 +298,9 @@ fn plonk_proof() {
 
     let arg = (arg.0, arg.1, wrong_public_inputs);
     let valid: bool = session
-        .call(contract_id, "verify_proof", &arg)
-        .expect("Query should succeed");
+        .call(contract_id, "verify_proof", &arg, POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert!(!valid, "The proof should be invalid");
 }
@@ -291,8 +314,9 @@ fn block_height() {
     let (mut session, contract_id) = instantiate(&vm, HEIGHT);
 
     let height: u64 = session
-        .call(contract_id, "block_height", &())
-        .expect("Query should succeed");
+        .call(contract_id, "block_height", &(), POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert_eq!(height, HEIGHT);
 }
@@ -312,8 +336,9 @@ fn owner() {
     let (mut session, contract_id) = instantiate(&vm, 0);
 
     let owner: [u8; 64] = session
-        .call(contract_id, "contract_owner", get_owner())
-        .expect("Query should succeed");
+        .call(contract_id, "contract_owner", get_owner(), POINT_LIMIT)
+        .expect("Query should succeed")
+        .data;
 
     assert_eq!(owner, get_owner().to_bytes());
 }
