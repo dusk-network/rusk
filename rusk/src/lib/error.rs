@@ -43,6 +43,8 @@ pub enum Error {
     CoinbaseDuskSpent(Dusk, Dusk),
     /// Proof creation error
     ProofCreation(rusk_prover::ProverError),
+    /// Failed to produce proper state
+    InconsistentState,
     /// Other
     Other(Box<dyn std::error::Error>),
 }
@@ -127,6 +129,7 @@ impl fmt::Display for Error {
             Error::ProofCreation(e) => {
                 write!(f, "Proof creation error: {e}")
             }
+            Error::InconsistentState => write!(f, "Inconsistent state root"),
         }
     }
 }
