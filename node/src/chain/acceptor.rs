@@ -17,6 +17,7 @@ use dusk_consensus::contract_state::{
 };
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
+use hex::ToHex;
 use node_data::ledger::{
     self, Block, Hash, Header, Signature, SpentTransaction,
 };
@@ -28,12 +29,17 @@ use std::rc::Rc;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::warn;
+use tracing::{info, warn};
 
 use std::any;
 
 use super::consensus::Task;
 use super::genesis;
+
+pub(crate) enum RevertTarget {
+    LastFinalizedState = 0,
+    LastEpoch = 1,
+}
 
 /// Implements block acceptance procedure. This includes block header,
 /// certificate and transactions full verifications.
@@ -244,6 +250,75 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         }
 
         Ok(())
+    }
+
+    /// Implements the algorithm of full revert to any of supported targets.
+    ///
+    /// This incorporates both VM state revert and Ledger state revert.
+    pub async fn try_revert(&self, target: RevertTarget) -> Result<()> {
+        let curr_height = self.get_curr_height().await;
+        let curr_iteration = self.get_curr_iteration().await;
+
+        let target_state_hash = match target {
+            RevertTarget::LastFinalizedState => {
+                info!("Revert VM to last finalized state");
+                let state_hash = self.vm.read().await.revert()?;
+
+                info!(
+                    "VM revert completed finalized_state_hash:{}",
+                    ToHex::encode_hex::<String>(&state_hash)
+                );
+
+                anyhow::Ok(state_hash)
+            }
+            RevertTarget::LastEpoch => panic!("not implemented"),
+        }?;
+
+        // Delete any block until we reach the target_state_hash, the
+        // VM was reverted to.
+
+        // The blockchain tip (most recent block) after reverting
+        let mut most_recent_block = Block::default();
+
+        self.db.read().await.update(|t| {
+            let mut height = curr_height;
+            while height != 0 {
+                let blk = Ledger::fetch_block_by_height(t, height)?
+                    .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
+
+                if blk.header.state_hash == target_state_hash {
+                    most_recent_block = blk;
+                    break;
+                }
+
+                info!(
+                    "Delete block height: {} iter: {} hash: {}",
+                    blk.header.height,
+                    blk.header.iteration,
+                    ToHex::encode_hex::<String>(&blk.header.hash)
+                );
+
+                // Delete any rocksdb record related to this block
+                Ledger::delete_block(t, &blk)?;
+
+                // Attempt to resubmit transactions back to mempool.
+                // An error here is not considered critical.
+                for tx in blk.txs().iter() {
+                    Mempool::add_tx(t, tx).map_err(|err| {
+                        tracing::error!("failed to resubmit transactions")
+                    });
+                }
+
+                height -= 1;
+            }
+
+            Ok(())
+        })?;
+
+        // Update blockchain tip to be the one we reverted to.
+        info!("Set new most_recent_block");
+
+        self.update_most_recent_block(&most_recent_block).await
     }
 
     pub(crate) async fn get_curr_height(&self) -> u64 {
