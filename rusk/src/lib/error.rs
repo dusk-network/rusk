@@ -130,11 +130,7 @@ impl fmt::Display for Error {
                 write!(f, "Proof creation error: {e}")
             }
             Error::InconsistentState(state_root) => {
-                write!(
-                    f,
-                    "Inconsistent state root {}",
-                    hex::ToHex::encode_hex::<String>(state_root)
-                )
+                write!(f, "Inconsistent state root {}", hex::encode(state_root))
             }
         }
     }

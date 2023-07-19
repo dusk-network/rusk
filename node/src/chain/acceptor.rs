@@ -266,7 +266,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 info!(
                     "VM revert completed finalized_state_hash:{}",
-                    ToHex::encode_hex::<String>(&state_hash)
+                    hex::encode(state_hash)
                 );
 
                 anyhow::Ok(state_hash)
@@ -295,7 +295,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                     "Delete block height: {} iter: {} hash: {}",
                     blk.header.height,
                     blk.header.iteration,
-                    ToHex::encode_hex::<String>(&blk.header.hash)
+                    hex::encode(blk.header.hash)
                 );
 
                 // Delete any rocksdb record related to this block
@@ -324,7 +324,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             "Blockchain tip height: {} iter: {} state_hash: {}",
             most_recent_block.header.height,
             most_recent_block.header.iteration,
-            ToHex::encode_hex::<String>(&most_recent_block.header.state_hash)
+            hex::encode(most_recent_block.header.state_hash)
         );
 
         self.update_most_recent_block(&most_recent_block).await

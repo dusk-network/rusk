@@ -72,7 +72,7 @@ impl VMExecution for Rusk {
                 blk.header.gas_limit,
                 generator,
                 blk.txs.clone(),
-                Some(blk.header.state_hash),
+                blk.header.state_hash,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -97,7 +97,7 @@ impl VMExecution for Rusk {
                 blk.header.gas_limit,
                 generator,
                 blk.txs.clone(),
-                Some(blk.header.state_hash),
+                blk.header.state_hash,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
