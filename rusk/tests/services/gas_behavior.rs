@@ -79,7 +79,7 @@ fn make_transactions(
     let tx_0 = wallet
         .execute(
             &mut rng,
-            ContractId::from([0x42; 32]),
+            [0x42; 32].into(),
             String::from("nonsense"),
             (),
             SENDER_INDEX_0,
@@ -95,7 +95,7 @@ fn make_transactions(
     let tx_1 = wallet
         .execute(
             &mut rng,
-            TRANSFER_CONTRACT,
+            TRANSFER_CONTRACT.to_bytes().into(),
             String::from("root"),
             (),
             SENDER_INDEX_1,

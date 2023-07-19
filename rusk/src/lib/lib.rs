@@ -482,15 +482,20 @@ impl Rusk {
         // height of zero since this doesn't affect the result.
         let current_commit = inner.current_commit;
         let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
-        session.set_point_limit(u64::MAX);
 
-        let mut result = session.call(contract_id, call_name, call_arg)?;
+        let mut result = session
+            .call(contract_id, call_name, call_arg, u64::MAX)?
+            .data;
 
         while let Some(call_arg) = closure(result) {
-            result = session.call(contract_id, call_name, &call_arg)?;
+            result = session
+                .call(contract_id, call_name, &call_arg, u64::MAX)?
+                .data;
         }
 
-        Ok(session.call(contract_id, call_name, call_arg)?)
+        Ok(session
+            .call(contract_id, call_name, call_arg, u64::MAX)?
+            .data)
     }
 
     pub async fn get_notes(
@@ -663,9 +668,8 @@ fn execute(
     }
 
     // Spend the transaction. If this error the transaction is unspendable.
-    session.set_point_limit(u64::MAX);
     session
-        .call(TRANSFER_CONTRACT, "spend", tx)
+        .call::<_, ()>(TRANSFER_CONTRACT, "spend", tx, u64::MAX)
         .map_err(TxError::Unspendable)?;
 
     let mut gas_spent = gas_for_spend;
@@ -680,12 +684,15 @@ fn execute(
             let contract_id = ContractId::from_bytes(*contract_id_bytes);
             let gas_left = cmp::min(block_gas_left, tx_gas_left);
 
-            session.set_point_limit(gas_left);
-
-            match session.call_raw(contract_id, fn_name, fn_data.clone()) {
-                Ok(vec) => {
-                    gas_spent += session.spent();
-                    Ok(vec)
+            match session.call_raw(
+                contract_id,
+                fn_name,
+                fn_data.clone(),
+                gas_left,
+            ) {
+                Ok(receipt) => {
+                    gas_spent += receipt.points_limit;
+                    Ok(receipt.data)
                 }
                 Err(err) => match err {
                     err @ PiecrustError::OutOfPoints => {
@@ -714,9 +721,13 @@ fn execute(
     // Refund the appropriate amount to the transaction. This call is guaranteed
     // to never error. If it does, then a programming error has occurred. As
     // such, the call to `Result::expect` is warranted.
-    session.set_point_limit(u64::MAX);
-    let _: () = session
-        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+    session
+        .call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "refund",
+            &(tx.fee, gas_spent),
+            u64::MAX,
+        )
         .expect("Refunding must succeed");
 
     res.map(|res| res.map(|data| (data, gas_spent)))
@@ -755,11 +766,20 @@ fn reward_and_update_root(
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
-    session.set_point_limit(u64::MAX);
+    session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "reward",
+        &(*DUSK_KEY, dusk_value),
+        u64::MAX,
+    )?;
+    session.call::<_, ()>(
+        STAKE_CONTRACT,
+        "reward",
+        &(*generator, generator_value),
+        u64::MAX,
+    )?;
 
-    session.call(STAKE_CONTRACT, "reward", &(*DUSK_KEY, dusk_value))?;
-    session.call(STAKE_CONTRACT, "reward", &(*generator, generator_value))?;
-    session.call(TRANSFER_CONTRACT, "update_root", &())?;
+    session.call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)?;
 
     Ok(())
 }
