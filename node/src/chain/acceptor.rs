@@ -315,8 +315,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
+        if most_recent_block.header.state_hash != target_state_hash {
+            return Err(anyhow!("Failed to revert to proper state"));
+        }
+
         // Update blockchain tip to be the one we reverted to.
-        info!("Set new most_recent_block");
+        info!(
+            "Blockchain tip height: {} iter: {} state_hash: {}",
+            most_recent_block.header.height,
+            most_recent_block.header.iteration,
+            ToHex::encode_hex::<String>(&most_recent_block.header.state_hash)
+        );
 
         self.update_most_recent_block(&most_recent_block).await
     }
