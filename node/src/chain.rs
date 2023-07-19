@@ -36,7 +36,7 @@ use tokio::task::JoinHandle;
 
 use std::any;
 
-use self::acceptor::Acceptor;
+use self::acceptor::{Acceptor, RevertTarget};
 use self::consensus::Task;
 use self::fsm::SimpleFSM;
 
@@ -76,12 +76,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         // Restore/Load most recent block
         let mrb = Self::load_most_recent_block(db.clone()).await?;
 
-        let vm_root = vm.read().await.get_state_root()?;
-
-        if mrb.header().height > 0 {
-            assert_eq!(mrb.header().state_hash, vm_root, "Invalid state root");
-        }
-
         let provisioners_list = vm.read().await.get_provisioners()?;
 
         // Initialize Acceptor and trigger consensus task
@@ -96,6 +90,19 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             )
             .await,
         ));
+
+        // NB. After restart, state_root returned by VM is always the last
+        // finalized one.
+        let mut state_root = vm.read().await.get_state_root()?;
+
+        // Detect a consistency issue between VM and Ledger states.
+        if mrb.header().height > 0 && mrb.header().state_hash != state_root {
+            // Revert to last known finalized state.
+            acc.read()
+                .await
+                .try_revert(RevertTarget::LastFinalizedState)
+                .await?;
+        }
 
         // Start-up FSM instance
         let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
