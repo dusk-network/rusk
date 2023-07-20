@@ -33,15 +33,19 @@ pub fn new_session(
     vm.session(
         SessionData::builder()
             .base(base)
-            .insert(Metadata::BLOCK_HEIGHT, block_height),
+            .insert(Metadata::BLOCK_HEIGHT, block_height)?,
     )
 }
 
 /// Create a new genesis session based on the given `vm`. The vm *must* have
 /// been created using [`new_vm`] or [`new_ephemeral_vm`].
 pub fn new_genesis_session(vm: &VM) -> Session {
-    vm.session(SessionData::builder().insert(Metadata::BLOCK_HEIGHT, 0))
-        .expect("Creating a genesis session should always succeed")
+    vm.session(
+        SessionData::builder()
+            .insert(Metadata::BLOCK_HEIGHT, 0)
+            .expect("Inserting block height in metadata should succeed"),
+    )
+    .expect("Creating a genesis session should always succeed")
 }
 
 /// Create a new [`VM`] compliant with Dusk's specification.

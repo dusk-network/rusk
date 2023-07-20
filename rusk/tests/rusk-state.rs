@@ -51,13 +51,11 @@ where
             rusk_abi::new_session(&inner.vm, current_commit, BLOCK_HEIGHT)
                 .expect("current commit should exist");
 
-        session.set_point_limit(u64::MAX);
-
-        let _: Note = session
-            .call(TRANSFER_CONTRACT, "push_note", &note)
+        session
+            .call::<_, Note>(TRANSFER_CONTRACT, "push_note", &note, u64::MAX)
             .expect("Pushing note should succeed");
-        let _: () = session
-            .call(TRANSFER_CONTRACT, "update_root", &())
+        session
+            .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
             .expect("Updating root should succeed");
 
         let commit_id = session.commit().expect("Committing should succeed");

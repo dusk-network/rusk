@@ -66,12 +66,12 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
-    session.set_point_limit(POINT_LIMIT);
 
     session
         .deploy(
             transfer_bytecode,
             ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+            POINT_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
 
@@ -79,6 +79,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .deploy(
             alice_bytecode,
             ContractData::builder(OWNER).contract_id(ALICE_ID),
+            POINT_LIMIT,
         )
         .expect("Deploying the alice contract should succeed");
 
@@ -86,48 +87,61 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .deploy(
             bob_bytecode,
             ContractData::builder(OWNER).contract_id(BOB_ID),
+            POINT_LIMIT,
         )
         .expect("Deploying the bob contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
     // push genesis note to the contract
-    let _: Note = session
-        .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
+    session
+        .call::<_, Note>(
+            TRANSFER_CONTRACT,
+            "push_note",
+            &(0u64, genesis_note),
+            POINT_LIMIT,
+        )
         .expect("Pushing genesis note should succeed");
 
     update_root(&mut session).expect("Updating the root should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, 1)
-        .expect("Instantiating new session should succeed");
-    session.set_point_limit(POINT_LIMIT);
 
-    session
+    rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed")
 }
 
 fn leaves_in_range(
     session: &mut Session,
     range: Range<u64>,
 ) -> Result<Vec<TreeLeaf>> {
-    session.call(
-        TRANSFER_CONTRACT,
-        "leaves_in_range",
-        &(range.start, range.end),
-    )
+    session
+        .call(
+            TRANSFER_CONTRACT,
+            "leaves_in_range",
+            &(range.start, range.end),
+            POINT_LIMIT,
+        )
+        .map(|r| r.data)
 }
 
 fn update_root(session: &mut Session) -> Result<()> {
-    session.call(TRANSFER_CONTRACT, "update_root", &())
+    session
+        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.call(TRANSFER_CONTRACT, "root", &())
+    session
+        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn module_balance(session: &mut Session, contract: ContractId) -> Result<u64> {
-    session.call(TRANSFER_CONTRACT, "module_balance", &contract)
+    session
+        .call(TRANSFER_CONTRACT, "module_balance", &contract, POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn message(
@@ -135,14 +149,18 @@ fn message(
     contract: ContractId,
     pk: PublicKey,
 ) -> Result<Option<Message>> {
-    session.call(TRANSFER_CONTRACT, "message", &(contract, pk))
+    session
+        .call(TRANSFER_CONTRACT, "message", &(contract, pk), POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, 4>>> {
-    session.call(TRANSFER_CONTRACT, "opening", &pos)
+    session
+        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
@@ -172,26 +190,32 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 
 /// Executes a transaction, returning the gas spent.
 fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    session.set_point_limit(u64::MAX);
-    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+    session.call::<_, ()>(TRANSFER_CONTRACT, "spend", &tx, u64::MAX)?;
 
     let mut gas_spent = GAS_PER_TX;
     if let Some((contract_id, fn_name, fn_data)) = &tx.call {
         let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
-        session.set_point_limit(gas_limit);
 
         let contract_id = ContractId::from_bytes(*contract_id);
         println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
 
-        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
-        println!("{r:?}");
+        let r = session.call_raw(
+            contract_id,
+            fn_name,
+            fn_data.clone(),
+            gas_limit,
+        )?;
 
-        gas_spent += session.spent();
+        gas_spent += r.points_spent;
     }
 
-    session.set_point_limit(u64::MAX);
-    let _: () = session
-        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+    session
+        .call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "refund",
+            &(tx.fee, gas_spent),
+            u64::MAX,
+        )
         .expect("Refunding must succeed");
 
     Ok(gas_spent)

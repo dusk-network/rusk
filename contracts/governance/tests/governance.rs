@@ -42,43 +42,43 @@ fn instantiate(
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
-    session.set_point_limit(POINT_LIMIT);
 
     session
         .deploy(
             governance_bytecode,
             ContractData::builder(OWNER).contract_id(GOVERNANCE_ID),
+            POINT_LIMIT,
         )
         .expect("Deploying the governance contract should succeed");
 
     // Set the broker and the authority of the governance contract
-    let _: () = session
-        .call(GOVERNANCE_ID, "set_broker", broker)
+    session
+        .call::<_, ()>(GOVERNANCE_ID, "set_broker", broker, POINT_LIMIT)
         .expect("Setting the broker should succeed");
 
-    let _: () = session
-        .call(GOVERNANCE_ID, "set_authority", authority)
+    session
+        .call::<_, ()>(GOVERNANCE_ID, "set_authority", authority, POINT_LIMIT)
         .expect("Setting the authority should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, 1)
-        .expect("Instantiating new session should succeed");
-    session.set_point_limit(POINT_LIMIT);
 
-    session
+    rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed")
 }
 
 /// Query the total supply in the governance contract.
 fn total_supply(session: &mut Session) -> u64 {
     session
-        .call(GOVERNANCE_ID, "total_supply", &())
+        .call(GOVERNANCE_ID, "total_supply", &(), POINT_LIMIT)
+        .map(|r| r.data)
         .expect("Querying the total supply should succeed")
 }
 
 fn balance(session: &mut Session, pk: &PublicKey) -> u64 {
     session
-        .call(GOVERNANCE_ID, "balance", pk)
+        .call(GOVERNANCE_ID, "balance", pk, POINT_LIMIT)
+        .map(|r| r.data)
         .expect("Querying the total supply should succeed")
 }
 
@@ -107,8 +107,13 @@ fn balance_overflow() {
     let msg = mint_msg(seed, alice, u64::MAX);
     let signature = authority_sk.sign(&authority, &msg);
 
-    let _: () = session
-        .call(GOVERNANCE_ID, "mint", &(signature, seed, alice, u64::MAX))
+    session
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "mint",
+            &(signature, seed, alice, u64::MAX),
+            POINT_LIMIT,
+        )
         .expect("Minting should succeed");
 
     assert_eq!(total_supply(session), u64::MAX);
@@ -124,7 +129,12 @@ fn balance_overflow() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "transfer",
+            &(signature, seed, batch),
+            POINT_LIMIT,
+        )
         .expect_err("The transaction should fail due to overflow");
 
     assert_eq!(total_supply(session), u64::MAX);
@@ -149,15 +159,20 @@ fn same_seed() {
     let msg = pause_msg(seed);
     let signature = authority_sk.sign(&authority, &msg);
 
-    let _: () = session
-        .call(GOVERNANCE_ID, "pause", &(signature, seed))
+    session
+        .call::<_, ()>(GOVERNANCE_ID, "pause", &(signature, seed), POINT_LIMIT)
         .expect("Pausing the contract should succeed");
 
     let msg = unpause_msg(seed);
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "unpause", &(signature, seed))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "unpause",
+            &(signature, seed),
+            POINT_LIMIT,
+        )
         .expect_err("Unpausing the contract with the same seed error");
 }
 
@@ -179,7 +194,7 @@ fn wrong_signature() {
     let wrong_sig = authority_sk.sign(&authority, &wrong_message);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "pause", &(wrong_sig, seed))
+        .call::<_, ()>(GOVERNANCE_ID, "pause", &(wrong_sig, seed), POINT_LIMIT)
         .expect_err("Pausing the contract with a wrong signature should error");
 }
 
@@ -208,8 +223,13 @@ fn mint_burn_transfer() {
     let msg = mint_msg(seed, alice, 100);
     let signature = authority_sk.sign(&authority, &msg);
 
-    let _: () = session
-        .call(GOVERNANCE_ID, "mint", &(signature, seed, alice, 100))
+    session
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "mint",
+            &(signature, seed, alice, 100),
+            POINT_LIMIT,
+        )
         .expect("Minting should succeed");
 
     assert_eq!(total_supply(session), 100);
@@ -225,7 +245,12 @@ fn mint_burn_transfer() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "transfer",
+            &(signature, seed, batch),
+            POINT_LIMIT,
+        )
         .expect("The transaction should succeed");
 
     assert_eq!(total_supply(session), 200);
@@ -241,7 +266,12 @@ fn mint_burn_transfer() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "transfer",
+            &(signature, seed, batch),
+            POINT_LIMIT,
+        )
         .expect("The transaction should succeed");
 
     assert_eq!(total_supply(session), 200);
@@ -281,7 +311,12 @@ fn fee() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "fee", &(signature, seed, batch))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "fee",
+            &(signature, seed, batch),
+            POINT_LIMIT,
+        )
         .expect("The fee payment should succeed");
 
     assert_eq!(total_supply(session), 250);
@@ -302,7 +337,12 @@ fn fee() {
     let signature = authority_sk.sign(&authority, &msg);
 
     session
-        .call::<_, ()>(GOVERNANCE_ID, "transfer", &(signature, seed, batch))
+        .call::<_, ()>(
+            GOVERNANCE_ID,
+            "transfer",
+            &(signature, seed, batch),
+            POINT_LIMIT,
+        )
         .expect("The batch processing should succeed");
 
     assert_eq!(total_supply(session), 260);

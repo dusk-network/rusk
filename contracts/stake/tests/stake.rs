@@ -52,12 +52,12 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     );
 
     let mut session = rusk_abi::new_genesis_session(vm);
-    session.set_point_limit(POINT_LIMIT);
 
     session
         .deploy(
             transfer_bytecode,
             ContractData::builder(OWNER).contract_id(TRANSFER_CONTRACT),
+            POINT_LIMIT,
         )
         .expect("Deploying the transfer contract should succeed");
 
@@ -65,59 +65,72 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .deploy(
             stake_bytecode,
             ContractData::builder(OWNER).contract_id(STAKE_CONTRACT),
+            POINT_LIMIT,
         )
         .expect("Deploying the stake contract should succeed");
 
     let genesis_note = Note::transparent(rng, psk, GENESIS_VALUE);
 
     // push genesis note to the contract
-    let _: Note = session
-        .call(TRANSFER_CONTRACT, "push_note", &(0u64, genesis_note))
+    session
+        .call::<_, Note>(
+            TRANSFER_CONTRACT,
+            "push_note",
+            &(0u64, genesis_note),
+            POINT_LIMIT,
+        )
         .expect("Pushing genesis note should succeed");
 
     update_root(&mut session).expect("Updating the root should succeed");
 
-    let _: () = session
-        .call(STAKE_CONTRACT, "add_owner", pk)
+    session
+        .call::<_, ()>(STAKE_CONTRACT, "add_owner", pk, POINT_LIMIT)
         .expect("Inserting APK into owners list should suceeed");
 
     // allow given public key to stake
-    let _: () = session
-        .call(STAKE_CONTRACT, "insert_allowlist", pk)
+    session
+        .call::<_, ()>(STAKE_CONTRACT, "insert_allowlist", pk, POINT_LIMIT)
         .expect("Inserting APK into allowlist should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
-    let mut session = rusk_abi::new_session(vm, base, 1)
-        .expect("Instantiating new session should succeed");
-    session.set_point_limit(POINT_LIMIT);
 
-    session
+    rusk_abi::new_session(vm, base, 1)
+        .expect("Instantiating new session should succeed")
 }
 
 fn leaves_in_range(
     session: &mut Session,
     range: Range<u64>,
 ) -> Result<Vec<TreeLeaf>> {
-    session.call(
-        TRANSFER_CONTRACT,
-        "leaves_in_range",
-        &(range.start, range.end),
-    )
+    session
+        .call(
+            TRANSFER_CONTRACT,
+            "leaves_in_range",
+            &(range.start, range.end),
+            POINT_LIMIT,
+        )
+        .map(|r| r.data)
 }
 fn update_root(session: &mut Session) -> Result<()> {
-    session.call(TRANSFER_CONTRACT, "update_root", &())
+    session
+        .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn root(session: &mut Session) -> Result<BlsScalar> {
-    session.call(TRANSFER_CONTRACT, "root", &())
+    session
+        .call(TRANSFER_CONTRACT, "root", &(), POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn opening(
     session: &mut Session,
     pos: u64,
 ) -> Result<Option<PoseidonOpening<(), H, A>>> {
-    session.call(TRANSFER_CONTRACT, "opening", &pos)
+    session
+        .call(TRANSFER_CONTRACT, "opening", &pos, POINT_LIMIT)
+        .map(|r| r.data)
 }
 
 fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
@@ -147,26 +160,33 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 
 /// Executes a transaction, returning the gas spent.
 fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    session.set_point_limit(u64::MAX);
-    session.call(TRANSFER_CONTRACT, "spend", &tx)?;
+    session.call::<_, ()>(TRANSFER_CONTRACT, "spend", &tx, u64::MAX)?;
 
     let mut gas_spent = GAS_PER_TX;
     if let Some((contract_id, fn_name, fn_data)) = &tx.call {
         let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
-        session.set_point_limit(gas_limit);
 
         let contract_id = ContractId::from_bytes(*contract_id);
         println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
 
-        let r = session.call_raw(contract_id, fn_name, fn_data.clone());
+        let r = session.call_raw(
+            contract_id,
+            fn_name,
+            fn_data.clone(),
+            gas_limit,
+        )?;
         println!("{r:?}");
 
-        gas_spent += session.spent();
+        gas_spent += r.points_spent;
     }
 
-    session.set_point_limit(u64::MAX);
-    let _: () = session
-        .call(TRANSFER_CONTRACT, "refund", &(tx.fee, gas_spent))
+    session
+        .call::<_, ()>(
+            TRANSFER_CONTRACT,
+            "refund",
+            &(tx.fee, gas_spent),
+            u64::MAX,
+        )
         .expect("Refunding must succeed");
 
     Ok(gas_spent)
@@ -352,8 +372,9 @@ fn stake_withdraw_unstake() {
     println!("STAKE   : {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk)
-        .expect("Getting the stake should succeed");
+        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .expect("Getting the stake should succeed")
+        .data;
     let stake_data = stake_data.expect("The stake should exist");
 
     let (amount, _) =
@@ -370,13 +391,19 @@ fn stake_withdraw_unstake() {
 
     const REWARD_AMOUNT: u64 = dusk(5.0);
 
-    let _: () = session
-        .call(STAKE_CONTRACT, "reward", &(pk, REWARD_AMOUNT))
+    session
+        .call::<_, ()>(
+            STAKE_CONTRACT,
+            "reward",
+            &(pk, REWARD_AMOUNT),
+            POINT_LIMIT,
+        )
         .expect("Rewarding a key should succeed");
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk)
-        .expect("Getting the stake should succeed");
+        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .expect("Getting the stake should succeed")
+        .data;
     let stake_data = stake_data.expect("The stake should exist");
 
     let (amount, _) =
@@ -559,8 +586,9 @@ fn stake_withdraw_unstake() {
     println!("WITHDRAW: {gas_spent} gas");
 
     let stake_data: Option<StakeData> = session
-        .call(STAKE_CONTRACT, "get_stake", &pk)
-        .expect("Getting the stake should succeed");
+        .call(STAKE_CONTRACT, "get_stake", &pk, POINT_LIMIT)
+        .expect("Getting the stake should succeed")
+        .data;
     let stake_data = stake_data.expect("The stake should exist");
 
     let (amount, _) =
@@ -935,8 +963,9 @@ fn allow() {
     println!("ALLOW   : {gas_spent} gas");
 
     let is_allowed: bool = session
-        .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk)
-        .expect("Querying the allowlist should succeed");
+        .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk, POINT_LIMIT)
+        .expect("Querying the allowlist should succeed")
+        .data;
 
     assert!(is_allowed, "The new public key should now be allowed");
 }
