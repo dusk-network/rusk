@@ -95,13 +95,16 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
         let already_verified = vc_list.lock().await.contains(&hash);
 
         if !already_verified {
-            if let Err(e) =
-                executor.lock().await.verify_state_transition(CallParams {
+            if let Err(e) = executor
+                .lock()
+                .await
+                .verify_state_transition(CallParams {
                     round: ru.round,
                     txs: candidate.txs.clone(),
                     block_gas_limit: crate::config::DEFAULT_BLOCK_GAS_LIMIT,
                     generator_pubkey: pubkey.clone(),
                 })
+                .await
             {
                 tracing::error!(
                     "verify state transition failed with err: {:?}",

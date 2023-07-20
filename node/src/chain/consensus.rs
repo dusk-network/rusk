@@ -234,17 +234,15 @@ impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
     }
 }
 
+#[async_trait::async_trait]
 impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
-    fn verify_state_transition(
+    async fn verify_state_transition(
         &self,
         params: CallParams,
     ) -> Result<StateRoot, dusk_consensus::contract_state::Error> {
         tracing::info!("verifying state");
 
-        let vm = self.vm.try_read().map_err(|e| {
-            tracing::error!("failed to try_read vm: {}", e);
-            Error::Failed
-        })?;
+        let vm = self.vm.read().await;
 
         vm.verify_state_transition(&params).map_err(|err| {
             tracing::error!("failed to call VST {}", err);
@@ -254,16 +252,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         Ok([0; 32])
     }
 
-    fn execute_state_transition(
+    async fn execute_state_transition(
         &self,
         params: CallParams,
     ) -> Result<Output, Error> {
         tracing::info!("executing state transition");
-
-        let vm = self.vm.try_read().map_err(|e| {
-            tracing::error!("failed to try_read vm: {}", e);
-            Error::Failed
-        })?;
+        let vm = self.vm.read().await;
 
         let (executed_txs, discarded_txs, state_root) =
             vm.execute_state_transition(params).map_err(|err| {
@@ -282,28 +276,11 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         })
     }
 
-    // fn accept(&self, _params: CallParams) -> Result<Output, Error> {
-    //     tracing::info!("accepting new state");
-    //     Ok(Output::default())
-    // }
-
-    // fn finalize(&self, _params: CallParams) -> Result<Output, Error> {
-    //     tracing::info!("finalizing new state");
-    //     Ok(Output::default())
-    // }
-
-    // fn get_state_root(&self) -> Result<StateRoot, Error> {
-    //     Ok([0; 32])
-    // }
-
-    fn get_mempool_txs(
+    async fn get_mempool_txs(
         &self,
         block_gas_limit: u64,
     ) -> Result<Vec<Transaction>, Error> {
-        let db = self.db.try_read().map_err(|e| {
-            tracing::error!("failed to try_read mempool: {}", e);
-            Error::Failed
-        })?;
+        let db = self.db.read().await;
 
         db.view(|view| {
             database::Mempool::get_txs_sorted_by_fee(&view, block_gas_limit)

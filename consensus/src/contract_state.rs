@@ -31,23 +31,21 @@ pub struct Output {
     pub provisioners: Provisioners,
     pub discarded_txs: Vec<Transaction>,
 }
+
+#[async_trait::async_trait]
 pub trait Operations: Send + Sync {
-    fn verify_state_transition(
+    async fn verify_state_transition(
         &self,
         params: CallParams,
     ) -> Result<StateRoot, Error>;
 
-    fn get_mempool_txs(
+    async fn get_mempool_txs(
         &self,
         block_gas_limit: u64,
     ) -> Result<Vec<Transaction>, Error>;
 
-    fn execute_state_transition(
+    async fn execute_state_transition(
         &self,
         params: CallParams,
     ) -> Result<Output, Error>;
-    // fn accept(&self, params: CallParams) -> Result<Output, Error>;
-    // fn finalize(&self, params: CallParams) -> Result<Output, Error>;
-
-    // fn get_state_root(&self) -> Result<StateRoot, Error>;
 }

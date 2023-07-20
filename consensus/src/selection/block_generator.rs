@@ -91,16 +91,20 @@ impl<T: Operations> Generator<T> {
             .executor
             .lock()
             .await
-            .get_mempool_txs(config::DEFAULT_BLOCK_GAS_LIMIT)?;
+            .get_mempool_txs(config::DEFAULT_BLOCK_GAS_LIMIT)
+            .await?;
 
-        let result = self.executor.lock().await.execute_state_transition(
-            CallParams {
+        let result = self
+            .executor
+            .lock()
+            .await
+            .execute_state_transition(CallParams {
                 round,
                 txs,
                 block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
                 generator_pubkey: pubkey.clone(),
-            },
-        )?;
+            })
+            .await?;
 
         let tx_hashes: Vec<_> =
             result.txs.iter().map(|t| t.inner.hash()).collect();
