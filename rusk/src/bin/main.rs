@@ -87,6 +87,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
 
+    tracing::info!("Rusk VM loaded");
+
     // Set up a node where:
     // transport layer is Kadcast with message ids from 0 to 255
     // persistence layer is rocksdb
