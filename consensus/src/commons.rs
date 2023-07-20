@@ -95,7 +95,7 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
         let already_verified = vc_list.lock().await.contains(&hash);
 
         if !already_verified {
-            if let Err(e) = executor
+            match executor
                 .lock()
                 .await
                 .verify_state_transition(CallParams {
@@ -106,12 +106,23 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 })
                 .await
             {
-                tracing::error!(
-                    "verify state transition failed with err: {:?}",
-                    e
-                );
-                return;
-            }
+                Ok(state_hash) => {
+                    // Ensure state_hash returned by VST call is the one we
+                    // expect to have with current candidate block
+                    if state_hash != candidate.header.state_hash {
+                        tracing::error!(
+                            "VST failed with invalid state_hash/candidate_state_hash {}/{} ",
+                            hex::encode(&state_hash),
+                            hex::encode(&candidate.header.state_hash),
+                        );
+                        return;
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("VST failed with err: {:?}", e);
+                    return;
+                }
+            };
         }
 
         vc_list.lock().await.insert(hash);
