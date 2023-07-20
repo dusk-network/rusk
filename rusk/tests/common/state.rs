@@ -115,6 +115,7 @@ pub fn generator_procedure(
     block.header.generator_bls_pubkey = generator_pubkey_bytes.clone();
     block.header.gas_limit = block_gas_limit;
     block.header.height = block_height;
+    block.header.state_hash = execute_state_root;
     block.txs = verify_param.txs;
 
     let (accept_txs, accept_state_root) = rusk.accept(&block)?;
