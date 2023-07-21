@@ -69,13 +69,6 @@ unsafe fn root(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn leaves_in_range(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |(start, end)| {
-        STATE.leaves_in_range(start..end)
-    })
-}
-
-#[no_mangle]
 unsafe fn module_balance(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |module| STATE.balance(&module))
 }
@@ -95,6 +88,13 @@ unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |nullifiers| {
         STATE.existing_nullifiers(nullifiers)
     })
+}
+
+// "Feeder" queries
+
+#[no_mangle]
+unsafe fn leaves_from_height(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |height| STATE.leaves_from_height(height))
 }
 
 // "Management" transactions
