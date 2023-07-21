@@ -12,7 +12,7 @@ use dusk_wallet_core::{self as wallet};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk, GAS_PER_INPUT};
-use rusk_abi::{ContractId, TRANSFER_CONTRACT};
+use rusk_abi::TRANSFER_CONTRACT;
 use tempfile::tempdir;
 use tracing::info;
 
@@ -157,7 +157,7 @@ pub async fn erroring_tx_charged_full() -> Result<()> {
         TestStore,
         TestStateClient {
             rusk: rusk.clone(),
-            cache: cache.clone(),
+            cache,
         },
         TestProverClient::default(),
     );

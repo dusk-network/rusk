@@ -114,7 +114,7 @@ fn wallet_transfer(
     let gas_spent = tx.gas_spent;
     info!("Gas spent: {gas_spent}");
 
-    generator_procedure(rusk, &vec![], block_height + 1, BLOCK_GAS_LIMIT, None)
+    generator_procedure(rusk, &[], block_height + 1, BLOCK_GAS_LIMIT, None)
         .expect("empty block generator procedure to succeed");
 
     // Check the receiver's balance is changed accordingly

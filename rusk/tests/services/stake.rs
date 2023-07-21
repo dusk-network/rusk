@@ -105,7 +105,7 @@ pub async fn stake() -> Result<()> {
         TestStore,
         TestStateClient {
             rusk: rusk.clone(),
-            cache: cache.clone(),
+            cache,
         },
         TestProverClient::default(),
     );

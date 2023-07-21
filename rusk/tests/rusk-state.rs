@@ -9,9 +9,11 @@ pub mod common;
 use crate::common::*;
 
 use std::path::Path;
+use std::sync::mpsc;
 
 use dusk_pki::SecretSpendKey;
 use parking_lot::MutexGuard;
+use phoenix_core::transaction::TreeLeaf;
 use phoenix_core::Note;
 use rand::prelude::*;
 use rand::rngs::StdRng;
@@ -31,6 +33,15 @@ fn initial_state<P: AsRef<Path>>(dir: P) -> Result<Rusk> {
         .expect("Cannot deserialize config");
 
     new_state(dir, &snapshot)
+}
+
+fn leaves_from_height(rusk: &Rusk, height: u64) -> Result<Vec<TreeLeaf>> {
+    let (sender, receiver) = mpsc::channel();
+    rusk.leaves_from_height(height, sender)?;
+    Ok(receiver
+        .into_iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).unwrap())
+        .collect())
 }
 
 fn push_note<'a, F, T>(rusk: &'a Rusk, after_push: F) -> T
@@ -75,7 +86,7 @@ pub fn rusk_state_accepted() -> Result<()> {
 
     push_note(&rusk, |_inner| {});
 
-    let leaves = rusk.leaves_in_range(0..1)?;
+    let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
         leaves.len(),
@@ -84,7 +95,7 @@ pub fn rusk_state_accepted() -> Result<()> {
     );
 
     rusk.revert()?;
-    let leaves = rusk.leaves_in_range(0..1)?;
+    let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
         leaves.len(),
@@ -107,7 +118,7 @@ pub fn rusk_state_finalized() -> Result<()> {
         inner.base_commit = inner.current_commit;
     });
 
-    let leaves = rusk.leaves_in_range(0..1)?;
+    let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
         leaves.len(),
@@ -116,7 +127,7 @@ pub fn rusk_state_finalized() -> Result<()> {
     );
 
     rusk.revert()?;
-    let leaves = rusk.leaves_in_range(0..1)?;
+    let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
         leaves.len(),
