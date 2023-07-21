@@ -55,6 +55,7 @@ impl RoundUpdate {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ConsensusError {
     InvalidBlock,
+    InvalidBlockHash,
     InvalidSignature,
     InvalidMsgType,
     FutureEvent,

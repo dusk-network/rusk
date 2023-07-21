@@ -26,9 +26,9 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         msg: Message,
         _ru: &RoundUpdate,
         _step: u8,
-        _committee: &Committee,
+        committee: &Committee,
     ) -> Result<Message, ConsensusError> {
-        self.verify_new_block(&msg)?;
+        self.verify_new_block(&msg, committee)?;
 
         Ok(msg)
     }
@@ -65,11 +65,19 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
 }
 
 impl<D: Database> Selection<D> {
-    fn verify_new_block(&self, msg: &Message) -> Result<(), ConsensusError> {
-        //  Verify new_block msg signature
+    fn verify_new_block(
+        &self,
+        msg: &Message,
+        committee: &Committee,
+    ) -> Result<(), ConsensusError> {
         if let Payload::NewBlock(p) = &msg.payload {
+            //  Verify new_block msg signature
             if msg.header.verify_signature(&p.signed_hash).is_err() {
                 return Err(ConsensusError::InvalidSignature);
+            }
+
+            if msg.header.block_hash != p.candidate.header.hash {
+                return Err(ConsensusError::InvalidBlockHash);
             }
 
             let tx_hashes: Vec<[u8; 32]> =
@@ -79,7 +87,10 @@ impl<D: Database> Selection<D> {
                 return Err(ConsensusError::InvalidBlock);
             }
 
-            // TODO: Verify newblock candidate
+            if !committee.is_member(&msg.header.pubkey_bls) {
+                return Err(ConsensusError::NotCommitteeMember);
+            }
+
             return Ok(());
         }
 
