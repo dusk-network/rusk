@@ -15,7 +15,7 @@ pub enum Error {
 }
 
 #[allow(unused)]
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct CallParams {
     pub round: u64,
     pub txs: Vec<Transaction>,

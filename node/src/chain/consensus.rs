@@ -263,9 +263,6 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 Error::Failed
             })?;
 
-        // For now we just return the transactions that were passed to us.
-        // Later we will need to actually execute the transactions and return
-        // proper results.
         Ok(Output {
             txs: executed_txs,
             state_root,
