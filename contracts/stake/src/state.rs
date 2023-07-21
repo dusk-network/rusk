@@ -315,18 +315,13 @@ impl StakeState {
         stake.increase_reward(value);
     }
 
-    /// Gets a vector of all public keys and stakes, `skip`ping the given number
-    /// of stakes and getting the given `max`imum number.
-    pub fn stakes(
-        &self,
-        max: usize,
-        skip: usize,
-    ) -> Vec<(PublicKey, StakeData)> {
-        let mut stakes = Vec::with_capacity(max);
-        for (k, v) in self.stakes.iter().skip(skip).take(max) {
-            stakes.push((PublicKey::from_bytes(k).unwrap(), v.clone().0));
+    /// Feeds the host with the stakes.
+    pub fn stakes(&self) {
+        for (k, v) in self.stakes.iter() {
+            let pk = PublicKey::from_bytes(k).unwrap();
+            let stake_data = v.clone().0;
+            rusk_abi::feed((pk, stake_data));
         }
-        stakes
     }
 
     /// Gets a vector of all allowlisted keys.
