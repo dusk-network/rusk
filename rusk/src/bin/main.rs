@@ -107,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = rocksdb::Backend::create_or_open(db_path);
     let net = Kadcast::new(config.clone().kadcast.into());
 
-    let node = Node::new(net, db, rusk.clone());
+    let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
 
     let mut _ws_server = None;
     if config.ws.listen {
@@ -117,7 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // node spawn_all is the entry point
-    if let Err(e) = node.spawn_all(service_list).await {
+    if let Err(e) = node.0.spawn_all(service_list).await {
         tracing::error!("node terminated with err: {}", e);
         Err(e.into())
     } else {

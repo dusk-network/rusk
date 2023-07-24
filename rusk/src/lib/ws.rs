@@ -10,6 +10,8 @@ use std::borrow::Cow;
 use std::convert::Infallible;
 use std::sync::Arc;
 
+use node::database::rocksdb::Backend;
+use serde::Deserialize;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::mpsc;
@@ -19,11 +21,13 @@ use tokio_tungstenite::accept_async;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 
-use futures_util::StreamExt;
+use futures_util::{SinkExt, StreamExt};
 
 use node::database;
 use node::{Network, Node};
 
+use crate::chain::RuskNode;
+use crate::graphql::DbContext;
 use crate::Rusk;
 
 pub struct WsServer {
@@ -32,9 +36,9 @@ pub struct WsServer {
 }
 
 impl WsServer {
-    pub async fn bind<N: Network, DB: database::DB, A: ToSocketAddrs>(
+    pub async fn bind<A: ToSocketAddrs>(
         rusk: Rusk,
-        node: Node<N, DB, Rusk>,
+        node: RuskNode,
         addr: A,
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(addr).await?;
@@ -53,13 +57,13 @@ impl WsServer {
     }
 }
 
-struct DataSources<N: Network, DB: database::DB> {
+struct DataSources {
     rusk: Rusk,
-    node: Node<N, DB, Rusk>,
+    node: RuskNode,
 }
 
-async fn listening_loop<N: Network, DB: database::DB>(
-    sources: DataSources<N, DB>,
+async fn listening_loop(
+    sources: DataSources,
     listener: TcpListener,
     mut shutdown: mpsc::Receiver<Infallible>,
 ) {
@@ -83,17 +87,20 @@ async fn listening_loop<N: Network, DB: database::DB>(
 }
 
 /// A request sent by the websocket client.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 struct Request {
     headers: serde_json::Map<String, serde_json::Value>,
     target_type: u8,
     target: String,
     topic: String,
-    data: Vec<u8>,
+    #[serde(skip)]
+    binary_data: Vec<u8>,
+    data: String,
 }
 
 impl Request {
-    fn parse(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+    fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+        let a: Vec<u8> = vec![];
         let (headers, bytes) = parse_header(bytes)?;
         let (target_type, bytes) = parse_target_type(bytes)?;
         let (target, bytes) = parse_string(bytes)?;
@@ -104,16 +111,15 @@ impl Request {
             target_type,
             target,
             topic,
-            data,
+            binary_data: data,
+            data: "".into(),
         })
     }
 }
 
-fn parse_len(
-    bytes: &[u8],
-) -> Result<(usize, &[u8]), Box<dyn std::error::Error>> {
+fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
     if bytes.len() < 4 {
-        return Err("not enough bytes".to_string().into());
+        return Err(anyhow::anyhow!("not enough bytes"));
     }
 
     let len =
@@ -124,10 +130,10 @@ fn parse_len(
 }
 
 type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-fn parse_header(bytes: &[u8]) -> Result<Header, Box<dyn std::error::Error>> {
+fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
-        return Err(format!("not enough bytes for parsed len {len}").into());
+        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
     }
 
     let (header_bytes, bytes) = bytes.split_at(len);
@@ -136,11 +142,9 @@ fn parse_header(bytes: &[u8]) -> Result<Header, Box<dyn std::error::Error>> {
     Ok((header, bytes))
 }
 
-fn parse_target_type(
-    bytes: &[u8],
-) -> Result<(u8, &[u8]), Box<dyn std::error::Error>> {
+fn parse_target_type(bytes: &[u8]) -> anyhow::Result<(u8, &[u8])> {
     if bytes.is_empty() {
-        return Err("not enough bytes for target type".to_string().into());
+        return Err(anyhow::anyhow!("not enough bytes for target type"));
     }
 
     let (target_type_bytes, bytes) = bytes.split_at(1);
@@ -149,12 +153,10 @@ fn parse_target_type(
     Ok((target_type, bytes))
 }
 
-fn parse_string(
-    bytes: &[u8],
-) -> Result<(String, &[u8]), Box<dyn std::error::Error>> {
+fn parse_string(bytes: &[u8]) -> anyhow::Result<(String, &[u8])> {
     let (len, bytes) = parse_len(bytes)?;
     if bytes.len() < len {
-        return Err(format!("not enough bytes for parsed len {len}").into());
+        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
     }
 
     let (string_bytes, bytes) = bytes.split_at(len);
@@ -168,23 +170,77 @@ struct StateQuery {}
 #[allow(unused)]
 struct ChainQuery {}
 
-async fn handle_stream<
-    N: Network,
-    DB: database::DB,
-    S: AsyncRead + AsyncWrite + Unpin,
->(
-    sources: Arc<DataSources<N, DB>>,
+use crate::graphql::Query;
+use juniper::EmptyMutation;
+use juniper::EmptySubscription;
+use juniper::OperationType;
+use juniper::Variables;
+type Schema = juniper::RootNode<
+    'static,
+    Query,
+    EmptyMutation<DbContext>,
+    EmptySubscription<DbContext>,
+>;
+
+async fn handle_stream<S: AsyncRead + AsyncWrite + Unpin>(
+    sources: Arc<DataSources>,
     stream: S,
 ) {
     if let Ok(mut stream) = accept_async(stream).await {
         while let Some(Ok(msg)) = stream.next().await {
-            let data = msg.into_data();
-            let r = Request::parse(&data);
-
+            let r = match msg.is_binary() {
+                true => Request::parse(&msg.into_data())
+                    .map_err(|e| anyhow::anyhow!(e)),
+                false => serde_json::from_slice(&msg.into_data()[..])
+                    .map_err(|e| anyhow::anyhow!(e)),
+            };
             if r.is_err() {
+                println!("{r:?}");
                 break;
             }
-            let request = r.unwrap();
+            let request: Request = r.unwrap();
+            match request.target_type {
+                0x02 if request.target == "chain" => {
+                    let ctx = DbContext(sources.node.db());
+
+                    // // Run the executor.
+                    match juniper::execute(
+                        &request.data,
+                        None,
+                        &Schema::new(
+                            Query,
+                            EmptyMutation::new(),
+                            EmptySubscription::new(),
+                        ),
+                        &Variables::new(),
+                        &ctx,
+                    )
+                    .await
+                    {
+                        Err(e) => {
+                            stream
+                                .send(tungstenite::protocol::Message::text(
+                                    format!("Error {e}"),
+                                ))
+                                .await;
+                        }
+                        Ok((res, _errors)) => {
+                            stream
+                                .send(tungstenite::protocol::Message::text(
+                                    format!("{res}"),
+                                ))
+                                .await;
+                        }
+                    }
+                }
+                _ => {
+                    stream
+                        .send(tungstenite::protocol::Message::text(
+                            "Unsupported",
+                        ))
+                        .await;
+                }
+            }
         }
 
         let _ = stream
