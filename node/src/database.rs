@@ -26,9 +26,9 @@ pub trait DB: Send + Sync + 'static {
         T: AsRef<Path>;
 
     /// Provides a managed execution of a read-only isolated transaction.
-    fn view<F>(&self, f: F) -> Result<()>
+    fn view<F, T>(&self, f: F) -> T
     where
-        F: for<'a> FnOnce(Self::P<'a>) -> Result<()>;
+        F: for<'a> FnOnce(Self::P<'a>) -> T;
 
     /// Provides a managed execution of a read-write atomic transaction.
     ///

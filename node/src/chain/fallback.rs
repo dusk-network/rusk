@@ -78,12 +78,9 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         info!("Fetch previous block");
 
         let prev_block_height = curr_height - 1;
-        let mut prev_block = ledger::Block::default();
-        acc.db.read().await.view(|v| {
-            prev_block = Ledger::fetch_block_by_height(&v, prev_block_height)?
-                .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
-
-            Ok(())
+        let prev_block = acc.db.read().await.view(|v| {
+            Ledger::fetch_block_by_height(&v, prev_block_height)?
+                .ok_or_else(|| anyhow::anyhow!("could not fetch block"))
         })?;
 
         info!("Verify block header/certificate data");
