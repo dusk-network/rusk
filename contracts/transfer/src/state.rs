@@ -11,7 +11,6 @@ use crate::tree::Tree;
 use alloc::collections::btree_map::Entry;
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
-use core::ops::Range;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
@@ -354,9 +353,12 @@ impl TransferState {
             .expect("There should be a note that was just inserted")
     }
 
-    /// Return the leaves in a given block height range.
-    pub fn leaves_in_range(&self, range: Range<u64>) -> Vec<TreeLeaf> {
-        self.tree.leaves(range).cloned().collect()
+    /// Feeds the host with the leaves in the tree, starting from the given
+    /// height.
+    pub fn leaves_from_height(&self, height: u64) {
+        for leaf in self.tree.leaves(height) {
+            rusk_abi::feed(leaf.clone());
+        }
     }
 
     /// Update the root for of the tree.

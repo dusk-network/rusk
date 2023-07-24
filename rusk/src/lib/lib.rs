@@ -8,8 +8,9 @@
 
 use crate::error::Error;
 
-use std::ops::Range;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
+use std::sync::mpsc;
 use std::sync::Arc;
 use std::{cmp, fs, io};
 
@@ -20,11 +21,8 @@ pub mod ws;
 
 use dusk_bytes::DeserializableSlice;
 use futures::Stream;
-use std::pin::Pin;
 use tokio::spawn;
-use tokio::sync::mpsc;
-use tokio_util::task::LocalPoolHandle;
-use tracing::info;
+use tracing::{error, info};
 
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
@@ -57,9 +55,6 @@ pub struct RuskInner {
     pub current_commit: [u8; 32],
     pub base_commit: [u8; 32],
     pub vm: VM,
-
-    // FIXME please remove me
-    pub latest_block_height: u64,
 }
 
 #[derive(Clone)]
@@ -93,7 +88,6 @@ impl Rusk {
             current_commit: base_commit,
             base_commit,
             vm,
-            latest_block_height: 0,
         }));
 
         Ok(Self {
@@ -263,7 +257,6 @@ impl Rusk {
 
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
-        inner.latest_block_height = block_height;
 
         Ok((spent_txs, state_root))
     }
@@ -305,7 +298,6 @@ impl Rusk {
 
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
-        inner.latest_block_height = block_height;
 
         // Delete all commits except the previous base commit, and the current
         // commit
@@ -358,9 +350,24 @@ impl Rusk {
         inner.current_commit
     }
 
-    /// Returns the leaves of the transfer tree in the given range.
-    pub fn leaves_in_range(&self, range: Range<u64>) -> Result<Vec<TreeLeaf>> {
-        self.query(TRANSFER_CONTRACT, "leaves_in_range", &range)
+    /// Performs a feeder query returning the leaves of the transfer tree
+    /// starting from the given height. The function will block while executing,
+    /// and the results of the query will be passed through the `receiver`
+    /// counterpart of the given `sender`.
+    ///
+    /// The receiver of the leaves is responsible for deserializing the leaves
+    /// appropriately - i.e. using `rkyv`.
+    pub fn leaves_from_height(
+        &self,
+        height: u64,
+        sender: mpsc::Sender<Vec<u8>>,
+    ) -> Result<()> {
+        self.feeder_query(
+            TRANSFER_CONTRACT,
+            "leaves_from_height",
+            &height,
+            sender,
+        )
     }
 
     /// Returns the nullifiers that already exist from a list of given
@@ -498,6 +505,33 @@ impl Rusk {
         Ok(())
     }
 
+    pub fn feeder_query<A>(
+        &self,
+        contract_id: ContractId,
+        call_name: &str,
+        call_arg: &A,
+        feeder: mpsc::Sender<Vec<u8>>,
+    ) -> Result<()>
+    where
+        A: for<'b> Serialize<StandardBufSerializer<'b>>,
+    {
+        let inner = self.inner.lock();
+
+        // For queries we set a point limit of effectively infinite and a block
+        // height of zero since this doesn't affect the result.
+        let current_commit = inner.current_commit;
+        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+
+        session.feeder_call::<_, ()>(
+            contract_id,
+            call_name,
+            call_arg,
+            feeder,
+        )?;
+
+        Ok(())
+    }
+
     pub async fn get_notes(
         &self,
         vk: &[u8],
@@ -514,55 +548,31 @@ impl Rusk {
             true => None,
         };
 
-        let (sender, receiver) = mpsc::channel(16);
+        let (sender, receiver) = mpsc::channel();
 
         // Clone rusk and move it to the thread
         let rusk = self.clone();
-        let latest_block_height =
-            rusk.with_inner(|inner| inner.latest_block_height);
 
-        // Spawn a task that's responsible for iterating through the leaves of
-        // the transfer contract tree and sending them through the sender
+        // Spawn a task responsible for running the feeder query.
         spawn(async move {
-            let local_pool = LocalPoolHandle::new(1);
-            local_pool
-                .spawn_pinned(move || async move {
-                    const BLOCKS_TO_SEARCH: u64 = 16;
-
-                    let mut needle = height;
-
-                    while needle <= latest_block_height {
-                        let range = needle..needle + BLOCKS_TO_SEARCH;
-
-                        let leaves = rusk
-                            .leaves_in_range(range)
-                            .expect("failed to iterate through leaves");
-
-                        for leaf in leaves {
-                            if let Some(vk) = vk {
-                                if !vk.owns(&leaf.note) {
-                                    continue;
-                                }
-                            }
-
-                            if sender
-                                .send((leaf.note, leaf.block_height))
-                                .await
-                                .is_err()
-                            {
-                                break;
-                            }
-                        }
-
-                        needle += BLOCKS_TO_SEARCH;
-                    }
-                })
-                .await
+            if let Err(err) = rusk.leaves_from_height(height, sender) {
+                error!("GetNotes errored: {err}");
+            }
         });
 
         // Make a stream from the receiver and map the elements to be the
         // expected output
-        let stream = tokio_stream::wrappers::ReceiverStream::new(receiver);
+        let stream =
+            tokio_stream::iter(receiver.into_iter().filter_map(move |bytes| {
+                let leaf = rkyv::from_bytes::<TreeLeaf>(&bytes)
+                    .expect("The contract should always return valid leaves");
+                match &vk {
+                    Some(vk) => vk
+                        .owns(&leaf.note)
+                        .then_some((leaf.note, leaf.block_height)),
+                    None => Some((leaf.note, leaf.block_height)),
+                }
+            }));
 
         Ok(Box::pin(stream) as GetNotesStream)
     }

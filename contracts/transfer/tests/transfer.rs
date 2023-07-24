@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::sync::mpsc;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
@@ -17,7 +19,6 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{ContractData, Error, Session, VM};
 use rusk_abi::{ContractId, TRANSFER_CONTRACT};
-use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
     ExecuteCircuitOneTwo, ExecuteCircuitTwoTwo,
@@ -112,18 +113,23 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .expect("Instantiating new session should succeed")
 }
 
-fn leaves_in_range(
+fn leaves_from_height(
     session: &mut Session,
-    range: Range<u64>,
+    height: u64,
 ) -> Result<Vec<TreeLeaf>> {
-    session
-        .call(
-            TRANSFER_CONTRACT,
-            "leaves_in_range",
-            &(range.start, range.end),
-            POINT_LIMIT,
-        )
-        .map(|r| r.data)
+    let (feeder, receiver) = mpsc::channel();
+
+    session.feeder_call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "leaves_from_height",
+        &height,
+        feeder,
+    )?;
+
+    Ok(receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
+        .collect())
 }
 
 fn update_root(session: &mut Session) -> Result<()> {
@@ -238,7 +244,7 @@ fn transfer() {
 
     let session = &mut instantiate(rng, vm, &psk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -335,7 +341,7 @@ fn transfer() {
 
     println!("EXECUTE_1_2 : {gas_spent} gas");
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -358,7 +364,7 @@ fn alice_ping() {
 
     let session = &mut instantiate(rng, vm, &psk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -450,7 +456,7 @@ fn alice_ping() {
 
     println!("EXECUTE_PING: {gas_spent} gas");
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -475,7 +481,7 @@ fn send_and_withdraw_transparent() {
 
     let session = &mut instantiate(rng, vm, &psk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -629,7 +635,7 @@ fn send_and_withdraw_transparent() {
 
     println!("EXECUTE_STCT: {gas_spent} gas");
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -829,7 +835,7 @@ fn send_and_withdraw_obfuscated() {
 
     let session = &mut instantiate(rng, vm, &psk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -1007,7 +1013,7 @@ fn send_and_withdraw_obfuscated() {
 
     println!("EXECUTE_STCO: {gas_spent} gas");
 
-    let leaves = leaves_in_range(session, 1..2)
+    let leaves = leaves_from_height(session, 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),

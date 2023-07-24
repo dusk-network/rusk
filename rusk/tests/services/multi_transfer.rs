@@ -221,7 +221,7 @@ pub async fn multi_transfer() -> Result<()> {
         TestStore,
         TestStateClient {
             rusk: rusk.clone(),
-            cache: cache.clone(),
+            cache,
         },
         TestProverClient::default(),
     );

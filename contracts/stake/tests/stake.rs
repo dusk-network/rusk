@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::sync::mpsc;
+
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_bytes::Serializable;
@@ -18,7 +20,6 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{ContractData, Error, Session, VM};
 use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
-use std::ops::Range;
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
@@ -99,18 +100,23 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .expect("Instantiating new session should succeed")
 }
 
-fn leaves_in_range(
+fn leaves_from_height(
     session: &mut Session,
-    range: Range<u64>,
+    height: u64,
 ) -> Result<Vec<TreeLeaf>> {
-    session
-        .call(
-            TRANSFER_CONTRACT,
-            "leaves_in_range",
-            &(range.start, range.end),
-            POINT_LIMIT,
-        )
-        .map(|r| r.data)
+    let (feeder, receiver) = mpsc::channel();
+
+    session.feeder_call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "leaves_from_height",
+        &height,
+        feeder,
+    )?;
+
+    Ok(receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
+        .collect())
 }
 fn update_root(session: &mut Session) -> Result<()> {
     session
@@ -212,7 +218,7 @@ fn stake_withdraw_unstake() {
 
     let mut session = instantiate(rng, vm, &psk, &pk);
 
-    let leaves = leaves_in_range(&mut session, 0..1)
+    let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
@@ -421,7 +427,7 @@ fn stake_withdraw_unstake() {
 
     // Start withdrawing the reward just given to our key
 
-    let leaves = leaves_in_range(&mut session, 1..2)
+    let leaves = leaves_from_height(&mut session, 1)
         .expect("Getting the notes should succeed");
 
     let input_notes =
@@ -603,7 +609,7 @@ fn stake_withdraw_unstake() {
 
     // Start unstaking the previously staked amount
 
-    let leaves = leaves_in_range(&mut session, 2..3)
+    let leaves = leaves_from_height(&mut session, 2)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),
@@ -831,7 +837,7 @@ fn allow() {
 
     let session = &mut instantiate(rng, vm, &psk, &pk);
 
-    let leaves = leaves_in_range(session, 0..1)
+    let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");

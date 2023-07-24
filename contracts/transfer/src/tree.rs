@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use core::ops::Range;
-
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
@@ -67,15 +65,16 @@ impl Tree {
         self.tree.root().hash
     }
 
-    pub fn leaves(&self, range: Range<u64>) -> impl Iterator<Item = &TreeLeaf> {
+    /// Return an iterator through the leaves in the tree, starting from a given
+    /// `height`.
+    pub fn leaves(&self, height: u64) -> impl Iterator<Item = &TreeLeaf> {
         // We can do this since we know the leaves are strictly increasing in
         // block height. If this ever changes - such as in the case of a
         // sparsely populated tree - we should annotate the tree and use
         // `Tree::walk` instead.
         self.leaves
             .iter()
-            .skip_while(move |leaf| leaf.block_height < range.start)
-            .take_while(move |leaf| leaf.block_height < range.end)
+            .skip_while(move |leaf| leaf.block_height < height)
     }
 
     pub fn opening(

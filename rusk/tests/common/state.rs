@@ -95,7 +95,7 @@ pub fn generator_procedure(
 
     info!(
         "execute_state_transition new root: {:?}",
-        hex::encode(&execute_state_root)
+        hex::encode(execute_state_root)
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
@@ -108,11 +108,11 @@ pub fn generator_procedure(
     let verify_root = rusk.verify_state_transition(&verify_param)?;
     info!(
         "verify_state_transition new root: {:?}",
-        hex::encode(&verify_root)
+        hex::encode(verify_root)
     );
 
     let mut block = Block::default();
-    block.header.generator_bls_pubkey = generator_pubkey_bytes.clone();
+    block.header.generator_bls_pubkey = generator_pubkey_bytes;
     block.header.gas_limit = block_gas_limit;
     block.header.height = block_height;
     block.header.state_hash = execute_state_root;
@@ -125,7 +125,7 @@ pub fn generator_procedure(
     info!(
         "accept block {} with new root: {:?}",
         block_height,
-        hex::encode(&accept_state_root)
+        hex::encode(accept_state_root)
     );
 
     assert_eq!(
