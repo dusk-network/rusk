@@ -6,12 +6,13 @@
 
 #![allow(unused)]
 
+mod event;
+pub(crate) use event::Request;
+
 use std::borrow::Cow;
 use std::convert::Infallible;
 use std::sync::Arc;
 
-use node::database::rocksdb::Backend;
-use serde::Deserialize;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::mpsc;
@@ -23,11 +24,7 @@ use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 
 use futures_util::{SinkExt, StreamExt};
 
-use node::database;
-use node::{Network, Node};
-
 use crate::chain::RuskNode;
-use crate::graphql::DbContext;
 use crate::Rusk;
 
 pub struct WsServer {
@@ -86,102 +83,6 @@ async fn listening_loop(
     }
 }
 
-/// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
-struct Request {
-    headers: serde_json::Map<String, serde_json::Value>,
-    target_type: u8,
-    target: String,
-    topic: String,
-    #[serde(skip)]
-    binary_data: Vec<u8>,
-    data: String,
-}
-
-impl Request {
-    fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let a: Vec<u8> = vec![];
-        let (headers, bytes) = parse_header(bytes)?;
-        let (target_type, bytes) = parse_target_type(bytes)?;
-        let (target, bytes) = parse_string(bytes)?;
-        let (topic, bytes) = parse_string(bytes)?;
-        let data = bytes.to_vec();
-        Ok(Self {
-            headers,
-            target_type,
-            target,
-            topic,
-            binary_data: data,
-            data: "".into(),
-        })
-    }
-}
-
-fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
-    if bytes.len() < 4 {
-        return Err(anyhow::anyhow!("not enough bytes"));
-    }
-
-    let len =
-        u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
-    let (_, left) = bytes.split_at(len);
-
-    Ok((len, left))
-}
-
-type Header<'a> = (serde_json::Map<String, serde_json::Value>, &'a [u8]);
-fn parse_header(bytes: &[u8]) -> anyhow::Result<Header> {
-    let (len, bytes) = parse_len(bytes)?;
-    if bytes.len() < len {
-        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
-    }
-
-    let (header_bytes, bytes) = bytes.split_at(len);
-    let header = serde_json::from_slice(header_bytes)?;
-
-    Ok((header, bytes))
-}
-
-fn parse_target_type(bytes: &[u8]) -> anyhow::Result<(u8, &[u8])> {
-    if bytes.is_empty() {
-        return Err(anyhow::anyhow!("not enough bytes for target type"));
-    }
-
-    let (target_type_bytes, bytes) = bytes.split_at(1);
-    let target_type = target_type_bytes[0];
-
-    Ok((target_type, bytes))
-}
-
-fn parse_string(bytes: &[u8]) -> anyhow::Result<(String, &[u8])> {
-    let (len, bytes) = parse_len(bytes)?;
-    if bytes.len() < len {
-        return Err(anyhow::anyhow!("not enough bytes for parsed len {len}"));
-    }
-
-    let (string_bytes, bytes) = bytes.split_at(len);
-    let string = String::from_utf8(string_bytes.to_vec())?;
-
-    Ok((string, bytes))
-}
-
-#[allow(unused)]
-struct StateQuery {}
-#[allow(unused)]
-struct ChainQuery {}
-
-use crate::graphql::Query;
-use juniper::EmptyMutation;
-use juniper::EmptySubscription;
-use juniper::OperationType;
-use juniper::Variables;
-type Schema = juniper::RootNode<
-    'static,
-    Query,
-    EmptyMutation<DbContext>,
-    EmptySubscription<DbContext>,
->;
-
 async fn handle_stream<S: AsyncRead + AsyncWrite + Unpin>(
     sources: Arc<DataSources>,
     stream: S,
@@ -199,48 +100,13 @@ async fn handle_stream<S: AsyncRead + AsyncWrite + Unpin>(
                 break;
             }
             let request: Request = r.unwrap();
-            match request.target_type {
+            let response = match request.target_type {
                 0x02 if request.target == "chain" => {
-                    let ctx = DbContext(sources.node.db());
-
-                    // // Run the executor.
-                    match juniper::execute(
-                        &request.data,
-                        None,
-                        &Schema::new(
-                            Query,
-                            EmptyMutation::new(),
-                            EmptySubscription::new(),
-                        ),
-                        &Variables::new(),
-                        &ctx,
-                    )
-                    .await
-                    {
-                        Err(e) => {
-                            stream
-                                .send(tungstenite::protocol::Message::text(
-                                    format!("Error {e}"),
-                                ))
-                                .await;
-                        }
-                        Ok((res, _errors)) => {
-                            stream
-                                .send(tungstenite::protocol::Message::text(
-                                    format!("{res}"),
-                                ))
-                                .await;
-                        }
-                    }
+                    sources.node.handle_request(request).await
                 }
-                _ => {
-                    stream
-                        .send(tungstenite::protocol::Message::text(
-                            "Unsupported",
-                        ))
-                        .await;
-                }
-            }
+                _ => tungstenite::protocol::Message::text("Unsupported"),
+            };
+            stream.send(response).await;
         }
 
         let _ = stream

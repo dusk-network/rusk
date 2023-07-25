@@ -16,7 +16,6 @@ use std::{cmp, fs, io};
 
 pub mod chain;
 pub mod error;
-mod graphql;
 pub mod prover;
 mod vm;
 pub mod ws;
