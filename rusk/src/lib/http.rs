@@ -6,7 +6,10 @@
 
 #![allow(unused)]
 
+mod chain;
 mod event;
+mod rusk;
+
 pub(crate) use event::{DataType, ExecutionError, WsRequest, WsResponse};
 
 use std::borrow::Cow;
@@ -34,6 +37,8 @@ use futures_util::{SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::Rusk;
+
+use self::event::WsTarget;
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -276,8 +281,9 @@ async fn handle_execution(
     request: WsRequest,
     responder: mpsc::UnboundedSender<WsResponse>,
 ) {
-    let rsp = match (request.target_type) {
-        0x02 => sources.node.handle_request(request).await,
+    let rsp = match (request.target) {
+        WsTarget::Contract(_) => sources.rusk.handle_request(request).await,
+        WsTarget::Host(_) => sources.node.handle_request(request).await,
         _ => WsResponse {
             headers: request.x_headers(),
             data: event::DataType::None,

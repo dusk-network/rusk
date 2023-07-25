@@ -10,13 +10,21 @@ use serde_with::serde_as;
 use std::fmt::{Display, Formatter};
 
 /// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct WsRequest {
     pub(crate) headers: serde_json::Map<String, serde_json::Value>,
-    pub(crate) target_type: u8,
-    pub(crate) target: String,
+    pub(crate) target: WsTarget,
+    // pub(crate) target_type: u8,
+    // pub(crate) target: String,
     pub(crate) topic: String,
     pub(crate) data: DataType,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub(crate) enum WsTarget {
+    Contract(String), // 0x01
+    Host(String),     // 0x02
+    Debugger(String), // 0x03
 }
 
 impl WsRequest {
@@ -57,6 +65,16 @@ pub enum DataType {
     Text(String),
 }
 
+impl DataType {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Binary(w) => w.inner.clone(),
+            Self::None => vec![],
+            Self::Text(s) => s.as_bytes().to_vec(),
+        }
+    }
+}
+
 impl From<String> for DataType {
     fn from(value: String) -> Self {
         Self::Text(value)
@@ -85,9 +103,17 @@ impl WsRequest {
         let (target, bytes) = parse_string(bytes)?;
         let (topic, bytes) = parse_string(bytes)?;
         let data = bytes.to_vec().into();
+
+        let target = match target_type {
+            0x01 => WsTarget::Contract(target),
+            0x02 => WsTarget::Host(target),
+            ty => {
+                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
+            }
+        };
+
         Ok(Self {
             headers,
-            target_type,
             target,
             topic,
             data,
@@ -142,11 +168,6 @@ fn parse_string(bytes: &[u8]) -> anyhow::Result<(String, &[u8])> {
 
     Ok((string, bytes))
 }
-
-#[allow(unused)]
-struct StateQuery {}
-#[allow(unused)]
-struct ChainQuery {}
 
 #[derive(Debug)]
 pub enum ExecutionError {

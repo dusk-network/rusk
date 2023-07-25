@@ -4,81 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-pub mod graphql;
-
 use node::database::rocksdb::Backend;
 use node::network::Kadcast;
 
-use juniper::EmptyMutation;
-use juniper::EmptySubscription;
-use juniper::Variables;
 use std::sync::Arc;
 
-use crate::chain::graphql::Query;
-use crate::http::{DataType, WsRequest, WsResponse};
 use crate::Rusk;
-use graphql::DbContext;
-
-type Schema = juniper::RootNode<
-    'static,
-    Query,
-    EmptyMutation<DbContext>,
-    EmptySubscription<DbContext>,
->;
 
 #[derive(Clone)]
 pub struct RuskNode(pub node::Node<Kadcast<255>, Backend, Rusk>);
 impl RuskNode {
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
         self.0.database() as Arc<tokio::sync::RwLock<Backend>>
-    }
-
-    pub(crate) async fn handle_request(
-        &self,
-        request: WsRequest,
-    ) -> WsResponse {
-        match request.target_type {
-            0x02 if request.target == "chain" => {
-                let ctx = DbContext(self.db());
-
-                let gql_query = match &request.data {
-                    DataType::Text(str) => str.clone(),
-                    DataType::Binary(data) => {
-                        String::from_utf8(data.inner.clone())
-                            .unwrap_or_default()
-                    }
-                    DataType::None => String::default(),
-                };
-                match juniper::execute(
-                    &gql_query,
-                    None,
-                    &Schema::new(
-                        Query,
-                        EmptyMutation::new(),
-                        EmptySubscription::new(),
-                    ),
-                    &Variables::new(),
-                    &ctx,
-                )
-                .await
-                {
-                    Err(e) => WsResponse {
-                        data: DataType::None,
-                        headers: request.x_headers(),
-                        error: format!("{e}").into(),
-                    },
-                    Ok((res, _errors)) => WsResponse {
-                        data: format!("{res}").into(),
-                        headers: request.x_headers(),
-                        error: None,
-                    },
-                }
-            }
-            _ => WsResponse {
-                data: DataType::None,
-                headers: request.x_headers(),
-                error: Some("Unsupported".into()),
-            },
-        }
     }
 }
