@@ -7,7 +7,7 @@
 #![allow(unused)]
 
 mod event;
-pub(crate) use event::{ExecutionError, ResponseData, WsRequest, WsResponse};
+pub(crate) use event::{DataType, ExecutionError, WsRequest, WsResponse};
 
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -280,7 +280,7 @@ async fn handle_execution(
         0x02 => sources.node.handle_request(request).await,
         _ => WsResponse {
             headers: request.x_headers(),
-            data: event::ResponseData::None,
+            data: event::DataType::None,
             error: Some("unsupported target type".into()),
         },
     };

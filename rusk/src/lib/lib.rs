@@ -16,9 +16,9 @@ use std::{cmp, fs, io};
 
 pub mod chain;
 pub mod error;
+pub mod http;
 pub mod prover;
 mod vm;
-pub mod http;
 
 use dusk_bytes::DeserializableSlice;
 use futures::Stream;

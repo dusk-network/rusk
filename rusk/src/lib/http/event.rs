@@ -16,9 +16,7 @@ pub(crate) struct WsRequest {
     pub(crate) target_type: u8,
     pub(crate) target: String,
     pub(crate) topic: String,
-    #[serde(skip)]
-    pub(crate) binary_data: Vec<u8>,
-    pub(crate) data: String,
+    pub(crate) data: DataType,
 }
 
 impl WsRequest {
@@ -34,7 +32,7 @@ pub struct WsResponse {
     pub(crate) headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
-    pub data: ResponseData,
+    pub data: DataType,
 
     /// A possible error happening during the contract call.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,19 +50,19 @@ impl WsResponse {
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 #[serde(untagged)]
-pub enum ResponseData {
+pub enum DataType {
     Binary(BinaryWrapper),
     #[default]
     None,
     Text(String),
 }
 
-impl From<String> for ResponseData {
+impl From<String> for DataType {
     fn from(value: String) -> Self {
         Self::Text(value)
     }
 }
-impl From<Vec<u8>> for ResponseData {
+impl From<Vec<u8>> for DataType {
     fn from(value: Vec<u8>) -> Self {
         Self::Binary(BinaryWrapper { inner: value })
     }
@@ -76,7 +74,7 @@ impl From<Vec<u8>> for ResponseData {
 #[serde(transparent)]
 pub struct BinaryWrapper {
     #[serde_as(as = "serde_with::hex::Hex")]
-    inner: Vec<u8>,
+    pub inner: Vec<u8>,
 }
 
 impl WsRequest {
@@ -86,14 +84,13 @@ impl WsRequest {
         let (target_type, bytes) = parse_target_type(bytes)?;
         let (target, bytes) = parse_string(bytes)?;
         let (topic, bytes) = parse_string(bytes)?;
-        let data = bytes.to_vec();
+        let data = bytes.to_vec().into();
         Ok(Self {
             headers,
             target_type,
             target,
             topic,
-            binary_data: data,
-            data: "".into(),
+            data,
         })
     }
 }

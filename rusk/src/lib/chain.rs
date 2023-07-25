@@ -15,7 +15,7 @@ use juniper::Variables;
 use std::sync::Arc;
 
 use crate::chain::graphql::Query;
-use crate::http::{ResponseData, WsRequest, WsResponse};
+use crate::http::{DataType, WsRequest, WsResponse};
 use crate::Rusk;
 use graphql::DbContext;
 
@@ -41,8 +41,16 @@ impl RuskNode {
             0x02 if request.target == "chain" => {
                 let ctx = DbContext(self.db());
 
+                let gql_query = match &request.data {
+                    DataType::Text(str) => str.clone(),
+                    DataType::Binary(data) => {
+                        String::from_utf8(data.inner.clone())
+                            .unwrap_or_default()
+                    }
+                    DataType::None => String::default(),
+                };
                 match juniper::execute(
-                    &request.data,
+                    &gql_query,
                     None,
                     &Schema::new(
                         Query,
@@ -55,7 +63,7 @@ impl RuskNode {
                 .await
                 {
                     Err(e) => WsResponse {
-                        data: ResponseData::None,
+                        data: DataType::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     },
@@ -67,7 +75,7 @@ impl RuskNode {
                 }
             }
             _ => WsResponse {
-                data: ResponseData::None,
+                data: DataType::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),
             },

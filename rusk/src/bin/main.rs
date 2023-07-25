@@ -112,7 +112,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut _ws_server = None;
     if config.http.listen {
         _ws_server = Some(
-            HttpServer::bind(rusk, node.clone(), config.http.listen_addr()).await?,
+            HttpServer::bind(rusk, node.clone(), config.http.listen_addr())
+                .await?,
         );
     }
 
