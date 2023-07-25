@@ -13,10 +13,9 @@ use juniper::EmptyMutation;
 use juniper::EmptySubscription;
 use juniper::Variables;
 use std::sync::Arc;
-use tungstenite::protocol::Message;
 
 use crate::chain::graphql::Query;
-use crate::ws::Request;
+use crate::http::{ResponseData, WsRequest, WsResponse};
 use crate::Rusk;
 use graphql::DbContext;
 
@@ -34,12 +33,14 @@ impl RuskNode {
         self.0.database() as Arc<tokio::sync::RwLock<Backend>>
     }
 
-    pub(crate) async fn handle_request(&self, request: Request) -> Message {
+    pub(crate) async fn handle_request(
+        &self,
+        request: WsRequest,
+    ) -> WsResponse {
         match request.target_type {
             0x02 if request.target == "chain" => {
                 let ctx = DbContext(self.db());
 
-                // // Run the executor.
                 match juniper::execute(
                     &request.data,
                     None,
@@ -53,11 +54,23 @@ impl RuskNode {
                 )
                 .await
                 {
-                    Err(e) => Message::text(format!("Error {e}")),
-                    Ok((res, _errors)) => Message::text(format!("{res}")),
+                    Err(e) => WsResponse {
+                        data: ResponseData::None,
+                        headers: request.x_headers(),
+                        error: format!("{e}").into(),
+                    },
+                    Ok((res, _errors)) => WsResponse {
+                        data: format!("{res}").into(),
+                        headers: request.x_headers(),
+                        error: None,
+                    },
                 }
             }
-            _ => Message::text("Unsupported"),
+            _ => WsResponse {
+                data: ResponseData::None,
+                headers: request.x_headers(),
+                error: Some("Unsupported".into()),
+            },
         }
     }
 }

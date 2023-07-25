@@ -18,7 +18,7 @@ pub mod chain;
 pub mod error;
 pub mod prover;
 mod vm;
-pub mod ws;
+pub mod http;
 
 use dusk_bytes::DeserializableSlice;
 use futures::Stream;

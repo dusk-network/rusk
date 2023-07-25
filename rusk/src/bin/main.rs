@@ -23,7 +23,7 @@ use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
-use rusk::ws::WsServer;
+use rusk::http::HttpServer;
 
 use crate::config::Config;
 
@@ -110,9 +110,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = rusk::chain::RuskNode(Node::new(net, db, rusk.clone()));
 
     let mut _ws_server = None;
-    if config.ws.listen {
+    if config.http.listen {
         _ws_server = Some(
-            WsServer::bind(rusk, node.clone(), config.ws.listen_addr()).await?,
+            HttpServer::bind(rusk, node.clone(), config.http.listen_addr()).await?,
         );
     }
 

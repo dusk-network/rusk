@@ -29,6 +29,7 @@ rand = "0.8"
 toml = "0.5"
 serde = "1"
 serde_json = "1"
+serde_with = { version = "3.1", features = ["hex"] }
 bs58 = "0.4"
 hex = "0.4"
 tempfile = "3.2"
@@ -49,8 +50,9 @@ dusk-bytes = "0.1"
 dusk-wallet-core = "0.20.0-piecrust.0.6"
 phoenix-core = "0.20.0-rc.0"
 kadcast = "0.5.0-rc"
-tokio-tungstenite = { version = "0.19", default-features = false, features = ["handshake"] }
 tungstenite = "0.19"
+hyper-tungstenite = "0.10"
+hyper = { version = "0.14", features = ["server", "http1", "http2"] }
 futures = "0.3"
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
