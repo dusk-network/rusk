@@ -414,29 +414,16 @@ impl Rusk {
 
     /// Returns the stakes.
     pub fn provisioners(&self) -> Result<Vec<(BlsPublicKey, StakeData)>> {
-        const MAX: usize = 8; // maximum number of stakes per call
-        let mut skip = 0;
-
-        let mut provisioners = Vec::new();
-
-        self.query_seq(
-            STAKE_CONTRACT,
-            "stakes",
-            &(MAX, skip),
-            |r: Vec<(BlsPublicKey, StakeData)>| {
-                let n_stakes = r.len();
-                provisioners.extend(r);
-
-                skip += n_stakes;
-                if n_stakes == 0 {
-                    None
-                } else {
-                    Some((MAX, skip))
-                }
-            },
-        )?;
-
-        Ok(provisioners)
+        let (sender, receiver) = mpsc::channel();
+        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender)?;
+        Ok(receiver
+            .into_iter()
+            .map(|bytes| {
+                rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
+                    "The contract should only return (pk, stake_data) tuples",
+                )
+            })
+            .collect())
     }
 
     /// Returns the keys allowed to stake.
