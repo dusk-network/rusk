@@ -5,7 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::msg_handler::HandleMsgOutput::{
+    FinalResult, FinalResultWithTimeoutIncrease,
+};
+use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
@@ -97,20 +100,23 @@ impl<'a> ExecutionCtx<'a> {
                 Ok(result) => {
                     if let Ok(msg) = result {
                         if let Some(step_result) = self
-                            .process_inbound_msg(committee, phase, msg)
+                            .process_inbound_msg(
+                                committee,
+                                phase,
+                                msg,
+                                timeout_millis,
+                            )
                             .await
                         {
                             return Ok(step_result);
                         }
                     }
                 }
-                // Timeout event
+                // Timeout event. Phase could not reach its final goal.
+                // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     tracing::info!("event: timeout");
-
-                    // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
-                    *timeout_millis =
-                        cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+                    Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase);
                 }
@@ -128,6 +134,7 @@ impl<'a> ExecutionCtx<'a> {
         committee: &Committee,
         phase: &mut C,
         msg: Message,
+        timeout_millis: &mut u64,
     ) -> Option<Message> {
         // Check if a message is fully valid. If so, then it can be broadcast.
         match phase.is_valid(
@@ -173,13 +180,21 @@ impl<'a> ExecutionCtx<'a> {
             .collect(msg.clone(), &self.round_update, self.step, committee)
             .await
         {
-            // Fully valid state reached on this step. Return it as an output.
-            // Populate next step with it.
             Ok(output) => {
                 trace!("message collected {:?}", msg);
 
-                if let HandleMsgOutput::FinalResult(msg) = output {
-                    return Some(msg);
+                match output {
+                    FinalResult(m) => {
+                        // Fully valid state reached on this step. Return it as
+                        // an output to populate next step with it.
+                        return Some(m);
+                    }
+                    FinalResultWithTimeoutIncrease(m) => {
+                        Self::increase_timeout(timeout_millis);
+                        return Some(m);
+                    }
+                    _ => {} /* Message collected but phase does not reach
+                             * a final result */
                 }
             }
             Err(e) => {
@@ -196,7 +211,7 @@ impl<'a> ExecutionCtx<'a> {
         &mut self,
         phase: &mut C,
     ) -> Result<Message, ConsensusError> {
-        if let Ok(HandleMsgOutput::FinalResult(msg)) =
+        if let Ok(FinalResult(msg)) =
             phase.handle_timeout(&self.round_update, self.step)
         {
             return Ok(msg);
@@ -227,7 +242,7 @@ impl<'a> ExecutionCtx<'a> {
                     self.step,
                     committee,
                 ) {
-                    if let Ok(HandleMsgOutput::FinalResult(msg)) = phase
+                    if let Ok(FinalResult(msg)) = phase
                         .collect(msg, &self.round_update, self.step, committee)
                         .await
                     {
@@ -247,5 +262,13 @@ impl<'a> ExecutionCtx<'a> {
             self.step,
             size,
         )
+    }
+
+    fn increase_timeout(timeout_millis: &mut u64) {
+        // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
+        *timeout_millis =
+            cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+
+        tracing::info!("increase timeout to {} ms", timeout_millis);
     }
 }

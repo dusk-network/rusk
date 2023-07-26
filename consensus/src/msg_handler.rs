@@ -14,6 +14,7 @@ use std::fmt::Debug;
 pub enum HandleMsgOutput {
     Result(Message),
     FinalResult(Message),
+    FinalResultWithTimeoutIncrease(Message),
 }
 
 /// MsgHandler must be implemented by any step that needs to handle an external
