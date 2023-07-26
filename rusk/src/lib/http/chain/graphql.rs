@@ -5,8 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use node::database::rocksdb::Backend;
-use node::database::{Ledger, DB};
+use node::database::{Ledger, Register, DB};
 use node_data::ledger::Block;
+
+use juniper::{FieldError, FieldResult};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -21,22 +23,17 @@ pub struct Query;
     Context = DbContext,
 )]
 impl Query {
-    async fn block<P>(context: &DbContext, height: f64) -> Option<Block> {
-        context
-            .0
-            .read()
-            .await
-            .view(|t| match height > 0f64 {
-                true => t.fetch_block_by_height(height as u64),
-                false => {
-                    let reg = t.get_register().ok().flatten();
-                    let mrb = reg.and_then(|reg| {
-                        t.fetch_block(&reg.mrb_hash).ok().flatten()
-                    });
-                    Ok(mrb)
-                }
-            })
-            .ok()
-            .flatten() // TODO: FIXME
+    async fn block<P>(
+        context: &DbContext,
+        height: f64,
+    ) -> FieldResult<Option<Block>> {
+        let block = context.0.read().await.view(|t| match height > 0f64 {
+            true => t.fetch_block_by_height(height as u64),
+            false => t.get_register().and_then(|reg| match reg {
+                Some(Register { mrb_hash, .. }) => t.fetch_block(&mrb_hash),
+                None => Ok(None),
+            }),
+        })?;
+        Ok(block)
     }
 }
