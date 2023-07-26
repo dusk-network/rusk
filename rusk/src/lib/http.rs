@@ -14,6 +14,7 @@ pub(crate) use event::{
     DataType, ExecutionError, Request as EventRequest,
     Response as EventResponse, Target,
 };
+use hyper::http::{HeaderName, HeaderValue};
 
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -218,10 +219,10 @@ struct ExecutionService {
     shutdown: broadcast::Receiver<Infallible>,
 }
 
-impl Service<Request<Body>> for ExecutionService
-// where
-//     Q: QueryRaw,
-{
+const CONTENT_TYPE: &str = "Content-Type";
+const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
+
+impl Service<Request<Body>> for ExecutionService {
     type Response = Response<Body>;
     type Error = ExecutionError;
     type Future = Pin<
@@ -257,10 +258,21 @@ impl Service<Request<Body>> for ExecutionService
 
                 Ok(response)
             } else {
-                let (_, req_body) = req.into_parts();
-
+                let (parts, req_body) = req.into_parts();
                 let body = body::to_bytes(req_body).await?;
-                let execution_request = serde_json::from_slice(&body)?;
+
+                let execution_request = match parts.headers.get(CONTENT_TYPE) {
+                    Some(h)
+                        if h.to_str()
+                            .ok()
+                            .map(|s| s.starts_with(CONTENT_TYPE_BINARY))
+                            .unwrap_or_default() =>
+                    {
+                        EventRequest::parse(&body)?
+                    }
+
+                    _ => serde_json::from_slice(&body)?,
+                };
 
                 let (responder, mut receiver) = mpsc::unbounded_channel();
                 handle_execution(sources, execution_request, responder).await;

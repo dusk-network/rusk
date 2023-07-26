@@ -174,6 +174,7 @@ pub enum ExecutionError {
     Json(serde_json::Error),
     Protocol(tungstenite::error::ProtocolError),
     Tungstenite(tungstenite::Error),
+    Generic(anyhow::Error),
 }
 
 impl Display for ExecutionError {
@@ -184,11 +185,18 @@ impl Display for ExecutionError {
             ExecutionError::Json(err) => write!(f, "{err}"),
             ExecutionError::Protocol(err) => write!(f, "{err}"),
             ExecutionError::Tungstenite(err) => write!(f, "{err}"),
+            ExecutionError::Generic(err) => write!(f, "{err}"),
         }
     }
 }
 
 impl std::error::Error for ExecutionError {}
+
+impl From<anyhow::Error> for ExecutionError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::Generic(err)
+    }
+}
 
 impl From<hyper::http::Error> for ExecutionError {
     fn from(err: hyper::http::Error) -> Self {
