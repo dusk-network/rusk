@@ -11,23 +11,21 @@ use std::fmt::{Display, Formatter};
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct WsRequest {
-    pub(crate) headers: serde_json::Map<String, serde_json::Value>,
-    pub(crate) target: WsTarget,
-    // pub(crate) target_type: u8,
-    // pub(crate) target: String,
-    pub(crate) topic: String,
-    pub(crate) data: DataType,
+pub(crate) struct Request {
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub target: Target,
+    pub topic: String,
+    pub data: DataType,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub(crate) enum WsTarget {
+pub(crate) enum Target {
     Contract(String), // 0x01
     Host(String),     // 0x02
     Debugger(String), // 0x03
 }
 
-impl WsRequest {
+impl Request {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
         h.retain(|k, _| k.to_lowercase().starts_with("x-"));
@@ -36,8 +34,8 @@ impl WsRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
-pub struct WsResponse {
-    pub(crate) headers: serde_json::Map<String, serde_json::Value>,
+pub(crate) struct Response {
+    pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
     pub data: DataType,
@@ -47,7 +45,7 @@ pub struct WsResponse {
     pub error: Option<String>,
 }
 
-impl WsResponse {
+impl Response {
     pub fn from_error(error: String) -> Self {
         Self {
             error: Some(error),
@@ -95,7 +93,7 @@ pub struct BinaryWrapper {
     pub inner: Vec<u8>,
 }
 
-impl WsRequest {
+impl Request {
     pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
         let a: Vec<u8> = vec![];
         let (headers, bytes) = parse_header(bytes)?;
@@ -105,8 +103,8 @@ impl WsRequest {
         let data = bytes.to_vec().into();
 
         let target = match target_type {
-            0x01 => WsTarget::Contract(target),
-            0x02 => WsTarget::Host(target),
+            0x01 => Target::Contract(target),
+            0x02 => Target::Host(target),
             ty => {
                 return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
             }

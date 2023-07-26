@@ -16,10 +16,8 @@ use std::sync::Arc;
 
 use graphql::{DbContext, Query};
 
+use super::event::{DataType, Request, Response, Target};
 use crate::chain::RuskNode;
-use crate::http::{DataType, WsRequest, WsResponse};
-
-use super::event::WsTarget;
 
 type Schema = juniper::RootNode<
     'static,
@@ -29,12 +27,9 @@ type Schema = juniper::RootNode<
 >;
 
 impl RuskNode {
-    pub(crate) async fn handle_request(
-        &self,
-        request: WsRequest,
-    ) -> WsResponse {
+    pub(crate) async fn handle_request(&self, request: Request) -> Response {
         match &request.target {
-            WsTarget::Host(s) if s == "Chain" && request.topic == "gql" => {
+            Target::Host(s) if s == "Chain" && request.topic == "gql" => {
                 let ctx = DbContext(self.db());
 
                 let gql_query = match &request.data {
@@ -58,19 +53,19 @@ impl RuskNode {
                 )
                 .await
                 {
-                    Err(e) => WsResponse {
+                    Err(e) => Response {
                         data: DataType::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     },
-                    Ok((res, _errors)) => WsResponse {
+                    Ok((res, _errors)) => Response {
                         data: format!("{res}").into(),
                         headers: request.x_headers(),
                         error: None,
                     },
                 }
             }
-            _ => WsResponse {
+            _ => Response {
                 data: DataType::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),

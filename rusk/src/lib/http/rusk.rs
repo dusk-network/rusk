@@ -8,21 +8,17 @@ use std::sync::Arc;
 
 use rusk_abi::ContractId;
 
-use crate::http::{DataType, WsRequest, WsResponse};
 use crate::Rusk;
 
-use super::event::WsTarget;
+use super::event::{DataType, Request, Response, Target};
 
 impl Rusk {
-    pub(crate) async fn handle_request(
-        &self,
-        request: WsRequest,
-    ) -> WsResponse {
+    pub(crate) async fn handle_request(&self, request: Request) -> Response {
         match &request.target {
-            WsTarget::Contract(contract) => {
+            Target::Contract(contract) => {
                 let contract_bytes = hex::decode(contract);
                 if let Err(e) = &contract_bytes {
-                    return WsResponse {
+                    return Response {
                         data: DataType::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
@@ -31,7 +27,7 @@ impl Rusk {
                 let contract_bytes =
                     contract_bytes.expect("to be already checked").try_into();
                 if let Err(e) = &contract_bytes {
-                    return WsResponse {
+                    return Response {
                         data: DataType::None,
                         headers: request.x_headers(),
                         error: "Invalid contract bytes".to_string().into(),
@@ -50,19 +46,19 @@ impl Rusk {
                 // });
 
                 match response {
-                    Err(e) => WsResponse {
+                    Err(e) => Response {
                         data: DataType::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     },
-                    Ok(data) => WsResponse {
+                    Ok(data) => Response {
                         data: data.into(),
                         headers: request.x_headers(),
                         error: None,
                     },
                 }
             }
-            _ => WsResponse {
+            _ => Response {
                 data: DataType::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),

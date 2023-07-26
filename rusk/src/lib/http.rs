@@ -10,7 +10,10 @@ mod chain;
 mod event;
 mod rusk;
 
-pub(crate) use event::{DataType, ExecutionError, WsRequest, WsResponse};
+pub(crate) use event::{
+    DataType, ExecutionError, Request as EventRequest,
+    Response as EventResponse, Target,
+};
 
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -37,8 +40,6 @@ use futures_util::{SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::Rusk;
-
-use self::event::WsTarget;
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -118,7 +119,7 @@ async fn handle_stream(
         Err(_) => return,
     };
 
-    let (responder, mut responses) = mpsc::unbounded_channel::<WsResponse>();
+    let (responder, mut responses) = mpsc::unbounded_channel::<EventResponse>();
 
     loop {
         tokio::select! {
@@ -140,7 +141,7 @@ async fn handle_stream(
                 // we simply serialize an error response.
                 let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
                     serde_json::to_string(
-                        &WsResponse::from_error(format!("Failed serializing response: {err}"))
+                        &EventResponse::from_error(format!("Failed serializing response: {err}"))
                     ).expect("serializing error response should succeed")
                 });
 
@@ -166,11 +167,11 @@ async fn handle_stream(
                         },
                         // We received a binary request.
                         Message::Binary(msg) => {
-                            WsRequest::parse(&msg)
+                            EventRequest::parse(&msg)
                                 .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
                         }
                         // Any other type of message is unsupported.
-                        e => Err(anyhow::anyhow!("Only text and binary messages are supported"))
+                        _ => Err(anyhow::anyhow!("Only text and binary messages are supported"))
                     }
                     // Errored while receiving the message, we will
                     // close the stream and return a close frame.
@@ -278,13 +279,13 @@ impl Service<Request<Body>> for ExecutionService
 
 async fn handle_execution(
     sources: Arc<DataSources>,
-    request: WsRequest,
-    responder: mpsc::UnboundedSender<WsResponse>,
+    request: EventRequest,
+    responder: mpsc::UnboundedSender<EventResponse>,
 ) {
     let rsp = match (request.target) {
-        WsTarget::Contract(_) => sources.rusk.handle_request(request).await,
-        WsTarget::Host(_) => sources.node.handle_request(request).await,
-        _ => WsResponse {
+        Target::Contract(_) => sources.rusk.handle_request(request).await,
+        Target::Host(_) => sources.node.handle_request(request).await,
+        _ => EventResponse {
             headers: request.x_headers(),
             data: event::DataType::None,
             error: Some("unsupported target type".into()),
