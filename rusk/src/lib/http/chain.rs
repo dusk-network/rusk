@@ -14,7 +14,7 @@ use juniper::EmptySubscription;
 use juniper::Variables;
 use std::sync::Arc;
 
-use graphql::{DbContext, Query};
+use graphql::{Ctx, Query};
 
 use super::event::{DataType, Request, Response, Target};
 use crate::chain::RuskNode;
@@ -22,15 +22,15 @@ use crate::chain::RuskNode;
 type Schema = juniper::RootNode<
     'static,
     Query,
-    EmptyMutation<DbContext>,
-    EmptySubscription<DbContext>,
+    EmptyMutation<Ctx>,
+    EmptySubscription<Ctx>,
 >;
 
 impl RuskNode {
     pub(crate) async fn handle_request(&self, request: Request) -> Response {
         match &request.target {
             Target::Host(s) if s == "Chain" && request.topic == "gql" => {
-                let ctx = DbContext(self.db());
+                let ctx = Ctx(self.db());
 
                 let gql_query = match &request.data {
                     DataType::Text(str) => str.clone(),
@@ -58,10 +58,10 @@ impl RuskNode {
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     },
-                    Ok((res, _errors)) => Response {
+                    Ok((res, errors)) => Response {
                         data: format!("{res}").into(),
                         headers: request.x_headers(),
-                        error: None,
+                        error: Some(format!("{errors:?}")),
                     },
                 }
             }
