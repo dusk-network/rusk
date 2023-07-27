@@ -167,17 +167,15 @@ impl DB for Backend {
         }
     }
 
-    fn view<F>(&self, f: F) -> Result<()>
+    fn view<F, T>(&self, f: F) -> T
     where
-        F: for<'a> FnOnce(Self::P<'a>) -> Result<()>,
+        F: for<'a> FnOnce(Self::P<'a>) -> T,
     {
         // Create a new read-only transaction
         let tx = self.begin_tx(TxType::ReadOnly);
 
         // Execute all read-only transactions in isolation
-        f(tx)?;
-
-        Ok(())
+        f(tx)
     }
 
     fn update<F, T>(&self, execute: F) -> Result<T>
@@ -752,7 +750,10 @@ mod tests {
 
             db.view(|txn| {
                 // Assert block header is fully fetched from ledger
-                let db_blk = txn.fetch_block(&hash)?.unwrap();
+                let db_blk = txn
+                    .fetch_block(&hash)
+                    .expect("Block to be fetched")
+                    .expect("Block to exist");
                 assert_eq!(db_blk.header.hash, b.header.hash);
 
                 // Assert all transactions are fully fetched from ledger as
@@ -760,8 +761,6 @@ mod tests {
                 for pos in (0..b.txs.len()) {
                     assert_eq!(db_blk.txs[pos].hash(), b.txs[pos].hash());
                 }
-
-                Ok(())
             });
 
             assert!(db
@@ -772,8 +771,10 @@ mod tests {
                 .is_ok());
 
             db.view(|txn| {
-                assert!(txn.fetch_block(&hash)?.is_none());
-                Ok(())
+                assert!(txn
+                    .fetch_block(&hash)
+                    .expect("block to be fetched")
+                    .is_none());
             });
         });
     }
@@ -783,16 +784,15 @@ mod tests {
         TestWrapper::new("test_read_only").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
-            assert!(db
-                .view(|txn| {
-                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
-                    Ok(())
-                })
-                .is_ok());
-
             db.view(|txn| {
-                assert!(txn.fetch_block(&b.header.hash)?.is_none());
-                Ok(())
+                txn.store_block(&b.header, &to_spent_txs(&b.txs))
+                    .expect("block to be stored");
+            });
+            db.view(|txn| {
+                assert!(txn
+                    .fetch_block(&b.header.hash)
+                    .expect("block to be fetched")
+                    .is_none());
             });
         });
     }
@@ -809,7 +809,7 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
+                        txn.store_block(&b.header, &to_spent_txs(&b.txs));
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -818,14 +818,21 @@ mod tests {
                     .is_ok());
 
                 // Asserts that the read-only/view transaction runs in isolation
-                assert!(txn.fetch_block(&hash)?.is_none());
-                Ok(())
+                assert!(txn
+                    .fetch_block(&hash)
+                    .expect("block to be fetched")
+                    .is_none());
             });
 
             // Asserts that update was done
             db.view(|txn| {
-                assert_blocks_eq(&mut txn.fetch_block(&hash)?.unwrap(), &mut b);
-                Ok(())
+                assert_blocks_eq(
+                    &mut txn
+                        .fetch_block(&hash)
+                        .expect("block to be fetched")
+                        .unwrap(),
+                    &mut b,
+                );
             });
         });
     }
@@ -855,7 +862,6 @@ mod tests {
                     t.hash(),
                     "fetched transaction should be the same"
                 );
-                Ok(())
             });
 
             // Delete a contract call
@@ -896,8 +902,6 @@ mod tests {
                         "tx fees are not in decreasing order"
                     );
                 }
-
-                Ok(())
             });
         });
     }
@@ -922,7 +926,6 @@ mod tests {
                     .expect("should return all txs");
 
                 assert_eq!(txs.len(), 3);
-                Ok(())
             });
         });
     }
@@ -963,8 +966,6 @@ mod tests {
                         .inner
                         .eq(&t));
                 }
-
-                Ok(())
             });
         });
     }
@@ -990,8 +991,6 @@ mod tests {
                     .expect("should not return error")
                     .expect("should find a block")
                     .eq(&b.header.hash));
-
-                Ok(())
             });
         });
     }

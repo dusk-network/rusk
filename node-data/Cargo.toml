@@ -24,6 +24,11 @@ base64 = "0.13"
 async-channel = "1.7"
 chrono = "0.4"
 
+## GraphQL deps
+juniper_codegen = { version = "0.15", optional = true }
+juniper = { version = "0.15", optional = true }
+bs58 = "0.4"
+
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }
 rand = "0.8"
@@ -32,3 +37,4 @@ hex = "0.4"
 [features]
 default = ["dep:rand", "dep:hex"]
 faker = ["dep:fake", "dep:rand", "dep:hex"]
+graphql = ["dep:juniper", "dep:juniper_codegen"]

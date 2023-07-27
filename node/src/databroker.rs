@@ -243,13 +243,10 @@ impl DataBrokerSrv {
         db: &Arc<RwLock<DB>>,
         m: &payload::GetCandidate,
     ) -> Result<Message> {
-        let mut res = Option::None;
-        db.read()
+        let res = db
+            .read()
             .await
-            .view(|t| {
-                res = t.fetch_candidate_block(&m.hash)?;
-                Ok(())
-            })
+            .view(|t| t.fetch_candidate_block(&m.hash))
             .map_err(|e| {
                 anyhow::anyhow!("could not fetch candidate block: {:?}", e)
             })?;
@@ -351,33 +348,29 @@ impl DataBrokerSrv {
         m: &node_data::message::payload::Inv,
         max_entries: usize,
     ) -> Result<Message> {
-        let mut inv = payload::Inv::default();
-
-        db.read()
-            .await
-            .view(|t| {
-                for i in &m.inv_list {
-                    match i.inv_type {
-                        InvType::Block => {
-                            if Ledger::fetch_block(&t, &i.hash)?.is_none() {
-                                inv.add_block_hash(i.hash);
-                            }
-                        }
-                        InvType::MempoolTx => {
-                            if Mempool::get_tx(&t, i.hash)?.is_none() {
-                                inv.add_tx_hash(i.hash);
-                            }
+        let inv = db.read().await.view(|t| {
+            let mut inv = payload::Inv::default();
+            for i in &m.inv_list {
+                match i.inv_type {
+                    InvType::Block => {
+                        if Ledger::fetch_block(&t, &i.hash)?.is_none() {
+                            inv.add_block_hash(i.hash);
                         }
                     }
-
-                    if inv.inv_list.len() >= max_entries {
-                        break;
+                    InvType::MempoolTx => {
+                        if Mempool::get_tx(&t, i.hash)?.is_none() {
+                            inv.add_tx_hash(i.hash);
+                        }
                     }
                 }
 
-                Ok(())
-            })
-            .map_err(|e| anyhow::anyhow!(e))?;
+                if inv.inv_list.len() >= max_entries {
+                    break;
+                }
+            }
+
+            Ok::<payload::Inv, anyhow::Error>(inv)
+        })?;
 
         if inv.inv_list.is_empty() {
             return Err(anyhow::anyhow!("no items to fetch"));
@@ -396,32 +389,22 @@ impl DataBrokerSrv {
         m: &node_data::message::payload::GetData,
         max_entries: usize,
     ) -> Result<Vec<Message>> {
-        let mut messages = Vec::new();
-
-        db.read()
-            .await
-            .view(|t| {
-                messages = m
-                    .inner
-                    .inv_list
-                    .iter()
-                    .filter_map(|i| match i.inv_type {
-                        InvType::Block => Ledger::fetch_block(&t, &i.hash)
-                            .ok()
-                            .flatten()
-                            .map(|blk| Message::new_block(Box::new(blk))),
-                        InvType::MempoolTx => Mempool::get_tx(&t, i.hash)
-                            .ok()
-                            .flatten()
-                            .map(|tx| Message::new_transaction(Box::new(tx))),
-                    })
-                    .take(max_entries)
-                    .collect();
-
-                Ok(())
-            })
-            .map_err(|e| anyhow::anyhow!(e))?;
-
-        Ok(messages)
+        db.read().await.view(|t| {
+            Ok(m.inner
+                .inv_list
+                .iter()
+                .filter_map(|i| match i.inv_type {
+                    InvType::Block => Ledger::fetch_block(&t, &i.hash)
+                        .ok()
+                        .flatten()
+                        .map(|blk| Message::new_block(Box::new(blk))),
+                    InvType::MempoolTx => Mempool::get_tx(&t, i.hash)
+                        .ok()
+                        .flatten()
+                        .map(|tx| Message::new_transaction(Box::new(tx))),
+                })
+                .take(max_entries)
+                .collect())
+        })
     }
 }

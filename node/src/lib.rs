@@ -151,6 +151,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
         }
     }
 
+    pub fn database(&self) -> Arc<RwLock<DB>> {
+        self.database.clone()
+    }
+
     /// Sets up and runs a list of services.
     pub async fn spawn_all(
         &self,

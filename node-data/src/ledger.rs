@@ -13,10 +13,14 @@ use std::io::{self, Read, Write};
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
 
+#[cfg(feature = "graphql")]
+pub mod graphql;
+
 pub type Seed = Signature;
 pub type Hash = [u8; 32];
 
 #[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "graphql", derive(juniper::GraphQLObject))]
 pub struct Block {
     pub header: Header,
     pub txs: Vec<Transaction>,

@@ -164,11 +164,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
         h: &Hash,
     ) -> anyhow::Result<Block> {
         // Make an attempt to fetch the candidate block from local storage
-        let mut res = Option::None;
-        self.db.read().await.view(|t| {
-            res = t.fetch_candidate_block(h)?;
-            Ok(())
-        });
+        let res = self.db.read().await.view(|t| t.fetch_candidate_block(h))?;
 
         if let Some(b) = res {
             return Ok(b);
@@ -309,19 +305,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             Error::Failed
         })?;
 
-        let mut txs = vec![];
         db.view(|view| {
-            txs = database::Mempool::get_txs_sorted_by_fee(
-                &view,
-                block_gas_limit,
-            )?;
-            Ok(())
+            database::Mempool::get_txs_sorted_by_fee(&view, block_gas_limit)
         })
         .map_err(|err| {
             tracing::error!("failed to get mempool txs: {}", err);
             Error::Failed
-        })?;
-
-        Ok(txs)
+        })
     }
 }
