@@ -124,6 +124,17 @@ async fn handle_stream(
         Err(_) => return,
     };
 
+    // Remove this block to handle requests through websockets
+    {
+        let _ = stream
+            .close(Some(CloseFrame {
+                code: CloseCode::Unsupported,
+                reason: Cow::from("Websocket is currently unsupported"),
+            }))
+            .await;
+        return;
+    }
+
     let (responder, mut responses) = mpsc::unbounded_channel::<EventResponse>();
 
     loop {
@@ -304,7 +315,7 @@ async fn handle_execution(
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let rsp = match (request.event.target) {
+    let rsp = match request.event.target {
         Target::Contract(_) => sources.rusk.handle_request(request).await,
         Target::Host(_) => sources.node.handle_request(request).await,
         _ => EventResponse {
