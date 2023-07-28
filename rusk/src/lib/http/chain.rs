@@ -21,7 +21,7 @@ use async_graphql::{
 use super::event::{DataType, Request, Response, Target};
 use crate::http::RuskNode;
 
-const GQL_VAR_PREFIX: &str = "Rusk-gqlvar-";
+const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
 fn variables_from_request(request: &Request) -> Variables {
     let mut var = Variables::default();
@@ -29,6 +29,7 @@ fn variables_from_request(request: &Request) -> Variables {
         .headers
         .iter()
         .filter_map(|(h, v)| {
+            let h = h.to_lowercase();
             h.starts_with(GQL_VAR_PREFIX).then(|| {
                 (h.replacen(GQL_VAR_PREFIX, "", 1), async_graphql::value!(v))
             })
@@ -71,8 +72,9 @@ impl RuskNode {
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);
 
-        let async_graphql::Response { data, errors, .. } =
-            schema.execute(gql_query).await;
+        let gql_res = schema.execute(gql_query).await;
+        println!("{gql_res:?}");
+        let async_graphql::Response { data, errors, .. } = gql_res;
 
         let data = match serde_json::to_string(&data) {
             Ok(d) => d,
@@ -85,7 +87,7 @@ impl RuskNode {
             }
         };
 
-        let errors = (errors.len() > 1).then(|| format!("{errors:?}"));
+        let errors = (!errors.is_empty()).then(|| format!("{errors:?}"));
         Response {
             data: data.into(),
             headers: request.x_headers(),

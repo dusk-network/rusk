@@ -4,16 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_with::{self, serde_as};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Request {
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub target: Target,
+    pub topic: String,
+    pub data: DataType,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct InnerRequest {
     pub topic: String,
     pub data: DataType,
 }
@@ -51,6 +59,22 @@ impl Response {
             error: Some(error),
             ..Default::default()
         }
+    }
+
+    pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(vec![])
+    }
+
+    pub fn to_http(
+        &self,
+        binary: bool,
+    ) -> anyhow::Result<hyper::Response<hyper::Body>> {
+        let body = match binary {
+            true => self.to_bytes(),
+            false => serde_json::to_vec(&self.data)
+                .map_err(|e| anyhow::anyhow!("Cannot ser {e}")),
+        }?;
+        Ok(hyper::Response::new(hyper::Body::from(body)))
     }
 }
 
@@ -116,7 +140,136 @@ impl Request {
             data,
         })
     }
+    pub async fn from_request(
+        req: hyper::Request<hyper::Body>,
+    ) -> anyhow::Result<(Self, bool)> {
+        // HTTP REQUEST
+        let (parts, req_body) = req.into_parts();
+        println!("1");
+        let is_binary = parts
+            .headers
+            .get(CONTENT_TYPE)
+            .and_then(|h| {
+                h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
+            })
+            .unwrap_or_default();
+
+        println!("2");
+        let headers = parts
+            .headers
+            .iter()
+            .filter_map(|(k, v)| {
+                let a = v.as_bytes();
+                serde_json::from_slice::<serde_json::Value>(a)
+                    .ok()
+                    .map(|v| (k.to_string(), v))
+            })
+            .collect();
+        println!("{headers:?}");
+
+        let paths: Vec<_> = parts
+            .uri
+            .path()
+            .split('/')
+            .skip_while(|p| p.is_empty())
+            .collect();
+
+        println!("{paths:?}");
+        let target_type = paths
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?;
+        let target_type = target_type.parse()?;
+        let target = paths
+            .get(1)
+            .ok_or_else(|| anyhow::anyhow!("Missing target"))?
+            .to_string();
+        println!("{target}");
+
+        let target = match target_type {
+            0x01 => Target::Contract(target),
+            0x02 => Target::Host(target),
+            ty => {
+                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
+            }
+        };
+        println!("{target:?}");
+        let body = hyper::body::to_bytes(req_body).await?;
+
+        let (topic, data) = match is_binary {
+            true => {
+                let (topic, bytes) = parse_string(&body)?;
+                let data = bytes.to_vec().into();
+                (topic, data)
+            }
+            false => {
+                println!("from slice");
+                let inner: InnerRequest =
+                    serde_json::from_slice(&body).unwrap();
+                (inner.topic, inner.data)
+            }
+        };
+        println!("decoded");
+        Ok((
+            Request {
+                headers,
+                target,
+                data,
+                topic,
+            },
+            is_binary,
+        ))
+    }
 }
+const CONTENT_TYPE: &str = "Content-Type";
+const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
+
+// impl TryFrom<hyper::Request<hyper::Body>> for Request {
+//     type Error = anyhow::Error;
+//     async fn try_from(req: hyper::Request<hyper::Body>) ->
+// anyhow::Result<Self> {         // HTTP REQUEST
+//         let (parts, req_body) = req.into_parts();
+//         let body = hyper::body::to_bytes(req_body).await?;
+
+//         let is_binary = parts
+//             .headers
+//             .get(CONTENT_TYPE)
+//             .and_then(|h| {
+//                 h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
+//             })
+//             .unwrap_or_default();
+
+//         if !is_binary {
+//             return serde_json::from_slice(&body);
+//         }
+//         let headers = parts
+//             .headers
+//             .iter()
+//             .filter_map(|(k, v)| {
+//                 v.to_str().ok().map(|v| (k.to_string(), v.to_string()))
+//             })
+//             .collect();
+
+//         let paths: Vec<_> = parts.uri.path().split_terminator('/').collect();
+//         let target_type: u8 = paths.get(0).try_into()?;
+//         let target = paths.get(1)?;
+//         let target = match target_type {
+//             0x01 => Target::Contract(target),
+//             0x02 => Target::Host(target),
+//             ty => {
+//                 return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
+//             }
+//         };
+
+//         let (topic, bytes) = parse_string(&body)?;
+//         let data = bytes.to_vec().into();
+//         Ok(Request {
+//             headers,
+//             target,
+//             data,
+//             topic,
+//         })
+//     }
+// }
 
 fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
     if bytes.len() < 4 {
@@ -212,6 +365,18 @@ impl From<hyper::Error> for ExecutionError {
 impl From<serde_json::Error> for ExecutionError {
     fn from(err: serde_json::Error) -> Self {
         Self::Json(err)
+    }
+}
+
+impl From<InvalidHeaderName> for ExecutionError {
+    fn from(value: InvalidHeaderName) -> Self {
+        Self::Generic(value.into())
+    }
+}
+
+impl From<InvalidHeaderValue> for ExecutionError {
+    fn from(value: InvalidHeaderValue) -> Self {
+        Self::Generic(value.into())
     }
 }
 

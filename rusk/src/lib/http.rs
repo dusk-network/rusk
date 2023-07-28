@@ -21,6 +21,7 @@ use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -219,9 +220,6 @@ struct ExecutionService {
     shutdown: broadcast::Receiver<Infallible>,
 }
 
-const CONTENT_TYPE: &str = "Content-Type";
-const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
-
 impl Service<Request<Body>> for ExecutionService {
     type Response = Response<Body>;
     type Error = ExecutionError;
@@ -258,21 +256,12 @@ impl Service<Request<Body>> for ExecutionService {
 
                 Ok(response)
             } else {
-                let (parts, req_body) = req.into_parts();
-                let body = body::to_bytes(req_body).await?;
+                // HTTP REQUEST
 
-                let execution_request = match parts.headers.get(CONTENT_TYPE) {
-                    Some(h)
-                        if h.to_str()
-                            .ok()
-                            .map(|s| s.starts_with(CONTENT_TYPE_BINARY))
-                            .unwrap_or_default() =>
-                    {
-                        EventRequest::parse(&body)?
-                    }
+                let (execution_request, is_binary) =
+                    EventRequest::from_request(req).await?;
 
-                    _ => serde_json::from_slice(&body)?,
-                };
+                let x_headers = execution_request.x_headers();
 
                 let (responder, mut receiver) = mpsc::unbounded_channel();
                 handle_execution(sources, execution_request, responder).await;
@@ -281,9 +270,24 @@ impl Service<Request<Body>> for ExecutionService {
                     .recv()
                     .await
                     .expect("An execution should always return a response");
+                let mut resp = execution_response.to_http(is_binary)?;
 
-                let response_body = serde_json::to_vec(&execution_response)?;
-                Ok(Response::new(Body::from(response_body)))
+                for (k, v) in x_headers {
+                    // let h = format!(r#""{k}":"{}"#, v.to_string());
+                    let k = HeaderName::from_str(&k)?;
+                    let v = HeaderValue::from_str(&v.to_string())?;
+                    resp.headers_mut().append(k, v);
+                }
+
+                Ok(resp)
+                // let response_body = match is_binary {
+                //     true => execution_response.to_bytes()?,
+                //     false => serde_json::to_vec(&execution_response)?,
+                // };
+                // let mut resp = Response::new(Body::from(response_body));
+                // resp.headers_mut()
+                //     .append("myheader", HeaderValue::from_static("value"));
+                // Ok(resp)
             }
         })
     }
