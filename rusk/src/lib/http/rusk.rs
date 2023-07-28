@@ -33,8 +33,6 @@ impl Rusk {
                         error: "Invalid contract bytes".to_string().into(),
                     };
                 };
-                // .map_err(|e| anyhow::anyhow!("Invalid contract specified"))
-                // contract_bytes.and_then(|contract_bytes| {
                 let response = self.query_raw(
                     ContractId::from_bytes(
                         contract_bytes.expect("to be valid"),
@@ -42,9 +40,6 @@ impl Rusk {
                     request.topic.clone(),
                     request.data.as_bytes(),
                 );
-                // .map_err(|e| anyhow::anyhow!(e.to_string()))
-                // });
-
                 match response {
                     Err(e) => Response {
                         data: DataType::None,

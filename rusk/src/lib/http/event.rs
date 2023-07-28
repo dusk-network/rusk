@@ -7,7 +7,10 @@
 use serde::{Deserialize, Serialize};
 use serde_with;
 use serde_with::serde_as;
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
