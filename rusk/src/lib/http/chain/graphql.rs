@@ -10,59 +10,62 @@ mod tx;
 use block::*;
 use tx::*;
 
-use juniper_codegen::GraphQLObject;
+use async_graphql::{Context, FieldError, FieldResult, Object};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, Register, DB};
 use node_data::ledger::{Block, SpentTransaction};
 
-use juniper::{graphql_value, FieldError, FieldResult};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub struct Ctx(pub Arc<RwLock<Backend>>);
+pub type Ctx = Arc<RwLock<Backend>>;
 pub type OptResult<T> = FieldResult<Option<T>>;
-
-// Mark our struct for juniper.
-impl juniper::Context for Ctx {}
 
 pub struct Query;
 
-#[juniper::graphql_object(
-    Context = Ctx,
-)]
+#[Object]
 impl Query {
     async fn block(
-        ctx: &Ctx,
+        &self,
+        ctx: &Context<'_>,
         height: Option<f64>,
         hash: Option<String>,
     ) -> OptResult<Block> {
+        let ctx = ctx.data::<Ctx>()?;
+
         match (height, hash) {
             (Some(height), None) => block_by_height(ctx, height).await,
             (None, Some(hash)) => block_by_hash(ctx, hash).await,
-            _ => Err(invalid_data("")),
+            _ => Err(FieldError::new("Specify heigth or hash")),
         }
     }
-    async fn tx(ctx: &Ctx, hash: String) -> OptResult<SpentTransaction> {
+    async fn tx(
+        &self,
+        ctx: &Context<'_>,
+        hash: String,
+    ) -> OptResult<SpentTransaction> {
+        let ctx = ctx.data::<Ctx>()?;
+
         tx_by_hash(ctx, hash).await
     }
 
     async fn blocks(
-        ctx: &Ctx,
+        &self,
+        ctx: &Context<'_>,
         last: Option<i32>,
         range: Option<Vec<i32>>,
     ) -> FieldResult<Vec<Block>> {
+        let ctx = ctx.data::<Ctx>()?;
+
         match (last, range) {
             (Some(count), None) => last_blocks(ctx, count).await,
             (None, Some(range)) => {
-                let range: [i32; 2] =
-                    range.try_into().map_err(|_| invalid_data("must be 2"))?;
+                let range: [i32; 2] = range.try_into().map_err(|_| {
+                    FieldError::new("You have to specify a range")
+                })?;
                 blocks_range(ctx, range[0], range[1]).await
             }
-            _ => Err(invalid_data("")),
+            _ => Err(FieldError::new("")),
         }
     }
-}
-
-fn invalid_data(err: &str) -> FieldError {
-    FieldError::new("Invalid data", graphql_value!(err))
 }

@@ -5,12 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use serde::{Deserialize, Serialize};
-use serde_with;
-use serde_with::serde_as;
-use std::{
-    collections::HashMap,
-    fmt::{Display, Formatter},
-};
+use serde_with::{self, serde_as};
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -88,7 +85,6 @@ impl From<Vec<u8>> for DataType {
 }
 
 #[serde_with::serde_as]
-// #[serde_as(as = "serde_with::hex::Hex")]
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct BinaryWrapper {

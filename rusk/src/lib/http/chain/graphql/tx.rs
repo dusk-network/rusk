@@ -10,10 +10,6 @@ use super::*;
 
 pub async fn tx_by_hash(ctx: &Ctx, hash: String) -> OptResult<Tx> {
     let hash = hex::decode(hash)?;
-    let tx = ctx
-        .0
-        .read()
-        .await
-        .view(|t| t.get_ledger_tx_by_hash(&hash))?;
+    let tx = ctx.read().await.view(|t| t.get_ledger_tx_by_hash(&hash))?;
     Ok(tx)
 }
