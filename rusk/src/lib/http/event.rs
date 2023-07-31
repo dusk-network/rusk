@@ -13,30 +13,92 @@ use std::str::FromStr;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Request {
-    pub headers: serde_json::Map<String, serde_json::Value>,
+pub(crate) struct Event {
+    #[serde(skip)]
     pub target: Target,
     pub topic: String,
     pub data: DataType,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+/// A request sent by the websocket client.
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct MessageRequest {
+    pub headers: serde_json::Map<String, serde_json::Value>,
+    pub event: Event,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub(crate) enum Target {
+    #[default]
+    None,
     Contract(String), // 0x01
     Host(String),     // 0x02
     Debugger(String), // 0x03
 }
 
-impl Request {
+impl TryFrom<&str> for Target {
+    type Error = anyhow::Error;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let paths: Vec<_> =
+            value.split('/').skip_while(|p| p.is_empty()).collect();
+        let target_type: i32 = paths
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?
+            .parse()?;
+        let target = paths
+            .get(1)
+            .ok_or_else(|| anyhow::anyhow!("Missing target"))?
+            .to_string();
+
+        let target = match target_type {
+            0x01 => Target::Contract(target),
+            0x02 => Target::Host(target),
+            0x03 => Target::Debugger(target),
+            ty => {
+                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
+            }
+        };
+
+        Ok(target)
+    }
+}
+
+impl MessageRequest {
     pub fn x_headers(&self) -> serde_json::Map<String, serde_json::Value> {
         let mut h = self.headers.clone();
         h.retain(|k, _| k.to_lowercase().starts_with("x-"));
         h
     }
+
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+        let (headers, bytes) = parse_header(bytes)?;
+        let event = Event::parse(bytes)?;
+        Ok(Self { event, headers })
+    }
+
+    pub async fn from_request(
+        req: hyper::Request<hyper::Body>,
+    ) -> anyhow::Result<(Self, bool)> {
+        let headers = req
+            .headers()
+            .iter()
+            .filter_map(|(k, v)| {
+                let a = v.as_bytes();
+                serde_json::from_slice::<serde_json::Value>(a)
+                    .ok()
+                    .map(|v| (k.to_string(), v))
+            })
+            .collect();
+        let (event, is_binary) = Event::from_request(req).await?;
+
+        let req = MessageRequest { event, headers };
+
+        Ok((req, is_binary))
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
-pub(crate) struct Response {
+pub(crate) struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
@@ -47,7 +109,7 @@ pub(crate) struct Response {
     pub error: Option<String>,
 }
 
-impl Response {
+impl MessageResponse {
     pub fn from_error(error: String) -> Self {
         Self {
             error: Some(error),
@@ -116,26 +178,13 @@ pub struct BinaryWrapper {
     pub inner: Vec<u8>,
 }
 
-impl Request {
+impl Event {
     pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let a: Vec<u8> = vec![];
-        let (headers, bytes) = parse_header(bytes)?;
-        let (target_type, bytes) = parse_target_type(bytes)?;
-        let (target, bytes) = parse_string(bytes)?;
         let (topic, bytes) = parse_string(bytes)?;
         let data = bytes.to_vec().into();
 
-        let target = match target_type {
-            0x01 => Target::Contract(target),
-            0x02 => Target::Host(target),
-            ty => {
-                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
-            }
-        };
-
         Ok(Self {
-            headers,
-            target,
+            target: Target::None,
             topic,
             data,
         })
@@ -143,8 +192,8 @@ impl Request {
     pub async fn from_request(
         req: hyper::Request<hyper::Body>,
     ) -> anyhow::Result<(Self, bool)> {
-        // HTTP REQUEST
         let (parts, req_body) = req.into_parts();
+        // HTTP REQUEST
         let is_binary = parts
             .headers
             .get(CONTENT_TYPE)
@@ -152,61 +201,19 @@ impl Request {
                 h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
             })
             .unwrap_or_default();
-        let headers = parts
-            .headers
-            .iter()
-            .filter_map(|(k, v)| {
-                let a = v.as_bytes();
-                serde_json::from_slice::<serde_json::Value>(a)
-                    .ok()
-                    .map(|v| (k.to_string(), v))
-            })
-            .collect();
-        let paths: Vec<_> = parts
-            .uri
-            .path()
-            .split('/')
-            .skip_while(|p| p.is_empty())
-            .collect();
-        let target_type: i32 = paths
-            .first()
-            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?
-            .parse()?;
-        let target = paths
-            .get(1)
-            .ok_or_else(|| anyhow::anyhow!("Missing target"))?
-            .to_string();
 
-        let target = match target_type {
-            0x01 => Target::Contract(target),
-            0x02 => Target::Host(target),
-            0x03 => Target::Debugger(target),
-            ty => {
-                return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
-            }
-        };
-
-        let topic = paths
-            .get(2)
-            .ok_or_else(|| anyhow::anyhow!("Missing topic"))?
-            .to_string();
+        let target = parts.uri.path().try_into()?;
 
         let body = hyper::body::to_bytes(req_body).await?;
 
-        let data = match is_binary {
-            true => body.to_vec().into(),
-            false => serde_json::from_slice::<DataType>(&body)
+        let mut event = match is_binary {
+            true => Event::parse(&body)
+                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
+            false => serde_json::from_slice(&body)
                 .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
         };
-        Ok((
-            Request {
-                headers,
-                target,
-                data,
-                topic,
-            },
-            is_binary,
-        ))
+        event.target = target;
+        Ok((event, is_binary))
     }
 }
 const CONTENT_TYPE: &str = "Content-Type";

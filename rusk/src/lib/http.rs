@@ -11,8 +11,8 @@ mod event;
 mod rusk;
 
 pub(crate) use event::{
-    DataType, ExecutionError, Request as EventRequest,
-    Response as EventResponse, Target,
+    DataType, Event as EventRequest, ExecutionError,
+    MessageResponse as EventResponse, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
 
@@ -42,6 +42,8 @@ use futures_util::{SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::Rusk;
+
+use self::event::MessageRequest;
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -114,6 +116,7 @@ async fn listening_loop(
 async fn handle_stream(
     sources: Arc<DataSources>,
     websocket: HyperWebsocket,
+    target: Target,
     mut shutdown: broadcast::Receiver<Infallible>,
 ) {
     let mut stream = match websocket.await {
@@ -160,7 +163,7 @@ async fn handle_stream(
 
             msg = stream.next() => {
 
-                let req = match msg {
+                let mut req = match msg {
                     Some(Ok(msg)) => match msg {
                         // We received a text request.
                         Message::Text(msg) => {
@@ -169,7 +172,7 @@ async fn handle_stream(
                         },
                         // We received a binary request.
                         Message::Binary(msg) => {
-                            EventRequest::parse(&msg)
+                            MessageRequest::parse(&msg)
                                 .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
                         }
                         // Any other type of message is unsupported.
@@ -194,7 +197,8 @@ async fn handle_stream(
                 };
                 match req {
                     // We received a valid request and should spawn a new task to handle it
-                    Ok(req) => {
+                    Ok(mut req) => {
+                        req.event.target=target.clone();
                         task::spawn(handle_execution(
                             sources.clone(),
                             req,
@@ -265,14 +269,14 @@ async fn handle_request(
     sources: Arc<DataSources>,
 ) -> Result<Response<Body>, ExecutionError> {
     if hyper_tungstenite::is_upgrade_request(&req) {
+        let target = req.uri().path().try_into()?;
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
-
-        task::spawn(handle_stream(sources, websocket, shutdown));
+        task::spawn(handle_stream(sources, websocket, target, shutdown));
 
         Ok(response)
     } else {
         let (execution_request, is_binary) =
-            EventRequest::from_request(req).await?;
+            MessageRequest::from_request(req).await?;
 
         let x_headers = execution_request.x_headers();
 
@@ -297,10 +301,10 @@ async fn handle_request(
 
 async fn handle_execution(
     sources: Arc<DataSources>,
-    request: EventRequest,
+    request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let rsp = match (request.target) {
+    let rsp = match (request.event.target) {
         Target::Contract(_) => sources.rusk.handle_request(request).await,
         Target::Host(_) => sources.node.handle_request(request).await,
         _ => EventResponse {

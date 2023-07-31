@@ -18,12 +18,12 @@ use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
 
-use super::event::{DataType, Request, Response, Target};
+use super::event::{DataType, Event, MessageRequest, MessageResponse, Target};
 use crate::http::RuskNode;
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
-fn variables_from_request(request: &Request) -> Variables {
+fn variables_from_request(request: &MessageRequest) -> Variables {
     let mut var = Variables::default();
     request
         .headers
@@ -42,12 +42,15 @@ fn variables_from_request(request: &Request) -> Variables {
 }
 
 impl RuskNode {
-    pub(crate) async fn handle_request(&self, request: Request) -> Response {
-        match &request.target {
-            Target::Host(s) if s == "Chain" && request.topic == "gql" => {
+    pub(crate) async fn handle_request(
+        &self,
+        request: MessageRequest,
+    ) -> MessageResponse {
+        match &request.event.target {
+            Target::Host(s) if s == "Chain" && request.event.topic == "gql" => {
                 self.handle_gql(request).await
             }
-            _ => Response {
+            _ => MessageResponse {
                 data: DataType::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),
@@ -55,8 +58,8 @@ impl RuskNode {
         }
     }
 
-    async fn handle_gql(&self, request: Request) -> Response {
-        let gql_query = match &request.data {
+    async fn handle_gql(&self, request: MessageRequest) -> MessageResponse {
+        let gql_query = match &request.event.data {
             DataType::Text(str) => str.clone(),
             DataType::Binary(data) => {
                 String::from_utf8(data.inner.clone()).unwrap_or_default()
@@ -78,7 +81,7 @@ impl RuskNode {
         let data = match serde_json::to_string(&data) {
             Ok(d) => d,
             Err(e) => {
-                return Response {
+                return MessageResponse {
                     data: data.to_string().into(),
                     headers: request.x_headers(),
                     error: Some("Cannot parse response".into()),
@@ -87,7 +90,7 @@ impl RuskNode {
         };
 
         let errors = (!errors.is_empty()).then(|| format!("{errors:?}"));
-        Response {
+        MessageResponse {
             data: data.into(),
             headers: request.x_headers(),
             error: errors,
