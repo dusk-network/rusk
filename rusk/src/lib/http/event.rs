@@ -132,10 +132,15 @@ impl MessageResponse {
         }
 
         let body = match binary {
-            true => self.to_bytes(),
-            false => serde_json::to_vec(&self.data)
-                .map_err(|e| anyhow::anyhow!("Cannot ser {e}")),
-        }?;
+            true => self.to_bytes()?,
+            false => match &self.data {
+                DataType::Binary(BinaryWrapper { inner }) => hex::encode(inner),
+                DataType::Text(text) => text.to_string(),
+                DataType::None => String::default(),
+            }
+            .as_bytes()
+            .to_vec(),
+        };
         Ok(hyper::Response::new(hyper::Body::from(body)))
     }
 }
