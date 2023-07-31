@@ -20,12 +20,6 @@ pub(crate) struct Request {
     pub data: DataType,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct InnerRequest {
-    pub topic: String,
-    pub data: DataType,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) enum Target {
     Contract(String), // 0x01
@@ -193,27 +187,26 @@ impl Request {
             }
         };
         println!("{target:?}");
+
+        let topic = paths
+            .get(2)
+            .ok_or_else(|| anyhow::anyhow!("Missing topic"))?
+            .to_string();
+        println!("{topic}");
+
         let body = hyper::body::to_bytes(req_body).await?;
 
-        let (topic, data) = match is_binary {
-            true => {
-                let (topic, bytes) = parse_string(&body)?;
-                let data = bytes.to_vec().into();
-                (topic, data)
-            }
-            false => {
-                println!("from slice");
-                let inner: InnerRequest =
-                    serde_json::from_slice(&body).unwrap();
-                (inner.topic, inner.data)
-            }
+        let data = match is_binary {
+            true => body.to_vec().into(),
+            false => serde_json::from_slice::<DataType>(&body)
+                .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
         };
         println!("decoded");
         Ok((
             Request {
                 headers,
                 target,
-                data,
+                data: data,
                 topic,
             },
             is_binary,

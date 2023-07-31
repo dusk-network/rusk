@@ -32,7 +32,7 @@ use tokio::{io, task};
 
 use hyper::server::conn::Http;
 use hyper::service::Service;
-use hyper::{body, Body, Request, Response};
+use hyper::{body, Body, Request, Response, StatusCode};
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
 
 use tungstenite::protocol::frame::coding::CloseCode;
@@ -256,38 +256,47 @@ impl Service<Request<Body>> for ExecutionService {
 
                 Ok(response)
             } else {
-                // HTTP REQUEST
+                let ret = {
+                    // HTTP REQUEST
 
-                let (execution_request, is_binary) =
-                    EventRequest::from_request(req).await?;
+                    let (execution_request, is_binary) =
+                        EventRequest::from_request(req).await?;
+                    // .map_err(|e|
 
-                let x_headers = execution_request.x_headers();
+                    //     Response::builder().status(StatusCode::BAD_REQUEST).
+                    // body(e.to_string()) );
 
-                let (responder, mut receiver) = mpsc::unbounded_channel();
-                handle_execution(sources, execution_request, responder).await;
+                    let x_headers = execution_request.x_headers();
 
-                let execution_response = receiver
-                    .recv()
-                    .await
-                    .expect("An execution should always return a response");
-                let mut resp = execution_response.to_http(is_binary)?;
+                    let (responder, mut receiver) = mpsc::unbounded_channel();
+                    handle_execution(sources, execution_request, responder)
+                        .await;
 
-                for (k, v) in x_headers {
-                    // let h = format!(r#""{k}":"{}"#, v.to_string());
-                    let k = HeaderName::from_str(&k)?;
-                    let v = HeaderValue::from_str(&v.to_string())?;
-                    resp.headers_mut().append(k, v);
-                }
+                    let execution_response = receiver
+                        .recv()
+                        .await
+                        .expect("An execution should always return a response");
+                    let mut resp = execution_response.to_http(is_binary)?;
 
-                Ok(resp)
-                // let response_body = match is_binary {
-                //     true => execution_response.to_bytes()?,
-                //     false => serde_json::to_vec(&execution_response)?,
-                // };
-                // let mut resp = Response::new(Body::from(response_body));
-                // resp.headers_mut()
-                //     .append("myheader", HeaderValue::from_static("value"));
-                // Ok(resp)
+                    for (k, v) in x_headers {
+                        let k = HeaderName::from_str(&k)?;
+                        let v = HeaderValue::from_str(&v.to_string())?;
+                        resp.headers_mut().append(k, v);
+                    }
+
+                    Ok(resp)
+                };
+                ret
+                // match ret {
+                //     Ok(ret) => Ok(ret),
+                //     Err(_) => Ok(Response::builder()
+                //         .status(StatusCode::INTERNAL_SERVER_ERROR)),
+                // }
+                // ret.or_else(|e| {
+                //     Response::builder()
+                //         .status(StatusCode::INTERNAL_SERVER_ERROR)
+                //         .body(e.to_string().into())
+                // })
             }
         })
     }
