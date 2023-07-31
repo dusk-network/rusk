@@ -110,7 +110,10 @@ impl<D: Database> Executor<D> {
             mpsc::channel::<accumulator::Output>(10);
 
         // Accumulator
-        let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
+        let mut acc = Accumulator::new(
+            config::ACCUMULATOR_QUEUE_CAP,
+            self.outbound_queue.clone(),
+        );
 
         acc.spawn_workers_pool(
             config::ACCUMULATOR_WORKERS_AMOUNT,
@@ -183,7 +186,7 @@ impl<D: Database> Executor<D> {
             }
             Payload::Agreement(_) => {
                 // Accumulate the agreement
-                self.collect_agreement(acc, msg).await;
+                self.accumulate_agreement(acc, msg).await;
             }
             _ => {}
         };
@@ -191,15 +194,11 @@ impl<D: Database> Executor<D> {
         None
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
-        // Publish the agreement
-        self.outbound_queue
-            .send(msg.clone())
-            .await
-            .unwrap_or_else(|err| {
-                error!("unable to publish a collected agreement msg {:?}", err)
-            });
-
+    async fn accumulate_agreement(
+        &mut self,
+        acc: &mut Accumulator,
+        msg: Message,
+    ) {
         // Accumulate the agreement
         acc.process(msg.clone()).await;
     }

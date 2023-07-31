@@ -9,7 +9,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use hex::ToHex;
 use node_data::ledger::{Hash, Seed};
-use node_data::message::{payload, Message, Payload};
+use node_data::message::{payload, AsyncQueue, Message, Payload};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
@@ -50,16 +50,19 @@ pub(super) struct Accumulator {
     workers: Vec<JoinHandle<()>>,
     tx: async_channel::Sender<Message>,
     rx: async_channel::Receiver<Message>,
+
+    outbound_queue: AsyncQueue<Message>,
 }
 
 impl Accumulator {
-    pub fn new(cap: usize) -> Self {
+    pub fn new(cap: usize, outbound_queue: AsyncQueue<Message>) -> Self {
         let (tx, rx) = async_channel::bounded(cap);
 
         Self {
             workers: vec![],
             tx,
             rx,
+            outbound_queue,
         }
     }
 
@@ -91,6 +94,7 @@ impl Accumulator {
             let committees_set = committees_set.clone();
             let output_chan = output_chan.clone();
             let stores = stores.clone();
+            let outbound_queue = self.outbound_queue.clone();
 
             self.workers.push(tokio::spawn(
                 async move {
@@ -115,6 +119,16 @@ impl Accumulator {
                             error!("{:#?}", e);
                             continue;
                         }
+
+                        // Verification completed. Re-propagate the agreement
+                        outbound_queue.send(msg.clone()).await.unwrap_or_else(
+                            |err| {
+                                error!(
+                                    "unable to publish an agreement msg {:?}",
+                                    err
+                                )
+                            },
+                        );
 
                         if let Some(msg) = Self::accumulate(
                             stores.clone(),
