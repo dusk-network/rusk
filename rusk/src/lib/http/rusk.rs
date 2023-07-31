@@ -10,7 +10,9 @@ use rusk_abi::ContractId;
 
 use crate::Rusk;
 
-use super::event::{DataType, Event, MessageRequest, MessageResponse, Target};
+use super::event::{
+    Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
+};
 
 impl Rusk {
     pub(crate) async fn handle_request(
@@ -22,7 +24,7 @@ impl Rusk {
                 let contract_bytes = hex::decode(contract);
                 if let Err(e) = &contract_bytes {
                     return MessageResponse {
-                        data: DataType::None,
+                        data: ResponseData::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     };
@@ -31,7 +33,7 @@ impl Rusk {
                     contract_bytes.expect("to be already checked").try_into();
                 if let Err(e) = &contract_bytes {
                     return MessageResponse {
-                        data: DataType::None,
+                        data: ResponseData::None,
                         headers: request.x_headers(),
                         error: "Invalid contract bytes".to_string().into(),
                     };
@@ -45,7 +47,7 @@ impl Rusk {
                 );
                 match response {
                     Err(e) => MessageResponse {
-                        data: DataType::None,
+                        data: ResponseData::None,
                         headers: request.x_headers(),
                         error: format!("{e}").into(),
                     },
@@ -57,7 +59,7 @@ impl Rusk {
                 }
             }
             _ => MessageResponse {
-                data: DataType::None,
+                data: ResponseData::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),
             },

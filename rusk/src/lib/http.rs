@@ -11,8 +11,8 @@ mod event;
 mod rusk;
 
 pub(crate) use event::{
-    DataType, Event as EventRequest, ExecutionError,
-    MessageResponse as EventResponse, Target,
+    Event as EventRequest, ExecutionError, MessageResponse as EventResponse,
+    RequestData, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
 
@@ -132,102 +132,103 @@ async fn handle_stream(
                 reason: Cow::from("Websocket is currently unsupported"),
             }))
             .await;
+        #[allow(clippy::needless_return)]
         return;
     }
 
-    let (responder, mut responses) = mpsc::unbounded_channel::<EventResponse>();
-
-    loop {
-        tokio::select! {
-            // If the server shuts down we send a close frame to the client
-            // and stop.
-            _ = shutdown.recv() => {
-                let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Away,
-                    reason: Cow::from("Shutting down"),
-                })).await;
-                break;
-            }
-
-            rsp = responses.recv() => {
-                // `responder` is never dropped so this can never be `None`
-                let rsp = rsp.unwrap();
-
-                // Serialize the response to text. If this does not succeed,
-                // we simply serialize an error response.
-                let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
-                    serde_json::to_string(
-                        &EventResponse::from_error(format!("Failed serializing response: {err}"))
-                    ).expect("serializing error response should succeed")
-                });
-
-                // If we error in sending the message we send a close frame
-                // to the client and stop.
-                if stream.send(Message::Text(rsp)).await.is_err() {
-                    let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Error,
-                    reason: Cow::from("Failed sending response"),
-                    })).await;
-                    break;
-                }
-            }
-
-            msg = stream.next() => {
-
-                let mut req = match msg {
-                    Some(Ok(msg)) => match msg {
-                        // We received a text request.
-                        Message::Text(msg) => {
-                            serde_json::from_str(&msg)
-                                .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
-                        },
-                        // We received a binary request.
-                        Message::Binary(msg) => {
-                            MessageRequest::parse(&msg)
-                                .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
-                        }
-                        // Any other type of message is unsupported.
-                        _ => Err(anyhow::anyhow!("Only text and binary messages are supported"))
-                    }
-                    // Errored while receiving the message, we will
-                    // close the stream and return a close frame.
-                    Some(Err(err)) => {
-                        Err(anyhow::anyhow!("Failed receiving message: {err}"))
-                    }
-                    // The stream has stopped producing messages, and we
-                    // should close it and stop. The client likely has done
-                    // this on purpose, and it's a part of the normal
-                    // operation of the server.
-                    None => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Normal,
-                            reason: Cow::from("Stream stopped"),
-                        })).await;
-                        break;
-                    }
-                };
-                match req {
-                    // We received a valid request and should spawn a new task to handle it
-                    Ok(mut req) => {
-                        req.event.target=target.clone();
-                        task::spawn(handle_execution(
-                            sources.clone(),
-                            req,
-                            responder.clone(),
-                        ));
-                    },
-                    Err(e) => {
-                        let _ = stream.close(Some(CloseFrame {
-                            code: CloseCode::Error,
-                            reason: Cow::from(e.to_string()),
-                        })).await;
-                        break;
-                    }
-                }
-
-            }
-        }
-    }
+    // let (responder, mut responses) =
+    // mpsc::unbounded_channel::<EventResponse>();
+    //
+    // loop {
+    //     tokio::select! {
+    //         // If the server shuts down we send a close frame to the client
+    //         // and stop.
+    //         _ = shutdown.recv() => {
+    //             let _ = stream.close(Some(CloseFrame {
+    //                 code: CloseCode::Away,
+    //                 reason: Cow::from("Shutting down"),
+    //             })).await;
+    //             break;
+    //         }
+    //
+    //         rsp = responses.recv() => {
+    //             // `responder` is never dropped so this can never be `None`
+    //             let rsp = rsp.unwrap();
+    //
+    //             // Serialize the response to text. If this does not succeed,
+    //             // we simply serialize an error response.
+    //             let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
+    //                 serde_json::to_string(
+    //                     &EventResponse::from_error(format!("Failed
+    // serializing response: {err}"))                 ).expect("serializing
+    // error response should succeed")             });
+    //
+    //             // If we error in sending the message we send a close frame
+    //             // to the client and stop.
+    //             if stream.send(Message::Text(rsp)).await.is_err() {
+    //                 let _ = stream.close(Some(CloseFrame {
+    //                 code: CloseCode::Error,
+    //                 reason: Cow::from("Failed sending response"),
+    //                 })).await;
+    //                 break;
+    //             }
+    //         }
+    //
+    //         msg = stream.next() => {
+    //
+    //             let req = match msg {
+    //                 Some(Ok(msg)) => match msg {
+    //                     // We received a text request.
+    //                     Message::Text(msg) => {
+    //                         serde_json::from_str(&msg)
+    //                             .map_err(|err| anyhow::anyhow!("Failed
+    // deserializing request: {err}"))                     },
+    //                     // We received a binary request.
+    //                     Message::Binary(msg) => {
+    //                         EventRequest::parse(&msg)
+    //                             .map_err(|err| anyhow::anyhow!("Failed
+    // deserializing request: {err}"))                     }
+    //                     // Any other type of message is unsupported.
+    //                     _ => Err(anyhow::anyhow!("Only text and binary
+    // messages are supported"))                 }
+    //                 // Errored while receiving the message, we will
+    //                 // close the stream and return a close frame.
+    //                 Some(Err(err)) => {
+    //                     Err(anyhow::anyhow!("Failed receiving message:
+    // {err}"))                 }
+    //                 // The stream has stopped producing messages, and we
+    //                 // should close it and stop. The client likely has done
+    //                 // this on purpose, and it's a part of the normal
+    //                 // operation of the server.
+    //                 None => {
+    //                     let _ = stream.close(Some(CloseFrame {
+    //                         code: CloseCode::Normal,
+    //                         reason: Cow::from("Stream stopped"),
+    //                     })).await;
+    //                     break;
+    //                 }
+    //             };
+    //             match req {
+    //                 // We received a valid request and should spawn a new
+    // task to handle it                 Ok(req) => {
+    //                     task::spawn(handle_execution(
+    //                         sources.clone(),
+    //                         req,
+    //                         responder.clone(),
+    //                     ));
+    //                 },
+    //                 Err(e) => {
+    //                     let _ = stream.close(Some(CloseFrame {
+    //                         code: CloseCode::Error,
+    //                         reason: Cow::from(e.to_string()),
+    //                     })).await;
+    //                     break;
+    //                 }
+    //             }
+    //
+    //         }
+    //     }
+    // }
 }
 
 struct ExecutionService {
@@ -298,7 +299,7 @@ async fn handle_request(
             .recv()
             .await
             .expect("An execution should always return a response");
-        let mut resp = execution_response.to_http(is_binary)?;
+        let mut resp = execution_response.into_http()?;
 
         for (k, v) in x_headers {
             let k = HeaderName::from_str(&k)?;
@@ -320,7 +321,7 @@ async fn handle_execution(
         Target::Host(_) => sources.node.handle_request(request).await,
         _ => EventResponse {
             headers: request.x_headers(),
-            data: event::DataType::None,
+            data: event::ResponseData::None,
             error: Some("unsupported target type".into()),
         },
     };

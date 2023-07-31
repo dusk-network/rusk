@@ -4,12 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use futures_util::{stream, StreamExt};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
+use hyper::Body;
 use serde::{Deserialize, Serialize};
 use serde_with::{self, serde_as};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
+use std::sync::mpsc;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,7 +20,7 @@ pub(crate) struct Event {
     #[serde(skip)]
     pub target: Target,
     pub topic: String,
-    pub data: DataType,
+    pub data: RequestData,
 }
 
 /// A request sent by the websocket client.
@@ -97,81 +100,100 @@ impl MessageRequest {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug)]
 pub(crate) struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
-    pub data: DataType,
+    pub data: ResponseData,
 
     /// A possible error happening during the contract call.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
 impl MessageResponse {
     pub fn from_error(error: String) -> Self {
         Self {
+            headers: serde_json::Map::default(),
+            data: ResponseData::None,
             error: Some(error),
-            ..Default::default()
         }
     }
 
-    pub fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        Ok(vec![])
-    }
-
-    pub fn to_http(
-        &self,
-        binary: bool,
-    ) -> anyhow::Result<hyper::Response<hyper::Body>> {
+    pub fn into_http(self) -> anyhow::Result<hyper::Response<hyper::Body>> {
         if let Some(error) = &self.error {
             return Ok(hyper::Response::builder()
                 .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
                 .body(hyper::Body::from(error.to_string()))?);
         }
 
-        let body = match binary {
-            true => self.to_bytes()?,
-            false => match &self.data {
-                DataType::Binary(BinaryWrapper { inner }) => hex::encode(inner),
-                DataType::Text(text) => text.to_string(),
-                DataType::None => String::default(),
+        let body = {
+            match self.data {
+                ResponseData::Binary(wrapper) => Body::from(wrapper.inner),
+                ResponseData::Text(text) => Body::from(text),
+                ResponseData::Channel(channel) => Body::wrap_stream(
+                    stream::iter(channel).map(Ok::<_, anyhow::Error>),
+                ),
+                ResponseData::None => Body::empty(),
             }
-            .as_bytes()
-            .to_vec(),
         };
+
         Ok(hyper::Response::new(hyper::Body::from(body)))
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-pub enum DataType {
+pub enum RequestData {
     Binary(BinaryWrapper),
-    #[default]
-    None,
     Text(String),
 }
 
-impl DataType {
+impl RequestData {
     pub fn as_bytes(&self) -> Vec<u8> {
         match self {
             Self::Binary(w) => w.inner.clone(),
-            Self::None => vec![],
             Self::Text(s) => s.as_bytes().to_vec(),
         }
     }
 }
 
-impl From<String> for DataType {
+impl From<String> for RequestData {
     fn from(value: String) -> Self {
         Self::Text(value)
     }
 }
-impl From<Vec<u8>> for DataType {
+impl From<Vec<u8>> for RequestData {
     fn from(value: Vec<u8>) -> Self {
         Self::Binary(BinaryWrapper { inner: value })
+    }
+}
+
+/// Data in a response.
+#[derive(Debug, Default)]
+pub enum ResponseData {
+    Binary(BinaryWrapper),
+    Text(String),
+    Channel(mpsc::Receiver<Vec<u8>>),
+    #[default]
+    None,
+}
+
+impl From<String> for ResponseData {
+    fn from(text: String) -> Self {
+        Self::Text(text)
+    }
+}
+
+impl From<Vec<u8>> for ResponseData {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self::Binary(BinaryWrapper { inner: bytes })
+    }
+}
+
+impl From<mpsc::Receiver<Vec<u8>>> for ResponseData {
+    fn from(receiver: mpsc::Receiver<Vec<u8>>) -> Self {
+        Self::Channel(receiver)
     }
 }
 
