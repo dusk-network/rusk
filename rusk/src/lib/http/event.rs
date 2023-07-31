@@ -63,6 +63,12 @@ impl Response {
         &self,
         binary: bool,
     ) -> anyhow::Result<hyper::Response<hyper::Body>> {
+        if let Some(error) = &self.error {
+            return Ok(hyper::Response::builder()
+                .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
+                .body(hyper::Body::from(error.to_string()))?);
+        }
+
         let body = match binary {
             true => self.to_bytes(),
             false => serde_json::to_vec(&self.data)
@@ -139,7 +145,6 @@ impl Request {
     ) -> anyhow::Result<(Self, bool)> {
         // HTTP REQUEST
         let (parts, req_body) = req.into_parts();
-        println!("1");
         let is_binary = parts
             .headers
             .get(CONTENT_TYPE)
@@ -147,8 +152,6 @@ impl Request {
                 h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
             })
             .unwrap_or_default();
-
-        println!("2");
         let headers = parts
             .headers
             .iter()
@@ -159,40 +162,34 @@ impl Request {
                     .map(|v| (k.to_string(), v))
             })
             .collect();
-        println!("{headers:?}");
-
         let paths: Vec<_> = parts
             .uri
             .path()
             .split('/')
             .skip_while(|p| p.is_empty())
             .collect();
-
-        println!("{paths:?}");
-        let target_type = paths
+        let target_type: i32 = paths
             .first()
-            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?;
-        let target_type = target_type.parse()?;
+            .ok_or_else(|| anyhow::anyhow!("Missing target type"))?
+            .parse()?;
         let target = paths
             .get(1)
             .ok_or_else(|| anyhow::anyhow!("Missing target"))?
             .to_string();
-        println!("{target}");
 
         let target = match target_type {
             0x01 => Target::Contract(target),
             0x02 => Target::Host(target),
+            0x03 => Target::Debugger(target),
             ty => {
                 return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
             }
         };
-        println!("{target:?}");
 
         let topic = paths
             .get(2)
             .ok_or_else(|| anyhow::anyhow!("Missing topic"))?
             .to_string();
-        println!("{topic}");
 
         let body = hyper::body::to_bytes(req_body).await?;
 
@@ -201,12 +198,11 @@ impl Request {
             false => serde_json::from_slice::<DataType>(&body)
                 .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
         };
-        println!("decoded");
         Ok((
             Request {
                 headers,
                 target,
-                data: data,
+                data,
                 topic,
             },
             is_binary,
@@ -215,54 +211,6 @@ impl Request {
 }
 const CONTENT_TYPE: &str = "Content-Type";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
-
-// impl TryFrom<hyper::Request<hyper::Body>> for Request {
-//     type Error = anyhow::Error;
-//     async fn try_from(req: hyper::Request<hyper::Body>) ->
-// anyhow::Result<Self> {         // HTTP REQUEST
-//         let (parts, req_body) = req.into_parts();
-//         let body = hyper::body::to_bytes(req_body).await?;
-
-//         let is_binary = parts
-//             .headers
-//             .get(CONTENT_TYPE)
-//             .and_then(|h| {
-//                 h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
-//             })
-//             .unwrap_or_default();
-
-//         if !is_binary {
-//             return serde_json::from_slice(&body);
-//         }
-//         let headers = parts
-//             .headers
-//             .iter()
-//             .filter_map(|(k, v)| {
-//                 v.to_str().ok().map(|v| (k.to_string(), v.to_string()))
-//             })
-//             .collect();
-
-//         let paths: Vec<_> = parts.uri.path().split_terminator('/').collect();
-//         let target_type: u8 = paths.get(0).try_into()?;
-//         let target = paths.get(1)?;
-//         let target = match target_type {
-//             0x01 => Target::Contract(target),
-//             0x02 => Target::Host(target),
-//             ty => {
-//                 return Err(anyhow::anyhow!("Unsupported target type '{ty}'"))
-//             }
-//         };
-
-//         let (topic, bytes) = parse_string(&body)?;
-//         let data = bytes.to_vec().into();
-//         Ok(Request {
-//             headers,
-//             target,
-//             data,
-//             topic,
-//         })
-//     }
-// }
 
 fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
     if bytes.len() < 4 {

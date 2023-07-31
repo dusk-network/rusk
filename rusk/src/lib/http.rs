@@ -222,7 +222,7 @@ struct ExecutionService {
 
 impl Service<Request<Body>> for ExecutionService {
     type Response = Response<Body>;
-    type Error = ExecutionError;
+    type Error = Infallible;
     type Future = Pin<
         Box<
             dyn Future<Output = Result<Self::Response, Self::Error>>
@@ -248,57 +248,50 @@ impl Service<Request<Body>> for ExecutionService {
         let shutdown = self.shutdown.resubscribe();
 
         Box::pin(async move {
-            if hyper_tungstenite::is_upgrade_request(&req) {
-                let (response, websocket) =
-                    hyper_tungstenite::upgrade(&mut req, None)?;
-
-                task::spawn(handle_stream(sources, websocket, shutdown));
-
-                Ok(response)
-            } else {
-                let ret = {
-                    // HTTP REQUEST
-
-                    let (execution_request, is_binary) =
-                        EventRequest::from_request(req).await?;
-                    // .map_err(|e|
-
-                    //     Response::builder().status(StatusCode::BAD_REQUEST).
-                    // body(e.to_string()) );
-
-                    let x_headers = execution_request.x_headers();
-
-                    let (responder, mut receiver) = mpsc::unbounded_channel();
-                    handle_execution(sources, execution_request, responder)
-                        .await;
-
-                    let execution_response = receiver
-                        .recv()
-                        .await
-                        .expect("An execution should always return a response");
-                    let mut resp = execution_response.to_http(is_binary)?;
-
-                    for (k, v) in x_headers {
-                        let k = HeaderName::from_str(&k)?;
-                        let v = HeaderValue::from_str(&v.to_string())?;
-                        resp.headers_mut().append(k, v);
-                    }
-
-                    Ok(resp)
-                };
-                ret
-                // match ret {
-                //     Ok(ret) => Ok(ret),
-                //     Err(_) => Ok(Response::builder()
-                //         .status(StatusCode::INTERNAL_SERVER_ERROR)),
-                // }
-                // ret.or_else(|e| {
-                //     Response::builder()
-                //         .status(StatusCode::INTERNAL_SERVER_ERROR)
-                //         .body(e.to_string().into())
-                // })
-            }
+            let response = handle_request(req, shutdown, sources).await;
+            response.or_else(|error| {
+                Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from(error.to_string()))
+                    .expect("Failed to build response"))
+            })
         })
+    }
+}
+
+async fn handle_request(
+    mut req: Request<Body>,
+    mut shutdown: broadcast::Receiver<Infallible>,
+    sources: Arc<DataSources>,
+) -> Result<Response<Body>, ExecutionError> {
+    if hyper_tungstenite::is_upgrade_request(&req) {
+        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+
+        task::spawn(handle_stream(sources, websocket, shutdown));
+
+        Ok(response)
+    } else {
+        let (execution_request, is_binary) =
+            EventRequest::from_request(req).await?;
+
+        let x_headers = execution_request.x_headers();
+
+        let (responder, mut receiver) = mpsc::unbounded_channel();
+        handle_execution(sources, execution_request, responder).await;
+
+        let execution_response = receiver
+            .recv()
+            .await
+            .expect("An execution should always return a response");
+        let mut resp = execution_response.to_http(is_binary)?;
+
+        for (k, v) in x_headers {
+            let k = HeaderName::from_str(&k)?;
+            let v = HeaderValue::from_str(&v.to_string())?;
+            resp.headers_mut().append(k, v);
+        }
+
+        Ok(resp)
     }
 }
 

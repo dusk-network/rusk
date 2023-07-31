@@ -73,7 +73,6 @@ impl RuskNode {
             async_graphql::Request::new(gql_query).variables(variables);
 
         let gql_res = schema.execute(gql_query).await;
-        println!("{gql_res:?}");
         let async_graphql::Response { data, errors, .. } = gql_res;
 
         let data = match serde_json::to_string(&data) {
