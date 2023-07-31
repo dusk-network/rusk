@@ -73,6 +73,10 @@ impl MessageRequest {
         h
     }
 
+    pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
+        self.headers.get(name)
+    }
+
     pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
         let (headers, bytes) = parse_header(bytes)?;
         let event = Event::parse(bytes)?;

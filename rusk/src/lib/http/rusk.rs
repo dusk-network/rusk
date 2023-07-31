@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
+use tokio::task;
 
 use rusk_abi::ContractId;
 
@@ -13,6 +14,8 @@ use crate::Rusk;
 use super::event::{
     Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
 };
+
+const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
 impl Rusk {
     pub(crate) async fn handle_request(
@@ -38,24 +41,52 @@ impl Rusk {
                         error: "Invalid contract bytes".to_string().into(),
                     };
                 };
-                let response = self.query_raw(
-                    ContractId::from_bytes(
-                        contract_bytes.expect("to be valid"),
-                    ),
-                    request.event.topic.clone(),
-                    request.event.data.as_bytes(),
-                );
-                match response {
-                    Err(e) => MessageResponse {
-                        data: ResponseData::None,
-                        headers: request.x_headers(),
-                        error: format!("{e}").into(),
-                    },
-                    Ok(data) => MessageResponse {
-                        data: data.into(),
-                        headers: request.x_headers(),
-                        error: None,
-                    },
+
+                match request.header(RUSK_FEEDER_HEADER).is_some() {
+                    true => {
+                        let (sender, receiver) = mpsc::channel();
+
+                        let rusk = self.clone();
+                        let topic = request.event.topic.clone();
+                        let arg = request.event.data.as_bytes();
+
+                        task::spawn(async move {
+                            rusk.feeder_query_raw(
+                                ContractId::from_bytes(
+                                    contract_bytes.expect("to be valid"),
+                                ),
+                                topic,
+                                arg,
+                                sender,
+                            );
+                        });
+
+                        MessageResponse {
+                            data: ResponseData::Channel(receiver),
+                            headers: request.x_headers(),
+                            error: None,
+                        }
+                    }
+                    false => {
+                        match self.query_raw(
+                            ContractId::from_bytes(
+                                contract_bytes.expect("to be valid"),
+                            ),
+                            request.event.topic.clone(),
+                            request.event.data.as_bytes(),
+                        ) {
+                            Ok(data) => MessageResponse {
+                                data: data.into(),
+                                headers: request.x_headers(),
+                                error: None,
+                            },
+                            Err(e) => MessageResponse {
+                                data: ResponseData::None,
+                                headers: request.x_headers(),
+                                error: format!("{e}").into(),
+                            },
+                        }
+                    }
                 }
             }
             _ => MessageResponse {
