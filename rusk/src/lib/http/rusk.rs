@@ -23,78 +23,70 @@ impl Rusk {
         &self,
         request: MessageRequest,
     ) -> MessageResponse {
-        match &request.event.target {
-            Target::Contract(contract) => {
-                let contract_bytes = hex::decode(contract);
-                if let Err(e) = &contract_bytes {
-                    return MessageResponse {
-                        data: ResponseData::None,
-                        headers: request.x_headers(),
-                        error: format!("{e}").into(),
-                    };
-                };
-                let contract_bytes =
-                    contract_bytes.expect("to be already checked").try_into();
-                if let Err(e) = &contract_bytes {
-                    return MessageResponse {
-                        data: ResponseData::None,
-                        headers: request.x_headers(),
-                        error: "Invalid contract bytes".to_string().into(),
-                    };
-                };
+        let data = match &request.event.target {
+            Target::Contract(contract) => self.handle_contract_query(
+                &request.event,
+                request.header(RUSK_FEEDER_HEADER).is_some(),
+            ),
+            // Target::Host(target) if target == "rusk" => {
+            //     match &request.event.topic {
+            //         "preverify" => {
+            //             self.handle_preverify(request.event.data.as_bytes())
+            //         }
+            //         _ => Err(anyhow::anyhow!("Unsupported")),
+            //     }
+            // }
+            _ => Err(anyhow::anyhow!("Unsupported")),
+        };
 
-                match request.header(RUSK_FEEDER_HEADER).is_some() {
-                    true => {
-                        let (sender, receiver) = mpsc::channel();
+        data.map(|data| MessageResponse {
+            data,
+            error: None,
+            headers: request.x_headers(),
+        })
+        .unwrap_or_else(|e| request.to_error(e.to_string()))
+    }
 
-                        let rusk = self.clone();
-                        let topic = request.event.topic.clone();
-                        let arg = request.event.data.as_bytes();
+    fn handle_contract_query(
+        &self,
+        event: &Event,
+        feeder: bool,
+    ) -> anyhow::Result<ResponseData> {
+        let contract = event.target.inner();
+        let contract_bytes = hex::decode(contract)?;
 
-                        thread::spawn(move || {
-                            rusk.feeder_query_raw(
-                                ContractId::from_bytes(
-                                    contract_bytes.expect("to be valid"),
-                                ),
-                                topic,
-                                arg,
-                                sender,
-                            );
-                        });
+        let contract_bytes = contract_bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
 
-                        MessageResponse {
-                            data: ResponseData::Channel(receiver),
-                            headers: request.x_headers(),
-                            error: None,
-                        }
-                    }
-                    false => {
-                        match self.query_raw(
-                            ContractId::from_bytes(
-                                contract_bytes.expect("to be valid"),
-                            ),
-                            request.event.topic.clone(),
-                            request.event.data.as_bytes(),
-                        ) {
-                            Ok(data) => MessageResponse {
-                                data: data.into(),
-                                headers: request.x_headers(),
-                                error: None,
-                            },
-                            Err(e) => MessageResponse {
-                                data: ResponseData::None,
-                                headers: request.x_headers(),
-                                error: format!("{e}").into(),
-                            },
-                        }
-                    }
-                }
+        match feeder {
+            true => {
+                let (sender, receiver) = mpsc::channel();
+
+                let rusk = self.clone();
+                let topic = event.topic.clone();
+                let arg = event.data.as_bytes();
+
+                thread::spawn(move || {
+                    rusk.feeder_query_raw(
+                        ContractId::from_bytes(contract_bytes),
+                        topic,
+                        arg,
+                        sender,
+                    );
+                });
+                Ok(ResponseData::Channel(receiver))
             }
-            _ => MessageResponse {
-                data: ResponseData::None,
-                headers: request.x_headers(),
-                error: Some("Unsupported".into()),
-            },
+            false => {
+                let data = self
+                    .query_raw(
+                        ContractId::from_bytes(contract_bytes),
+                        event.topic.clone(),
+                        event.data.as_bytes(),
+                    )
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                Ok(data.into())
+            }
         }
     }
 }

@@ -30,6 +30,19 @@ pub(crate) struct MessageRequest {
     pub event: Event,
 }
 
+impl MessageRequest {
+    pub fn to_error<S>(&self, err: S) -> MessageResponse
+    where
+        S: AsRef<str>,
+    {
+        MessageResponse {
+            headers: self.x_headers(),
+            data: ResponseData::None,
+            error: Some(err.as_ref().to_string()),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub(crate) enum Target {
     #[default]
@@ -37,6 +50,17 @@ pub(crate) enum Target {
     Contract(String), // 0x01
     Host(String),     // 0x02
     Debugger(String), // 0x03
+}
+
+impl Target {
+    pub fn inner(&self) -> &str {
+        match self {
+            Self::None => "",
+            Self::Contract(s) => s,
+            Self::Host(s) => s,
+            Self::Debugger(s) => s,
+        }
+    }
 }
 
 impl TryFrom<&str> for Target {
