@@ -11,6 +11,8 @@ use std::sync::Arc;
 
 use node::database::rocksdb::Backend;
 use node::network::Kadcast;
+use node::Network;
+use node_data::message::Message;
 
 use graphql::{Ctx, Query};
 
@@ -50,6 +52,9 @@ impl RuskNode {
     ) -> anyhow::Result<ResponseData> {
         match &request.event.to_route() {
             (Target::Host(_), "Chain", "gql") => self.handle_gql(request).await,
+            (Target::Host(_), "Chain", "propagate_tx") => {
+                self.propagate_tx(request.event_data()).await
+            }
             _ => anyhow::bail!("Unsupported"),
         }
     }
@@ -81,5 +86,17 @@ impl RuskNode {
         let data = serde_json::to_string(&data)
             .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
         Ok(data.into())
+    }
+
+    async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
+        let tx = phoenix_core::Transaction::from_slice(tx)
+            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
+            .into();
+        let tx_message = Message::new_transaction(Box::new(tx));
+
+        let network = self.0.network();
+        network.read().await.route_internal(tx_message);
+
+        Ok(ResponseData::None)
     }
 }
