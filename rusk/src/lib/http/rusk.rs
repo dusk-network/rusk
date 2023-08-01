@@ -29,6 +29,9 @@ impl Rusk {
                 let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
                 self.handle_contract_query(&request.event, feeder)
             }
+            (Target::Host(_), "rusk", "preverify") => {
+                self.handle_preverify(request.event.data.as_bytes())
+            }
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
@@ -71,5 +74,12 @@ impl Rusk {
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             Ok(data.into())
         }
+    }
+
+    fn handle_preverify(&self, data: Vec<u8>) -> anyhow::Result<ResponseData> {
+        let tx = phoenix_core::Transaction::from_slice(&data)
+            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
+        self.preverify(&tx.into())?;
+        Ok(ResponseData::None)
     }
 }
