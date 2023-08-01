@@ -11,8 +11,8 @@ mod event;
 mod rusk;
 
 pub(crate) use event::{
-    DataType, Event as EventRequest, ExecutionError,
-    MessageResponse as EventResponse, Target,
+    BinaryWrapper, Event as EventRequest, ExecutionError,
+    MessageResponse as EventResponse, RequestData, ResponseData, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
 
@@ -38,7 +38,7 @@ use hyper_tungstenite::{tungstenite, HyperWebsocket};
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{stream, SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::Rusk;
@@ -124,9 +124,21 @@ async fn handle_stream(
         Err(_) => return,
     };
 
+    // Add this block to disable requests through websockets
+    // {
+    //     let _ = stream
+    //         .close(Some(CloseFrame {
+    //             code: CloseCode::Unsupported,
+    //             reason: Cow::from("Websocket is currently unsupported"),
+    //         }))
+    //         .await;
+    //     #[allow(clippy::needless_return)]
+    //     return;
+    // }
+
     let (responder, mut responses) = mpsc::unbounded_channel::<EventResponse>();
 
-    loop {
+    'outer: loop {
         tokio::select! {
             // If the server shuts down we send a close frame to the client
             // and stop.
@@ -142,22 +154,53 @@ async fn handle_stream(
                 // `responder` is never dropped so this can never be `None`
                 let rsp = rsp.unwrap();
 
-                // Serialize the response to text. If this does not succeed,
-                // we simply serialize an error response.
-                let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
-                    serde_json::to_string(
-                        &EventResponse::from_error(format!("Failed serializing response: {err}"))
-                    ).expect("serializing error response should succeed")
-                });
+                if let ResponseData::Channel(c) = rsp.data {
+                    let mut datas = stream::iter(c).map(|e| {
+                       EventResponse {
+                            data: e.into(),
+                            headers: rsp.headers.clone(),
+                            error: None
+                        }
+                    });//.await;
+                    while let Some(c) = datas.next().await {
+                        let rsp = serde_json::to_string(&c).unwrap_or_else(|err| {
+                            serde_json::to_string(
+                                &EventResponse::from_error(
+                                    format!("Failed serializing response: {err}")
+                                )).expect("serializing error response should succeed")
+                            });
 
-                // If we error in sending the message we send a close frame
-                // to the client and stop.
-                if stream.send(Message::Text(rsp)).await.is_err() {
-                    let _ = stream.close(Some(CloseFrame {
-                    code: CloseCode::Error,
-                    reason: Cow::from("Failed sending response"),
-                    })).await;
-                    break;
+                        // If we error in sending the message we send a close frame
+                        // to the client and stop.
+                        if stream.send(Message::Text(rsp)).await.is_err() {
+                            let _ = stream.close(Some(CloseFrame {
+                            code: CloseCode::Error,
+                            reason: Cow::from("Failed sending response"),
+                            })).await;
+                            // break;
+                        }
+                    }
+
+
+                } else {
+                    // Serialize the response to text. If this does not succeed,
+                    // we simply serialize an error response.
+                    let rsp = serde_json::to_string(&rsp).unwrap_or_else(|err| {
+                        serde_json::to_string(
+                            &EventResponse::from_error(
+                                format!("Failed serializing response: {err}")
+                            )).expect("serializing error response should succeed")
+                        });
+
+                    // If we error in sending the message we send a close frame
+                    // to the client and stop.
+                    if stream.send(Message::Text(rsp)).await.is_err() {
+                        let _ = stream.close(Some(CloseFrame {
+                        code: CloseCode::Error,
+                        reason: Cow::from("Failed sending response"),
+                        })).await;
+                        break;
+                    }
                 }
             }
 
@@ -287,7 +330,7 @@ async fn handle_request(
             .recv()
             .await
             .expect("An execution should always return a response");
-        let mut resp = execution_response.to_http(is_binary)?;
+        let mut resp = execution_response.into_http(is_binary)?;
 
         for (k, v) in x_headers {
             let k = HeaderName::from_str(&k)?;
@@ -304,12 +347,12 @@ async fn handle_execution(
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let rsp = match (request.event.target) {
+    let rsp = match request.event.target {
         Target::Contract(_) => sources.rusk.handle_request(request).await,
         Target::Host(_) => sources.node.handle_request(request).await,
         _ => EventResponse {
             headers: request.x_headers(),
-            data: event::DataType::None,
+            data: event::ResponseData::None,
             error: Some("unsupported target type".into()),
         },
     };

@@ -18,7 +18,9 @@ use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
 
-use super::event::{DataType, Event, MessageRequest, MessageResponse, Target};
+use super::event::{
+    Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
+};
 use crate::http::RuskNode;
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
@@ -51,7 +53,7 @@ impl RuskNode {
                 self.handle_gql(request).await
             }
             _ => MessageResponse {
-                data: DataType::None,
+                data: ResponseData::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),
             },
@@ -60,11 +62,10 @@ impl RuskNode {
 
     async fn handle_gql(&self, request: MessageRequest) -> MessageResponse {
         let gql_query = match &request.event.data {
-            DataType::Text(str) => str.clone(),
-            DataType::Binary(data) => {
+            RequestData::Text(str) => str.clone(),
+            RequestData::Binary(data) => {
                 String::from_utf8(data.inner.clone()).unwrap_or_default()
             }
-            DataType::None => String::default(),
         };
 
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)

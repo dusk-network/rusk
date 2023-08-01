@@ -543,6 +543,34 @@ impl Rusk {
         Ok(())
     }
 
+    pub fn feeder_query_raw<S, V>(
+        &self,
+        contract_id: ContractId,
+        call_name: S,
+        call_arg: V,
+        feeder: mpsc::Sender<Vec<u8>>,
+    ) -> Result<()>
+    where
+        S: AsRef<str>,
+        V: Into<Vec<u8>>,
+    {
+        let inner = self.inner.lock();
+
+        // For queries we set a point limit of effectively infinite and a block
+        // height of zero since this doesn't affect the result.
+        let current_commit = inner.current_commit;
+        let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
+
+        session.feeder_call_raw(
+            contract_id,
+            call_name.as_ref(),
+            call_arg,
+            feeder,
+        )?;
+
+        Ok(())
+    }
+
     pub async fn get_notes(
         &self,
         vk: &[u8],
