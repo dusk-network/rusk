@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::sync::{mpsc, Arc};
+use std::thread;
 use tokio::task;
 
 use rusk_abi::ContractId;
@@ -50,7 +51,7 @@ impl Rusk {
                         let topic = request.event.topic.clone();
                         let arg = request.event.data.as_bytes();
 
-                        task::spawn(async move {
+                        thread::spawn(move || {
                             rusk.feeder_query_raw(
                                 ContractId::from_bytes(
                                     contract_bytes.expect("to be valid"),

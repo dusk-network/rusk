@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::mpsc;
 
 /// A request sent by the websocket client.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct Event {
     #[serde(skip)]
     pub target: Target,
@@ -24,7 +24,7 @@ pub(crate) struct Event {
 }
 
 /// A request sent by the websocket client.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct MessageRequest {
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub event: Event,
@@ -74,7 +74,9 @@ impl MessageRequest {
     }
 
     pub fn header(&self, name: &str) -> Option<&serde_json::Value> {
-        self.headers.get(name)
+        self.headers
+            .iter()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(name).then_some(v))
     }
 
     pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
@@ -104,7 +106,7 @@ impl MessageRequest {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub(crate) struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
@@ -124,7 +126,10 @@ impl MessageResponse {
         }
     }
 
-    pub fn into_http(self) -> anyhow::Result<hyper::Response<hyper::Body>> {
+    pub fn into_http(
+        self,
+        is_binary: bool,
+    ) -> anyhow::Result<hyper::Response<hyper::Body>> {
         if let Some(error) = &self.error {
             return Ok(hyper::Response::builder()
                 .status(hyper::StatusCode::INTERNAL_SERVER_ERROR)
@@ -133,20 +138,31 @@ impl MessageResponse {
 
         let body = {
             match self.data {
-                ResponseData::Binary(wrapper) => Body::from(wrapper.inner),
+                ResponseData::Binary(wrapper) => {
+                    let data = match is_binary {
+                        true => wrapper.inner,
+                        false => hex::encode(wrapper.inner).as_bytes().to_vec(),
+                    };
+                    Body::from(data)
+                }
                 ResponseData::Text(text) => Body::from(text),
                 ResponseData::Channel(channel) => Body::wrap_stream(
-                    stream::iter(channel).map(Ok::<_, anyhow::Error>),
+                    stream::iter(channel).map(move |e| match is_binary {
+                        true => Ok::<_, anyhow::Error>(e),
+                        false => Ok::<_, anyhow::Error>(
+                            hex::encode(e).as_bytes().to_vec(),
+                        ),
+                    }), // Ok::<_, anyhow::Error>),
                 ),
                 ResponseData::None => Body::empty(),
             }
         };
 
-        Ok(hyper::Response::new(hyper::Body::from(body)))
+        Ok(hyper::Response::new(body))
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum RequestData {
     Binary(BinaryWrapper),
@@ -181,6 +197,20 @@ pub enum ResponseData {
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
+}
+
+impl serde::Serialize for ResponseData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let str = match self {
+            Self::Text(s) => s.to_string(),
+            Self::Binary(w) => hex::encode(&w.inner),
+            _ => String::default(),
+        };
+        serializer.serialize_str(&str)
+    }
 }
 
 impl From<String> for ResponseData {
