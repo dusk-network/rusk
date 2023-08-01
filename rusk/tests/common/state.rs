@@ -63,14 +63,7 @@ pub fn generator_procedure(
         discarded: 0,
     });
 
-    let txs: Vec<_> = txs
-        .iter()
-        .map(|t| Transaction {
-            inner: t.clone(),
-            r#type: 1,
-            version: 1,
-        })
-        .collect();
+    let txs: Vec<_> = txs.iter().map(|t| t.clone().into()).collect();
     for tx in &txs {
         rusk.preverify(tx)?;
     }

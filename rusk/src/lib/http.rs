@@ -347,15 +347,19 @@ async fn handle_execution(
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let rsp = match request.event.target {
-        Target::Contract(_) => sources.rusk.handle_request(request).await,
-        Target::Host(_) => sources.node.handle_request(request).await,
-        _ => EventResponse {
-            headers: request.x_headers(),
-            data: event::ResponseData::None,
-            error: Some("unsupported target type".into()),
-        },
+    let data = match request.event.target {
+        Target::Contract(_) => sources.rusk.handle_request(&request).await,
+        Target::Host(_) => sources.node.handle_request(&request).await,
+        _ => Err(anyhow::anyhow!("unsupported target type")),
     };
+
+    let rsp = data
+        .map(|data| EventResponse {
+            data,
+            error: None,
+            headers: request.x_headers(),
+        })
+        .unwrap_or_else(|e| request.to_error(e.to_string()));
 
     let _ = responder.send(rsp);
 }

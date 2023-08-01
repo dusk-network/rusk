@@ -23,6 +23,12 @@ pub(crate) struct Event {
     pub data: RequestData,
 }
 
+impl Event {
+    pub fn to_route(&self) -> (&Target, &str, &str) {
+        (&self.target, self.target.inner(), self.topic.as_ref())
+    }
+}
+
 /// A request sent by the websocket client.
 #[derive(Debug, Deserialize)]
 pub(crate) struct MessageRequest {
