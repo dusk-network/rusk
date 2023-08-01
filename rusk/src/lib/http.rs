@@ -11,8 +11,8 @@ mod event;
 mod rusk;
 
 pub(crate) use event::{
-    DataType, ExecutionError, Request as EventRequest,
-    Response as EventResponse, Target,
+    DataType, Event as EventRequest, ExecutionError,
+    MessageResponse as EventResponse, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
 
@@ -21,6 +21,7 @@ use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -31,7 +32,7 @@ use tokio::{io, task};
 
 use hyper::server::conn::Http;
 use hyper::service::Service;
-use hyper::{body, Body, Request, Response};
+use hyper::{body, Body, Request, Response, StatusCode};
 use hyper_tungstenite::{tungstenite, HyperWebsocket};
 
 use tungstenite::protocol::frame::coding::CloseCode;
@@ -41,6 +42,8 @@ use futures_util::{SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::Rusk;
+
+use self::event::MessageRequest;
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -113,6 +116,7 @@ async fn listening_loop(
 async fn handle_stream(
     sources: Arc<DataSources>,
     websocket: HyperWebsocket,
+    target: Target,
     mut shutdown: broadcast::Receiver<Infallible>,
 ) {
     let mut stream = match websocket.await {
@@ -159,7 +163,7 @@ async fn handle_stream(
 
             msg = stream.next() => {
 
-                let req = match msg {
+                let mut req = match msg {
                     Some(Ok(msg)) => match msg {
                         // We received a text request.
                         Message::Text(msg) => {
@@ -168,7 +172,7 @@ async fn handle_stream(
                         },
                         // We received a binary request.
                         Message::Binary(msg) => {
-                            EventRequest::parse(&msg)
+                            MessageRequest::parse(&msg)
                                 .map_err(|err| anyhow::anyhow!("Failed deserializing request: {err}"))
                         }
                         // Any other type of message is unsupported.
@@ -193,7 +197,8 @@ async fn handle_stream(
                 };
                 match req {
                     // We received a valid request and should spawn a new task to handle it
-                    Ok(req) => {
+                    Ok(mut req) => {
+                        req.event.target=target.clone();
                         task::spawn(handle_execution(
                             sources.clone(),
                             req,
@@ -219,12 +224,9 @@ struct ExecutionService {
     shutdown: broadcast::Receiver<Infallible>,
 }
 
-const CONTENT_TYPE: &str = "Content-Type";
-const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
-
 impl Service<Request<Body>> for ExecutionService {
     type Response = Response<Body>;
-    type Error = ExecutionError;
+    type Error = Infallible;
     type Future = Pin<
         Box<
             dyn Future<Output = Result<Self::Response, Self::Error>>
@@ -250,51 +252,59 @@ impl Service<Request<Body>> for ExecutionService {
         let shutdown = self.shutdown.resubscribe();
 
         Box::pin(async move {
-            if hyper_tungstenite::is_upgrade_request(&req) {
-                let (response, websocket) =
-                    hyper_tungstenite::upgrade(&mut req, None)?;
-
-                task::spawn(handle_stream(sources, websocket, shutdown));
-
-                Ok(response)
-            } else {
-                let (parts, req_body) = req.into_parts();
-                let body = body::to_bytes(req_body).await?;
-
-                let execution_request = match parts.headers.get(CONTENT_TYPE) {
-                    Some(h)
-                        if h.to_str()
-                            .ok()
-                            .map(|s| s.starts_with(CONTENT_TYPE_BINARY))
-                            .unwrap_or_default() =>
-                    {
-                        EventRequest::parse(&body)?
-                    }
-
-                    _ => serde_json::from_slice(&body)?,
-                };
-
-                let (responder, mut receiver) = mpsc::unbounded_channel();
-                handle_execution(sources, execution_request, responder).await;
-
-                let execution_response = receiver
-                    .recv()
-                    .await
-                    .expect("An execution should always return a response");
-
-                let response_body = serde_json::to_vec(&execution_response)?;
-                Ok(Response::new(Body::from(response_body)))
-            }
+            let response = handle_request(req, shutdown, sources).await;
+            response.or_else(|error| {
+                Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from(error.to_string()))
+                    .expect("Failed to build response"))
+            })
         })
+    }
+}
+
+async fn handle_request(
+    mut req: Request<Body>,
+    mut shutdown: broadcast::Receiver<Infallible>,
+    sources: Arc<DataSources>,
+) -> Result<Response<Body>, ExecutionError> {
+    if hyper_tungstenite::is_upgrade_request(&req) {
+        let target = req.uri().path().try_into()?;
+        let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
+        task::spawn(handle_stream(sources, websocket, target, shutdown));
+
+        Ok(response)
+    } else {
+        let (execution_request, is_binary) =
+            MessageRequest::from_request(req).await?;
+
+        let x_headers = execution_request.x_headers();
+
+        let (responder, mut receiver) = mpsc::unbounded_channel();
+        handle_execution(sources, execution_request, responder).await;
+
+        let execution_response = receiver
+            .recv()
+            .await
+            .expect("An execution should always return a response");
+        let mut resp = execution_response.to_http(is_binary)?;
+
+        for (k, v) in x_headers {
+            let k = HeaderName::from_str(&k)?;
+            let v = HeaderValue::from_str(&v.to_string())?;
+            resp.headers_mut().append(k, v);
+        }
+
+        Ok(resp)
     }
 }
 
 async fn handle_execution(
     sources: Arc<DataSources>,
-    request: EventRequest,
+    request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let rsp = match (request.target) {
+    let rsp = match (request.event.target) {
         Target::Contract(_) => sources.rusk.handle_request(request).await,
         Target::Host(_) => sources.node.handle_request(request).await,
         _ => EventResponse {

@@ -18,17 +18,18 @@ use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
 
-use super::event::{DataType, Request, Response, Target};
+use super::event::{DataType, Event, MessageRequest, MessageResponse, Target};
 use crate::http::RuskNode;
 
-const GQL_VAR_PREFIX: &str = "Rusk-gqlvar-";
+const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
-fn variables_from_request(request: &Request) -> Variables {
+fn variables_from_request(request: &MessageRequest) -> Variables {
     let mut var = Variables::default();
     request
         .headers
         .iter()
         .filter_map(|(h, v)| {
+            let h = h.to_lowercase();
             h.starts_with(GQL_VAR_PREFIX).then(|| {
                 (h.replacen(GQL_VAR_PREFIX, "", 1), async_graphql::value!(v))
             })
@@ -41,12 +42,15 @@ fn variables_from_request(request: &Request) -> Variables {
 }
 
 impl RuskNode {
-    pub(crate) async fn handle_request(&self, request: Request) -> Response {
-        match &request.target {
-            Target::Host(s) if s == "Chain" && request.topic == "gql" => {
+    pub(crate) async fn handle_request(
+        &self,
+        request: MessageRequest,
+    ) -> MessageResponse {
+        match &request.event.target {
+            Target::Host(s) if s == "Chain" && request.event.topic == "gql" => {
                 self.handle_gql(request).await
             }
-            _ => Response {
+            _ => MessageResponse {
                 data: DataType::None,
                 headers: request.x_headers(),
                 error: Some("Unsupported".into()),
@@ -54,8 +58,8 @@ impl RuskNode {
         }
     }
 
-    async fn handle_gql(&self, request: Request) -> Response {
-        let gql_query = match &request.data {
+    async fn handle_gql(&self, request: MessageRequest) -> MessageResponse {
+        let gql_query = match &request.event.data {
             DataType::Text(str) => str.clone(),
             DataType::Binary(data) => {
                 String::from_utf8(data.inner.clone()).unwrap_or_default()
@@ -71,13 +75,13 @@ impl RuskNode {
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);
 
-        let async_graphql::Response { data, errors, .. } =
-            schema.execute(gql_query).await;
+        let gql_res = schema.execute(gql_query).await;
+        let async_graphql::Response { data, errors, .. } = gql_res;
 
         let data = match serde_json::to_string(&data) {
             Ok(d) => d,
             Err(e) => {
-                return Response {
+                return MessageResponse {
                     data: data.to_string().into(),
                     headers: request.x_headers(),
                     error: Some("Cannot parse response".into()),
@@ -85,8 +89,8 @@ impl RuskNode {
             }
         };
 
-        let errors = (errors.len() > 1).then(|| format!("{errors:?}"));
-        Response {
+        let errors = (!errors.is_empty()).then(|| format!("{errors:?}"));
+        MessageResponse {
             data: data.into(),
             headers: request.x_headers(),
             error: errors,
