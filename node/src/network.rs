@@ -118,6 +118,17 @@ impl<const N: usize> Kadcast<N> {
         }
     }
 
+    pub fn route_internal(&self, msg: Message) {
+        let topic = msg.header.topic as usize;
+        let routes = self.routes.clone();
+
+        tokio::spawn(async move {
+            if let Some(Some(queue)) = routes.read().await.get(topic) {
+                queue.send(msg.clone()).await;
+            };
+        });
+    }
+
     /// Removes a route, if exists, for a given topic.
     async fn remove_route(&mut self, topic: u8) -> anyhow::Result<()> {
         let mut guard = self.routes.write().await;
