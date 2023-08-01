@@ -47,6 +47,10 @@ impl MessageRequest {
             error: Some(err.as_ref().to_string()),
         }
     }
+
+    pub fn event_data(&self) -> &[u8] {
+        self.event.data.as_bytes()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
@@ -200,10 +204,10 @@ pub enum RequestData {
 }
 
 impl RequestData {
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> &[u8] {
         match self {
-            Self::Binary(w) => w.inner.clone(),
-            Self::Text(s) => s.as_bytes().to_vec(),
+            Self::Binary(w) => &w.inner,
+            Self::Text(s) => s.as_bytes(),
         }
     }
 }

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use node::vm::VMExecution;
+use rusk_prover::{LocalProver, Prover};
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
@@ -30,7 +31,22 @@ impl Rusk {
                 self.handle_contract_query(&request.event, feeder)
             }
             (Target::Host(_), "rusk", "preverify") => {
-                self.handle_preverify(request.event.data.as_bytes())
+                self.handle_preverify(request.event_data())
+            }
+            (Target::Host(_), "rusk", "prove_execute") => {
+                Ok(LocalProver.prove_execute(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_stct") => {
+                Ok(LocalProver.prove_stct(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_stco") => {
+                Ok(LocalProver.prove_stco(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_wfct") => {
+                Ok(LocalProver.prove_wfct(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_wfco") => {
+                Ok(LocalProver.prove_wfco(request.event_data())?.into())
             }
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
@@ -53,7 +69,7 @@ impl Rusk {
 
             let rusk = self.clone();
             let topic = event.topic.clone();
-            let arg = event.data.as_bytes();
+            let arg = event.data.as_bytes().to_vec();
 
             thread::spawn(move || {
                 rusk.feeder_query_raw(
@@ -76,8 +92,8 @@ impl Rusk {
         }
     }
 
-    fn handle_preverify(&self, data: Vec<u8>) -> anyhow::Result<ResponseData> {
-        let tx = phoenix_core::Transaction::from_slice(&data)
+    fn handle_preverify(&self, data: &[u8]) -> anyhow::Result<ResponseData> {
+        let tx = phoenix_core::Transaction::from_slice(data)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         self.preverify(&tx.into())?;
         Ok(ResponseData::None)
