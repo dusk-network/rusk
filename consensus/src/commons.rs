@@ -15,6 +15,7 @@ use node_data::message;
 use crate::contract_state::CallParams;
 use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
+use dusk_bytes::DeserializableSlice;
 use node_data::bls::PublicKey;
 use node_data::message::AsyncQueue;
 use node_data::message::Message;
@@ -54,6 +55,7 @@ impl RoundUpdate {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ConsensusError {
     InvalidBlock,
+    InvalidBlockHash,
     InvalidSignature,
     InvalidMsgType,
     FutureEvent,
@@ -91,24 +93,56 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
+        if candidate == Block::default() {
+            return;
+        }
+
         let hash = candidate.header.hash;
         let already_verified = vc_list.lock().await.contains(&hash);
 
         if !already_verified {
-            if let Err(e) =
-                executor.lock().await.verify_state_transition(CallParams {
+            let pubkey = &candidate.header.generator_bls_pubkey.0;
+            let generator =
+                match dusk_bls12_381_sign::PublicKey::from_slice(pubkey) {
+                    Ok(pubkey) => pubkey,
+                    Err(e) => {
+                        tracing::error!(
+                        "unable to decode generator BLS Pubkey {}, err: {:?}",
+                        hex::encode(pubkey),
+                        e,
+                    );
+                        return;
+                    }
+                };
+
+            match executor
+                .lock()
+                .await
+                .verify_state_transition(CallParams {
                     round: ru.round,
                     txs: candidate.txs.clone(),
                     block_gas_limit: crate::config::DEFAULT_BLOCK_GAS_LIMIT,
-                    generator_pubkey: pubkey.clone(),
+                    generator_pubkey: PublicKey::new(generator),
                 })
+                .await
             {
-                tracing::error!(
-                    "verify state transition failed with err: {:?}",
-                    e
-                );
-                return;
-            }
+                Ok(state_hash) => {
+                    // Ensure state_hash returned from VST call is the one we
+                    // expect to have with current candidate block
+                    if state_hash != candidate.header.state_hash {
+                        tracing::error!(
+                            "VST failed with invalid state_hash: {}, candidate_state_hash: {}",
+                            hex::encode(state_hash),
+                            hex::encode(candidate.header.state_hash),
+                        );
+                        return;
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("VST failed with err: {:?}", e);
+                    return;
+                }
+            };
         }
 
         vc_list.lock().await.insert(hash);

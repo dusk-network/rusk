@@ -36,6 +36,15 @@ fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
     ))
 }
 
+fn final_result_with_timeout(
+    sv: StepVotes,
+    candidate: ledger::Block,
+) -> HandleMsgOutput {
+    HandleMsgOutput::FinalResultWithTimeoutIncrease(Message::from_stepvotes(
+        payload::StepVotesWithCandidate { sv, candidate },
+    ))
+}
+
 #[derive(Default)]
 pub struct Reduction<DB: Database> {
     pub(crate) db: Arc<Mutex<DB>>,
@@ -97,9 +106,8 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             // if the votes converged for an empty hash we invoke halt
             if hash == [0u8; 32] {
                 tracing::warn!("votes converged for an empty hash");
-                // TODO: increase timeout
 
-                return Ok(final_result(
+                return Ok(final_result_with_timeout(
                     StepVotes::default(),
                     ledger::Block::default(),
                 ));
