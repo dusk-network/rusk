@@ -347,9 +347,11 @@ async fn handle_execution(
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
 ) {
-    let data = match request.event.target {
-        Target::Contract(_) => sources.rusk.handle_request(&request).await,
-        Target::Host(_) => sources.node.handle_request(&request).await,
+    let data = match request.event.to_route() {
+        (Target::Contract(_), ..) | (_, "rusk", _) => {
+            sources.rusk.handle_request(&request).await
+        }
+        (_, "Chain", _) => sources.node.handle_request(&request).await,
         _ => Err(anyhow::anyhow!("unsupported target type")),
     };
 
