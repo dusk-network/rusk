@@ -277,12 +277,10 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     ) -> Result<Vec<Transaction>, Error> {
         let db = self.db.read().await;
 
-        db.view(|view| {
-            database::Mempool::get_txs_sorted_by_fee(&view, block_gas_limit)
-        })
-        .map_err(|err| {
-            tracing::error!("failed to get mempool txs: {}", err);
-            Error::Failed
-        })
+        db.view(|db| db.get_txs_sorted_by_fee(block_gas_limit))
+            .map_err(|err| {
+                tracing::error!("failed to get mempool txs: {}", err);
+                Error::Failed
+            })
     }
 }
