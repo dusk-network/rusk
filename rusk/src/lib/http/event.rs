@@ -16,7 +16,7 @@ use std::sync::mpsc;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Deserialize)]
-pub(crate) struct Event {
+pub struct Event {
     #[serde(skip)]
     pub target: Target,
     pub topic: String,
@@ -31,7 +31,7 @@ impl Event {
 
 /// A request sent by the websocket client.
 #[derive(Debug, Deserialize)]
-pub(crate) struct MessageRequest {
+pub struct MessageRequest {
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub event: Event,
 }
@@ -54,7 +54,7 @@ impl MessageRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-pub(crate) enum Target {
+pub enum Target {
     #[default]
     None,
     Contract(String), // 0x01
@@ -141,7 +141,7 @@ impl MessageRequest {
 }
 
 #[derive(Debug, Serialize)]
-pub(crate) struct MessageResponse {
+pub struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.

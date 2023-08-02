@@ -25,6 +25,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use async_trait::async_trait;
+
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::{broadcast, mpsc};
@@ -52,9 +54,8 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn bind<A: ToSocketAddrs>(
-        rusk: Rusk,
-        node: RuskNode,
+    pub async fn bind<A: ToSocketAddrs, H: HandleRequest>(
+        handler: H,
         addr: A,
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(addr).await?;
@@ -62,11 +63,8 @@ impl HttpServer {
 
         let local_addr = listener.local_addr()?;
 
-        let handle = task::spawn(listening_loop(
-            DataSources { rusk, node },
-            listener,
-            shutdown_receiver,
-        ));
+        let handle =
+            task::spawn(listening_loop(handler, listener, shutdown_receiver));
 
         Ok(Self {
             handle,
@@ -76,17 +74,33 @@ impl HttpServer {
     }
 }
 
-struct DataSources {
-    rusk: Rusk,
-    node: RuskNode,
+pub struct DataSources {
+    pub rusk: Rusk,
+    pub node: RuskNode,
 }
 
-async fn listening_loop(
-    sources: DataSources,
+#[async_trait]
+impl HandleRequest for DataSources {
+    async fn handle(
+        &self,
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData> {
+        match request.event.to_route() {
+            (Target::Contract(_), ..) | (_, "rusk", _) => {
+                self.rusk.handle_request(request).await
+            }
+            (_, "Chain", _) => self.node.handle_request(request).await,
+            _ => Err(anyhow::anyhow!("unsupported target type")),
+        }
+    }
+}
+
+async fn listening_loop<H: HandleRequest>(
+    handler: H,
     listener: TcpListener,
     mut shutdown: broadcast::Receiver<Infallible>,
 ) {
-    let sources = Arc::new(sources);
+    let handler = Arc::new(handler);
     let http = Http::new();
 
     loop {
@@ -101,7 +115,7 @@ async fn listening_loop(
                 let (stream, _) = r.unwrap();
 
                 let service = ExecutionService {
-                    sources: sources.clone(),
+                    sources: handler.clone(),
                     shutdown: shutdown.resubscribe()
                 };
                 let conn = http.serve_connection(stream, service).with_upgrades();
@@ -113,8 +127,8 @@ async fn listening_loop(
     }
 }
 
-async fn handle_stream(
-    sources: Arc<DataSources>,
+async fn handle_stream<H: HandleRequest>(
+    sources: Arc<H>,
     websocket: HyperWebsocket,
     target: Target,
     mut shutdown: broadcast::Receiver<Infallible>,
@@ -262,12 +276,15 @@ async fn handle_stream(
     }
 }
 
-struct ExecutionService {
-    sources: Arc<DataSources>,
+struct ExecutionService<H> {
+    sources: Arc<H>,
     shutdown: broadcast::Receiver<Infallible>,
 }
 
-impl Service<Request<Body>> for ExecutionService {
+impl<H> Service<Request<Body>> for ExecutionService<H>
+where
+    H: HandleRequest,
+{
     type Response = Response<Body>;
     type Error = Infallible;
     type Future = Pin<
@@ -306,11 +323,14 @@ impl Service<Request<Body>> for ExecutionService {
     }
 }
 
-async fn handle_request(
+async fn handle_request<H>(
     mut req: Request<Body>,
     mut shutdown: broadcast::Receiver<Infallible>,
-    sources: Arc<DataSources>,
-) -> Result<Response<Body>, ExecutionError> {
+    sources: Arc<H>,
+) -> Result<Response<Body>, ExecutionError>
+where
+    H: HandleRequest,
+{
     if hyper_tungstenite::is_upgrade_request(&req) {
         let target = req.uri().path().try_into()?;
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
@@ -342,20 +362,18 @@ async fn handle_request(
     }
 }
 
-async fn handle_execution(
-    sources: Arc<DataSources>,
+async fn handle_execution<H>(
+    sources: Arc<H>,
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
-) {
-    let data = match request.event.to_route() {
-        (Target::Contract(_), ..) | (_, "rusk", _) => {
-            sources.rusk.handle_request(&request).await
-        }
-        (_, "Chain", _) => sources.node.handle_request(&request).await,
-        _ => Err(anyhow::anyhow!("unsupported target type")),
-    };
+) where
+    H: HandleRequest,
+{
+    let data = sources.handle(&request).await;
 
-    let rsp = data
+    let rsp = sources
+        .handle(&request)
+        .await
         .map(|data| EventResponse {
             data,
             error: None,
@@ -364,4 +382,12 @@ async fn handle_execution(
         .unwrap_or_else(|e| request.to_error(e.to_string()));
 
     let _ = responder.send(rsp);
+}
+
+#[async_trait]
+pub trait HandleRequest: Send + Sync + 'static {
+    async fn handle(
+        &self,
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData>;
 }

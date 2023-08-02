@@ -14,6 +14,7 @@ use clap::{Arg, Command};
 use node::database::rocksdb;
 use node::database::DB;
 use node::LongLivedService;
+use rusk::http::DataSources;
 use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
 use version::show_version;
@@ -111,10 +112,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut _ws_server = None;
     if config.http.listen {
-        _ws_server = Some(
-            HttpServer::bind(rusk, node.clone(), config.http.listen_addr())
-                .await?,
-        );
+        let handler = DataSources {
+            node: node.clone(),
+            rusk,
+        };
+        _ws_server =
+            Some(HttpServer::bind(handler, config.http.listen_addr()).await?);
     }
 
     // node spawn_all is the entry point

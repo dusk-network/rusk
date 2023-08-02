@@ -56,6 +56,7 @@ hyper = { version = "0.14", features = ["server", "stream", "http1", "http2"] }
 futures = "0.3"
 tokio-stream = "0.1"
 tokio-util = { version = "0.7", features = ["rt"] }
+async-trait = "0.1"
 
 
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = [
