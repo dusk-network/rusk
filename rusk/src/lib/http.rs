@@ -391,3 +391,155 @@ pub trait HandleRequest: Send + Sync + 'static {
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData>;
 }
+
+#[cfg(test)]
+mod tests {
+    use std::thread;
+
+    use super::*;
+
+    use std::net::TcpStream;
+    use tungstenite::client;
+
+    /// A [`HandleRequest`] implementation that returns the same data
+    struct TestHandle;
+
+    const STREAMED_DATA: &[&[u8; 16]] = &[
+        b"I am call data 0",
+        b"I am call data 1",
+        b"I am call data 2",
+        b"I am call data 3",
+    ];
+
+    #[async_trait]
+    impl HandleRequest for TestHandle {
+        async fn handle(
+            &self,
+            request: &MessageRequest,
+        ) -> anyhow::Result<ResponseData> {
+            let response = match request.event.to_route() {
+                (_, _, "stream") => {
+                    let (sender, rec) = std::sync::mpsc::channel();
+                    thread::spawn(move || {
+                        for f in STREAMED_DATA.iter() {
+                            sender.send(f.to_vec()).unwrap()
+                        }
+                    });
+                    ResponseData::Channel(rec)
+                }
+                _ => request.event_data().to_vec().into(),
+            };
+            Ok(response)
+        }
+    }
+
+    #[tokio::test]
+    async fn http_query() {
+        let server = HttpServer::bind(TestHandle, "localhost:0")
+            .await
+            .expect("Binding the server to the address should succeed");
+
+        let data = Vec::from(&b"I am call data 0"[..]);
+
+        let data = RequestData::Binary(BinaryWrapper { inner: data });
+
+        let event = EventRequest {
+            target: Target::None,
+            data,
+            topic: "topic".into(),
+        };
+
+        let request = serde_json::to_vec(&event)
+            .expect("Serializing request should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{}/01/target", server.local_addr))
+            .body(Body::from(request))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let response_bytes =
+            response.bytes().await.expect("There should be a response");
+        let response_bytes =
+            hex::decode(response_bytes).expect("data to be hex encoded");
+        let request_bytes = event.data.as_bytes();
+
+        assert_eq!(
+            request_bytes, response_bytes,
+            "Data received the same as sent"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_queries() {
+        let server = HttpServer::bind(TestHandle, "localhost:0")
+            .await
+            .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(server.local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{}/01/stream", server.local_addr);
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let event = EventRequest {
+            target: Target::None,
+            data: RequestData::Text("Not used".into()),
+            topic: "stream".into(),
+        };
+        let headers: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(r#"{"X-requestid": "100"}"#)
+                .expect("headers to be serialized");
+
+        let request = MessageRequest {
+            event,
+            headers: headers.clone(),
+        };
+
+        let request = serde_json::to_string(&request).unwrap();
+
+        stream
+            .write_message(Message::Text(request))
+            .expect("Sending request to the server should succeed");
+
+        let mut responses = vec![];
+        // Vec::<ExecutionResponse>::with_capacity(request_num);
+
+        while responses.len() < STREAMED_DATA.len() {
+            let msg = stream
+                .read_message()
+                .expect("Response should be received without error");
+
+            let msg = match msg {
+                Message::Text(msg) => msg,
+                _ => panic!("Shouldn't receive anything but text"),
+            };
+            println!("{msg}");
+            let response: EventResponse = serde_json::from_str(&msg)
+                .expect("Response should deserialize successfully");
+            assert_eq!(
+                response.headers, headers,
+                "x- headers to be propagated back"
+            );
+            assert!(matches!(response.error, None), "There should be noerror");
+            match response.data {
+                ResponseData::Binary(BinaryWrapper { inner }) => {
+                    responses.push(inner);
+                }
+                _ => panic!("WS stream is supposed to return binary data"),
+            }
+        }
+
+        for (idx, response) in responses.iter().enumerate() {
+            let expected_data = STREAMED_DATA[idx];
+            assert_eq!(
+                &response[..],
+                expected_data,
+                "Response data should be the same as the request `fn_args`"
+            );
+        }
+    }
+}

@@ -15,7 +15,7 @@ use std::str::FromStr;
 use std::sync::mpsc;
 
 /// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Event {
     #[serde(skip)]
     pub target: Target,
@@ -30,7 +30,7 @@ impl Event {
 }
 
 /// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MessageRequest {
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub event: Event,
@@ -140,7 +140,7 @@ impl MessageRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
@@ -196,7 +196,7 @@ impl MessageResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RequestData {
     Binary(BinaryWrapper),
@@ -224,27 +224,14 @@ impl From<Vec<u8>> for RequestData {
 }
 
 /// Data in a response.
-#[derive(Debug, Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub enum ResponseData {
     Binary(BinaryWrapper),
     Text(String),
+    #[serde(skip)]
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
-}
-
-impl serde::Serialize for ResponseData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let str = match self {
-            Self::Text(s) => s.to_string(),
-            Self::Binary(w) => hex::encode(&w.inner),
-            _ => String::default(),
-        };
-        serializer.serialize_str(&str)
-    }
 }
 
 impl From<String> for ResponseData {

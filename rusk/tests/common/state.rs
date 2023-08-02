@@ -14,7 +14,7 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::contract_state::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::{Block, SpentTransaction};
 use tracing::info;
 
 use crate::common::keys::BLS_SK;
