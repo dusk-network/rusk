@@ -15,17 +15,23 @@ use std::str::FromStr;
 use std::sync::mpsc;
 
 /// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
-pub(crate) struct Event {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Event {
     #[serde(skip)]
     pub target: Target,
     pub topic: String,
     pub data: RequestData,
 }
 
+impl Event {
+    pub fn to_route(&self) -> (&Target, &str, &str) {
+        (&self.target, self.target.inner(), self.topic.as_ref())
+    }
+}
+
 /// A request sent by the websocket client.
-#[derive(Debug, Deserialize)]
-pub(crate) struct MessageRequest {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MessageRequest {
     pub headers: serde_json::Map<String, serde_json::Value>,
     pub event: Event,
 }
@@ -41,10 +47,14 @@ impl MessageRequest {
             error: Some(err.as_ref().to_string()),
         }
     }
+
+    pub fn event_data(&self) -> &[u8] {
+        self.event.data.as_bytes()
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
-pub(crate) enum Target {
+pub enum Target {
     #[default]
     None,
     Contract(String), // 0x01
@@ -130,8 +140,8 @@ impl MessageRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub(crate) struct MessageResponse {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
@@ -186,7 +196,7 @@ impl MessageResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RequestData {
     Binary(BinaryWrapper),
@@ -194,10 +204,10 @@ pub enum RequestData {
 }
 
 impl RequestData {
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> &[u8] {
         match self {
-            Self::Binary(w) => w.inner.clone(),
-            Self::Text(s) => s.as_bytes().to_vec(),
+            Self::Binary(w) => &w.inner,
+            Self::Text(s) => s.as_bytes(),
         }
     }
 }
@@ -214,27 +224,14 @@ impl From<Vec<u8>> for RequestData {
 }
 
 /// Data in a response.
-#[derive(Debug, Default)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub enum ResponseData {
     Binary(BinaryWrapper),
     Text(String),
+    #[serde(skip)]
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
-}
-
-impl serde::Serialize for ResponseData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let str = match self {
-            Self::Text(s) => s.to_string(),
-            Self::Binary(w) => hex::encode(&w.inner),
-            _ => String::default(),
-        };
-        serializer.serialize_str(&str)
-    }
 }
 
 impl From<String> for ResponseData {
@@ -311,7 +308,7 @@ fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
 
     let len =
         u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
-    let (_, left) = bytes.split_at(len);
+    let (_, left) = bytes.split_at(4);
 
     Ok((len, left))
 }
@@ -422,5 +419,19 @@ impl From<tungstenite::error::ProtocolError> for ExecutionError {
 impl From<tungstenite::Error> for ExecutionError {
     fn from(err: tungstenite::Error) -> Self {
         Self::Tungstenite(err)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn event() {
+        let data =
+            "120000006c65617665735f66726f6d5f6865696768740000000000000000";
+        let data = hex::decode(data).unwrap();
+        let event = Event::parse(&data).unwrap();
     }
 }

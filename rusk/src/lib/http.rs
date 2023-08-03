@@ -25,6 +25,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use async_trait::async_trait;
+
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::sync::{broadcast, mpsc};
@@ -52,9 +54,8 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn bind<A: ToSocketAddrs>(
-        rusk: Rusk,
-        node: RuskNode,
+    pub async fn bind<A: ToSocketAddrs, H: HandleRequest>(
+        handler: H,
         addr: A,
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(addr).await?;
@@ -62,11 +63,8 @@ impl HttpServer {
 
         let local_addr = listener.local_addr()?;
 
-        let handle = task::spawn(listening_loop(
-            DataSources { rusk, node },
-            listener,
-            shutdown_receiver,
-        ));
+        let handle =
+            task::spawn(listening_loop(handler, listener, shutdown_receiver));
 
         Ok(Self {
             handle,
@@ -76,17 +74,33 @@ impl HttpServer {
     }
 }
 
-struct DataSources {
-    rusk: Rusk,
-    node: RuskNode,
+pub struct DataSources {
+    pub rusk: Rusk,
+    pub node: RuskNode,
 }
 
-async fn listening_loop(
-    sources: DataSources,
+#[async_trait]
+impl HandleRequest for DataSources {
+    async fn handle(
+        &self,
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData> {
+        match request.event.to_route() {
+            (Target::Contract(_), ..) | (_, "rusk", _) => {
+                self.rusk.handle_request(request).await
+            }
+            (_, "Chain", _) => self.node.handle_request(request).await,
+            _ => Err(anyhow::anyhow!("unsupported target type")),
+        }
+    }
+}
+
+async fn listening_loop<H: HandleRequest>(
+    handler: H,
     listener: TcpListener,
     mut shutdown: broadcast::Receiver<Infallible>,
 ) {
-    let sources = Arc::new(sources);
+    let handler = Arc::new(handler);
     let http = Http::new();
 
     loop {
@@ -101,7 +115,7 @@ async fn listening_loop(
                 let (stream, _) = r.unwrap();
 
                 let service = ExecutionService {
-                    sources: sources.clone(),
+                    sources: handler.clone(),
                     shutdown: shutdown.resubscribe()
                 };
                 let conn = http.serve_connection(stream, service).with_upgrades();
@@ -113,8 +127,8 @@ async fn listening_loop(
     }
 }
 
-async fn handle_stream(
-    sources: Arc<DataSources>,
+async fn handle_stream<H: HandleRequest>(
+    sources: Arc<H>,
     websocket: HyperWebsocket,
     target: Target,
     mut shutdown: broadcast::Receiver<Infallible>,
@@ -262,12 +276,15 @@ async fn handle_stream(
     }
 }
 
-struct ExecutionService {
-    sources: Arc<DataSources>,
+struct ExecutionService<H> {
+    sources: Arc<H>,
     shutdown: broadcast::Receiver<Infallible>,
 }
 
-impl Service<Request<Body>> for ExecutionService {
+impl<H> Service<Request<Body>> for ExecutionService<H>
+where
+    H: HandleRequest,
+{
     type Response = Response<Body>;
     type Error = Infallible;
     type Future = Pin<
@@ -306,11 +323,14 @@ impl Service<Request<Body>> for ExecutionService {
     }
 }
 
-async fn handle_request(
+async fn handle_request<H>(
     mut req: Request<Body>,
     mut shutdown: broadcast::Receiver<Infallible>,
-    sources: Arc<DataSources>,
-) -> Result<Response<Body>, ExecutionError> {
+    sources: Arc<H>,
+) -> Result<Response<Body>, ExecutionError>
+where
+    H: HandleRequest,
+{
     if hyper_tungstenite::is_upgrade_request(&req) {
         let target = req.uri().path().try_into()?;
         let (response, websocket) = hyper_tungstenite::upgrade(&mut req, None)?;
@@ -342,20 +362,184 @@ async fn handle_request(
     }
 }
 
-async fn handle_execution(
-    sources: Arc<DataSources>,
+async fn handle_execution<H>(
+    sources: Arc<H>,
     request: MessageRequest,
     responder: mpsc::UnboundedSender<EventResponse>,
-) {
-    let rsp = match request.event.target {
-        Target::Contract(_) => sources.rusk.handle_request(request).await,
-        Target::Host(_) => sources.node.handle_request(request).await,
-        _ => EventResponse {
+) where
+    H: HandleRequest,
+{
+    let data = sources.handle(&request).await;
+
+    let rsp = sources
+        .handle(&request)
+        .await
+        .map(|data| EventResponse {
+            data,
+            error: None,
             headers: request.x_headers(),
-            data: event::ResponseData::None,
-            error: Some("unsupported target type".into()),
-        },
-    };
+        })
+        .unwrap_or_else(|e| request.to_error(e.to_string()));
 
     let _ = responder.send(rsp);
+}
+
+#[async_trait]
+pub trait HandleRequest: Send + Sync + 'static {
+    async fn handle(
+        &self,
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData>;
+}
+
+#[cfg(test)]
+mod tests {
+    use std::thread;
+
+    use super::*;
+
+    use std::net::TcpStream;
+    use tungstenite::client;
+
+    /// A [`HandleRequest`] implementation that returns the same data
+    struct TestHandle;
+
+    const STREAMED_DATA: &[&[u8; 16]] = &[
+        b"I am call data 0",
+        b"I am call data 1",
+        b"I am call data 2",
+        b"I am call data 3",
+    ];
+
+    #[async_trait]
+    impl HandleRequest for TestHandle {
+        async fn handle(
+            &self,
+            request: &MessageRequest,
+        ) -> anyhow::Result<ResponseData> {
+            let response = match request.event.to_route() {
+                (_, _, "stream") => {
+                    let (sender, rec) = std::sync::mpsc::channel();
+                    thread::spawn(move || {
+                        for f in STREAMED_DATA.iter() {
+                            sender.send(f.to_vec()).unwrap()
+                        }
+                    });
+                    ResponseData::Channel(rec)
+                }
+                _ => request.event_data().to_vec().into(),
+            };
+            Ok(response)
+        }
+    }
+
+    #[tokio::test]
+    async fn http_query() {
+        let server = HttpServer::bind(TestHandle, "localhost:0")
+            .await
+            .expect("Binding the server to the address should succeed");
+
+        let data = Vec::from(&b"I am call data 0"[..]);
+
+        let data = RequestData::Binary(BinaryWrapper { inner: data });
+
+        let event = EventRequest {
+            target: Target::None,
+            data,
+            topic: "topic".into(),
+        };
+
+        let request = serde_json::to_vec(&event)
+            .expect("Serializing request should succeed");
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://{}/01/target", server.local_addr))
+            .body(Body::from(request))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let response_bytes =
+            response.bytes().await.expect("There should be a response");
+        let response_bytes =
+            hex::decode(response_bytes).expect("data to be hex encoded");
+        let request_bytes = event.data.as_bytes();
+
+        assert_eq!(
+            request_bytes, response_bytes,
+            "Data received the same as sent"
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn websocket_queries() {
+        let server = HttpServer::bind(TestHandle, "localhost:0")
+            .await
+            .expect("Binding the server to the address should succeed");
+
+        let stream = TcpStream::connect(server.local_addr)
+            .expect("Connecting to the server should succeed");
+
+        let ws_uri = format!("ws://{}/01/stream", server.local_addr);
+        let (mut stream, _) = client(ws_uri, stream)
+            .expect("Handshake with the server should succeed");
+
+        let event = EventRequest {
+            target: Target::None,
+            data: RequestData::Text("Not used".into()),
+            topic: "stream".into(),
+        };
+        let headers: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_str(r#"{"X-requestid": "100"}"#)
+                .expect("headers to be serialized");
+
+        let request = MessageRequest {
+            event,
+            headers: headers.clone(),
+        };
+
+        let request = serde_json::to_string(&request).unwrap();
+
+        stream
+            .write_message(Message::Text(request))
+            .expect("Sending request to the server should succeed");
+
+        let mut responses = vec![];
+        // Vec::<ExecutionResponse>::with_capacity(request_num);
+
+        while responses.len() < STREAMED_DATA.len() {
+            let msg = stream
+                .read_message()
+                .expect("Response should be received without error");
+
+            let msg = match msg {
+                Message::Text(msg) => msg,
+                _ => panic!("Shouldn't receive anything but text"),
+            };
+            println!("{msg}");
+            let response: EventResponse = serde_json::from_str(&msg)
+                .expect("Response should deserialize successfully");
+            assert_eq!(
+                response.headers, headers,
+                "x- headers to be propagated back"
+            );
+            assert!(matches!(response.error, None), "There should be noerror");
+            match response.data {
+                ResponseData::Binary(BinaryWrapper { inner }) => {
+                    responses.push(inner);
+                }
+                _ => panic!("WS stream is supposed to return binary data"),
+            }
+        }
+
+        for (idx, response) in responses.iter().enumerate() {
+            let expected_data = STREAMED_DATA[idx];
+            assert_eq!(
+                &response[..],
+                expected_data,
+                "Response data should be the same as the request `fn_args`"
+            );
+        }
+    }
 }

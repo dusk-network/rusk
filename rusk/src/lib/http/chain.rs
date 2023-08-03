@@ -11,6 +11,8 @@ use std::sync::Arc;
 
 use node::database::rocksdb::Backend;
 use node::network::Kadcast;
+use node::Network;
+use node_data::message::Message;
 
 use graphql::{Ctx, Query};
 
@@ -46,21 +48,21 @@ fn variables_from_request(request: &MessageRequest) -> Variables {
 impl RuskNode {
     pub(crate) async fn handle_request(
         &self,
-        request: MessageRequest,
-    ) -> MessageResponse {
-        match &request.event.target {
-            Target::Host(s) if s == "Chain" && request.event.topic == "gql" => {
-                self.handle_gql(request).await
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData> {
+        match &request.event.to_route() {
+            (Target::Host(_), "Chain", "gql") => self.handle_gql(request).await,
+            (Target::Host(_), "Chain", "propagate_tx") => {
+                self.propagate_tx(request.event_data()).await
             }
-            _ => MessageResponse {
-                data: ResponseData::None,
-                headers: request.x_headers(),
-                error: Some("Unsupported".into()),
-            },
+            _ => anyhow::bail!("Unsupported"),
         }
     }
 
-    async fn handle_gql(&self, request: MessageRequest) -> MessageResponse {
+    async fn handle_gql(
+        &self,
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData> {
         let gql_query = match &request.event.data {
             RequestData::Text(str) => str.clone(),
             RequestData::Binary(data) => {
@@ -72,29 +74,29 @@ impl RuskNode {
             .data(self.db())
             .finish();
 
-        let variables = variables_from_request(&request);
+        let variables = variables_from_request(request);
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);
 
         let gql_res = schema.execute(gql_query).await;
         let async_graphql::Response { data, errors, .. } = gql_res;
-
-        let data = match serde_json::to_string(&data) {
-            Ok(d) => d,
-            Err(e) => {
-                return MessageResponse {
-                    data: data.to_string().into(),
-                    headers: request.x_headers(),
-                    error: Some("Cannot parse response".into()),
-                }
-            }
-        };
-
-        let errors = (!errors.is_empty()).then(|| format!("{errors:?}"));
-        MessageResponse {
-            data: data.into(),
-            headers: request.x_headers(),
-            error: errors,
+        if !errors.is_empty() {
+            return Err(anyhow::anyhow!("{errors:?}"));
         }
+        let data = serde_json::to_string(&data)
+            .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
+        Ok(data.into())
+    }
+
+    async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
+        let tx = phoenix_core::Transaction::from_slice(tx)
+            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
+            .into();
+        let tx_message = Message::new_transaction(Box::new(tx));
+
+        let network = self.0.network();
+        network.read().await.route_internal(tx_message);
+
+        Ok(ResponseData::None)
     }
 }

@@ -14,7 +14,7 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::contract_state::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, SpentTransaction, Transaction};
+use node_data::ledger::{Block, SpentTransaction};
 use tracing::info;
 
 use crate::common::keys::BLS_SK;
@@ -63,14 +63,7 @@ pub fn generator_procedure(
         discarded: 0,
     });
 
-    let txs: Vec<_> = txs
-        .iter()
-        .map(|t| Transaction {
-            inner: t.clone(),
-            r#type: 1,
-            version: 1,
-        })
-        .collect();
+    let txs: Vec<_> = txs.iter().map(|t| t.clone().into()).collect();
     for tx in &txs {
         rusk.preverify(tx)?;
     }

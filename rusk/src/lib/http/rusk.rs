@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node::vm::VMExecution;
+use rusk_prover::{LocalProver, Prover};
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
@@ -21,30 +23,33 @@ const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 impl Rusk {
     pub(crate) async fn handle_request(
         &self,
-        request: MessageRequest,
-    ) -> MessageResponse {
-        let data = match &request.event.target {
-            Target::Contract(contract) => self.handle_contract_query(
-                &request.event,
-                request.header(RUSK_FEEDER_HEADER).is_some(),
-            ),
-            // Target::Host(target) if target == "rusk" => {
-            //     match &request.event.topic {
-            //         "preverify" => {
-            //             self.handle_preverify(request.event.data.as_bytes())
-            //         }
-            //         _ => Err(anyhow::anyhow!("Unsupported")),
-            //     }
-            // }
+        request: &MessageRequest,
+    ) -> anyhow::Result<ResponseData> {
+        match &request.event.to_route() {
+            (Target::Contract(_), ..) => {
+                let feeder = request.header(RUSK_FEEDER_HEADER).is_some();
+                self.handle_contract_query(&request.event, feeder)
+            }
+            (Target::Host(_), "rusk", "preverify") => {
+                self.handle_preverify(request.event_data())
+            }
+            (Target::Host(_), "rusk", "prove_execute") => {
+                Ok(LocalProver.prove_execute(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_stct") => {
+                Ok(LocalProver.prove_stct(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_stco") => {
+                Ok(LocalProver.prove_stco(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_wfct") => {
+                Ok(LocalProver.prove_wfct(request.event_data())?.into())
+            }
+            (Target::Host(_), "rusk", "prove_wfco") => {
+                Ok(LocalProver.prove_wfco(request.event_data())?.into())
+            }
             _ => Err(anyhow::anyhow!("Unsupported")),
-        };
-
-        data.map(|data| MessageResponse {
-            data,
-            error: None,
-            headers: request.x_headers(),
-        })
-        .unwrap_or_else(|e| request.to_error(e.to_string()))
+        }
     }
 
     fn handle_contract_query(
@@ -59,34 +64,38 @@ impl Rusk {
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid contract bytes"))?;
 
-        match feeder {
-            true => {
-                let (sender, receiver) = mpsc::channel();
+        if feeder {
+            let (sender, receiver) = mpsc::channel();
 
-                let rusk = self.clone();
-                let topic = event.topic.clone();
-                let arg = event.data.as_bytes();
+            let rusk = self.clone();
+            let topic = event.topic.clone();
+            let arg = event.data.as_bytes().to_vec();
 
-                thread::spawn(move || {
-                    rusk.feeder_query_raw(
-                        ContractId::from_bytes(contract_bytes),
-                        topic,
-                        arg,
-                        sender,
-                    );
-                });
-                Ok(ResponseData::Channel(receiver))
-            }
-            false => {
-                let data = self
-                    .query_raw(
-                        ContractId::from_bytes(contract_bytes),
-                        event.topic.clone(),
-                        event.data.as_bytes(),
-                    )
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
-                Ok(data.into())
-            }
+            thread::spawn(move || {
+                rusk.feeder_query_raw(
+                    ContractId::from_bytes(contract_bytes),
+                    topic,
+                    arg,
+                    sender,
+                );
+            });
+            Ok(ResponseData::Channel(receiver))
+        } else {
+            let data = self
+                .query_raw(
+                    ContractId::from_bytes(contract_bytes),
+                    event.topic.clone(),
+                    event.data.as_bytes(),
+                )
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            Ok(data.into())
         }
+    }
+
+    fn handle_preverify(&self, data: &[u8]) -> anyhow::Result<ResponseData> {
+        let tx = phoenix_core::Transaction::from_slice(data)
+            .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
+        self.preverify(&tx.into())?;
+        Ok(ResponseData::None)
     }
 }

@@ -87,6 +87,16 @@ pub struct Transaction {
     pub inner: phoenix_core::Transaction,
 }
 
+impl From<phoenix_core::Transaction> for Transaction {
+    fn from(value: phoenix_core::Transaction) -> Self {
+        Self {
+            inner: value,
+            r#type: 1,
+            version: 1,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SpentTransaction {
     pub inner: Transaction,
@@ -372,10 +382,6 @@ pub mod faker {
 
         let inner = phoenix_core::Transaction::from_slice(&utx_bytes)
             .expect("should be valid");
-        Transaction {
-            inner,
-            version: 1,
-            r#type: 1,
-        }
+        inner.into()
     }
 }

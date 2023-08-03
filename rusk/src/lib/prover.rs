@@ -6,8 +6,6 @@
 
 //! Prover service implementation for the Rusk server.
 
-use rusk_prover::Prover;
-
 use crate::error::Error;
 use crate::Result;
 
@@ -18,9 +16,6 @@ use rusk_profile::keys_for;
 use transfer_circuits::{CircuitOutput, ExecuteCircuit};
 
 const A: usize = 4;
-
-#[derive(Debug, Default)]
-pub struct RuskProver<P: Prover>(P);
 
 pub fn verify_proof(tx: &Transaction) -> Result<bool> {
     let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
