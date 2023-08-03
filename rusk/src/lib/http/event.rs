@@ -308,7 +308,7 @@ fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
 
     let len =
         u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
-    let (_, left) = bytes.split_at(len);
+    let (_, left) = bytes.split_at(4);
 
     Ok((len, left))
 }
@@ -419,5 +419,19 @@ impl From<tungstenite::error::ProtocolError> for ExecutionError {
 impl From<tungstenite::Error> for ExecutionError {
     fn from(err: tungstenite::Error) -> Self {
         Self::Tungstenite(err)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn event() {
+        let data =
+            "120000006c65617665735f66726f6d5f6865696768740000000000000000";
+        let data = hex::decode(data).unwrap();
+        let event = Event::parse(&data).unwrap();
     }
 }
