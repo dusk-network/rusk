@@ -115,7 +115,7 @@ impl<T: Operations> Generator<T> {
             version: 0,
             height: round,
             timestamp: self.get_timestamp(prev_block_timestamp) as i64,
-            gas_limit: 0,
+            gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
             generator_bls_pubkey: node_data::bls::PublicKeyBytes(
