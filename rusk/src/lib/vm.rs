@@ -49,9 +49,7 @@ impl VMExecution for Rusk {
                 params.generator_pubkey.inner(),
                 &params.txs[..],
             )
-            .map_err(|inner| {
-                anyhow::anyhow!("Cannot execute txs: {inner}!!")
-            })?;
+            .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
         Ok(state_root)
     }
@@ -74,9 +72,7 @@ impl VMExecution for Rusk {
                 blk.txs.clone(),
                 Some(blk.header.state_hash),
             )
-            .map_err(|inner| {
-                anyhow::anyhow!("Cannot execute txs: {inner}!!")
-            })?;
+            .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
         Ok((txs, state_root))
     }
@@ -100,7 +96,7 @@ impl VMExecution for Rusk {
                 Some(blk.header.state_hash),
             )
             .map_err(|inner| {
-                anyhow::anyhow!("Cannot execute txs: {inner}!!")
+                anyhow::anyhow!("Cannot finalize txs: {inner}!!")
             })?;
 
         Ok((txs, state_root))

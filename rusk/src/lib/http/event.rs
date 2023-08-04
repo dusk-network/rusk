@@ -225,6 +225,7 @@ impl From<Vec<u8>> for RequestData {
 
 /// Data in a response.
 #[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(untagged)]
 pub enum ResponseData {
     Binary(BinaryWrapper),
     Text(String),

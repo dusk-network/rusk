@@ -121,7 +121,7 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 .verify_state_transition(CallParams {
                     round: ru.round,
                     txs: candidate.txs.clone(),
-                    block_gas_limit: crate::config::DEFAULT_BLOCK_GAS_LIMIT,
+                    block_gas_limit: candidate.header.gas_limit,
                     generator_pubkey: PublicKey::new(generator),
                 })
                 .await
