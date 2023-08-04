@@ -387,11 +387,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         &self,
         height: u64,
     ) -> Result<Option<ledger::Block>> {
-        let hash = self
-            .fetch_block_hash_by_height(height)?
-            .ok_or_else(|| anyhow::anyhow!("could not find hash by height"))?;
-
-        self.fetch_block(&hash)
+        let hash = self.fetch_block_hash_by_height(height)?;
+        let block = match hash {
+            Some(hash) => self.fetch_block(&hash)?,
+            None => None,
+        };
+        Ok(block)
     }
 }
 
