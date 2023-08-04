@@ -310,8 +310,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut txs = vec![];
                 for buf in txs_buffers {
                     let mut buf = buf?.unwrap();
-                    let tx = ledger::Transaction::read(&mut &buf.to_vec()[..])?;
-                    txs.push(tx);
+                    let tx =
+                        ledger::SpentTransaction::read(&mut &buf.to_vec()[..])?;
+                    txs.push(tx.inner);
                 }
 
                 Ok(Some(ledger::Block {
