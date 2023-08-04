@@ -740,7 +740,7 @@ fn execute(
                 gas_left,
             ) {
                 Ok(receipt) => {
-                    gas_spent += receipt.points_limit;
+                    gas_spent += receipt.points_spent;
                     Ok(receipt.data)
                 }
                 Err(err) => match err {
