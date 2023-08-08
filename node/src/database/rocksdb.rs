@@ -310,8 +310,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                 let mut txs = vec![];
                 for buf in txs_buffers {
                     let mut buf = buf?.unwrap();
-                    let tx = ledger::Transaction::read(&mut &buf.to_vec()[..])?;
-                    txs.push(tx);
+                    let tx =
+                        ledger::SpentTransaction::read(&mut &buf.to_vec()[..])?;
+                    txs.push(tx.inner);
                 }
 
                 Ok(Some(ledger::Block {
@@ -386,11 +387,12 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         &self,
         height: u64,
     ) -> Result<Option<ledger::Block>> {
-        let hash = self
-            .fetch_block_hash_by_height(height)?
-            .ok_or_else(|| anyhow::anyhow!("could not find hash by height"))?;
-
-        self.fetch_block(&hash)
+        let hash = self.fetch_block_hash_by_height(height)?;
+        let block = match hash {
+            Some(hash) => self.fetch_block(&hash)?,
+            None => None,
+        };
+        Ok(block)
     }
 }
 

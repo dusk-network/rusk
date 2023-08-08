@@ -59,5 +59,15 @@ pub async fn blocks_range(
     from: i32,
     to: i32,
 ) -> FieldResult<Vec<Block>> {
-    unimplemented!()
+    let blocks = ctx.read().await.view(|t| {
+        let mut blocks = vec![];
+        for i in (from..=to) {
+            match t.fetch_block_by_height(i as u64)? {
+                None => break,
+                Some(b) => blocks.push(b),
+            }
+        }
+        Ok::<_, anyhow::Error>(blocks)
+    })?;
+    Ok(blocks)
 }
