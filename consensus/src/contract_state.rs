@@ -18,7 +18,6 @@ pub enum Error {
 #[derive(Default, Clone, Debug)]
 pub struct CallParams {
     pub round: u64,
-    pub txs: Vec<Transaction>,
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
 }
@@ -37,12 +36,8 @@ pub trait Operations: Send + Sync {
     async fn verify_state_transition(
         &self,
         params: CallParams,
+        txs: Vec<Transaction>,
     ) -> Result<StateRoot, Error>;
-
-    async fn get_mempool_txs(
-        &self,
-        block_gas_limit: u64,
-    ) -> Result<Vec<Transaction>, Error>;
 
     async fn execute_state_transition(
         &self,

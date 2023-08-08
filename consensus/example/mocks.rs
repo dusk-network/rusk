@@ -19,6 +19,7 @@ impl Operations for Executor {
     async fn verify_state_transition(
         &self,
         _params: CallParams,
+        _txs: Vec<Transaction>,
     ) -> Result<StateRoot, Error> {
         Ok([0; 32])
     }
@@ -28,13 +29,6 @@ impl Operations for Executor {
         _params: CallParams,
     ) -> Result<Output, Error> {
         Ok(Output::default())
-    }
-
-    async fn get_mempool_txs(
-        &self,
-        _block_gas_limit: u64,
-    ) -> Result<Vec<Transaction>, Error> {
-        Ok(vec![])
     }
 }
 

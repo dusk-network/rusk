@@ -16,9 +16,10 @@ use crate::database::Mempool;
 use dusk_bytes::Serializable as DuskBytesSerializable;
 
 use rocksdb_lib::{
-    ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon, DBWithThreadMode,
-    IteratorMode, MultiThreaded, OptimisticTransactionDB,
-    OptimisticTransactionOptions, Options, ReadOptions, SnapshotWithThreadMode,
+    ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon,
+    DBRawIteratorWithThreadMode, DBWithThreadMode, IteratorMode, MultiThreaded,
+    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
+    ReadOptions, SnapshotWithThreadMode, Transaction, TransactionDB,
     WriteOptions,
 };
 
@@ -543,50 +544,10 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
     fn get_txs_sorted_by_fee(
         &self,
-        max_gas_limit: u64,
-    ) -> Result<Vec<ledger::Transaction>> {
-        // The slippageGasLimit is the threshold that consider the "estimated
-        // gas spent" acceptable even if it exceeds the strict GasLimit.
-        // This is required to avoid to iterate the whole mempool until
-        // it fit perfectly the block GasLimit
-        let slippage_gas_limit = max_gas_limit + max_gas_limit / 10;
+    ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>> {
+        let iter = MemPoolIterator::new(&self.inner, self.fees_cf, self);
 
-        let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
-        iter.seek_to_last();
-
-        let mut total_gas: u64 = 0;
-        let mut txs_list = vec![];
-
-        // Iterate all keys from the end in reverse lexicographic order
-        while iter.valid() {
-            if let Some(key) = iter.key() {
-                let (read_gp, tx_hash) =
-                    deserialize_fee_key(&mut &key.to_vec()[..])?;
-
-                let mut tx = self.get_tx(tx_hash)?;
-                if let Some(tx) = tx {
-                    let gas_price = tx.gas_price();
-                    debug_assert_eq!(read_gp, gas_price);
-
-                    if let Some(res) = total_gas.checked_add(gas_price) {
-                        total_gas = res;
-                        if total_gas > slippage_gas_limit {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-
-                    txs_list.push(tx);
-                } else {
-                    tracing::error!("get_txs_sorted_by_fee tx: not found");
-                }
-            }
-
-            iter.prev();
-        }
-
-        Ok(txs_list)
+        Ok(Box::new(iter))
     }
 
     fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>> {
@@ -594,6 +555,8 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         iter.seek_to_last();
 
         let mut txs_list = vec![];
+
+        // Iterate all keys from the end in reverse lexicographic order
         while iter.valid() {
             if let Some(key) = iter.key() {
                 let (read_gp, tx_hash) =
@@ -606,6 +569,45 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         }
 
         Ok(txs_list)
+    }
+}
+
+pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
+    iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
+    db: &'db Transaction<'db, DB>,
+    mempool: &'db M,
+}
+
+impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
+    fn new(
+        db: &'db Transaction<DB>,
+        fees_cf: &ColumnFamily,
+        mempool: &'db M,
+    ) -> Self {
+        let mut iter = db.raw_iterator_cf(fees_cf);
+        iter.seek_to_last();
+        MemPoolIterator { db, iter, mempool }
+    }
+}
+
+impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
+    type Item = ledger::Transaction;
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.valid() {
+            true => {
+                if let Some(key) = self.iter.key() {
+                    let (_, tx_hash) =
+                        deserialize_fee_key(&mut &key.to_vec()[..]).ok()?;
+
+                    let tx = self.mempool.get_tx(tx_hash).ok().flatten();
+                    self.iter.prev();
+                    tx
+                } else {
+                    None
+                }
+            }
+            false => None,
+        }
     }
 }
 
@@ -888,14 +890,10 @@ mod tests {
                 Ok(())
             });
 
-            // Assert txs are retrieved in descending order sorted by fee
-            let max_gas_limit = u64::MAX - u64::MAX / 10;
             db.view(|txn| {
-                let txs = txn
-                    .get_txs_sorted_by_fee(max_gas_limit)
-                    .expect("should return all txs");
+                let txs =
+                    txn.get_txs_sorted_by_fee().expect("iter should return");
 
-                assert!(!txs.is_empty());
                 let mut last_fee = u64::MAX;
                 for t in txs {
                     let fee = t.gas_price();
@@ -903,7 +901,9 @@ mod tests {
                         fee <= last_fee,
                         "tx fees are not in decreasing order"
                     );
+                    last_fee = fee
                 }
+                assert_ne!(last_fee, u64::MAX, "No tx has been processed")
             });
         });
     }
@@ -921,13 +921,15 @@ mod tests {
                 Ok(())
             });
 
-            let max_gas_limit: u32 = 9 + 8 + 7;
+            let total_gas_price: u64 = 9 + 8 + 7 + 6 + 5 + 4 + 3 + 2 + 1;
             db.view(|txn| {
                 let txs = txn
-                    .get_txs_sorted_by_fee(max_gas_limit as u64)
-                    .expect("should return all txs");
+                    .get_txs_sorted_by_fee()
+                    .expect("should return all txs")
+                    .map(|t| t.gas_price())
+                    .sum::<u64>();
 
-                assert_eq!(txs.len(), 3);
+                assert_eq!(txs, total_gas_price);
             });
         });
     }

@@ -87,20 +87,12 @@ impl<T: Operations> Generator<T> {
         tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS))
             .await;
 
-        let txs = self
-            .executor
-            .lock()
-            .await
-            .get_mempool_txs(config::DEFAULT_BLOCK_GAS_LIMIT)
-            .await?;
-
         let result = self
             .executor
             .lock()
             .await
             .execute_state_transition(CallParams {
                 round,
-                txs,
                 block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
                 generator_pubkey: pubkey.clone(),
             })
