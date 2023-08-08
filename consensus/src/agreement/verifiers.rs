@@ -19,10 +19,11 @@ use node_data::message::{Header, Message, Payload};
 use std::fmt::{self, Display};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::error;
 
 #[derive(Debug)]
 pub enum Error {
-    VoteSetTooSmall,
+    VoteSetTooSmall(u8),
     VerificationFailed(dusk_bls12_381_sign::Error),
     EmptyApk,
     InvalidType,
@@ -37,7 +38,9 @@ impl From<dusk_bls12_381_sign::Error> for Error {
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::VoteSetTooSmall => write!(f, "Failed to reach a quorum"),
+            Error::VoteSetTooSmall(step) => {
+                write!(f, "Failed to reach a quorum at step {}", step)
+            }
             Error::VerificationFailed(_) => write!(f, "Verification error"),
             Error::EmptyApk => write!(f, "Empty Apk instance"),
             Error::InvalidType => write!(f, "Invalid Type"),
@@ -56,9 +59,19 @@ pub async fn verify_agreement(
 ) -> Result<(), Error> {
     match msg.payload {
         Payload::Agreement(payload) => {
-            msg.header.verify_signature(&payload.signature)?;
+            msg.header
+                .verify_signature(&payload.signature)
+                .map_err(|e| {
+                    error!(
+                        desc = "invalid signature",
+                        signature =
+                            format!("{:?}", hex::encode(payload.signature)),
+                        hdr = format!("{:?}", msg.header),
+                    );
+                    e
+                })?;
 
-            // Verify 1th_reduction step_votes
+            // Verify 1st_reduction step_votes
             verify_step_votes(
                 &payload.first_step,
                 &committees_set,
@@ -66,7 +79,15 @@ pub async fn verify_agreement(
                 &msg.header,
                 0,
             )
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    desc = "invalid 1st_reduction step_votes",
+                    sv = format!("{:?}", payload.first_step),
+                    hdr = format!("{:?}", msg.header),
+                );
+                e
+            })?;
 
             // Verify 2th_reduction step_votes
             verify_step_votes(
@@ -76,7 +97,15 @@ pub async fn verify_agreement(
                 &msg.header,
                 1,
             )
-            .await?;
+            .await
+            .map_err(|e| {
+                error!(
+                    desc = "invalid 2th_reduction step_votes",
+                    sv = format!("{:?}", payload.second_step),
+                    hdr = format!("{:?}", msg.header),
+                );
+                e
+            })?;
 
             // Verification done
             Ok(())
@@ -122,9 +151,18 @@ pub async fn verify_votes(
 
         let sub_committee = guard.intersect(bitset, cfg);
         let target_quorum = guard.quorum(cfg);
+        let total = guard.total_occurrences(&sub_committee, cfg);
 
-        if guard.total_occurrences(&sub_committee, cfg) < target_quorum {
-            Err(Error::VoteSetTooSmall)
+        if total < target_quorum {
+            tracing::error!(
+                desc = "vote_set_too_small",
+                committee = format!("{:#?}", sub_committee),
+                cfg = format!("{:#?}", cfg),
+                bitset = bitset,
+                target_quorum = target_quorum,
+                total = total,
+            );
+            Err(Error::VoteSetTooSmall(cfg.step))
         } else {
             Ok(sub_committee)
         }
