@@ -15,9 +15,10 @@ use tracing::info;
 use crate::Rusk;
 
 impl VMExecution for Rusk {
-    fn execute_state_transition(
+    fn execute_state_transition<I: Iterator<Item = Transaction>>(
         &self,
         params: CallParams,
+        txs: I,
     ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>
     {
         info!("Received execute_state_transition request");
@@ -27,7 +28,7 @@ impl VMExecution for Rusk {
                 params.round,
                 params.block_gas_limit,
                 params.generator_pubkey.inner(),
-                params.txs,
+                txs,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -39,6 +40,7 @@ impl VMExecution for Rusk {
     fn verify_state_transition(
         &self,
         params: &CallParams,
+        txs: Vec<Transaction>,
     ) -> anyhow::Result<[u8; 32]> {
         info!("Received verify_state_transition request");
 
@@ -47,7 +49,7 @@ impl VMExecution for Rusk {
                 params.round,
                 params.block_gas_limit,
                 params.generator_pubkey.inner(),
-                &params.txs[..],
+                &txs[..],
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 

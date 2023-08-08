@@ -97,12 +97,12 @@ impl Rusk {
         })
     }
 
-    pub fn execute_transactions(
+    pub fn execute_transactions<I: Iterator<Item = Transaction>>(
         &self,
         block_height: u64,
         block_gas_limit: u64,
         generator: &BlsPublicKey,
-        txs: Vec<Transaction>,
+        txs: I,
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
         let inner = self.inner.lock();
 
@@ -112,8 +112,8 @@ impl Rusk {
 
         let mut block_gas_left = block_gas_limit;
 
-        let mut spent_txs = Vec::<SpentTransaction>::with_capacity(txs.len());
-        let mut discarded_txs = Vec::with_capacity(txs.len());
+        let mut spent_txs = Vec::<SpentTransaction>::new();
+        let mut discarded_txs = vec![];
 
         let mut dusk_spent = 0;
 
@@ -186,9 +186,8 @@ impl Rusk {
                 err: call_result.map(|e| format!("{e:?}")),
             });
 
-            // No need to keep executing if there is no gas left in the
-            // block
-            if block_gas_left == 0 {
+            // Stop executing if there is no gas left for a normal transfer
+            if block_gas_left < GAS_PER_INPUT {
                 break;
             }
         }

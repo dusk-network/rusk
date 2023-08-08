@@ -75,13 +75,15 @@ pub fn generator_procedure(
     // let txs = vec![];
 
     let (transfer_txs, discarded, execute_state_root) = rusk
-        .execute_state_transition(CallParams {
-            txs,
-            round,
-            block_gas_limit,
-            generator_pubkey: generator_pubkey.clone(),
-        })
-        .expect("msg");
+        .execute_state_transition(
+            CallParams {
+                round,
+                block_gas_limit,
+                generator_pubkey: generator_pubkey.clone(),
+            },
+            txs.into_iter(),
+        )
+        .expect("state transition to success");
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
@@ -94,11 +96,11 @@ pub fn generator_procedure(
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
     let verify_param = CallParams {
         round,
-        txs,
         block_gas_limit,
         generator_pubkey,
     };
-    let verify_root = rusk.verify_state_transition(&verify_param)?;
+    let verify_root =
+        rusk.verify_state_transition(&verify_param, txs.clone())?;
     info!(
         "verify_state_transition new root: {:?}",
         hex::encode(verify_root)
@@ -109,7 +111,7 @@ pub fn generator_procedure(
     block.header.gas_limit = block_gas_limit;
     block.header.height = block_height;
     block.header.state_hash = execute_state_root;
-    block.txs = verify_param.txs;
+    block.txs = txs;
 
     let (accept_txs, accept_state_root) = rusk.accept(&block)?;
 
