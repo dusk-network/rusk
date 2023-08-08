@@ -118,12 +118,14 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
             match executor
                 .lock()
                 .await
-                .verify_state_transition(CallParams {
-                    round: ru.round,
-                    txs: candidate.txs.clone(),
-                    block_gas_limit: candidate.header.gas_limit,
-                    generator_pubkey: PublicKey::new(generator),
-                })
+                .verify_state_transition(
+                    CallParams {
+                        round: ru.round,
+                        block_gas_limit: candidate.header.gas_limit,
+                        generator_pubkey: PublicKey::new(generator),
+                    },
+                    candidate.txs.clone(),
+                )
                 .await
             {
                 Ok(state_hash) => {
