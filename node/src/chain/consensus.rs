@@ -239,12 +239,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     async fn verify_state_transition(
         &self,
         params: CallParams,
+        txs: Vec<Transaction>,
     ) -> Result<StateRoot, dusk_consensus::contract_state::Error> {
         tracing::info!("verifying state");
 
         let vm = self.vm.read().await;
 
-        Ok(vm.verify_state_transition(&params).map_err(|err| {
+        Ok(vm.verify_state_transition(&params, txs).map_err(|err| {
             tracing::error!("failed to call VST {}", err);
             Error::Failed
         })?)
@@ -257,9 +258,19 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         tracing::info!("executing state transition");
         let vm = self.vm.read().await;
 
-        let (executed_txs, discarded_txs, state_root) =
-            vm.execute_state_transition(params).map_err(|err| {
-                tracing::error!("failed to call EST {}", err);
+        let db = self.db.read().await;
+        let (executed_txs, discarded_txs, state_root) = db
+            .view(|view| {
+                let txs = view.get_txs_sorted_by_fee().map_err(|err| {
+                    anyhow::anyhow!("failed to get mempool txs: {}", err)
+                })?;
+                let ret = vm.execute_state_transition(params, txs).map_err(
+                    |err| anyhow::anyhow!("failed to call EST {}", err),
+                )?;
+                Ok(ret)
+            })
+            .map_err(|err: anyhow::Error| {
+                tracing::error!("{err}");
                 Error::Failed
             })?;
 
@@ -269,18 +280,5 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             discarded_txs,
             provisioners: Provisioners::default(),
         })
-    }
-
-    async fn get_mempool_txs(
-        &self,
-        block_gas_limit: u64,
-    ) -> Result<Vec<Transaction>, Error> {
-        let db = self.db.read().await;
-
-        db.view(|db| db.get_txs_sorted_by_fee(block_gas_limit))
-            .map_err(|err| {
-                tracing::error!("failed to get mempool txs: {}", err);
-                Error::Failed
-            })
     }
 }

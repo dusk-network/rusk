@@ -15,14 +15,16 @@ use node_data::ledger::{Block, SpentTransaction, Transaction};
 pub struct Config {}
 
 pub trait VMExecution: Send + Sync + 'static {
-    fn execute_state_transition(
+    fn execute_state_transition<I: Iterator<Item = Transaction>>(
         &self,
         params: CallParams,
+        txs: I,
     ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>;
 
     fn verify_state_transition(
         &self,
         params: &CallParams,
+        txs: Vec<Transaction>,
     ) -> anyhow::Result<[u8; 32]>;
 
     fn accept(
