@@ -48,7 +48,10 @@ impl Aggregator {
             if cluster.contains_key(&header.pubkey_bls) {
                 warn!(
                     event = "discarded duplicated vote",
-                    from = header.pubkey_bls.to_bs58()
+                    from = header.pubkey_bls.to_bs58(),
+                    hash = hex::encode(hash),
+                    msg_step = header.step,
+                    msg_round = header.round,
                 );
                 return None;
             }

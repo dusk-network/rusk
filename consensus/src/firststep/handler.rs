@@ -60,6 +60,11 @@ impl<DB: Database> Reduction<DB> {
             candidate: Block::default(),
         }
     }
+
+    pub(crate) fn reset(&mut self) {
+        self.aggr = Aggregator::default();
+        self.candidate = Block::default();
+    }
 }
 
 #[async_trait]

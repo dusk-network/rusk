@@ -32,11 +32,11 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         step: u8,
         committee: &Committee,
     ) -> Result<T, ConsensusError> {
-        tracing::trace!(
-            "received msg from {:?} with hash {} msg: {:?}",
-            msg.get_pubkey_bls().to_bs58(),
-            msg.get_block_hash().encode_hex::<String>(),
-            msg,
+        tracing::debug!(
+            event = "msg received",
+            from = msg.get_pubkey_bls().to_bs58(),
+            hash = msg.get_block_hash().encode_hex::<String>(),
+            msg = format!("{:#?}", msg),
         );
 
         match msg.compare(ru.round, step) {

@@ -99,11 +99,6 @@ impl Accumulator {
                             break;
                         }
 
-                        if msg.header.block_hash == [0; 32] {
-                            // discard empty block hash
-                            continue;
-                        }
-
                         if let Err(e) = verifiers::verify_agreement(
                             msg.clone(),
                             committees_set.clone(),
