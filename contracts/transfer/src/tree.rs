@@ -77,6 +77,20 @@ impl Tree {
             .skip_while(move |leaf| leaf.block_height < height)
     }
 
+    /// Return an iterator through the leaves in the tree, starting from a given
+    /// `position`.
+    pub fn leaves_pos(&self, pos: u64) -> impl Iterator<Item = &TreeLeaf> {
+        // We can do this since we know the leaves are strictly increasing in
+        // block height. If this ever changes - such as in the case of a
+        // sparsely populated tree - we should annotate the tree and use
+        // `Tree::walk` instead.
+        let pos = pos as usize;
+        if self.leaves.len() < pos {
+            return self.leaves[..0].iter();
+        }
+        self.leaves[pos..].iter()
+    }
+
     pub fn opening(
         &self,
         pos: u64,
