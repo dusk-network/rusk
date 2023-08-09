@@ -15,6 +15,7 @@ pub(crate) use event::{
     MessageResponse as EventResponse, RequestData, ResponseData, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
+use tracing::info;
 
 use std::borrow::Cow;
 use std::convert::Infallible;
@@ -85,6 +86,10 @@ impl HandleRequest for DataSources {
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
+        info!(
+            "Received {:?}:{} request",
+            request.event.target, request.event.topic
+        );
         match request.event.to_route() {
             (Target::Contract(_), ..) | (_, "rusk", _) => {
                 self.rusk.handle_request(request).await
@@ -369,8 +374,6 @@ async fn handle_execution<H>(
 ) where
     H: HandleRequest,
 {
-    let data = sources.handle(&request).await;
-
     let rsp = sources
         .handle(&request)
         .await
@@ -517,7 +520,6 @@ mod tests {
                 Message::Text(msg) => msg,
                 _ => panic!("Shouldn't receive anything but text"),
             };
-            println!("{msg}");
             let response: EventResponse = serde_json::from_str(&msg)
                 .expect("Response should deserialize successfully");
             assert_eq!(
