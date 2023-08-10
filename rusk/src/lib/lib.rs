@@ -28,6 +28,7 @@ use tracing::{error, info};
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use dusk_consensus::contract_state::VerificationOutput;
 use dusk_pki::{PublicKey, ViewKey};
 use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
@@ -38,11 +39,12 @@ use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{
-    ContractId, Error as PiecrustError, Session, StandardBufSerializer,
-    STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
+    CallReceipt, ContractId, Error as PiecrustError, Event, Session,
+    StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use rusk_recovery_tools::provisioners::DUSK_KEY;
+use sha3::{Digest, Sha3_256};
 
 const A: usize = 4;
 
@@ -103,7 +105,8 @@ impl Rusk {
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: I,
-    ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])> {
+    ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
+    {
         let inner = self.inner.lock();
 
         let current_commit = inner.current_commit;
@@ -117,6 +120,8 @@ impl Rusk {
 
         let mut dusk_spent = 0;
 
+        let mut event_hasher = Sha3_256::new();
+
         for unspent_tx in txs {
             let tx = unspent_tx.inner.clone();
             let (call_result, gas_spent) = match execute(
@@ -125,7 +130,13 @@ impl Rusk {
                 block_gas_left,
             ) {
                 // We're currently ignoring the result of a call.
-                Ok((_ret, gas_spent)) => (None, gas_spent),
+                Ok((receipt, gas_spent)) => {
+                    for event in receipt.events {
+                        update_hasher(&mut event_hasher, event);
+                    }
+
+                    (None, gas_spent)
+                }
                 Err(err) => match err {
                     // An unspendable transaction should be discarded
                     TxError::Unspendable(_) => {
@@ -198,9 +209,18 @@ impl Rusk {
             dusk_spent,
             generator,
         )?;
-        let state_root = session.root();
 
-        Ok((spent_txs, discarded_txs, state_root))
+        let state_root = session.root();
+        let event_hash = event_hasher.finalize().into();
+
+        Ok((
+            spent_txs,
+            discarded_txs,
+            VerificationOutput {
+                state_root,
+                event_hash,
+            },
+        ))
     }
 
     /// Verify the given transactions are ok.
@@ -210,7 +230,7 @@ impl Rusk {
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: &[Transaction],
-    ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
+    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let inner = self.inner.lock();
 
         let current_commit = inner.current_commit;
@@ -231,15 +251,15 @@ impl Rusk {
         block_gas_limit: u64,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: Option<[u8; 32]>,
-    ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
+        consistency_check: Option<VerificationOutput>,
+    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let mut inner = self.inner.lock();
 
         let current_commit = inner.current_commit;
         let mut session =
             rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
-        let (spent_txs, state_root) = accept(
+        let (spent_txs, verification_output) = accept(
             &mut session,
             block_height,
             block_gas_limit,
@@ -247,18 +267,18 @@ impl Rusk {
             &txs[..],
         )?;
 
-        if let Some(expected_root) = consistency_check {
-            if expected_root != state_root {
-                // Drop the session if the result state root is inconsistent
+        if let Some(expected_verification) = consistency_check {
+            if expected_verification != verification_output {
+                // Drop the session if the resulting is inconsistent
                 // with the callers one.
-                return Err(Error::InconsistentState(state_root));
+                return Err(Error::InconsistentState(verification_output));
             }
         }
 
         let commit_id = session.commit()?;
         inner.current_commit = commit_id;
 
-        Ok((spent_txs, state_root))
+        Ok((spent_txs, verification_output))
     }
 
     /// Finalize the given transactions.
@@ -272,15 +292,15 @@ impl Rusk {
         block_gas_limit: u64,
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
-        consistency_check: Option<[u8; 32]>,
-    ) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
+        consistency_check: Option<VerificationOutput>,
+    ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let mut inner = self.inner.lock();
 
         let current_commit = inner.current_commit;
         let mut session =
             rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
-        let (spent_txs, state_root) = accept(
+        let (spent_txs, verification_output) = accept(
             &mut session,
             block_height,
             block_gas_limit,
@@ -288,11 +308,11 @@ impl Rusk {
             &txs[..],
         )?;
 
-        if let Some(expected_root) = consistency_check {
-            if expected_root != state_root {
+        if let Some(expected_verification) = consistency_check {
+            if expected_verification != verification_output {
                 // Drop the session if the result state root is inconsistent
                 // with the callers one.
-                return Err(Error::InconsistentState(state_root));
+                return Err(Error::InconsistentState(verification_output));
             }
         }
 
@@ -316,7 +336,7 @@ impl Rusk {
 
         inner.base_commit = commit_id;
 
-        Ok((spent_txs, state_root))
+        Ok((spent_txs, verification_output))
     }
 
     pub fn persist_state(&self) -> Result<()> {
@@ -622,18 +642,25 @@ fn accept(
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
-) -> Result<(Vec<SpentTransaction>, [u8; 32])> {
+) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
     let mut block_gas_left = block_gas_limit;
 
     let mut spent_txs = Vec::with_capacity(txs.len());
     let mut dusk_spent = 0;
 
+    let mut event_hasher = Sha3_256::new();
+
     for unspent_tx in txs {
         let tx = &unspent_tx.inner;
         let (call_result, gas_spent) =
             match execute(session, tx, block_gas_left) {
-                // We're currently ignoring the result of a call.
-                Ok((_ret, gas_spent)) => (None, gas_spent),
+                Ok((receipt, gas_spent)) => {
+                    for event in receipt.events {
+                        update_hasher(&mut event_hasher, event);
+                    }
+
+                    (None, gas_spent)
+                }
                 Err(err) => match err {
                     TxError::TxLimit { err, gas_spent } => {
                         (Some(err), gas_spent)
@@ -660,9 +687,17 @@ fn accept(
     }
 
     reward_and_update_root(session, block_height, dusk_spent, generator)?;
-    let state_root = session.root();
 
-    Ok((spent_txs, state_root))
+    let state_root = session.root();
+    let event_hash = event_hasher.finalize().into();
+
+    Ok((
+        spent_txs,
+        VerificationOutput {
+            state_root,
+            event_hash,
+        },
+    ))
 }
 
 /// Executes a transaction, returning the result of the call and the gas spent.
@@ -700,7 +735,7 @@ fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
     block_gas_left: u64,
-) -> Result<(Vec<u8>, u64), TxError> {
+) -> Result<(CallReceipt<Vec<u8>>, u64), TxError> {
     let gas_for_spend = spent_gas_per_input(tx.nullifiers.len());
 
     // If the gas given is less than the amount the node charges per input, then
@@ -740,7 +775,7 @@ fn execute(
             ) {
                 Ok(receipt) => {
                     gas_spent += receipt.points_spent;
-                    Ok(receipt.data)
+                    Ok(receipt)
                 }
                 Err(err) => match err {
                     err @ PiecrustError::OutOfPoints => {
@@ -778,8 +813,22 @@ fn execute(
         )
         .expect("Refunding must succeed");
 
-    res.map(|res| res.map(|data| (data, gas_spent)))
-        .unwrap_or(Ok((vec![], gas_spent)))
+    res.map(|res| res.map(|receipt| (receipt, gas_spent)))
+        .unwrap_or(Ok((
+            CallReceipt {
+                points_spent: 0,
+                points_limit: 0,
+                events: vec![],
+                data: vec![],
+            },
+            gas_spent,
+        )))
+}
+
+fn update_hasher(hasher: &mut Sha3_256, event: Event) {
+    hasher.update(event.source.as_bytes());
+    hasher.update(event.topic.as_bytes());
+    hasher.update(event.data);
 }
 
 /// The gas charged per input of a transaction.

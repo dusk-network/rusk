@@ -41,6 +41,7 @@ dirs = "4"
 dusk-schnorr = "0.13"
 dusk-poseidon = "0.30"
 poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl", "size_32"] }
+sha3 = "0.10"
 dusk-plonk = "0.14"
 dusk-bls12_381 = "0.11"
 dusk-bls12_381-sign = "0.4"
