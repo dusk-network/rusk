@@ -19,6 +19,8 @@ use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
 use version::show_version;
 
+use tracing_subscriber::filter::EnvFilter;
+
 use node::chain::ChainSrv;
 use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
@@ -55,10 +57,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::from(&args);
 
     let log = config.log_level();
+    let log_filter = config.log_filter();
 
-    // Generate a subscriber with the desired log level.
-    let subscriber =
-        tracing_subscriber::fmt::Subscriber::builder().with_max_level(log);
+    // Generate a subscriber with the desired default log level and optional log
+    // filter.
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(EnvFilter::new(log_filter).add_directive(log.into()));
 
     // Set the subscriber as global.
     // so this subscriber will be used as the default in all threads for the
