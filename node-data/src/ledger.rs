@@ -35,6 +35,7 @@ pub struct Header {
     pub prev_block_hash: Hash,
     pub seed: Seed,
     pub state_hash: Hash,
+    pub event_hash: Hash,
     pub generator_bls_pubkey: bls::PublicKeyBytes,
     pub txroot: Hash,
     pub gas_limit: u64,
@@ -69,6 +70,7 @@ impl std::fmt::Debug for Header {
             .field("prev_block_hash", &to_str(&self.prev_block_hash))
             .field("seed", &to_str(&self.seed.inner()))
             .field("state_hash", &to_str(&self.state_hash))
+            .field("event_hash", &to_str(&self.event_hash))
             .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
             .field("gas_limit", &self.gas_limit)
             .field("hash", &to_str(&self.hash))
@@ -140,6 +142,7 @@ impl Header {
         }
 
         w.write_all(&self.state_hash[..])?;
+        w.write_all(&self.event_hash[..])?;
         w.write_all(&self.generator_bls_pubkey.inner()[..])?;
         w.write_all(&self.txroot[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
@@ -172,6 +175,9 @@ impl Header {
         let mut state_hash = [0u8; 32];
         r.read_exact(&mut state_hash[..])?;
 
+        let mut event_hash = [0u8; 32];
+        r.read_exact(&mut event_hash[..])?;
+
         let mut generator_bls_pubkey = [0u8; 96];
         r.read_exact(&mut generator_bls_pubkey[..])?;
 
@@ -196,6 +202,7 @@ impl Header {
             generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
             iteration,
             state_hash,
+            event_hash,
             txroot,
             hash: [0; 32],
             cert: Default::default(),
