@@ -128,13 +128,27 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 )
                 .await
             {
-                Ok(state_hash) => {
-                    // Ensure state_hash returned from VST call is the one we
-                    // expect to have with current candidate block
-                    if state_hash != candidate.header.state_hash {
+                Ok(verification_output) => {
+                    // Ensure the `event_hash` and `state_root` returned from
+                    // the VST call are the ones we expect to have with the
+                    // current candidate block.
+                    if verification_output.event_hash
+                        != candidate.header.event_hash
+                    {
+                        tracing::error!(
+                            "VST failed with invalid event_hash: {}, candidate_event_hash: {}",
+                            hex::encode(verification_output.event_hash),
+                            hex::encode(candidate.header.event_hash),
+                        );
+                        return;
+                    }
+
+                    if verification_output.state_root
+                        != candidate.header.state_hash
+                    {
                         tracing::error!(
                             "VST failed with invalid state_hash: {}, candidate_state_hash: {}",
-                            hex::encode(state_hash),
+                            hex::encode(verification_output.state_root),
                             hex::encode(candidate.header.state_hash),
                         );
                         return;

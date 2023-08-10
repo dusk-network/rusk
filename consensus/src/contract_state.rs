@@ -4,17 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::user::provisioners::Provisioners;
+use std::fmt;
+
 use node_data::ledger::{SpentTransaction, Transaction};
 
+use crate::user::provisioners::Provisioners;
+
 pub type StateRoot = [u8; 32];
+pub type EventHash = [u8; 32];
 
 #[derive(Debug)]
 pub enum Error {
     Failed,
 }
 
-#[allow(unused)]
 #[derive(Default, Clone, Debug)]
 pub struct CallParams {
     pub round: u64,
@@ -22,13 +25,29 @@ pub struct CallParams {
     pub generator_pubkey: node_data::bls::PublicKey,
 }
 
-#[allow(unused)]
 #[derive(Default)]
 pub struct Output {
     pub txs: Vec<SpentTransaction>,
-    pub state_root: StateRoot,
+    pub verification_output: VerificationOutput,
     pub provisioners: Provisioners,
     pub discarded_txs: Vec<Transaction>,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub struct VerificationOutput {
+    pub state_root: StateRoot,
+    pub event_hash: EventHash,
+}
+
+impl fmt::Display for VerificationOutput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "VerificationOutput {{ state_root: {}, event_hash: {} }}",
+            hex::encode(self.state_root),
+            hex::encode(self.event_hash)
+        )
+    }
 }
 
 #[async_trait::async_trait]
@@ -37,7 +56,7 @@ pub trait Operations: Send + Sync {
         &self,
         params: CallParams,
         txs: Vec<Transaction>,
-    ) -> Result<StateRoot, Error>;
+    ) -> Result<VerificationOutput, Error>;
 
     async fn execute_state_transition(
         &self,

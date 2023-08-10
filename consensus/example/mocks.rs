@@ -7,7 +7,7 @@
 use anyhow::bail;
 use dusk_consensus::commons::Database;
 use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
+    CallParams, Error, Operations, Output, VerificationOutput,
 };
 use node_data::ledger::*;
 
@@ -20,8 +20,11 @@ impl Operations for Executor {
         &self,
         _params: CallParams,
         _txs: Vec<Transaction>,
-    ) -> Result<StateRoot, Error> {
-        Ok([0; 32])
+    ) -> Result<VerificationOutput, Error> {
+        Ok(VerificationOutput {
+            state_root: [0; 32],
+            event_hash: [1; 32],
+        })
     }
 
     async fn execute_state_transition(
