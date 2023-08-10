@@ -34,7 +34,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     ) -> Result<T, ConsensusError> {
         tracing::trace!(
             "received msg from {:?} with hash {} msg: {:?}",
-            msg.get_pubkey_bls().encode_short_hex(),
+            msg.get_pubkey_bls().to_bs58(),
             msg.get_block_hash().encode_hex::<String>(),
             msg,
         );

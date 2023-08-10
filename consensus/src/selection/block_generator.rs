@@ -67,8 +67,6 @@ impl<T: Operations> Generator<T> {
         tracing::info!(
             event = "gen_candidate",
             hash = &to_str(&candidate.header.hash),
-            round = ru.round,
-            step = step,
         );
 
         tracing::debug!("block: {:#?}", &candidate);

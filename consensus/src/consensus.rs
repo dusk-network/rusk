@@ -214,10 +214,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     msg = phase
                         .run(ctx)
                         .instrument(tracing::info_span!(
-                            "main_task",
+                            "main",
                             round = ru.round,
                             step = step,
-                            pubkey = ru.pubkey_bls.encode_short_hex(),
+                            pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;
 

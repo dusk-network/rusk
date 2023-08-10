@@ -142,7 +142,7 @@ fn spawn_consensus_in_thread_pool(
                     let average_block_time =
                         (average_block_time * 100f64).round() / 100f64;
                     tracing::info!(
-                        bls_key = keys.1.encode_short_hex(),
+                        bls_key = keys.1.to_bs58(),
                         round = i,
                         block_time,
                         average_block_time,

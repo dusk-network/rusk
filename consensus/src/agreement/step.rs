@@ -60,7 +60,7 @@ impl Agreement {
 
         tokio::spawn(async move {
             let round = ru.round;
-            let pubkey = ru.pubkey_bls.encode_short_hex();
+            let pubkey = ru.pubkey_bls.to_bs58();
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound, db)
                 .run(future_msgs)
