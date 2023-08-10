@@ -246,6 +246,10 @@ impl StepVotes {
             signature: Signature(signature),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.bitset == 0 || self.signature.is_zeroed()
+    }
 }
 
 /// a wrapper of 48-sized array to facilitate Signature
