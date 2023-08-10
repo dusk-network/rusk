@@ -210,7 +210,7 @@ impl Accumulator {
                     msg_round = hdr.round,
                     msg_step = hdr.step,
                     target = target_quorum,
-                    aggr_count = agr_weight
+                    agr_weight = agr_weight
                 );
 
                 return Some(agr_set.clone());
