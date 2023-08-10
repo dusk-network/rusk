@@ -261,12 +261,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
-                info!("Revert VM to last finalized state");
+                info!(event = "vm_revert to last finalized state");
                 let state_hash = self.vm.read().await.revert()?;
 
                 info!(
-                    "VM revert completed finalized_state_hash:{}",
-                    hex::encode(state_hash)
+                    event = "vm reverted",
+                    state_root = hex::encode(state_hash)
                 );
 
                 anyhow::Ok(state_hash)
@@ -292,10 +292,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 info!(
-                    "Delete block height: {} iter: {} hash: {}",
-                    blk.header.height,
-                    blk.header.iteration,
-                    hex::encode(blk.header.hash)
+                    event = "deleted block height",
+                    height = blk.header.height,
+                    iter = blk.header.iteration,
+                    hash = hex::encode(blk.header.hash)
                 );
 
                 // Delete any rocksdb record related to this block
@@ -321,10 +321,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Update blockchain tip to be the one we reverted to.
         info!(
-            "Blockchain tip height: {} iter: {} state_hash: {}",
-            most_recent_block.header.height,
-            most_recent_block.header.iteration,
-            hex::encode(most_recent_block.header.state_hash)
+            event = "updating blockchain tip",
+            height = most_recent_block.header.height,
+            iter = most_recent_block.header.iteration,
+            state_root = hex::encode(most_recent_block.header.state_hash)
         );
 
         self.update_most_recent_block(&most_recent_block).await

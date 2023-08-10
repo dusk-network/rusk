@@ -96,9 +96,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let mut state_root = vm.read().await.get_state_root()?;
 
         info!(
-            "loaded state hashes VM: {}, Ledger: {}",
-            to_str(&state_root),
-            to_str(&mrb.header().state_hash)
+            event = "VM state loaded",
+            state_root = hex::encode(state_root),
         );
 
         // Detect a consistency issue between VM and Ledger states.
@@ -206,7 +205,12 @@ impl ChainSrv {
             Ok(())
         });
 
-        tracing::info!("loaded block height: {}", mrb.header.height);
+        tracing::info!(
+            event = "Ledger block loaded",
+            height = mrb.header.height,
+            hash = hex::encode(mrb.header.hash),
+            state_root = hex::encode(mrb.header.state_hash)
+        );
 
         Ok(mrb)
     }
