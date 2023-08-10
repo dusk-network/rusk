@@ -8,6 +8,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
+use crate::ledger::to_str;
 use crate::{bls, ledger, Serializable};
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
@@ -308,7 +309,7 @@ fn is_consensus_msg(topic: u8) -> bool {
     )
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 pub struct Header {
     pub topic: u8,
 
@@ -316,6 +317,18 @@ pub struct Header {
     pub round: u64,
     pub step: u8,
     pub block_hash: [u8; 32],
+}
+
+impl std::fmt::Debug for Header {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Header")
+            .field("topic", &self.topic)
+            .field("pubkey_bls", &to_str(self.pubkey_bls.bytes()))
+            .field("round", &self.round)
+            .field("step", &self.step)
+            .field("block_hash", &ledger::to_str(&self.block_hash))
+            .finish()
+    }
 }
 
 impl Serializable for Header {
@@ -462,7 +475,7 @@ pub enum Payload {
 }
 
 pub mod payload {
-    use crate::ledger::{Block, Certificate, StepVotes};
+    use crate::ledger::{self, Block, Certificate, StepVotes};
     use crate::Serializable;
     use std::io::{self, Read, Write};
 
@@ -497,11 +510,21 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Clone)]
     pub struct NewBlock {
         pub prev_hash: [u8; 32],
         pub candidate: Block,
         pub signed_hash: [u8; 48],
+    }
+
+    impl std::fmt::Debug for NewBlock {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_struct("NewBlock")
+                .field("signed_hash", &ledger::to_str(&self.signed_hash))
+                .field("candidate", &self.candidate)
+                .field("prev_hash", &ledger::to_str(&self.prev_hash))
+                .finish()
+        }
     }
 
     impl Default for NewBlock {
