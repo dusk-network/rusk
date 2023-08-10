@@ -38,7 +38,7 @@ impl<T: Operations + 'static> Reduction<T> {
 
     pub fn initialize(&mut self, msg: &Message) {
         self.candidate = None;
-        self.handler.first_step_votes = Default::default();
+        self.handler.reset();
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
             self.handler.first_step_votes = p.sv;

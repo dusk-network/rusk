@@ -46,7 +46,13 @@ impl Aggregator {
             // account (if more votes for the same slot are
             // propagated, those are discarded).
             if cluster.contains_key(&header.pubkey_bls) {
-                warn!("discarding duplicated votes from a provisioner");
+                warn!(
+                    event = "discarded duplicated vote",
+                    from = header.pubkey_bls.to_bs58(),
+                    hash = hex::encode(hash),
+                    msg_step = header.step,
+                    msg_round = header.round,
+                );
                 return None;
             }
 
@@ -64,10 +70,13 @@ impl Aggregator {
 
             let total = cluster.total_occurrences();
             let quorum_target = committee.quorum();
-            tracing::trace!(
-                "total votes: {}, quorum target: {} ",
-                total,
-                quorum_target
+
+            tracing::debug!(
+                event = "vote aggregated",
+                total = total,
+                target = quorum_target,
+                added = val,
+                from = header.pubkey_bls.to_bs58(),
             );
 
             if total >= committee.quorum() {

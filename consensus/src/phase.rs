@@ -13,7 +13,7 @@ use crate::user::committee::Committee;
 
 use crate::{firststep, secondstep, selection};
 
-use tracing::trace;
+use tracing::debug;
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -47,13 +47,14 @@ pub enum Phase<T: Operations, D: Database> {
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
     pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
-        trace!(
-            "init phase:{} with msg {:?} at round:{} step:{}",
+        debug!(
+            "event: init_step:{} round:{} step:{} msg: {:#?}",
             self.name(),
-            msg,
             round,
-            step
+            step,
+            msg,
         );
+
         call_phase!(self, initialize(msg))
     }
 
@@ -61,7 +62,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         &mut self,
         ctx: ExecutionCtx<'_>,
     ) -> Result<Message, ConsensusError> {
-        tracing::info!("event: execute, timeout: {}", self.get_timeout());
+        debug!(event = "execute_step", timeout = self.get_timeout());
 
         let size = call_phase!(self, get_committee_size());
 

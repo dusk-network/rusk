@@ -70,12 +70,11 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         }
 
         info!(
-            "Fallback procedure started curr_iter: {:?} new_iter: {:?}",
-            curr_iteration, blk.header.iteration
+            event = "starting fallback",
+            height = curr_height,
+            iter = curr_iteration,
+            target_iter = blk.header.iteration,
         );
-
-        // Fetch previous block
-        info!("Fetch previous block");
 
         let prev_block_height = curr_height - 1;
         let prev_block = acc.db.read().await.view(|v| {
@@ -83,7 +82,12 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
                 .ok_or_else(|| anyhow::anyhow!("could not fetch block"))
         })?;
 
-        info!("Verify block header/certificate data");
+        info!(
+            event = "fallback checking block",
+            height = curr_height,
+            iter = curr_iteration,
+            target_iter = blk.header.iteration,
+        );
 
         // Validate Header/Certificate of the new block upon previous block and
         // provisioners.

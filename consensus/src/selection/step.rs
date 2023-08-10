@@ -36,7 +36,11 @@ impl<T: Operations, D: Database> Selection<T, D> {
         }
     }
 
-    pub fn initialize(&mut self, _msg: &Message) {}
+    pub fn initialize(&mut self, _msg: &Message) {
+        // To be aligned with the original impl, Selection does not double its
+        // timeout settings
+        self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
+    }
 
     pub async fn run(
         &mut self,

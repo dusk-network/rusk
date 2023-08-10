@@ -127,7 +127,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             acc.try_accept_block(blk, true).await?;
         }
 
-        info!("entering in-sync at {}", curr_h,);
+        info!(event = "entering in-sync", height = curr_h);
 
         Ok(())
     }
@@ -169,8 +169,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             }
 
             info!(
-                "fallback curr: {}/{}, new: {}/{}",
-                curr_h, iter, blk.header.height, blk.header.iteration
+                event = "entering fallback",
+                height = curr_h,
+                iter = iter,
+                new_iter = blk.header.iteration,
             );
 
             match fallback::WithContext::new(acc.deref())
@@ -289,8 +291,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         self.pool.insert(key, blk.clone());
 
         info!(
-            "entering out-of-sync with range: {:?} peer: {:?}",
-            self.range, dest_addr,
+            event = "entering out-of-sync",
+            from = self.range.0,
+            to = self.range.1,
+            peer = format!("{:?}", dest_addr),
         );
     }
 

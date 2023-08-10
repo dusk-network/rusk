@@ -8,7 +8,7 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 use node_data::ledger::Block;
-use node_data::message::{AsyncQueue, Message};
+use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::agreement::step;
 use crate::execution_ctx::ExecutionCtx;
@@ -214,10 +214,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     msg = phase
                         .run(ctx)
                         .instrument(tracing::info_span!(
-                            "main_task",
+                            "main",
                             round = ru.round,
                             step = step,
-                            pubkey = ru.pubkey_bls.encode_short_hex(),
+                            pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;
 
@@ -238,9 +238,19 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         agr_inbound_queue: &mut AsyncQueue<Message>,
         msg: Message,
     ) {
-        let _ = agr_inbound_queue
-            .send(msg.clone())
-            .await
-            .map_err(|e| error!("send agreement failed with {:?}", e));
+        if let Payload::Agreement(payload) = &msg.payload {
+            if payload.signature == [0u8; 48]
+                || payload.first_step.is_empty()
+                || payload.second_step.is_empty()
+                || msg.header.block_hash == [0; 32]
+            {
+                return;
+            }
+
+            let _ = agr_inbound_queue
+                .send(msg.clone())
+                .await
+                .map_err(|e| error!("send agreement failed with {:?}", e));
+        }
     }
 }
