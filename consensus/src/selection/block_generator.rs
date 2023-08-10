@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use crate::contract_state::CallParams;
-use node_data::ledger::{Block, Certificate, Seed};
+use node_data::ledger::{to_str, Block, Certificate, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
@@ -63,6 +63,15 @@ impl<T: Operations> Generator<T> {
 
         let signed_hash =
             msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
+        tracing::info!(
+            event = "gen_candidate",
+            hash = &to_str(&candidate.header.hash),
+            round = ru.round,
+            step = step,
+        );
+
+        tracing::debug!("block: {:#?}", &candidate);
 
         Ok(Message::new_newblock(
             msg_header,

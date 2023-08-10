@@ -7,8 +7,7 @@
 use crate::agreement::verifiers;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
-use hex::ToHex;
-use node_data::ledger::{Hash, Seed};
+use node_data::ledger::{to_str, Hash, Seed};
 use node_data::message::{payload, Message, Payload};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -207,7 +206,7 @@ impl Accumulator {
             if *agr_weight >= target_quorum {
                 info!(
                     event = "quorum reached",
-                    hash = hdr.block_hash.encode_hex::<String>(),
+                    hash = to_str(&hdr.block_hash),
                     msg_round = hdr.round,
                     msg_step = hdr.step,
                     target = target_quorum,

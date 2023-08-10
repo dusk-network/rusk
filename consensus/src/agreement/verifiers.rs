@@ -16,6 +16,7 @@ use bytes::Buf;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{Header, Message, Payload};
+use std::fmt::{self, Display};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -31,6 +32,17 @@ pub enum Error {
 impl From<dusk_bls12_381_sign::Error> for Error {
     fn from(inner: dusk_bls12_381_sign::Error) -> Self {
         Self::VerificationFailed(inner)
+    }
+}
+impl Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::VoteSetTooSmall => write!(f, "Failed to reach a quorum"),
+            Error::VerificationFailed(_) => write!(f, "Verification error"),
+            Error::EmptyApk => write!(f, "Empty Apk instance"),
+            Error::InvalidType => write!(f, "Invalid Type"),
+            Error::InvalidStepNum => write!(f, "Invalid step number"),
+        }
     }
 }
 

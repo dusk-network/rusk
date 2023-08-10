@@ -84,7 +84,7 @@ impl<'a> ExecutionCtx<'a> {
         phase: &mut C,
         timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
-        tracing::info!("event: run event_loop");
+        tracing::debug!(event = "run event_loop");
 
         // Calculate timeout
         let deadline = Instant::now()
@@ -115,7 +115,7 @@ impl<'a> ExecutionCtx<'a> {
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
-                    tracing::info!("event: timeout");
+                    tracing::info!(event = "timeout");
                     Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase);
@@ -165,7 +165,7 @@ impl<'a> ExecutionCtx<'a> {
                         );
                     }
                     ConsensusError::PastEvent => {
-                        trace!("discard message from past {:?}", msg);
+                        trace!("discard message from past {:#?}", msg);
                     }
                     _ => {
                         error!("phase handler err: {:?}", e);
@@ -181,7 +181,7 @@ impl<'a> ExecutionCtx<'a> {
             .await
         {
             Ok(output) => {
-                trace!("message collected {:?}", msg);
+                trace!("message collected {:#?}", msg);
 
                 match output {
                     FinalResult(m) => {
