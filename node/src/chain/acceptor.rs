@@ -194,12 +194,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, state_hash) = match blk.header.iteration {
+                let (txs, verification_output) = match blk.header.iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
 
-                assert_eq!(blk.header.state_hash, state_hash);
+                assert_eq!(
+                    blk.header.state_hash,
+                    verification_output.state_root
+                );
+                assert_eq!(
+                    blk.header.event_hash,
+                    verification_output.event_hash
+                );
 
                 // Store block with updated transactions with Error and GasSpent
                 t.store_block(&blk.header, &txs)?;
