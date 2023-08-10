@@ -15,7 +15,7 @@ dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-imp
 dusk-schnorr = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 phoenix-core = { version = "0.20.0-rc.0", features = ["alloc"] }
 poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl"] }
-zk-citadel = { version = "0.4", git = "https://github.com/dusk-network/citadel", tag = "0.4.1-rc.0" }
+zk-citadel = "0.4"
 hex = "0.4"
 
 code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
