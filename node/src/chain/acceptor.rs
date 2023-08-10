@@ -19,7 +19,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
 use hex::ToHex;
 use node_data::ledger::{
-    self, Block, Hash, Header, Signature, SpentTransaction,
+    self, to_str, Block, Hash, Header, Signature, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -230,12 +230,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         tracing::info!(
-            "block accepted height/iter:{}/{} hash:{} txs_count: {} state_hash:{}",
-            blk.header.height,
-            blk.header.iteration,
-            hex::encode(blk.header.hash),
-            blk.txs.len(),
-            hex::encode(blk.header.state_hash)
+            event = "block accepted",
+            height = blk.header.height,
+            iter = blk.header.iteration,
+            hash = to_str(&blk.header.hash),
+            txs = blk.txs.len(),
+            state_hash = to_str(&blk.header.state_hash)
         );
 
         // Restart Consensus.

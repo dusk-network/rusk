@@ -18,7 +18,7 @@ use anyhow::{anyhow, bail, Result};
 use dusk_consensus::user::committee::CommitteeSet;
 use std::rc::Rc;
 use std::sync::Arc;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
@@ -27,7 +27,7 @@ use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Header};
+use node_data::ledger::{self, to_str, Block, Hash, Header};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -95,8 +95,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         // finalized one.
         let mut state_root = vm.read().await.get_state_root()?;
 
+        info!(
+            "loaded state hashes VM: {}, Ledger: {}",
+            to_str(&state_root),
+            to_str(&mrb.header().state_hash)
+        );
+
         // Detect a consistency issue between VM and Ledger states.
         if mrb.header().height > 0 && mrb.header().state_hash != state_root {
+            info!("revert to last finalized state");
             // Revert to last known finalized state.
             acc.read()
                 .await

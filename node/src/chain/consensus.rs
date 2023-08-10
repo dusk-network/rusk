@@ -86,7 +86,7 @@ impl Task {
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
-        let round_update = RoundUpdate {
+        let ru = RoundUpdate {
             round: most_recent_block.height + 1,
             seed: most_recent_block.seed,
             hash: most_recent_block.hash,
@@ -96,7 +96,17 @@ impl Task {
         };
 
         self.task_id += 1;
-        tracing::trace!("spawn consensus task: {}", self.task_id);
+
+        let (all_num, eligible_num) =
+            provisioners.get_provisioners_info(ru.round);
+
+        tracing::info!(
+            event = "spawn consensus",
+            id = self.task_id,
+            round = ru.round,
+            all = all_num,           // all provisioners count
+            eligible = eligible_num  // eligible provisioners count
+        );
 
         let id = self.task_id;
         let mut result_queue = self.result.clone();
@@ -106,7 +116,7 @@ impl Task {
         self.running_task = Some((
             tokio::spawn(async move {
                 result_queue
-                    .send(c.spin(round_update, provisioners, cancel_rx).await)
+                    .send(c.spin(ru, provisioners, cancel_rx).await)
                     .await;
 
                 tracing::trace!("terminate consensus task: {}", id);

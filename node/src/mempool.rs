@@ -156,7 +156,10 @@ impl MempoolSrv {
         // VM Preverify call
         vm.read().await.preverify(tx)?;
 
-        tracing::debug!("accepted transaction {:?}", hex::encode(hash));
+        tracing::info!(
+            event = "transaction accepted",
+            hash = hex::encode(hash)
+        );
 
         // Add transaction to the mempool
         db.read().await.update(|db| db.add_tx(tx))?;
