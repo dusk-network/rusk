@@ -11,7 +11,6 @@ use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 
-use hex::ToHex;
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use std::cmp::Ordering;
@@ -58,10 +57,11 @@ impl PublicKey {
         &self.inner
     }
 
-    pub fn encode_short_hex(&self) -> String {
-        let mut hex = self.bytes().encode_hex::<String>();
-        hex.truncate(16);
-        hex
+    /// Converts inner data in a truncated base58 string.
+    pub fn to_bs58(&self) -> String {
+        let mut bs = bs58::encode(&self.as_bytes.inner()).into_string();
+        bs.truncate(16);
+        bs
     }
 }
 
@@ -79,13 +79,8 @@ impl Ord for PublicKey {
 
 impl std::fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-        let mut hex = self.as_bytes.inner().encode_hex::<String>();
-        hex.truncate(16);
-
-        let debug_trait_builder =
-            &mut ::core::fmt::Formatter::debug_tuple(f, "PublicKey");
-        let _ = ::core::fmt::DebugTuple::field(debug_trait_builder, &hex);
-        ::core::fmt::DebugTuple::finish(debug_trait_builder)
+        let bs = bs58::encode(&self.as_bytes.inner()).into_string();
+        f.debug_struct("PublicKey").field("bs58", &bs).finish()
     }
 }
 /// a wrapper of 96-sized array
