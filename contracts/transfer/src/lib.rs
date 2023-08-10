@@ -97,6 +97,11 @@ unsafe fn leaves_from_height(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |height| STATE.leaves_from_height(height))
 }
 
+#[no_mangle]
+unsafe fn leaves_from_pos(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |pos| STATE.leaves_from_pos(pos))
+}
+
 // "Management" transactions
 
 #[no_mangle]

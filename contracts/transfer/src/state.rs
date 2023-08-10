@@ -361,6 +361,14 @@ impl TransferState {
         }
     }
 
+    /// Feeds the host with the leaves in the tree, starting from the given
+    /// position.
+    pub fn leaves_from_pos(&self, pos: u64) {
+        for leaf in self.tree.leaves_pos(pos) {
+            rusk_abi::feed(leaf.clone());
+        }
+    }
+
     /// Update the root for of the tree.
     pub fn update_root(&mut self) {
         let root = self.tree.root();
