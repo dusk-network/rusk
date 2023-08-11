@@ -32,7 +32,6 @@ serde_json = "1"
 serde_with = { version = "3.1", features = ["hex"] }
 bs58 = "0.4"
 hex = "0.4"
-tempfile = "3.2"
 parking_lot = "0.12"
 rkyv = "0.7"
 bytecheck = "0.6"
@@ -60,9 +59,6 @@ tokio-util = { version = "0.7", features = ["rt"] }
 async-trait = "0.1"
 
 
-rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = [
-  "state",
-] }
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
@@ -75,9 +71,18 @@ node-data = { version = "0.1", path = "../node-data", features = ["graphql"] }
 async-graphql = "5.0"
 
 
+## Ephemeral dependencies
+rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"], optional = true}
+tempfile = { version = "3.2", optional = true }
+
 [dev-dependencies]
 test-context = "0.1"
 reqwest = "0.11"
+rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
+
+[features]
+default = ["ephemeral"]
+ephemeral = ["dep:rusk-recovery", "dep:tempfile"]
