@@ -348,7 +348,9 @@ impl TransferState {
     /// Note: the method `update_root` needs to be called after the last note is
     /// pushed.
     pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
+        let tree_leaf = TreeLeaf { block_height, note };
         let pos = self.tree.push(TreeLeaf { block_height, note });
+        rusk_abi::emit("TREE_LEAF", (pos, tree_leaf.clone()));
         self.get_note(pos)
             .expect("There should be a note that was just inserted")
     }
