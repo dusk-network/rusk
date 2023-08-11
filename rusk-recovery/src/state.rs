@@ -6,6 +6,7 @@
 
 use crate::theme::Theme;
 
+use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use once_cell::sync::Lazy;
@@ -22,7 +23,6 @@ use std::path::Path;
 use tracing::info;
 use url::Url;
 
-use crate::provisioners::DUSK_KEY as DUSK_BLS_KEY;
 pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
 
 mod http;
@@ -241,14 +241,13 @@ fn generate_empty_state<P: AsRef<Path>>(
         .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
         .expect("root to be updated after pushing genesis note");
 
-    session
-        .call::<_, Option<StakeData>>(
-            STAKE_CONTRACT,
-            "get_stake",
-            &*DUSK_BLS_KEY,
-            u64::MAX,
-        )
-        .expect("Querying a stake should succeed");
+    let owners = session
+        .call::<_, Vec<BlsPublicKey>>(STAKE_CONTRACT, "owners", &(), u64::MAX)
+        .expect("Querying the stake owners should succeed");
+    assert!(
+        owners.data.is_empty(),
+        "Genesis stake should have no owners"
+    );
 
     session
         .call::<_, ()>(LICENSE_CONTRACT, "noop", &(), u64::MAX)
