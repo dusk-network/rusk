@@ -120,7 +120,8 @@ impl<T: Operations> Generator<T> {
             generator_bls_pubkey: node_data::bls::PublicKeyBytes(
                 *pubkey.bytes(),
             ),
-            state_hash: result.state_root,
+            state_hash: result.verification_output.state_root,
+            event_hash: result.verification_output.event_hash,
             hash: [0; 32],
             cert: Certificate::default(),
             txroot,

@@ -74,7 +74,7 @@ pub fn generator_procedure(
     let round = block_height;
     // let txs = vec![];
 
-    let (transfer_txs, discarded, execute_state_root) = rusk
+    let (transfer_txs, discarded, execute_output) = rusk
         .execute_state_transition(
             CallParams {
                 round,
@@ -89,8 +89,8 @@ pub fn generator_procedure(
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
 
     info!(
-        "execute_state_transition new root: {:?}",
-        hex::encode(execute_state_root)
+        "execute_state_transition new verification: {}",
+        execute_output
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
@@ -99,33 +99,30 @@ pub fn generator_procedure(
         block_gas_limit,
         generator_pubkey,
     };
-    let verify_root =
+    let verify_output =
         rusk.verify_state_transition(&verify_param, txs.clone())?;
-    info!(
-        "verify_state_transition new root: {:?}",
-        hex::encode(verify_root)
-    );
+    info!("verify_state_transition new verification: {verify_output}",);
 
     let mut block = Block::default();
     block.header.generator_bls_pubkey = generator_pubkey_bytes;
     block.header.gas_limit = block_gas_limit;
     block.header.height = block_height;
-    block.header.state_hash = execute_state_root;
+    block.header.state_hash = execute_output.state_root;
+    block.header.event_hash = execute_output.event_hash;
     block.txs = txs;
 
-    let (accept_txs, accept_state_root) = rusk.accept(&block)?;
+    let (accept_txs, accept_output) = rusk.accept(&block)?;
 
     assert_eq!(accept_txs.len(), expected.executed, "all txs accepted");
 
     info!(
-        "accept block {} with new root: {:?}",
+        "accept block {} with new verification: {accept_output}",
         block_height,
-        hex::encode(accept_state_root)
     );
 
     assert_eq!(
-        accept_state_root, execute_state_root,
-        "Root should be equal"
+        accept_output, execute_output,
+        "Verification outputs should be equal"
     );
 
     Ok(accept_txs)

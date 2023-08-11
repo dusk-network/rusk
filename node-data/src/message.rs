@@ -988,8 +988,9 @@ mod tests {
                 seed: ledger::Seed::from([2; 48]),
                 generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
                 state_hash: [4; 32],
-                hash: [5; 32],
-                txroot: [6; 32],
+                event_hash: [5; 32],
+                hash: [6; 32],
+                txroot: [7; 32],
                 cert: Certificate {
                     first_reduction: ledger::StepVotes::new([6; 48], 22222222),
                     second_reduction: ledger::StepVotes::new([7; 48], 3333333),

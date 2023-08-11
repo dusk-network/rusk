@@ -7,7 +7,8 @@
 use async_trait::async_trait;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_consensus::{
-    contract_state::CallParams, user::provisioners::Provisioners,
+    contract_state::CallParams, contract_state::VerificationOutput,
+    user::provisioners::Provisioners,
 };
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 
@@ -19,23 +20,27 @@ pub trait VMExecution: Send + Sync + 'static {
         &self,
         params: CallParams,
         txs: I,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>;
+    ) -> anyhow::Result<(
+        Vec<SpentTransaction>,
+        Vec<Transaction>,
+        VerificationOutput,
+    )>;
 
     fn verify_state_transition(
         &self,
         params: &CallParams,
         txs: Vec<Transaction>,
-    ) -> anyhow::Result<[u8; 32]>;
+    ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])>;
+    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn finalize(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])>;
+    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)>;
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 
