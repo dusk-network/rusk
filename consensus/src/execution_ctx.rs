@@ -23,7 +23,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
@@ -84,7 +84,7 @@ impl<'a> ExecutionCtx<'a> {
         phase: &mut C,
         timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
-        tracing::debug!(event = "run event_loop");
+        debug!(event = "run event_loop");
 
         // Calculate timeout
         let deadline = Instant::now()
@@ -115,7 +115,7 @@ impl<'a> ExecutionCtx<'a> {
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
-                    tracing::info!(event = "timeout");
+                    tracing::info!(event = "timeout-ed");
                     Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase);
@@ -235,6 +235,10 @@ impl<'a> ExecutionCtx<'a> {
             .await
             .drain_events(self.round_update.round, self.step)
         {
+            if !messages.is_empty() {
+                debug!(event = "drain future msgs", count = messages.len(),)
+            }
+
             for msg in messages {
                 if let Ok(msg) = phase.is_valid(
                     msg,
@@ -268,7 +272,5 @@ impl<'a> ExecutionCtx<'a> {
         // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
         *timeout_millis =
             cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
-
-        tracing::info!("increase timeout to {} ms", timeout_millis);
     }
 }

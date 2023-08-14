@@ -67,9 +67,10 @@ impl<T: Operations> Generator<T> {
         tracing::info!(
             event = "gen_candidate",
             hash = &to_str(&candidate.header.hash),
+            state_hash = &to_str(&candidate.header.state_hash),
         );
 
-        tracing::debug!("block: {:#?}", &candidate);
+        tracing::debug!("block: {:?}", &candidate);
 
         Ok(Message::new_newblock(
             msg_header,

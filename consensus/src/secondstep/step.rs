@@ -10,7 +10,7 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
-use node_data::ledger::Block;
+use node_data::ledger::{to_str, Block};
 use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -36,7 +36,7 @@ impl<T: Operations + 'static> Reduction<T> {
         }
     }
 
-    pub fn initialize(&mut self, msg: &Message) {
+    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         self.candidate = None;
         self.handler.reset();
 
@@ -44,6 +44,23 @@ impl<T: Operations + 'static> Reduction<T> {
             self.handler.first_step_votes = p.sv;
             self.candidate = Some(p.candidate);
         }
+
+        tracing::debug!(
+            event = "init",
+            name = self.name(),
+            round = round,
+            step = step,
+            timeout = self.timeout_millis,
+            hash = to_str(
+                &self
+                    .candidate
+                    .as_ref()
+                    .map_or(&Block::default(), |c| c)
+                    .header
+                    .hash
+            ),
+            fsv_bitset = self.handler.first_step_votes.bitset,
+        )
     }
 
     pub async fn run(
@@ -79,7 +96,7 @@ impl<T: Operations + 'static> Reduction<T> {
     }
 
     pub fn name(&self) -> &'static str {
-        "2nd_reduction"
+        "2nd_red"
     }
     pub fn get_timeout(&self) -> u64 {
         self.timeout_millis

@@ -8,11 +8,11 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
-use node_data::ledger::{Hash, Signature, StepVotes};
+use node_data::ledger::{to_str, Hash, Signature, StepVotes};
 use node_data::message::Header;
 use std::collections::BTreeMap;
 use std::fmt;
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 
 /// Aggregator collects votes per a block hash by aggregating signatures of
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
@@ -27,9 +27,9 @@ impl Aggregator {
         header: &Header,
         signed_hash: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
-        // Get weight for this pubkey bls. If it is 0, it means the key is not a
-        // committee member, respectively we should not process a vote
-        // from it.
+        // Get weight for this pubkey bls. If votes_for returns None, it means
+        // the key is not a committee member, respectively we should not
+        // process a vote from it.
         if let Some(weight) = committee.votes_for(&header.pubkey_bls) {
             let hash: Hash = header.block_hash;
 
@@ -65,18 +65,19 @@ impl Aggregator {
             // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
-            let val = cluster.set_weight(&header.pubkey_bls, weight);
-            debug_assert!(val.is_some());
+            let weight = cluster.set_weight(&header.pubkey_bls, weight);
+            debug_assert!(weight.is_some());
 
             let total = cluster.total_occurrences();
             let quorum_target = committee.quorum();
 
-            tracing::debug!(
+            debug!(
                 event = "vote aggregated",
-                total = total,
-                target = quorum_target,
-                added = val,
+                hash = to_str(&hash),
                 from = header.pubkey_bls.to_bs58(),
+                added = weight,
+                total,
+                target = quorum_target,
             );
 
             if total >= committee.quorum() {
@@ -89,6 +90,16 @@ impl Aggregator {
                     bitset,
                     signature: Signature::from(s),
                 };
+
+                tracing::info!(
+                    event = "reduction, quorum reached",
+                    hash = to_str(&hash),
+                    total,
+                    target = quorum_target,
+                    bitset,
+                    step = header.step,
+                    signature = to_str(&s),
+                );
 
                 return Some((hash, step_votes));
             }

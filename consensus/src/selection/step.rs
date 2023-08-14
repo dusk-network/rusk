@@ -36,10 +36,18 @@ impl<T: Operations, D: Database> Selection<T, D> {
         }
     }
 
-    pub fn initialize(&mut self, _msg: &Message) {
+    pub fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
         // To be aligned with the original impl, Selection does not double its
         // timeout settings
         self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
+
+        tracing::debug!(
+            event = "init",
+            name = self.name(),
+            round = round,
+            step = step,
+            timeout = self.timeout_millis,
+        )
     }
 
     pub async fn run(
@@ -95,7 +103,7 @@ impl<T: Operations, D: Database> Selection<T, D> {
     }
 
     pub fn name(&self) -> &'static str {
-        "selection"
+        "sel"
     }
     pub fn get_timeout(&self) -> u64 {
         self.timeout_millis
