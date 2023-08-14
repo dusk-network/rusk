@@ -41,6 +41,8 @@ pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
     fn get_pubkey_bls(&self) -> &bls::PublicKey;
     fn get_block_hash(&self) -> [u8; 32];
+    fn get_topic(&self) -> u8;
+    fn get_step(&self) -> u8;
 }
 
 /// Message definition
@@ -163,6 +165,13 @@ impl MessageTrait for Message {
     }
     fn get_block_hash(&self) -> [u8; 32] {
         self.header.block_hash
+    }
+    fn get_topic(&self) -> u8 {
+        self.header.topic
+    }
+
+    fn get_step(&self) -> u8 {
+        self.header.step
     }
 }
 
