@@ -13,7 +13,9 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block, Certificate};
-use node_data::message::{AsyncQueue, Header, Message, Payload, Status};
+use node_data::message::{
+    AsyncQueue, Header, Message, Payload, Status, Topics,
+};
 
 use crate::agreement::aggr_agreement;
 use crate::config;
@@ -176,6 +178,15 @@ impl<D: Database> Executor<D> {
             return None;
         }
 
+        let hdr = &msg.header;
+        tracing::debug!(
+            event = "msg received",
+            from = hdr.pubkey_bls.to_bs58(),
+            hash = to_str(&hdr.block_hash),
+            topic = format!("{:?}", Topics::from(hdr.topic)),
+            step = hdr.step,
+        );
+
         match msg.payload {
             Payload::AggrAgreement(_) => {
                 // process aggregated agreement
@@ -220,7 +231,7 @@ impl<D: Database> Executor<D> {
             )
             .await;
 
-            tracing::debug!("broadcast aggr_agreement {:#?}", msg);
+            tracing::trace!("broadcast aggr_agreement {:#?}", msg);
             // Broadcast AggrAgreement message
             self.publish(msg).await;
         }
@@ -245,7 +256,10 @@ impl<D: Database> Executor<D> {
             )
             .await
             {
-                error!("failed to verify aggr agreement err: {}", e);
+                error!(
+                    err = "invalid aggr agreement",
+                    desc = format!("{:?}", e)
+                );
                 return None;
             }
 
@@ -288,18 +302,20 @@ impl<D: Database> Executor<D> {
         hash: &[u8; 32],
         cert: &Certificate,
     ) -> Option<Block> {
-        debug!(event = "create winning block", hash = to_str(hash));
-
         // Retrieve winning block from local storage
         match self.db.lock().await.get_candidate_block_by_hash(hash).await {
             Ok(mut block) => {
-                debug!("winning block retrieved");
+                debug!(event = "winner block retrieved", hash = to_str(hash));
                 block.header.cert = cert.clone();
                 Some(block)
             }
 
             Err(e) => {
-                error!("failed to retrieve winning block err: {}", e);
+                error!(
+                    event = "block retrieval failed",
+                    err = format!("{}", e),
+                    hash = to_str(hash)
+                );
                 None
             }
         }

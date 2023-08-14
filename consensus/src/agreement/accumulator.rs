@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
-use tracing::{error, info, warn, Instrument};
+use tracing::{debug, error, info, warn, Instrument};
 
 #[derive(Debug, Clone, Eq)]
 pub(super) struct AgreementMessage {
@@ -91,46 +91,43 @@ impl Accumulator {
             let output_chan = output_chan.clone();
             let stores = stores.clone();
 
-            self.workers.push(tokio::spawn(
-                async move {
-                    // Process each request for verification
-                    while let Ok(msg) = rx.recv().await {
-                        if rx.is_closed() {
-                            break;
-                        }
+            let worker = async move {
+                // Process each request for verification
+                while let Ok(msg) = rx.recv().await {
+                    if rx.is_closed() {
+                        break;
+                    }
 
-                        if let Err(e) = verifiers::verify_agreement(
-                            msg.clone(),
-                            committees_set.clone(),
-                            seed,
-                        )
-                        .await
-                        {
-                            error!("{:#?}", e);
-                            continue;
-                        }
+                    if let Err(e) = verifiers::verify_agreement(
+                        msg.clone(),
+                        committees_set.clone(),
+                        seed,
+                    )
+                    .await
+                    {
+                        error!("{:#?}", e);
+                        continue;
+                    }
 
-                        if let Some(msg) = Self::accumulate(
-                            stores.clone(),
-                            committees_set.clone(),
-                            msg,
-                            seed,
-                        )
-                        .await
-                        {
-                            rx.close();
-                            output_chan.send(msg).await.unwrap_or_else(|err| {
-                                warn!(
-                                    "unable to send_msg collected_votes {}",
-                                    err
-                                )
-                            });
-                            break;
-                        }
+                    if let Some(msg) = Self::accumulate(
+                        stores.clone(),
+                        committees_set.clone(),
+                        msg,
+                        seed,
+                    )
+                    .await
+                    {
+                        rx.close();
+                        output_chan.send(msg).await.unwrap_or_else(|err| {
+                            warn!("unable to send_msg collected_votes {}", err)
+                        });
+                        break;
                     }
                 }
-                .instrument(tracing::info_span!("acc_task",)),
-            ));
+            }
+            .instrument(tracing::info_span!("acc_task"));
+
+            self.workers.push(tokio::spawn(worker));
         }
     }
 
@@ -143,7 +140,7 @@ impl Accumulator {
         assert!(!self.workers.is_empty());
 
         self.tx.send(msg).await.unwrap_or_else(|err| {
-            error!("unable to queue agreement_msg {:?}", err)
+            warn!("unable to queue agreement_msg {:?}", err)
         });
     }
 
@@ -157,6 +154,8 @@ impl Accumulator {
         seed: Seed,
     ) -> Option<Output> {
         let hdr = msg.header.clone();
+        let pubkey_bs58 = msg.header.pubkey_bls.to_bs58();
+        let hash = msg.header.block_hash;
 
         let cfg = sortition::Config::new(seed, hdr.round, hdr.step, 64);
 
@@ -164,11 +163,19 @@ impl Accumulator {
         let (weight, target_quorum) = {
             let mut guard = committees_set.lock().await;
 
-            let weight = guard.votes_for(&hdr.pubkey_bls, &cfg)?;
-            if weight == 0 {
-                warn!("Agreement was not accumulated since it is not from a committee member");
-                return None;
-            }
+            let weight = match guard.votes_for(&hdr.pubkey_bls, &cfg) {
+                Some(0) | None => {
+                    warn!(
+                        event = "discarded agreement from non-committee member",
+                        from = pubkey_bs58,
+                        hash = to_str(&hash),
+                        msg_step = hdr.step,
+                        msg_round = hdr.round,
+                    );
+                    return None;
+                }
+                Some(weight) => Some(weight),
+            }?;
 
             Some((weight, guard.quorum(&cfg)))
         }?;
@@ -176,7 +183,7 @@ impl Accumulator {
         if let Payload::Agreement(payload) = msg.payload {
             let mut guard = stores.lock().await;
 
-            let (agr_set, agr_weight) = guard
+            let (agreement_set, total) = guard
                 .entry(hdr.block_hash)
                 .or_insert_with(AgreementsPerStep::default)
                 .entry(hdr.step)
@@ -187,28 +194,43 @@ impl Accumulator {
                 payload,
             };
 
-            if agr_set.contains(&key) {
-                warn!("Agreement was not accumulated since it is a duplicate");
+            if agreement_set.contains(&key) {
+                warn!(
+                    event = "discarded duplicated agreement",
+                    from = pubkey_bs58,
+                    hash = to_str(&hash),
+                    msg_step = key.header.step,
+                    msg_round = key.header.round,
+                );
+
                 return None;
             }
 
             // Save agreement to avoid duplicates
-            agr_set.insert(key);
+            agreement_set.insert(key);
 
             // Increase the cumulative weight
-            *agr_weight += weight;
+            *total += weight;
 
-            if *agr_weight >= target_quorum {
+            debug!(
+                event = "agreement accumulated",
+                hash = to_str(&hash),
+                from = pubkey_bs58,
+                added = weight,
+                total,
+            );
+
+            if *total >= target_quorum {
                 info!(
-                    event = "quorum reached",
-                    hash = to_str(&hdr.block_hash),
+                    event = "agreement, quorum reached",
+                    hash = to_str(&hash),
                     msg_round = hdr.round,
                     msg_step = hdr.step,
                     target = target_quorum,
-                    agr_weight = agr_weight
+                    total = total
                 );
 
-                return Some(agr_set.clone());
+                return Some(agreement_set.clone());
             }
         }
 

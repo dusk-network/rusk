@@ -9,6 +9,7 @@ use crate::commons::RoundUpdate;
 use crate::user::cluster::Cluster;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
+use node_data::ledger::to_str;
 use node_data::message::payload::AggrAgreement;
 use node_data::message::{payload, Header, Message, Topics};
 use std::sync::Arc;
@@ -42,7 +43,10 @@ pub(super) async fn verify(
     )
     .await?;
 
-    debug!("valid aggr agreement");
+    debug!(
+        event = "aggr_agreement recv",
+        signature = to_str(&aggr.aggr_signature)
+    );
     Ok(())
 }
 
