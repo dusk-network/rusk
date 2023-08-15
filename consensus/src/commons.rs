@@ -93,14 +93,10 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
-        if candidate == Block::default() {
-            return;
-        }
-
         let hash = candidate.header.hash;
         let already_verified = vc_list.lock().await.contains(&hash);
 
-        if !already_verified {
+        if !already_verified && hash != [0u8; 32] {
             let pubkey = &candidate.header.generator_bls_pubkey.0;
             let generator =
                 match dusk_bls12_381_sign::PublicKey::from_slice(pubkey) {
