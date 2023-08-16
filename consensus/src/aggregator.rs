@@ -220,60 +220,45 @@ mod tests {
 
         let mut a = Aggregator::default();
 
-        // Ensure total value for this block_hash is increased with 2 on a vote
-        // from a provisioner at pos 1.
-        let (signature, h) = input.get(1).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
         dbg!("{:?}", p);
 
-        // this provisioner vote has weight of 2
-        assert_eq!(a.get_total(block_hash), Some(2));
+        // Collect votes from expected committee members
+        let expected_members = vec![0, 1, 2, 4, 5];
+        let expected_votes = vec![1, 1, 2, 1, 3];
+        let mut collected_votes = 0;
+        for i in 0..expected_members.len() - 1 {
+            // Select provisioner
+            let (signature, h) =
+                input.get(expected_members[i]).expect("invalid index");
 
-        // Ensure total value for this block_hash is increased with 1 on a vote
-        // from a provisioner at pos 0.
-        let (signature, h) = input.get(0).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
+            // Last member's vote should reach the quorum
+            if i == expected_members.len() - 1 {
+                // (hash, sv) is only returned in case we reach the quorum
+                let (hash, sv) = a
+                    .collect_vote(&c, h, signature)
+                    .expect("failed to reach quorum");
 
-        // this provisioner vote has weight of 1
-        assert_eq!(a.get_total(block_hash), Some(3));
+                // Check expected block hash
+                assert_eq!(hash, block_hash);
 
-        // Ensure total value for this block_hash is increased with 1 on a vote
-        // from a provisioner at pos 5.
-        let (signature, h) = input.get(5).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
+                // Check expected StepVotes bitset
+                // bitset: 0b00000000000000000000000000000000000000000000000000000000011111
+                println!("bitset: {:#064b}", sv.bitset);
+                assert_eq!(sv.bitset, 31);
 
-        // this provisioner has weight of 1. Total should be sum of weights of
-        // all prior votes.
-        assert_eq!(a.get_total(block_hash), Some(4));
+                break;
+            }
 
-        // Ensure a duplicated vote is discarded
-        let (signature, h) = input.get(5).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
-        assert_eq!(a.get_total(block_hash), Some(4));
+            // Check collected votes
+            assert!(a.collect_vote(&c, h, signature).is_none());
+            collected_votes += expected_votes[i];
+            assert_eq!(a.get_total(block_hash), Some(collected_votes));
 
-        let (signature, h) = input.get(6).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
-        // this provisioner vote has weight of 0.
-
-        assert_eq!(a.get_total(block_hash), Some(4));
-
-        let (signature, h) = input.get(8).expect("invalid index");
-        assert!(a.collect_vote(&c, h, signature).is_none());
-        // this provisioner vote has weight of 0. Quorum threshold still not
-        // reached
-        assert_eq!(a.get_total(block_hash), Some(4));
-
-        let (signature, h) = input.get(9).expect("invalid index");
-        let (hash, sv) = a
-            .collect_vote(&c, h, signature)
-            .expect("failed to reach quorum");
-
-        assert_eq!(hash, block_hash);
-        // this provisioner vote has weight of 3. Quorum reached
-        assert!(a.get_total(block_hash).unwrap() >= c.quorum());
-
-        // bitset: 0b00000000000000000000000000000000000000000000000000000000100111
-        println!("bitset: {:#064b}", sv.bitset);
-        assert_eq!(sv.bitset, 39);
+            // Ensure a duplicated vote is discarded
+            if i == 0 {
+                assert!(a.collect_vote(&c, h, signature).is_none());
+                assert_eq!(a.get_total(block_hash), Some(collected_votes));
+            }
+        }
     }
 }

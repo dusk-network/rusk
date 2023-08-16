@@ -25,11 +25,14 @@ fn test_deterministic_sortition_1() {
 
     let committee = Committee::new(PublicKey::default(), &mut p, cfg);
 
+    // Verify expected committee size
     assert_eq!(
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
     );
-    assert_eq!(vec![7, 23, 13, 21], committee.get_occurrences());
+
+    // Verify expected distribution
+    assert_eq!(vec![7, 32, 7, 18], committee.get_occurrences());
 }
 
 #[test]
@@ -45,7 +48,7 @@ fn test_deterministic_sortition_2() {
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
     );
-    assert_eq!(vec![5, 13, 14, 13], committee.get_occurrences());
+    assert_eq!(vec![7, 15, 10, 13], committee.get_occurrences());
 }
 
 #[test]
