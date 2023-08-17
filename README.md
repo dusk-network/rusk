@@ -62,3 +62,19 @@ make wasm for=transfer
 ```
 
 See also `make help` for all the available commands
+
+## Docker support
+
+It's also possible to run a local ephemeral node with Docker.
+
+To build the Docker image:
+
+```sh
+docker build -t rusk .
+```
+
+To run Rusk inside a Docker container:
+
+```sh
+docker run -p 9000:9000/udp rusk
+```
