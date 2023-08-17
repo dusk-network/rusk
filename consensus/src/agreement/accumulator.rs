@@ -7,8 +7,7 @@
 use crate::agreement::verifiers;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
-use hex::ToHex;
-use node_data::ledger::{Hash, Seed};
+use node_data::ledger::{to_str, Hash, Seed};
 use node_data::message::{payload, Message, Payload};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -98,11 +97,6 @@ impl Accumulator {
                     while let Ok(msg) = rx.recv().await {
                         if rx.is_closed() {
                             break;
-                        }
-
-                        if msg.header.block_hash == [0; 32] {
-                            // discard empty block hash
-                            continue;
                         }
 
                         if let Err(e) = verifiers::verify_agreement(
@@ -207,11 +201,11 @@ impl Accumulator {
             if *agr_weight >= target_quorum {
                 info!(
                     event = "quorum reached",
-                    hash = hdr.block_hash.encode_hex::<String>(),
+                    hash = to_str(&hdr.block_hash),
                     msg_round = hdr.round,
                     msg_step = hdr.step,
                     target = target_quorum,
-                    aggr_count = agr_weight
+                    agr_weight = agr_weight
                 );
 
                 return Some(agr_set.clone());

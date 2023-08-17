@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::DeserializableSlice;
-use dusk_consensus::contract_state::CallParams;
+use dusk_consensus::contract_state::{CallParams, VerificationOutput};
 use dusk_consensus::user::provisioners::{Member, Provisioners};
 use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
@@ -19,11 +19,14 @@ impl VMExecution for Rusk {
         &self,
         params: CallParams,
         txs: I,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, Vec<Transaction>, [u8; 32])>
-    {
+    ) -> anyhow::Result<(
+        Vec<SpentTransaction>,
+        Vec<Transaction>,
+        VerificationOutput,
+    )> {
         info!("Received execute_state_transition request");
 
-        let (txs, discarded_txs, state_root) = self
+        let (txs, discarded_txs, verification_output) = self
             .execute_transactions(
                 params.round,
                 params.block_gas_limit,
@@ -34,17 +37,17 @@ impl VMExecution for Rusk {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
             })?;
 
-        Ok((txs, discarded_txs, state_root))
+        Ok((txs, discarded_txs, verification_output))
     }
 
     fn verify_state_transition(
         &self,
         params: &CallParams,
         txs: Vec<Transaction>,
-    ) -> anyhow::Result<[u8; 32]> {
+    ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
 
-        let (_, state_root) = self
+        let (_, verification_output) = self
             .verify_transactions(
                 params.round,
                 params.block_gas_limit,
@@ -53,36 +56,39 @@ impl VMExecution for Rusk {
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
-        Ok(state_root)
+        Ok(verification_output)
     }
 
     fn accept(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header.generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
-        let (txs, state_root) = self
+        let (txs, verification_output) = self
             .accept_transactions(
                 blk.header.height,
                 blk.header.gas_limit,
                 generator,
                 blk.txs.clone(),
-                Some(blk.header.state_hash),
+                Some(VerificationOutput {
+                    state_root: blk.header.state_hash,
+                    event_hash: blk.header.event_hash,
+                }),
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
-        Ok((txs, state_root))
+        Ok((txs, verification_output))
     }
 
     fn finalize(
         &self,
         blk: &Block,
-    ) -> anyhow::Result<(Vec<SpentTransaction>, [u8; 32])> {
+    ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received finalize request");
         let generator = blk.header.generator_bls_pubkey;
         let generator =
@@ -95,7 +101,10 @@ impl VMExecution for Rusk {
                 blk.header.gas_limit,
                 generator,
                 blk.txs.clone(),
-                Some(blk.header.state_hash),
+                Some(VerificationOutput {
+                    state_root: blk.header.state_hash,
+                    event_hash: blk.header.event_hash,
+                }),
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")

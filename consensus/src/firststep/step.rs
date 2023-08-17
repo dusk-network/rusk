@@ -32,6 +32,8 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     }
 
     pub fn initialize(&mut self, msg: &Message) {
+        self.handler.reset();
+
         if let Payload::NewBlock(p) = msg.clone().payload {
             self.handler.candidate = p.deref().candidate.clone();
         }

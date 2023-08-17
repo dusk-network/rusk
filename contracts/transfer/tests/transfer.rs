@@ -132,6 +132,22 @@ fn leaves_from_height(
         .collect())
 }
 
+fn leaves_from_pos(session: &mut Session, pos: u64) -> Result<Vec<TreeLeaf>> {
+    let (feeder, receiver) = mpsc::channel();
+
+    session.feeder_call::<_, ()>(
+        TRANSFER_CONTRACT,
+        "leaves_from_pos",
+        &pos,
+        feeder,
+    )?;
+
+    Ok(receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return leaves"))
+        .collect())
+}
+
 fn update_root(session: &mut Session) -> Result<()> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
@@ -249,6 +265,11 @@ fn transfer() {
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
 
+    let leaves = leaves_from_pos(session, 0)
+        .expect("Getting leaves in the given range should succeed");
+
+    assert_eq!(leaves.len(), 1, "There should be one note in the state");
+
     let input_note = leaves[0].note;
     let input_value = input_note
         .value(None)
@@ -342,6 +363,14 @@ fn transfer() {
     println!("EXECUTE_1_2 : {gas_spent} gas");
 
     let leaves = leaves_from_height(session, 1)
+        .expect("Getting the notes should succeed");
+    assert_eq!(
+        leaves.len(),
+        3,
+        "There should be three notes in the tree at this block height"
+    );
+
+    let leaves = leaves_from_height(session, input_note.pos() + 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),

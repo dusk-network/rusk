@@ -12,7 +12,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use node_data::bls::PublicKey;
-use node_data::ledger::{Block, Certificate};
+use node_data::ledger::{to_str, Block, Certificate};
 use node_data::message::{AsyncQueue, Header, Message, Payload, Status};
 
 use crate::agreement::aggr_agreement;
@@ -21,7 +21,7 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{error, info, Instrument};
+use tracing::{debug, error, Instrument};
 
 use super::accumulator;
 
@@ -60,7 +60,7 @@ impl Agreement {
 
         tokio::spawn(async move {
             let round = ru.round;
-            let pubkey = ru.pubkey_bls.encode_short_hex();
+            let pubkey = ru.pubkey_bls.to_bs58();
             // Run agreement life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound, db)
                 .run(future_msgs)
@@ -245,7 +245,7 @@ impl<D: Database> Executor<D> {
             )
             .await
             {
-                error!("failed to verify aggr agreement err: {:?}", e);
+                error!("failed to verify aggr agreement err: {}", e);
                 return None;
             }
 
@@ -288,21 +288,18 @@ impl<D: Database> Executor<D> {
         hash: &[u8; 32],
         cert: &Certificate,
     ) -> Option<Block> {
-        info!(
-            "winning block hash {}",
-            hex::ToHex::encode_hex::<String>(hash)
-        );
+        debug!(event = "create winning block", hash = to_str(hash));
 
         // Retrieve winning block from local storage
         match self.db.lock().await.get_candidate_block_by_hash(hash).await {
             Ok(mut block) => {
-                info!("winning block retrieved");
+                debug!("winning block retrieved");
                 block.header.cert = cert.clone();
                 Some(block)
             }
 
             Err(e) => {
-                error!("failed to retrieve winning block err: {:?}", e);
+                error!("failed to retrieve winning block err: {}", e);
                 None
             }
         }

@@ -35,6 +35,7 @@ pub struct Header {
     pub prev_block_hash: Hash,
     pub seed: Seed,
     pub state_hash: Hash,
+    pub event_hash: Hash,
     pub generator_bls_pubkey: bls::PublicKeyBytes,
     pub txroot: Hash,
     pub gas_limit: u64,
@@ -66,15 +67,13 @@ impl std::fmt::Debug for Header {
             .field("version", &self.version)
             .field("height", &self.height)
             .field("timestamp", &timestamp)
-            .field("prev_block_hash", &hex::encode(self.prev_block_hash))
-            .field("seed", &hex::encode(self.seed.inner()))
-            .field("state_hash", &hex::encode(self.state_hash))
-            .field(
-                "generator_bls_pubkey",
-                &hex::encode(self.generator_bls_pubkey.inner()),
-            )
+            .field("prev_block_hash", &to_str(&self.prev_block_hash))
+            .field("seed", &to_str(&self.seed.inner()))
+            .field("state_hash", &to_str(&self.state_hash))
+            .field("event_hash", &to_str(&self.event_hash))
+            .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
             .field("gas_limit", &self.gas_limit)
-            .field("hash", &hex::encode(self.hash))
+            .field("hash", &to_str(&self.hash))
             .field("cert", &self.cert)
             .finish()
     }
@@ -143,6 +142,7 @@ impl Header {
         }
 
         w.write_all(&self.state_hash[..])?;
+        w.write_all(&self.event_hash[..])?;
         w.write_all(&self.generator_bls_pubkey.inner()[..])?;
         w.write_all(&self.txroot[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
@@ -175,6 +175,9 @@ impl Header {
         let mut state_hash = [0u8; 32];
         r.read_exact(&mut state_hash[..])?;
 
+        let mut event_hash = [0u8; 32];
+        r.read_exact(&mut event_hash[..])?;
+
         let mut generator_bls_pubkey = [0u8; 96];
         r.read_exact(&mut generator_bls_pubkey[..])?;
 
@@ -199,6 +202,7 @@ impl Header {
             generator_bls_pubkey: bls::PublicKeyBytes(generator_bls_pubkey),
             iteration,
             state_hash,
+            event_hash,
             txroot,
             hash: [0; 32],
             cert: Default::default(),
@@ -249,6 +253,10 @@ impl StepVotes {
             signature: Signature(signature),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.bitset == 0 || self.signature.is_zeroed()
+    }
 }
 
 /// a wrapper of 48-sized array to facilitate Signature
@@ -267,7 +275,7 @@ impl Signature {
 impl std::fmt::Debug for Signature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Signature")
-            .field("signature", &hex::encode(self.0))
+            .field("signature", &to_str(&self.0))
             .finish()
     }
 }
@@ -309,6 +317,20 @@ impl PartialEq<Self> for SpentTransaction {
 }
 
 impl Eq for SpentTransaction {}
+
+/// Encode a byte array into a shortened HEX representation.
+pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
+    let e = hex::encode(bytes);
+    if e.len() != bytes.len() * 2 {
+        return String::from("invalid hex");
+    }
+
+    const OFFSET: usize = 16;
+    let (first, last) = e.split_at(OFFSET);
+    let (_, second) = last.split_at(e.len() - 2 * OFFSET);
+
+    first.to_owned() + "..." + second
+}
 
 #[cfg(any(feature = "faker", test))]
 pub mod faker {

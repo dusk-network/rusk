@@ -12,7 +12,7 @@ use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
+    CallParams, Error, Operations, Output, StateRoot, VerificationOutput,
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Hash, Transaction};
@@ -53,10 +53,13 @@ impl Task {
     pub(crate) fn new_with_keys(path: String) -> Self {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
             .expect("DUSK_CONSENSUS_KEYS_PASS not set");
-        tracing::info!("Loading consensus keys from {path}");
+        tracing::info!(event = "loading consensus keys", path = path);
         let keys = node_data::bls::load_keys(path, pwd);
 
-        tracing::info!("Loaded consensus keys: {:?}", keys.1);
+        tracing::info!(
+            event = "loaded consensus keys",
+            pubkey = format!("{:?}", keys.1)
+        );
 
         Self {
             agreement_inbound: AsyncQueue::default(),
@@ -86,7 +89,7 @@ impl Task {
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
-        let round_update = RoundUpdate {
+        let ru = RoundUpdate {
             round: most_recent_block.height + 1,
             seed: most_recent_block.seed,
             hash: most_recent_block.hash,
@@ -96,7 +99,17 @@ impl Task {
         };
 
         self.task_id += 1;
-        tracing::trace!("spawn consensus task: {}", self.task_id);
+
+        let (all_num, eligible_num) =
+            provisioners.get_provisioners_info(ru.round);
+
+        tracing::info!(
+            event = "spawn consensus",
+            id = self.task_id,
+            round = ru.round,
+            all = all_num,           // all provisioners count
+            eligible = eligible_num  // eligible provisioners count
+        );
 
         let id = self.task_id;
         let mut result_queue = self.result.clone();
@@ -106,7 +119,7 @@ impl Task {
         self.running_task = Some((
             tokio::spawn(async move {
                 result_queue
-                    .send(c.spin(round_update, provisioners, cancel_rx).await)
+                    .send(c.spin(ru, provisioners, cancel_rx).await)
                     .await;
 
                 tracing::trace!("terminate consensus task: {}", id);
@@ -240,7 +253,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         params: CallParams,
         txs: Vec<Transaction>,
-    ) -> Result<StateRoot, dusk_consensus::contract_state::Error> {
+    ) -> Result<VerificationOutput, dusk_consensus::contract_state::Error> {
         tracing::info!("verifying state");
 
         let vm = self.vm.read().await;
@@ -259,7 +272,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
-        let (executed_txs, discarded_txs, state_root) = db
+        let (executed_txs, discarded_txs, verification_output) = db
             .view(|view| {
                 let txs = view.get_txs_sorted_by_fee().map_err(|err| {
                     anyhow::anyhow!("failed to get mempool txs: {}", err)
@@ -276,7 +289,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
         Ok(Output {
             txs: executed_txs,
-            state_root,
+            verification_output,
             discarded_txs,
             provisioners: Provisioners::default(),
         })

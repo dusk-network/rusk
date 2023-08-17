@@ -48,6 +48,10 @@ impl Member {
         }
     }
 
+    pub fn is_eligible(&self, round: u64) -> bool {
+        self.stakes.iter().any(|(s, _)| s.eligible_since <= round)
+    }
+
     pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
         for (stake, _) in self.stakes.iter_mut() {
             let stake_val = stake.intermediate_value;
@@ -120,6 +124,18 @@ impl Provisioners {
         self.members
             .values_mut()
             .for_each(|m| m.update_eligibility_flag(round));
+    }
+
+    // Returns a pair of count of all provisioners and count of eligible
+    // provisioners for the specified round.
+    pub fn get_provisioners_info(&self, round: u64) -> (usize, usize) {
+        let eligible_len = self
+            .members
+            .iter()
+            .filter(|(_, m)| m.is_eligible(round))
+            .count();
+
+        (self.members.len(), eligible_len)
     }
 
     /// Returns a member of Provisioner list by public key.

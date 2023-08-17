@@ -19,7 +19,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
 use hex::ToHex;
 use node_data::ledger::{
-    self, Block, Hash, Header, Signature, SpentTransaction,
+    self, to_str, Block, Hash, Header, Signature, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -194,12 +194,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, state_hash) = match blk.header.iteration {
+                let (txs, verification_output) = match blk.header.iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
 
-                assert_eq!(blk.header.state_hash, state_hash);
+                assert_eq!(
+                    blk.header.state_hash,
+                    verification_output.state_root
+                );
+                assert_eq!(
+                    blk.header.event_hash,
+                    verification_output.event_hash
+                );
 
                 // Store block with updated transactions with Error and GasSpent
                 t.store_block(&blk.header, &txs)?;
@@ -230,12 +237,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         })?;
 
         tracing::info!(
-            "block accepted height/iter:{}/{} hash:{} txs_count: {} state_hash:{}",
-            blk.header.height,
-            blk.header.iteration,
-            hex::encode(blk.header.hash),
-            blk.txs.len(),
-            hex::encode(blk.header.state_hash)
+            event = "block accepted",
+            height = blk.header.height,
+            iter = blk.header.iteration,
+            hash = to_str(&blk.header.hash),
+            txs = blk.txs.len(),
+            state_hash = to_str(&blk.header.state_hash)
         );
 
         // Restart Consensus.
@@ -261,12 +268,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
-                info!("Revert VM to last finalized state");
+                info!(event = "vm_revert to last finalized state");
                 let state_hash = self.vm.read().await.revert()?;
 
                 info!(
-                    "VM revert completed finalized_state_hash:{}",
-                    hex::encode(state_hash)
+                    event = "vm reverted",
+                    state_root = hex::encode(state_hash)
                 );
 
                 anyhow::Ok(state_hash)
@@ -292,10 +299,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 }
 
                 info!(
-                    "Delete block height: {} iter: {} hash: {}",
-                    blk.header.height,
-                    blk.header.iteration,
-                    hex::encode(blk.header.hash)
+                    event = "deleted block height",
+                    height = blk.header.height,
+                    iter = blk.header.iteration,
+                    hash = hex::encode(blk.header.hash)
                 );
 
                 // Delete any rocksdb record related to this block
@@ -321,10 +328,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Update blockchain tip to be the one we reverted to.
         info!(
-            "Blockchain tip height: {} iter: {} state_hash: {}",
-            most_recent_block.header.height,
-            most_recent_block.header.iteration,
-            hex::encode(most_recent_block.header.state_hash)
+            event = "updating blockchain tip",
+            height = most_recent_block.header.height,
+            iter = most_recent_block.header.iteration,
+            state_root = hex::encode(most_recent_block.header.state_hash)
         );
 
         self.update_most_recent_block(&most_recent_block).await

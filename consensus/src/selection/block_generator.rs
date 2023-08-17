@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use crate::contract_state::CallParams;
-use node_data::ledger::{Block, Certificate, Seed};
+use node_data::ledger::{to_str, Block, Certificate, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
@@ -64,6 +64,13 @@ impl<T: Operations> Generator<T> {
         let signed_hash =
             msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
+        tracing::info!(
+            event = "gen_candidate",
+            hash = &to_str(&candidate.header.hash),
+        );
+
+        tracing::debug!("block: {:#?}", &candidate);
+
         Ok(Message::new_newblock(
             msg_header,
             NewBlock {
@@ -113,7 +120,8 @@ impl<T: Operations> Generator<T> {
             generator_bls_pubkey: node_data::bls::PublicKeyBytes(
                 *pubkey.bytes(),
             ),
-            state_hash: result.state_root,
+            state_hash: result.verification_output.state_root,
+            event_hash: result.verification_output.event_hash,
             hash: [0; 32],
             cert: Certificate::default(),
             txroot,
