@@ -70,7 +70,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // work in the `log` crate.
     match config.log_type().as_str() {
         "json" => {
-            let subscriber = subscriber.json().flatten_event(true).finish();
+            let subscriber = subscriber
+                .json()
+                .with_current_span(false)
+                .flatten_event(true)
+                .finish();
+
             tracing::subscriber::set_global_default(subscriber)?;
         }
         "plain" => {
