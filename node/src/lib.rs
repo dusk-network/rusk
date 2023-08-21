@@ -180,11 +180,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
             let name = s.name();
             info!("starting service {}", name);
 
-            set.spawn(async move {
-                s.execute(n, d, vm)
-                    .instrument(tracing::info_span!("srv", name))
-                    .await
-            });
+            set.spawn(async move { s.execute(n, d, vm).await });
         }
 
         // Wait for all spawned services to terminate with a result code or
