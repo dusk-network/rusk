@@ -377,6 +377,10 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         return Err(anyhow!("unsupported block version"));
     }
 
+    if blk_header.hash == [0u8; 32] {
+        return Err(anyhow!("empty block hash"));
+    }
+
     if blk_header.height != curr_header.height + 1 {
         return Err(anyhow!(
             "invalid block height block_height: {:?}, curr_height: {:?}",
