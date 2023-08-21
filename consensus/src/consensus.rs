@@ -254,7 +254,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 event = "send agreement",
                 hash = to_str(&msg.header.block_hash),
                 round = msg.header.round,
-                step = msg.header.round,
+                step = msg.header.step,
                 first = format!("{:#?}", payload.first_step),
                 second = format!("{:#?}", payload.second_step),
                 signature = to_str(&payload.signature),
