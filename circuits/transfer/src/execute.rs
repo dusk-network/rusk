@@ -187,25 +187,6 @@ impl<const I: usize, T, const H: usize, const A: usize>
         Err(Error::CircuitMaximumInputs)
     }
 
-    // pub fn into_inner(
-    //     &self,
-    // ) -> (
-    //     [Option<CircuitInput<T, H, A>>; I],
-    //     CircuitCrossover,
-    //     [Option<CircuitOutput>; OUTPUTS],
-    //     BlsScalar,
-    // )
-    // where
-    //     T: Clone,
-    // {
-    //     let inputs = self.inputs.clone();
-    //     let crossover = self.crossover.clone();
-    //     let outputs = self.outputs.clone();
-    //     let tx_hash = self.tx_hash;
-
-    //     (inputs, crossover, outputs, tx_hash)
-    // }
-
     pub const fn tx_hash(&self) -> &BlsScalar {
         &self.tx_hash
     }

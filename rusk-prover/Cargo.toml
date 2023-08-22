@@ -11,7 +11,7 @@ dusk-bytes = { version = "0.1" }
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }
 dusk-plonk = { version = "0.14", optional = true }
-dusk-wallet-core = { version = "0.20.0-piecrust.0.6", optional = true, default-features = false }
+dusk-wallet-core = { version = "0.20.0-piecrust.0.6", default-features = false }
 phoenix-core = { version = "0.20.0-rc.0", optional = true }
 dusk-pki = { version = "0.12", optional = true }
 dusk-schnorr = { version = "0.13", optional = true }
@@ -28,7 +28,6 @@ default = ["local_prover"]
 local_prover = [
     "once_cell",
     "dusk-plonk",
-    "dusk-wallet-core",
     "phoenix-core",
     "dusk-pki",
     "dusk-schnorr",
