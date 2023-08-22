@@ -21,6 +21,7 @@ type DataBrokerConfig = node::databroker::conf::Params;
 pub(crate) struct Config {
     log_level: Option<String>,
     log_type: Option<String>,
+    log_filter: Option<String>,
 
     pub(crate) databroker: DataBrokerConfig,
 
@@ -56,6 +57,11 @@ impl From<&ArgMatches> for Config {
             rusk_config.log_type = Some(log_type.into());
         }
 
+        // Overwrite config log-filter
+        if let Some(log_filter) = matches.value_of("log-filter") {
+            rusk_config.log_filter = Some(log_filter.into());
+        }
+
         rusk_config.kadcast.merge(matches);
         rusk_config.chain.merge(matches);
         rusk_config.http.merge(matches);
@@ -89,6 +95,13 @@ impl Config {
                     .help("Change the log format accordingly")
                     .takes_value(true),
             )
+            .arg(
+                Arg::new("log-filter")
+                    .long("log-filter")
+                    .value_name("LOG_FILTER")
+                    .help("Add log filter(s)")
+                    .takes_value(true),
+            )
     }
 
     pub(crate) fn log_type(&self) -> String {
@@ -106,6 +119,13 @@ impl Config {
         tracing::Level::from_str(log_level).unwrap_or_else(|e| {
             panic!("Invalid log-level specified '{log_level}' - {e}")
         })
+    }
+
+    pub(crate) fn log_filter(&self) -> String {
+        match &self.log_filter {
+            None => "".to_owned(),
+            Some(log_filter) => log_filter.into(),
+        }
     }
 
     pub(crate) fn databroker(&self) -> &node::databroker::conf::Params {

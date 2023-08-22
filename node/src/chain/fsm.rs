@@ -18,7 +18,7 @@ use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
@@ -182,7 +182,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 Err(e) => {
                     // Fallback execution has failed. The block is ignored and
                     // Node remains in InSync state.
-                    tracing::error!("{}", e);
+                    error!("{}", e);
                     return Ok(false);
                 }
                 Ok(_) => {

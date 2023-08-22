@@ -19,12 +19,15 @@ use rusk::{Result, Rusk};
 use rustc_tools_util::get_version_info;
 use version::show_version;
 
+use tracing_subscriber::filter::EnvFilter;
+
 use node::chain::ChainSrv;
 use node::databroker::DataBrokerSrv;
 use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
 use rusk::http::HttpServer;
+use tracing::info;
 
 use crate::config::Config;
 
@@ -55,10 +58,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::from(&args);
 
     let log = config.log_level();
+    let log_filter = config.log_filter();
 
-    // Generate a subscriber with the desired log level.
-    let subscriber =
-        tracing_subscriber::fmt::Subscriber::builder().with_max_level(log);
+    // Generate a subscriber with the desired default log level and optional log
+    // filter.
+    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
+        .with_env_filter(EnvFilter::new(log_filter).add_directive(log.into()));
 
     // Set the subscriber as global.
     // so this subscriber will be used as the default in all threads for the
@@ -66,7 +71,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // work in the `log` crate.
     match config.log_type().as_str() {
         "json" => {
-            let subscriber = subscriber.json().flatten_event(true).finish();
+            let subscriber = subscriber
+                .json()
+                .with_current_span(false)
+                .flatten_event(true)
+                .finish();
+
             tracing::subscriber::set_global_default(subscriber)?;
         }
         "plain" => {
@@ -85,10 +95,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
     let state_dir = rusk_profile::get_rusk_state_dir()?;
-    tracing::info!("Using state from {state_dir:?}");
+    info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
 
-    tracing::info!("Rusk VM loaded");
+    info!("Rusk VM loaded");
 
     // Set up a node where:
     // transport layer is Kadcast with message ids from 0 to 255

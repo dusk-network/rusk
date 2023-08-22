@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
-use node_data::ledger::Block;
+use node_data::ledger::{to_str, Block};
 use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::agreement::step;
@@ -190,10 +190,11 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 // Execute a single iteration
                 for phase in phases.iter_mut() {
                     step += 1;
+                    let name = phase.name();
 
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.initialize(&msg, ru.round, step);
+                    phase.reinitialize(&msg, ru.round, step);
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
@@ -217,6 +218,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                             "main",
                             round = ru.round,
                             step = step,
+                            name,
                             pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;
@@ -234,6 +236,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         })
     }
 
+    /// Sends an agreement (internally) to the agreement loop.
     async fn send_agreement(
         agr_inbound_queue: &mut AsyncQueue<Message>,
         msg: Message,
@@ -246,6 +249,16 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             {
                 return;
             }
+
+            tracing::debug!(
+                event = "send agreement",
+                hash = to_str(&msg.header.block_hash),
+                round = msg.header.round,
+                step = msg.header.step,
+                first = format!("{:#?}", payload.first_step),
+                second = format!("{:#?}", payload.second_step),
+                signature = to_str(&payload.signature),
+            );
 
             let _ = agr_inbound_queue
                 .send(msg.clone())

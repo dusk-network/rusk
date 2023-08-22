@@ -22,6 +22,7 @@ use node_data::message::Message;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::error;
 
 #[derive(Clone, Default, Debug)]
 #[allow(unused)]
@@ -93,20 +94,16 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     executor: Arc<Mutex<T>>,
 ) {
     tokio::spawn(async move {
-        if candidate == Block::default() {
-            return;
-        }
-
         let hash = candidate.header.hash;
         let already_verified = vc_list.lock().await.contains(&hash);
 
-        if !already_verified {
+        if !already_verified && hash != [0u8; 32] {
             let pubkey = &candidate.header.generator_bls_pubkey.0;
             let generator =
                 match dusk_bls12_381_sign::PublicKey::from_slice(pubkey) {
                     Ok(pubkey) => pubkey,
                     Err(e) => {
-                        tracing::error!(
+                        error!(
                         "unable to decode generator BLS Pubkey {}, err: {:?}",
                         hex::encode(pubkey),
                         e,
@@ -135,10 +132,13 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                     if verification_output.event_hash
                         != candidate.header.event_hash
                     {
-                        tracing::error!(
-                            "VST failed with invalid event_hash: {}, candidate_event_hash: {}",
-                            hex::encode(verification_output.event_hash),
-                            hex::encode(candidate.header.event_hash),
+                        error!(
+                            desc = "event hash mismatch",
+                            event_hash =
+                                hex::encode(verification_output.event_hash),
+                            hash = hex::encode(candidate.header.event_hash),
+                            round = ru.round,
+                            step,
                         );
                         return;
                     }
@@ -146,16 +146,20 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                     if verification_output.state_root
                         != candidate.header.state_hash
                     {
-                        tracing::error!(
-                            "VST failed with invalid state_hash: {}, candidate_state_hash: {}",
-                            hex::encode(verification_output.state_root),
-                            hex::encode(candidate.header.state_hash),
+                        error!(
+                            desc = "state hash mismatch",
+                            vst_state_hash =
+                                hex::encode(verification_output.state_root),
+                            state_hash =
+                                hex::encode(candidate.header.state_hash),
+                            round = ru.round,
+                            step,
                         );
                         return;
                     }
                 }
                 Err(e) => {
-                    tracing::error!("VST failed with err: {:?}", e);
+                    error!("VST failed with err: {:?}", e);
                     return;
                 }
             };
@@ -181,12 +185,12 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
 
         //   publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-            tracing::error!("unable to publish reduction msg {:?}", err)
+            error!("unable to publish reduction msg {:?}", err)
         });
 
         // Register my vote locally
         inbound.send(msg).await.unwrap_or_else(|err| {
-            tracing::error!("unable to register reduction msg {:?}", err)
+            error!("unable to register reduction msg {:?}", err)
         });
     });
 }

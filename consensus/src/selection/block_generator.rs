@@ -20,6 +20,7 @@ use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
+use tracing::{debug, info};
 
 pub struct Generator<T: Operations> {
     executor: Arc<Mutex<T>>,
@@ -64,12 +65,13 @@ impl<T: Operations> Generator<T> {
         let signed_hash =
             msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        tracing::info!(
+        info!(
             event = "gen_candidate",
             hash = &to_str(&candidate.header.hash),
+            state_hash = &to_str(&candidate.header.state_hash),
         );
 
-        tracing::debug!("block: {:#?}", &candidate);
+        debug!("block: {:?}", &candidate);
 
         Ok(Message::new_newblock(
             msg_header,

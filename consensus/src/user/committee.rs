@@ -11,6 +11,7 @@ use super::cluster::Cluster;
 use crate::config;
 use node_data::bls::PublicKey;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt;
 use std::mem;
 
 #[allow(unused)]
@@ -134,6 +135,16 @@ impl Committee {
         }
 
         total
+    }
+}
+
+impl fmt::Display for &Committee {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (pos, (member_pk, weight)) in self.members.iter().enumerate() {
+            write!(f, " [{}]=pk:{} w:{},", pos, member_pk.to_bs58(), weight)?;
+        }
+
+        Ok(())
     }
 }
 

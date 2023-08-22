@@ -7,9 +7,10 @@
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::user::committee::Committee;
 use async_trait::async_trait;
-use hex::ToHex;
-use node_data::message::{Message, MessageTrait, Status};
+use node_data::ledger::to_str;
+use node_data::message::{Message, MessageTrait, Status, Topics};
 use std::fmt::Debug;
+use tracing::{debug, trace};
 
 pub enum HandleMsgOutput {
     Result(Message),
@@ -32,12 +33,15 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         step: u8,
         committee: &Committee,
     ) -> Result<T, ConsensusError> {
-        tracing::debug!(
+        debug!(
             event = "msg received",
             from = msg.get_pubkey_bls().to_bs58(),
-            hash = msg.get_block_hash().encode_hex::<String>(),
-            msg = format!("{:#?}", msg),
+            hash = to_str(&msg.get_block_hash()),
+            topic = format!("{:?}", Topics::from(msg.get_topic())),
+            step = msg.get_step(),
         );
+
+        trace!(event = "msg received", msg = format!("{:#?}", msg),);
 
         match msg.compare(ru.round, step) {
             Status::Past => Err(ConsensusError::PastEvent),

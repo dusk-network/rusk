@@ -13,7 +13,7 @@ use crate::user::committee::Committee;
 
 use crate::{firststep, secondstep, selection};
 
-use tracing::debug;
+use tracing::{debug, trace};
 
 macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
@@ -46,16 +46,10 @@ pub enum Phase<T: Operations, D: Database> {
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
-    pub fn initialize(&mut self, msg: &Message, round: u64, step: u8) {
-        debug!(
-            "event: init_step:{} round:{} step:{} msg: {:#?}",
-            self.name(),
-            round,
-            step,
-            msg,
-        );
+    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+        trace!(event = "init step", msg = format!("{:#?}", msg),);
 
-        call_phase!(self, initialize(msg))
+        call_phase!(self, reinitialize(msg, round, step))
     }
 
     pub async fn run(
@@ -77,10 +71,15 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
             ctx.get_sortition_config(size),
         );
 
+        debug!(
+            event = "committee_generated",
+            members = format!("{}", &step_committee)
+        );
+
         await_phase!(self, run(ctx, step_committee))
     }
 
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         call_phase!(self, name())
     }
 

@@ -10,10 +10,12 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
 use crate::user::committee::Committee;
+use node_data::ledger::to_str;
 use node_data::message::{Message, Payload};
 use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::debug;
 
 #[allow(unused)]
 pub struct Reduction<T, DB: Database> {
@@ -31,12 +33,21 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         }
     }
 
-    pub fn initialize(&mut self, msg: &Message) {
+    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         self.handler.reset();
 
         if let Payload::NewBlock(p) = msg.clone().payload {
             self.handler.candidate = p.deref().candidate.clone();
         }
+
+        debug!(
+            event = "init",
+            name = self.name(),
+            round = round,
+            step = step,
+            timeout = self.timeout_millis,
+            hash = to_str(&self.handler.candidate.header.hash),
+        )
     }
 
     pub async fn run(
@@ -70,7 +81,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     }
 
     pub fn name(&self) -> &'static str {
-        "1th_reduction"
+        "1st_red"
     }
     pub fn get_timeout(&self) -> u64 {
         self.timeout_millis
