@@ -23,7 +23,7 @@ use std::sync::Arc;
 use tokio::select;
 use tokio::sync::{mpsc, Mutex};
 use tokio::task::JoinHandle;
-use tracing::{debug, error, Instrument};
+use tracing::{debug, error, trace, Instrument};
 
 use super::accumulator;
 
@@ -179,7 +179,7 @@ impl<D: Database> Executor<D> {
         }
 
         let hdr = &msg.header;
-        tracing::debug!(
+        debug!(
             event = "msg received",
             from = hdr.pubkey_bls.to_bs58(),
             hash = to_str(&hdr.block_hash),
@@ -231,7 +231,7 @@ impl<D: Database> Executor<D> {
             )
             .await;
 
-            tracing::trace!("broadcast aggr_agreement {:#?}", msg);
+            trace!("broadcast aggr_agreement {:#?}", msg);
             // Broadcast AggrAgreement message
             self.publish(msg).await;
         }

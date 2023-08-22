@@ -23,7 +23,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
@@ -115,7 +115,7 @@ impl<'a> ExecutionCtx<'a> {
                 // Timeout event. Phase could not reach its final goal.
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
-                    tracing::info!(event = "timeout-ed");
+                    info!(event = "timeout-ed");
                     Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase);

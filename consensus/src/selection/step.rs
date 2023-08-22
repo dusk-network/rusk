@@ -16,7 +16,7 @@ use crate::config;
 use crate::selection::block_generator::Generator;
 use crate::selection::handler;
 use crate::user::committee::Committee;
-use tracing::error;
+use tracing::{debug, error};
 
 pub struct Selection<T, D: Database>
 where
@@ -41,7 +41,7 @@ impl<T: Operations, D: Database> Selection<T, D> {
         // timeout settings
         self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
 
-        tracing::debug!(
+        debug!(
             event = "init",
             name = self.name(),
             round = round,

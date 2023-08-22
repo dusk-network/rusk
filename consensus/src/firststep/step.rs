@@ -15,6 +15,7 @@ use node_data::message::{Message, Payload};
 use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::debug;
 
 #[allow(unused)]
 pub struct Reduction<T, DB: Database> {
@@ -39,7 +40,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
             self.handler.candidate = p.deref().candidate.clone();
         }
 
-        tracing::debug!(
+        debug!(
             event = "init",
             name = self.name(),
             round = round,
