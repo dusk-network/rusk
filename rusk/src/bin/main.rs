@@ -27,7 +27,7 @@ use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
 use rusk::http::HttpServer;
-use tracing::{debug, info, trace};
+use tracing::info;
 
 use crate::config::Config;
 

@@ -11,7 +11,7 @@ use std::fs::File;
 use std::io::{Read, Result};
 use std::path::PathBuf;
 use tempfile::TempDir;
-use tracing::{debug, info, trace};
+use tracing::error;
 
 pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
     command.arg(
