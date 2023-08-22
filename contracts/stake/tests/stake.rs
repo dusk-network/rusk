@@ -21,7 +21,7 @@ use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{ContractData, Error, Session, VM};
 use rusk_abi::{ContractId, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use transfer_circuits::{
-    CircuitInput, CircuitInputSignature, ExecuteCircuit, ExecuteCircuitOneTwo,
+    CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
     SendToContractTransparentCircuit, WithdrawFromTransparentCircuit,
 };
@@ -302,7 +302,7 @@ fn stake_withdraw_unstake() {
     ));
 
     // Compose the circuit. In this case we're using one input and one output.
-    let mut execute_circuit = ExecuteCircuit::new(1);
+    let mut execute_circuit = ExecuteCircuitOneTwo::new();
 
     execute_circuit.set_fee_crossover(
         &fee,
@@ -311,11 +311,9 @@ fn stake_withdraw_unstake() {
         crossover_blinder,
     );
 
-    execute_circuit.add_output_with_data(
-        change_note,
-        change_value,
-        change_blinder,
-    );
+    execute_circuit
+        .add_output_with_data(change_note, change_value, change_blinder)
+        .expect("appending output should succeed");
 
     let input_opening = opening(&mut session, *input_note.pos())
         .expect("Querying the opening for the given position should succeed")
@@ -353,12 +351,13 @@ fn stake_withdraw_unstake() {
         circuit_input_signature,
     );
 
-    execute_circuit.add_input(circuit_input);
+    execute_circuit
+        .add_input(circuit_input)
+        .expect("appending input should succeed");
 
-    let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
-    let (execute_proof, _) = execute_circuit
-        .prove(rng, &prover_key)
+    let (prover_key, _) = prover_verifier(ExecuteCircuitOneTwo::circuit_id());
+    let (execute_proof, _) = prover_key
+        .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
 
     let tx = Transaction {
@@ -497,15 +496,13 @@ fn stake_withdraw_unstake() {
     ));
 
     // Compose the circuit. In this case we're using two inputs and one output.
-    let mut execute_circuit = ExecuteCircuit::new(2);
+    let mut execute_circuit = ExecuteCircuitTwoTwo::new();
 
     execute_circuit.set_fee(&fee);
 
-    execute_circuit.add_output_with_data(
-        change_note,
-        change_value,
-        change_blinder,
-    );
+    execute_circuit
+        .add_output_with_data(change_note, change_value, change_blinder)
+        .expect("appending output should succeed");
 
     let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
@@ -560,13 +557,16 @@ fn stake_withdraw_unstake() {
         circuit_input_signature_1,
     );
 
-    execute_circuit.add_input(circuit_input_0);
-    execute_circuit.add_input(circuit_input_1);
+    execute_circuit
+        .add_input(circuit_input_0)
+        .expect("appending input should succeed");
+    execute_circuit
+        .add_input(circuit_input_1)
+        .expect("appending input should succeed");
 
-    let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitTwoTwo::<(), H, A>::circuit_id());
-    let (execute_proof, _) = execute_circuit
-        .prove(rng, &prover_key)
+    let (prover_key, _) = prover_verifier(ExecuteCircuitTwoTwo::circuit_id());
+    let (execute_proof, _) = prover_key
+        .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
 
     let tx = Transaction {
@@ -695,15 +695,13 @@ fn stake_withdraw_unstake() {
 
     // Compose the circuit. In this case we're using three inputs and one
     // output.
-    let mut execute_circuit = ExecuteCircuit::new(3);
+    let mut execute_circuit = ExecuteCircuitThreeTwo::new();
 
     execute_circuit.set_fee(&fee);
 
-    execute_circuit.add_output_with_data(
-        change_note,
-        change_value,
-        change_blinder,
-    );
+    execute_circuit
+        .add_output_with_data(change_note, change_value, change_blinder)
+        .expect("appending output should succeed");
 
     let input_opening_0 = opening(&mut session, *input_notes[0].pos())
         .expect("Querying the opening for the given position should succeed")
@@ -778,14 +776,19 @@ fn stake_withdraw_unstake() {
         circuit_input_signature_2,
     );
 
-    execute_circuit.add_input(circuit_input_0);
-    execute_circuit.add_input(circuit_input_1);
-    execute_circuit.add_input(circuit_input_2);
+    execute_circuit
+        .add_input(circuit_input_0)
+        .expect("appending input should succeed");
+    execute_circuit
+        .add_input(circuit_input_1)
+        .expect("appending input should succeed");
+    execute_circuit
+        .add_input(circuit_input_2)
+        .expect("appending input should succeed");
 
-    let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitThreeTwo::<(), H, A>::circuit_id());
-    let (execute_proof, _) = execute_circuit
-        .prove(rng, &prover_key)
+    let (prover_key, _) = prover_verifier(ExecuteCircuitThreeTwo::circuit_id());
+    let (execute_proof, _) = prover_key
+        .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
 
     let tx = Transaction {
@@ -894,7 +897,7 @@ fn allow() {
     ));
 
     // Compose the circuit. In this case we're using one input and one output.
-    let mut execute_circuit = ExecuteCircuit::new(1);
+    let mut execute_circuit = ExecuteCircuitOneTwo::new();
 
     execute_circuit.set_fee_crossover(
         &fee,
@@ -903,11 +906,9 @@ fn allow() {
         crossover_blinder,
     );
 
-    execute_circuit.add_output_with_data(
-        change_note,
-        change_value,
-        change_blinder,
-    );
+    execute_circuit
+        .add_output_with_data(change_note, change_value, change_blinder)
+        .expect("appending output should succeed");
 
     let input_opening = opening(session, *input_note.pos())
         .expect("Querying the opening for the given position should succeed")
@@ -945,12 +946,13 @@ fn allow() {
         circuit_input_signature,
     );
 
-    execute_circuit.add_input(circuit_input);
+    execute_circuit
+        .add_input(circuit_input)
+        .expect("appending input should succeed");
 
-    let (prover_key, _) =
-        prover_verifier_keys(ExecuteCircuitOneTwo::<(), H, A>::circuit_id());
-    let (execute_proof, _) = execute_circuit
-        .prove(rng, &prover_key)
+    let (prover_key, _) = prover_verifier(ExecuteCircuitOneTwo::circuit_id());
+    let (execute_proof, _) = prover_key
+        .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
 
     let tx = Transaction {
