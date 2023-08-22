@@ -24,6 +24,3 @@ pub use withdraw_from_obfuscated::{
     WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
 };
 pub use withdraw_from_transparent::WithdrawFromTransparentCircuit;
-
-#[cfg(feature = "builder")]
-pub use execute::builder;
