@@ -20,7 +20,7 @@ use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 
 pub struct Generator<T: Operations> {
     executor: Arc<Mutex<T>>,
