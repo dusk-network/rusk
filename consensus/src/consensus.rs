@@ -19,6 +19,7 @@ use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
 use std::collections::HashSet;
+
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -132,7 +133,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // This could be triggered by Synchronizer or on node termination.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
-                tracing::trace!("consensus canceled");
+                tracing::debug!("consensus canceled");
             }
         }
 
@@ -140,9 +141,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         // Delete all candidates
         self.db.lock().await.delete_candidate_blocks();
 
-        // Cancel all tasks
-        agreement_task_handle.abort();
-        main_task_handle.abort();
+        // Abort all tasks
+        abort(&mut agreement_task_handle).await;
+        abort(&mut main_task_handle).await;
 
         result
     }
@@ -266,4 +267,15 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 .map_err(|e| error!("send agreement failed with {:?}", e));
         }
     }
+}
+
+#[inline]
+async fn abort<T>(h: &mut JoinHandle<T>) {
+    if h.is_finished() {
+        return;
+    }
+
+    h.abort();
+
+    let _ = h.await;
 }
