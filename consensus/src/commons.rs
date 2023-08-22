@@ -132,9 +132,12 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                         != candidate.header.event_hash
                     {
                         tracing::error!(
-                            "VST failed with invalid event_hash: {}, candidate_event_hash: {}",
-                            hex::encode(verification_output.event_hash),
-                            hex::encode(candidate.header.event_hash),
+                            desc = "event hash mismatch",
+                            event_hash =
+                                hex::encode(verification_output.event_hash),
+                            hash = hex::encode(candidate.header.event_hash),
+                            round = ru.round,
+                            step,
                         );
                         return;
                     }
@@ -143,9 +146,13 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                         != candidate.header.state_hash
                     {
                         tracing::error!(
-                            "VST failed with invalid state_hash: {}, candidate_state_hash: {}",
-                            hex::encode(verification_output.state_root),
-                            hex::encode(candidate.header.state_hash),
+                            desc = "state hash mismatch",
+                            vst_state_hash =
+                                hex::encode(verification_output.state_root),
+                            state_hash =
+                                hex::encode(candidate.header.state_hash),
+                            round = ru.round,
+                            step,
                         );
                         return;
                     }
