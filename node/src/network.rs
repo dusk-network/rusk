@@ -18,6 +18,7 @@ use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
+use tracing::{debug, error, info, trace};
 
 mod frame;
 
@@ -70,18 +71,18 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
 
                 // Allow upper layers to fast-discard a message before queueing
                 if let Err(e) = self.call_filters(msg.topic(), &msg) {
-                    tracing::info!("discard message due to {:?}", e);
+                    info!("discard message due to {:?}", e);
                     return;
                 }
 
                 // Reroute message to the upper layer
                 if let Err(e) = self.reroute(msg.topic().into(), msg) {
-                    tracing::error!("could not reroute due to {:?}", e);
+                    error!("could not reroute due to {:?}", e);
                 }
             }
             Err(err) => {
                 // Dump message blob and topic number
-                tracing::error!(
+                error!(
                     "err: {:?}, msg_topic: {:?}",
                     err,
                     blob.get(node_data::message::TOPIC_FIELD_POS),
@@ -155,11 +156,11 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         };
 
         let encoded = frame::Pdu::encode(msg, 0).map_err(|err| {
-            tracing::error!("could not encode message {:?}: {}", msg, err);
+            error!("could not encode message {:?}: {}", msg, err);
             anyhow::anyhow!("failed to broadcast: {}", err)
         })?;
 
-        tracing::trace!("broadcasting msg ({:?})", msg.header.topic);
+        trace!("broadcasting msg ({:?})", msg.header.topic);
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())
@@ -177,10 +178,9 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         )
         .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {}", err))?;
 
-        tracing::info!(
+        info!(
             "sending msg ({:?}) to peer {:?}",
-            msg.header.topic,
-            recv_addr
+            msg.header.topic, recv_addr
         );
 
         self.peer.send(&encoded, recv_addr).await;
@@ -198,7 +198,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             .map_err(|err| anyhow::anyhow!("failed to encode: {}", err))?;
 
         for recv_addr in self.peer.alive_nodes(amount).await {
-            tracing::trace!(
+            trace!(
                 "sending msg ({:?}) to peer {:?}",
                 msg.header.topic,
                 recv_addr

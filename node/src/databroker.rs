@@ -30,6 +30,7 @@ use node_data::message::{payload, AsyncQueue, Metadata};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock, Semaphore};
 use tokio::task::JoinHandle;
+use tracing::{debug, info, trace, warn};
 
 use std::any;
 
@@ -90,7 +91,7 @@ pub struct DataBrokerSrv {
 
 impl DataBrokerSrv {
     pub fn new(conf: &conf::Params) -> Self {
-        tracing::info!("DataBrokerSrv::new with conf: {}", conf);
+        info!("DataBrokerSrv::new with conf: {}", conf);
 
         Self {
             conf: conf.clone(),
@@ -125,7 +126,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         )
         .await?;
 
-        tracing::info!("data_broker service started");
+        info!("data_broker service started");
 
         loop {
             /// Wait until we can process a new request. We limit the number of
@@ -163,7 +164,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         }
                     }
                     Err(e) => {
-                        tracing::warn!("error on handling msg: {}", e);
+                        warn!("error on handling msg: {}", e);
                     }
                 };
 

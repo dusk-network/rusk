@@ -29,7 +29,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use std::any;
 
@@ -236,7 +236,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
-        tracing::info!(
+        info!(
             event = "block accepted",
             height = blk.header.height,
             iter = blk.header.iteration,
@@ -312,7 +312,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // An error here is not considered critical.
                 for tx in blk.txs().iter() {
                     Mempool::add_tx(t, tx).map_err(|err| {
-                        tracing::error!("failed to resubmit transactions")
+                        error!("failed to resubmit transactions")
                     });
                 }
 

@@ -22,6 +22,7 @@ use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
+use tracing::{error, info, trace};
 
 use std::sync::Arc;
 use std::{any, vec};
@@ -53,10 +54,10 @@ impl Task {
     pub(crate) fn new_with_keys(path: String) -> Self {
         let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS")
             .expect("DUSK_CONSENSUS_KEYS_PASS not set");
-        tracing::info!(event = "loading consensus keys", path = path);
+        info!(event = "loading consensus keys", path = path);
         let keys = node_data::bls::load_keys(path, pwd);
 
-        tracing::info!(
+        info!(
             event = "loaded consensus keys",
             pubkey = format!("{:?}", keys.1)
         );
@@ -103,7 +104,7 @@ impl Task {
         let (all_num, eligible_num) =
             provisioners.get_provisioners_info(ru.round);
 
-        tracing::info!(
+        info!(
             event = "spawn consensus",
             id = self.task_id,
             round = ru.round,
@@ -122,7 +123,7 @@ impl Task {
                     .send(c.spin(ru, provisioners, cancel_rx).await)
                     .await;
 
-                tracing::trace!("terminate consensus task: {}", id);
+                trace!("terminate consensus task: {}", id);
                 id
             }),
             cancel_tx,
@@ -254,12 +255,12 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         params: CallParams,
         txs: Vec<Transaction>,
     ) -> Result<VerificationOutput, dusk_consensus::contract_state::Error> {
-        tracing::info!("verifying state");
+        info!("verifying state");
 
         let vm = self.vm.read().await;
 
         Ok(vm.verify_state_transition(&params, txs).map_err(|err| {
-            tracing::error!("failed to call VST {}", err);
+            error!("failed to call VST {}", err);
             Error::Failed
         })?)
     }
@@ -268,7 +269,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         &self,
         params: CallParams,
     ) -> Result<Output, Error> {
-        tracing::info!("executing state transition");
+        info!("executing state transition");
         let vm = self.vm.read().await;
 
         let db = self.db.read().await;
@@ -283,7 +284,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 Ok(ret)
             })
             .map_err(|err: anyhow::Error| {
-                tracing::error!("{err}");
+                error!("{err}");
                 Error::Failed
             })?;
 
