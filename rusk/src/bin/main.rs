@@ -27,6 +27,7 @@ use node::mempool::MempoolSrv;
 use node::network::Kadcast;
 use node::Node;
 use rusk::http::HttpServer;
+use tracing::{debug, info, trace};
 
 use crate::config::Config;
 
@@ -94,10 +95,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None => None,
     };
     let state_dir = rusk_profile::get_rusk_state_dir()?;
-    tracing::info!("Using state from {state_dir:?}");
+    info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
 
-    tracing::info!("Rusk VM loaded");
+    info!("Rusk VM loaded");
 
     // Set up a node where:
     // transport layer is Kadcast with message ids from 0 to 255

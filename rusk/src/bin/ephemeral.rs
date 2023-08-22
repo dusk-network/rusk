@@ -11,6 +11,7 @@ use std::fs::File;
 use std::io::{Read, Result};
 use std::path::PathBuf;
 use tempfile::TempDir;
+use tracing::{debug, info, trace};
 
 pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
     command.arg(
@@ -35,7 +36,7 @@ pub(crate) fn configure(state_zip: &PathBuf) -> Result<Option<TempDir>> {
     let unarchive = tar::unarchive(&data[..], tmpdir.path());
 
     if let Err(e) = unarchive {
-        tracing::error!("Invalid state input {}", e);
+        error!("Invalid state input {}", e);
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, ""));
     }
 
