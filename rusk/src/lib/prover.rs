@@ -10,12 +10,12 @@ use crate::error::Error;
 use crate::Result;
 
 use dusk_wallet_core::Transaction;
-use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use rusk_profile::keys_for;
 
-use transfer_circuits::{CircuitOutput, ExecuteCircuit};
-
-const A: usize = 4;
+use transfer_circuits::{
+    CircuitOutput, ExecuteCircuitFourTwo, ExecuteCircuitOneTwo,
+    ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
+};
 
 pub fn verify_proof(tx: &Transaction) -> Result<bool> {
     let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
@@ -23,12 +23,12 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
     let inputs = &tx.nullifiers;
     let outputs = &tx.outputs;
     let proof = &tx.proof;
-
-    let circuit = circuit_from_numbers(inputs.len(), outputs.len())
-        .ok_or_else(|| {
-            Error::InvalidCircuitArguments(inputs.len(), outputs.len())
-        })?;
-
+    if outputs.len() > 2 {
+        return Err(Error::InvalidCircuitArguments(
+            inputs.len(),
+            outputs.len(),
+        ));
+    }
     let mut pi: Vec<rusk_abi::PublicInput> =
         Vec::with_capacity(9 + inputs.len());
 
@@ -53,25 +53,22 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
             .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
     );
 
-    let keys = keys_for(circuit.circuit_id())?;
+    let keys = match inputs.len() {
+        1 => keys_for(ExecuteCircuitOneTwo::circuit_id())?,
+        2 => keys_for(ExecuteCircuitTwoTwo::circuit_id())?,
+        3 => keys_for(ExecuteCircuitThreeTwo::circuit_id())?,
+        4 => keys_for(ExecuteCircuitFourTwo::circuit_id())?,
+        _ => {
+            return Err(Error::InvalidCircuitArguments(
+                inputs.len(),
+                outputs.len(),
+            ))
+        }
+    };
+
     let vd = keys.get_verifier()?;
 
     // Maybe we want to handle internal serialization error too, currently
     // they map to `false`.
     Ok(rusk_abi::verify_proof(vd, proof.clone(), pi))
-}
-
-pub(crate) fn circuit_from_numbers(
-    num_inputs: usize,
-    num_outputs: usize,
-) -> Option<ExecuteCircuit<(), TRANSFER_TREE_DEPTH, A>> {
-    use ExecuteCircuit::*;
-
-    match num_inputs {
-        1 if num_outputs < 3 => Some(OneTwo(Default::default())),
-        2 if num_outputs < 3 => Some(TwoTwo(Default::default())),
-        3 if num_outputs < 3 => Some(ThreeTwo(Default::default())),
-        4 if num_outputs < 3 => Some(FourTwo(Default::default())),
-        _ => None,
-    }
 }
