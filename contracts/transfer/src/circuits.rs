@@ -23,19 +23,19 @@ const VD_WFCO: &[u8] = include_bytes!(concat!(
 
 const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/1aed4ea248e24d6eb71ca40dbc8aca90e1972f0c08cce0666df248e14627d299.vd"
+    "/.rusk/keys/97f7335c7fc873e7d31238fb0d476d32175e16377d1b5c175c34154ffc14156f.vd"
 ));
 const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/90369a00165fcf91b792bf6d64deaf39f5a16603588fe711838e1005e58458a6.vd"
+    "/.rusk/keys/77b6fcc405a60d463456e4893eb8966635773c550a19166111d0975fee0dd571.vd"
 ));
 const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/942a788cf56d9ef93bda7385e86e8620b127bb47eac46829f81bc48e61bdf00e.vd"
+    "/.rusk/keys/d9d4357e5fbe36a323fbd4758f49b6ff6e66c9f27536a485b1d471053f910fbe.vd"
 ));
 const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/076cdf6a1f160432941ac3cb14f8dece2c07da58559af4dfdda32b9be5cca884.vd"
+    "/.rusk/keys/0a08b8746ac2de5deafd476b9ad690586ac7586dc6ec62d474d17da674bb074a.vd"
 ));
 
 /// Verifier data for the execute circuits.
