@@ -11,7 +11,7 @@ use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CircuitInputSignature {
     u: JubJubScalar,
     r: JubJubAffine,

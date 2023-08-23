@@ -10,7 +10,6 @@
 
 extern crate alloc;
 
-mod circuit;
 mod error;
 mod license_circuits;
 mod license_types;

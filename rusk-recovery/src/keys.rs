@@ -4,10 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod transfer;
-use transfer::*;
-mod license;
-use license::*;
+mod loader;
+pub use loader::*;
 
 use crate::theme::Theme;
 use dusk_plonk::prelude::*;
@@ -20,9 +18,6 @@ use tracing::{info, warn};
 /// Label used for the ZK transcript initialization. Must be the same for prover
 /// and verifier.
 const TRANSCRIPT_LABEL: &[u8] = b"dusk-network";
-
-const H: usize = phoenix_core::transaction::TRANSFER_TREE_DEPTH;
-const A: usize = 4;
 
 static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     let theme = Theme::default();
@@ -56,7 +51,7 @@ pub trait CircuitLoader {
 
     fn circuit_name(&self) -> &'static str;
 
-    fn compile_circuit(
+    fn compile_to_bytes(
         &self,
     ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>;
 }
@@ -99,7 +94,7 @@ fn check_keys_cache(
                 _ => {
                     warn!("{} due to cache miss", theme.warn("Compiling"),);
 
-                    let (pk, vd) = loader.compile_circuit()?;
+                    let (pk, vd) = loader.compile_to_bytes()?;
                     rusk_profile::add_keys_for(loader.circuit_id(), pk, vd)?;
                     info!(
                         "{}   {}",
@@ -140,10 +135,10 @@ pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
             &StcoCircuitLoader {},
             &WfctCircuitLoader {},
             &WfcoCircuitLoader {},
-            &ExecuteOneTwoCircuitLoader::<(), H, A>::new(),
-            &ExecuteTwoTwoCircuitLoader::<(), H, A>::new(),
-            &ExecuteThreeTwoCircuitLoader::<(), H, A>::new(),
-            &ExecuteFourTwoCircuitLoader::<(), H, A>::new(),
+            &ExecOneTwoCircuitLoader {},
+            &ExecTwoTwoCircuitLoader {},
+            &ExecThreeTwoCircuitLoader {},
+            &ExecFourTwoCircuitLoader {},
             &LicenseCircuitLoader {},
         ],
     )?;

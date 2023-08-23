@@ -20,7 +20,6 @@ use rand::rngs::OsRng;
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use dusk_wallet_core::UnprovenTransaction;
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 
@@ -43,8 +42,8 @@ pub const A: usize = 4;
 pub struct LocalProver;
 
 impl crate::Prover for LocalProver {
-    fn prove_execute(&self, utx_bytes: &[u8]) -> ProverResult {
-        self.local_prove_execute(utx_bytes)
+    fn prove_execute(&self, circuit_inputs: &[u8]) -> ProverResult {
+        self.local_prove_execute(circuit_inputs)
     }
 
     fn prove_stco(&self, circuit_inputs: &[u8]) -> ProverResult {
@@ -78,7 +77,6 @@ macro_rules! lazy_prover {
 
 #[cfg(test)]
 mod tests {
-    use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
     use transfer_circuits::{
         ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
         ExecuteCircuitTwoTwo, SendToContractObfuscatedCircuit,
@@ -108,21 +106,19 @@ mod tests {
             hex::encode(WithdrawFromObfuscatedCircuit::circuit_id())
         );
 
-        let c1_2 =
-            ExecuteCircuitOneTwo::<(), TRANSFER_TREE_DEPTH, A>::circuit_id();
-        println!("Exec 1 {}", hex::encode(c1_2));
+        println!("Exec 1 {}", hex::encode(ExecuteCircuitOneTwo::circuit_id()));
 
-        let c2_2 =
-            ExecuteCircuitTwoTwo::<(), TRANSFER_TREE_DEPTH, A>::circuit_id();
-        println!("Exec 2 {}", hex::encode(c2_2));
+        println!("Exec 2 {}", hex::encode(ExecuteCircuitTwoTwo::circuit_id()));
 
-        let c3_2 =
-            ExecuteCircuitThreeTwo::<(), TRANSFER_TREE_DEPTH, A>::circuit_id();
-        println!("Exec 3 {}", hex::encode(c3_2));
+        println!(
+            "Exec 3 {}",
+            hex::encode(ExecuteCircuitThreeTwo::circuit_id())
+        );
 
-        let c4_2 =
-            ExecuteCircuitFourTwo::<(), TRANSFER_TREE_DEPTH, A>::circuit_id();
-        println!("Exec 4 {}", hex::encode(c4_2));
+        println!(
+            "Exec 4 {}",
+            hex::encode(ExecuteCircuitFourTwo::circuit_id())
+        );
 
         let utx_hex = include_str!("../tests/utx.hex");
         let utx_bytes = hex::decode(utx_hex).unwrap();

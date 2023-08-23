@@ -23,13 +23,10 @@ rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
 [dev-dependencies]
 rand = "0.8"
 
-[features]
-builder = ["rusk-profile"]
-
 [[test]]
 name = "test-execute"
 path = "tests/execute.rs"
-required-features = ["builder"]
+required-features = ["rusk-profile"]
 
 [[test]]
 name = "test-stct"

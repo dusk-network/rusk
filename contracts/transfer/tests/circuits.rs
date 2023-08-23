@@ -6,10 +6,7 @@
 
 #[cfg(test)]
 mod tests {
-    use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
     use transfer_circuits::*;
-
-    const A: usize = 4;
 
     macro_rules! test_circuit {
         ($circuit:ty, $expected_id:literal) => {
@@ -51,20 +48,20 @@ mod tests {
             "7824ae42a6208eb0eca9f7c5e7ca964efa04a500fc3275e1c89541a26876808a"
         );
         test_circuit!(
-            ExecuteCircuitOneTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "1aed4ea248e24d6eb71ca40dbc8aca90e1972f0c08cce0666df248e14627d299"
+            ExecuteCircuitOneTwo,
+            "97f7335c7fc873e7d31238fb0d476d32175e16377d1b5c175c34154ffc14156f"
         );
         test_circuit!(
-            ExecuteCircuitTwoTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "90369a00165fcf91b792bf6d64deaf39f5a16603588fe711838e1005e58458a6"
+            ExecuteCircuitTwoTwo,
+            "77b6fcc405a60d463456e4893eb8966635773c550a19166111d0975fee0dd571"
         );
         test_circuit!(
-            ExecuteCircuitThreeTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "942a788cf56d9ef93bda7385e86e8620b127bb47eac46829f81bc48e61bdf00e"
+            ExecuteCircuitThreeTwo,
+            "d9d4357e5fbe36a323fbd4758f49b6ff6e66c9f27536a485b1d471053f910fbe"
         );
         test_circuit!(
-            ExecuteCircuitFourTwo<(), TRANSFER_TREE_DEPTH, A>,
-            "076cdf6a1f160432941ac3cb14f8dece2c07da58559af4dfdda32b9be5cca884"
+            ExecuteCircuitFourTwo,
+            "0a08b8746ac2de5deafd476b9ad690586ac7586dc6ec62d474d17da674bb074a"
         );
     }
 }

@@ -4,12 +4,10 @@ help: ## Display this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 all: ## Build the circuits
-	@cargo build --release \
-		--features builder
+	@cargo build --release
 
 test: ## Run the transfer circuits tests
-	@cargo test --release \
-		--features builder
+	@cargo test --release --features rusk-profile
 
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings

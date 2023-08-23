@@ -55,7 +55,7 @@ impl CircuitOutput {
         self.note.value_commitment()
     }
 
-    pub fn pad() -> Self {
+    pub(crate) fn pad() -> Self {
         let note = Note::transparent_stealth(
             Self::ZERO_STEALTH_ADDRESS,
             0,
