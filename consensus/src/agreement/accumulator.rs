@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
-use tracing::{debug, error, info, warn, Instrument};
+use tracing::{debug, error, info, trace, warn, Instrument};
 
 #[derive(Debug, Clone, Eq)]
 pub(super) struct AgreementMessage {
@@ -240,6 +240,8 @@ impl Accumulator {
 
 impl Drop for Accumulator {
     fn drop(&mut self) {
+        trace!(event = "acc dropped", len = self.workers.len());
+
         // Abort all workers
         for handle in self.workers.iter() {
             handle.abort();

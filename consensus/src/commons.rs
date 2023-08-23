@@ -22,6 +22,7 @@ use node_data::message::Message;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::task::JoinSet;
 use tracing::error;
 
 #[derive(Clone, Default, Debug)]
@@ -84,6 +85,7 @@ pub fn marshal_signable_vote(
 
 #[allow(clippy::too_many_arguments)]
 pub fn spawn_send_reduction<T: Operations + 'static>(
+    join_set: &mut JoinSet<()>,
     candidate: Block,
     pubkey: PublicKey,
     ru: RoundUpdate,
@@ -93,7 +95,7 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     vc_list: Arc<Mutex<HashSet<[u8; 32]>>>,
     executor: Arc<Mutex<T>>,
 ) {
-    tokio::spawn(async move {
+    join_set.spawn(async move {
         let hash = candidate.header.hash;
         let already_verified = vc_list.lock().await.contains(&hash);
 
