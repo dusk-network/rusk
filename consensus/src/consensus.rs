@@ -11,7 +11,7 @@ use node_data::ledger::{to_str, Block};
 use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::agreement::step;
-use crate::execution_ctx::ExecutionCtx;
+use crate::execution_ctx::{ExecutionCtx, IterationCtx};
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use crate::{config, selection};
@@ -99,9 +99,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         mut provisioners: Provisioners,
         cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
+        let round = ru.round;
         // Enable/Disable all members stakes depending on the current round. If
         // a stake is not eligible for this round, it's disabled.
-        provisioners.update_eligibility_flag(ru.round);
+        provisioners.update_eligibility_flag(round);
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.
@@ -133,7 +134,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // This could be triggered by Synchronizer or on node termination.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
-                tracing::debug!("consensus canceled");
+                tracing::debug!(event = "consensus canceled", round);
             }
         }
 
@@ -187,6 +188,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             loop {
                 let mut msg = Message::empty();
+                let mut iter_ctx = IterationCtx::new(ru.round, step + 1);
 
                 // Execute a single iteration
                 for phase in phases.iter_mut() {
@@ -199,6 +201,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
+                        &mut iter_ctx,
                         inbound.clone(),
                         outbound.clone(),
                         future_msgs.clone(),

@@ -16,6 +16,7 @@ use crate::user::sortition;
 use node_data::message::{AsyncQueue, Message};
 use std::cmp;
 use std::collections::HashSet;
+use tokio::task::JoinSet;
 
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use std::sync::Arc;
@@ -25,9 +26,41 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
 
+/// Represents a shared state within a context of the exection of a single
+/// iteration.
+pub struct IterationCtx {
+    pub join_set: JoinSet<()>,
+    round: u64,
+    iter: u8,
+}
+
+impl IterationCtx {
+    pub fn new(round: u64, step: u8) -> Self {
+        Self {
+            round,
+            join_set: JoinSet::new(),
+            iter: step / 3 + 1,
+        }
+    }
+}
+
+impl Drop for IterationCtx {
+    fn drop(&mut self) {
+        debug!(
+            event = "iter completed",
+            len = self.join_set.len(),
+            round = self.round,
+            iter = self.iter,
+        );
+        self.join_set.abort_all();
+    }
+}
+
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
 pub struct ExecutionCtx<'a> {
+    pub iter_ctx: &'a mut IterationCtx,
+
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
     pub outbound: AsyncQueue<Message>,
@@ -49,7 +82,9 @@ pub struct ExecutionCtx<'a> {
 
 impl<'a> ExecutionCtx<'a> {
     /// Creates step execution context.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        iter_ctx: &'a mut IterationCtx,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
@@ -59,6 +94,7 @@ impl<'a> ExecutionCtx<'a> {
         step: u8,
     ) -> Self {
         Self {
+            iter_ctx,
             inbound,
             outbound,
             future_msgs,
