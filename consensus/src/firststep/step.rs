@@ -58,6 +58,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         if committee.am_member() {
             // Send reduction async
             spawn_send_reduction(
+                &mut ctx.iter_ctx.join_set,
                 self.handler.candidate.clone(),
                 committee.get_my_pubkey().clone(),
                 ctx.round_update.clone(),
