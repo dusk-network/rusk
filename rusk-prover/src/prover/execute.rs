@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::lazy_prover;
+use dusk_wallet_core::UnprovenTransaction;
 use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use transfer_circuits::{
     ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
@@ -26,11 +27,8 @@ pub static EXEC_4_2_PROVER: Lazy<PlonkProver> =
 
 fn fill_circuit<const I: usize>(
     circuit: &mut ExecuteCircuit<I, (), TRANSFER_TREE_DEPTH, 4>,
-    utx_bytes: &[u8],
+    utx: &UnprovenTransaction,
 ) -> Result<(), ProverError> {
-    let utx = UnprovenTransaction::from_slice(utx_bytes)
-        .map_err(|e| ProverError::invalid_data("utx", e))?;
-
     for input in utx.inputs() {
         let cis = CircuitInputSignature::from(input.signature());
         let cinput = CircuitInput::new(
@@ -75,63 +73,78 @@ fn fill_circuit<const I: usize>(
 }
 
 impl LocalProver {
-    pub(crate) fn local_prove_exec_1_2(
+    pub(crate) fn local_prove_execute(
         &self,
-        utx_bytes: &[u8],
+        circuit_inputs: &[u8],
     ) -> Result<Vec<u8>, ProverError> {
-        const I: usize = 1;
-        let mut circuit = ExecuteCircuitOneTwo::new();
-        fill_circuit::<I>(&mut circuit, utx_bytes)?;
-
-        let (proof, _) =
-            EXEC_1_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-                ProverError::with_context("Failed proving the circuit", e)
-            })?;
-        Ok(proof.to_bytes().to_vec())
+        let utx = UnprovenTransaction::from_slice(circuit_inputs)
+            .map_err(|e| ProverError::invalid_data("utx", e))?;
+        match utx.inputs().len() {
+            1 => local_prove_exec_1_2(&utx),
+            2 => local_prove_exec_2_2(&utx),
+            3 => local_prove_exec_3_2(&utx),
+            4 => local_prove_exec_4_2(&utx),
+            _ => Err(ProverError::from(format!(
+                "Invalid I/O count: {}/{}",
+                utx.inputs().len(),
+                utx.outputs().len()
+            ))),
+        }
     }
+}
 
-    pub(crate) fn local_prove_exec_2_2(
-        &self,
-        utx_bytes: &[u8],
-    ) -> Result<Vec<u8>, ProverError> {
-        const I: usize = 2;
-        let mut circuit = ExecuteCircuitTwoTwo::new();
-        fill_circuit::<I>(&mut circuit, utx_bytes)?;
+fn local_prove_exec_1_2(
+    utx: &UnprovenTransaction,
+) -> Result<Vec<u8>, ProverError> {
+    const I: usize = 1;
+    let mut circuit = ExecuteCircuitOneTwo::new();
+    fill_circuit::<I>(&mut circuit, utx)?;
 
-        let (proof, _) =
-            EXEC_2_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-                ProverError::with_context("Failed proving the circuit", e)
-            })?;
-        Ok(proof.to_bytes().to_vec())
-    }
+    let (proof, _) =
+        EXEC_1_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
+            ProverError::with_context("Failed proving the circuit", e)
+        })?;
+    Ok(proof.to_bytes().to_vec())
+}
 
-    pub(crate) fn local_prove_exec_3_2(
-        &self,
-        utx_bytes: &[u8],
-    ) -> Result<Vec<u8>, ProverError> {
-        const I: usize = 3;
-        let mut circuit = ExecuteCircuitThreeTwo::new();
-        fill_circuit::<I>(&mut circuit, utx_bytes)?;
+fn local_prove_exec_2_2(
+    utx: &UnprovenTransaction,
+) -> Result<Vec<u8>, ProverError> {
+    const I: usize = 2;
+    let mut circuit = ExecuteCircuitTwoTwo::new();
+    fill_circuit::<I>(&mut circuit, utx)?;
 
-        let (proof, _) =
-            EXEC_3_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-                ProverError::with_context("Failed proving the circuit", e)
-            })?;
-        Ok(proof.to_bytes().to_vec())
-    }
+    let (proof, _) =
+        EXEC_2_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
+            ProverError::with_context("Failed proving the circuit", e)
+        })?;
+    Ok(proof.to_bytes().to_vec())
+}
 
-    pub(crate) fn local_prove_exec_4_2(
-        &self,
-        utx_bytes: &[u8],
-    ) -> Result<Vec<u8>, ProverError> {
-        const I: usize = 4;
-        let mut circuit = ExecuteCircuitFourTwo::new();
-        fill_circuit::<I>(&mut circuit, utx_bytes)?;
+fn local_prove_exec_3_2(
+    utx: &UnprovenTransaction,
+) -> Result<Vec<u8>, ProverError> {
+    const I: usize = 3;
+    let mut circuit = ExecuteCircuitThreeTwo::new();
+    fill_circuit::<I>(&mut circuit, utx)?;
 
-        let (proof, _) =
-            EXEC_4_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-                ProverError::with_context("Failed proving the circuit", e)
-            })?;
-        Ok(proof.to_bytes().to_vec())
-    }
+    let (proof, _) =
+        EXEC_3_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
+            ProverError::with_context("Failed proving the circuit", e)
+        })?;
+    Ok(proof.to_bytes().to_vec())
+}
+
+fn local_prove_exec_4_2(
+    utx: &UnprovenTransaction,
+) -> Result<Vec<u8>, ProverError> {
+    const I: usize = 4;
+    let mut circuit = ExecuteCircuitFourTwo::new();
+    fill_circuit::<I>(&mut circuit, utx)?;
+
+    let (proof, _) =
+        EXEC_4_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
+            ProverError::with_context("Failed proving the circuit", e)
+        })?;
+    Ok(proof.to_bytes().to_vec())
 }

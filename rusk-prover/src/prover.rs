@@ -20,7 +20,6 @@ use rand::rngs::OsRng;
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
-use dusk_wallet_core::UnprovenTransaction;
 use phoenix_core::{Crossover, Fee, Message};
 use rusk_profile::keys_for;
 
@@ -43,20 +42,8 @@ pub const A: usize = 4;
 pub struct LocalProver;
 
 impl crate::Prover for LocalProver {
-    fn prove_exec_1_2(&self, utx_bytes: &[u8]) -> ProverResult {
-        self.local_prove_exec_1_2(utx_bytes)
-    }
-
-    fn prove_exec_2_2(&self, utx_bytes: &[u8]) -> ProverResult {
-        self.local_prove_exec_2_2(utx_bytes)
-    }
-
-    fn prove_exec_3_2(&self, utx_bytes: &[u8]) -> ProverResult {
-        self.local_prove_exec_3_2(utx_bytes)
-    }
-
-    fn prove_exec_4_2(&self, utx_bytes: &[u8]) -> ProverResult {
-        self.local_prove_exec_4_2(utx_bytes)
+    fn prove_execute(&self, circuit_inputs: &[u8]) -> ProverResult {
+        self.local_prove_execute(circuit_inputs)
     }
 
     fn prove_stco(&self, circuit_inputs: &[u8]) -> ProverResult {
@@ -136,7 +123,7 @@ mod tests {
         let utx_hex = include_str!("../tests/utx.hex");
         let utx_bytes = hex::decode(utx_hex).unwrap();
         let prover = LocalProver {};
-        let proof = prover.prove_exec_4_2(&utx_bytes).unwrap();
+        let proof = prover.prove_execute(&utx_bytes).unwrap();
         println!("{}", hex::encode(proof));
     }
 }

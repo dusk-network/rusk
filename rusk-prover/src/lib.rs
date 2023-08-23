@@ -13,30 +13,10 @@ pub use crate::prover::LocalProver;
 
 pub use errors::ProverError;
 
-use dusk_wallet_core::UnprovenTransaction;
-
 pub type ProverResult = Result<Vec<u8>, ProverError>;
 
 pub trait Prover {
-    fn prove_execute(&self, utx_bytes: &[u8]) -> ProverResult {
-        let utx = UnprovenTransaction::from_slice(utx_bytes)
-            .map_err(|e| ProverError::invalid_data("utx", e))?;
-        match utx.inputs().len() {
-            1 => self.prove_exec_1_2(utx_bytes),
-            2 => self.prove_exec_2_2(utx_bytes),
-            3 => self.prove_exec_3_2(utx_bytes),
-            4 => self.prove_exec_4_2(utx_bytes),
-            _ => Err(ProverError::from(format!(
-                "Invalid I/O count: {}/{}",
-                utx.inputs().len(),
-                utx.outputs().len()
-            ))),
-        }
-    }
-    fn prove_exec_1_2(&self, utx_bytes: &[u8]) -> ProverResult;
-    fn prove_exec_2_2(&self, utx_bytes: &[u8]) -> ProverResult;
-    fn prove_exec_3_2(&self, utx_bytes: &[u8]) -> ProverResult;
-    fn prove_exec_4_2(&self, utx_bytes: &[u8]) -> ProverResult;
+    fn prove_execute(&self, utx_bytes: &[u8]) -> ProverResult;
     fn prove_stco(&self, circuit_inputs: &[u8]) -> ProverResult;
     fn prove_stct(&self, circuit_inputs: &[u8]) -> ProverResult;
     fn prove_wfco(&self, circuit_inputs: &[u8]) -> ProverResult;
