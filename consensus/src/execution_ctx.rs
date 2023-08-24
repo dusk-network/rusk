@@ -15,7 +15,6 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use node_data::message::{AsyncQueue, Message};
 use std::cmp;
-use std::collections::HashSet;
 use tokio::task::JoinSet;
 
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
@@ -30,6 +29,13 @@ use tracing::{debug, error, info, trace};
 /// iteration.
 pub struct IterationCtx {
     pub join_set: JoinSet<()>,
+
+    /// verified candidate hash
+    ///
+    /// An optimization to call VST once per a candidate block when this
+    /// provisioner is extracted for both reductions.
+    pub verified_hash: Arc<Mutex<[u8; 32]>>,
+
     round: u64,
     iter: u8,
 }
@@ -40,6 +46,7 @@ impl IterationCtx {
             round,
             join_set: JoinSet::new(),
             iter: step / 3 + 1,
+            verified_hash: Arc::new(Mutex::new([0u8; 32])),
         }
     }
 }
@@ -72,12 +79,6 @@ pub struct ExecutionCtx<'a> {
     // Round/Step parameters
     pub round_update: RoundUpdate,
     pub step: u8,
-
-    /// List of verified candidate hashes
-    ///
-    /// An optimization to call VST once per a candidate block when this
-    /// provisioner is extracted for both reductions.
-    pub verified_candidates: Arc<Mutex<HashSet<[u8; 32]>>>,
 }
 
 impl<'a> ExecutionCtx<'a> {
@@ -90,7 +91,6 @@ impl<'a> ExecutionCtx<'a> {
         future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
-        verified_candidates: Arc<Mutex<HashSet<[u8; 32]>>>,
         step: u8,
     ) -> Self {
         Self {
@@ -101,7 +101,6 @@ impl<'a> ExecutionCtx<'a> {
             provisioners,
             round_update,
             step,
-            verified_candidates,
         }
     }
 

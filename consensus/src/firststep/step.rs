@@ -59,13 +59,13 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
             // Send reduction async
             spawn_send_reduction(
                 &mut ctx.iter_ctx.join_set,
+                ctx.iter_ctx.verified_hash.clone(),
                 self.handler.candidate.clone(),
                 committee.get_my_pubkey().clone(),
                 ctx.round_update.clone(),
                 ctx.step,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
-                ctx.verified_candidates.clone(),
                 self.executor.clone(),
             );
         }
