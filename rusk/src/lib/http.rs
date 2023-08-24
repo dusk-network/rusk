@@ -64,6 +64,8 @@ impl HttpServer {
 
         let local_addr = listener.local_addr()?;
 
+        info!("Starting HTTP Listener to {local_addr}");
+
         let handle =
             task::spawn(listening_loop(handler, listener, shutdown_receiver));
 
