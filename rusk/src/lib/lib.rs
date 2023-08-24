@@ -10,8 +10,7 @@ use crate::error::Error;
 
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::mpsc;
-use std::sync::Arc;
+use std::sync::{mpsc, Arc, LazyLock};
 use std::{cmp, fs, io};
 
 pub mod chain;
@@ -43,7 +42,6 @@ use rusk_abi::{
     StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
-use rusk_recovery_tools::provisioners::DUSK_KEY;
 use sha3::{Digest, Sha3_256};
 
 const A: usize = 4;
@@ -53,6 +51,12 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 pub type StoredNote = (Note, u64);
 
 pub type GetNotesStream = Pin<Box<dyn Stream<Item = StoredNote> + Send>>;
+
+pub static DUSK_KEY: LazyLock<BlsPublicKey> = LazyLock::new(|| {
+    let dusk_cpk_bytes = include_bytes!("../assets/dusk.cpk");
+    BlsPublicKey::from_slice(dusk_cpk_bytes)
+        .expect("Dusk consensus public key to be valid")
+});
 
 pub struct RuskInner {
     pub current_commit: [u8; 32],

@@ -5,10 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod config;
+#[cfg(feature = "ephemeral")]
 mod ephemeral;
 mod version;
-
-use std::path::PathBuf;
 
 use clap::{Arg, Command};
 use node::database::rocksdb;
@@ -52,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .required(false),
         );
 
+    #[cfg(feature = "ephemeral")]
     let command = ephemeral::inject_args(command);
     let command = Config::inject_args(command);
     let args = command.get_matches();
@@ -90,10 +90,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => unreachable!(),
     };
 
-    let tempdir = match args.get_one::<PathBuf>("state_file") {
+    #[cfg(feature = "ephemeral")]
+    let tempdir = match args.get_one::<std::path::PathBuf>("state_file") {
         Some(state_zip) => ephemeral::configure(state_zip)?,
         None => None,
     };
+
     let state_dir = rusk_profile::get_rusk_state_dir()?;
     info!("Using state from {state_dir:?}");
     let rusk = Rusk::new(state_dir)?;
@@ -112,9 +114,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(DataBrokerSrv::new(config.databroker())),
     ];
 
-    let db_path = tempdir
-        .as_ref()
-        .map_or_else(|| config.chain.db_path(), |t| t.path().to_path_buf());
+    #[cfg(feature = "ephemeral")]
+    let db_path = tempdir.as_ref().map_or_else(
+        || config.chain.db_path(),
+        |t| std::path::Path::to_path_buf(t.path()),
+    );
+
+    #[cfg(not(feature = "ephemeral"))]
+    let db_path = config.chain.db_path();
+
     let db = rocksdb::Backend::create_or_open(db_path);
     let net = Kadcast::new(config.clone().kadcast.into());
 

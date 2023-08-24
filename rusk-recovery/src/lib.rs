@@ -9,5 +9,4 @@ pub mod keys;
 #[cfg(feature = "state")]
 pub mod state;
 
-pub mod provisioners;
 pub mod theme;
