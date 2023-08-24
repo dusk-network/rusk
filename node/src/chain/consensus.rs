@@ -184,8 +184,8 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
             return Ok(b);
         }
 
-        const RECV_PEERS_COUNT: usize = 5;
-        const TIMEOUT_MILLIS: u64 = 1000;
+        const RECV_PEERS_COUNT: usize = 7;
+        const TIMEOUT_MILLIS: u64 = 2000;
 
         // For redundancy reasons, we send the GetCandidate request to multiple
         // network peers
