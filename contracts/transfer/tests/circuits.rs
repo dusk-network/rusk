@@ -49,19 +49,19 @@ mod tests {
         );
         test_circuit!(
             ExecuteCircuitOneTwo,
-            "97f7335c7fc873e7d31238fb0d476d32175e16377d1b5c175c34154ffc14156f"
+            "cff6ae2993e629cffb5b9b6fb04e368e64f79cd2f8bd3fc6095cedbbfd5cdc1d"
         );
         test_circuit!(
             ExecuteCircuitTwoTwo,
-            "77b6fcc405a60d463456e4893eb8966635773c550a19166111d0975fee0dd571"
+            "2b987ac4bcb3eeda279b5c1e36018f9537db02e0a6d55f8b46c608b9690c3a1e"
         );
         test_circuit!(
             ExecuteCircuitThreeTwo,
-            "d9d4357e5fbe36a323fbd4758f49b6ff6e66c9f27536a485b1d471053f910fbe"
+            "51846c23e307b4d2904230ff14acaa1af7b032867065cbcb5c693d8ff8cb6063"
         );
         test_circuit!(
             ExecuteCircuitFourTwo,
-            "0a08b8746ac2de5deafd476b9ad690586ac7586dc6ec62d474d17da674bb074a"
+            "f2a04c3a1de344ba9f52cc6693b569a2a5b683871e1fb58d1845a1a11a8a5542"
         );
     }
 }
