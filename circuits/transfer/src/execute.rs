@@ -274,9 +274,20 @@ impl<const I: usize, T, const H: usize, const A: usize>
 
 impl<const I: usize, T, const H: usize, const A: usize> Default
     for ExecuteCircuit<I, T, H, A>
+where
+    T: Default + Clone + Aggregate<A>,
 {
     fn default() -> Self {
-        Self::new()
+        let mut circuit = Self::new();
+        circuit
+            .inputs
+            .iter_mut()
+            .for_each(|i| *i = Some(CircuitInput::pad()));
+        circuit
+            .outputs
+            .iter_mut()
+            .for_each(|o| *o = Some(CircuitOutput::pad()));
+        circuit
     }
 }
 
@@ -420,25 +431,25 @@ where
     }
 }
 
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitOneTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitTwoTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitThreeTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.1.0")]
+#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitFourTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
