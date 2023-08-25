@@ -28,7 +28,7 @@ impl HttpConfig {
         }
 
         // Overwrite config ws-listen
-        self.listen = matches.get_flag("ws-listen");
+        self.listen = self.listen || matches.get_flag("ws-listen");
     }
 
     pub fn inject_args(command: Command<'_>) -> Command<'_> {
@@ -45,7 +45,7 @@ impl HttpConfig {
                     .action(ArgAction::SetTrue)
                     .long("ws-listen")
                     .value_name("WS_LISTEN")
-                    .help("If the websocket server should be active")
+                    .help("Force the websocket to be active")
                     .takes_value(false),
             )
     }
