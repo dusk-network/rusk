@@ -75,7 +75,6 @@ impl<T: Operations> Generator<T> {
         Ok(Message::new_newblock(
             msg_header,
             NewBlock {
-                prev_hash: ru.hash,
                 candidate,
                 signature,
             },

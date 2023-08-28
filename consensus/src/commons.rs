@@ -14,12 +14,11 @@ use node_data::message;
 use tracing::Instrument;
 
 use crate::contract_state::CallParams;
-use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use node_data::bls::PublicKey;
-use node_data::message::AsyncQueue;
-use node_data::message::Message;
+
+use node_data::message::{AsyncQueue, Message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -68,19 +67,6 @@ pub enum ConsensusError {
     MaxStepReached,
     ChildTaskTerminated,
     Canceled,
-}
-
-pub fn marshal_signable_vote(
-    round: u64,
-    step: u8,
-    block_hash: &[u8; 32],
-) -> BytesMut {
-    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
-    msg.put_u64_le(round);
-    msg.put_u8(step);
-    msg.put(&block_hash[..]);
-
-    msg
 }
 
 #[allow(clippy::too_many_arguments)]
