@@ -78,7 +78,7 @@ impl Aggregator {
                 added = weight,
                 total,
                 target = quorum_target,
-                signature = to_str(&signature),
+                signature = to_str(signature),
             );
 
             if total >= committee.quorum() {

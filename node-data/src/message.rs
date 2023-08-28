@@ -566,14 +566,12 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let mut result = NewBlock::default();
-
-            result.candidate = Block::read(r)?;
-            result.signature = Self::read_var_bytes(r)?
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-            Ok(result)
+            Ok(NewBlock {
+                candidate: Block::read(r)?,
+                signature: Self::read_var_bytes(r)?
+                    .try_into()
+                    .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
+            })
         }
     }
 
