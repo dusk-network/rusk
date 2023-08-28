@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::Ownable;
+use dusk_merkle::Aggregate;
+use dusk_pki::{Ownable, PublicSpendKey};
 use phoenix_core::Note;
-use poseidon_merkle::Opening;
+use poseidon_merkle::{Item, Opening, Tree};
 
 use dusk_plonk::prelude::*;
 
@@ -120,5 +121,40 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
 
             nullifier,
         })
+    }
+}
+
+impl<T, const H: usize, const A: usize> CircuitInput<T, H, A>
+where
+    T: Aggregate<A> + Clone + Default,
+{
+    pub fn pad() -> Self {
+        let mut tree = Tree::new();
+        tree.insert(0, Item::new(BlsScalar::default(), T::default()));
+        let opening = tree.opening(0).expect(
+            "It should be possible to create an opening at the given position",
+        );
+
+        let note = Note::deterministic(
+            phoenix_core::NoteType::Transparent,
+            &JubJubScalar::default(),
+            BlsScalar::default(),
+            &PublicSpendKey::new(
+                JubJubExtended::default(),
+                JubJubExtended::default(),
+            ),
+            u64::default(),
+            JubJubScalar::default(),
+        );
+
+        Self::new(
+            opening,
+            note,
+            JubJubAffine::default(),
+            u64::default(),
+            JubJubScalar::default(),
+            BlsScalar::default(),
+            CircuitInputSignature::default(),
+        )
     }
 }
