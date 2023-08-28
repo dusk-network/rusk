@@ -25,7 +25,7 @@ impl Aggregator {
         &mut self,
         committee: &Committee,
         header: &Header,
-        signed_hash: &[u8; 48],
+        signature: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
@@ -57,7 +57,7 @@ impl Aggregator {
             }
 
             // Aggregate Signatures
-            if let Err(e) = aggr_sign.add(signed_hash) {
+            if let Err(e) = aggr_sign.add(signature) {
                 error!("{:?}", e);
                 return None;
             }
@@ -78,6 +78,7 @@ impl Aggregator {
                 added = weight,
                 total,
                 target = quorum_target,
+                signature = to_str(&signature),
             );
 
             if total >= committee.quorum() {

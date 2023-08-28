@@ -185,12 +185,12 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 topic: message::Topics::Reduction as u8,
             };
 
-            let signed_hash = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
+            let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
             // Sign and construct reduction message
             let msg = message::Message::new_reduction(
                 hdr,
-                message::payload::Reduction { signed_hash },
+                message::payload::Reduction { signature },
             );
 
             //   publish
