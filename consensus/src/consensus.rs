@@ -11,14 +11,13 @@ use node_data::ledger::{to_str, Block};
 use node_data::message::{AsyncQueue, Message, Payload};
 
 use crate::agreement::step;
-use crate::execution_ctx::ExecutionCtx;
+use crate::execution_ctx::{ExecutionCtx, IterationCtx};
 use crate::queue::Queue;
 use crate::user::provisioners::Provisioners;
 use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
-use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -98,9 +97,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         mut provisioners: Provisioners,
         cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
+        let round = ru.round;
         // Enable/Disable all members stakes depending on the current round. If
         // a stake is not eligible for this round, it's disabled.
-        provisioners.update_eligibility_flag(ru.round);
+        provisioners.update_eligibility_flag(round);
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.
@@ -132,7 +132,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // This could be triggered by Synchronizer or on node termination.
             _ = cancel_rx => {
                 result = Err(ConsensusError::Canceled);
-                tracing::trace!("consensus canceled");
+                tracing::debug!(event = "consensus canceled", round);
             }
         }
 
@@ -140,9 +140,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         // Delete all candidates
         self.db.lock().await.delete_candidate_blocks();
 
-        // Cancel all tasks
-        agreement_task_handle.abort();
-        main_task_handle.abort();
+        // Abort all tasks
+        abort(&mut agreement_task_handle).await;
+        abort(&mut main_task_handle).await;
 
         result
     }
@@ -176,16 +176,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Reduction2(secondstep::step::Reduction::new(executor)),
             ];
 
-            // A list of hashes of candidate blocks already verified
-            let verified_candidates =
-                Arc::new(Mutex::new(HashSet::<[u8; 32]>::new()));
-
             // Consensus loop
             // Initialize and run consensus loop
             let mut step: u8 = 0;
 
             loop {
                 let mut msg = Message::empty();
+                let mut iter_ctx = IterationCtx::new(ru.round, step + 1);
 
                 // Execute a single iteration
                 for phase in phases.iter_mut() {
@@ -198,12 +195,12 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
+                        &mut iter_ctx,
                         inbound.clone(),
                         outbound.clone(),
                         future_msgs.clone(),
                         &mut provisioners,
                         ru.clone(),
-                        verified_candidates.clone(),
                         step,
                     );
 
@@ -266,4 +263,15 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 .map_err(|e| error!("send agreement failed with {:?}", e));
         }
     }
+}
+
+#[inline]
+async fn abort<T>(h: &mut JoinHandle<T>) {
+    if h.is_finished() {
+        return;
+    }
+
+    h.abort();
+
+    let _ = h.await;
 }

@@ -15,7 +15,7 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use node_data::message::{AsyncQueue, Message};
 use std::cmp;
-use std::collections::HashSet;
+use tokio::task::JoinSet;
 
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use std::sync::Arc;
@@ -25,9 +25,49 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
 
+/// Represents a shared state within a context of the exection of a single
+/// iteration.
+pub struct IterationCtx {
+    pub join_set: JoinSet<()>,
+
+    /// verified candidate hash
+    ///
+    /// An optimization to call VST once per a candidate block when this
+    /// provisioner is extracted for both reductions.
+    pub verified_hash: Arc<Mutex<[u8; 32]>>,
+
+    round: u64,
+    iter: u8,
+}
+
+impl IterationCtx {
+    pub fn new(round: u64, step: u8) -> Self {
+        Self {
+            round,
+            join_set: JoinSet::new(),
+            iter: step / 3 + 1,
+            verified_hash: Arc::new(Mutex::new([0u8; 32])),
+        }
+    }
+}
+
+impl Drop for IterationCtx {
+    fn drop(&mut self) {
+        debug!(
+            event = "iter completed",
+            len = self.join_set.len(),
+            round = self.round,
+            iter = self.iter,
+        );
+        self.join_set.abort_all();
+    }
+}
+
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
 pub struct ExecutionCtx<'a> {
+    pub iter_ctx: &'a mut IterationCtx,
+
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
     pub outbound: AsyncQueue<Message>,
@@ -39,33 +79,28 @@ pub struct ExecutionCtx<'a> {
     // Round/Step parameters
     pub round_update: RoundUpdate,
     pub step: u8,
-
-    /// List of verified candidate hashes
-    ///
-    /// An optimization to call VST once per a candidate block when this
-    /// provisioner is extracted for both reductions.
-    pub verified_candidates: Arc<Mutex<HashSet<[u8; 32]>>>,
 }
 
 impl<'a> ExecutionCtx<'a> {
     /// Creates step execution context.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
+        iter_ctx: &'a mut IterationCtx,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
-        verified_candidates: Arc<Mutex<HashSet<[u8; 32]>>>,
         step: u8,
     ) -> Self {
         Self {
+            iter_ctx,
             inbound,
             outbound,
             future_msgs,
             provisioners,
             round_update,
             step,
-            verified_candidates,
         }
     }
 

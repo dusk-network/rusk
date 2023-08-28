@@ -72,13 +72,14 @@ impl<T: Operations + 'static> Reduction<T> {
             //  Send reduction in async way
             if let Some(b) = &self.candidate {
                 spawn_send_reduction(
+                    &mut ctx.iter_ctx.join_set,
+                    ctx.iter_ctx.verified_hash.clone(),
                     b.clone(),
                     committee.get_my_pubkey().clone(),
                     ctx.round_update.clone(),
                     ctx.step,
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
-                    ctx.verified_candidates.clone(),
                     self.executor.clone(),
                 );
             }
