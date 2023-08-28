@@ -519,7 +519,6 @@ pub mod payload {
 
     #[derive(Clone)]
     pub struct NewBlock {
-        pub prev_hash: [u8; 32],
         pub candidate: Block,
         pub signature: [u8; 48],
     }
@@ -529,7 +528,6 @@ pub mod payload {
             f.debug_struct("NewBlock")
                 .field("signature", &ledger::to_str(&self.signature))
                 .field("candidate", &self.candidate)
-                .field("prev_hash", &ledger::to_str(&self.prev_hash))
                 .finish()
         }
     }
@@ -538,7 +536,6 @@ pub mod payload {
         fn default() -> Self {
             Self {
                 candidate: Default::default(),
-                prev_hash: Default::default(),
                 signature: [0; 48],
             }
         }
@@ -546,8 +543,7 @@ pub mod payload {
 
     impl PartialEq<Self> for NewBlock {
         fn eq(&self, other: &Self) -> bool {
-            self.prev_hash.eq(&other.prev_hash)
-                && self.signature.eq(&other.signature)
+            self.signature.eq(&other.signature)
                 && self
                     .candidate
                     .header()
@@ -560,7 +556,6 @@ pub mod payload {
 
     impl Serializable for NewBlock {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            w.write_all(&self.prev_hash[..])?;
             self.candidate.write(w)?;
             Self::write_var_bytes(w, &self.signature[..])?;
 
@@ -573,7 +568,6 @@ pub mod payload {
         {
             let mut result = NewBlock::default();
 
-            r.read_exact(&mut result.prev_hash[..])?;
             result.candidate = Block::read(r)?;
             result.signature = Self::read_var_bytes(r)?
                 .try_into()
@@ -1008,7 +1002,6 @@ mod tests {
         };
 
         assert_serialize(payload::NewBlock {
-            prev_hash: [3; 32],
             candidate: sample_block,
             signature: [4; 48],
         });
