@@ -47,18 +47,20 @@ pub struct Header {
 
 impl std::fmt::Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let timestamp =
-            chrono::NaiveDateTime::from_timestamp_opt(self.timestamp, 0)
-                .map_or_else(
-                    || "unknown".to_owned(),
-                    |v| {
-                        chrono::DateTime::<chrono::Utc>::from_utc(
-                            v,
-                            chrono::Utc,
-                        )
-                        .to_rfc2822()
-                    },
-                );
+        let timestamp = chrono::NaiveDateTime::from_timestamp_opt(
+            self.timestamp,
+            0,
+        )
+        .map_or_else(
+            || "unknown".to_owned(),
+            |v| {
+                chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
+                    v,
+                    chrono::Utc,
+                )
+                .to_rfc2822()
+            },
+        );
 
         f.debug_struct("Header")
             .field("version", &self.version)
