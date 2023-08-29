@@ -750,7 +750,7 @@ mod tests {
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(b.header(), &to_spent_txs(&b.txs))?;
+                    txn.store_block(b.header(), &to_spent_txs(&b.txs()))?;
                     Ok(())
                 })
                 .is_ok());
@@ -792,7 +792,7 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
-                txn.store_block(&b.header(), &to_spent_txs(&b.txs))
+                txn.store_block(&b.header(), &to_spent_txs(&b.txs()))
                     .expect("block to be stored");
             });
             db.view(|txn| {
@@ -816,7 +816,7 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b.header(), &to_spent_txs(&b.txs));
+                        txn.store_block(&b.header(), &to_spent_txs(&b.txs()));
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -952,12 +952,12 @@ mod tests {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
-            assert!(b.txs.len() > 0);
+            assert!(b.txs().len() > 0);
 
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header(), &to_spent_txs(&b.txs))?;
+                    txn.store_block(&b.header(), &to_spent_txs(&b.txs()))?;
                     Ok(())
                 })
                 .is_ok());
@@ -965,7 +965,7 @@ mod tests {
             // Assert all transactions of the accepted (stored) block are
             // accessible by hash.
             db.view(|v| {
-                for t in b.txs.iter() {
+                for t in b.txs().iter() {
                     assert!(v
                         .get_ledger_tx_by_hash(&t.hash())
                         .expect("should not return error")
@@ -986,7 +986,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header(), &to_spent_txs(&b.txs))?;
+                    txn.store_block(&b.header(), &to_spent_txs(&b.txs()))?;
                     Ok(())
                 })
                 .is_ok());
@@ -1012,7 +1012,7 @@ mod tests {
 
             assert!(db
                 .update(|ut| {
-                    ut.store_block(&b.header, &to_spent_txs(&b.txs))?;
+                    ut.store_block(b.header(), &to_spent_txs(b.txs()))?;
                     Ok(())
                 })
                 .is_ok());
