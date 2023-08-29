@@ -979,27 +979,27 @@ mod tests {
             topic: 0,
         });
 
-        let sample_block = ledger::Block {
-            header: ledger::Header {
-                version: 3,
-                height: 1888881,
-                timestamp: 123456789,
-                gas_limit: 111111111,
-                prev_block_hash: [1; 32],
-                seed: ledger::Seed::from([2; 48]),
-                generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
-                state_hash: [4; 32],
-                event_hash: [5; 32],
-                hash: [6; 32],
-                txroot: [7; 32],
-                cert: Certificate {
-                    first_reduction: ledger::StepVotes::new([6; 48], 22222222),
-                    second_reduction: ledger::StepVotes::new([7; 48], 3333333),
-                },
-                iteration: 1,
+        let header = ledger::Header {
+            version: 3,
+            height: 1888881,
+            timestamp: 123456789,
+            gas_limit: 111111111,
+            prev_block_hash: [1; 32],
+            seed: ledger::Seed::from([2; 48]),
+            generator_bls_pubkey: bls::PublicKeyBytes([5; 96]),
+            state_hash: [4; 32],
+            event_hash: [5; 32],
+            hash: [6; 32],
+            txroot: [7; 32],
+            cert: Certificate {
+                first_reduction: ledger::StepVotes::new([6; 48], 22222222),
+                second_reduction: ledger::StepVotes::new([7; 48], 3333333),
             },
-            txs: vec![],
+            iteration: 1,
         };
+
+        let sample_block =
+            ledger::Block::new(header, vec![]).expect("should be valid block");
 
         assert_serialize(payload::NewBlock {
             candidate: sample_block,
