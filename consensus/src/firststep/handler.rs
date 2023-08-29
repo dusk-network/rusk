@@ -78,7 +78,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signed_hash),
+            Payload::Reduction(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -98,15 +98,15 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         _step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signed_hash),
+        let signature = match &msg.payload {
+            Payload::Reduction(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
         // Collect vote, if msg payload is reduction type
         if let Some((hash, sv)) =
-            self.aggr.collect_vote(committee, &msg.header, &signed_hash)
+            self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // if the votes converged for an empty hash we invoke halt
             if hash == [0u8; 32] {

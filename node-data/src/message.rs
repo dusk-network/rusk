@@ -466,10 +466,12 @@ impl Header {
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
-    StepVotes(ledger::StepVotes),
-    StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
     Agreement(payload::Agreement),
     AggrAgreement(payload::AggrAgreement),
+
+    StepVotes(ledger::StepVotes),
+    StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
+
     Block(Box<ledger::Block>),
     Transaction(Box<ledger::Transaction>),
     GetCandidate(payload::GetCandidate),
@@ -490,12 +492,12 @@ pub mod payload {
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Reduction {
-        pub signed_hash: [u8; 48],
+        pub signature: [u8; 48],
     }
 
     impl Serializable for Reduction {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_bytes(w, &self.signed_hash[..])?;
+            Self::write_var_bytes(w, &self.signature[..])?;
             Ok(())
         }
 
@@ -503,35 +505,31 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signed_hash: [u8; 48] = Self::read_var_bytes(r)?
+            let signature: [u8; 48] = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-            Ok(Reduction { signed_hash })
+            Ok(Reduction { signature })
         }
     }
 
     impl Default for Reduction {
         fn default() -> Self {
-            Self {
-                signed_hash: [0; 48],
-            }
+            Self { signature: [0; 48] }
         }
     }
 
     #[derive(Clone)]
     pub struct NewBlock {
-        pub prev_hash: [u8; 32],
+        pub signature: [u8; 48],
         pub candidate: Block,
-        pub signed_hash: [u8; 48],
     }
 
     impl std::fmt::Debug for NewBlock {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             f.debug_struct("NewBlock")
-                .field("signed_hash", &ledger::to_str(&self.signed_hash))
+                .field("signature", &ledger::to_str(&self.signature))
                 .field("candidate", &self.candidate)
-                .field("prev_hash", &ledger::to_str(&self.prev_hash))
                 .finish()
         }
     }
@@ -540,16 +538,14 @@ pub mod payload {
         fn default() -> Self {
             Self {
                 candidate: Default::default(),
-                prev_hash: Default::default(),
-                signed_hash: [0; 48],
+                signature: [0; 48],
             }
         }
     }
 
     impl PartialEq<Self> for NewBlock {
         fn eq(&self, other: &Self) -> bool {
-            self.prev_hash.eq(&other.prev_hash)
-                && self.signed_hash.eq(&other.signed_hash)
+            self.signature.eq(&other.signature)
                 && self
                     .candidate
                     .header()
@@ -562,9 +558,8 @@ pub mod payload {
 
     impl Serializable for NewBlock {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            w.write_all(&self.prev_hash[..])?;
             self.candidate.write(w)?;
-            Self::write_var_bytes(w, &self.signed_hash[..])?;
+            Self::write_var_bytes(w, &self.signature[..])?;
 
             Ok(())
         }
@@ -573,15 +568,12 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let mut result = NewBlock::default();
-
-            r.read_exact(&mut result.prev_hash[..])?;
-            result.candidate = Block::read(r)?;
-            result.signed_hash = Self::read_var_bytes(r)?
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-            Ok(result)
+            Ok(NewBlock {
+                candidate: Block::read(r)?,
+                signature: Self::read_var_bytes(r)?
+                    .try_into()
+                    .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
+            })
         }
     }
 
@@ -660,14 +652,14 @@ pub mod payload {
     pub struct AggrAgreement {
         pub agreement: Agreement,
         pub bitset: u64,
-        pub aggr_signature: [u8; 48],
+        pub aggregate_signature: [u8; 48],
     }
 
     impl Serializable for AggrAgreement {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.agreement.write(w)?;
             w.write_all(&self.bitset.to_le_bytes())?;
-            Self::write_var_bytes(w, &self.aggr_signature[..])?;
+            Self::write_var_bytes(w, &self.aggregate_signature[..])?;
 
             Ok(())
         }
@@ -689,7 +681,7 @@ pub mod payload {
             Ok(AggrAgreement {
                 agreement,
                 bitset,
-                aggr_signature,
+                aggregate_signature: aggr_signature,
             })
         }
     }
@@ -697,7 +689,7 @@ pub mod payload {
     impl Default for AggrAgreement {
         fn default() -> Self {
             Self {
-                aggr_signature: [0; 48],
+                aggregate_signature: [0; 48],
                 agreement: Default::default(),
                 bitset: 0,
             }
@@ -1010,49 +1002,46 @@ mod tests {
         };
 
         assert_serialize(payload::NewBlock {
-            prev_hash: [3; 32],
             candidate: sample_block,
-            signed_hash: [4; 48],
+            signature: [4; 48],
         });
 
         assert_serialize(payload::AggrAgreement {
             agreement: payload::Agreement {
                 first_step: StepVotes {
                     bitset: 12345,
-                    signature: Signature([1; 48]),
+                    aggregate_signature: Signature([1; 48]),
                 },
                 second_step: StepVotes {
                     bitset: 98765,
-                    signature: Signature([2; 48]),
+                    aggregate_signature: Signature([2; 48]),
                 },
                 signature: [3; 48],
             },
-            aggr_signature: [8; 48],
+            aggregate_signature: [8; 48],
             bitset: 10,
         });
 
         assert_serialize(ledger::StepVotes {
             bitset: 12345,
-            signature: Signature([4; 48]),
+            aggregate_signature: Signature([4; 48]),
         });
 
-        assert_serialize(payload::Reduction {
-            signed_hash: [4; 48],
-        });
+        assert_serialize(payload::Reduction { signature: [4; 48] });
 
         assert_serialize(ledger::StepVotes {
             bitset: 12345,
-            signature: Signature([4; 48]),
+            aggregate_signature: Signature([4; 48]),
         });
 
         assert_serialize(payload::Agreement {
             first_step: ledger::StepVotes {
                 bitset: 12345,
-                signature: Signature([1; 48]),
+                aggregate_signature: Signature([1; 48]),
             },
             second_step: ledger::StepVotes {
                 bitset: 98765,
-                signature: Signature([2; 48]),
+                aggregate_signature: Signature([2; 48]),
             },
             signature: [3; 48],
         });

@@ -155,8 +155,14 @@ impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // In order to be aligned with golang impl,
         // we cannot use here StepVotes::write for now.
-        Self::write_var_bytes(w, &self.first_reduction.signature.inner()[..])?;
-        Self::write_var_bytes(w, &self.second_reduction.signature.inner()[..])?;
+        Self::write_var_bytes(
+            w,
+            &self.first_reduction.aggregate_signature.inner()[..],
+        )?;
+        Self::write_var_bytes(
+            w,
+            &self.second_reduction.aggregate_signature.inner()[..],
+        )?;
 
         w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
         w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
@@ -187,11 +193,11 @@ impl Serializable for Certificate {
         Ok(Certificate {
             first_reduction: StepVotes {
                 bitset: first_red_bitset,
-                signature: Signature(first_red_signature),
+                aggregate_signature: Signature(first_red_signature),
             },
             second_reduction: StepVotes {
                 bitset: sec_red_bitset,
-                signature: Signature(second_red_signature),
+                aggregate_signature: Signature(second_red_signature),
             },
         })
     }
@@ -200,7 +206,7 @@ impl Serializable for Certificate {
 impl Serializable for StepVotes {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.bitset.to_le_bytes())?;
-        Self::write_var_bytes(w, &self.signature.inner()[..])?;
+        Self::write_var_bytes(w, &self.aggregate_signature.inner()[..])?;
 
         Ok(())
     }
@@ -211,13 +217,13 @@ impl Serializable for StepVotes {
     {
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
-        let signature: [u8; 48] = Self::read_var_bytes(r)?
+        let aggregate_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         Ok(StepVotes {
             bitset: u64::from_le_bytes(buf),
-            signature: Signature(signature),
+            aggregate_signature: Signature(aggregate_signature),
         })
     }
 }

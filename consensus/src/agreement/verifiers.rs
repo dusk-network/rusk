@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::marshal_signable_vote;
-
 use node_data::ledger::{Seed, StepVotes};
 
 use crate::user::cluster::Cluster;
@@ -15,7 +13,7 @@ use bytes::Buf;
 
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
-use node_data::message::{Header, Message, Payload};
+use node_data::message::{marshal_signable_vote, Header, Message, Payload};
 use std::fmt::{self, Display};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -131,7 +129,7 @@ pub async fn verify_step_votes(
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
-        &sv.signature.inner(),
+        &sv.aggregate_signature.inner(),
         committees_set,
         &cfg,
     )

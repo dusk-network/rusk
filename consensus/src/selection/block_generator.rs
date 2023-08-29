@@ -62,8 +62,7 @@ impl<T: Operations> Generator<T> {
             topic: Topics::NewBlock as u8,
         };
 
-        let signed_hash =
-            msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         info!(
             event = "gen_candidate",
@@ -76,9 +75,8 @@ impl<T: Operations> Generator<T> {
         Ok(Message::new_newblock(
             msg_header,
             NewBlock {
-                prev_hash: ru.hash,
                 candidate,
-                signed_hash,
+                signature,
             },
         ))
     }

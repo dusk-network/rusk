@@ -72,7 +72,7 @@ impl<D: Database> Selection<D> {
     ) -> Result<(), ConsensusError> {
         if let Payload::NewBlock(p) = &msg.payload {
             //  Verify new_block msg signature
-            if msg.header.verify_signature(&p.signed_hash).is_err() {
+            if msg.header.verify_signature(&p.signature).is_err() {
                 return Err(ConsensusError::InvalidSignature);
             }
 

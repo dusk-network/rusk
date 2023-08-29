@@ -243,19 +243,19 @@ impl Block {
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct StepVotes {
     pub bitset: u64,
-    pub signature: Signature,
+    pub aggregate_signature: Signature,
 }
 
 impl StepVotes {
-    pub fn new(signature: [u8; 48], bitset: u64) -> StepVotes {
+    pub fn new(aggregate_signature: [u8; 48], bitset: u64) -> StepVotes {
         StepVotes {
             bitset,
-            signature: Signature(signature),
+            aggregate_signature: Signature(aggregate_signature),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bitset == 0 || self.signature.is_zeroed()
+        self.bitset == 0 || self.aggregate_signature.is_zeroed()
     }
 }
 
