@@ -83,6 +83,7 @@ impl Serializable for Transaction {
 impl Serializable for SpentTransaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.inner.write(w)?;
+        w.write_all(&self.block_height.to_le_bytes())?;
         w.write_all(&self.gas_spent.to_le_bytes())?;
 
         match &self.err {
@@ -107,6 +108,10 @@ impl Serializable for SpentTransaction {
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
+        let block_height = u64::from_le_bytes(buf);
+
+        let mut buf = [0u8; 8];
+        r.read_exact(&mut buf)?;
         let gas_spent = u64::from_le_bytes(buf);
 
         let mut buf = [0u8; 8];
@@ -125,6 +130,7 @@ impl Serializable for SpentTransaction {
 
         Ok(Self {
             inner,
+            block_height,
             gas_spent,
             err,
         })

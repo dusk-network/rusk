@@ -99,6 +99,7 @@ impl From<phoenix_core::Transaction> for Transaction {
 #[derive(Debug, Clone)]
 pub struct SpentTransaction {
     pub inner: Transaction,
+    pub block_height: u64,
     pub gas_spent: u64,
     pub err: Option<String>,
 }
@@ -368,6 +369,7 @@ pub mod faker {
             let tx = gen_dummy_tx(1_000_000);
             SpentTransaction {
                 inner: tx,
+                block_height: 0,
                 gas_spent: 3,
                 err: Some("error".to_string()),
             }
