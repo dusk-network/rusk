@@ -89,7 +89,7 @@ impl Aggregator {
 
                 let step_votes = StepVotes {
                     bitset,
-                    signature: Signature::from(s),
+                    aggregate_signature: Signature::from(s),
                 };
 
                 tracing::info!(

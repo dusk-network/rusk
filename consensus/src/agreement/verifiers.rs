@@ -129,7 +129,7 @@ pub async fn verify_step_votes(
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
-        &sv.signature.inner(),
+        &sv.aggregate_signature.inner(),
         committees_set,
         &cfg,
     )
