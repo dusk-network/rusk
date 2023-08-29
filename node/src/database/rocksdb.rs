@@ -845,8 +845,7 @@ mod tests {
     }
 
     fn assert_blocks_eq(a: &mut ledger::Block, b: &mut ledger::Block) {
-        assert!(a.calculate_hash().is_ok());
-        assert!(b.calculate_hash().is_ok());
+        assert!(a.header().hash != [0u8; 32]);
         assert!(a.header().hash.eq(&b.header().hash));
     }
 
