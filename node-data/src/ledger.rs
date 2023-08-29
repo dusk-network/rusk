@@ -218,7 +218,7 @@ impl Block {
         Ok(b)
     }
 
-    pub fn calculate_hash(&mut self) -> io::Result<()> {
+    fn calculate_hash(&mut self) -> io::Result<()> {
         // Call hasher only if header.hash is empty
         if self.header.hash != Hash::default() {
             return Ok(());
