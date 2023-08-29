@@ -88,7 +88,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         };
 
         acc.task.write().await.spawn(
-            &mrb.header,
+            mrb.header(),
             &provisioners_list.clone(),
             &db,
             &vm,
@@ -145,7 +145,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .db
             .read()
             .await
-            .update(|t| t.get_block_exists(&blk.header.hash))?;
+            .update(|t| t.get_block_exists(&blk.header().hash))?;
 
         if !exists {
             return Err(anyhow::anyhow!("could not find block"));
@@ -158,7 +158,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.db
             .read()
             .await
-            .update(|t| t.set_register(&blk.header))?;
+            .update(|t| t.set_register(blk.header()))?;
 
         *provisioners_list = self.vm.read().await.get_provisioners()?;
         *mrb = blk.clone();
@@ -180,10 +180,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Verify Block Header
         verify_block_header(
             self.db.clone(),
-            &mrb.header.clone(),
+            &mrb.header().clone(),
             provisioners_list.clone(),
             &public_key,
-            &blk.header,
+            blk.header(),
         )
         .await?;
 
@@ -194,22 +194,22 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = match blk.header.iteration {
+                let (txs, verification_output) = match blk.header().iteration {
                     1 => vm.finalize(blk)?,
                     _ => vm.accept(blk)?,
                 };
 
                 assert_eq!(
-                    blk.header.state_hash,
+                    blk.header().state_hash,
                     verification_output.state_root
                 );
                 assert_eq!(
-                    blk.header.event_hash,
+                    blk.header().event_hash,
                     verification_output.event_hash
                 );
 
                 // Store block with updated transactions with Error and GasSpent
-                t.store_block(&blk.header, &txs)?;
+                t.store_block(blk.header(), &txs)?;
 
                 Ok(txs)
             })?;
@@ -230,7 +230,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Delete from mempool any transaction already included in the block
         self.db.read().await.update(|update| {
-            for tx in blk.txs.iter() {
+            for tx in blk.txs().iter() {
                 database::Mempool::delete_tx(update, tx.hash());
             }
             Ok(())
@@ -238,17 +238,17 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         info!(
             event = "block accepted",
-            height = blk.header.height,
-            iter = blk.header.iteration,
-            hash = to_str(&blk.header.hash),
-            txs = blk.txs.len(),
-            state_hash = to_str(&blk.header.state_hash)
+            height = blk.header().height,
+            iter = blk.header().iteration,
+            hash = to_str(&blk.header().hash),
+            txs = blk.txs().len(),
+            state_hash = to_str(&blk.header().state_hash)
         );
 
         // Restart Consensus.
         if enable_consensus {
             task.spawn(
-                &mrb.header,
+                mrb.header(),
                 &provisioners_list,
                 &self.db,
                 &self.vm,
@@ -293,16 +293,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 let blk = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
-                if blk.header.state_hash == target_state_hash {
+                if blk.header().state_hash == target_state_hash {
                     most_recent_block = blk;
                     break;
                 }
 
                 info!(
                     event = "deleted block height",
-                    height = blk.header.height,
-                    iter = blk.header.iteration,
-                    hash = hex::encode(blk.header.hash)
+                    height = blk.header().height,
+                    iter = blk.header().iteration,
+                    hash = hex::encode(blk.header().hash)
                 );
 
                 // Delete any rocksdb record related to this block
@@ -322,35 +322,35 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
-        if most_recent_block.header.state_hash != target_state_hash {
+        if most_recent_block.header().state_hash != target_state_hash {
             return Err(anyhow!("Failed to revert to proper state"));
         }
 
         // Update blockchain tip to be the one we reverted to.
         info!(
             event = "updating blockchain tip",
-            height = most_recent_block.header.height,
-            iter = most_recent_block.header.iteration,
-            state_root = hex::encode(most_recent_block.header.state_hash)
+            height = most_recent_block.header().height,
+            iter = most_recent_block.header().iteration,
+            state_root = hex::encode(most_recent_block.header().state_hash)
         );
 
         self.update_most_recent_block(&most_recent_block).await
     }
 
     pub(crate) async fn get_curr_height(&self) -> u64 {
-        self.mrb.read().await.header.height
+        self.mrb.read().await.header().height
     }
 
     pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
-        self.mrb.read().await.header.hash
+        self.mrb.read().await.header().hash
     }
 
     pub(crate) async fn get_curr_timestamp(&self) -> i64 {
-        self.mrb.read().await.header.timestamp
+        self.mrb.read().await.header().timestamp
     }
 
     pub(crate) async fn get_curr_iteration(&self) -> u8 {
-        self.mrb.read().await.header.iteration
+        self.mrb.read().await.header().iteration
     }
 
     pub(crate) async fn get_result_chan(

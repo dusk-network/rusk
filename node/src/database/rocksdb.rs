@@ -278,14 +278,16 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     }
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()> {
-        self.inner
-            .delete_cf(self.ledger_height_cf, b.header.height.to_le_bytes())?;
+        self.inner.delete_cf(
+            self.ledger_height_cf,
+            b.header().height.to_le_bytes(),
+        )?;
 
-        for tx in &b.txs {
+        for tx in b.txs() {
             self.inner.delete_cf(self.ledger_txs_cf, tx.hash())?;
         }
 
-        self.inner.delete_cf(self.ledger_cf, b.header.hash)?;
+        self.inner.delete_cf(self.ledger_cf, b.header().hash)?;
 
         Ok(())
     }
@@ -316,10 +318,10 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                     txs.push(tx.inner);
                 }
 
-                Ok(Some(ledger::Block {
-                    header: record.header,
-                    txs,
-                }))
+                Ok(Some(
+                    ledger::Block::new(record.header, txs)
+                        .expect("block should be valid"),
+                ))
             }
             None => Ok(None),
         }
@@ -403,7 +405,7 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
         b.write(&mut serialized)?;
 
         self.inner
-            .put_cf(self.candidates_cf, b.header.hash, serialized)?;
+            .put_cf(self.candidates_cf, b.header().hash, serialized)?;
 
         Ok(())
     }
@@ -621,7 +623,7 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
                 self.snapshot.get_cf(self.ledger_cf, &hash[..])
             {
                 let b = ledger::Block::read(&mut &blob[..]).unwrap_or_default();
-                writeln!(f, "ledger_block [{}]: {:#?}", b.header.height, b)
+                writeln!(f, "ledger_block [{}]: {:#?}", b.header().height, b)
             } else {
                 Ok(())
             }
@@ -642,7 +644,8 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
                     writeln!(
                         f,
                         "candidate_block [{}]: {:#?}",
-                        b.header.height, b
+                        b.header().height,
+                        b
                     )
                 } else {
                     Ok(())
@@ -741,13 +744,13 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
-            assert!(b.txs.len() > 0);
+            assert!(b.txs().len() > 0);
 
-            let hash = b.header.hash;
+            let hash = b.header().hash;
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
+                    txn.store_block(b.header(), &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -758,12 +761,12 @@ mod tests {
                     .fetch_block(&hash)
                     .expect("Block to be fetched")
                     .expect("Block to exist");
-                assert_eq!(db_blk.header.hash, b.header.hash);
+                assert_eq!(db_blk.header().hash, b.header().hash);
 
                 // Assert all transactions are fully fetched from ledger as
                 // well.
-                for pos in (0..b.txs.len()) {
-                    assert_eq!(db_blk.txs[pos].hash(), b.txs[pos].hash());
+                for pos in (0..b.txs().len()) {
+                    assert_eq!(db_blk.txs()[pos].hash(), b.txs()[pos].hash());
                 }
             });
 
@@ -789,12 +792,12 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
-                txn.store_block(&b.header, &to_spent_txs(&b.txs))
+                txn.store_block(&b.header(), &to_spent_txs(&b.txs))
                     .expect("block to be stored");
             });
             db.view(|txn| {
                 assert!(txn
-                    .fetch_block(&b.header.hash)
+                    .fetch_block(&b.header().hash)
                     .expect("block to be fetched")
                     .is_none());
             });
@@ -806,14 +809,14 @@ mod tests {
         TestWrapper::new("test_transaction_isolation").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
-            let hash = b.header.hash;
+            let hash = b.header().hash;
 
             db.view(|txn| {
                 // Simulate a concurrent update is committed during read-only
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b.header, &to_spent_txs(&b.txs));
+                        txn.store_block(&b.header(), &to_spent_txs(&b.txs));
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -844,7 +847,7 @@ mod tests {
     fn assert_blocks_eq(a: &mut ledger::Block, b: &mut ledger::Block) {
         assert!(a.calculate_hash().is_ok());
         assert!(b.calculate_hash().is_ok());
-        assert!(a.header.hash.eq(&b.header.hash));
+        assert!(a.header().hash.eq(&b.header().hash));
     }
 
     #[test]
@@ -954,7 +957,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
+                    txn.store_block(&b.header(), &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -983,7 +986,7 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header, &to_spent_txs(&b.txs))?;
+                    txn.store_block(&b.header(), &to_spent_txs(&b.txs))?;
                     Ok(())
                 })
                 .is_ok());
@@ -991,10 +994,10 @@ mod tests {
             // Assert block hash is accessible by height.
             db.view(|v| {
                 assert!(v
-                    .fetch_block_hash_by_height(b.header.height)
+                    .fetch_block_hash_by_height(b.header().height)
                     .expect("should not return error")
                     .expect("should find a block")
-                    .eq(&b.header.hash));
+                    .eq(&b.header().hash));
             });
         });
     }

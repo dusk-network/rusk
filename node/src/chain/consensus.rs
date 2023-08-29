@@ -208,7 +208,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 
                 // Ensure that the received candidate block is the one we
                 // requested
-                if b.header.hash != *h {
+                if b.header().hash != *h {
                     return Err(anyhow::anyhow!(
                         "incorrect candidate block hash"
                     ));
@@ -216,8 +216,8 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 
                 tracing::info!(
                     "received candidate height: {:?}  hash: {:?}",
-                    b.header.height,
-                    hex::ToHex::encode_hex::<String>(&b.header.hash)
+                    b.header().height,
+                    hex::ToHex::encode_hex::<String>(&b.header().hash)
                 );
 
                 Ok(b)

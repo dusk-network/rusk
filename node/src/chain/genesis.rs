@@ -5,14 +5,17 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::Block;
+use node_data::ledger::{Block, Header};
 
 /// Generates the genesis state for the chain per specified network type
 pub(crate) fn generate_state() -> Block {
-    // TBD
-    let mut b = Block::default();
-    // March 9, 2022 16:10:22 GMT
-    b.header.timestamp = 1646842222;
-    b.calculate_hash();
-    b
+    Block::new(
+        Header {
+            // March 9, 2022 16:10:22 GMT
+            timestamp: 1646842222,
+            ..Default::default()
+        },
+        vec![],
+    )
+    .expect("block should be valid")
 }

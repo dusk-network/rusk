@@ -305,7 +305,7 @@ impl DataBrokerSrv {
                     .ok_or_else(|| {
                         anyhow::anyhow!("could not find locator block")
                     })?
-                    .header
+                    .header()
                     .height;
 
                 loop {
