@@ -21,8 +21,8 @@ pub type Hash = [u8; 32];
 
 #[derive(Default, Debug, Clone)]
 pub struct Block {
-    pub header: Header,
-    pub txs: Vec<Transaction>,
+    header: Header,
+    txs: Vec<Transaction>,
 }
 
 #[derive(Default, Eq, PartialEq, Clone)]
@@ -236,6 +236,10 @@ impl Block {
     }
     pub fn txs(&self) -> &Vec<Transaction> {
         &self.txs
+    }
+
+    pub fn set_certificate(&mut self, cert: Certificate) {
+        self.header.cert = cert;
     }
 }
 

@@ -14,7 +14,7 @@ impl Serializable for Block {
 
         Self::write_varint(w, self.txs().len() as u64)?;
 
-        for t in self.txs.iter() {
+        for t in self.txs().iter() {
             t.write(w)?;
         }
 
