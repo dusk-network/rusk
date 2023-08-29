@@ -14,7 +14,7 @@ use node::network::Kadcast;
 use node::Network;
 use node_data::message::Message;
 
-use graphql::{Ctx, Query};
+use graphql::{DBContext, Query};
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,

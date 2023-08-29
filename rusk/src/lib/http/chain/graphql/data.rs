@@ -1,0 +1,237 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+// Copyright (c) DUSK NETWORK. All rights reserved.
+
+use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
+use node::database::{Ledger, DB};
+
+pub struct Block {
+    header: node_data::ledger::Header,
+    txs_id: Vec<[u8; 32]>,
+}
+
+impl Block {
+    pub fn new(
+        header: node_data::ledger::Header,
+        txs_id: Vec<[u8; 32]>,
+    ) -> Self {
+        Self { header, txs_id }
+    }
+
+    pub fn header(&self) -> &node_data::ledger::Header {
+        &self.header
+    }
+}
+
+pub struct Header<'a>(&'a node_data::ledger::Header);
+pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
+pub struct Transaction<'a>(&'a node_data::ledger::Transaction);
+
+#[Object]
+impl Block {
+    #[graphql(name = "header")]
+    pub async fn gql_header(&self) -> Header {
+        Header(&self.header)
+    }
+
+    pub async fn transactions(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<Vec<SpentTransaction>> {
+        let db = ctx.data::<super::DBContext>()?.read().await;
+        let mut ret = vec![];
+
+        db.view(|t| {
+            for id in &self.txs_id {
+                let tx = t.get_ledger_tx_by_hash(id)?.ok_or_else(|| {
+                    FieldError::new("Cannot find transaction")
+                })?;
+                ret.push(SpentTransaction(tx));
+            }
+            Ok::<(), async_graphql::Error>(())
+        })?;
+
+        Ok(ret)
+    }
+
+    pub async fn reward(&self) -> u64 {
+        crate::emission_amount(self.header.height)
+    }
+
+    pub async fn fees(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<u64> {
+        let fees = self
+            .transactions(ctx)
+            .await?
+            .iter()
+            .map(|t| t.0.gas_spent * t.0.inner.gas_price())
+            .sum();
+        Ok(fees)
+    }
+
+    pub async fn gas_spent(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<u64> {
+        let gas_spent = self
+            .transactions(ctx)
+            .await?
+            .iter()
+            .map(|t| t.0.gas_spent)
+            .sum();
+        Ok(gas_spent)
+    }
+}
+
+#[Object]
+impl<'a> Header<'a> {
+    pub async fn version(&self) -> u8 {
+        self.0.version
+    }
+
+    pub async fn height(&self) -> u64 {
+        self.0.height
+    }
+
+    pub async fn prev_block_hash(&self) -> String {
+        hex::encode(self.0.prev_block_hash)
+    }
+
+    pub async fn timestamp(&self) -> i64 {
+        self.0.timestamp
+    }
+
+    pub async fn hash(&self) -> String {
+        hex::encode(self.0.hash)
+    }
+
+    pub async fn generator_bls_pubkey(&self) -> String {
+        bs58::encode(self.0.generator_bls_pubkey.0).into_string()
+    }
+
+    pub async fn tx_root(&self) -> String {
+        hex::encode(self.0.txroot)
+    }
+
+    pub async fn gas_limit(&self) -> u64 {
+        self.0.gas_limit
+    }
+
+    pub async fn seed(&self) -> String {
+        hex::encode(self.0.seed.0)
+    }
+
+    pub async fn iteration(&self) -> u8 {
+        self.0.iteration
+    }
+}
+
+#[Object]
+impl SpentTransaction {
+    pub async fn tx(&self) -> Transaction {
+        Transaction(&self.0.inner)
+    }
+
+    pub async fn err(&self) -> &Option<String> {
+        &self.0.err
+    }
+
+    pub async fn gas_spent(&self) -> u64 {
+        self.0.gas_spent
+    }
+
+    pub async fn block_hash(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<String> {
+        let db = ctx.data::<super::DBContext>()?.read().await;
+        let block_height = self.0.block_height;
+
+        let block_hash = db.view(|t| {
+            t.fetch_block_hash_by_height(block_height)?.ok_or_else(|| {
+                FieldError::new("Cannot find block hash by height")
+            })
+        })?;
+
+        Ok(hex::encode(block_hash))
+    }
+
+    pub async fn block_height(&self) -> u64 {
+        self.0.block_height
+    }
+
+    pub async fn block_timestamp(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<i64> {
+        let db = ctx.data::<super::DBContext>()?.read().await;
+        let block_height = self.0.block_height;
+
+        let (header, _) = db.view(|t| {
+            let block_hash =
+                t.fetch_block_hash_by_height(block_height)?.ok_or_else(
+                    || FieldError::new("Cannot find block hash by height"),
+                )?;
+            t.fetch_block_header(&block_hash)?
+                .ok_or_else(|| FieldError::new("Cannot find block header"))
+        })?;
+
+        Ok(header.timestamp)
+    }
+
+    pub async fn id(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<String> {
+        self.tx(ctx).await?.id(ctx).await
+    }
+
+    pub async fn raw(
+        &self,
+        ctx: &async_graphql::Context<'_>,
+    ) -> FieldResult<String> {
+        self.tx(ctx).await?.raw(ctx).await
+    }
+}
+
+#[Object]
+impl<'a> Transaction<'a> {
+    pub async fn raw(&self) -> String {
+        hex::encode(self.0.inner.to_var_bytes())
+    }
+
+    pub async fn id(&self) -> String {
+        hex::encode(self.0.hash())
+    }
+
+    pub async fn gas_limit(&self) -> u64 {
+        self.0.inner.fee().gas_limit
+    }
+
+    pub async fn gas_price(&self) -> u64 {
+        self.0.inner.fee().gas_price
+    }
+
+    pub async fn call_data(&self) -> Option<CallData> {
+        self.0
+            .inner
+            .call
+            .as_ref()
+            .map(|(contract_id, fn_name, data)| CallData {
+                contract_id: hex::encode(contract_id),
+                fn_name: fn_name.into(),
+                data: hex::encode(data),
+            })
+    }
+}
+
+#[derive(SimpleObject)]
+pub struct CallData {
+    contract_id: String,
+    fn_name: String,
+    data: String,
+}

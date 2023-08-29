@@ -902,7 +902,7 @@ const fn coinbase_value(block_height: u64, dusk_spent: u64) -> (Dusk, Dusk) {
 }
 
 /// This implements the emission schedule described in the economic paper.
-const fn emission_amount(block_height: u64) -> Dusk {
+pub const fn emission_amount(block_height: u64) -> Dusk {
     match block_height {
         1..=12_500_000 => dusk(16.0),
         12_500_001..=18_750_000 => dusk(12.8),
