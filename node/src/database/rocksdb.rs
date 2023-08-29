@@ -940,6 +940,7 @@ mod tests {
         txs.iter()
             .map(|t| SpentTransaction {
                 inner: t.clone(),
+                block_height: 0,
                 gas_spent: 0,
                 err: None,
             })
