@@ -57,7 +57,7 @@ impl Query {
         contract: Option<String>,
     ) -> FieldResult<Vec<Transaction>> {
         let blocks = self.blocks(ctx, last, range).await?;
-        let txs = blocks.into_iter().flat_map(|Block { txs, .. }| txs);
+        let txs = blocks.into_iter().flat_map(|b| b.txs().clone());
 
         let txs =
             match contract {

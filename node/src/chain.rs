@@ -197,7 +197,7 @@ impl ChainSrv {
                     let genesis_blk = genesis::generate_state();
 
                     /// Persist genesis block
-                    t.store_block(&genesis_blk.header, &[]);
+                    t.store_block(genesis_blk.header(), &[]);
                     genesis_blk
                 }
             };
@@ -207,9 +207,9 @@ impl ChainSrv {
 
         tracing::info!(
             event = "Ledger block loaded",
-            height = mrb.header.height,
-            hash = hex::encode(mrb.header.hash),
-            state_root = hex::encode(mrb.header.state_hash)
+            height = mrb.header().height,
+            hash = hex::encode(mrb.header().hash),
+            state_root = hex::encode(mrb.header().state_hash)
         );
 
         Ok(mrb)

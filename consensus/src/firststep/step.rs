@@ -46,7 +46,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
             round = round,
             step = step,
             timeout = self.timeout_millis,
-            hash = to_str(&self.handler.candidate.header.hash),
+            hash = to_str(&self.handler.candidate.header().hash),
         )
     }
 

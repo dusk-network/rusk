@@ -21,8 +21,8 @@ pub type Hash = [u8; 32];
 
 #[derive(Default, Debug, Clone)]
 pub struct Block {
-    pub header: Header,
-    pub txs: Vec<Transaction>,
+    header: Header,
+    txs: Vec<Transaction>,
 }
 
 #[derive(Default, Eq, PartialEq, Clone)]
@@ -218,7 +218,7 @@ impl Block {
         Ok(b)
     }
 
-    pub fn calculate_hash(&mut self) -> io::Result<()> {
+    fn calculate_hash(&mut self) -> io::Result<()> {
         // Call hasher only if header.hash is empty
         if self.header.hash != Hash::default() {
             return Ok(());
@@ -236,6 +236,10 @@ impl Block {
     }
     pub fn txs(&self) -> &Vec<Transaction> {
         &self.txs
+    }
+
+    pub fn set_certificate(&mut self, cert: Certificate) {
+        self.header.cert = cert;
     }
 }
 

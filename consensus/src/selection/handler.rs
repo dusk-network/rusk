@@ -76,14 +76,14 @@ impl<D: Database> Selection<D> {
                 return Err(ConsensusError::InvalidSignature);
             }
 
-            if msg.header.block_hash != p.candidate.header.hash {
+            if msg.header.block_hash != p.candidate.header().hash {
                 return Err(ConsensusError::InvalidBlockHash);
             }
 
             let tx_hashes: Vec<[u8; 32]> =
                 p.candidate.txs().iter().map(|t| t.hash()).collect();
             let tx_root = merkle_root(&tx_hashes[..]);
-            if tx_root != p.candidate.header.txroot {
+            if tx_root != p.candidate.header().txroot {
                 return Err(ConsensusError::InvalidBlock);
             }
 

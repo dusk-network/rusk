@@ -44,12 +44,12 @@ pub struct SimpleDB {
 #[async_trait::async_trait]
 impl Database for SimpleDB {
     fn store_candidate_block(&mut self, b: Block) {
-        if b.header.hash == Hash::default() {
+        if b.header().hash == Hash::default() {
             tracing::error!("candidate block with empty hash");
             return;
         }
 
-        self.candidates.entry(b.header.hash).or_insert(b);
+        self.candidates.entry(b.header().hash).or_insert(b);
     }
 
     async fn get_candidate_block_by_hash(
