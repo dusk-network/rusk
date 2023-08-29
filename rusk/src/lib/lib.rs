@@ -188,6 +188,7 @@ impl Rusk {
             spent_txs.push(SpentTransaction {
                 inner: unspent_tx.clone(),
                 gas_spent,
+                block_height,
                 err: call_result.map(|e| format!("{e:?}")),
             });
 
@@ -678,6 +679,7 @@ fn accept(
         spent_txs.push(SpentTransaction {
             inner: unspent_tx.clone(),
             gas_spent,
+            block_height,
 
             err: call_result.map(|e| format!("{e:?}")),
         });
