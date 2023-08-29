@@ -55,6 +55,11 @@ pub trait Ledger {
     ) -> Result<()>;
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;
+    fn fetch_block_header(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<(ledger::Header, Vec<[u8; 32]>)>>;
+
     fn fetch_block(&self, hash: &[u8]) -> Result<Option<ledger::Block>>;
     fn fetch_block_hash_by_height(
         &self,
