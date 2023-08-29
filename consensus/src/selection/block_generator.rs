@@ -57,7 +57,7 @@ impl<T: Operations> Generator<T> {
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            block_hash: candidate.header.hash,
+            block_hash: candidate.header().hash,
             step,
             topic: Topics::NewBlock as u8,
         };
@@ -66,8 +66,8 @@ impl<T: Operations> Generator<T> {
 
         info!(
             event = "gen_candidate",
-            hash = &to_str(&candidate.header.hash),
-            state_hash = &to_str(&candidate.header.state_hash),
+            hash = &to_str(&candidate.header().hash),
+            state_hash = &to_str(&candidate.header().state_hash),
         );
 
         debug!("block: {:?}", &candidate);

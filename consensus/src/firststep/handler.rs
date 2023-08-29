@@ -118,7 +118,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                 ));
             }
 
-            if hash != self.candidate.header.hash {
+            if hash != self.candidate.header().hash {
                 // If the block generator is behind this node, we'll miss the
                 // candidate block.
                 if let Ok(block) = self

@@ -81,15 +81,15 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     inbound: AsyncQueue<Message>,
     executor: Arc<Mutex<T>>,
 ) {
-    let hash = to_str(&candidate.header.hash);
+    let hash = to_str(&candidate.header().hash);
 
     join_set.spawn(
         async move {
-            let hash = candidate.header.hash;
+            let hash = candidate.header().hash;
             let already_verified = *verified_hash.lock().await == hash;
 
             if !already_verified && hash != [0u8; 32] {
-                let pubkey = &candidate.header.generator_bls_pubkey.0;
+                let pubkey = &candidate.header().generator_bls_pubkey.0;
                 let generator =
                     match dusk_bls12_381_sign::PublicKey::from_slice(pubkey) {
                         Ok(pubkey) => pubkey,
@@ -109,10 +109,10 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                     .verify_state_transition(
                         CallParams {
                             round: ru.round,
-                            block_gas_limit: candidate.header.gas_limit,
+                            block_gas_limit: candidate.header().gas_limit,
                             generator_pubkey: PublicKey::new(generator),
                         },
-                        candidate.txs.clone(),
+                        candidate.txs().clone(),
                     )
                     .await
                 {
@@ -122,27 +122,27 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                         // ones we expect to have with the
                         // current candidate block.
                         if verification_output.event_hash
-                            != candidate.header.event_hash
+                            != candidate.header().event_hash
                         {
                             error!(
                                 desc = "event hash mismatch",
                                 event_hash =
                                     hex::encode(verification_output.event_hash),
                                 candidate_event_hash =
-                                    hex::encode(candidate.header.event_hash),
+                                    hex::encode(candidate.header().event_hash),
                             );
                             return;
                         }
 
                         if verification_output.state_root
-                            != candidate.header.state_hash
+                            != candidate.header().state_hash
                         {
                             error!(
                                 desc = "state hash mismatch",
                                 vst_state_hash =
                                     hex::encode(verification_output.state_root),
                                 state_hash =
-                                    hex::encode(candidate.header.state_hash),
+                                    hex::encode(candidate.header().state_hash),
                             );
                             return;
                         }

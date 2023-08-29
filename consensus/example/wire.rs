@@ -194,7 +194,7 @@ mod tests {
             .expect("should be valid hash");
 
         // Check if calculate hash is correct
-        assert_eq!(candidate.header.hash, FIXED_HASH);
+        assert_eq!(candidate.header().hash, FIXED_HASH);
 
         // Ensure that the dumped message is properly encoded
         assert_eq!(
@@ -203,7 +203,7 @@ mod tests {
                     pubkey_bls: PublicKey::default(),
                     round: 999999,
                     step: 255,
-                    block_hash: candidate.header.hash,
+                    block_hash: candidate.header().hash,
                     topic: Topics::NewBlock as u8,
                 },
                 NewBlock {

@@ -112,7 +112,7 @@ fn spawn_consensus_in_thread_pool(
                                 i,
                                 keys.1.clone(),
                                 keys.0,
-                                chain_tip.header.seed,
+                                chain_tip.header().seed,
                             ),
                             p.clone(),
                             cancel_rx,
