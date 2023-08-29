@@ -14,7 +14,7 @@ use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::contract_state::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Block, SpentTransaction};
+use node_data::ledger::{Block, Header, SpentTransaction};
 use tracing::info;
 
 use crate::common::keys::BLS_SK;
@@ -103,13 +103,18 @@ pub fn generator_procedure(
         rusk.verify_state_transition(&verify_param, txs.clone())?;
     info!("verify_state_transition new verification: {verify_output}",);
 
-    let mut block = Block::default();
-    block.header.generator_bls_pubkey = generator_pubkey_bytes;
-    block.header.gas_limit = block_gas_limit;
-    block.header.height = block_height;
-    block.header.state_hash = execute_output.state_root;
-    block.header.event_hash = execute_output.event_hash;
-    block.txs = txs;
+    let block = Block::new(
+        Header {
+            height: block_height,
+            gas_limit: block_gas_limit,
+            generator_bls_pubkey: generator_pubkey_bytes,
+            state_hash: execute_output.state_root,
+            event_hash: execute_output.event_hash,
+            ..Default::default()
+        },
+        txs,
+    )
+    .expect("valid block");
 
     let (accept_txs, accept_output) = rusk.accept(&block)?;
 
