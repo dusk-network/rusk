@@ -64,20 +64,20 @@ impl VMExecution for Rusk {
         blk: &Block,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
-        let generator = blk.header.generator_bls_pubkey;
+        let generator = blk.header().generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, verification_output) = self
             .accept_transactions(
-                blk.header.height,
-                blk.header.gas_limit,
+                blk.header().height,
+                blk.header().gas_limit,
                 generator,
-                blk.txs.clone(),
+                blk.txs().clone(),
                 Some(VerificationOutput {
-                    state_root: blk.header.state_hash,
-                    event_hash: blk.header.event_hash,
+                    state_root: blk.header().state_hash,
+                    event_hash: blk.header().event_hash,
                 }),
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
@@ -90,20 +90,20 @@ impl VMExecution for Rusk {
         blk: &Block,
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received finalize request");
-        let generator = blk.header.generator_bls_pubkey;
+        let generator = blk.header().generator_bls_pubkey;
         let generator =
             dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
                 .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, state_root) = self
             .finalize_transactions(
-                blk.header.height,
-                blk.header.gas_limit,
+                blk.header().height,
+                blk.header().gas_limit,
                 generator,
-                blk.txs.clone(),
+                blk.txs().clone(),
                 Some(VerificationOutput {
-                    state_root: blk.header.state_hash,
-                    event_hash: blk.header.event_hash,
+                    state_root: blk.header().state_hash,
+                    event_hash: blk.header().event_hash,
                 }),
             )
             .map_err(|inner| {
