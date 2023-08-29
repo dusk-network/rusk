@@ -123,7 +123,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let acc = self.acc.write().await;
         let curr_h = acc.get_curr_height().await;
 
-        if blk.header.height == curr_h + 1 {
+        if blk.header().height == curr_h + 1 {
             acc.try_accept_block(blk, true).await?;
         }
 
@@ -141,7 +141,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         msg: &Message,
     ) -> anyhow::Result<bool> {
         let acc = self.acc.write().await;
-        let h = blk.header.height;
+        let h = blk.header().height;
         let curr_h = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
         let curr_hash = acc.get_curr_hash().await;
@@ -156,13 +156,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             .blacklisted_blocks
             .read()
             .await
-            .contains(&blk.header.hash)
+            .contains(&blk.header().hash)
         {
             return Ok(false);
         }
 
         if h == curr_h {
-            if blk.header.hash == curr_hash {
+            if blk.header().hash == curr_hash {
                 // Duplicated block.
                 // Node has already accepted it.
                 return Ok(false);
@@ -172,7 +172,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 event = "entering fallback",
                 height = curr_h,
                 iter = iter,
-                new_iter = blk.header.iteration,
+                new_iter = blk.header().iteration,
             );
 
             match fallback::WithContext::new(acc.deref())
@@ -192,7 +192,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     self.blacklisted_blocks
                         .write()
                         .await
-                        .insert(blk.header.hash);
+                        .insert(blk.header().hash);
 
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing ephemeral
@@ -208,7 +208,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // On first finalized block accepted while we're inSync, clear
             // blacklisted blocks
-            if blk.header.iteration == 1 {
+            if blk.header().iteration == 1 {
                 self.blacklisted_blocks.write().await.clear();
             }
 
@@ -273,7 +273,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             curr_height,
             std::cmp::min(
                 curr_height + MAX_BLOCKS_TO_REQUEST as u64,
-                blk.header.height,
+                blk.header().height,
             ),
         );
 
@@ -287,7 +287,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .await;
 
         // add to the pool
-        let key = blk.header.height;
+        let key = blk.header().height;
         self.pool.insert(key, blk.clone());
 
         info!(
@@ -309,7 +309,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         msg: &Message,
     ) -> anyhow::Result<bool> {
         let acc = self.acc.write().await;
-        let h = blk.header.height;
+        let h = blk.header().height;
 
         if self
             .start_time
@@ -357,7 +357,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         // add block to the pool
-        let key = blk.header.height;
+        let key = blk.header().height;
         self.pool.insert(key, blk.clone());
 
         Ok(false)

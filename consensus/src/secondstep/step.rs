@@ -56,7 +56,7 @@ impl<T: Operations + 'static> Reduction<T> {
                     .candidate
                     .as_ref()
                     .map_or(&Block::default(), |c| c)
-                    .header
+                    .header()
                     .hash
             ),
             fsv_bitset = self.handler.first_step_votes.bitset,

@@ -112,7 +112,7 @@ fn spawn_consensus_in_thread_pool(
                                 i,
                                 keys.1.clone(),
                                 keys.0,
-                                chain_tip.header.seed,
+                                chain_tip.header().seed,
                             ),
                             p.clone(),
                             cancel_rx,
@@ -123,8 +123,8 @@ fn spawn_consensus_in_thread_pool(
                         tracing::info!(
                             "rusk-node accept_block height={} with hash={} with seed={}",
                             i,
-                            hex!(&b.header.hash, 10),
-                            hex!(&b.header.seed.inner(), 10),
+                            hex!(&b.header().hash, 10),
+                            hex!(&b.header().seed.inner(), 10),
                         );
 
                         chain_tip = b;

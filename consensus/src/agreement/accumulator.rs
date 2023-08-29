@@ -189,6 +189,7 @@ impl Accumulator {
                 .entry(hdr.step)
                 .or_insert((HashSet::new(), 0));
 
+            let signature = payload.signature;
             let key = AgreementMessage {
                 header: msg.header,
                 payload,
@@ -218,6 +219,7 @@ impl Accumulator {
                 from = pubkey_bs58,
                 added = weight,
                 total,
+                signature = to_str(&signature),
             );
 
             if *total >= target_quorum {

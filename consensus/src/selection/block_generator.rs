@@ -57,18 +57,17 @@ impl<T: Operations> Generator<T> {
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            block_hash: candidate.header.hash,
+            block_hash: candidate.header().hash,
             step,
             topic: Topics::NewBlock as u8,
         };
 
-        let signed_hash =
-            msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         info!(
             event = "gen_candidate",
-            hash = &to_str(&candidate.header.hash),
-            state_hash = &to_str(&candidate.header.state_hash),
+            hash = &to_str(&candidate.header().hash),
+            state_hash = &to_str(&candidate.header().state_hash),
         );
 
         debug!("block: {:?}", &candidate);
@@ -76,9 +75,8 @@ impl<T: Operations> Generator<T> {
         Ok(Message::new_newblock(
             msg_header,
             NewBlock {
-                prev_hash: ru.hash,
                 candidate,
-                signed_hash,
+                signature,
             },
         ))
     }

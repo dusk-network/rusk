@@ -29,7 +29,7 @@ pub(super) async fn verify(
     verifiers::verify_votes(
         &hdr.block_hash,
         aggr.bitset,
-        &aggr.aggr_signature,
+        &aggr.aggregate_signature,
         &committees_set,
         &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
     )
@@ -45,7 +45,7 @@ pub(super) async fn verify(
 
     debug!(
         event = "aggr_agreement recv",
-        signature = to_str(&aggr.aggr_signature)
+        signature = to_str(&aggr.aggregate_signature)
     );
     Ok(())
 }
@@ -62,7 +62,7 @@ pub(super) async fn aggregate(
         .next()
         .expect("agreements to not be empty");
 
-    let (aggr_signature, bitset) = {
+    let (aggregate_signature, bitset) = {
         let voters = &mut Cluster::new();
         let mut aggr_sign = AggrSignature::default();
 
@@ -98,7 +98,7 @@ pub(super) async fn aggregate(
         header,
         payload::AggrAgreement {
             agreement: first_agreement.payload.clone(),
-            aggr_signature,
+            aggregate_signature,
             bitset,
         },
     )

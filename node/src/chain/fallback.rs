@@ -55,11 +55,11 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             return Err(anyhow!("cannot fallback over genesis block"));
         }
 
-        if blk.header.iteration > curr_iteration {
+        if blk.header().iteration > curr_iteration {
             return Err(anyhow!("iteration is higher than current"));
         }
 
-        if blk.header.iteration == curr_iteration {
+        if blk.header().iteration == curr_iteration {
             // This may happen only if:
             //
             // we have more than one winner blocks per a single iteration, same
@@ -73,7 +73,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             event = "starting fallback",
             height = curr_height,
             iter = curr_iteration,
-            target_iter = blk.header.iteration,
+            target_iter = blk.header().iteration,
         );
 
         let prev_block_height = curr_height - 1;
@@ -86,7 +86,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             event = "fallback checking block",
             height = curr_height,
             iter = curr_iteration,
-            target_iter = blk.header.iteration,
+            target_iter = blk.header().iteration,
         );
 
         // Validate Header/Certificate of the new block upon previous block and

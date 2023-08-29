@@ -31,7 +31,7 @@ impl MsgHandler<Message> for Reduction {
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signed_hash),
+            Payload::Reduction(p) => Ok(p.signature),
             Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -53,7 +53,7 @@ impl MsgHandler<Message> for Reduction {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signed_hash),
+            Payload::Reduction(p) => Ok(p.signature),
             Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;

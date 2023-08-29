@@ -14,12 +14,11 @@ use node_data::message;
 use tracing::Instrument;
 
 use crate::contract_state::CallParams;
-use bytes::{BufMut, BytesMut};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use node_data::bls::PublicKey;
-use node_data::message::AsyncQueue;
-use node_data::message::Message;
+
+use node_data::message::{AsyncQueue, Message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -70,19 +69,6 @@ pub enum ConsensusError {
     Canceled,
 }
 
-pub fn marshal_signable_vote(
-    round: u64,
-    step: u8,
-    block_hash: &[u8; 32],
-) -> BytesMut {
-    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
-    msg.put_u64_le(round);
-    msg.put_u8(step);
-    msg.put(&block_hash[..]);
-
-    msg
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn spawn_send_reduction<T: Operations + 'static>(
     join_set: &mut JoinSet<()>,
@@ -95,15 +81,15 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     inbound: AsyncQueue<Message>,
     executor: Arc<Mutex<T>>,
 ) {
-    let hash = to_str(&candidate.header.hash);
+    let hash = to_str(&candidate.header().hash);
 
     join_set.spawn(
         async move {
-            let hash = candidate.header.hash;
+            let hash = candidate.header().hash;
             let already_verified = *verified_hash.lock().await == hash;
 
             if !already_verified && hash != [0u8; 32] {
-                let pubkey = &candidate.header.generator_bls_pubkey.0;
+                let pubkey = &candidate.header().generator_bls_pubkey.0;
                 let generator =
                     match dusk_bls12_381_sign::PublicKey::from_slice(pubkey) {
                         Ok(pubkey) => pubkey,
@@ -123,10 +109,10 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                     .verify_state_transition(
                         CallParams {
                             round: ru.round,
-                            block_gas_limit: candidate.header.gas_limit,
+                            block_gas_limit: candidate.header().gas_limit,
                             generator_pubkey: PublicKey::new(generator),
                         },
-                        candidate.txs.clone(),
+                        candidate.txs().clone(),
                     )
                     .await
                 {
@@ -136,27 +122,27 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                         // ones we expect to have with the
                         // current candidate block.
                         if verification_output.event_hash
-                            != candidate.header.event_hash
+                            != candidate.header().event_hash
                         {
                             error!(
                                 desc = "event hash mismatch",
                                 event_hash =
                                     hex::encode(verification_output.event_hash),
                                 candidate_event_hash =
-                                    hex::encode(candidate.header.event_hash),
+                                    hex::encode(candidate.header().event_hash),
                             );
                             return;
                         }
 
                         if verification_output.state_root
-                            != candidate.header.state_hash
+                            != candidate.header().state_hash
                         {
                             error!(
                                 desc = "state hash mismatch",
                                 vst_state_hash =
                                     hex::encode(verification_output.state_root),
                                 state_hash =
-                                    hex::encode(candidate.header.state_hash),
+                                    hex::encode(candidate.header().state_hash),
                             );
                             return;
                         }
@@ -185,12 +171,12 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 topic: message::Topics::Reduction as u8,
             };
 
-            let signed_hash = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
+            let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
             // Sign and construct reduction message
             let msg = message::Message::new_reduction(
                 hdr,
-                message::payload::Reduction { signed_hash },
+                message::payload::Reduction { signature },
             );
 
             //   publish

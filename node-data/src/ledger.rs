@@ -21,8 +21,8 @@ pub type Hash = [u8; 32];
 
 #[derive(Default, Debug, Clone)]
 pub struct Block {
-    pub header: Header,
-    pub txs: Vec<Transaction>,
+    header: Header,
+    txs: Vec<Transaction>,
 }
 
 #[derive(Default, Eq, PartialEq, Clone)]
@@ -218,7 +218,7 @@ impl Block {
         Ok(b)
     }
 
-    pub fn calculate_hash(&mut self) -> io::Result<()> {
+    fn calculate_hash(&mut self) -> io::Result<()> {
         // Call hasher only if header.hash is empty
         if self.header.hash != Hash::default() {
             return Ok(());
@@ -237,25 +237,29 @@ impl Block {
     pub fn txs(&self) -> &Vec<Transaction> {
         &self.txs
     }
+
+    pub fn set_certificate(&mut self, cert: Certificate) {
+        self.header.cert = cert;
+    }
 }
 
 #[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct StepVotes {
     pub bitset: u64,
-    pub signature: Signature,
+    pub aggregate_signature: Signature,
 }
 
 impl StepVotes {
-    pub fn new(signature: [u8; 48], bitset: u64) -> StepVotes {
+    pub fn new(aggregate_signature: [u8; 48], bitset: u64) -> StepVotes {
         StepVotes {
             bitset,
-            signature: Signature(signature),
+            aggregate_signature: Signature(aggregate_signature),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.bitset == 0 || self.signature.is_zeroed()
+        self.bitset == 0 || self.aggregate_signature.is_zeroed()
     }
 }
 
