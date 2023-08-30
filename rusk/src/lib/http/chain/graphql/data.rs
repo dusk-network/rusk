@@ -109,6 +109,10 @@ impl<'a> Header<'a> {
         hex::encode(self.0.hash)
     }
 
+    pub async fn state_hash(&self) -> String {
+        hex::encode(self.0.state_hash)
+    }
+
     pub async fn generator_bls_pubkey(&self) -> String {
         bs58::encode(self.0.generator_bls_pubkey.0).into_string()
     }
