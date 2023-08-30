@@ -210,6 +210,15 @@ impl RequestData {
             Self::Text(s) => s.as_bytes(),
         }
     }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            Self::Binary(w) => {
+                String::from_utf8(w.inner.clone()).unwrap_or_default()
+            }
+            Self::Text(s) => s.clone(),
+        }
+    }
 }
 
 impl From<String> for RequestData {

@@ -4,8 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk_prover::{LocalProver, Prover};
+use serde::Serialize;
 use std::sync::{mpsc, Arc};
 use std::thread;
 use tokio::task;
@@ -47,6 +49,10 @@ impl Rusk {
             }
             (Target::Host(_), "rusk", "prove_wfco") => {
                 Ok(LocalProver.prove_wfco(request.event_data())?.into())
+            }
+
+            (Target::Host(_), "rusk", "provisioners") => {
+                self.get_provisioners()
             }
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
@@ -98,4 +104,30 @@ impl Rusk {
         self.preverify(&tx.into())?;
         Ok(ResponseData::None)
     }
+
+    fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
+        let prov = self
+            .provisioners()
+            .unwrap()
+            .iter()
+            .filter_map(|(key, stake)| {
+                let key = bs58::encode(key.to_bytes()).into_string();
+                let (amount, eligibility) = stake.amount.unwrap_or_default();
+                (amount > 0).then_some(Provisioner {
+                    amount,
+                    eligibility,
+                    key,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        Ok(serde_json::to_string(&prov)?.into())
+    }
+}
+
+#[derive(Serialize)]
+struct Provisioner {
+    key: String,
+    amount: u64,
+    eligibility: u64,
 }
