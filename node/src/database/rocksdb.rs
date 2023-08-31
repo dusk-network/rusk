@@ -327,6 +327,19 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         }
     }
 
+    fn fetch_block_header(
+        &self,
+        hash: &[u8],
+    ) -> Result<Option<(ledger::Header, Vec<[u8; 32]>)>> {
+        match self.snapshot.get_cf(self.ledger_cf, hash)? {
+            Some(blob) => {
+                let record = HeaderRecord::read(&mut &blob[..])?;
+                Ok(Some((record.header, record.transactions_ids)))
+            }
+            None => Ok(None),
+        }
+    }
+
     fn fetch_block_hash_by_height(
         &self,
         height: u64,
@@ -940,6 +953,7 @@ mod tests {
         txs.iter()
             .map(|t| SpentTransaction {
                 inner: t.clone(),
+                block_height: 0,
                 gas_spent: 0,
                 err: None,
             })

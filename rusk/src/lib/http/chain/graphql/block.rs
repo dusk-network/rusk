@@ -6,45 +6,65 @@
 
 use super::*;
 
-pub async fn block_by_height(ctx: &Ctx, height: f64) -> OptResult<Block> {
-    let block = ctx.read().await.view(|t| match height > 0f64 {
-        true => t.fetch_block_by_height(height as u64),
-        false => t.get_register().and_then(|reg| match reg {
-            Some(Register { mrb_hash, .. }) => t.fetch_block(&mrb_hash),
-            None => Ok(None),
-        }),
+pub async fn block_by_height(
+    ctx: &Context<'_>,
+    height: f64,
+) -> OptResult<Block> {
+    let db = ctx.data::<DBContext>()?;
+
+    let block_hash = db.read().await.view(|t| match height >= 0f64 {
+        true => t.fetch_block_hash_by_height(height as u64),
+        false => t.get_register().map(|reg| reg.map(|r| r.mrb_hash)),
     })?;
-    Ok(block)
+
+    if let Some(hash) = block_hash {
+        return block_by_hash(ctx, hex::encode(hash)).await;
+    };
+    Ok(None)
 }
 
-pub async fn last_block(ctx: &Ctx) -> FieldResult<Block> {
-    let block = ctx.read().await.view(|t| {
+pub async fn last_block(ctx: &Context<'_>) -> FieldResult<Block> {
+    let db = ctx.data::<DBContext>()?;
+    let block = db.read().await.view(|t| {
         t.get_register().and_then(|reg| match reg {
-            Some(Register { mrb_hash, .. }) => t.fetch_block(&mrb_hash),
+            Some(Register { mrb_hash, .. }) => t.fetch_block_header(&mrb_hash),
             None => Ok(None),
         })
     })?;
-    block.ok_or_else(|| FieldError::new("Cannot find last block"))
+    block
+        .map(|(header, txs_id)| Block::new(header, txs_id))
+        .ok_or_else(|| FieldError::new("Cannot find last block"))
 }
 
-pub async fn block_by_hash(ctx: &Ctx, hash: String) -> OptResult<Block> {
+pub async fn block_by_hash(
+    ctx: &Context<'_>,
+    hash: String,
+) -> OptResult<Block> {
+    let db = ctx.data::<DBContext>()?;
     let hash = hex::decode(hash)?;
-    let block = ctx.read().await.view(|t| t.fetch_block(&hash))?;
-    Ok(block)
+    let block = db.read().await.view(|t| t.fetch_block_header(&hash))?;
+    Ok(block.map(|(header, txs_id)| Block::new(header, txs_id)))
 }
 
-pub async fn last_blocks(ctx: &Ctx, count: i32) -> FieldResult<Vec<Block>> {
+pub async fn last_blocks(
+    ctx: &Context<'_>,
+    count: u64,
+) -> FieldResult<Vec<Block>> {
+    if (count < 1) {
+        return Err(FieldError::new("count must be positive"));
+    }
+    let db = ctx.data::<DBContext>()?;
     let last_block = last_block(ctx).await?;
     let mut hash_to_search = last_block.header().prev_block_hash;
-    let blocks = ctx.read().await.view(|t| {
+    let blocks = db.read().await.view(|t| {
         let mut blocks = vec![last_block];
         let mut count = count - 1;
         while (count > 0) {
-            match t.fetch_block(&hash_to_search)? {
+            match t.fetch_block_header(&hash_to_search)? {
                 None => break,
-                Some(b) => {
-                    hash_to_search = b.header().prev_block_hash;
-                    blocks.push(b);
+                Some((header, txs_id)) => {
+                    hash_to_search = header.prev_block_hash;
+                    blocks.push(Block::new(header, txs_id));
                     count -= 1;
                 }
             }
@@ -55,19 +75,27 @@ pub async fn last_blocks(ctx: &Ctx, count: i32) -> FieldResult<Vec<Block>> {
 }
 
 pub async fn blocks_range(
-    ctx: &Ctx,
-    from: i32,
-    to: i32,
+    ctx: &Context<'_>,
+    from: u64,
+    to: u64,
 ) -> FieldResult<Vec<Block>> {
-    let blocks = ctx.read().await.view(|t| {
+    let db = ctx.data::<DBContext>()?;
+    let mut blocks = db.read().await.view(|t| {
         let mut blocks = vec![];
-        for i in (from..=to) {
-            match t.fetch_block_by_height(i as u64)? {
-                None => break,
-                Some(b) => blocks.push(b),
+        let mut hash_to_search = None;
+        for height in (from..=to).rev() {
+            if hash_to_search.is_none() {
+                hash_to_search = t.fetch_block_hash_by_height(height)?;
+            }
+            if let Some(hash) = hash_to_search {
+                let (header, txs_id) =
+                    t.fetch_block_header(&hash)?.expect("Block to be found");
+                hash_to_search = header.prev_block_hash.into();
+                blocks.push(Block::new(header, txs_id))
             }
         }
         Ok::<_, anyhow::Error>(blocks)
     })?;
+    blocks.reverse();
     Ok(blocks)
 }

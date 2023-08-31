@@ -7,6 +7,7 @@
 pub mod graphql;
 
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use node::database::rocksdb::Backend;
@@ -14,11 +15,12 @@ use node::network::Kadcast;
 use node::Network;
 use node_data::message::Message;
 
-use graphql::{Ctx, Query};
+use graphql::{DBContext, Query};
 
 use async_graphql::{
     EmptyMutation, EmptySubscription, Name, Schema, Variables,
 };
+use serde_json::json;
 
 use super::event::{
     Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
@@ -55,6 +57,10 @@ impl RuskNode {
             (Target::Host(_), "Chain", "propagate_tx") => {
                 self.propagate_tx(request.event_data()).await
             }
+            (Target::Host(_), "Chain", "alive_nodes") => {
+                let amount = request.event.data.as_string().trim().parse()?;
+                self.alive_nodes(amount).await
+            }
             _ => anyhow::bail!("Unsupported"),
         }
     }
@@ -63,12 +69,7 @@ impl RuskNode {
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
-        let gql_query = match &request.event.data {
-            RequestData::Text(str) => str.clone(),
-            RequestData::Binary(data) => {
-                String::from_utf8(data.inner.clone()).unwrap_or_default()
-            }
-        };
+        let gql_query = request.event.data.as_string();
 
         let schema = Schema::build(Query, EmptyMutation, EmptySubscription)
             .data(self.db())
@@ -98,5 +99,11 @@ impl RuskNode {
         network.read().await.route_internal(tx_message);
 
         Ok(ResponseData::None)
+    }
+
+    async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
+        let nodes = self.0.network().read().await.alive_nodes(amount).await;
+        let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
+        Ok(serde_json::to_string(&nodes)?.into())
     }
 }

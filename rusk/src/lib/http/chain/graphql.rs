@@ -5,20 +5,21 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod block;
+mod data;
 mod tx;
 
 use block::*;
+use data::*;
 use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use node::database::rocksdb::Backend;
 use node::database::{Ledger, Register, DB};
-use node_data::ledger::{Block, SpentTransaction, Transaction};
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub type Ctx = Arc<RwLock<Backend>>;
+pub type DBContext = Arc<RwLock<Backend>>;
 pub type OptResult<T> = FieldResult<Option<T>>;
 
 pub struct Query;
@@ -30,14 +31,13 @@ impl Query {
         ctx: &Context<'_>,
         height: Option<f64>,
         hash: Option<String>,
-    ) -> OptResult<Block> {
-        let ctx = ctx.data::<Ctx>()?;
-
-        match (height, hash) {
+    ) -> OptResult<data::Block> {
+        let block = match (height, hash) {
             (Some(height), None) => block_by_height(ctx, height).await,
             (None, Some(hash)) => block_by_hash(ctx, hash).await,
             _ => Err(FieldError::new("Specify heigth or hash")),
-        }
+        };
+        Ok(block?)
     }
 
     async fn tx(
@@ -45,36 +45,57 @@ impl Query {
         ctx: &Context<'_>,
         hash: String,
     ) -> OptResult<SpentTransaction> {
-        let ctx = ctx.data::<Ctx>()?;
         tx_by_hash(ctx, hash).await
+    }
+
+    async fn transactions(
+        &self,
+        ctx: &Context<'_>,
+        last: u64,
+    ) -> FieldResult<Vec<SpentTransaction>> {
+        last_transactions(ctx, last as usize).await
     }
 
     async fn block_txs(
         &self,
         ctx: &Context<'_>,
-        last: Option<i32>,
-        range: Option<[i32; 2]>,
+        last: Option<u64>,
+        range: Option<[u64; 2]>,
         contract: Option<String>,
-    ) -> FieldResult<Vec<Transaction>> {
+    ) -> FieldResult<Vec<SpentTransaction>> {
         let blocks = self.blocks(ctx, last, range).await?;
-        let txs = blocks.into_iter().flat_map(|b| b.txs().clone());
 
-        let txs =
-            match contract {
-                None => txs.collect(),
+        let contract = match contract {
+            Some(contract) => Some(hex::decode(contract)?),
+            _ => None,
+        };
+
+        let mut txs = vec![];
+        for b in blocks.iter() {
+            let mut block_txs = b.transactions(ctx).await?;
+            match contract.as_ref() {
+                None => txs.append(&mut block_txs),
                 Some(contract) => {
-                    let contract = hex::decode(contract)?;
-                    txs.filter(|t| {
-                        let tx_contract =
-                            t.inner.call.as_ref().map(|(c, ..)| *c).unwrap_or(
-                                rusk_abi::TRANSFER_CONTRACT.to_bytes(),
-                            );
+                    let mut txs_to_add = block_txs
+                        .into_iter()
+                        .filter(|t| {
+                            let tx_contract =
+                                t.0.inner
+                                    .inner
+                                    .call
+                                    .as_ref()
+                                    .map(|(c, ..)| *c)
+                                    .unwrap_or(
+                                        rusk_abi::TRANSFER_CONTRACT.to_bytes(),
+                                    );
 
-                        tx_contract == contract[..]
-                    })
-                    .collect()
+                            tx_contract == contract[..]
+                        })
+                        .collect();
+                    txs.append(&mut txs_to_add);
                 }
-            };
+            }
+        }
 
         Ok(txs)
     }
@@ -82,11 +103,9 @@ impl Query {
     async fn blocks(
         &self,
         ctx: &Context<'_>,
-        last: Option<i32>,
-        range: Option<[i32; 2]>,
+        last: Option<u64>,
+        range: Option<[u64; 2]>,
     ) -> FieldResult<Vec<Block>> {
-        let ctx = ctx.data::<Ctx>()?;
-
         match (last, range) {
             (Some(count), None) => last_blocks(ctx, count).await,
             (None, Some([from, to])) => blocks_range(ctx, from, to).await,

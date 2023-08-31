@@ -13,9 +13,6 @@ use std::io::{self, Read, Write};
 #[cfg(any(feature = "faker", test))]
 use fake::{Dummy, Fake, Faker};
 
-#[cfg(feature = "graphql")]
-pub mod graphql;
-
 pub type Seed = Signature;
 pub type Hash = [u8; 32];
 
@@ -50,18 +47,20 @@ pub struct Header {
 
 impl std::fmt::Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let timestamp =
-            chrono::NaiveDateTime::from_timestamp_opt(self.timestamp, 0)
-                .map_or_else(
-                    || "unknown".to_owned(),
-                    |v| {
-                        chrono::DateTime::<chrono::Utc>::from_utc(
-                            v,
-                            chrono::Utc,
-                        )
-                        .to_rfc2822()
-                    },
-                );
+        let timestamp = chrono::NaiveDateTime::from_timestamp_opt(
+            self.timestamp,
+            0,
+        )
+        .map_or_else(
+            || "unknown".to_owned(),
+            |v| {
+                chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
+                    v,
+                    chrono::Utc,
+                )
+                .to_rfc2822()
+            },
+        );
 
         f.debug_struct("Header")
             .field("version", &self.version)
@@ -99,6 +98,7 @@ impl From<phoenix_core::Transaction> for Transaction {
 #[derive(Debug, Clone)]
 pub struct SpentTransaction {
     pub inner: Transaction,
+    pub block_height: u64,
     pub gas_spent: u64,
     pub err: Option<String>,
 }
@@ -368,6 +368,7 @@ pub mod faker {
             let tx = gen_dummy_tx(1_000_000);
             SpentTransaction {
                 inner: tx,
+                block_height: 0,
                 gas_spent: 3,
                 err: Some("error".to_string()),
             }

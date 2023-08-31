@@ -25,9 +25,6 @@ async-channel = "1.7"
 chrono = "0.4"
 bs58 = { version = "0.4" }
 
-## GraphQL deps
-async-graphql = { version = "5.0", optional = true }
-
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }
@@ -37,4 +34,3 @@ hex = "0.4"
 [features]
 default = ["dep:rand", "dep:hex"]
 faker = ["dep:fake", "dep:rand", "dep:hex"]
-graphql = ["dep:async-graphql"]
