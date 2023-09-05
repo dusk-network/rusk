@@ -642,8 +642,8 @@ pub mod payload {
         /// Generates a certificate from agreement.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
-                first_reduction: self.first_step.clone(),
-                second_reduction: self.second_step.clone(),
+                first_reduction: self.first_step,
+                second_reduction: self.second_step,
             }
         }
     }
