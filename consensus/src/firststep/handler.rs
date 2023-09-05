@@ -62,7 +62,6 @@ impl<DB: Database> Reduction<DB> {
     }
 
     pub(crate) fn reset(&mut self) {
-        self.aggr = Aggregator::default();
         self.candidate = Block::default();
     }
 }

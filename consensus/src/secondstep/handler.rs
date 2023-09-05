@@ -113,7 +113,6 @@ impl Reduction {
     }
 
     pub(crate) fn reset(&mut self) {
-        self.aggr = Aggregator::default();
         self.first_step_votes = StepVotes::default();
     }
 }
