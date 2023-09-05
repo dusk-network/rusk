@@ -12,7 +12,7 @@ use crate::firststep::handler;
 use crate::round_ctx::SafeRoundCtx;
 use crate::user::committee::Committee;
 use node_data::ledger::to_str;
-use node_data::message::{Message, Payload};
+use node_data::message::{Message, Payload, Topics};
 use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -72,6 +72,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
                 self.executor.clone(),
+                Topics::FirstReduction,
             );
         }
 

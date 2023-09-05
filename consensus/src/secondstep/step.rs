@@ -12,7 +12,7 @@ use crate::round_ctx::SafeRoundCtx;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use node_data::ledger::{to_str, Block};
-use node_data::message::{Message, Payload};
+use node_data::message::{Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -25,7 +25,10 @@ pub struct Reduction<T> {
 }
 
 impl<T: Operations + 'static> Reduction<T> {
-    pub(crate) fn new(executor: Arc<Mutex<T>>, round_ctx: SafeRoundCtx) -> Self {
+    pub(crate) fn new(
+        executor: Arc<Mutex<T>>,
+        round_ctx: SafeRoundCtx,
+    ) -> Self {
         Self {
             handler: handler::Reduction {
                 round_ctx,
@@ -83,6 +86,7 @@ impl<T: Operations + 'static> Reduction<T> {
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
                     self.executor.clone(),
+                    Topics::SecondReduction,
                 );
             }
         }
