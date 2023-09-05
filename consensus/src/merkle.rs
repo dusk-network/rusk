@@ -94,10 +94,10 @@ mod tests {
     #[derive(Clone, Copy)]
     struct HashableStr(&'static str);
 
-    impl Into<Hash> for HashableStr {
-        fn into(self) -> Hash {
+    impl From<HashableStr> for Hash {
+        fn from(val: HashableStr) -> Self {
             let mut hasher = Sha3_256::new();
-            hasher.update(self.0.as_bytes());
+            hasher.update(val.0.as_bytes());
             hasher.finalize().into()
         }
     }

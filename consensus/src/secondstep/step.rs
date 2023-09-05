@@ -8,6 +8,7 @@ use crate::commons::{spawn_send_reduction, ConsensusError};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
+use crate::round_ctx::SafeRoundCtx;
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use node_data::ledger::{to_str, Block};
@@ -24,9 +25,10 @@ pub struct Reduction<T> {
 }
 
 impl<T: Operations + 'static> Reduction<T> {
-    pub fn new(executor: Arc<Mutex<T>>) -> Self {
+    pub(crate) fn new(executor: Arc<Mutex<T>>, round_ctx: SafeRoundCtx) -> Self {
         Self {
             handler: handler::Reduction {
+                round_ctx,
                 aggr: Default::default(),
                 first_step_votes: Default::default(),
             },

@@ -9,6 +9,7 @@ use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
+use crate::round_ctx::SafeRoundCtx;
 use crate::user::committee::Committee;
 use node_data::ledger::to_str;
 use node_data::message::{Message, Payload};
@@ -25,10 +26,14 @@ pub struct Reduction<T, DB: Database> {
 }
 
 impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
-    pub fn new(executor: Arc<Mutex<T>>, db: Arc<Mutex<DB>>) -> Self {
+    pub(crate) fn new(
+        executor: Arc<Mutex<T>>,
+        db: Arc<Mutex<DB>>,
+        round_ctx: SafeRoundCtx,
+    ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Reduction::new(db),
+            handler: handler::Reduction::new(db, round_ctx),
             executor,
         }
     }

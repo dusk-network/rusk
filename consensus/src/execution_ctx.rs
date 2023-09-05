@@ -200,6 +200,18 @@ impl<'a> ExecutionCtx<'a> {
                         );
                     }
                     ConsensusError::PastEvent => {
+                        /* TODO: Implement
+                        let phase = phases[topic];
+
+                        if phase.is_valid(msg) {
+
+                            republish
+                            if phase.collect(msg) {
+                                return Agreement;
+                            }
+                        }
+
+                         */
                         trace!("discard message from past {:#?}", msg);
                     }
                     _ => {

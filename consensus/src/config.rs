@@ -6,6 +6,9 @@
 
 /// Maximum number of steps Consensus runs per a single round.
 pub const CONSENSUS_MAX_STEP: u8 = 213;
+/// Maximum number of iterations Consensus runs per a single round.
+pub const CONSENSUS_MAX_ITER: u8 = CONSENSUS_MAX_STEP / 3;
+
 /// Percentage number that determines a quorum.
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
 /// Initial step timeout in milliseconds.

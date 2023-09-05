@@ -6,14 +6,15 @@
 
 use std::sync::Arc;
 
+use crate::aggregator::Aggregator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::round_ctx::SafeRoundCtx;
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
 use tokio::sync::Mutex;
 
-use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
 use node_data::message::{payload, Message, Payload};
 
@@ -45,16 +46,18 @@ fn final_result_with_timeout(
     ))
 }
 
-#[derive(Default)]
 pub struct Reduction<DB: Database> {
+    round_ctx: SafeRoundCtx,
+
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
 }
 
 impl<DB: Database> Reduction<DB> {
-    pub(crate) fn new(db: Arc<Mutex<DB>>) -> Self {
+    pub(crate) fn new(db: Arc<Mutex<DB>>, round_ctx: SafeRoundCtx) -> Self {
         Self {
+            round_ctx,
             db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
@@ -94,7 +97,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
@@ -115,6 +118,16 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                     StepVotes::default(),
                     ledger::Block::default(),
                 ));
+            } else {
+                // Record result in global round results registry
+                if let Some(msg) = self
+                    .round_ctx
+                    .lock()
+                    .await
+                    .add_step_votes(step, hash, sv, true)
+                {
+                    return Ok(HandleMsgOutput::FinalResult(msg));
+                }
             }
 
             if hash != self.candidate.header().hash {

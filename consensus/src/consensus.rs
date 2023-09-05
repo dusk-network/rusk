@@ -8,7 +8,8 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 use node_data::ledger::{to_str, Block};
-use node_data::message::{AsyncQueue, Message, Payload};
+
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 
 use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
@@ -18,6 +19,7 @@ use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
+use crate::round_ctx::RoundCtx;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -164,6 +166,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 future_msgs.lock().await.clear_round(ru.round - 1);
             }
 
+            let round_ctx = Arc::new(Mutex::new(RoundCtx::new(ru.clone())));
+
             let mut phases = [
                 Phase::Selection(selection::step::Selection::new(
                     executor.clone(),
@@ -172,8 +176,12 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Reduction1(firststep::step::Reduction::new(
                     executor.clone(),
                     db.clone(),
+                    round_ctx.clone(),
                 )),
-                Phase::Reduction2(secondstep::step::Reduction::new(executor)),
+                Phase::Reduction2(secondstep::step::Reduction::new(
+                    executor,
+                    round_ctx.clone(),
+                )),
             ];
 
             // Consensus loop
@@ -219,6 +227,12 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                             pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;
+
+                    // During execution of any step we may encounter that an
+                    // agreement is generated for previous iteration.
+                    if msg.topic() == Topics::Agreement {
+                        break;
+                    }
 
                     if step >= config::CONSENSUS_MAX_STEP {
                         return Err(ConsensusError::MaxStepReached);

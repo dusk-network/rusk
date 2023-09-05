@@ -174,7 +174,7 @@ pub fn fetch_blskeys_from_file(
 
     // attempt to load and decode wallet
     let ciphertext =
-        fs::read(&path).expect("path should be valid consensus keys file");
+        fs::read(path).expect("path should be valid consensus keys file");
 
     // Decrypt
     let iv = &ciphertext[..16];

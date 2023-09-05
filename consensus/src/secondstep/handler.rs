@@ -6,6 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::round_ctx::SafeRoundCtx;
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
@@ -17,6 +18,8 @@ use node_data::message::{payload, Message, Payload, Topics};
 use crate::user::committee::Committee;
 
 pub struct Reduction {
+    pub(crate) round_ctx: SafeRoundCtx,
+
     pub(crate) aggr: Aggregator,
     pub(crate) first_step_votes: StepVotes,
 }
@@ -62,6 +65,18 @@ impl MsgHandler<Message> for Reduction {
         if let Some((block_hash, second_step_votes)) =
             self.aggr.collect_vote(committee, &msg.header, &signed_hash)
         {
+            if block_hash != [0u8; 32] {
+                // Record result in global round results registry
+                if let Some(msg) = self.round_ctx.lock().await.add_step_votes(
+                    step,
+                    block_hash,
+                    second_step_votes,
+                    false,
+                ) {
+                    return Ok(HandleMsgOutput::FinalResult(msg));
+                }
+            }
+
             // At that point, we have reached a quorum for 2th_reduction on an
             // empty on non-empty block. Return an empty message as
             // this iteration terminates here.
@@ -105,7 +120,7 @@ impl Reduction {
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
         let payload = payload::Agreement {
             signature,
-            first_step: self.first_step_votes.clone(),
+            first_step: self.first_step_votes,
             second_step: second_step_votes,
         };
 
