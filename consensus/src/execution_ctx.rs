@@ -13,7 +13,7 @@ use crate::queue::Queue;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use node_data::message::{AsyncQueue, Message};
+use node_data::message::{AsyncQueue, Message, Topics};
 use std::cmp;
 use tokio::task::JoinSet;
 
@@ -281,6 +281,32 @@ impl<'a> ExecutionCtx<'a> {
                     self.step,
                     committee,
                 ) {
+                    // Check if a message is fully valid. If so, then it can be
+                    // broadcast.
+                    if let Ok(msg) = phase.is_valid(
+                        msg.clone(),
+                        &self.round_update,
+                        self.step,
+                        committee,
+                    ) {
+                        // Re-publish the drained message
+                        debug!(
+                            event = "republish",
+                            src = "future_msgs",
+                            msg_step = msg.header.step,
+                            msg_round = msg.header.round,
+                            msg_topic =
+                                format!("{:?}", Topics::from(msg.header.topic))
+                        );
+
+                        self.outbound.send(msg).await.unwrap_or_else(|err| {
+                            error!(
+                                "unable to re-publish a drained msg {:?}",
+                                err
+                            )
+                        });
+                    }
+
                     if let Ok(FinalResult(msg)) = phase
                         .collect(msg, &self.round_update, self.step, committee)
                         .await
