@@ -112,4 +112,19 @@ impl Query {
             _ => Err(FieldError::new("")),
         }
     }
+
+    async fn mempool_txs(
+        &self,
+        ctx: &Context<'_>,
+    ) -> FieldResult<Vec<Transaction>> {
+        mempool(ctx).await
+    }
+
+    async fn mempool_tx(
+        &self,
+        ctx: &Context<'_>,
+        hash: String,
+    ) -> OptResult<Transaction> {
+        mempool_by_hash(ctx, hash).await
+    }
 }

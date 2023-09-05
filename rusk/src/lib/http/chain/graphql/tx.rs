@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node::database::Mempool;
+
 use super::*;
 
 pub async fn tx_by_hash(
@@ -50,4 +52,26 @@ pub async fn last_transactions(
         Ok::<_, async_graphql::Error>(txs)
     })?;
     Ok(transactions)
+}
+
+pub async fn mempool<'a>(
+    ctx: &Context<'_>,
+) -> FieldResult<Vec<Transaction<'a>>> {
+    let db = ctx.data::<DBContext>()?;
+    let transactions = db.read().await.view(|t| {
+        let txs = t.get_txs_sorted_by_fee()?.map(|t| t.into()).collect();
+        Ok::<_, async_graphql::Error>(txs)
+    })?;
+    Ok(transactions)
+}
+
+pub async fn mempool_by_hash<'a>(
+    ctx: &Context<'_>,
+    hash: String,
+) -> OptResult<Transaction<'a>> {
+    let db = ctx.data::<DBContext>()?;
+    let hash = &hex::decode(hash)?[..];
+    let hash = hash.try_into()?;
+    let tx = db.read().await.view(|t| t.get_tx(hash))?;
+    Ok(tx.map(|t| t.into()))
 }
