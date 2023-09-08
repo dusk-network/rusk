@@ -1,9 +1,9 @@
+all: keys wasm abi circuits state allmacros contracts node ## Build everything
+
 help: ## Display this help screen
 	@grep -h \
 		-E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
-all: keys wasm abi circuits state allmacros contracts node ## Build everything
 
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
