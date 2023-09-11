@@ -255,7 +255,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         {
             if m.header.topic == Topics::Agreement as u8 {
                 debug!(
-                    event = "agreement from previous iter",
+                    event = "agreement from former iter",
                     msg_step = m.header.step
                 );
                 return Some(m);
