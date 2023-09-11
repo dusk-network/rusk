@@ -194,7 +194,7 @@ impl<D: Database> Executor<D> {
             }
             Payload::Agreement(_) => {
                 // Accumulate the agreement
-                self.collect_agreement(acc, msg).await;
+                return self.collect_agreement(acc, msg).await;
             }
             _ => {}
         };
@@ -202,7 +202,11 @@ impl<D: Database> Executor<D> {
         None
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
+    async fn collect_agreement(
+        &mut self,
+        acc: &mut Accumulator,
+        msg: Message,
+    ) -> Option<Block> {
         // Publish the agreement
         self.outbound_queue
             .send(msg.clone())
@@ -211,8 +215,18 @@ impl<D: Database> Executor<D> {
                 error!("unable to publish a collected agreement msg {:?}", err)
             });
 
-        // Accumulate the agreement
-        acc.process(msg.clone()).await;
+        debug!("compile block with certificate");
+
+        match msg.payload {
+            Payload::Agreement(payload) => {
+                let (cert, hash) =
+                    (payload.generate_certificate(), msg.header.block_hash);
+
+                // Create winning block
+                self.create_winning_block(&hash, &cert).await
+            }
+            _ => None,
+        }
     }
 
     /// Collects accumulator output (a list of agreements) and publishes
