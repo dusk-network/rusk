@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::user::committee::Committee;
@@ -16,6 +17,7 @@ use tokio::sync::Mutex;
 #[derive(Debug, Default)]
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
+    pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
 }
 
 #[async_trait]
@@ -65,6 +67,13 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
 }
 
 impl<D: Database> Selection<D> {
+    pub(crate) fn new(db: Arc<Mutex<D>>) -> Self {
+        Self {
+            db,
+            committees: vec![Committee::default(); 213], // TODO:
+        }
+    }
+
     fn verify_new_block(
         &self,
         msg: &Message,

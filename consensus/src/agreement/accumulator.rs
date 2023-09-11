@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![allow(dead_code)]
+
 use crate::agreement::verifiers;
 use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
@@ -136,6 +138,7 @@ impl Accumulator {
     /// # Panics
     ///
     /// If workers pool is not spawned, this will panic.
+
     pub async fn process(&mut self, msg: Message) {
         assert!(!self.workers.is_empty());
 

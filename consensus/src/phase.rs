@@ -7,6 +7,7 @@
 use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
+
 use node_data::message::Message;
 
 use crate::user::committee::Committee;
@@ -42,19 +43,19 @@ macro_rules! call_phase {
 pub enum Phase<T: Operations, D: Database> {
     Selection(selection::step::Selection<T, D>),
     Reduction1(firststep::step::Reduction<T, D>),
-    Reduction2(secondstep::step::Reduction<T>),
+    Reduction2(secondstep::step::Reduction<T, D>),
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
-    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         trace!(event = "init step", msg = format!("{:#?}", msg),);
 
-        call_phase!(self, reinitialize(msg, round, step))
+        await_phase!(self, reinitialize(msg, round, step))
     }
 
     pub async fn run(
         &mut self,
-        ctx: ExecutionCtx<'_>,
+        ctx: ExecutionCtx<'_, D>,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "execute_step", timeout = self.get_timeout());
 

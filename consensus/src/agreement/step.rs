@@ -204,7 +204,7 @@ impl<D: Database> Executor<D> {
 
     async fn collect_agreement(
         &mut self,
-        acc: &mut Accumulator,
+        _acc: &mut Accumulator,
         msg: Message,
     ) -> Option<Block> {
         // Publish the agreement

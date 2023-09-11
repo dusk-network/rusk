@@ -49,6 +49,8 @@ fn final_result_with_timeout(
 pub struct Reduction<DB: Database> {
     round_ctx: SafeRoundCtx,
 
+    pub(crate) committees: Vec<Committee>,
+
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
@@ -61,6 +63,7 @@ impl<DB: Database> Reduction<DB> {
             db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
+            committees: vec![Committee::default(); 213], // TODO:
         }
     }
 
@@ -98,7 +101,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         msg: Message,
         _ru: &RoundUpdate,
         step: u8,
-        committee: &Committee,
+        _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signature),
@@ -107,9 +110,11 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv)) =
-            self.aggr.collect_vote(committee, &msg.header, &signature)
-        {
+        if let Some((hash, sv)) = self.aggr.collect_vote(
+            &self.committees[step as usize],
+            &msg.header,
+            &signature,
+        ) {
             // if the votes converged for an empty hash we invoke halt
             if hash == [0u8; 32] {
                 tracing::warn!("votes converged for an empty hash");
@@ -120,13 +125,13 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                 ));
             } else {
                 // Record result in global round results registry
-                if let Some(msg) = self
+                if let Some(m) = self
                     .round_ctx
                     .lock()
                     .await
                     .add_step_votes(step, hash, sv, true)
                 {
-                    return Ok(HandleMsgOutput::FinalResult(msg));
+                    return Ok(HandleMsgOutput::FinalResult(m));
                 }
             }
 

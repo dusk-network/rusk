@@ -7,6 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
+
 use node_data::ledger::{to_str, Block};
 
 use node_data::message::{AsyncQueue, Message, Payload, Topics};
@@ -168,38 +169,64 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             let round_ctx = Arc::new(Mutex::new(RoundCtx::new(ru.clone())));
 
+            let sel_handler = Arc::new(Mutex::new(
+                selection::handler::Selection::new(db.clone()),
+            ));
+
+            let first_handler =
+                Arc::new(Mutex::new(firststep::handler::Reduction::new(
+                    db.clone(),
+                    round_ctx.clone(),
+                )));
+
+            let sec_handler = Arc::new(Mutex::new(
+                secondstep::handler::Reduction::new(round_ctx.clone()),
+            ));
+
             let mut phases = [
                 Phase::Selection(selection::step::Selection::new(
                     executor.clone(),
                     db.clone(),
+                    sel_handler.clone(),
                 )),
                 Phase::Reduction1(firststep::step::Reduction::new(
                     executor.clone(),
                     db.clone(),
-                    round_ctx.clone(),
+                    first_handler.clone(),
                 )),
                 Phase::Reduction2(secondstep::step::Reduction::new(
                     executor,
-                    round_ctx.clone(),
+                    sec_handler.clone(),
                 )),
             ];
 
             // Consensus loop
             // Initialize and run consensus loop
-            let mut step: u8 = 0;
+
+            let mut iter: u8 = 0;
 
             loop {
+                iter += 1;
+
                 let mut msg = Message::empty();
-                let mut iter_ctx = IterationCtx::new(ru.round, step + 1);
+                let mut iter_ctx = IterationCtx::new(
+                    ru.round,
+                    iter,
+                    sel_handler.clone(),
+                    first_handler.clone(),
+                    sec_handler.clone(),
+                );
 
                 // Execute a single iteration
-                for phase in phases.iter_mut() {
-                    step += 1;
+                for pos in 0..phases.len() {
+                    let phase = phases.get_mut(pos).unwrap();
+
+                    let step = (iter - 1) * 3 + (pos as u8 + 1);
                     let name = phase.name();
 
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.reinitialize(&msg, ru.round, step);
+                    phase.reinitialize(&msg, ru.round, step).await;
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
