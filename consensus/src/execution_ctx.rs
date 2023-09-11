@@ -277,6 +277,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         msg: Message,
         timeout_millis: &mut u64,
     ) -> Option<Message> {
+        let mut past_event = false;
         // Check if a message is fully valid. If so, then it can be broadcast.
         match phase.lock().await.is_valid(
             msg.clone(),
@@ -308,7 +309,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
                         return None;
                     }
                     ConsensusError::PastEvent => {
-                        return self.process_past_events(&msg).await;
+                        past_event = true;
                     }
                     _ => {
                         error!("phase handler err: {:?}", e);
@@ -316,6 +317,10 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
                     }
                 }
             }
+        }
+
+        if past_event {
+            return self.process_past_events(&msg).await;
         }
 
         match phase
