@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 pub mod gas_behavior;
+pub mod growth;
 pub mod multi_transfer;
 // pub mod prover_service;
 pub mod stake;
