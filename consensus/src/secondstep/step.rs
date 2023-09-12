@@ -72,7 +72,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, DB>,
+        mut ctx: ExecutionCtx<'_, DB, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         self.handler.lock().await.committees[ctx.step as usize] =

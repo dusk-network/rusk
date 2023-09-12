@@ -4,8 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::commons::spawn_send_reduction;
 use crate::commons::Database;
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{
     FinalResult, FinalResultWithTimeoutIncrease,
 };
@@ -15,14 +18,14 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep, selection};
+use node_data::ledger::Block;
+use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
 use std::cmp;
-use tokio::task::JoinSet;
-
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use tokio::task::JoinSet;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
@@ -142,7 +145,7 @@ impl<DB: Database> Drop for IterationCtx<DB> {
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
-pub struct ExecutionCtx<'a, DB: Database> {
+pub struct ExecutionCtx<'a, DB: Database, T> {
     pub iter_ctx: &'a mut IterationCtx<DB>,
 
     /// Messaging-related fields
@@ -156,9 +159,11 @@ pub struct ExecutionCtx<'a, DB: Database> {
     // Round/Step parameters
     pub round_update: RoundUpdate,
     pub step: u8,
+
+    executor: Arc<Mutex<T>>,
 }
 
-impl<'a, DB: Database> ExecutionCtx<'a, DB> {
+impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// Creates step execution context.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -169,6 +174,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
         step: u8,
+        executor: Arc<Mutex<T>>,
     ) -> Self {
         Self {
             iter_ctx,
@@ -178,6 +184,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
             provisioners,
             round_update,
             step,
+            executor,
         }
     }
 
@@ -236,6 +243,47 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         }
     }
 
+    pub(crate) fn vote_for_former_candidate(
+        &mut self,
+        step: u8,
+        candidate: &Block,
+    ) {
+        // Vote for both reductions
+        // TODO: if I am a member
+
+        debug!(
+            event = "former candidate received",
+            hash = node_data::ledger::to_str(&candidate.header().hash),
+            step,
+        );
+
+        spawn_send_reduction(
+            &mut self.iter_ctx.join_set,
+            Arc::new(Mutex::new([0u8; 32])),
+            candidate.clone(),
+            self.round_update.pubkey_bls.clone(),
+            self.round_update.clone(),
+            step + 1,
+            self.outbound.clone(),
+            self.inbound.clone(),
+            self.executor.clone(),
+            Topics::FirstReduction,
+        );
+
+        spawn_send_reduction(
+            &mut self.iter_ctx.join_set,
+            Arc::new(Mutex::new([0u8; 32])),
+            candidate.clone(),
+            self.round_update.pubkey_bls.clone(),
+            self.round_update.clone(),
+            step + 2,
+            self.outbound.clone(),
+            self.inbound.clone(),
+            self.executor.clone(),
+            Topics::SecondReduction,
+        );
+    }
+
     /// Process messages from past
     async fn process_past_events(&mut self, msg: &Message) -> Option<Message> {
         if msg.header.block_hash == [0u8; 32]
@@ -246,6 +294,10 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
 
         if let Err(e) = self.outbound.send(msg.clone()).await {
             error!("could not send newblock msg due to {:?}", e);
+        }
+
+        if let Payload::NewBlock(p) = &msg.payload {
+            self.vote_for_former_candidate(msg.header.step, &p.candidate);
         }
 
         if let Some(m) = self
@@ -277,14 +329,15 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         msg: Message,
         timeout_millis: &mut u64,
     ) -> Option<Message> {
-        let mut past_event = false;
-        // Check if a message is fully valid. If so, then it can be broadcast.
-        match phase.lock().await.is_valid(
+        // Check if message is valid in the context of current step
+        let ret = phase.lock().await.is_valid(
             msg.clone(),
             &self.round_update,
             self.step,
             committee,
-        ) {
+        );
+
+        match ret {
             Ok(msg) => {
                 // Re-publish the returned message
                 self.outbound.send(msg).await.unwrap_or_else(|err| {
@@ -309,7 +362,7 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
                         return None;
                     }
                     ConsensusError::PastEvent => {
-                        past_event = true;
+                        return self.process_past_events(&msg).await;
                     }
                     _ => {
                         error!("phase handler err: {:?}", e);
@@ -319,16 +372,13 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
             }
         }
 
-        if past_event {
-            return self.process_past_events(&msg).await;
-        }
-
-        match phase
+        let ret = phase
             .lock()
             .await
             .collect(msg.clone(), &self.round_update, self.step, committee)
-            .await
-        {
+            .await;
+
+        match ret {
             Ok(output) => {
                 trace!("message collected {:#?}", msg);
 
@@ -366,10 +416,10 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        let mut phase = phase.lock().await;
-
-        if let Ok(FinalResult(msg)) =
-            phase.handle_timeout(&self.round_update, self.step)
+        if let Ok(FinalResult(msg)) = phase
+            .lock()
+            .await
+            .handle_timeout(&self.round_update, self.step)
         {
             return Ok(msg);
         }
@@ -386,8 +436,6 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
         committee: &Committee,
         phase: Arc<Mutex<C>>,
     ) -> Option<Message> {
-        let mut phase = phase.lock().await;
-
         if let Some(messages) = self
             .future_msgs
             .lock()
@@ -399,13 +447,17 @@ impl<'a, DB: Database> ExecutionCtx<'a, DB> {
             }
 
             for msg in messages {
-                if let Ok(msg) = phase.is_valid(
+                let ret = phase.lock().await.is_valid(
                     msg,
                     &self.round_update,
                     self.step,
                     committee,
-                ) {
+                );
+
+                if let Ok(msg) = ret {
                     if let Ok(FinalResult(msg)) = phase
+                        .lock()
+                        .await
                         .collect(msg, &self.round_update, self.step, committee)
                         .await
                     {

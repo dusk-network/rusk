@@ -18,7 +18,9 @@ use tracing::{debug, error, warn};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<PublicKey>)>);
+pub struct Aggregator(
+    BTreeMap<(u8, Hash), (AggrSignature, Cluster<PublicKey>)>,
+);
 
 impl Aggregator {
     pub fn collect_vote(
@@ -27,6 +29,7 @@ impl Aggregator {
         header: &Header,
         signature: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
+        let msg_step = header.step;
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
@@ -35,7 +38,7 @@ impl Aggregator {
 
             let (aggr_sign, cluster) = self
                 .0
-                .entry(hash)
+                .entry((msg_step, hash))
                 .or_insert((AggrSignature::default(), Cluster::new()));
 
             // Each committee has 64 slots. If a Provisioner is extracted into

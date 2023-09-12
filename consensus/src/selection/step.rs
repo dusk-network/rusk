@@ -27,7 +27,7 @@ where
     timeout_millis: u64,
 }
 
-impl<T: Operations, D: Database> Selection<T, D> {
+impl<T: Operations + 'static, D: Database> Selection<T, D> {
     pub fn new(
         executor: Arc<Mutex<T>>,
         _db: Arc<Mutex<D>>,
@@ -56,7 +56,7 @@ impl<T: Operations, D: Database> Selection<T, D> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_, D>,
+        mut ctx: ExecutionCtx<'_, D, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         self.handler.lock().await.committees[ctx.step as usize] =

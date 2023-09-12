@@ -55,7 +55,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub async fn run(
         &mut self,
-        ctx: ExecutionCtx<'_, D>,
+        ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "execute_step", timeout = self.get_timeout());
 

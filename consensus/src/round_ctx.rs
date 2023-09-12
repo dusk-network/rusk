@@ -4,13 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-
+use crate::commons::spawn_send_reduction;
 use crate::commons::RoundUpdate;
-
 use crate::config::CONSENSUS_MAX_ITER;
+use node_data::bls::PublicKey;
 use node_data::ledger::to_str;
-use node_data::ledger::StepVotes;
-use node_data::message::{payload, Message, Topics};
+use node_data::ledger::{Block, StepVotes};
+use node_data::message::{payload, AsyncQueue, Message, Topics};
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;

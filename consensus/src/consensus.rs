@@ -169,9 +169,11 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             let round_ctx = Arc::new(Mutex::new(RoundCtx::new(ru.clone())));
 
-            let sel_handler = Arc::new(Mutex::new(
-                selection::handler::Selection::new(db.clone()),
-            ));
+            let sel_handler =
+                Arc::new(Mutex::new(selection::handler::Selection::new(
+                    db.clone(),
+                    round_ctx.clone(),
+                )));
 
             let first_handler =
                 Arc::new(Mutex::new(firststep::handler::Reduction::new(
@@ -195,7 +197,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     first_handler.clone(),
                 )),
                 Phase::Reduction2(secondstep::step::Reduction::new(
-                    executor,
+                    executor.clone(),
                     sec_handler.clone(),
                 )),
             ];
@@ -237,6 +239,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         &mut provisioners,
                         ru.clone(),
                         step,
+                        executor.clone(),
                     );
 
                     // Execute a phase.

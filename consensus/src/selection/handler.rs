@@ -5,18 +5,19 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::round_ctx::SafeRoundCtx;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
+
 use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[derive(Debug, Default)]
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
+    pub(crate) round_ctx: SafeRoundCtx,
     pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
 }
 
@@ -40,7 +41,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
@@ -67,10 +68,11 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
 }
 
 impl<D: Database> Selection<D> {
-    pub(crate) fn new(db: Arc<Mutex<D>>) -> Self {
+    pub(crate) fn new(db: Arc<Mutex<D>>, round_ctx: SafeRoundCtx) -> Self {
         Self {
             db,
-            committees: vec![Committee::default(); 213], // TODO:
+            committees: vec![Committee::default(); 213],
+            round_ctx,
         }
     }
 
