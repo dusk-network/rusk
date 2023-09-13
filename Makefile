@@ -1,4 +1,4 @@
-all: circuits keys wasm abi allcircuits state allmacros contracts node ## Build everything
+all: circuits keys wasm abi allcircuits state contracts node ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -7,9 +7,6 @@ help: ## Display this help screen
 
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
-
-allmacros: ## Build the workspace macro libs and test them
-	$(MAKE) -C ./macros all
 
 circuits: ## Compress and store all circuits
 	$(MAKE) -C ./circuits $@
@@ -34,7 +31,6 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) state
-	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./node-data $@
@@ -44,7 +40,6 @@ test: keys wasm ## Run the tests
 			
 clippy: ## Run clippy$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -j -C ./circuits $@
-	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 	$(MAKE) -C ./rusk-profile $@
