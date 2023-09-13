@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::lazy_prover;
+use crate::prover::fetch_prover;
 
 pub const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
@@ -22,7 +22,7 @@ pub const WFCO_INPUT_LEN: usize = u64::SIZE
     + JubJubAffine::SIZE;
 
 pub static WFCO_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(WithdrawFromObfuscatedCircuit);
+    Lazy::new(|| fetch_prover("WithdrawFromObfuscatedCircuit"));
 
 impl LocalProver {
     pub(crate) fn local_prove_wfco(

@@ -5,13 +5,13 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::lazy_prover;
+use crate::prover::fetch_prover;
 
 pub const WFCT_INPUT_LEN: usize =
     JubJubAffine::SIZE + u64::SIZE + JubJubScalar::SIZE;
 
 pub static WFCT_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(WithdrawFromTransparentCircuit);
+    Lazy::new(|| fetch_prover("WithdrawFromTransparentCircuit"));
 
 impl LocalProver {
     pub(crate) fn local_prove_wfct(
