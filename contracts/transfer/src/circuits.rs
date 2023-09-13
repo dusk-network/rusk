@@ -6,36 +6,36 @@
 
 const VD_STCT: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/cfebfdcd309a070b44e1b407b7228ca9b900720e7cff283d653400357161899a.vd"
+    "/.rusk/keys/1e826837c2de377128fc73ebfac77d84f3a334fe8310ff5b316d8f55e2ff3661.vd"
 ));
 const VD_STCO: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/d7fbe016d385b7d3b44c510225388a0f2a9889d07294ba3e3f9c037801d3148e.vd"
+    "/.rusk/keys/8878bbe32b52953022d1b4895d77d325429715c9a69f90f46d80b543c4348728.vd"
 ));
 const VD_WFCT: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/d0b52061b33cb2f2ef79448b53cd3d2dbca30819ca4a55e151c8af01e6c7efcd.vd"
+    "/.rusk/keys/a56c87dcd43402dcae9aa719d378dc91b8e93c5fbe2cfbda099d0eeb75b5c628.vd"
 ));
 const VD_WFCO: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/7824ae42a6208eb0eca9f7c5e7ca964efa04a500fc3275e1c89541a26876808a.vd"
+    "/.rusk/keys/01f4bc9da62145d1e28ac7947cd6428fc4127a046e449a6583b56443d180a689.vd"
 ));
 
 const VD_EXEC_1_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/cff6ae2993e629cffb5b9b6fb04e368e64f79cd2f8bd3fc6095cedbbfd5cdc1d.vd"
+    "/.rusk/keys/90ed94f311a94d6401df61f1a4e98328ed029f42340537bc1661d551eab3319e.vd"
 ));
 const VD_EXEC_2_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/2b987ac4bcb3eeda279b5c1e36018f9537db02e0a6d55f8b46c608b9690c3a1e.vd"
+    "/.rusk/keys/2dcb577684657c0b0e10d32938cca7396cfcb579ed044aa6c9d3bad31fe5c005.vd"
 ));
 const VD_EXEC_3_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/51846c23e307b4d2904230ff14acaa1af7b032867065cbcb5c693d8ff8cb6063.vd"
+    "/.rusk/keys/cba6ad03bbe9f53bdeddef0256ffad331652b3380b7996cd670fd7d92670fd53.vd"
 ));
 const VD_EXEC_4_2: &[u8] = include_bytes!(concat!(
     env!("RUSK_PROFILE_PATH"),
-    "/.rusk/keys/f2a04c3a1de344ba9f52cc6693b569a2a5b683871e1fb58d1845a1a11a8a5542.vd"
+    "/.rusk/keys/728a4c412d7a5651f1c530a855f40f2ebed120446fb7a87fa17f82164b789a17.vd"
 ));
 
 /// Verifier data for the execute circuits.

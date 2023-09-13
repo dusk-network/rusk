@@ -185,22 +185,20 @@ fn opening(
         .map(|r| r.data)
 }
 
-fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
-    let (pk, vd) = prover_verifier_keys(circuit_id);
+fn prover_verifier(circuit_name: &str) -> (Prover, Verifier) {
+    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
+        .expect(&format!(
+            "There should be circuit data stored for {}",
+            circuit_name
+        ));
+    let (pk, vd) = circuit_profile
+        .get_keys()
+        .expect(&format!("there should be keys stored for {}", circuit_name));
 
     let prover = Prover::try_from_bytes(pk).unwrap();
     let verifier = Verifier::try_from_bytes(vd).unwrap();
 
     (prover, verifier)
-}
-
-fn prover_verifier_keys(circuit_id: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
-    let keys = rusk_profile::keys_for(circuit_id).unwrap();
-
-    let pk = keys.get_prover().unwrap();
-    let vd = keys.get_verifier().unwrap();
-
-    (pk, vd)
 }
 
 fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
@@ -347,9 +345,7 @@ fn transfer() {
         .add_input(circuit_input)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (proof, _) = prover
         .prove(rng, &circuit)
         .expect("creating a proof should succeed");
@@ -475,9 +471,7 @@ fn alice_ping() {
         .add_input(circuit_input)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (proof, _) = prover
         .prove(rng, &circuit)
         .expect("creating a proof should succeed");
@@ -579,8 +573,7 @@ fn send_and_withdraw_transparent() {
         stct_signature,
     );
 
-    let (prover, _) =
-        prover_verifier(SendToContractTransparentCircuit::circuit_id());
+    let (prover, _) = prover_verifier("SendToContractTransparentCircuit");
     let (stct_proof, _) = prover
         .prove(rng, &stct_circuit)
         .expect("Proving STCT circuit should succeed");
@@ -655,9 +648,7 @@ fn send_and_withdraw_transparent() {
         .add_input(circuit_input)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (execute_proof, _) = prover
         .prove(rng, &execute_circuit)
         .expect("creating a proof should succeed");
@@ -746,8 +737,7 @@ fn send_and_withdraw_transparent() {
         withdraw_value,
         withdraw_blinder,
     );
-    let (wfct_prover, _) =
-        prover_verifier(WithdrawFromTransparentCircuit::circuit_id());
+    let (wfct_prover, _) = prover_verifier("WithdrawFromTransparentCircuit");
 
     let (wfct_proof, _) = wfct_prover
         .prove(rng, &wfct_circuit)
@@ -834,9 +824,7 @@ fn send_and_withdraw_transparent() {
         .add_input(circuit_input_1)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitTwoTwo");
     let (execute_proof, _) = prover
         .prove(rng, &execute_circuit)
         .expect("creating a proof should succeed");
@@ -960,8 +948,7 @@ fn send_and_withdraw_obfuscated() {
         stco_signature,
     );
 
-    let (stco_prover, _) =
-        prover_verifier(SendToContractObfuscatedCircuit::circuit_id());
+    let (stco_prover, _) = prover_verifier("SendToContractObfuscatedCircuit");
     let (stco_proof, _) = stco_prover
         .prove(rng, &stco_circuit)
         .expect("Proving STCO circuit should succeed");
@@ -1037,9 +1024,7 @@ fn send_and_withdraw_obfuscated() {
         .add_input(circuit_input)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitOneTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (execute_proof, _) = prover
         .prove(rng, &execute_circuit)
         .expect("creating a proof should succeed");
@@ -1173,8 +1158,7 @@ fn send_and_withdraw_obfuscated() {
         change: wfco_change,
         output: wfco_output,
     };
-    let (wfco_prover, _) =
-        prover_verifier(WithdrawFromObfuscatedCircuit::circuit_id());
+    let (wfco_prover, _) = prover_verifier("WithdrawFromObfuscatedCircuit");
 
     let (wfco_proof, _) = wfco_prover
         .prove(rng, &wfco_circuit)
@@ -1267,9 +1251,7 @@ fn send_and_withdraw_obfuscated() {
         .add_input(circuit_input_1)
         .expect("appending input or output should succeed");
 
-    let (pk, _) = prover_verifier_keys(ExecuteCircuitTwoTwo::circuit_id());
-    let prover = Prover::try_from_bytes(pk.as_slice())
-        .expect("loading prover key should succeed");
+    let (prover, _) = prover_verifier("ExecuteCircuitTwoTwo");
     let (execute_proof, _) = prover
         .prove(rng, &execute_circuit)
         .expect("creating a proof should succeed");
