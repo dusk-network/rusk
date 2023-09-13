@@ -13,10 +13,10 @@ use dusk_bytes::Serializable;
 use poseidon_merkle::{Opening, Tree};
 use rusk_abi::PublicInput;
 
-use crate::license_circuits::verifier_data_license_circuit;
 use crate::license_types::{
     LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
 };
+use crate::verifier_data_license_circuit;
 
 const DEPTH: usize = 17; // depth of the Merkle tree
 const ARITY: usize = 4; // arity of the Merkle tree

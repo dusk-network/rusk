@@ -6,9 +6,6 @@
 
 extern crate alloc;
 
-#[path = "../src/license_circuits.rs"]
-mod license_circuits;
-
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
 use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
@@ -26,7 +23,7 @@ use rkyv::{check_archived_root, Deserialize, Infallible};
 mod license_types;
 use license_types::*;
 
-use ::license_circuits::LicenseCircuit;
+use license_circuits::LicenseCircuit;
 
 use rusk_abi::{ContractData, ContractId, Session};
 use zk_citadel::license::{
@@ -407,7 +404,7 @@ fn use_license_get_session() {
         &owned_license,
         merkle_opening,
     );
-    let circuit = LicenseCircuit::new(&cpp, &sc);
+    let circuit = LicenseCircuit::new(cpp, sc);
 
     let (proof, public_inputs) =
         prover.prove(rng, &circuit).expect("Proving should succeed");

@@ -11,7 +11,6 @@
 extern crate alloc;
 
 mod error;
-mod license_circuits;
 mod license_types;
 #[cfg(target_family = "wasm")]
 mod state;
@@ -19,6 +18,14 @@ mod state;
 pub use license_types::{
     LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
 };
+
+const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/b4395f9a50ee374393166d57d8f062e9191f259678dbafca5b6279abb215f1db.vd"));
+
+/// Verifier data for the `License` circuit.
+#[allow(dead_code)]
+pub const fn verifier_data_license_circuit() -> &'static [u8] {
+    VD_LICENSE_CIRCUIT
+}
 
 #[cfg(target_family = "wasm")]
 #[path = ""]
