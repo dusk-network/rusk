@@ -20,10 +20,6 @@ pub struct WithdrawFromTransparentCircuit {
 }
 
 impl WithdrawFromTransparentCircuit {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-
     pub const fn new(
         commitment: JubJubExtended,
         value: u64,
@@ -37,7 +33,6 @@ impl WithdrawFromTransparentCircuit {
     }
 }
 
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for WithdrawFromTransparentCircuit {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         // Witnesses

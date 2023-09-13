@@ -16,6 +16,7 @@ use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 use dusk_plonk::prelude::*;
 
 mod keys;
+use keys::load_keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
     rng: &mut R,
@@ -73,10 +74,8 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 fn send_to_contract_obfuscated_public_key() {
     let rng = &mut StdRng::seed_from_u64(2322u64);
 
-    let circuit_id = SendToContractObfuscatedCircuit::circuit_id();
-
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
+    let (prover, verifier) = load_keys("SendToContractObfuscatedCircuit")
+        .expect("Keys should be stored");
 
     let circuit = create_random_circuit(rng, true);
 
@@ -93,10 +92,8 @@ fn send_to_contract_obfuscated_public_key() {
 fn send_to_contract_obfuscated_secret_key() {
     let rng = &mut StdRng::seed_from_u64(2322u64);
 
-    let circuit_id = SendToContractObfuscatedCircuit::circuit_id();
-
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
+    let (prover, verifier) = load_keys("SendToContractObfuscatedCircuit")
+        .expect("Keys should be stored");
 
     let circuit = create_random_circuit(rng, false);
 

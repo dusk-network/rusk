@@ -17,11 +17,19 @@ dusk-pki ="0.12"
 dusk-schnorr = "0.13"
 phoenix-core = { version = "0.20.0-rc.0", features = ["alloc"] }
 
-code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
+storage = { version = "0.1", path = "../storage", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
+
+[features]
+store = ["rusk-profile", "storage"]
+
+[[bin]]
+name = "transfer-circuits-store"
+path = "src/bin/store.rs"
+required-features = ["store"]
 
 [[test]]
 name = "test-execute"

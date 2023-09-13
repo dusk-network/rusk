@@ -6,7 +6,7 @@
 
 use dusk_merkle::Aggregate;
 use dusk_pki::{Ownable, PublicSpendKey};
-use phoenix_core::Note;
+use phoenix_core::{Note, NoteType};
 use poseidon_merkle::{Item, Opening, Tree};
 
 use dusk_plonk::prelude::*;
@@ -136,7 +136,7 @@ where
         );
 
         let note = Note::deterministic(
-            phoenix_core::NoteType::Transparent,
+            NoteType::Transparent,
             &JubJubScalar::default(),
             BlsScalar::default(),
             &PublicSpendKey::new(
