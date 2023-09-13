@@ -10,12 +10,22 @@ use crate::error::Error;
 use crate::Result;
 
 use dusk_wallet_core::Transaction;
-use rusk_profile::keys_for;
+use rusk_profile::Circuit as CircuitProfile;
+use transfer_circuits::CircuitOutput;
 
-use transfer_circuits::{
-    CircuitOutput, ExecuteCircuitFourTwo, ExecuteCircuitOneTwo,
-    ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
-};
+use std::sync::LazyLock;
+
+pub static VD_EXEC_1_2: LazyLock<Vec<u8>> =
+    LazyLock::new(|| fetch_verifier("ExecuteCircuitOneTwo"));
+
+pub static VD_EXEC_2_2: LazyLock<Vec<u8>> =
+    LazyLock::new(|| fetch_verifier("ExecuteCircuitTwoTwo"));
+
+pub static VD_EXEC_3_2: LazyLock<Vec<u8>> =
+    LazyLock::new(|| fetch_verifier("ExecuteCircuitThreeTwo"));
+
+pub static VD_EXEC_4_2: LazyLock<Vec<u8>> =
+    LazyLock::new(|| fetch_verifier("ExecuteCircuitFourTwo"));
 
 pub fn verify_proof(tx: &Transaction) -> Result<bool> {
     let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
@@ -53,11 +63,11 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
             .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),
     );
 
-    let keys = match inputs.len() {
-        1 => keys_for(ExecuteCircuitOneTwo::circuit_id())?,
-        2 => keys_for(ExecuteCircuitTwoTwo::circuit_id())?,
-        3 => keys_for(ExecuteCircuitThreeTwo::circuit_id())?,
-        4 => keys_for(ExecuteCircuitFourTwo::circuit_id())?,
+    let vd = match inputs.len() {
+        1 => &VD_EXEC_1_2,
+        2 => &VD_EXEC_2_2,
+        3 => &VD_EXEC_3_2,
+        4 => &VD_EXEC_4_2,
         _ => {
             return Err(Error::InvalidCircuitArguments(
                 inputs.len(),
@@ -66,9 +76,17 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
         }
     };
 
-    let vd = keys.get_verifier()?;
-
     // Maybe we want to handle internal serialization error too, currently
     // they map to `false`.
-    Ok(rusk_abi::verify_proof(vd, proof.clone(), pi))
+    Ok(rusk_abi::verify_proof(vd.to_vec(), proof.clone(), pi))
+}
+
+fn fetch_verifier(circuit_name: &str) -> Vec<u8> {
+    let circuit_profile = CircuitProfile::from_name(circuit_name)
+        .unwrap_or_else(|_| {
+            panic!("There should be circuit data stored for {}", circuit_name)
+        });
+    circuit_profile.get_verifier().unwrap_or_else(|_| {
+        panic!("there should be a verifier key stored for {}", circuit_name)
+    })
 }
