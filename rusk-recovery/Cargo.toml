@@ -29,8 +29,6 @@ dusk-plonk = { version = "0.14", features = ["rkyv-impl"] }
 dusk-pki ="0.12"
 phoenix-core = { version = "0.20.0-rc.0", features = ["rkyv-impl", "alloc"] }
 rand = "0.8"
-transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
-license-circuits = { version = "0.1", path = "../circuits/license" }
 dusk-merkle = "0.5"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
@@ -40,7 +38,6 @@ dusk-bls12_381 = "0.11"
 dusk-bls12_381-sign = "0.4"
 clap = { version = "3.1", features = ["cargo", "env", "derive"] }
 thiserror = "1.0"
-console = "0.12"
 tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.2.0", features = ["fmt"] }
 http_req = "0.8"

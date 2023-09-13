@@ -4,12 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use rusk_recovery_tools::theme::Theme;
+use rusk_recovery_tools::Theme;
 use std::env;
 use std::path::PathBuf;
 use std::time::Instant;
 use tracing::info;
-use tracing_subscriber::filter::filter_fn;
 use tracing_subscriber::prelude::*;
 
 pub fn run(
@@ -33,10 +32,7 @@ pub fn run(
             .without_time()
             .with_target(false)
             .with_level(false)
-            .compact()
-            .with_filter(filter_fn(|meta| {
-                meta.target().contains("rusk_recovery")
-            }));
+            .compact();
 
         tracing_subscriber::registry().with(fmt_layer).init();
     }
@@ -48,7 +44,6 @@ pub fn run(
         rusk_profile::get_rusk_profile_dir()?.to_str().unwrap()
     );
 
-    //rusk_recovery_tools::keys::exec(args.keep)?;
     task()?;
 
     info!(

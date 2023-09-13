@@ -11,7 +11,7 @@ abi: ## Build the ABI
 circuits: ## Compress and store all circuits
 	$(MAKE) -C ./circuits $@
 
-keys: ## Create the keys for the circuits
+keys: circuits ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
 state: wasm ## Create the network state
@@ -56,4 +56,4 @@ run: keys state ## Run the server
 node: rusk ## Build node binary
 	$(MAKE) -C ./node binary
 
-.PHONY: all abi keys state wasm circuits contracts test run help node
+.PHONY: all abi circuits keys state wasm allcircuits contracts test run help node

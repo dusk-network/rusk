@@ -9,4 +9,4 @@ pub mod keys;
 #[cfg(feature = "state")]
 pub mod state;
 
-pub mod theme;
+pub use rusk_profile::Theme;
