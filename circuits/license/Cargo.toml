@@ -18,11 +18,19 @@ poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl"] }
 zk-citadel = "0.4"
 hex = "0.4"
 
-code-hasher = { version = "0.4", path = "../../macros/code-hasher" }
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
+storage = { version = "0.1", path = "../storage", optional = true }
 
 [dev-dependencies]
 rand = "0.8"
+
+[features]
+store = ["rusk-profile", "storage"]
+
+[[bin]]
+name = "license-circuits-store"
+path = "src/bin/store.rs"
+required-features = ["store"]
 
 [[test]]
 name = "test-license"
