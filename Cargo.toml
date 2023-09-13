@@ -2,6 +2,7 @@
 members = [
     "circuits/transfer",
     "circuits/license",
+    "circuits/storage",
 
     "contract-helpers",
     "contracts/alice",

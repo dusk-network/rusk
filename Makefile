@@ -1,4 +1,4 @@
-all: keys wasm abi circuits state allmacros contracts node ## Build everything
+all: circuits keys wasm abi allcircuits state allmacros contracts node ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -11,6 +11,9 @@ abi: ## Build the ABI
 allmacros: ## Build the workspace macro libs and test them
 	$(MAKE) -C ./macros all
 
+circuits: ## Compress and store all circuits
+	$(MAKE) -C ./circuits $@
+
 keys: ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
@@ -21,7 +24,7 @@ wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 
-circuits: ## Build circuit crates
+allcircuits: ## Build circuit crates
 	$(MAKE) -j -C ./circuits all
 
 contracts: ## Execute the test for all contracts
