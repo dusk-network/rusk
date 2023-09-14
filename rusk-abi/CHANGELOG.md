@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update `piecrust` from `0.8.0-rc` to `0.9`
+- Update `piecrust` from `0.8.0-rc` to `0.10`
 - Update `piecrust` from `0.7` to `0.8.0-rc`
 - Update `piecrust` from `0.6` to `0.7`
 - Update `piecrust-uplink` from `0.6` to `0.7`
