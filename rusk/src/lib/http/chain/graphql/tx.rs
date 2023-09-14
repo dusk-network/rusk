@@ -43,7 +43,7 @@ pub async fn last_transactions(
 
                 txs.push(SpentTransaction(tx));
                 if txs.len() >= count {
-                    break;
+                    return Ok::<_, async_graphql::Error>(txs);
                 }
             }
             current_block = t.fetch_block_header(&header.prev_block_hash)?;
