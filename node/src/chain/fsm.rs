@@ -146,6 +146,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let iter = acc.get_curr_iteration().await;
         let curr_hash = acc.get_curr_hash().await;
 
+        info!(
+            event = "fsm::on_event",
+            height = curr_h,
+            iter,
+            blk_height = h,
+            blk_iter = blk.header().iteration
+        );
+
         if h < curr_h {
             return Ok(false);
         }
@@ -164,10 +172,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         if h == curr_h {
             if blk.header().hash == curr_hash {
                 // Duplicated block.
-                // Node has already accepted it however we still need to
-                // re-propagate it so that we do not eclipse the network.
-                // Eclipsing the network for that broadcast would damage the
-                // fallback.
+                //
+                // Node has already accepted it (maybe from local consensus)
+                // however we still need to re-propagate it so
+                // that we do not eclipse the network. Eclipsing
+                // the network for that broadcast may damage the
+                // fallback for nodes on different fork.
 
                 self.network.write().await.broadcast(msg).await;
 
@@ -188,7 +198,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 Err(e) => {
                     // Fallback execution has failed. The block is ignored and
                     // Node remains in InSync state.
-                    error!("{}", e);
+                    error!(event = "fallback failed", err = format!("{:?}", e));
                     return Ok(false);
                 }
                 Ok(_) => {
