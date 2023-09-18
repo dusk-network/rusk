@@ -164,7 +164,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         if h == curr_h {
             if blk.header().hash == curr_hash {
                 // Duplicated block.
-                // Node has already accepted it.
+                // Node has already accepted it however we still need to
+                // re-propagate it so that we do not eclipse the network.
+                // Eclipsing the network for that broadcast would damage the
+                // fallback.
+
+                self.network.write().await.broadcast(msg).await;
+
                 return Ok(false);
             }
 
@@ -193,6 +199,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         .write()
                         .await
                         .insert(blk.header().hash);
+
+                    self.network.write().await.broadcast(msg).await;
 
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing ephemeral
