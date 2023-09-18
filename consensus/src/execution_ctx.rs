@@ -243,45 +243,72 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    pub(crate) fn vote_for_former_candidate(
+    pub(crate) async fn vote_for_former_candidate(
         &mut self,
         step: u8,
         candidate: &Block,
     ) {
-        // Vote for both reductions
-        // TODO: if I am a member
-
         debug!(
             event = "former candidate received",
             hash = node_data::ledger::to_str(&candidate.header().hash),
             step,
         );
 
-        spawn_send_reduction(
-            &mut self.iter_ctx.join_set,
-            Arc::new(Mutex::new([0u8; 32])),
-            candidate.clone(),
-            self.round_update.pubkey_bls.clone(),
-            self.round_update.clone(),
-            step + 1,
-            self.outbound.clone(),
-            self.inbound.clone(),
-            self.executor.clone(),
-            Topics::FirstReduction,
-        );
+        let first_red_step_num = step as usize + 1;
+        if self
+            .iter_ctx
+            .first_reduction_handler
+            .lock()
+            .await
+            .committees[first_red_step_num]
+            .am_member()
+        {
+            debug!(
+                event = "vote for former candidate in 1st_red",
+                hash = node_data::ledger::to_str(&candidate.header().hash),
+                step,
+            );
 
-        spawn_send_reduction(
-            &mut self.iter_ctx.join_set,
-            Arc::new(Mutex::new([0u8; 32])),
-            candidate.clone(),
-            self.round_update.pubkey_bls.clone(),
-            self.round_update.clone(),
-            step + 2,
-            self.outbound.clone(),
-            self.inbound.clone(),
-            self.executor.clone(),
-            Topics::SecondReduction,
-        );
+            spawn_send_reduction(
+                &mut self.iter_ctx.join_set, /* TODO: this should not be
+                                              * aborted
+                                              * on iteration end */
+                Arc::new(Mutex::new([0u8; 32])),
+                candidate.clone(),
+                self.round_update.pubkey_bls.clone(),
+                self.round_update.clone(),
+                first_red_step_num as u8,
+                self.outbound.clone(),
+                self.inbound.clone(),
+                self.executor.clone(),
+                Topics::FirstReduction,
+            );
+        }
+
+        let sec_reduction_step_num = step as usize + 2;
+        if self.iter_ctx.sec_reduction_handler.lock().await.committees
+            [sec_reduction_step_num]
+            .am_member()
+        {
+            debug!(
+                event = "vote for former candidate in 2nd_red",
+                hash = node_data::ledger::to_str(&candidate.header().hash),
+                step,
+            );
+
+            spawn_send_reduction(
+                &mut self.iter_ctx.join_set,
+                Arc::new(Mutex::new([0u8; 32])),
+                candidate.clone(),
+                self.round_update.pubkey_bls.clone(),
+                self.round_update.clone(),
+                sec_reduction_step_num as u8,
+                self.outbound.clone(),
+                self.inbound.clone(),
+                self.executor.clone(),
+                Topics::SecondReduction,
+            );
+        }
     }
 
     /// Process messages from past
@@ -297,7 +324,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
 
         if let Payload::NewBlock(p) = &msg.payload {
-            self.vote_for_former_candidate(msg.header.step, &p.candidate);
+            self.vote_for_former_candidate(msg.header.step, &p.candidate)
+                .await;
         }
 
         if let Some(m) = self
