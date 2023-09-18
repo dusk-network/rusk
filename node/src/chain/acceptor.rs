@@ -452,7 +452,14 @@ async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!("invalid first reduction votes"));
+        return Err(anyhow!(
+            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?} ",
+            to_str(&hdr.block_hash),
+            hdr.round,
+            iteration,
+            to_str(&curr_seed.inner()),
+            cert.first_reduction
+        ));
     }
 
     // Verify second reduction
@@ -465,7 +472,14 @@ async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!("invalid second reduction votes"));
+        return Err(anyhow!(
+            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?} ",
+            to_str(&hdr.block_hash),
+            hdr.round,
+            iteration,
+            to_str(&curr_seed.inner()),
+            cert.second_reduction
+        ));
     }
 
     Ok(())
