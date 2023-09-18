@@ -13,6 +13,7 @@ pub const CONSENSUS_MAX_ITER: u8 = CONSENSUS_MAX_STEP / 3;
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
 /// Initial step timeout in milliseconds.
 pub const CONSENSUS_TIMEOUT_MS: u64 = 20 * 1000;
+
 /// Maximum step timeout.
 pub const CONSENSUS_MAX_TIMEOUT_MS: u64 = 60 * 1000;
 

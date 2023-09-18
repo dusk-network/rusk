@@ -75,6 +75,10 @@ impl RuskNode {
             .data(self.db())
             .finish();
 
+        if gql_query.trim().is_empty() {
+            return Ok(schema.sdl().into());
+        }
+
         let variables = variables_from_request(request);
         let gql_query =
             async_graphql::Request::new(gql_query).variables(variables);

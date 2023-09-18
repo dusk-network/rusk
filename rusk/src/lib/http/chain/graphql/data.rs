@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::ops::Deref;
+
 use async_graphql::{FieldError, FieldResult, Object, SimpleObject};
 use node::database::{Ledger, DB};
 
@@ -27,7 +29,35 @@ impl Block {
 
 pub struct Header<'a>(&'a node_data::ledger::Header);
 pub struct SpentTransaction(pub node_data::ledger::SpentTransaction);
-pub struct Transaction<'a>(&'a node_data::ledger::Transaction);
+pub struct Transaction<'a>(TransactionData<'a>);
+
+impl<'a> From<&'a node_data::ledger::Transaction> for Transaction<'a> {
+    fn from(value: &'a node_data::ledger::Transaction) -> Self {
+        Self(TransactionData::Ref(value))
+    }
+}
+
+impl From<node_data::ledger::Transaction> for Transaction<'_> {
+    fn from(value: node_data::ledger::Transaction) -> Self {
+        Self(TransactionData::Owned(value))
+    }
+}
+
+#[allow(clippy::large_enum_variant)]
+enum TransactionData<'a> {
+    Owned(node_data::ledger::Transaction),
+    Ref(&'a node_data::ledger::Transaction),
+}
+
+impl Deref for TransactionData<'_> {
+    type Target = node_data::ledger::Transaction;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            TransactionData::Owned(t) => t,
+            TransactionData::Ref(t) => t,
+        }
+    }
+}
 
 #[Object]
 impl Block {
@@ -88,7 +118,7 @@ impl Block {
 }
 
 #[Object]
-impl<'a> Header<'a> {
+impl Header<'_> {
     pub async fn version(&self) -> u8 {
         self.0.version
     }
@@ -137,7 +167,8 @@ impl<'a> Header<'a> {
 #[Object]
 impl SpentTransaction {
     pub async fn tx(&self) -> Transaction {
-        Transaction(&self.0.inner)
+        let inner = &self.0.inner;
+        inner.into()
     }
 
     pub async fn err(&self) -> &Option<String> {
@@ -203,7 +234,7 @@ impl SpentTransaction {
 }
 
 #[Object]
-impl<'a> Transaction<'a> {
+impl Transaction<'_> {
     pub async fn raw(&self) -> String {
         hex::encode(self.0.inner.to_var_bytes())
     }

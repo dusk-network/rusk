@@ -323,9 +323,6 @@ impl Rusk {
             inner.vm.delete_commit(commit)?;
         }
 
-        // Squash the current commit
-        inner.vm.squash_commit(inner.current_commit)?;
-
         let commit_id_path = to_rusk_state_id_path(&self.dir);
         fs::write(commit_id_path, commit_id)?;
 

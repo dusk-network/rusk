@@ -236,13 +236,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
+        let fsv_bitset = blk.header().cert.first_reduction.bitset;
+        let ssv_bitset = blk.header().cert.second_reduction.bitset;
+
         info!(
             event = "block accepted",
             height = blk.header().height,
             iter = blk.header().iteration,
             hash = to_str(&blk.header().hash),
             txs = blk.txs().len(),
-            state_hash = to_str(&blk.header().state_hash)
+            state_hash = to_str(&blk.header().state_hash),
+            fsv_bitset,
+            ssv_bitset,
         );
 
         // Restart Consensus.
