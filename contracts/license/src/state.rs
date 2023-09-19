@@ -59,13 +59,12 @@ impl LicenseContractState {
 impl LicenseContractState {
     /// Inserts a license into the collection of licenses.
     /// Method intended to be called by the License Provider.
-    pub fn issue_license(
-        &mut self,
-        license: Vec<u8>,
-        pos: u64,
-        hash: BlsScalar,
-    ) {
+    pub fn issue_license(&mut self, license: Vec<u8>, hash: BlsScalar) {
         let item = PoseidonItem { hash, data: () };
+        let mut pos = self.tree.len();
+        while self.tree.contains(pos) {
+            pos += 1;
+        }
         self.tree.insert(pos, item);
         let block_height = rusk_abi::block_height();
         self.licenses.insert(
@@ -79,11 +78,14 @@ impl LicenseContractState {
 
     /// Returns licenses for a given range of block-heights.
     /// Method intended to be called by the user.
-    pub fn get_licenses(&mut self, block_heights: Range<u64>) -> Vec<Vec<u8>> {
+    pub fn get_licenses(
+        &mut self,
+        block_heights: Range<u64>,
+    ) -> Vec<(u64, Vec<u8>)> {
         self.licenses
-            .filter(|le| block_heights.contains(&le.block_height))
+            .entries_filter(|(_, le)| block_heights.contains(&le.block_height))
             .into_iter()
-            .map(|le| le.license.clone())
+            .map(|(pos, le)| (*pos, le.license.clone()))
             .collect()
     }
 

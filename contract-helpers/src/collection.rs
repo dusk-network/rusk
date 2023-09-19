@@ -68,6 +68,16 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
             .filter_map(|(_, v)| f(v).then_some(v))
             .collect()
     }
+
+    pub fn entries_filter<F>(&self, f: F) -> Vec<(&K, &V)>
+    where
+        F: Fn((&K, &V)) -> bool,
+    {
+        self.data
+            .iter()
+            .filter_map(|(k, v)| f((k, v)).then_some((k, v)))
+            .collect()
+    }
 }
 
 #[allow(dead_code)]
