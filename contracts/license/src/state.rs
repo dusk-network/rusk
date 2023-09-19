@@ -102,10 +102,7 @@ impl LicenseContractState {
     /// Verifies the proof of a given license, if successful,
     /// creates a session with the corresponding session id.
     /// Method intended to be called by the user.
-    pub fn use_license(
-        &mut self,
-        use_license_arg: UseLicenseArg,
-    ) {
+    pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
         let mut pi = Vec::new();
         for scalar in use_license_arg.public_inputs.iter() {
             pi.push(PublicInput::BlsScalar(*scalar));
@@ -146,5 +143,14 @@ impl LicenseContractState {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then_some(())
             .ok_or(Error::ProofVerification)
+    }
+
+    /// Info about contract state
+    pub fn get_info(&self) -> (u32, u32, u32) {
+        (
+            self.licenses.len() as u32,
+            self.tree.len() as u32,
+            self.sessions.len() as u32,
+        )
     }
 }

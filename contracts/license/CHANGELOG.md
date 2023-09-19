@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added method 'get_info' [#1052]
+
 ### Changed
 
 - Changed 'use_license' to check if license already nullified [#1051]
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `license` contract to Rusk [#960]
 
+[#1052]: https://github.com/dusk-network/rusk/issues/1052
 [#1051]: https://github.com/dusk-network/rusk/issues/1051
 [#1040]: https://github.com/dusk-network/rusk/issues/1040
 [#1039]: https://github.com/dusk-network/rusk/issues/1039

@@ -70,4 +70,9 @@ mod wasm {
     unsafe fn noop(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |_: ()| STATE.noop())
     }
+
+    #[no_mangle]
+    unsafe fn get_info(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_info())
+    }
 }
