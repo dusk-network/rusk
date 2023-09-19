@@ -105,7 +105,7 @@ impl LicenseContractState {
     pub fn use_license(
         &mut self,
         use_license_arg: UseLicenseArg,
-    ) -> LicenseSessionId {
+    ) {
         let mut pi = Vec::new();
         for scalar in use_license_arg.public_inputs.iter() {
             pi.push(PublicInput::BlsScalar(*scalar));
@@ -120,8 +120,10 @@ impl LicenseContractState {
             public_inputs: use_license_arg.public_inputs,
         };
         let session_id = license_session.session_id();
+        if self.sessions.get(&session_id).is_some() {
+            panic!("License already nullified");
+        }
         self.sessions.insert(session_id, license_session);
-        session_id
     }
 
     /// Returns session with a given session id.
