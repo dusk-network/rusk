@@ -84,7 +84,6 @@ impl LicenseContractState {
     ) -> Vec<(u64, Vec<u8>)> {
         self.licenses
             .entries_filter(|(_, le)| block_heights.contains(&le.block_height))
-            .into_iter()
             .map(|(pos, le)| (*pos, le.license.clone()))
             .collect()
     }
