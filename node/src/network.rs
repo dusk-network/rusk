@@ -6,7 +6,7 @@
 
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{any, default};
 
 use crate::{BoxedFilter, Message};
@@ -15,6 +15,7 @@ use kadcast::config::Config;
 use kadcast::{MessageInfo, Peer};
 use node_data::message::Metadata;
 use node_data::message::{AsyncQueue, Topics};
+use rand_core::RngCore;
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
@@ -109,13 +110,15 @@ impl<const N: usize> Kadcast<N> {
         const INIT_FN: Option<BoxedFilter> = None;
         let filters = Arc::new(RwLock::new([INIT_FN; N]));
 
+        let mut rng = rand::thread_rng();
+
         Kadcast {
             routes: routes.clone(),
             filters: filters.clone(),
             peer: Peer::new(conf.clone(), Listener { routes, filters })
                 .unwrap(),
             conf,
-            counter: AtomicU64::new(0),
+            counter: AtomicU64::new(rng.next_u64()),
         }
     }
 
@@ -176,15 +179,16 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(
-            msg,
-            self.counter.fetch_add(1, Ordering::SeqCst),
-        )
-        .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {}", err))?;
+        let reserved = self.counter.fetch_add(1, Ordering::SeqCst);
+
+        let encoded = frame::Pdu::encode(msg, reserved).map_err(|err| {
+            anyhow::anyhow!("failed to send_to_peer: {}", err)
+        })?;
 
         info!(
-            "sending msg ({:?}) to peer {:?}",
-            msg.header.topic, recv_addr
+            event = "send msg",
+            dest = format!("{:?}", recv_addr),
+            msg_topic = format!("{:?}", Topics::from(msg.header.topic)),
         );
 
         self.peer.send(&encoded, recv_addr).await;

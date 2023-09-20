@@ -32,6 +32,9 @@ blake2 = "0.10.5"
 dusk-bls12_381-sign = { version = "0.4", default-features = false }
 console-subscriber = { version = "0.1.8", optional = true }
 smallvec = "1.10.0"
+rand_core = { version = "0.6", default-features = false }
+rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+
 
 ## Binary dependencies
 clap = { version = "3.1", features = ["env"] }

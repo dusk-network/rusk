@@ -124,6 +124,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 recv = &mut result_chan.recv() => {
                     match recv? {
                         Ok(blk) => {
+                            info!(
+                                event = "block received",
+                                src = "consensus",
+                                blk_height = blk.header().height,
+                                blk_hash = to_str(&blk.header().hash),
+                            );
+
                             fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone())))
                                 .await
                                 .map_err(|e| error!("failed to process block: {}", e));
@@ -139,7 +146,12 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                     let msg = recv?;
                     match &msg.payload {
                         Payload::Block(blk) => {
-                            debug!("received block {:?}", blk);
+                           info!(
+                                event = "block received",
+                                src = "wire",
+                                blk_height = blk.header().height,
+                                blk_hash = to_str(&blk.header().hash),
+                            );
 
                             fsm.on_event(blk, &msg)
                                 .await
