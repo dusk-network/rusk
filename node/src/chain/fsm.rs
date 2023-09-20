@@ -9,7 +9,7 @@ use crate::chain::fallback;
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
 use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, Block, Hash, Transaction};
+use node_data::ledger::{self, to_str, Block, Hash, Transaction};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::cell::RefCell;
@@ -63,6 +63,17 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<()> {
+        // Filter out blocks that have already been marked as
+        // blacklisted upon successful fallback execution.
+        if self
+            .blacklisted_blocks
+            .read()
+            .await
+            .contains(&blk.header().hash)
+        {
+            return Ok(());
+        }
+
         match &mut self.curr {
             State::InSync(ref mut curr) => {
                 if curr.on_event(blk, msg).await? {
@@ -74,6 +85,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         self.acc.clone(),
                         self.network.clone(),
                     );
+
                     next.on_entering(blk, msg).await;
                     self.curr = State::OutOfSync(next);
                 }
@@ -151,21 +163,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             height = curr_h,
             iter,
             blk_height = h,
-            blk_iter = blk.header().iteration
+            blk_iter = blk.header().iteration,
+            blk_hash = to_str(&blk.header().hash),
         );
 
         if h < curr_h {
-            return Ok(false);
-        }
-
-        // Filter out blocks that have already been marked as
-        // blacklisted upon successful fallback execution.
-        if self
-            .blacklisted_blocks
-            .read()
-            .await
-            .contains(&blk.header().hash)
-        {
             return Ok(false);
         }
 
@@ -205,16 +207,25 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // Fallback has completed successfully. Node has managed to
                     // fallback to the most recent finalized block and state.
 
-                    self.blacklisted_blocks
-                        .write()
-                        .await
-                        .insert(blk.header().hash);
+                    // Blacklist the old-block hash so that if it's again
+                    // sent then this node does not try to accept it.
+                    self.blacklisted_blocks.write().await.insert(curr_hash);
+
+                    if h == acc.get_curr_height().await + 1 {
+                        // If we have fallback-ed to previous block only, then
+                        // accepting the new block would be enough to continue
+                        // in in_Sync mode instead of switching to Out-Of-Sync
+                        // mode.
+
+                        acc.try_accept_block(blk, true).await?;
+                        return Ok(false);
+                    }
 
                     self.network.write().await.broadcast(msg).await;
 
                     // By switching to OutOfSync mode, we trigger the
-                    // sync-up procedure to download all missing ephemeral
-                    // blocks from the correct chain.
+                    // sync-up procedure to download all missing blocks from the
+                    // correct chain.
                     return Ok(msg.metadata.is_some());
                 }
             }
@@ -305,8 +316,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .await;
 
         // add to the pool
-        let key = blk.header().height;
-        self.pool.insert(key, blk.clone());
+        let h = blk.header().height;
+        self.pool.insert(h, blk.clone());
 
         info!(
             event = "entering out-of-sync",
