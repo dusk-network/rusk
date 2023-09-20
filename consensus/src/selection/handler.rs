@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
-    pub(crate) round_ctx: SafeRoundCtx,
+    pub(crate) _round_ctx: SafeRoundCtx,
     pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
 }
 
@@ -41,7 +41,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        step: u8,
+        _step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
@@ -72,7 +72,7 @@ impl<D: Database> Selection<D> {
         Self {
             db,
             committees: vec![Committee::default(); 213],
-            round_ctx,
+            _round_ctx: round_ctx,
         }
     }
 
