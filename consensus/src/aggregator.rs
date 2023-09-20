@@ -176,8 +176,8 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {
-        pub fn get_total(&self, hash: Hash) -> Option<usize> {
-            if let Some(value) = self.0.get(&hash) {
+        pub fn get_total(&self, step: u8, hash: Hash) -> Option<usize> {
+            if let Some(value) = self.0.get(&(step, hash)) {
                 return Some(value.1.total_occurrences());
             }
             None
@@ -267,12 +267,15 @@ mod tests {
             // Check collected votes
             assert!(a.collect_vote(&c, h, signature).is_none());
             collected_votes += expected_votes[i];
-            assert_eq!(a.get_total(block_hash), Some(collected_votes));
+            assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
                 assert!(a.collect_vote(&c, h, signature).is_none());
-                assert_eq!(a.get_total(block_hash), Some(collected_votes));
+                assert_eq!(
+                    a.get_total(h.step, block_hash),
+                    Some(collected_votes)
+                );
             }
         }
     }
