@@ -483,6 +483,25 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 );
 
                 if let Ok(msg) = ret {
+                    // Re-publish a drained message
+                    debug!(
+                        event = "republish",
+                        src = "future_msgs",
+                        msg_step = msg.header.step,
+                        msg_round = msg.header.round,
+                        msg_topic =
+                            format!("{:?}", Topics::from(msg.header.topic))
+                    );
+
+                    self.outbound.send(msg.clone()).await.unwrap_or_else(
+                        |err| {
+                            error!(
+                                "unable to re-publish a drained msg {:?}",
+                                err
+                            )
+                        },
+                    );
+
                     if let Ok(FinalResult(msg)) = phase
                         .lock()
                         .await
