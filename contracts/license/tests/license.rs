@@ -15,6 +15,7 @@ use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
 use std::ops::Range;
+use std::sync::mpsc;
 
 use poseidon_merkle::Opening;
 use rand::rngs::StdRng;
@@ -181,23 +182,28 @@ fn license_issue_get_merkle() {
         .expect("Issuing license should succeed");
 
     let bh_range = 0..10000u64;
-
-    let license_pos_pairs = session
-        .call::<Range<u64>, Vec<(u64, Vec<u8>)>>(
+    let (feeder, receiver) = mpsc::channel();
+    session
+        .feeder_call::<Range<u64>, ()>(
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
-            POINT_LIMIT,
+            feeder,
         )
-        .expect("Querying the licenses should succeed")
+        .expect("Querying of the licenses should succeed")
         .data;
 
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
     assert!(
-        !license_pos_pairs.is_empty(),
+        !pos_license_pairs.is_empty(),
         "Call to getting a license request should return some licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &license_pos_pairs);
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -253,25 +259,30 @@ fn multiple_licenses_issue_get_merkle() {
             .expect("Issuing license should succeed");
     }
 
+    let (feeder, receiver) = mpsc::channel();
     let bh_range = 0..NUM_LICENSES as u64;
-
-    let license_pos_pairs = session
-        .call::<Range<u64>, Vec<(u64, Vec<u8>)>>(
+    session
+        .feeder_call::<Range<u64>, ()>(
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
-            POINT_LIMIT,
+            feeder,
         )
-        .expect("Querying the license should succeed")
+        .expect("Querying of the licenses should succeed")
         .data;
 
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
     assert_eq!(
-        license_pos_pairs.len(),
+        pos_license_pairs.len(),
         NUM_LICENSES,
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &license_pos_pairs);
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"
@@ -350,23 +361,29 @@ fn use_license_get_session() {
         )
         .expect("Issuing license should succeed");
 
+    let (feeder, receiver) = mpsc::channel();
     let bh_range = 0..10000u64;
-
-    let license_pos_pairs = session
-        .call::<Range<u64>, Vec<(u64, Vec<u8>)>>(
+    session
+        .feeder_call::<Range<u64>, ()>(
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
-            POINT_LIMIT,
+            feeder,
         )
         .expect("Querying the license should succeed")
         .data;
+
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
     assert!(
-        !license_pos_pairs.is_empty(),
+        !pos_license_pairs.is_empty(),
         "Call to getting license requests should return licenses"
     );
 
-    let owned_license = find_owned_license(ssk_user, &license_pos_pairs);
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
     assert!(
         owned_license.is_some(),
         "Some license should be owned by the user"

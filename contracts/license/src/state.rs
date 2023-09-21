@@ -78,14 +78,14 @@ impl LicenseContractState {
 
     /// Returns licenses for a given range of block-heights.
     /// Method intended to be called by the user.
-    pub fn get_licenses(
-        &mut self,
-        block_heights: Range<u64>,
-    ) -> Vec<(u64, Vec<u8>)> {
-        self.licenses
+    pub fn get_licenses(&mut self, block_heights: Range<u64>) {
+        for pos_license_pair in self
+            .licenses
             .entries_filter(|(_, le)| block_heights.contains(&le.block_height))
             .map(|(pos, le)| (*pos, le.license.clone()))
-            .collect()
+        {
+            rusk_abi::feed(pos_license_pair);
+        }
     }
 
     /// Returns merkle opening for a given position in the merkle tree of
