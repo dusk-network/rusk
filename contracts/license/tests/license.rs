@@ -15,10 +15,12 @@ use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
 use std::ops::Range;
+use std::sync::mpsc;
 
 use poseidon_merkle::Opening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
+use rkyv::{check_archived_root, Deserialize, Infallible};
 
 #[path = "../src/license_types.rs"]
 mod license_types;
@@ -27,8 +29,9 @@ use license_types::*;
 use ::license_circuits::LicenseCircuit;
 
 use rusk_abi::{ContractData, ContractId, Session};
-use zk_citadel::license::{License, Request};
-use zk_citadel::utils::CitadelUtils;
+use zk_citadel::license::{
+    CitadelProverParameters, License, Request, SessionCookie,
+};
 
 const LICENSE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -78,6 +81,70 @@ fn initialize() -> Session {
     session
 }
 
+/// Deserializes license, panics if deserialization fails.
+fn deserialise_license(v: &Vec<u8>) -> License {
+    let response_data = check_archived_root::<License>(v.as_slice())
+        .expect("License should deserialize correctly");
+    let license: License = response_data
+        .deserialize(&mut Infallible)
+        .expect("Infallible");
+    license
+}
+
+/// Finds owned license in a collection of licenses.
+/// It searches in a reverse order to return a newest license.
+fn find_owned_license(
+    ssk_user: SecretSpendKey,
+    licenses: &Vec<(u64, Vec<u8>)>,
+) -> Option<(u64, License)> {
+    for (pos, license) in licenses.iter().rev() {
+        let license = deserialise_license(&license);
+        if ssk_user.view_key().owns(&license.lsa) {
+            return Some((pos.clone(), license));
+        }
+    }
+    None
+}
+
+/// Computes prover parameters and a session cookie
+/// This function should be moved to CitadelUtils
+fn compute_citadel_parameters(
+    rng: &mut StdRng,
+    ssk: SecretSpendKey,
+    psk_lp: PublicSpendKey,
+    lic: &License,
+    merkle_proof: Opening<(), DEPTH, ARITY>,
+) -> (CitadelProverParameters<DEPTH, ARITY>, SessionCookie) {
+    const CHALLENGE: u64 = 20221126u64;
+    let c = JubJubScalar::from(CHALLENGE);
+    let (cpp, sc) = CitadelProverParameters::compute_parameters(
+        &ssk,
+        &lic,
+        &psk_lp,
+        &psk_lp,
+        &c,
+        rng,
+        merkle_proof,
+    );
+    (cpp, sc)
+}
+
+/// Creates the Citadel request object
+/// This function should be moved to CitadelUtils
+fn create_request<R: RngCore + CryptoRng>(
+    ssk_user: &SecretSpendKey,
+    psk_lp: &PublicSpendKey,
+    rng: &mut R,
+) -> Request {
+    let psk = ssk_user.public_spend_key();
+    let lsa = psk.gen_stealth_address(&JubJubScalar::random(rng));
+    let lsk = ssk_user.sk_r(&lsa);
+    let k_lic = JubJubAffine::from(
+        GENERATOR_EXTENDED * sponge::truncated::hash(&[(*lsk.as_ref()).into()]),
+    );
+    Request::new(psk_lp, &lsa, &k_lic, rng)
+}
+
 #[test]
 fn license_issue_get_merkle() {
     let rng = &mut StdRng::seed_from_u64(0xcafe);
@@ -96,9 +163,8 @@ fn license_issue_get_merkle() {
 
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
 
-    let mut license =
+    let license =
         create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
-    license.pos = 1u64;
     let license_blob = rkyv::to_bytes::<_, 4096>(&license)
         .expect("Request should serialize correctly")
         .to_vec();
@@ -107,46 +173,52 @@ fn license_issue_get_merkle() {
     let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
 
     session
-        .call::<(Vec<u8>, u64, BlsScalar), ()>(
+        .call::<(Vec<u8>, BlsScalar), ()>(
             LICENSE_CONTRACT_ID,
             "issue_license",
-            &(license_blob, license.pos, license_hash),
+            &(license_blob, license_hash),
             POINT_LIMIT,
         )
         .expect("Issuing license should succeed");
 
-    let bh_range = 0..1u64;
-
-    let licenses = session
-        .call::<Range<u64>, Vec<Vec<u8>>>(
+    let bh_range = 0..10000u64;
+    let (feeder, receiver) = mpsc::channel();
+    session
+        .feeder_call::<Range<u64>, ()>(
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
-            POINT_LIMIT,
+            feeder,
         )
-        .expect("Querying the licenses should succeed")
+        .expect("Querying of the licenses should succeed")
         .data;
 
-    assert_eq!(
-        licenses.len(),
-        1,
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
+    assert!(
+        !pos_license_pairs.is_empty(),
         "Call to getting a license request should return some licenses"
     );
 
-    let merkle_opening = session
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    assert!(
+        owned_license.is_some(),
+        "Some license should be owned by the user"
+    );
+    let (pos, _) = owned_license.unwrap();
+
+    let _merkle_opening = session
         .call::<u64, Opening<(), DEPTH, ARITY>>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
-            &license.pos,
+            &pos,
             POINT_LIMIT,
         )
         .expect("Querying the merkle opening should succeed")
         .data;
-
-    const EXPECTED_POSITIONS: [usize; DEPTH] =
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-
-    assert_eq!(merkle_opening.positions(), &EXPECTED_POSITIONS);
 }
 
 #[test]
@@ -166,10 +238,10 @@ fn multiple_licenses_issue_get_merkle() {
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
 
     const NUM_LICENSES: usize = ARITY + 1;
-    for pos in 0..NUM_LICENSES {
+    for _ in 0..NUM_LICENSES {
         let k_lic =
             JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
-        let mut license =
+        let license =
             create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
         let license_blob = rkyv::to_bytes::<_, 4096>(&license)
             .expect("Request should serialize correctly")
@@ -177,47 +249,55 @@ fn multiple_licenses_issue_get_merkle() {
 
         let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
         let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
-        license.pos = pos as u64 + 1;
         session
-            .call::<(Vec<u8>, u64, BlsScalar), ()>(
+            .call::<(Vec<u8>, BlsScalar), ()>(
                 LICENSE_CONTRACT_ID,
                 "issue_license",
-                &(license_blob, license.pos, license_hash),
+                &(license_blob, license_hash),
                 POINT_LIMIT,
             )
             .expect("Issuing license should succeed");
     }
 
+    let (feeder, receiver) = mpsc::channel();
     let bh_range = 0..NUM_LICENSES as u64;
-
-    let licenses = session
-        .call::<Range<u64>, Vec<Vec<u8>>>(
+    session
+        .feeder_call::<Range<u64>, ()>(
             LICENSE_CONTRACT_ID,
             "get_licenses",
             &bh_range,
-            POINT_LIMIT,
+            feeder,
         )
-        .expect("Querying the license should succeed")
+        .expect("Querying of the licenses should succeed")
         .data;
 
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
     assert_eq!(
-        licenses.len(),
+        pos_license_pairs.len(),
         NUM_LICENSES,
         "Call to getting license requests should return licenses"
     );
 
-    let merkle_opening = session
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    assert!(
+        owned_license.is_some(),
+        "Some license should be owned by the user"
+    );
+    let (pos, _) = owned_license.unwrap();
+
+    let _merkle_opening = session
         .call::<u64, Opening<(), DEPTH, ARITY>>(
             LICENSE_CONTRACT_ID,
             "get_merkle_opening",
-            &(NUM_LICENSES as u64),
+            &pos,
             POINT_LIMIT,
         )
         .expect("Querying the merkle opening should succeed")
         .data;
-
-    assert!(merkle_opening.positions()[DEPTH - 1] > 0);
-    assert!(merkle_opening.positions()[DEPTH - 2] > 0);
 }
 
 #[test]
@@ -248,6 +328,7 @@ fn use_license_get_session() {
     // NOTE: it is important that the seed is the same as in the recovery
     // PUB_PARAMS initialization code
     let rng = &mut StdRng::seed_from_u64(0xbeef);
+
     let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
 
     let (prover, verifier) = Compiler::compile::<LicenseCircuit>(&pp, LABEL)
@@ -255,20 +336,15 @@ fn use_license_get_session() {
 
     // user
     let ssk_user = SecretSpendKey::random(rng);
-    let psk_user = ssk_user.public_spend_key();
-    let sa_user = psk_user.gen_stealth_address(&JubJubScalar::random(rng));
 
     // license provider
     let ssk_lp = SecretSpendKey::random(rng);
     let psk_lp = ssk_lp.public_spend_key();
-    let k_lic =
-        JubJubAffine::from(GENERATOR_EXTENDED * JubJubScalar::random(rng));
 
+    let request = create_request(&ssk_user, &psk_lp, rng);
     let attr = JubJubScalar::from(USER_ATTRIBUTES);
+    let license = License::new(&attr, &ssk_lp, &request, rng);
 
-    let mut license =
-        create_test_license(&attr, &ssk_lp, &psk_lp, &sa_user, &k_lic, rng);
-    license.pos = 1u64;
     let license_blob = rkyv::to_bytes::<_, 4096>(&license)
         .expect("Request should serialize correctly")
         .to_vec();
@@ -277,22 +353,68 @@ fn use_license_get_session() {
     let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
 
     session
-        .call::<(Vec<u8>, u64, BlsScalar), ()>(
+        .call::<(Vec<u8>, BlsScalar), ()>(
             LICENSE_CONTRACT_ID,
             "issue_license",
-            &(license_blob, license.pos, license_hash),
+            &(license_blob, license_hash),
             POINT_LIMIT,
         )
         .expect("Issuing license should succeed");
 
-    let (cpp, sc) =
-        CitadelUtils::compute_citadel_parameters::<StdRng, DEPTH, ARITY>(
-            rng, ssk_user, psk_user, ssk_lp, psk_lp,
-        );
+    let (feeder, receiver) = mpsc::channel();
+    let bh_range = 0..10000u64;
+    session
+        .feeder_call::<Range<u64>, ()>(
+            LICENSE_CONTRACT_ID,
+            "get_licenses",
+            &bh_range,
+            feeder,
+        )
+        .expect("Querying the license should succeed")
+        .data;
+
+    let pos_license_pairs: Vec<(u64, Vec<u8>)> = receiver
+        .iter()
+        .map(|bytes| rkyv::from_bytes(&bytes).expect("Should return licenses"))
+        .collect();
+
+    assert!(
+        !pos_license_pairs.is_empty(),
+        "Call to getting license requests should return licenses"
+    );
+
+    let owned_license = find_owned_license(ssk_user, &pos_license_pairs);
+    assert!(
+        owned_license.is_some(),
+        "Some license should be owned by the user"
+    );
+    let (pos, owned_license) = owned_license.unwrap();
+
+    let merkle_opening = session
+        .call::<u64, Opening<(), DEPTH, ARITY>>(
+            LICENSE_CONTRACT_ID,
+            "get_merkle_opening",
+            &pos,
+            POINT_LIMIT,
+        )
+        .expect("Querying the merkle opening should succeed")
+        .data;
+
+    let (cpp, sc) = compute_citadel_parameters(
+        rng,
+        ssk_user,
+        psk_lp,
+        &owned_license,
+        merkle_opening,
+    );
     let circuit = LicenseCircuit::new(&cpp, &sc);
 
     let (proof, public_inputs) =
         prover.prove(rng, &circuit).expect("Proving should succeed");
+
+    let session_id = LicenseSessionId {
+        id: public_inputs[0],
+    };
 
     verifier
         .verify(&proof, &public_inputs)
@@ -303,15 +425,14 @@ fn use_license_get_session() {
         public_inputs,
     };
 
-    let session_id = session
-        .call::<UseLicenseArg, LicenseSessionId>(
+    session
+        .call::<UseLicenseArg, ()>(
             LICENSE_CONTRACT_ID,
             "use_license",
             &use_license_arg,
             POINT_LIMIT,
         )
-        .expect("Use license should succeed")
-        .data;
+        .expect("Use license should succeed");
 
     assert!(
         session

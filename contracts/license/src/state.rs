@@ -59,13 +59,12 @@ impl LicenseContractState {
 impl LicenseContractState {
     /// Inserts a license into the collection of licenses.
     /// Method intended to be called by the License Provider.
-    pub fn issue_license(
-        &mut self,
-        license: Vec<u8>,
-        pos: u64,
-        hash: BlsScalar,
-    ) {
+    pub fn issue_license(&mut self, license: Vec<u8>, hash: BlsScalar) {
         let item = PoseidonItem { hash, data: () };
+        let mut pos = self.tree.len();
+        while self.tree.contains(pos) {
+            pos += 1;
+        }
         self.tree.insert(pos, item);
         let block_height = rusk_abi::block_height();
         self.licenses.insert(
@@ -79,12 +78,14 @@ impl LicenseContractState {
 
     /// Returns licenses for a given range of block-heights.
     /// Method intended to be called by the user.
-    pub fn get_licenses(&mut self, block_heights: Range<u64>) -> Vec<Vec<u8>> {
-        self.licenses
-            .filter(|le| block_heights.contains(&le.block_height))
-            .into_iter()
-            .map(|le| le.license.clone())
-            .collect()
+    pub fn get_licenses(&mut self, block_heights: Range<u64>) {
+        for pos_license_pair in self
+            .licenses
+            .entries_filter(|(_, le)| block_heights.contains(&le.block_height))
+            .map(|(pos, le)| (*pos, le.license.clone()))
+        {
+            rusk_abi::feed(pos_license_pair);
+        }
     }
 
     /// Returns merkle opening for a given position in the merkle tree of
@@ -100,10 +101,7 @@ impl LicenseContractState {
     /// Verifies the proof of a given license, if successful,
     /// creates a session with the corresponding session id.
     /// Method intended to be called by the user.
-    pub fn use_license(
-        &mut self,
-        use_license_arg: UseLicenseArg,
-    ) -> LicenseSessionId {
+    pub fn use_license(&mut self, use_license_arg: UseLicenseArg) {
         let mut pi = Vec::new();
         for scalar in use_license_arg.public_inputs.iter() {
             pi.push(PublicInput::BlsScalar(*scalar));
@@ -118,8 +116,10 @@ impl LicenseContractState {
             public_inputs: use_license_arg.public_inputs,
         };
         let session_id = license_session.session_id();
+        if self.sessions.get(&session_id).is_some() {
+            panic!("License already nullified");
+        }
         self.sessions.insert(session_id, license_session);
-        session_id
     }
 
     /// Returns session with a given session id.
@@ -142,5 +142,14 @@ impl LicenseContractState {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
             .then_some(())
             .ok_or(Error::ProofVerification)
+    }
+
+    /// Info about contract state
+    pub fn get_info(&self) -> (u32, u32, u32) {
+        (
+            self.licenses.len() as u32,
+            self.tree.len() as u32,
+            self.sessions.len() as u32,
+        )
     }
 }

@@ -35,8 +35,8 @@ mod wasm {
 
     #[no_mangle]
     unsafe fn issue_license(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |(license, pos, hash)| {
-            STATE.issue_license(license, pos, hash)
+        rusk_abi::wrap_call(arg_len, |(license, hash)| {
+            STATE.issue_license(license, hash)
         })
     }
 
@@ -69,5 +69,10 @@ mod wasm {
     #[no_mangle]
     unsafe fn noop(arg_len: u32) -> u32 {
         rusk_abi::wrap_call(arg_len, |_: ()| STATE.noop())
+    }
+
+    #[no_mangle]
+    unsafe fn get_info(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |_: ()| STATE.get_info())
     }
 }

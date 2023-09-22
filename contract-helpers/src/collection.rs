@@ -59,14 +59,18 @@ impl<K: PartialEq, V: PartialEq> Map<K, V> {
         self.data.iter().find_map(|(_, v)| f(v).then_some(v))
     }
 
-    pub fn filter<F>(&self, f: F) -> Vec<&V>
+    pub fn filter<F>(&self, f: F) -> impl Iterator<Item = &V>
     where
         F: Fn(&V) -> bool,
     {
-        self.data
-            .iter()
-            .filter_map(|(_, v)| f(v).then_some(v))
-            .collect()
+        self.data.iter().filter_map(move |(_, v)| f(v).then_some(v))
+    }
+
+    pub fn entries_filter<F>(&self, f: F) -> impl Iterator<Item = &(K, V)>
+    where
+        F: Fn((&K, &V)) -> bool,
+    {
+        self.data.iter().filter(move |(k, v)| f((k, v)))
     }
 }
 
