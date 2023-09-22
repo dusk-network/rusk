@@ -10,7 +10,7 @@ use tracing::{info, warn};
 
 use std::env;
 use std::fs::{self, read, remove_file, write};
-use std::io::{self, ErrorKind};
+use std::io;
 use std::path::{Path, PathBuf};
 
 mod theme;
@@ -38,66 +38,57 @@ fn file_name(p: &Path) -> Option<&str> {
 
 pub fn get_rusk_profile_dir() -> io::Result<PathBuf> {
     env::var("RUSK_PROFILE_PATH")
-        .map_or(home_dir(), |e| Some(PathBuf::from(e)))
-        .and_then(|mut p| {
-            p.push(".rusk");
-            fs::create_dir_all(&p).map(|_| p).ok()
-        })
-        .ok_or_else(|| {
-            warn!("rusk-profile dir not found and impossible to create");
-            io::Error::new(ErrorKind::NotFound, "User Profile Dir not found")
+        .map_or_else(
+            |e| {
+                home_dir()
+                    .ok_or(io::Error::new(io::ErrorKind::InvalidInput, e))
+                    .map(|p| p.join(".dusk").join("rusk"))
+            },
+            |profile_path| Ok(PathBuf::from(profile_path)),
+        )
+        .and_then(|p| fs::create_dir_all(&p).map(|_| p))
+        .map_err(|e| {
+            warn!("rusk-profile dir not found and impossible to create: {e}");
+            e
         })
 }
 
-fn get_rusk_circuits_dir() -> io::Result<PathBuf> {
+pub fn get_rusk_circuits_dir() -> io::Result<PathBuf> {
     env::var("RUSK_CIRCUITS_PATH")
         .map_or_else(
-            |_| get_rusk_profile_dir().ok(),
-            |e| Some(PathBuf::from(e)),
+            |_| get_rusk_profile_dir().map(|p| p.join("circuits")),
+            |circuits_path| Ok(PathBuf::from(circuits_path)),
         )
-        .and_then(|mut p| {
-            p.push("circuits");
-            fs::create_dir_all(&p).map(|_| p).ok()
-        })
-        .ok_or_else(|| {
-            warn!(
-                "rusk-profile circuits dir not found and impossible to create"
-            );
-            io::Error::new(ErrorKind::NotFound, "Circuits Dir not found")
+        .and_then(|p| fs::create_dir_all(&p).map(|_| p))
+        .map_err(|e| {
+            warn!("rusk-profile circuits dir not found and impossible to create: {e}");
+            e
         })
 }
 
-fn get_rusk_keys_dir() -> io::Result<PathBuf> {
+pub fn get_rusk_keys_dir() -> io::Result<PathBuf> {
     env::var("RUSK_KEYS_PATH")
         .map_or_else(
-            |_| get_rusk_profile_dir().ok(),
-            |e| Some(PathBuf::from(e)),
+            |_| get_rusk_profile_dir().map(|p| p.join("keys")),
+            |keys_path| Ok(PathBuf::from(keys_path)),
         )
-        .and_then(|mut p| {
-            p.push("keys");
-            fs::create_dir_all(&p).map(|_| p).ok()
-        })
-        .ok_or_else(|| {
-            warn!("rusk-profile key's dir not found and impossible to create");
-            io::Error::new(ErrorKind::NotFound, "User Profile Dir not found")
+        .and_then(|p| fs::create_dir_all(&p).map(|_| p))
+        .map_err(|e| {
+            warn!("rusk-profile key's dir not found and impossible to create: {e}");
+            e
         })
 }
 
 pub fn get_rusk_state_dir() -> io::Result<PathBuf> {
     env::var("RUSK_STATE_PATH")
         .map_or_else(
-            |_| {
-                get_rusk_profile_dir().ok().map(|mut p| {
-                    p.push("state");
-                    p
-                })
-            },
-            |e| Some(PathBuf::from(e)),
+            |_| get_rusk_profile_dir().map(|p| p.join("state")),
+            |state_path| Ok(PathBuf::from(state_path)),
         )
-        .and_then(|p| fs::create_dir_all(&p).map(|_| p).ok())
-        .ok_or_else(|| {
-            warn!("rusk-profile state dir not found and impossible to create");
-            io::Error::new(ErrorKind::NotFound, "State Dir not found")
+        .and_then(|p| fs::create_dir_all(&p).map(|_| p))
+        .map_err(|e| {
+            warn!("rusk-profile state dir not found and impossible to create: {e}");
+            e
         })
 }
 
@@ -107,28 +98,22 @@ pub fn to_rusk_state_id_path<P: AsRef<Path>>(dir: P) -> PathBuf {
 }
 
 pub fn get_common_reference_string() -> io::Result<Vec<u8>> {
-    let mut profile = get_rusk_profile_dir()?;
-    profile.push(CRS_FNAME);
-
-    read(profile)
+    let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
+    read(crs)
 }
 
 pub fn set_common_reference_string(buffer: Vec<u8>) -> io::Result<()> {
-    let mut profile = get_rusk_profile_dir()?;
-    profile.push(CRS_FNAME);
-
-    write(&profile, buffer)?;
+    let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
+    write(crs, buffer)?;
     info!("{} CRS to cache", Theme::default().success("Added"),);
 
     Ok(())
 }
 
 pub fn delete_common_reference_string() -> io::Result<()> {
-    let mut profile = get_rusk_profile_dir()?;
-    profile.push(CRS_FNAME);
-
-    remove_file(&profile)?;
-    warn!("{} CRS", Theme::default().warn("Removed"),);
+    let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
+    remove_file(crs)?;
+    warn!("{}   CRS", Theme::default().warn("Removed"),);
 
     Ok(())
 }
