@@ -1,4 +1,4 @@
-all: keys wasm abi circuits state allmacros contracts node ## Build everything
+all: circuits keys wasm abi allcircuits state contracts node ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -8,10 +8,10 @@ help: ## Display this help screen
 abi: ## Build the ABI
 	$(MAKE) -C ./rusk-abi all
 
-allmacros: ## Build the workspace macro libs and test them
-	$(MAKE) -C ./macros all
+circuits: ## Compress and store all circuits
+	$(MAKE) -C ./circuits $@
 
-keys: ## Create the keys for the circuits
+keys: circuits ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
 state: wasm ## Create the network state
@@ -21,7 +21,7 @@ wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 
-circuits: ## Build circuit crates
+allcircuits: ## Build circuit crates
 	$(MAKE) -j -C ./circuits all
 
 contracts: ## Execute the test for all contracts
@@ -31,7 +31,6 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) state
-	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./node-data $@
@@ -41,7 +40,6 @@ test: keys wasm ## Run the tests
 			
 clippy: ## Run clippy$(MAKE) -C ./rusk-abi/ $@
 	$(MAKE) -j -C ./circuits $@
-	$(MAKE) -C ./macros $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 	$(MAKE) -C ./rusk-profile $@
@@ -58,4 +56,4 @@ run: keys state ## Run the server
 node: rusk ## Build node binary
 	$(MAKE) -C ./node binary
 
-.PHONY: all abi keys state wasm circuits contracts test run help node
+.PHONY: all abi circuits keys state wasm allcircuits contracts test run help node

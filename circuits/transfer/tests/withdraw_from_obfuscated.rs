@@ -16,6 +16,7 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use dusk_plonk::prelude::*;
 
 mod keys;
+use keys::load_keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
     rng: &mut R,
@@ -90,10 +91,8 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 fn withdraw_from_obfuscated_public() {
     let rng = &mut StdRng::seed_from_u64(8586);
 
-    let circuit_id = WithdrawFromObfuscatedCircuit::circuit_id();
-
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
+    let (prover, verifier) = load_keys("WithdrawFromObfuscatedCircuit")
+        .expect("Keys should be stored");
 
     let circuit = create_random_circuit(rng, true);
 
@@ -110,10 +109,8 @@ fn withdraw_from_obfuscated_public() {
 fn withdraw_from_obfuscated_private() {
     let rng = &mut StdRng::seed_from_u64(8586);
 
-    let circuit_id = WithdrawFromObfuscatedCircuit::circuit_id();
-
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Failed to load keys!");
+    let (prover, verifier) = load_keys("WithdrawFromObfuscatedCircuit")
+        .expect("Keys should be stored");
 
     let circuit = create_random_circuit(rng, false);
 

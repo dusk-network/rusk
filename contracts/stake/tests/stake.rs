@@ -139,22 +139,20 @@ fn opening(
         .map(|r| r.data)
 }
 
-fn prover_verifier(circuit_id: &[u8; 32]) -> (Prover, Verifier) {
-    let (pk, vd) = prover_verifier_keys(circuit_id);
+fn prover_verifier(circuit_name: &str) -> (Prover, Verifier) {
+    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
+        .expect(&format!(
+            "There should be circuit data stored for {}",
+            circuit_name
+        ));
+    let (pk, vd) = circuit_profile
+        .get_keys()
+        .expect(&format!("there should be keys stored for {}", circuit_name));
 
     let prover = Prover::try_from_bytes(pk).unwrap();
     let verifier = Verifier::try_from_bytes(vd).unwrap();
 
     (prover, verifier)
-}
-
-fn prover_verifier_keys(circuit_id: &[u8; 32]) -> (Vec<u8>, Vec<u8>) {
-    let keys = rusk_profile::keys_for(circuit_id).unwrap();
-
-    let pk = keys.get_prover().unwrap();
-    let vd = keys.get_verifier().unwrap();
-
-    (pk, vd)
 }
 
 fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
@@ -275,8 +273,7 @@ fn stake_withdraw_unstake() {
         stct_signature,
     );
 
-    let (prover, _) =
-        prover_verifier(SendToContractTransparentCircuit::circuit_id());
+    let (prover, _) = prover_verifier("SendToContractTransparentCircuit");
     let (stct_proof, _) = prover
         .prove(rng, &stct_circuit)
         .expect("Proving STCT circuit should succeed");
@@ -355,7 +352,7 @@ fn stake_withdraw_unstake() {
         .add_input(circuit_input)
         .expect("appending input should succeed");
 
-    let (prover_key, _) = prover_verifier(ExecuteCircuitOneTwo::circuit_id());
+    let (prover_key, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (execute_proof, _) = prover_key
         .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
@@ -564,7 +561,7 @@ fn stake_withdraw_unstake() {
         .add_input(circuit_input_1)
         .expect("appending input should succeed");
 
-    let (prover_key, _) = prover_verifier(ExecuteCircuitTwoTwo::circuit_id());
+    let (prover_key, _) = prover_verifier("ExecuteCircuitTwoTwo");
     let (execute_proof, _) = prover_key
         .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
@@ -666,8 +663,7 @@ fn stake_withdraw_unstake() {
         withdraw_value,
         withdraw_blinder,
     );
-    let (wfct_prover, _) =
-        prover_verifier(WithdrawFromTransparentCircuit::circuit_id());
+    let (wfct_prover, _) = prover_verifier("WithdrawFromTransparentCircuit");
 
     let (wfct_proof, _) = wfct_prover
         .prove(rng, &wfct_circuit)
@@ -786,7 +782,7 @@ fn stake_withdraw_unstake() {
         .add_input(circuit_input_2)
         .expect("appending input should succeed");
 
-    let (prover_key, _) = prover_verifier(ExecuteCircuitThreeTwo::circuit_id());
+    let (prover_key, _) = prover_verifier("ExecuteCircuitThreeTwo");
     let (execute_proof, _) = prover_key
         .prove(rng, &execute_circuit)
         .expect("Proving should be successful");
@@ -950,7 +946,7 @@ fn allow() {
         .add_input(circuit_input)
         .expect("appending input should succeed");
 
-    let (prover_key, _) = prover_verifier(ExecuteCircuitOneTwo::circuit_id());
+    let (prover_key, _) = prover_verifier("ExecuteCircuitOneTwo");
     let (execute_proof, _) = prover_key
         .prove(rng, &execute_circuit)
         .expect("Proving should be successful");

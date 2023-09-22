@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::lazy_prover;
+use crate::prover::fetch_prover;
 use dusk_wallet_core::UnprovenTransaction;
 use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
 use transfer_circuits::{
@@ -14,16 +14,16 @@ use transfer_circuits::{
 };
 
 pub static EXEC_1_2_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(ExecuteCircuitOneTwo);
+    Lazy::new(|| fetch_prover("ExecuteCircuitOneTwo"));
 
 pub static EXEC_2_2_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(ExecuteCircuitTwoTwo);
+    Lazy::new(|| fetch_prover("ExecuteCircuitTwoTwo"));
 
 pub static EXEC_3_2_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(ExecuteCircuitThreeTwo);
+    Lazy::new(|| fetch_prover("ExecuteCircuitThreeTwo"));
 
 pub static EXEC_4_2_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(ExecuteCircuitFourTwo);
+    Lazy::new(|| fetch_prover("ExecuteCircuitFourTwo"));
 
 fn fill_circuit<const I: usize>(
     circuit: &mut ExecuteCircuit<I, (), TRANSFER_TREE_DEPTH, 4>,

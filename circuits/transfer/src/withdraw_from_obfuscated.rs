@@ -54,13 +54,6 @@ pub struct WithdrawFromObfuscatedCircuit {
     pub output: WfoCommitment,
 }
 
-impl WithdrawFromObfuscatedCircuit {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-}
-
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for WithdrawFromObfuscatedCircuit {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         let zero = C::ZERO;

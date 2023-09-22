@@ -5,21 +5,37 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_pki::SecretSpendKey;
-use license_circuits::{LicenseCircuit, ARITY, DEPTH};
+use dusk_plonk::prelude::*;
+use license_circuits::{Error, LicenseCircuit, ARITY, DEPTH};
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 use zk_citadel::utils::CitadelUtils;
-mod keys;
+
+pub fn load_keys(name: impl AsRef<str>) -> Result<(Prover, Verifier), Error> {
+    let circuit_profile = rusk_profile::Circuit::from_name(name.as_ref())
+        .expect(&format!(
+            "the circuit data for {} should be stores",
+            name.as_ref()
+        ));
+
+    let (pk, vd) = circuit_profile
+        .get_keys()
+        .expect("The keys for the LicenseCircuit should be stored");
+
+    let prover = Prover::try_from_bytes(&pk)?;
+    let verifier = Verifier::try_from_bytes(&vd)?;
+
+    Ok((prover, verifier))
+}
 
 #[test]
 fn prove_verify_license_circuit() {
     let rng = &mut StdRng::seed_from_u64(8586);
-    let circuit_id = LicenseCircuit::circuit_id();
 
-    let (prover, verifier) = keys::circuit_keys(circuit_id)
-        .expect("Circuit generation should succeed");
+    let (prover, verifier) =
+        load_keys("LicenseCircuit").expect("Circuit generation should succeed");
 
     // user
     let ssk = SecretSpendKey::random(rng);
@@ -33,7 +49,7 @@ fn prove_verify_license_circuit() {
         CitadelUtils::compute_citadel_parameters::<StdRng, DEPTH, ARITY>(
             rng, ssk, psk, ssk_lp, psk_lp,
         );
-    let circuit = LicenseCircuit::new(&cpp, &sc);
+    let circuit = LicenseCircuit::new(cpp, sc);
 
     let (proof, public_inputs) = prover
         .prove(rng, &circuit)

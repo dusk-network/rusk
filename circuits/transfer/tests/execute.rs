@@ -19,6 +19,9 @@ use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
 
+mod keys;
+use keys::load_keys;
+
 const HEIGHT: usize = 17;
 const ARITY: usize = 4;
 
@@ -142,17 +145,6 @@ pub fn create_test_circuit<const I: usize>(
     Ok(circuit)
 }
 
-fn load_keys(circuit_id: &[u8; 32]) -> Result<(Prover, Verifier), Error> {
-    let keys = rusk_profile::keys_for(&circuit_id)?;
-    let pk = keys.get_prover()?;
-    let vd = keys.get_verifier()?;
-
-    let prover = Prover::try_from_bytes(pk.as_slice())?;
-    let verifier = Verifier::try_from_bytes(vd.as_slice())?;
-
-    Ok((prover, verifier))
-}
-
 #[test]
 fn execute_1_2() {
     let rng = &mut StdRng::seed_from_u64(424242u64);
@@ -162,9 +154,8 @@ fn execute_1_2() {
         let circuit: ExecuteCircuitOneTwo =
             create_test_circuit::<1>(rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
-        let circuit_id = ExecuteCircuitOneTwo::circuit_id();
-        let (prover, verifier) =
-            load_keys(&circuit_id).expect("loading the keys should succeed");
+        let (prover, verifier) = load_keys("ExecuteCircuitOneTwo")
+            .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
             .prove(rng, &circuit)
@@ -185,9 +176,8 @@ fn execute_2_2() {
         let circuit: ExecuteCircuitTwoTwo =
             create_test_circuit::<2>(rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
-        let circuit_id = ExecuteCircuitTwoTwo::circuit_id();
-        let (prover, verifier) =
-            load_keys(&circuit_id).expect("loading the keys should succeed");
+        let (prover, verifier) = load_keys("ExecuteCircuitTwoTwo")
+            .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
             .prove(rng, &circuit)
@@ -208,9 +198,8 @@ fn execute_3_2() {
         let circuit: ExecuteCircuitThreeTwo =
             create_test_circuit::<3>(rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
-        let circuit_id = ExecuteCircuitThreeTwo::circuit_id();
-        let (prover, verifier) =
-            load_keys(&circuit_id).expect("loading the keys should succeed");
+        let (prover, verifier) = load_keys("ExecuteCircuitThreeTwo")
+            .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
             .prove(rng, &circuit)
@@ -231,9 +220,8 @@ fn execute_4_2() {
         let circuit: ExecuteCircuitFourTwo =
             create_test_circuit::<4>(rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
-        let circuit_id = ExecuteCircuitFourTwo::circuit_id();
-        let (prover, verifier) =
-            load_keys(&circuit_id).expect("loading the keys should succeed");
+        let (prover, verifier) = load_keys("ExecuteCircuitFourTwo")
+            .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
             .prove(rng, &circuit)

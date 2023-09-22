@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::lazy_prover;
+use crate::prover::fetch_prover;
 
 pub const STCO_INPUT_LEN: usize = u64::SIZE
     + JubJubScalar::SIZE
@@ -21,7 +21,7 @@ pub const STCO_INPUT_LEN: usize = u64::SIZE
     + Signature::SIZE;
 
 pub static STCO_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(SendToContractObfuscatedCircuit);
+    Lazy::new(|| fetch_prover("SendToContractObfuscatedCircuit"));
 
 impl LocalProver {
     pub(crate) fn local_prove_stco(

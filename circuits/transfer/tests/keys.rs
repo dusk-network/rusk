@@ -8,10 +8,16 @@ use transfer_circuits::Error;
 
 use dusk_plonk::prelude::*;
 
-pub fn circuit_keys(id: &[u8; 32]) -> Result<(Prover, Verifier), Error> {
-    let keys = rusk_profile::keys_for(id)?;
-    let pk = keys.get_prover()?;
-    let vd = keys.get_verifier()?;
+pub fn load_keys(name: impl AsRef<str>) -> Result<(Prover, Verifier), Error> {
+    let circuit_profile = rusk_profile::Circuit::from_name(name.as_ref())
+        .expect(&format!(
+            "the circuit data for {} should be stores",
+            name.as_ref()
+        ));
+
+    let (pk, vd) = circuit_profile
+        .get_keys()
+        .expect("The keys for the LicenseCircuit should be stored");
 
     let prover = Prover::try_from_bytes(&pk)?;
     let verifier = Verifier::try_from_bytes(&vd)?;

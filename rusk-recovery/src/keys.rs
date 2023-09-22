@@ -4,14 +4,14 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod loader;
-pub use loader::*;
-
-use crate::theme::Theme;
-use dusk_plonk::prelude::*;
+use crate::Theme;
+use dusk_plonk::prelude::{Compiler, PublicParameters};
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
+use std::io;
+
+use rusk_profile::Circuit as CircuitProfile;
 
 use tracing::{info, warn};
 
@@ -46,102 +46,93 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
     }
 });
 
-pub trait CircuitLoader {
-    fn circuit_id(&self) -> &[u8; 32];
-
-    fn circuit_name(&self) -> &'static str;
-
-    fn compile_to_bytes(
-        &self,
-    ) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>>;
-}
-
-fn clear_outdated_keys(
-    loader_list: &[&dyn CircuitLoader],
-) -> Result<(), Box<dyn std::error::Error>> {
-    let id_list: Vec<_> = loader_list
-        .iter()
-        .map(|loader| loader.circuit_id())
-        .cloned()
-        .collect();
-
-    Ok(rusk_profile::clean_outdated_keys(&id_list)?)
-}
-
-fn check_keys_cache(
-    loader_list: &[&dyn CircuitLoader],
-) -> Result<Vec<()>, Box<dyn std::error::Error>> {
+fn check_circuits_cache(
+    circuit_list: Vec<CircuitProfile>,
+) -> Result<(), io::Error> {
     let theme = Theme::default();
-    loader_list
-        .iter()
-        .map(|loader| {
-            info!(
-                "{} {} key from cache",
-                theme.action("Fetching"),
-                loader.circuit_name()
-            );
-
-            let keys = rusk_profile::keys_for(loader.circuit_id())?;
-            match keys.get_verifier() {
-                Ok(_) => {
-                    info!(
-                        "{}   {}",
-                        theme.info("Loaded"),
-                        hex::encode(loader.circuit_id())
-                    );
-                    Ok(())
-                }
-                _ => {
-                    warn!("{} due to cache miss", theme.warn("Compiling"),);
-
-                    let (pk, vd) = loader.compile_to_bytes()?;
-                    rusk_profile::add_keys_for(loader.circuit_id(), pk, vd)?;
-                    info!(
-                        "{}   {}",
-                        theme.info("Cached"),
-                        hex::encode(loader.circuit_id())
-                    );
-                    Ok(())
-                }
+    for circuit in circuit_list {
+        info!(
+            "{} {} verifier data from cache",
+            theme.action("Fetching"),
+            circuit.name()
+        );
+        match circuit.get_verifier() {
+            Ok(_) => {
+                info!("{}   {}.vd", theme.info("Found"), circuit.id_str());
             }
-        })
-        .collect::<Result<Vec<()>, Box<dyn std::error::Error>>>()
+
+            _ => {
+                warn!("{} due to cache miss", theme.warn("Compiling"),);
+
+                let compressed = circuit.get_compressed();
+                let (pk, vd) = Compiler::decompress(
+                    &PUB_PARAMS,
+                    TRANSCRIPT_LABEL,
+                    compressed,
+                )
+                .map_err(|e| {
+                    io::Error::new(
+                        io::ErrorKind::Other,
+                        format!(
+                            "Couldn't compile keys for {}: {}",
+                            circuit.name(),
+                            e
+                        ),
+                    )
+                })?;
+                circuit.add_keys(pk.to_bytes(), vd.to_bytes())?;
+                info!("{}   {}.vd", theme.info("Cached"), circuit.id_str());
+                info!("{}   {}.pk", theme.info("Cached"), circuit.id_str());
+            }
+        }
+    }
+    Ok(())
 }
 
-pub fn run_circuit_keys_checks(
-    keep_keys: bool,
-    loader_list: Vec<&dyn CircuitLoader>,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn circuits_from_names(
+    names: &[&str],
+) -> Result<Vec<CircuitProfile>, io::Error> {
+    let mut circuits = Vec::new();
+    for name in names {
+        let circuit = CircuitProfile::from_name(name)?;
+        circuits.push(circuit);
+    }
+    Ok(circuits)
+}
+
+fn run_stored_circuits_checks(
+    keep_circuits: bool,
+    circuit_list: Vec<CircuitProfile>,
+) -> Result<(), io::Error> {
     let theme = Theme::default();
 
-    if !keep_keys {
-        info!("{} untracked keys", theme.action("Cleaning"),);
-        clear_outdated_keys(&loader_list)?;
+    if !keep_circuits {
+        warn!("{} for untracked circuits", theme.warn("Checking"),);
+        rusk_profile::clean_outdated(&circuit_list)?;
     } else {
-        info!("{} untracked keys", theme.action("Keeping"),);
+        info!("{} untracked circuits", theme.action("Keeping"),);
     }
-    check_keys_cache(&loader_list).map(|_| ())
+    check_circuits_cache(circuit_list).map(|_| ())
 }
 
-pub fn exec(keep_keys: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn exec(keep_circuits: bool) -> Result<(), io::Error> {
     // This force init is needed to check CRS and create it (if not available)
     // See also: https://github.com/dusk-network/rusk/issues/767
     Lazy::force(&PUB_PARAMS);
 
-    run_circuit_keys_checks(
-        keep_keys,
-        vec![
-            &StctCircuitLoader {},
-            &StcoCircuitLoader {},
-            &WfctCircuitLoader {},
-            &WfcoCircuitLoader {},
-            &ExecOneTwoCircuitLoader {},
-            &ExecTwoTwoCircuitLoader {},
-            &ExecThreeTwoCircuitLoader {},
-            &ExecFourTwoCircuitLoader {},
-            &LicenseCircuitLoader {},
-        ],
-    )?;
+    let circuits = circuits_from_names(&[
+        "SendToContractTransparentCircuit",
+        "SendToContractObfuscatedCircuit",
+        "WithdrawFromTransparentCircuit",
+        "WithdrawFromObfuscatedCircuit",
+        "ExecuteCircuitOneTwo",
+        "ExecuteCircuitTwoTwo",
+        "ExecuteCircuitThreeTwo",
+        "ExecuteCircuitFourTwo",
+        "LicenseCircuit",
+    ])?;
+
+    run_stored_circuits_checks(keep_circuits, circuits)?;
 
     Ok(())
 }

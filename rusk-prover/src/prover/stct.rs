@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
-use crate::lazy_prover;
+use crate::prover::fetch_prover;
 
 pub const STCT_INPUT_LEN: usize = Fee::SIZE
     + Crossover::SIZE
@@ -15,7 +15,7 @@ pub const STCT_INPUT_LEN: usize = Fee::SIZE
     + Signature::SIZE;
 
 pub static STCT_PROVER: Lazy<PlonkProver> =
-    lazy_prover!(SendToContractTransparentCircuit);
+    Lazy::new(|| fetch_prover("SendToContractTransparentCircuit"));
 
 impl LocalProver {
     pub(crate) fn local_prove_stct(

@@ -2,6 +2,7 @@
 members = [
     "circuits/transfer",
     "circuits/license",
+    "circuits/storage",
 
     "contract-helpers",
     "contracts/alice",
@@ -11,8 +12,6 @@ members = [
     "contracts/transfer",
     "contracts/license",
 
-    "macros/code-hasher",
-    
     "rusk-prover",
 
     "rusk-recovery",

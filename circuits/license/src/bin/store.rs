@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[cfg(feature = "keys")]
-pub mod keys;
-#[cfg(feature = "state")]
-pub mod state;
+use license_circuits::LicenseCircuit;
+use std::io;
+use storage::store_circuit;
 
-pub use rusk_profile::Theme;
+pub fn main() -> Result<(), io::Error> {
+    store_circuit::<LicenseCircuit>(Some(String::from("LicenseCircuit")))
+}

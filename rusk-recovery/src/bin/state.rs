@@ -8,7 +8,7 @@ mod task;
 mod version;
 
 use clap::Parser;
-use rusk_recovery_tools::theme::Theme;
+use rusk_recovery_tools::Theme;
 use std::error::Error;
 use std::{env, io};
 use std::{fs, path::PathBuf};

@@ -431,48 +431,23 @@ where
     }
 }
 
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitOneTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitTwoTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitThreeTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
     }
 }
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for ExecuteCircuitFourTwo {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         self.circuit(composer)
-    }
-}
-
-impl ExecuteCircuitOneTwo {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-}
-impl ExecuteCircuitTwoTwo {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-}
-impl ExecuteCircuitThreeTwo {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-}
-impl ExecuteCircuitFourTwo {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
     }
 }

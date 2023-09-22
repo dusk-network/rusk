@@ -14,6 +14,7 @@ use rand::{CryptoRng, RngCore, SeedableRng};
 use dusk_plonk::prelude::*;
 
 mod keys;
+use keys::load_keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
     rng: &mut R,
@@ -45,10 +46,9 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
 #[test]
 fn send_to_contract_transparent() {
     let rng = &mut StdRng::seed_from_u64(8586);
-    let circuit_id = SendToContractTransparentCircuit::circuit_id();
 
-    let (prover, verifier) =
-        keys::circuit_keys(circuit_id).expect("Failed to generate circuit!");
+    let (prover, verifier) = load_keys("SendToContractTransparentCircuit")
+        .expect("Keys should be stored");
 
     let circuit = create_random_circuit(rng);
 

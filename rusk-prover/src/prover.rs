@@ -21,7 +21,6 @@ use rand::rngs::OsRng;
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
 use phoenix_core::{Crossover, Fee, Message};
-use rusk_profile::keys_for;
 
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuit,
@@ -63,63 +62,25 @@ impl crate::Prover for LocalProver {
     }
 }
 
-#[macro_export]
-macro_rules! lazy_prover {
-    ($circuit:ty) => {
-        Lazy::new(|| {
-            let keys = keys_for(<$circuit>::circuit_id())
-                .expect("keys to be available");
-            let pk = keys.get_prover().expect("prover to be available");
-            Prover::try_from_bytes(&pk).expect("prover key to be valid")
-        })
-    };
+pub fn fetch_prover(circuit_name: &str) -> PlonkProver {
+    let circuit_profile = rusk_profile::Circuit::from_name(circuit_name)
+        .unwrap_or_else(|_| {
+            panic!("There should be circuit data stored for {}", circuit_name)
+        });
+    let pk = circuit_profile.get_prover().unwrap_or_else(|_| {
+        panic!("there should be a prover key stored for {}", circuit_name)
+    });
+
+    Prover::try_from_bytes(pk).expect("Prover key is expected to by valid")
 }
 
 #[cfg(test)]
 mod tests {
-    use transfer_circuits::{
-        ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
-        ExecuteCircuitTwoTwo, SendToContractObfuscatedCircuit,
-        SendToContractTransparentCircuit, WithdrawFromObfuscatedCircuit,
-        WithdrawFromTransparentCircuit,
-    };
-
     use super::*;
     use crate::Prover;
 
     #[test]
     fn test_prove_execute() {
-        println!(
-            "STCT   {}",
-            hex::encode(SendToContractTransparentCircuit::circuit_id())
-        );
-        println!(
-            "STCO   {}",
-            hex::encode(SendToContractObfuscatedCircuit::circuit_id())
-        );
-        println!(
-            "WFCT   {}",
-            hex::encode(WithdrawFromTransparentCircuit::circuit_id())
-        );
-        println!(
-            "WFCO   {}",
-            hex::encode(WithdrawFromObfuscatedCircuit::circuit_id())
-        );
-
-        println!("Exec 1 {}", hex::encode(ExecuteCircuitOneTwo::circuit_id()));
-
-        println!("Exec 2 {}", hex::encode(ExecuteCircuitTwoTwo::circuit_id()));
-
-        println!(
-            "Exec 3 {}",
-            hex::encode(ExecuteCircuitThreeTwo::circuit_id())
-        );
-
-        println!(
-            "Exec 4 {}",
-            hex::encode(ExecuteCircuitFourTwo::circuit_id())
-        );
-
         let utx_hex = include_str!("../tests/utx.hex");
         let utx_bytes = hex::decode(utx_hex).unwrap();
         let prover = LocalProver {};

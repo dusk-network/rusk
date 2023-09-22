@@ -106,10 +106,6 @@ impl Default for SendToContractObfuscatedCircuit {
 }
 
 impl SendToContractObfuscatedCircuit {
-    pub const fn circuit_id() -> &'static [u8; 32] {
-        &Self::CIRCUIT_ID
-    }
-
     pub fn sign_message(
         crossover: &Crossover,
         message: &Message,
@@ -205,7 +201,6 @@ impl SendToContractObfuscatedCircuit {
 }
 
 #[allow(clippy::option_map_unit_fn)]
-#[code_hasher::hash(name = "CIRCUIT_ID", version = "0.2.0")]
 impl Circuit for SendToContractObfuscatedCircuit {
     fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
         let zero = C::ZERO;
