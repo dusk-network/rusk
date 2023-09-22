@@ -25,8 +25,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         rustc_tools_util::get_channel().unwrap_or_default()
     );
 
-    assert!(option_env!("RUSK_PROFILE_PATH").is_some(),
-        "RUSK_PROFILE_PATH env var is not set. Please run `source .env` to set it");
-
     Ok(())
 }
