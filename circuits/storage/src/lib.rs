@@ -10,7 +10,6 @@ use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_profile::{Circuit as CircuitProfile, Theme};
-use std::env;
 use std::io::{self, ErrorKind};
 use tracing::{info, warn};
 use tracing_subscriber::prelude::*;
@@ -43,14 +42,6 @@ pub fn store_circuit<C>(name: Option<String>) -> io::Result<()>
 where
     C: Circuit,
 {
-    // check whether the veriable `RUSK_PROFILE_PATH` is set
-    if env::var("RUSK_PROFILE_PATH").is_err() {
-        return Err(io::Error::new(
-            ErrorKind::Other,
-            "RUSK_PROFILE_PATH variable not set",
-        ));
-    };
-
     // This force init is needed to check CRS and create it (if not available)
     // See also: https://github.com/dusk-network/rusk/issues/767
     Lazy::force(&PUB_PARAMS);
