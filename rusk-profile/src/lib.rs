@@ -36,6 +36,18 @@ fn file_name(p: &Path) -> Option<&str> {
     p.file_name()?.to_str()
 }
 
+/// Return Rusk profile directory, ensuring that all parents directory are
+/// created
+///
+/// Default to [`home_dir`]/.dusk/rusk
+///
+/// `RUSK_PROFILE_PATH` env can be used to override
+///
+/// E.g:
+/// RUSK_PROFILE_PATH | result
+/// -- | --
+/// None | $HOME/.dusk/rusk
+/// Set | $RUSK_PROFILE_PATH
 pub fn get_rusk_profile_dir() -> io::Result<PathBuf> {
     env::var("RUSK_PROFILE_PATH")
         .map_or_else(
@@ -53,6 +65,19 @@ pub fn get_rusk_profile_dir() -> io::Result<PathBuf> {
         })
 }
 
+/// Return Rusk circuits directory, ensuring that all parents directory are
+/// created
+///
+/// Default to [`get_rusk_profile_dir`]/circuits
+///
+/// `RUSK_CIRCUITS_PATH` env can be used to override
+///
+/// E.g:
+/// RUSK_PROFILE_PATH | RUSK_CIRCUITS_PATH | result
+/// -- | -- | --
+/// None | None | $HOME/.dusk/rusk/circuits
+/// Set | None | $RUSK_PROFILE_PATH/circuits
+/// _ | Set | $RUSK_CIRCUITS_PATH
 pub fn get_rusk_circuits_dir() -> io::Result<PathBuf> {
     env::var("RUSK_CIRCUITS_PATH")
         .map_or_else(
@@ -66,6 +91,18 @@ pub fn get_rusk_circuits_dir() -> io::Result<PathBuf> {
         })
 }
 
+/// Return Rusk keys directory, ensuring that all parents directory are created
+///
+/// Default to [`get_rusk_profile_dir`]/keys
+///
+/// `RUSK_KEYS_PATH` env can be used to override
+///
+/// E.g:
+/// RUSK_PROFILE_PATH | RUSK_KEYS_PATH | result
+/// -- | -- | --
+/// None | None | $HOME/.dusk/rusk/keys
+/// Set | None | $RUSK_PROFILE_PATH/keys
+/// _ | Set | $RUSK_KEYS_PATH
 pub fn get_rusk_keys_dir() -> io::Result<PathBuf> {
     env::var("RUSK_KEYS_PATH")
         .map_or_else(
@@ -79,6 +116,18 @@ pub fn get_rusk_keys_dir() -> io::Result<PathBuf> {
         })
 }
 
+/// Return Rusk keys directory, ensuring that all parents directory are created
+///
+/// Default  to [get_rusk_profile_dir]/state
+///
+/// `RUSK_STATE_PATH` env can be used to override
+///
+/// E.g:
+/// RUSK_PROFILE_PATH | RUSK_STATE_PATH | result
+/// -- | -- | --
+/// None | None | $HOME/.dusk/rusk/state
+/// Set | None | $RUSK_PROFILE_PATH/state
+/// _ | Set | $RUSK_STATE_PATH
 pub fn get_rusk_state_dir() -> io::Result<PathBuf> {
     env::var("RUSK_STATE_PATH")
         .map_or_else(
