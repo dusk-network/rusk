@@ -7,22 +7,17 @@
 /// Buildfile for the rusk crate.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let keys_dir = rusk_profile::get_rusk_keys_dir()?;
+
+    println!("Keys dir is {keys_dir:?}");
     // Ensure we run the build script again even if we change just the build.rs
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=../Cargo.lock");
 
-    // Get crate version + commit + toolchain for `-v` arg support.
+    // Set RUSK_BUILT_KEYS_PATH for `.vd` resolver
     println!(
-        "cargo:rustc-env=GIT_HASH={}",
-        rustc_tools_util::get_commit_hash().unwrap_or_default()
-    );
-    println!(
-        "cargo:rustc-env=COMMIT_DATE={}",
-        rustc_tools_util::get_commit_date().unwrap_or_default()
-    );
-    println!(
-        "cargo:rustc-env=RUSTC_RELEASE_CHANNEL={}",
-        rustc_tools_util::get_channel().unwrap_or_default()
+        "cargo:rustc-env=RUSK_BUILT_KEYS_PATH={}",
+        keys_dir.to_str().unwrap()
     );
 
     Ok(())

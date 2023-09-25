@@ -19,7 +19,10 @@ pub use license_types::{
     LicenseSession, LicenseSessionId, PoseidonItem, UseLicenseArg,
 };
 
-const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(env!("RUSK_PROFILE_PATH"), "/.rusk/keys/b4395f9a50ee374393166d57d8f062e9191f259678dbafca5b6279abb215f1db.vd"));
+const VD_LICENSE_CIRCUIT: &[u8] = include_bytes!(concat!(
+    env!("RUSK_BUILT_KEYS_PATH"),
+    "/b4395f9a50ee374393166d57d8f062e9191f259678dbafca5b6279abb215f1db.vd"
+));
 
 /// Verifier data for the `License` circuit.
 #[allow(dead_code)]

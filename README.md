@@ -33,14 +33,12 @@ is in development.
 To build `rusk` from source, Rust, GCC and Clang are required. Once the dependencies are installed, you can simply run the following command to compile everything:
 
 ```bash
-source .env
 make
 ```
 
 To run tests:
 
 ```bash
-source .env
 make test
 ```
 
@@ -51,9 +49,6 @@ That will also compile all the genesis contracts and its associated circuits.
 Prerequisites:
 
 ```bash
-# Required for the generation of the keys
-source .env
-
 # Generate the keys used by the circuits
 make keys
 
