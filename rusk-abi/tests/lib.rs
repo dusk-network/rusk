@@ -66,7 +66,7 @@ fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
 
     let base = session.commit().expect("Committing should succeed");
 
-    let mut session = rusk_abi::new_session(vm, base, height)
+    let session = rusk_abi::new_session(vm, base, height)
         .expect("Instantiating new session should succeed");
 
     (session, contract_id)
