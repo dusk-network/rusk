@@ -253,14 +253,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     fn allow_transition(&self, msg: &Message) -> anyhow::Result<()> {
-        let recv_peer = msg
-            .metadata
-            .as_ref()
-            .map(|m| m.src_addr)
-            .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
-
         // TODO: Consider verifying certificate here
-
         Ok(())
     }
 }
@@ -296,7 +289,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             (acc.get_curr_height().await, acc.get_curr_hash().await)
         };
 
-        let dest_addr = msg.metadata.as_ref().unwrap().src_addr;
+        let dest_addr = msg.metadata.as_ref();
 
         self.range = (
             curr_height,
@@ -309,11 +302,22 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // Request missing blocks from source peer
         let gb_msg = Message::new_get_blocks(GetBlocks { locator });
 
-        self.network
-            .write()
-            .await
-            .send_to_peer(&gb_msg, dest_addr)
-            .await;
+        if let Some(peer) = dest_addr {
+            self.network
+                .write()
+                .await
+                .send_to_peer(&gb_msg, peer.src_addr)
+                .await;
+        } else {
+            // In case we reverted multiple blocks after fallback execution
+            // triggered by a block from local consensus, there is no fixed peer
+            // to sync with.
+            self.network
+                .write()
+                .await
+                .send_to_alive_peers(&gb_msg, 5)
+                .await;
+        }
 
         // add to the pool
         let h = blk.header().height;
