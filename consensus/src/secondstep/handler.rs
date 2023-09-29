@@ -23,8 +23,9 @@ pub struct Reduction {
                                          * shared state */
     pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
 
-    pub(crate) aggr: Aggregator,
+    pub(crate) aggregator: Aggregator,
     pub(crate) first_step_votes: StepVotes,
+    pub(crate) curr_step: u8,
 }
 
 #[async_trait]
@@ -65,11 +66,13 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is of reduction type
-        if let Some((block_hash, second_step_votes)) = self.aggr.collect_vote(
-            &self.committees[step as usize],
-            &msg.header,
-            &signed_hash,
-        ) {
+        if let Some((block_hash, second_step_votes)) =
+            self.aggregator.collect_vote(
+                &self.committees[step as usize],
+                &msg.header,
+                &signed_hash,
+            )
+        {
             if block_hash != [0u8; 32] {
                 // Record result in global round results registry
                 if let Some(m) = self.round_ctx.lock().await.add_step_votes(
@@ -80,11 +83,12 @@ impl MsgHandler<Message> for Reduction {
                 ) {
                     return Ok(HandleMsgOutput::FinalResult(m));
                 }
+
+                if step != self.curr_step {
+                    return Ok(HandleMsgOutput::Result(msg));
+                }
             }
 
-            // At that point, we have reached a quorum for 2th_reduction on an
-            // empty on non-empty block. Return an empty message as
-            // this iteration terminates here.
             return Ok(HandleMsgOutput::FinalResult(self.build_agreement_msg(
                 ru,
                 step,
@@ -110,9 +114,10 @@ impl Reduction {
     pub(crate) fn new(round_ctx: SafeRoundCtx) -> Self {
         Self {
             round_ctx,
-            aggr: Default::default(),
+            aggregator: Default::default(),
             first_step_votes: Default::default(),
             committees: vec![Committee::default(); 213], // TODO:
+            curr_step: 0,
         }
     }
 
@@ -141,7 +146,8 @@ impl Reduction {
         Message::new_agreement(hdr, payload)
     }
 
-    pub(crate) fn reset(&mut self) {
+    pub(crate) fn reset(&mut self, step: u8) {
         self.first_step_votes = StepVotes::default();
+        self.curr_step = step;
     }
 }

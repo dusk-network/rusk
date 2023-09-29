@@ -45,7 +45,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         let mut handler = self.handler.lock().await;
 
         self.candidate = None;
-        handler.reset();
+        handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
             handler.first_step_votes = p.sv;
