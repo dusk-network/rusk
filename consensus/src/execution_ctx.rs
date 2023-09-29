@@ -320,7 +320,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
 
         if let Err(e) = self.outbound.send(msg.clone()).await {
-            error!("could not send newblock msg due to {:?}", e);
+            error!("could not send msg due to {:?}", e);
         }
 
         if let Payload::NewBlock(p) = &msg.payload {

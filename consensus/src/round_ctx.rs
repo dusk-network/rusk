@@ -82,6 +82,9 @@ impl RoundCtx {
                 CONSENSUS_MAX_ITER as usize],
         }
     }
+
+    /// Adds step votes per iteration
+    /// Returns an agreement if both reductions for an iteration are available
     pub(crate) fn add_step_votes(
         &mut self,
         step: u8,
