@@ -54,6 +54,7 @@ pub struct Reduction<DB: Database> {
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
+    curr_step: u8,
 }
 
 impl<DB: Database> Reduction<DB> {
@@ -64,11 +65,13 @@ impl<DB: Database> Reduction<DB> {
             aggr: Aggregator::default(),
             candidate: Block::default(),
             committees: vec![Committee::default(); 213], // TODO:
+            curr_step: 0,
         }
     }
 
-    pub(crate) fn reset(&mut self) {
+    pub(crate) fn reset(&mut self, curr_step: u8) {
         self.candidate = Block::default();
+        self.curr_step = curr_step;
     }
 }
 
@@ -115,16 +118,8 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             &msg.header,
             &signature,
         ) {
-            // if the votes converged for an empty hash we invoke halt
-            if hash == [0u8; 32] {
-                tracing::warn!("votes converged for an empty hash");
-
-                return Ok(final_result_with_timeout(
-                    StepVotes::default(),
-                    ledger::Block::default(),
-                ));
-            } else {
-                // Record result in global round results registry
+            // Record result in global round registry of all non-Nil step_votes
+            if hash != [0u8; 32] {
                 if let Some(m) = self
                     .round_ctx
                     .lock()
@@ -133,6 +128,22 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                 {
                     return Ok(HandleMsgOutput::FinalResult(m));
                 }
+
+                // If step is different from the current one, this means
+                // * collect * func is being called from different iteration
+                if step != self.curr_step {
+                    return Ok(HandleMsgOutput::Result(msg));
+                }
+            }
+
+            // if the votes converged for an empty hash we invoke halt
+            if hash == [0u8; 32] {
+                tracing::warn!("votes converged for an empty hash");
+
+                return Ok(final_result_with_timeout(
+                    StepVotes::default(),
+                    ledger::Block::default(),
+                ));
             }
 
             if hash != self.candidate.header().hash {

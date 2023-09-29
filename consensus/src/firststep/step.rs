@@ -41,7 +41,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         let mut handler = self.handler.lock().await;
 
-        handler.reset();
+        handler.reset(step);
 
         if let Payload::NewBlock(p) = msg.clone().payload {
             handler.candidate = p.deref().candidate.clone();
