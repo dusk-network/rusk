@@ -5,15 +5,22 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use rusk_recovery_tools::Theme;
+use std::env;
+use std::path::PathBuf;
 use std::time::Instant;
 use tracing::info;
 use tracing_subscriber::prelude::*;
 
 pub fn run(
     task: impl Fn() -> Result<(), Box<dyn std::error::Error>>,
+    profile: Option<PathBuf>,
     verbose: usize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let begin = Instant::now();
+
+    if let Some(profile) = profile {
+        env::set_var("RUSK_PROFILE_PATH", profile.to_str().unwrap());
+    }
 
     if verbose > 0 {
         let fmt_layer = tracing_subscriber::fmt::layer()

@@ -21,6 +21,16 @@ use rusk_recovery_tools::state::{deploy, restore_state, tar, Snapshot};
 #[clap(name = "rusk-recovery-state")]
 #[clap(author, version = &VERSION_BUILD[..], about, long_about = None)]
 struct Cli {
+    /// Sets the profile path
+    #[clap(
+        short,
+        long,
+        parse(from_os_str),
+        value_name = "PATH",
+        env = "RUSK_PROFILE_PATH"
+    )]
+    profile: Option<PathBuf>,
+
     /// Forces a build/download even if the state is in the profile path.
     #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
     force: bool,
@@ -56,6 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 output_file: args.output.clone(),
             })
         },
+        args.profile,
         args.verbose,
     )
 }
