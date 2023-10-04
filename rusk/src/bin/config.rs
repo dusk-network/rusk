@@ -8,12 +8,16 @@ pub mod chain;
 pub mod http;
 pub mod kadcast;
 
+use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 
-use clap::{Arg, ArgMatches, Command};
+use clap::{value_parser, Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
-use self::{chain::ChainConfig, http::HttpConfig, kadcast::KadcastConfig};
+use self::chain::ChainConfig;
+use self::http::HttpConfig;
+use self::kadcast::KadcastConfig;
 
 type DataBrokerConfig = node::databroker::conf::Params;
 
@@ -62,6 +66,13 @@ impl From<&ArgMatches> for Config {
             rusk_config.log_filter = Some(log_filter.into());
         }
 
+        // Set profile path if specified
+        if let Some(profile) = matches.value_of("profile-path") {
+            // Since the profile path is resolved by the rusk_profile library,
+            // there is the need to set the env variable
+            env::set_var("RUSK_PROFILE_PATH", profile);
+        }
+
         rusk_config.kadcast.merge(matches);
         rusk_config.chain.merge(matches);
         rusk_config.http.merge(matches);
@@ -101,6 +112,14 @@ impl Config {
                     .value_name("LOG_FILTER")
                     .help("Add log filter(s)")
                     .takes_value(true),
+            )
+            .arg(
+                Arg::new("profile-path")
+                    .long("profile")
+                    .help("Sets the profile path")
+                    .takes_value(true)
+                    .value_parser(value_parser!(PathBuf))
+                    .required(false),
             )
     }
 
