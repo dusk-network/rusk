@@ -11,4 +11,7 @@ clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
 	@cargo clippy --no-default-features --release -- -D warnings
 
-.PHONY: test help clippy 
+build: ## Build rusk binary
+	@cargo build --release
+
+.PHONY: test help clippy build
