@@ -1,4 +1,4 @@
-all: circuits keys wasm abi allcircuits state contracts node ## Build everything
+all: circuits keys wasm abi allcircuits state contracts rusk ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -14,7 +14,7 @@ circuits: ## Compress and store all circuits
 keys: circuits ## Create the keys for the circuits
 	$(MAKE) -C ./rusk-recovery keys
 
-state: wasm ## Create the network state
+state: keys wasm ## Create the network state
 	$(MAKE) -C ./rusk-recovery state
 
 wasm: ## Generate the WASM for all the contracts
@@ -53,7 +53,7 @@ clippy: ## Run clippy$(MAKE) -C ./rusk-abi/ $@
 run: keys state ## Run the server
 	cargo run --release --bin rusk
 
-node: rusk ## Build node binary
-	$(MAKE) -C ./node binary
+rusk: keys state ## Build rusk binary
+	$(MAKE) -C ./rusk build
 
-.PHONY: all abi circuits keys state wasm allcircuits contracts test run help node
+.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk
