@@ -33,8 +33,11 @@ use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
+use tokio::time::{sleep_until, Instant};
 
+use node_data::message::payload::GetBlocks;
 use std::any;
+use std::time::Duration;
 
 use self::acceptor::{Acceptor, RevertTarget};
 use self::consensus::Task;
@@ -48,6 +51,8 @@ const TOPICS: &[u8] = &[
     Topics::AggrAgreement as u8,
     Topics::Agreement as u8,
 ];
+
+const ACCEPT_BLOCK_TIMEOUT_SEC: u8 = 10;
 
 pub struct ChainSrv {
     /// Inbound wire messages queue
@@ -75,7 +80,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         .await?;
 
         // Restore/Load most recent block
-        let mrb = Self::load_most_recent_block(db.clone()).await?;
+        let (mrb, last_finalized) =
+            Self::load_most_recent_block(db.clone()).await?;
 
         let provisioners_list = vm.read().await.get_provisioners()?;
 
@@ -84,6 +90,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             Acceptor::new_with_run(
                 &self.keys_path,
                 &mrb,
+                &last_finalized,
                 &provisioners_list,
                 db.clone(),
                 network.clone(),
@@ -111,11 +118,25 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 .await?;
         }
 
+        // Request most recent blocks from alive peers
+        network
+            .write()
+            .await
+            .send_to_alive_peers(
+                &Message::new_get_blocks(GetBlocks {
+                    locator: mrb.header().hash,
+                }),
+                fsm::REDUNDANCY_PEER_FACTOR,
+            )
+            .await;
+
         // Start-up FSM instance
         let mut fsm = SimpleFSM::new(acc.clone(), network.clone());
 
         let outbound_chan = acc.read().await.get_outbound_chan().await;
         let result_chan = acc.read().await.get_result_chan().await;
+
+        let mut deadline = Self::reset_timeout();
 
         // Message loop for Chain context
         loop {
@@ -140,9 +161,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         }
                     }
                 },
-                // Receives inbound wire messages.
+                // Handles accept_block_timeout event
+                _ = sleep_until(deadline) => {
+                    fsm.on_idle(ACCEPT_BLOCK_TIMEOUT_SEC).await;
+                    deadline = Self::reset_timeout();
+                },
+                // Handles any inbound wire.
                 // Component should either process it or re-route it to the next upper layer
-                recv = &mut self.inbound.recv() => {
+                recv =  self.inbound.recv() => {
                     let msg = recv?;
                     match &msg.payload {
                         Payload::Block(blk) => {
@@ -153,9 +179,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                                 blk_hash = to_str(&blk.header().hash),
                             );
 
-                            fsm.on_event(blk, &msg)
-                                .await
-                                .map_err(|e| error!("failed to process block: {}", e));
+                            if let Err(e) = fsm.on_event(blk, &msg).await  {
+                                 error!(event = "fsm::on_event failed", err = format!("{}",e));
+                            } else {
+                                deadline = Self::reset_timeout();
+                            }
                         }
 
                         // Re-route message to the acceptor
@@ -198,8 +226,9 @@ impl ChainSrv {
     /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
-    ) -> Result<Block> {
+    ) -> Result<(Block, Block)> {
         let mut mrb = Block::default();
+        let mut last_finalized = Block::default();
 
         db.read().await.update(|t| {
             mrb = match t.get_register()? {
@@ -215,16 +244,37 @@ impl ChainSrv {
                 }
             };
 
+            let mut h = mrb.header().height;
+            while h != 0 {
+                let blk = t
+                    .fetch_block_by_height(h)?
+                    .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
+
+                if blk.header().iteration == 1 {
+                    last_finalized = blk;
+                    break;
+                }
+
+                h -= 1;
+            }
+
             Ok(())
         });
 
         tracing::info!(
             event = "Ledger block loaded",
             height = mrb.header().height,
+            finalized_height = last_finalized.header().height,
             hash = hex::encode(mrb.header().hash),
             state_root = hex::encode(mrb.header().state_hash)
         );
 
-        Ok(mrb)
+        Ok((mrb, last_finalized))
+    }
+
+    fn reset_timeout() -> Instant {
+        Instant::now()
+            .checked_add(Duration::from_secs(ACCEPT_BLOCK_TIMEOUT_SEC as u64))
+            .unwrap()
     }
 }

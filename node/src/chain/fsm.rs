@@ -15,13 +15,14 @@ use node_data::message::Message;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
+pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 
@@ -56,6 +57,35 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             network,
             blacklisted_blocks,
         }
+    }
+
+    pub async fn on_idle(&mut self, timeout_sec: u8) -> anyhow::Result<()> {
+        let acc = self.acc.read().await;
+        let mrb_height = acc.get_curr_height().await;
+        let iter = acc.get_curr_iteration().await;
+        let last_finalized = acc.get_finalized().await;
+
+        info!(
+            event = "fsm::idle",
+            mrb_height,
+            iter,
+            timeout_sec,
+            "finalized_height" = last_finalized.header().height,
+        );
+
+        // Request updates for any block after my last finalized state
+        self.network
+            .write()
+            .await
+            .send_to_alive_peers(
+                &Message::new_get_blocks(GetBlocks {
+                    locator: last_finalized.header().hash,
+                }),
+                REDUNDANCY_PEER_FACTOR,
+            )
+            .await;
+
+        Ok(())
     }
 
     pub async fn on_event(
@@ -173,16 +203,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         if h == curr_h {
             if blk.header().hash == curr_hash {
-                // Duplicated block.
-                //
-                // Node has already accepted it (maybe from local consensus)
-                // however we still need to re-propagate it so
-                // that we do not eclipse the network. Eclipsing
-                // the network for that broadcast may damage the
-                // fallback for nodes on different fork.
-
-                self.network.write().await.broadcast(msg).await;
-
                 return Ok(false);
             }
 
@@ -282,6 +302,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             network,
         }
     }
+
     /// performed when entering the OutOfSync state
     async fn on_entering(&mut self, blk: &Block, msg: &Message) {
         let (curr_height, locator) = {
@@ -315,7 +336,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             self.network
                 .write()
                 .await
-                .send_to_alive_peers(&gb_msg, 5)
+                .send_to_alive_peers(&gb_msg, REDUNDANCY_PEER_FACTOR)
                 .await;
         }
 
