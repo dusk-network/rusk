@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{Arg, ArgAction, ArgMatches, Command};
+use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
@@ -23,30 +23,20 @@ impl HttpConfig {
 
     pub(crate) fn merge(&mut self, matches: &ArgMatches) {
         // Overwrite config ws-listen-addr
-        if let Some(ws_listen_addr) = matches.value_of("ws-listen-addr") {
+        if let Some(ws_listen_addr) =
+            matches.get_one::<String>("ws-listen-addr")
+        {
             self.listen_address = Some(ws_listen_addr.into());
         }
-
-        // Overwrite config ws-listen
-        self.listen = self.listen || matches.get_flag("ws-listen");
     }
 
-    pub fn inject_args(command: Command<'_>) -> Command<'_> {
-        command
-            .arg(
-                Arg::new("ws-listen-addr")
-                    .long("ws-listen-addr")
-                    .value_name("WS_LISTEN_ADDR")
-                    .help("Address websocket should listen on")
-                    .takes_value(true),
-            )
-            .arg(
-                Arg::new("ws-listen")
-                    .action(ArgAction::SetTrue)
-                    .long("ws-listen")
-                    .value_name("WS_LISTEN")
-                    .help("Force the websocket to be active")
-                    .takes_value(false),
-            )
+    pub fn inject_args(command: Command) -> Command {
+        command.arg(
+            Arg::new("ws-listen-addr")
+                .long("ws-listen-addr")
+                .value_name("WS_LISTEN_ADDR")
+                .help("Address websocket should listen on")
+                .num_args(1),
+        )
     }
 }

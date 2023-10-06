@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let crate_name = &crate_info.crate_name.to_string();
     let version = show_version(crate_info);
     let command = Command::new(crate_name)
-        .version(version.as_str())
+        .version(version)
         .author("Dusk Network B.V. All Rights Reserved.")
         .about("Rusk Server node.")
         .arg(
@@ -47,8 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .short('c')
                 .env("RUSK_CONFIG_TOML")
                 .help("Configuration file path")
-                .takes_value(true)
-                .required(false),
+                .num_args(1),
         );
 
     #[cfg(feature = "ephemeral")]
@@ -111,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_list: Vec<Box<Services>> = vec![
         Box::<MempoolSrv>::default(),
         Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
-        Box::new(DataBrokerSrv::new(config.databroker())),
+        Box::new(DataBrokerSrv::new(config.clone().databroker.into())),
     ];
 
     #[cfg(feature = "ephemeral")]

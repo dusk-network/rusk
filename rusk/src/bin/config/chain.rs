@@ -19,32 +19,32 @@ impl ChainConfig {
     pub(crate) fn merge(&mut self, matches: &ArgMatches) {
         // Overwrite config consensus-keys-path
         if let Some(consensus_keys_path) =
-            matches.value_of("consensus-keys-path")
+            matches.get_one::<String>("consensus-keys-path")
         {
             self.consensus_keys_path = Some(PathBuf::from(consensus_keys_path));
         }
 
         // Overwrite config db-path
-        if let Some(db_path) = matches.value_of("db-path") {
+        if let Some(db_path) = matches.get_one::<String>("db-path") {
             self.db_path = Some(PathBuf::from(db_path));
         }
     }
 
-    pub fn inject_args(command: Command<'_>) -> Command<'_> {
+    pub fn inject_args(command: Command) -> Command {
         command
             .arg(
                 Arg::new("consensus-keys-path")
                     .long("consensus-keys-path")
                     .value_name("CONSENSUS_KEYS_PATH")
                     .help("path to encrypted BLS keys")
-                    .takes_value(true),
+                    .num_args(1),
             )
             .arg(
                 Arg::new("db-path")
                     .long("db-path")
                     .value_name("DB_PATH")
                     .help("path to blockchain database")
-                    .takes_value(true),
+                    .num_args(1),
             )
     }
 

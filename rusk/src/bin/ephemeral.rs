@@ -13,16 +13,15 @@ use std::path::PathBuf;
 use tempfile::TempDir;
 use tracing::error;
 
-pub(crate) fn inject_args(command: Command<'_>) -> Command<'_> {
+pub(crate) fn inject_args(command: Command) -> Command {
     command.arg(
         Arg::new("state_file")
             .long("state")
             .short('s')
             .env("RUSK_STATE_FILE")
             .help("Ephemeral state file (archive)")
-            .takes_value(true)
-            .value_parser(value_parser!(PathBuf))
-            .required(false),
+            .num_args(1)
+            .value_parser(value_parser!(PathBuf)),
     )
 }
 
