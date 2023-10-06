@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
+
+use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct HttpConfig {
@@ -21,22 +22,10 @@ impl HttpConfig {
             .unwrap_or("127.0.0.1:8080".into())
     }
 
-    pub(crate) fn merge(&mut self, matches: &ArgMatches) {
+    pub(crate) fn merge(&mut self, args: &Args) {
         // Overwrite config ws-listen-addr
-        if let Some(ws_listen_addr) =
-            matches.get_one::<String>("ws-listen-addr")
-        {
-            self.listen_address = Some(ws_listen_addr.into());
+        if let Some(http_listen_addr) = &args.http_listen_addr {
+            self.listen_address = Some(http_listen_addr.into());
         }
-    }
-
-    pub fn inject_args(command: Command) -> Command {
-        command.arg(
-            Arg::new("ws-listen-addr")
-                .long("ws-listen-addr")
-                .value_name("WS_LISTEN_ADDR")
-                .help("Address websocket should listen on")
-                .num_args(1),
-        )
     }
 }

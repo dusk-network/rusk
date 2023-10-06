@@ -10,11 +10,11 @@ pub mod http;
 pub mod kadcast;
 
 use std::env;
-use std::path::PathBuf;
 use std::str::FromStr;
 
-use clap::{value_parser, Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
+
+use crate::args::Args;
 
 use self::chain::ChainConfig;
 use self::databroker::DataBrokerConfig;
@@ -27,10 +27,15 @@ pub(crate) struct Config {
     log_type: Option<String>,
     log_filter: Option<String>,
 
+    #[serde(default = "DataBrokerConfig::default")]
     pub(crate) databroker: DataBrokerConfig,
 
+    #[serde(default = "KadcastConfig::default")]
     pub(crate) kadcast: KadcastConfig,
+
+    #[serde(default = "ChainConfig::default")]
     pub(crate) chain: ChainConfig,
+
     #[serde(default = "HttpConfig::default")]
     pub(crate) http: HttpConfig,
 }
@@ -41,85 +46,45 @@ const DEFAULT_LOG_LEVEL: &str = "info";
 /// Default log_type.
 const DEFAULT_LOG_TYPE: &str = "coloured";
 
-impl From<&ArgMatches> for Config {
-    fn from(matches: &ArgMatches) -> Self {
-        let mut rusk_config = matches.get_one::<String>("config").map_or(
-            Config::default(),
-            |conf_path| {
+impl From<&Args> for Config {
+    fn from(args: &Args) -> Self {
+        let mut rusk_config =
+            args.config.as_ref().map_or(Config::default(), |conf_path| {
                 let toml = std::fs::read_to_string(conf_path).unwrap();
                 toml::from_str(&toml).unwrap()
-            },
-        );
+            });
 
         // Overwrite config log-level
-        if let Some(log_level) = matches.get_one::<String>("log-level") {
-            rusk_config.log_level = Some(log_level.into());
+        if let Some(log_level) = args.log_level {
+            rusk_config.log_level = Some(log_level.to_string());
         }
 
         // Overwrite config log-type
-        if let Some(log_type) = matches.get_one::<String>("log-type") {
+        if let Some(log_type) = &args.log_type {
             rusk_config.log_type = Some(log_type.into());
         }
 
         // Overwrite config log-filter
-        if let Some(log_filter) = matches.get_one::<String>("log-filter") {
+        if let Some(log_filter) = &args.log_filter {
             rusk_config.log_filter = Some(log_filter.into());
         }
 
         // Set profile path if specified
-        if let Some(profile) = matches.get_one::<String>("profile-path") {
+        if let Some(profile) = &args.profile {
             // Since the profile path is resolved by the rusk_profile library,
             // there is the need to set the env variable
             env::set_var("RUSK_PROFILE_PATH", profile);
         }
 
-        rusk_config.kadcast.merge(matches);
-        rusk_config.chain.merge(matches);
-        rusk_config.http.merge(matches);
-        rusk_config.databroker.merge(matches);
+        rusk_config.kadcast.merge(args);
+        rusk_config.chain.merge(args);
+        rusk_config.http.merge(args);
+        rusk_config.databroker.merge(args);
         rusk_config
     }
 }
 
 impl Config {
-    pub fn inject_args(command: Command) -> Command {
-        let command = KadcastConfig::inject_args(command);
-        let command = ChainConfig::inject_args(command);
-        let command = HttpConfig::inject_args(command);
-        let command = DataBrokerConfig::inject_args(command);
-        command
-            .arg(
-                Arg::new("log-level")
-                    .long("log-level")
-                    .value_name("LOG")
-                    .value_parser(["error", "warn", "info", "debug", "trace"])
-                    .help("Output log level")
-                    .num_args(1),
-            )
-            .arg(
-                Arg::new("log-type")
-                    .long("log-type")
-                    .value_name("LOG_TYPE")
-                    .value_parser(["coloured", "plain", "json"])
-                    .help("Change the log format accordingly")
-                    .num_args(1),
-            )
-            .arg(
-                Arg::new("log-filter")
-                    .long("log-filter")
-                    .value_name("LOG_FILTER")
-                    .help("Add log filter(s)")
-                    .num_args(1),
-            )
-            .arg(
-                Arg::new("profile-path")
-                    .long("profile")
-                    .help("Sets the profile path")
-                    .num_args(1)
-                    .value_parser(value_parser!(PathBuf)),
-            )
-    }
-
     pub(crate) fn log_type(&self) -> String {
         match &self.log_type {
             None => DEFAULT_LOG_TYPE.into(),
@@ -138,9 +103,6 @@ impl Config {
     }
 
     pub(crate) fn log_filter(&self) -> String {
-        match &self.log_filter {
-            None => "".to_owned(),
-            Some(log_filter) => log_filter.into(),
-        }
+        self.log_filter.clone().unwrap_or_default()
     }
 }

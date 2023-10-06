@@ -4,9 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use clap::{Arg, ArgAction, ArgMatches, Command};
 use kadcast::config::Config;
 use serde::{Deserialize, Serialize};
+
+use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(crate) struct KadcastConfig(Config);
@@ -18,55 +19,15 @@ impl From<KadcastConfig> for Config {
 }
 
 impl KadcastConfig {
-    pub(crate) fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(public_address) =
-            matches.get_one::<String>("kadcast_public_address")
-        {
+    pub(crate) fn merge(&mut self, arg: &Args) {
+        if let Some(public_address) = &arg.kadcast_public_address {
             self.0.public_address = public_address.into();
         };
-        if let Some(listen_address) =
-            matches.get_one::<String>("kadcast_listen_address")
-        {
+        if let Some(listen_address) = &arg.kadcast_listen_address {
             self.0.listen_address = Some(listen_address.into());
         };
-        if let Some(bootstrapping_nodes) =
-            matches.get_many::<String>("kadcast_bootstrap")
-        {
-            self.0.bootstrapping_nodes =
-                bootstrapping_nodes.map(|s| s.into()).collect();
+        if let Some(bootstrapping_nodes) = arg.kadcast_bootstrap.clone() {
+            self.0.bootstrapping_nodes = bootstrapping_nodes
         };
-    }
-
-    pub fn inject_args(command: Command) -> Command {
-        command.arg(
-            Arg::new("kadcast_public_address")
-                .long("kadcast_public_address")
-                .long_help("This is the address where other peer can contact you. 
-    This address MUST be accessible from any peer of the network")
-                .help("Public address you want to be identified with. Eg: 193.xxx.xxx.198:9999")
-                .env("KADCAST_PUBLIC_ADDRESS")
-                .num_args(1)
-        )
-        .arg(
-            Arg::new("kadcast_listen_address")
-                .long("kadcast_listen_address")
-                .long_help("This address is the one bound for the incoming connections. 
-    Use this argument if your host is not publicly reachable from other peer in
-    the network (Eg: if you are behind a NAT)
-    If this is not specified, the public address is used for binding incoming connection")
-                .help("Optional internal address to listen incoming connections. Eg: 127.0.0.1:9999")
-                .env("KADCAST_LISTEN_ADDRESS")
-                .num_args(1)
-
-        )
-        .arg(
-            Arg::new("kadcast_bootstrap")
-                .long("kadcast_bootstrap")
-                .env("KADCAST_BOOTSTRAP")
-                .action(ArgAction::Append)
-                .help("Kadcast list of bootstrapping server addresses")
-                .num_args(1)
-
-        )
     }
 }
