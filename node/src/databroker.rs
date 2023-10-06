@@ -90,15 +90,13 @@ pub struct DataBrokerSrv {
 }
 
 impl DataBrokerSrv {
-    pub fn new(conf: &conf::Params) -> Self {
+    pub fn new(conf: conf::Params) -> Self {
         info!("DataBrokerSrv::new with conf: {}", conf);
-
+        let permits = conf.max_ongoing_requests;
         Self {
-            conf: conf.clone(),
+            conf,
             requests: AsyncQueue::default(),
-            limit_ongoing_requests: Arc::new(Semaphore::new(
-                conf.max_ongoing_requests,
-            )),
+            limit_ongoing_requests: Arc::new(Semaphore::new(permits)),
         }
     }
 }
