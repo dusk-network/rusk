@@ -18,8 +18,7 @@ wasm: ## Build the WASM files
 		cargo build \
 			--release \
 			--color=always \
-			-Z build-std=core,alloc,panic_abort \
-			-Z build-std-features=panic_immediate_abort \
+			-Z build-std=core,alloc \
 			--target wasm32-unknown-unknown
 			
 clippy: ## Run clippy
