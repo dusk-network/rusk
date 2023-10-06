@@ -22,8 +22,8 @@ dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 dusk-plonk = { version = "0.14", default-features = false, features = ["rkyv-impl", "alloc"] }
 
-piecrust-uplink = "0.7"
-piecrust = { version = "0.10", optional = true }
+piecrust-uplink = "0.8.0-rc"
+piecrust = { version = "0.10.1-rc", optional = true }
 
 # These are patches since these crates don't seem to like semver.
 rkyv = { version = "=0.7.39", default-features = false }
