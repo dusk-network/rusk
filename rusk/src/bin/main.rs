@@ -4,19 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(lazy_cell)]
+
+mod args;
 mod config;
 #[cfg(feature = "ephemeral")]
 mod ephemeral;
 mod version;
 
-use clap::{Arg, Command};
+use clap::Parser;
 use node::database::rocksdb;
 use node::database::DB;
 use node::LongLivedService;
 use rusk::http::DataSources;
 use rusk::{Result, Rusk};
-use rustc_tools_util::get_version_info;
-use version::show_version;
 
 use tracing_subscriber::filter::EnvFilter;
 
@@ -34,27 +35,8 @@ use crate::config::Config;
 // `dusk_consensus::config`.
 #[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let crate_info = get_version_info!();
-    let crate_name = &crate_info.crate_name.to_string();
-    let version = show_version(crate_info);
-    let command = Command::new(crate_name)
-        .version(version.as_str())
-        .author("Dusk Network B.V. All Rights Reserved.")
-        .about("Rusk Server node.")
-        .arg(
-            Arg::new("config")
-                .long("config")
-                .short('c')
-                .env("RUSK_CONFIG_TOML")
-                .help("Configuration file path")
-                .takes_value(true)
-                .required(false),
-        );
+    let args = args::Args::parse();
 
-    #[cfg(feature = "ephemeral")]
-    let command = ephemeral::inject_args(command);
-    let command = Config::inject_args(command);
-    let args = command.get_matches();
     let config = Config::from(&args);
 
     let log = config.log_level();
@@ -91,8 +73,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     #[cfg(feature = "ephemeral")]
-    let tempdir = match args.get_one::<std::path::PathBuf>("state_file") {
-        Some(state_zip) => ephemeral::configure(state_zip)?,
+    let tempdir = match args.state_path {
+        Some(state_zip) => ephemeral::configure(&state_zip)?,
         None => None,
     };
 
@@ -111,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let service_list: Vec<Box<Services>> = vec![
         Box::<MempoolSrv>::default(),
         Box::new(ChainSrv::new(config.chain.consensus_keys_path())),
-        Box::new(DataBrokerSrv::new(config.databroker())),
+        Box::new(DataBrokerSrv::new(config.clone().databroker.into())),
     ];
 
     #[cfg(feature = "ephemeral")]

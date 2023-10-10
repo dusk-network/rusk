@@ -7,7 +7,8 @@
 mod task;
 mod version;
 
-use clap::Parser;
+use clap::builder::BoolishValueParser;
+use clap::{ArgAction, Parser};
 use std::path::PathBuf;
 use version::VERSION_BUILD;
 
@@ -19,18 +20,18 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
+        value_parser,
         value_name = "PATH",
         env = "RUSK_PROFILE_PATH"
     )]
     profile: Option<PathBuf>,
 
     /// Keeps untracked keys
-    #[clap(short, long, env = "RUSK_KEEP_KEYS")]
+    #[clap(short, long, value_parser = BoolishValueParser::new(), env = "RUSK_KEEP_KEYS")]
     keep: bool,
 
     /// Sets different levels of verbosity
-    #[clap(short, long, parse(from_occurrences))]
+    #[clap(short, long, action = ArgAction::Count)]
     verbose: usize,
 }
 

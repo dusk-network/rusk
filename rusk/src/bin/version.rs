@@ -7,6 +7,8 @@
 //! Helper functions to get the proper version of the crate to be
 //! displayed.
 
+use std::sync::LazyLock;
+
 use rustc_tools_util::VersionInfo;
 
 #[inline]
@@ -24,3 +26,8 @@ pub(crate) fn show_version(info: VersionInfo) -> String {
         version
     }
 }
+
+pub static VERSION_BUILD: LazyLock<String> = LazyLock::new(|| {
+    let info = rustc_tools_util::get_version_info!();
+    show_version(info)
+});

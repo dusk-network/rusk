@@ -7,6 +7,7 @@
 mod task;
 mod version;
 
+use clap::builder::{ArgAction, BoolishValueParser};
 use clap::Parser;
 use rusk_recovery_tools::Theme;
 use std::error::Error;
@@ -25,27 +26,27 @@ struct Cli {
     #[clap(
         short,
         long,
-        parse(from_os_str),
+        value_parser,
         value_name = "PATH",
         env = "RUSK_PROFILE_PATH"
     )]
     profile: Option<PathBuf>,
 
     /// Forces a build/download even if the state is in the profile path.
-    #[clap(short = 'f', long, env = "RUSK_FORCE_STATE")]
+    #[clap(short = 'f', value_parser = BoolishValueParser::new(), long, env = "RUSK_FORCE_STATE")]
     force: bool,
 
     /// Create a state applying the init config specified in this file.
-    #[clap(short, long, parse(from_os_str), env = "RUSK_RECOVERY_INPUT")]
+    #[clap(short, long, value_parser, env = "RUSK_RECOVERY_INPUT")]
     init: Option<PathBuf>,
 
     /// Sets different levels of verbosity
-    #[clap(short, long, parse(from_occurrences))]
+    #[clap(short, long, action = ArgAction::Count)]
     verbose: usize,
 
     /// If specified, the generated state is written on this file instead of
     /// save the state in the profile path.
-    #[clap(short, long, parse(from_os_str), takes_value(true))]
+    #[clap(short, long, value_parser, num_args(1))]
     output: Option<PathBuf>,
 }
 

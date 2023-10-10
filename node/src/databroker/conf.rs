@@ -6,7 +6,6 @@
 
 use std::fmt::Formatter;
 
-use clap::{Arg, ArgMatches, Command};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -29,41 +28,12 @@ impl Default for Params {
     }
 }
 
-impl std::fmt::Display for &Params {
+impl std::fmt::Display for Params {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "max_inv_entries: {}, max_ongoing_requests: {}",
             self.max_inv_entries, self.max_ongoing_requests,
-        )
-    }
-}
-
-impl Params {
-    pub fn merge(&mut self, matches: &ArgMatches) {
-        if let Some(delay_on_resp_msg) = matches.value_of("delay_on_resp_msg") {
-            match delay_on_resp_msg.parse() {
-                Ok(delay_on_resp_msg) => {
-                    self.delay_on_resp_msg = Some(delay_on_resp_msg);
-                }
-                Err(e) => {
-                    tracing::error!(
-                        "Failed to parse delay_on_resp_msg: {:?}",
-                        e
-                    );
-                }
-            }
-        };
-    }
-
-    pub fn inject_args(command: Command<'_>) -> Command<'_> {
-        command.arg(
-            Arg::new("delay_on_resp_msg")
-                .long("delay_on_resp_msg")
-                .help("Delay in milliseconds to mitigate UDP drops for DataBroker service in localnet")
-                .env("DELAY_ON_RESP_MSG")
-                .takes_value(true)
-                .required(false),
         )
     }
 }
