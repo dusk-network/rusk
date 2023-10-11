@@ -198,6 +198,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Reset Consensus
         task.abort_with_wait().await;
 
+        let start = std::time::Instant::now();
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -252,6 +253,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let fsv_bitset = blk.header().cert.first_reduction.bitset;
         let ssv_bitset = blk.header().cert.second_reduction.bitset;
 
+        let duration = start.elapsed();
         info!(
             event = "block accepted",
             height = blk.header().height,
@@ -262,6 +264,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             fsv_bitset,
             ssv_bitset,
             block_time,
+            dur = format!("{:?}ms", duration.as_millis()),
         );
 
         // Restart Consensus.
