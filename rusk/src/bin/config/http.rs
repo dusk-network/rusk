@@ -8,11 +8,24 @@ use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct HttpConfig {
-    #[serde(default = "bool::default")]
+    #[serde(default = "default_listen")]
     pub listen: bool,
     listen_address: Option<String>,
+}
+
+impl Default for HttpConfig {
+    fn default() -> Self {
+        Self {
+            listen: default_listen(),
+            listen_address: None,
+        }
+    }
+}
+
+const fn default_listen() -> bool {
+    true
 }
 
 impl HttpConfig {
