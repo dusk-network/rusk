@@ -75,9 +75,6 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         mut ctx: ExecutionCtx<'_, DB, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
-        self.handler.lock().await.committees[ctx.step as usize] =
-            committee.clone();
-
         if committee.am_member() {
             //  Send reduction in async way
             if let Some(b) = &self.candidate {

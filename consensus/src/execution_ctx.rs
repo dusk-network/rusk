@@ -22,6 +22,7 @@ use node_data::ledger::Block;
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
 use std::cmp;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -47,6 +48,10 @@ pub struct IterationCtx<DB: Database> {
 
     round: u64,
     iter: u8,
+
+    // Stores any committee already generated in the execution of any iteration
+    // of current round
+    committees: HashMap<u8, Committee>,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -65,6 +70,7 @@ impl<D: Database> IterationCtx<D> {
             selection_handler,
             first_reduction_handler,
             sec_reduction_handler,
+            committees: Default::default(),
         }
     }
 
@@ -73,54 +79,29 @@ impl<D: Database> IterationCtx<D> {
         ru: &RoundUpdate,
         msg: &Message,
     ) -> Option<Message> {
-        // TODO: call verify() and then re-publish
-
+        let committee = self.committees.get(&msg.header.step)?;
         match msg.topic() {
             node_data::message::Topics::NewBlock => {
                 let mut handler = self.selection_handler.lock().await;
-
                 _ = handler
-                    .collect(
-                        msg.clone(),
-                        ru,
-                        msg.header.step,
-                        &Committee::default(),
-                    )
+                    .collect(msg.clone(), ru, msg.header.step, committee)
                     .await;
             }
             node_data::message::Topics::FirstReduction => {
                 let mut handler = self.first_reduction_handler.lock().await;
-
                 if let Ok(FinalResult(m)) = handler
-                    .collect(
-                        msg.clone(),
-                        ru,
-                        msg.header.step,
-                        &Committee::default(),
-                    )
+                    .collect(msg.clone(), ru, msg.header.step, committee)
                     .await
                 {
-                    // Fully valid state reached on this step. Return it
-                    // as an output to
-                    // populate next step with it.
                     return Some(m);
                 }
             }
             node_data::message::Topics::SecondReduction => {
                 let mut handler = self.sec_reduction_handler.lock().await;
-
                 if let Ok(FinalResult(m)) = handler
-                    .collect(
-                        msg.clone(),
-                        ru,
-                        msg.header.step,
-                        &Committee::default(),
-                    )
+                    .collect(msg.clone(), ru, msg.header.step, committee)
                     .await
                 {
-                    // Fully valid state reached on this step. Return it
-                    // as an output to
-                    // populate next step with it.
                     return Some(m);
                 }
             }
@@ -128,6 +109,10 @@ impl<D: Database> IterationCtx<D> {
         };
 
         None
+    }
+
+    pub(crate) fn get_committee(&mut self, step: u8) -> Option<&Committee> {
+        self.committees.get(&step)
     }
 }
 
@@ -186,6 +171,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             step,
             executor,
         }
+    }
+
+    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
+        self.iter_ctx.committees.insert(step, committee);
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -247,51 +236,21 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         step: u8,
         candidate: &Block,
-    ) {
+    ) -> Option<()> {
         debug!(
             event = "former candidate received",
             hash = node_data::ledger::to_str(&candidate.header().hash),
             step,
         );
 
-        let first_red_step_num = step as usize + 1;
-        if self
-            .iter_ctx
-            .first_reduction_handler
-            .lock()
-            .await
-            .committees[first_red_step_num]
-            .am_member()
-        {
-            debug!(
-                event = "vote for former candidate in 1st_red",
-                hash = node_data::ledger::to_str(&candidate.header().hash),
-                step,
-            );
+        // TODO: Perform sanity-check
 
-            spawn_send_reduction(
-                &mut self.iter_ctx.join_set, /* TODO: this should not be
-                                              * aborted
-                                              * on iteration end */
-                Arc::new(Mutex::new([0u8; 32])),
-                candidate.clone(),
-                self.round_update.pubkey_bls.clone(),
-                self.round_update.clone(),
-                first_red_step_num as u8,
-                self.outbound.clone(),
-                self.inbound.clone(),
-                self.executor.clone(),
-                Topics::FirstReduction,
-            );
-        }
+        // TODO: Err instead of unwrap
 
-        let sec_reduction_step_num = step as usize + 2;
-        if self.iter_ctx.sec_reduction_handler.lock().await.committees
-            [sec_reduction_step_num]
-            .am_member()
-        {
+        if self.iter_ctx.get_committee(step + 1).unwrap().am_member() {
             debug!(
-                event = "vote for former candidate in 2nd_red",
+                event = "vote for former candidate",
+                step_name = "1st_reduction",
                 hash = node_data::ledger::to_str(&candidate.header().hash),
                 step,
             );
@@ -302,13 +261,37 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 candidate.clone(),
                 self.round_update.pubkey_bls.clone(),
                 self.round_update.clone(),
-                sec_reduction_step_num as u8,
+                step + 1,
+                self.outbound.clone(),
+                self.inbound.clone(),
+                self.executor.clone(),
+                Topics::FirstReduction,
+            );
+        }
+
+        if self.iter_ctx.get_committee(step + 2).unwrap().am_member() {
+            debug!(
+                event = "vote for former candidate",
+                step_name = "2nd_reduction",
+                hash = node_data::ledger::to_str(&candidate.header().hash),
+                step,
+            );
+
+            spawn_send_reduction(
+                &mut self.iter_ctx.join_set,
+                Arc::new(Mutex::new([0u8; 32])),
+                candidate.clone(),
+                self.round_update.pubkey_bls.clone(),
+                self.round_update.clone(),
+                step + 2,
                 self.outbound.clone(),
                 self.inbound.clone(),
                 self.executor.clone(),
                 Topics::SecondReduction,
             );
-        }
+        };
+
+        Some(())
     }
 
     /// Process messages from past
@@ -323,6 +306,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             error!("could not send msg due to {:?}", e);
         }
 
+        // Try to vote for candidate block from former iteration
         if let Payload::NewBlock(p) = &msg.payload {
             self.vote_for_former_candidate(msg.header.step, &p.candidate)
                 .await;

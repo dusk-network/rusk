@@ -259,7 +259,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .await?;
 
                     // During execution of any step we may encounter that an
-                    // agreement is generated for previous iteration.
+                    // agreement is generated for a former iteration.
                     if msg.topic() == Topics::Agreement {
                         break;
                     }

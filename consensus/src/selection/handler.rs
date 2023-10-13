@@ -18,7 +18,6 @@ use tokio::sync::Mutex;
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
     pub(crate) _round_ctx: SafeRoundCtx,
-    pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
 }
 
 #[async_trait]
@@ -71,7 +70,6 @@ impl<D: Database> Selection<D> {
     pub(crate) fn new(db: Arc<Mutex<D>>, round_ctx: SafeRoundCtx) -> Self {
         Self {
             db,
-            committees: vec![Committee::default(); 213],
             _round_ctx: round_ctx,
         }
     }

@@ -24,7 +24,6 @@ pub struct Reduction<T, DB: Database> {
     handler: Arc<Mutex<handler::Reduction<DB>>>,
     executor: Arc<Mutex<T>>,
 }
-
 impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
@@ -62,9 +61,6 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         mut ctx: ExecutionCtx<'_, DB, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
-        self.handler.lock().await.committees[ctx.step as usize] =
-            committee.clone();
-
         if committee.am_member() {
             let candidate = self.handler.lock().await.candidate.clone();
             // Send reduction async

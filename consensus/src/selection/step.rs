@@ -59,9 +59,6 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
         mut ctx: ExecutionCtx<'_, D, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
-        self.handler.lock().await.committees[ctx.step as usize] =
-            committee.clone();
-
         if committee.am_member() {
             if let Ok(msg) = self
                 .bg

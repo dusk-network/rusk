@@ -49,8 +49,6 @@ fn final_result_with_timeout(
 pub struct Reduction<DB: Database> {
     round_ctx: SafeRoundCtx,
 
-    pub(crate) committees: Vec<Committee>,
-
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
@@ -64,7 +62,6 @@ impl<DB: Database> Reduction<DB> {
             db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
-            committees: vec![Committee::default(); 213], // TODO:
             curr_step: 0,
         }
     }
@@ -104,7 +101,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         msg: Message,
         _ru: &RoundUpdate,
         step: u8,
-        _committee: &Committee,
+        committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signature),
@@ -113,11 +110,9 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv)) = self.aggr.collect_vote(
-            &self.committees[step as usize],
-            &msg.header,
-            &signature,
-        ) {
+        if let Some((hash, sv)) =
+            self.aggr.collect_vote(committee, &msg.header, &signature)
+        {
             // Record result in global round registry of all non-Nil step_votes
             if hash != [0u8; 32] {
                 if let Some(m) = self

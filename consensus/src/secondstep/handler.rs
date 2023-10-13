@@ -18,10 +18,7 @@ use node_data::message::{payload, Message, Payload, Topics};
 use crate::user::committee::Committee;
 
 pub struct Reduction {
-    pub(crate) round_ctx: SafeRoundCtx, /*TODO:  SafeRoundCtx and
-                                         * committees in a
-                                         * shared state */
-    pub(crate) committees: Vec<Committee>, /* TODO: Reduce size */
+    pub(crate) round_ctx: SafeRoundCtx,
 
     pub(crate) aggregator: Aggregator,
     pub(crate) first_step_votes: StepVotes,
@@ -57,7 +54,7 @@ impl MsgHandler<Message> for Reduction {
         msg: Message,
         ru: &RoundUpdate,
         step: u8,
-        _committee: &Committee,
+        committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signature),
@@ -66,12 +63,9 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is of reduction type
-        if let Some((block_hash, second_step_votes)) =
-            self.aggregator.collect_vote(
-                &self.committees[step as usize],
-                &msg.header,
-                &signed_hash,
-            )
+        if let Some((block_hash, second_step_votes)) = self
+            .aggregator
+            .collect_vote(committee, &msg.header, &signed_hash)
         {
             if block_hash != [0u8; 32] {
                 // Record result in global round results registry
@@ -116,7 +110,6 @@ impl Reduction {
             round_ctx,
             aggregator: Default::default(),
             first_step_votes: Default::default(),
-            committees: vec![Committee::default(); 213], // TODO:
             curr_step: 0,
         }
     }

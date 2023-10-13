@@ -55,7 +55,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub async fn run(
         &mut self,
-        ctx: ExecutionCtx<'_, D, T>,
+        mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "execute_step", timeout = self.get_timeout());
 
@@ -76,6 +76,8 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
             event = "committee_generated",
             members = format!("{}", &step_committee)
         );
+
+        ctx.save_committee(ctx.step, step_committee.clone());
 
         await_phase!(self, run(ctx, step_committee))
     }
