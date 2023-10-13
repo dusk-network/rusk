@@ -8,6 +8,6 @@ resolver = "2"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-phoenix-core = { version = "0.20.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
-rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../../rusk-abi", features = ["dlmalloc"] }
-dusk-pki = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+phoenix-core = { version = "0.21", default-features = false, features = ["rkyv-impl", "alloc"] }
+rusk-abi = { version = "0.11", path = "../../rusk-abi", features = ["dlmalloc"] }
+dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
