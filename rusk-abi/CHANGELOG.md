@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update `dusk-bls12_381` from `0.11` to `0.12`
+- Update `dusk-bls12_381-sign` from `0.4` to `0.15`
+- Update `dusk-jubjub` from `0.12` to `0.13`
+- Update `dusk-poseidon` from `0.30` to `0.31`
+- Update `dusk-pki` from `0.12` to `0.13`
+- Update `dusk-plonk` from `0.14` to `0.16`
+
+### Added
+
+- Add `ff` dev-dependency `0.13`
+
+### Changed
+
 - Update `piecrust` from `0.8.0-rc` to `0.10`
 - Update `piecrust` from `0.7` to `0.8.0-rc`
 - Update `piecrust` from `0.6` to `0.7`
