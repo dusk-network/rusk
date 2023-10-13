@@ -167,7 +167,7 @@ fn license_issue_get_merkle() {
         .to_vec();
 
     let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-    let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
+    let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
 
     session
         .call::<(Vec<u8>, BlsScalar), ()>(
@@ -245,7 +245,7 @@ fn multiple_licenses_issue_get_merkle() {
             .to_vec();
 
         let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-        let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
+        let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
         session
             .call::<(Vec<u8>, BlsScalar), ()>(
                 LICENSE_CONTRACT_ID,
@@ -347,7 +347,7 @@ fn use_license_get_session() {
         .to_vec();
 
     let lpk = JubJubAffine::from(license.lsa.pk_r().as_ref());
-    let license_hash = sponge::hash(&[lpk.get_x(), lpk.get_y()]);
+    let license_hash = sponge::hash(&[lpk.get_u(), lpk.get_v()]);
 
     session
         .call::<(Vec<u8>, BlsScalar), ()>(
