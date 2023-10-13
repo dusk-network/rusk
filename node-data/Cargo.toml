@@ -4,15 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-phoenix-core = { version = "0.20.0-rc.0", features = ["alloc"] }
+phoenix-core = { version = "0.21", features = ["alloc"] }
 dusk-bytes = "^0.1"
 bytes = "0.6"
 sha3 = { version = "0.10" }
 fake = { version = "2.5", features = ['derive'], optional = true }
 rand = { version = "0.8", optional = true }
 hex = { version = "0.4", optional = true }
-dusk-bls12_381-sign = { version = "0.4", default-features = false }
-rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false }
+dusk-bls12_381-sign = { version = "0.5", default-features = false }
+rusk-abi = { version = "0.11", path = "../rusk-abi", default-features = false }
 
 rand_core = { version = "0.6", default-features = false }
 blake3 = "1.3"
