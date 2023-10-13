@@ -38,7 +38,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./rusk/ $@
 			
-clippy: ## Run clippy$(MAKE) -C ./rusk-abi/ $@
+clippy: ## Run clippy
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) -j1 -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
