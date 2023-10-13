@@ -79,6 +79,7 @@ tempfile = { version = "3.2", optional = true }
 test-context = "0.1"
 reqwest = "0.11"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
+ff = { version = "0.13", default-features = false }
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
