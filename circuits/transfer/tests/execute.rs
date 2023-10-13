@@ -13,6 +13,7 @@ use transfer_circuits::{
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
 };
 
+use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rand_core::{CryptoRng, RngCore};
@@ -147,18 +148,18 @@ pub fn create_test_circuit<const I: usize>(
 
 #[test]
 fn execute_1_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitOneTwo =
-            create_test_circuit::<1>(rng, *use_crossover, tx_hash)
+            create_test_circuit::<1>(&mut rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
         let (prover, verifier) = load_keys("ExecuteCircuitOneTwo")
             .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
-            .prove(rng, &circuit)
+            .prove(&mut rng, &circuit)
             .expect("creating a proof should succeed");
 
         verifier
@@ -169,18 +170,18 @@ fn execute_1_2() {
 
 #[test]
 fn execute_2_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitTwoTwo =
-            create_test_circuit::<2>(rng, *use_crossover, tx_hash)
+            create_test_circuit::<2>(&mut rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
         let (prover, verifier) = load_keys("ExecuteCircuitTwoTwo")
             .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
-            .prove(rng, &circuit)
+            .prove(&mut rng, &circuit)
             .expect("creating a proof should succeed");
 
         verifier
@@ -191,18 +192,18 @@ fn execute_2_2() {
 
 #[test]
 fn execute_3_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitThreeTwo =
-            create_test_circuit::<3>(rng, *use_crossover, tx_hash)
+            create_test_circuit::<3>(&mut rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
         let (prover, verifier) = load_keys("ExecuteCircuitThreeTwo")
             .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
-            .prove(rng, &circuit)
+            .prove(&mut rng, &circuit)
             .expect("creating a proof should succeed");
 
         verifier
@@ -213,18 +214,18 @@ fn execute_3_2() {
 
 #[test]
 fn execute_4_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitFourTwo =
-            create_test_circuit::<4>(rng, *use_crossover, tx_hash)
+            create_test_circuit::<4>(&mut rng, *use_crossover, tx_hash)
                 .expect("test circuit creation should pass");
         let (prover, verifier) = load_keys("ExecuteCircuitFourTwo")
             .expect("loading the keys should succeed");
 
         let (proof, pi) = prover
-            .prove(rng, &circuit)
+            .prove(&mut rng, &circuit)
             .expect("creating a proof should succeed");
 
         verifier

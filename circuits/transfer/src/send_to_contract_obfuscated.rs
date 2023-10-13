@@ -264,7 +264,6 @@ impl Circuit for SendToContractObfuscatedCircuit {
             crossover_commitment,
             value,
             crossover_blinder,
-            64,
         )?;
 
         // 2. commitment(Mc,Mv,Mb,64)
@@ -273,7 +272,6 @@ impl Circuit for SendToContractObfuscatedCircuit {
             message_commitment,
             value,
             message_blinder,
-            64,
         )?;
 
         // 3. (pa,pb) := selectPair(Mx,I,Mp,Ms)
