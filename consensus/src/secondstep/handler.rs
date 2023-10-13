@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::round_ctx::SafeRoundCtx;
+use crate::step_votes_reg::{SafeStepVotesRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
@@ -18,7 +18,7 @@ use node_data::message::{payload, Message, Payload, Topics};
 use crate::user::committee::Committee;
 
 pub struct Reduction {
-    pub(crate) round_ctx: SafeRoundCtx,
+    pub(crate) sv_registry: SafeStepVotesRegistry,
 
     pub(crate) aggregator: Aggregator,
     pub(crate) first_step_votes: StepVotes,
@@ -69,11 +69,11 @@ impl MsgHandler<Message> for Reduction {
         {
             if block_hash != [0u8; 32] {
                 // Record result in global round results registry
-                if let Some(m) = self.round_ctx.lock().await.add_step_votes(
+                if let Some(m) = self.sv_registry.lock().await.add_step_votes(
                     step,
                     block_hash,
                     second_step_votes,
-                    false,
+                    SvType::SecondReduction,
                 ) {
                     return Ok(HandleMsgOutput::FinalResult(m));
                 }
@@ -105,9 +105,9 @@ impl MsgHandler<Message> for Reduction {
 }
 
 impl Reduction {
-    pub(crate) fn new(round_ctx: SafeRoundCtx) -> Self {
+    pub(crate) fn new(sv_registry: SafeStepVotesRegistry) -> Self {
         Self {
-            round_ctx,
+            sv_registry,
             aggregator: Default::default(),
             first_step_votes: Default::default(),
             curr_step: 0,

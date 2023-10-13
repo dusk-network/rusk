@@ -49,8 +49,8 @@ pub struct IterationCtx<DB: Database> {
     round: u64,
     iter: u8,
 
-    // Stores any committee already generated in the execution of any iteration
-    // of current round
+    /// Stores any committee already generated in the execution of any
+    /// iteration of current round
     committees: HashMap<u8, Committee>,
 }
 
@@ -114,10 +114,12 @@ impl<D: Database> IterationCtx<D> {
     pub(crate) fn get_committee(&mut self, step: u8) -> Option<&Committee> {
         self.committees.get(&step)
     }
-}
 
-impl<DB: Database> Drop for IterationCtx<DB> {
-    fn drop(&mut self) {
+    pub(crate) fn on_iteration_begin(&mut self, iter: u8) {
+        self.iter = iter;
+    }
+
+    pub(crate) fn on_iteration_end(&mut self) {
         debug!(
             event = "iter completed",
             len = self.join_set.len(),
@@ -125,6 +127,12 @@ impl<DB: Database> Drop for IterationCtx<DB> {
             iter = self.iter,
         );
         self.join_set.abort_all();
+    }
+}
+
+impl<DB: Database> Drop for IterationCtx<DB> {
+    fn drop(&mut self) {
+        self.on_iteration_end();
     }
 }
 

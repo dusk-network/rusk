@@ -9,7 +9,7 @@ use std::sync::Arc;
 use crate::aggregator::Aggregator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::round_ctx::SafeRoundCtx;
+use crate::step_votes_reg::{SafeStepVotesRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
@@ -47,7 +47,7 @@ fn final_result_with_timeout(
 }
 
 pub struct Reduction<DB: Database> {
-    round_ctx: SafeRoundCtx,
+    sv_registry: SafeStepVotesRegistry,
 
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
@@ -56,9 +56,12 @@ pub struct Reduction<DB: Database> {
 }
 
 impl<DB: Database> Reduction<DB> {
-    pub(crate) fn new(db: Arc<Mutex<DB>>, round_ctx: SafeRoundCtx) -> Self {
+    pub(crate) fn new(
+        db: Arc<Mutex<DB>>,
+        sv_registry: SafeStepVotesRegistry,
+    ) -> Self {
         Self {
-            round_ctx,
+            sv_registry,
             db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
@@ -115,12 +118,12 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         {
             // Record result in global round registry of all non-Nil step_votes
             if hash != [0u8; 32] {
-                if let Some(m) = self
-                    .round_ctx
-                    .lock()
-                    .await
-                    .add_step_votes(step, hash, sv, true)
-                {
+                if let Some(m) = self.sv_registry.lock().await.add_step_votes(
+                    step,
+                    hash,
+                    sv,
+                    SvType::FirstReduction,
+                ) {
                     return Ok(HandleMsgOutput::FinalResult(m));
                 }
 
