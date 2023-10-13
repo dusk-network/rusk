@@ -29,7 +29,7 @@ dusk-bytes = "^0.1"
 node-data = { version = "0.1", path = "../node-data" }
 rustc_tools_util = "=0.2.0"
 blake2 = "0.10.5"
-dusk-bls12_381-sign = { version = "0.4", default-features = false }
+dusk-bls12_381-sign = { version = "0.5", default-features = false }
 console-subscriber = { version = "0.1.8", optional = true }
 smallvec = "1.10.0"
 
