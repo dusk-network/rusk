@@ -20,7 +20,7 @@ use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
-use crate::round_ctx::RoundCtx;
+use crate::step_votes_reg::StepVotesRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -167,22 +167,23 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 future_msgs.lock().await.clear_round(ru.round - 1);
             }
 
-            let round_ctx = Arc::new(Mutex::new(RoundCtx::new(ru.clone())));
+            let sv_registry =
+                Arc::new(Mutex::new(StepVotesRegistry::new(ru.clone())));
 
             let sel_handler =
                 Arc::new(Mutex::new(selection::handler::Selection::new(
                     db.clone(),
-                    round_ctx.clone(),
+                    sv_registry.clone(),
                 )));
 
             let first_handler =
                 Arc::new(Mutex::new(firststep::handler::Reduction::new(
                     db.clone(),
-                    round_ctx.clone(),
+                    sv_registry.clone(),
                 )));
 
             let sec_handler = Arc::new(Mutex::new(
-                secondstep::handler::Reduction::new(round_ctx.clone()),
+                secondstep::handler::Reduction::new(sv_registry.clone()),
             ));
 
             let mut phases = [
@@ -205,25 +206,25 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // Consensus loop
             // Initialize and run consensus loop
 
-            let mut iter: u8 = 0;
+            let mut iter_num: u8 = 0;
+            let mut iter_ctx = IterationCtx::new(
+                ru.round,
+                iter_num,
+                sel_handler.clone(),
+                first_handler.clone(),
+                sec_handler.clone(),
+            );
 
             loop {
-                iter += 1;
+                iter_num += 1;
+                iter_ctx.on_iteration_begin(iter_num);
 
                 let mut msg = Message::empty();
-                let mut iter_ctx = IterationCtx::new(
-                    ru.round,
-                    iter,
-                    sel_handler.clone(),
-                    first_handler.clone(),
-                    sec_handler.clone(),
-                );
-
                 // Execute a single iteration
                 for pos in 0..phases.len() {
                     let phase = phases.get_mut(pos).unwrap();
 
-                    let step = (iter - 1) * 3 + (pos as u8 + 1);
+                    let step = (iter_num - 1) * 3 + (pos as u8 + 1);
                     let name = phase.name();
 
                     // Initialize new phase with message returned by previous
@@ -268,6 +269,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         return Err(ConsensusError::MaxStepReached);
                     }
                 }
+
+                iter_ctx.on_iteration_end();
 
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
