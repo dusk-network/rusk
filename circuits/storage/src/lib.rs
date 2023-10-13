@@ -5,47 +5,16 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use cargo_toml::{Dependency, Manifest};
-use dusk_plonk::prelude::{Circuit, Compiler, PublicParameters};
-use once_cell::sync::Lazy;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
+use dusk_plonk::prelude::{Circuit, Compiler};
 use rusk_profile::{Circuit as CircuitProfile, Theme};
 use std::io::{self, ErrorKind};
-use tracing::{info, warn};
+use tracing::info;
 use tracing_subscriber::prelude::*;
-
-pub static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
-    match rusk_profile::get_common_reference_string() {
-        Ok(buff) if rusk_profile::verify_common_reference_string(&buff) => unsafe {
-            PublicParameters::from_slice_unchecked(&buff[..])
-        },
-
-        _ => {
-            warn!(
-                "{}   CRS due to cache miss",
-                Theme::default().warn("Building"),
-            );
-            let mut rng = StdRng::seed_from_u64(0xbeef);
-
-            let pp = PublicParameters::setup(1 << 17, &mut rng)
-                .expect("Cannot initialize Public Parameters");
-
-            rusk_profile::set_common_reference_string(pp.to_raw_var_bytes())
-                .expect("Unable to write the CRS");
-
-            pp
-        }
-    }
-});
 
 pub fn store_circuit<C>(name: Option<String>) -> io::Result<()>
 where
     C: Circuit,
 {
-    // This force init is needed to check CRS and create it (if not available)
-    // See also: https://github.com/dusk-network/rusk/issues/767
-    Lazy::force(&PUB_PARAMS);
-
     // enable tracing logs
     let fmt_layer = tracing_subscriber::fmt::layer()
         .without_time()
@@ -69,7 +38,7 @@ where
     };
 
     // compress circuit and prepare for storage
-    let compressed = Compiler::compress::<C>(&PUB_PARAMS).map_err(|e| {
+    let compressed = Compiler::compress::<C>().map_err(|e| {
         io::Error::new(
             ErrorKind::InvalidData,
             format!("Plonk circuit couldn't be compressed: {e}"),
