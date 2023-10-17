@@ -29,5 +29,8 @@ impl KadcastConfig {
         if let Some(bootstrapping_nodes) = arg.kadcast_bootstrap.clone() {
             self.0.bootstrapping_nodes = bootstrapping_nodes
         };
+        if let Some(network_id) = arg.kadcast_network_id {
+            self.0.kadcast_id = Some(network_id)
+        };
     }
 }
