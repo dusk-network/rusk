@@ -81,4 +81,8 @@ pub struct Args {
     /// If this is not specified, the public address is used for binding
     /// incoming connection
     pub kadcast_listen_address: Option<String>,
+
+    #[clap(short = 'n', long = "network-id")]
+    /// Kadcast network id
+    pub kadcast_network_id: Option<u8>,
 }
