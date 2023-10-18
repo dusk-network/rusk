@@ -26,9 +26,9 @@ use license_types::*;
 use license_circuits::LicenseCircuit;
 
 use rusk_abi::{ContractData, ContractId, Session};
-use zk_citadel::license::{
-    CitadelProverParameters, License, Request, SessionCookie,
-};
+use rusk_profile::get_common_reference_string;
+use zk_citadel::license::{License, Request};
+use zk_citadel::utils::CitadelUtils;
 
 const LICENSE_CONTRACT_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -41,7 +41,6 @@ const TEST_OWNER: [u8; 32] = [0; 32];
 const USER_ATTRIBUTES: u64 = 545072475273;
 
 static LABEL: &[u8] = b"dusk-network";
-const CAPACITY: usize = 17; // capacity required for the setup
 const DEPTH: usize = 17; // depth of the Merkle tree
 const ARITY: usize = 4; // arity of the Merkle tree
 
@@ -101,29 +100,6 @@ fn find_owned_license(
         }
     }
     None
-}
-
-/// Computes prover parameters and a session cookie
-/// This function should be moved to CitadelUtils
-fn compute_citadel_parameters(
-    rng: &mut StdRng,
-    ssk: SecretSpendKey,
-    psk_lp: PublicSpendKey,
-    lic: &License,
-    merkle_proof: Opening<(), DEPTH, ARITY>,
-) -> (CitadelProverParameters<DEPTH, ARITY>, SessionCookie) {
-    const CHALLENGE: u64 = 20221126u64;
-    let c = JubJubScalar::from(CHALLENGE);
-    let (cpp, sc) = CitadelProverParameters::compute_parameters(
-        &ssk,
-        &lic,
-        &psk_lp,
-        &psk_lp,
-        &c,
-        rng,
-        merkle_proof,
-    );
-    (cpp, sc)
 }
 
 /// Creates the Citadel request object
@@ -326,7 +302,8 @@ fn use_license_get_session() {
     // PUB_PARAMS initialization code
     let rng = &mut StdRng::seed_from_u64(0xbeef);
 
-    let pp = PublicParameters::setup(1 << CAPACITY, rng).unwrap();
+    let crs = get_common_reference_string().expect("getting CRS file works");
+    let pp = unsafe { PublicParameters::from_slice_unchecked(crs.as_slice()) };
 
     let (prover, verifier) = Compiler::compile::<LicenseCircuit>(&pp, LABEL)
         .expect("Compiling circuit should succeed");
@@ -397,7 +374,7 @@ fn use_license_get_session() {
         .expect("Querying the merkle opening should succeed")
         .data;
 
-    let (cpp, sc) = compute_citadel_parameters(
+    let (cpp, sc) = CitadelUtils::compute_citadel_parameters(
         rng,
         ssk_user,
         psk_lp,
