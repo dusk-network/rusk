@@ -7,8 +7,10 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
+
 use node_data::ledger::{to_str, Block};
-use node_data::message::{AsyncQueue, Message, Payload};
+
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 
 use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
@@ -18,6 +20,7 @@ use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
+use crate::step_votes_reg::StepVotesRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -164,34 +167,69 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 future_msgs.lock().await.clear_round(ru.round - 1);
             }
 
+            let sv_registry =
+                Arc::new(Mutex::new(StepVotesRegistry::new(ru.clone())));
+
+            let sel_handler =
+                Arc::new(Mutex::new(selection::handler::Selection::new(
+                    db.clone(),
+                    sv_registry.clone(),
+                )));
+
+            let first_handler =
+                Arc::new(Mutex::new(firststep::handler::Reduction::new(
+                    db.clone(),
+                    sv_registry.clone(),
+                )));
+
+            let sec_handler = Arc::new(Mutex::new(
+                secondstep::handler::Reduction::new(sv_registry.clone()),
+            ));
+
             let mut phases = [
                 Phase::Selection(selection::step::Selection::new(
                     executor.clone(),
                     db.clone(),
+                    sel_handler.clone(),
                 )),
                 Phase::Reduction1(firststep::step::Reduction::new(
                     executor.clone(),
                     db.clone(),
+                    first_handler.clone(),
                 )),
-                Phase::Reduction2(secondstep::step::Reduction::new(executor)),
+                Phase::Reduction2(secondstep::step::Reduction::new(
+                    executor.clone(),
+                    sec_handler.clone(),
+                )),
             ];
 
             // Consensus loop
             // Initialize and run consensus loop
-            let mut step: u8 = 0;
+
+            let mut iter_num: u8 = 0;
+            let mut iter_ctx = IterationCtx::new(
+                ru.round,
+                iter_num,
+                sel_handler.clone(),
+                first_handler.clone(),
+                sec_handler.clone(),
+            );
 
             loop {
-                let mut msg = Message::empty();
-                let mut iter_ctx = IterationCtx::new(ru.round, step + 1);
+                iter_num += 1;
+                iter_ctx.on_iteration_begin(iter_num);
 
+                let mut msg = Message::empty();
                 // Execute a single iteration
-                for phase in phases.iter_mut() {
-                    step += 1;
+                for pos in 0..phases.len() {
+                    let phase = phases.get_mut(pos).unwrap();
+
+                    let step = (iter_num - 1) * 3 + (pos as u8 + 1);
                     let name = phase.name();
 
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.reinitialize(&msg, ru.round, step);
+                    phase.reinitialize(&msg, ru.round, step).await;
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
@@ -202,6 +240,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         &mut provisioners,
                         ru.clone(),
                         step,
+                        executor.clone(),
                     );
 
                     // Execute a phase.
@@ -220,10 +259,18 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         ))
                         .await?;
 
+                    // During execution of any step we may encounter that an
+                    // agreement is generated for a former iteration.
+                    if msg.topic() == Topics::Agreement {
+                        break;
+                    }
+
                     if step >= config::CONSENSUS_MAX_STEP {
                         return Err(ConsensusError::MaxStepReached);
                     }
                 }
+
+                iter_ctx.on_iteration_end();
 
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
