@@ -43,7 +43,8 @@ use self::fsm::SimpleFSM;
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
     Topics::NewBlock as u8,
-    Topics::Reduction as u8,
+    Topics::FirstReduction as u8,
+    Topics::SecondReduction as u8,
     Topics::AggrAgreement as u8,
     Topics::Agreement as u8,
 ];

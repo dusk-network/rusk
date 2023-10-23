@@ -31,6 +31,7 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
+use dusk_consensus::config;
 use std::any;
 
 use super::consensus::Task;
@@ -454,6 +455,7 @@ async fn verify_block_cert(
         curr_seed,
         &hdr,
         0,
+        config::FIRST_REDUCTION_COMMITTEE_SIZE,
     )
     .await
     {
@@ -467,6 +469,7 @@ async fn verify_block_cert(
         curr_seed,
         &hdr,
         1,
+        config::SECOND_REDUCTION_COMMITTEE_SIZE,
     )
     .await
     {
