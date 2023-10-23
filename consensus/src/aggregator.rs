@@ -18,7 +18,9 @@ use tracing::{debug, error, warn};
 /// voters.StepVotes Mapping of a block hash to both an aggregated signatures
 /// and a cluster of bls voters.
 #[derive(Default)]
-pub struct Aggregator(BTreeMap<Hash, (AggrSignature, Cluster<PublicKey>)>);
+pub struct Aggregator(
+    BTreeMap<(u8, Hash), (AggrSignature, Cluster<PublicKey>)>,
+);
 
 impl Aggregator {
     pub fn collect_vote(
@@ -27,6 +29,7 @@ impl Aggregator {
         header: &Header,
         signature: &[u8; 48],
     ) -> Option<(Hash, StepVotes)> {
+        let msg_step = header.step;
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
@@ -35,7 +38,7 @@ impl Aggregator {
 
             let (aggr_sign, cluster) = self
                 .0
-                .entry(hash)
+                .entry((msg_step, hash))
                 .or_insert((AggrSignature::default(), Cluster::new()));
 
             // Each committee has 64 slots. If a Provisioner is extracted into
@@ -173,8 +176,8 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     impl Aggregator {
-        pub fn get_total(&self, hash: Hash) -> Option<usize> {
-            if let Some(value) = self.0.get(&hash) {
+        pub fn get_total(&self, step: u8, hash: Hash) -> Option<usize> {
+            if let Some(value) = self.0.get(&(step, hash)) {
                 return Some(value.1.total_occurrences());
             }
             None
@@ -264,12 +267,15 @@ mod tests {
             // Check collected votes
             assert!(a.collect_vote(&c, h, signature).is_none());
             collected_votes += expected_votes[i];
-            assert_eq!(a.get_total(block_hash), Some(collected_votes));
+            assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
                 assert!(a.collect_vote(&c, h, signature).is_none());
-                assert_eq!(a.get_total(block_hash), Some(collected_votes));
+                assert_eq!(
+                    a.get_total(h.step, block_hash),
+                    Some(collected_votes)
+                );
             }
         }
     }
