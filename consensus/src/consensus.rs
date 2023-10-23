@@ -260,9 +260,13 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .await?;
 
                     // During execution of any step we may encounter that an
-                    // agreement is generated for a former iteration.
+                    // agreement is generated for a former or current iteration.
                     if msg.topic() == Topics::Agreement {
-                        break;
+                        Self::send_agreement(
+                            &mut agr_inbound_queue,
+                            msg.clone(),
+                        )
+                        .await;
                     }
 
                     if step >= config::CONSENSUS_MAX_STEP {
@@ -274,8 +278,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
-
-                Self::send_agreement(&mut agr_inbound_queue, msg.clone()).await;
             }
         })
     }

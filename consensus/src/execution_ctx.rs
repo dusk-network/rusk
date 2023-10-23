@@ -260,14 +260,14 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    fn try_vote(&mut self, step: u8, candidate: &Block, topic: Topics) {
-        if let Some(committee) = self.iter_ctx.get_committee(step) {
+    fn try_vote(&mut self, msg_step: u8, candidate: &Block, topic: Topics) {
+        if let Some(committee) = self.iter_ctx.get_committee(msg_step) {
             if committee.am_member() {
                 debug!(
                     event = "vote for former candidate",
                     step_topic = format!("{:?}", topic),
                     hash = node_data::ledger::to_str(&candidate.header().hash),
-                    step,
+                    msg_step,
                 );
 
                 spawn_send_reduction(
@@ -276,7 +276,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     candidate.clone(),
                     self.round_update.pubkey_bls.clone(),
                     self.round_update.clone(),
-                    step,
+                    msg_step,
                     self.outbound.clone(),
                     self.inbound.clone(),
                     self.executor.clone(),
@@ -284,11 +284,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 );
             };
         } else {
-            error!(
-                event = "committee not found",
-                step = self.step,
-                msg_step = step
-            );
+            error!(event = "committee not found", step = self.step, msg_step);
         }
     }
 
