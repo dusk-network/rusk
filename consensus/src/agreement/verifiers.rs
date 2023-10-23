@@ -11,6 +11,7 @@ use crate::user::committee::CommitteeSet;
 use crate::user::sortition;
 use bytes::Buf;
 
+use crate::config;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{marshal_signable_vote, Header, Message, Payload};
@@ -76,6 +77,7 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 0,
+                config::FIRST_REDUCTION_COMMITTEE_SIZE,
             )
             .await
             .map_err(|e| {
@@ -94,6 +96,7 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 1,
+                config::SECOND_REDUCTION_COMMITTEE_SIZE,
             )
             .await
             .map_err(|e| {
@@ -118,13 +121,14 @@ pub async fn verify_step_votes(
     seed: Seed,
     hdr: &Header,
     step_offset: u8,
+    committee_size: usize,
 ) -> Result<(), Error> {
     if hdr.step == 0 {
         return Err(Error::InvalidStepNum);
     }
 
     let step = hdr.step - 1 + step_offset;
-    let cfg = sortition::Config::new(seed, hdr.round, step, 64);
+    let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
 
     verify_votes(
         &hdr.block_hash,
