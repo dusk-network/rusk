@@ -9,9 +9,10 @@ use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::firststep::handler;
+
 use crate::user::committee::Committee;
 use node_data::ledger::to_str;
-use node_data::message::{Message, Payload};
+use node_data::message::{Message, Payload, Topics};
 use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -20,24 +21,29 @@ use tracing::debug;
 #[allow(unused)]
 pub struct Reduction<T, DB: Database> {
     timeout_millis: u64,
-    handler: handler::Reduction<DB>,
+    handler: Arc<Mutex<handler::Reduction<DB>>>,
     executor: Arc<Mutex<T>>,
 }
-
 impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
-    pub fn new(executor: Arc<Mutex<T>>, db: Arc<Mutex<DB>>) -> Self {
+    pub(crate) fn new(
+        executor: Arc<Mutex<T>>,
+        _db: Arc<Mutex<DB>>,
+        handler: Arc<Mutex<handler::Reduction<DB>>>,
+    ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Reduction::new(db),
+            handler,
             executor,
         }
     }
 
-    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
-        self.handler.reset();
+    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+        let mut handler = self.handler.lock().await;
+
+        handler.reset(step);
 
         if let Payload::NewBlock(p) = msg.clone().payload {
-            self.handler.candidate = p.deref().candidate.clone();
+            handler.candidate = p.deref().candidate.clone();
         }
 
         debug!(
@@ -46,39 +52,46 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
             round = round,
             step = step,
             timeout = self.timeout_millis,
-            hash = to_str(&self.handler.candidate.header().hash),
+            hash = to_str(&handler.candidate.header().hash),
         )
     }
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_>,
+        mut ctx: ExecutionCtx<'_, DB, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
+            let candidate = self.handler.lock().await.candidate.clone();
             // Send reduction async
             spawn_send_reduction(
                 &mut ctx.iter_ctx.join_set,
                 ctx.iter_ctx.verified_hash.clone(),
-                self.handler.candidate.clone(),
+                candidate,
                 committee.get_my_pubkey().clone(),
                 ctx.round_update.clone(),
                 ctx.step,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
                 self.executor.clone(),
+                Topics::FirstReduction,
             );
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) =
-            ctx.handle_future_msgs(&committee, &mut self.handler).await
+        if let Some(m) = ctx
+            .handle_future_msgs(&committee, self.handler.clone())
+            .await
         {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
-            .await
+        ctx.event_loop(
+            &committee,
+            self.handler.clone(),
+            &mut self.timeout_millis,
+        )
+        .await
     }
 
     pub fn name(&self) -> &'static str {

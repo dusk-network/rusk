@@ -22,21 +22,25 @@ pub struct Selection<T, D: Database>
 where
     T: Operations,
 {
-    handler: handler::Selection<D>,
+    handler: Arc<Mutex<handler::Selection<D>>>,
     bg: Generator<T>,
     timeout_millis: u64,
 }
 
-impl<T: Operations, D: Database> Selection<T, D> {
-    pub fn new(executor: Arc<Mutex<T>>, db: Arc<Mutex<D>>) -> Self {
+impl<T: Operations + 'static, D: Database> Selection<T, D> {
+    pub fn new(
+        executor: Arc<Mutex<T>>,
+        _db: Arc<Mutex<D>>,
+        handler: Arc<Mutex<handler::Selection<D>>>,
+    ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler: handler::Selection { db },
+            handler,
             bg: Generator::new(executor),
         }
     }
 
-    pub fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
         // To be aligned with the original impl, Selection does not double its
         // timeout settings
         self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
@@ -52,7 +56,7 @@ impl<T: Operations, D: Database> Selection<T, D> {
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_>,
+        mut ctx: ExecutionCtx<'_, D, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
@@ -69,6 +73,8 @@ impl<T: Operations, D: Database> Selection<T, D> {
                 // register new candidate in local state
                 match self
                     .handler
+                    .lock()
+                    .await
                     .collect(
                         msg.clone(),
                         &ctx.round_update,
@@ -92,14 +98,19 @@ impl<T: Operations, D: Database> Selection<T, D> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) =
-            ctx.handle_future_msgs(&committee, &mut self.handler).await
+        if let Some(m) = ctx
+            .handle_future_msgs(&committee, self.handler.clone())
+            .await
         {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
-            .await
+        ctx.event_loop(
+            &committee,
+            self.handler.clone(),
+            &mut self.timeout_millis,
+        )
+        .await
     }
 
     pub fn name(&self) -> &'static str {
