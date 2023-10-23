@@ -11,6 +11,7 @@ use crate::contract_state::Operations;
 
 use node_data::ledger::*;
 use node_data::message;
+use node_data::message::Topics;
 use tracing::Instrument;
 
 use crate::contract_state::CallParams;
@@ -80,6 +81,7 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
     outbound: AsyncQueue<Message>,
     inbound: AsyncQueue<Message>,
     executor: Arc<Mutex<T>>,
+    topic: Topics,
 ) {
     let hash = to_str(&candidate.header().hash);
 
@@ -168,7 +170,7 @@ pub fn spawn_send_reduction<T: Operations + 'static>(
                 round: ru.round,
                 step,
                 block_hash: hash,
-                topic: message::Topics::Reduction as u8,
+                topic: topic.into(),
             };
 
             let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
