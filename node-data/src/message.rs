@@ -118,7 +118,7 @@ impl Serializable for Message {
             Topics::NewBlock => {
                 Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
-            Topics::Reduction => {
+            Topics::FirstReduction | Topics::SecondReduction => {
                 Payload::Reduction(payload::Reduction::read(r)?)
             }
             Topics::Agreement => {
@@ -312,7 +312,8 @@ fn is_consensus_msg(topic: u8) -> bool {
     matches!(
         Topics::from(topic),
         Topics::NewBlock
-            | Topics::Reduction
+            | Topics::FirstReduction
+            | Topics::SecondReduction
             | Topics::Agreement
             | Topics::AggrAgreement
     )
@@ -642,8 +643,8 @@ pub mod payload {
         /// Generates a certificate from agreement.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
-                first_reduction: self.first_step.clone(),
-                second_reduction: self.second_step.clone(),
+                first_reduction: self.first_step,
+                second_reduction: self.second_step,
             }
         }
     }
@@ -898,11 +899,12 @@ pub enum Topics {
     // Consensus main loop topics
     Candidate = 15,
     NewBlock = 16,
-    Reduction = 17,
+    FirstReduction = 17,
+    SecondReduction = 18,
 
     // Consensus Agreement loop topics
-    Agreement = 18,
-    AggrAgreement = 19,
+    Agreement = 19,
+    AggrAgreement = 20,
 
     #[default]
     Unknown = 255,
@@ -919,7 +921,8 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Candidate);
         map_topic!(v, Topics::GetCandidate);
         map_topic!(v, Topics::NewBlock);
-        map_topic!(v, Topics::Reduction);
+        map_topic!(v, Topics::FirstReduction);
+        map_topic!(v, Topics::SecondReduction);
         map_topic!(v, Topics::Agreement);
         map_topic!(v, Topics::AggrAgreement);
 
