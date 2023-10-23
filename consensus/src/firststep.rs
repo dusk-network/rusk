@@ -4,5 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod handler;
+pub(crate) mod handler;
 pub mod step;

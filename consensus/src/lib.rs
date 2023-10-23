@@ -21,6 +21,7 @@ mod phase;
 mod queue;
 mod secondstep;
 mod selection;
+mod step_votes_reg;
 
 pub mod merkle;
 
