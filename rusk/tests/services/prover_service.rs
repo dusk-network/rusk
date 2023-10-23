@@ -39,7 +39,7 @@ fn mock_wallet<Rng: RngCore + CryptoRng>(
     let psk = store.retrieve_ssk(0).unwrap().public_spend_key();
 
     let notes = new_notes(rng, &psk, note_values);
-    let anchor = BlsScalar::random(rng);
+    let anchor = BlsScalar::random(&mut *rng);
 
     const POS: u64 = 42;
     let mut tree = Tree::new();

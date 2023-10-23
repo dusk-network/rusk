@@ -25,17 +25,17 @@ rustc_tools_util = "=0.2.0"
 [dependencies]
 hex = "0.4"
 rustc_tools_util = "0.2"
-dusk-plonk = { version = "0.14", features = ["rkyv-impl"] }
-dusk-pki ="0.12"
-phoenix-core = { version = "0.20.0-rc.0", features = ["rkyv-impl", "alloc"] }
+dusk-plonk = { version = "0.16", features = ["rkyv-impl"] }
+dusk-pki ="0.13"
+phoenix-core = { version = "0.21", features = ["rkyv-impl", "alloc"] }
 rand = "0.8"
 dusk-merkle = "0.5"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.11", path = "../rusk-abi", default-features = false, features = ["host"] }
 once_cell = "1.13"
 dusk-bytes = "0.1"
-dusk-bls12_381 = "0.11"
-dusk-bls12_381-sign = "0.4"
+dusk-bls12_381 = "0.12"
+dusk-bls12_381-sign = "0.5"
 clap = { version = "4", features = ["env", "derive"] }
 thiserror = "1.0"
 tracing = { version = "0.1", features = ["log"] }

@@ -23,9 +23,9 @@ pub fn commitment<C: Composer>(
     p: WitnessPoint,
     v: Witness,
     b: Witness,
-    bits: usize,
 ) -> Result<(), Error> {
-    composer.component_range(v, bits);
+    const HALF_64: usize = 32;
+    composer.component_range::<HALF_64>(v);
 
     let v = composer.component_mul_generator(v, GENERATOR_EXTENDED)?;
     let b = composer.component_mul_generator(b, GENERATOR_NUMS_EXTENDED)?;

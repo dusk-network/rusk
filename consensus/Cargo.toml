@@ -18,7 +18,7 @@ rand = { version = "0.8", default-features = false, features = ["std_rng"] }
 tokio = { version = "1", features = ["full"] }
 tracing-subscriber = "0.2"
 tracing = "0.1"
-dusk-bls12_381-sign = { version = "0.4" }
+dusk-bls12_381-sign = { version = "0.5" }
 sha3 = { version = "0.10" }
 num-bigint = { version = "0.4.3", default-features = false }
 hex = { version = "0.4.3" }

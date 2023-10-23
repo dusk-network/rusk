@@ -45,10 +45,17 @@ fn prove_verify_license_circuit() {
     let ssk_lp = SecretSpendKey::random(rng);
     let psk_lp = ssk_lp.public_spend_key();
 
-    let (cpp, sc) =
-        CitadelUtils::compute_citadel_parameters::<StdRng, DEPTH, ARITY>(
+    let (lic, merkle_proof) =
+        CitadelUtils::compute_random_license::<StdRng, DEPTH, ARITY>(
             rng, ssk, psk, ssk_lp, psk_lp,
         );
+
+    let (cpp, sc) = CitadelUtils::compute_citadel_parameters::<
+        StdRng,
+        DEPTH,
+        ARITY,
+    >(rng, ssk, psk_lp, &lic, merkle_proof);
+
     let circuit = LicenseCircuit::new(cpp, sc);
 
     let (proof, public_inputs) = prover

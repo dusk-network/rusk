@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2023-10-12
+
+### Changed
+
+- Update `dusk-bls12_381` from `0.11` to `0.12`
+- Update `dusk-bls12_381-sign` from `0.4` to `0.15`
+- Update `dusk-jubjub` from `0.12` to `0.13`
+- Update `dusk-poseidon` from `0.30` to `0.31`
+- Update `dusk-pki` from `0.12` to `0.13`
+- Update `dusk-plonk` from `0.14` to `0.16`
+
+### Added
+
+- Add `ff` dev-dependency `0.13`
+
 ### Changed
 
 - Update `piecrust` from `0.8.0-rc` to `0.10`
@@ -188,7 +203,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#227]: https://github.com/dusk-network/rusk/issues/227
 [#254]: https://github.com/dusk-network/rusk/issues/254
 
-[Unreleased]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.10.0-piecrust.0.6...HEAD
+[Unreleased]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.11.0...HEAD
+[0.11.0]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.10.0-piecrust.0.6...rusk-abi-0.11.0
 [0.10.0-piecrust.0.6]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.9.0-piecrust.0.6...rusk-abi-0.10.0-piecrust.0.6
 [0.9.0-piecrust.0.6]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.8.0-piecrust.0.5...rusk-abi-0.9.0-piecrust.0.6
 [0.8.0-piecrust.0.5]: https://github.com/dusk-network/dusk-abi/compare/rusk-abi-0.8.0-alpha...rusk-abi-0.8.0-piecrust.0.5

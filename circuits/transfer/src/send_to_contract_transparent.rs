@@ -169,7 +169,7 @@ impl Circuit for SendToContractTransparentCircuit {
         let _ = composer.append_public(self.message);
 
         // 1. commitment(Cc,Cv,Cb,64)
-        gadgets::commitment(composer, commitment, value, blinder, 64)?;
+        gadgets::commitment(composer, commitment, value, blinder)?;
 
         // 2. S == H(Cc,Cn,Cψ,Cv,A)
         let mut s = [C::ZERO; MESSAGE_SIZE];

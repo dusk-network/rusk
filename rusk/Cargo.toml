@@ -37,19 +37,19 @@ rkyv = "0.7"
 bytecheck = "0.6"
 dirs = "4"
 
-dusk-schnorr = "0.13"
-dusk-poseidon = "0.30"
-poseidon-merkle = { version = "0.2.1-rc.0", features = ["rkyv-impl", "size_32"] }
+dusk-schnorr = "0.14"
+dusk-poseidon = "0.31"
+poseidon-merkle = { version = "0.3", features = ["rkyv-impl", "size_32"] }
 sha3 = "0.10"
-dusk-plonk = "0.14"
-dusk-bls12_381 = "0.11"
-dusk-bls12_381-sign = "0.4"
-dusk-jubjub = "0.12"
-dusk-pki = "0.12"
+dusk-plonk = "0.16"
+dusk-bls12_381 = "0.12"
+dusk-bls12_381-sign = "0.5"
+dusk-jubjub = "0.13"
+dusk-pki = "0.13"
 dusk-bytes = "0.1"
-dusk-wallet-core = "0.20.0-piecrust.0.6"
-phoenix-core = "0.20.0-rc.0"
 kadcast = "0.6.0-rc"
+dusk-wallet-core = "0.22.0-plonk.0.16"
+phoenix-core = "0.21"
 tungstenite = "0.20"
 hyper-tungstenite = "0.11"
 hyper = { version = "0.14", features = ["server", "stream", "http1", "http2"] }
@@ -61,7 +61,7 @@ async-trait = "0.1"
 
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.11", path = "../rusk-abi", default-features = false, features = ["host"] }
 rusk-prover = { version = "0.2", path = "../rusk-prover" }
 node = { version = "0.1", path = "../node" }
 dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
@@ -79,6 +79,7 @@ tempfile = { version = "3.2", optional = true }
 test-context = "0.1"
 reqwest = "0.11"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
+ff = { version = "0.13", default-features = false }
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
