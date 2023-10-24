@@ -1,9 +1,9 @@
 [acl.stake]
 owners = [
-    'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv',
+    'oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu',
 ]
 allowlist = [
-    'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv',
+    'oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu',
 ]
 
 [[balance]]
@@ -12,5 +12,5 @@ seed = 0xdead_beef
 notes = [100_000_000_000_000]
 
 [[stake]]
-address = 'qdUStJbB2iDiuwxffREdDo3Z9Jq48E6obboEX6Zsy5o4ujoro5qQnrAhYYhxzCqU6WGFwbKEFFkrfLdrWKs9YS8qs6SMwnK3cPKFor8Px9bjQu3o5LQcC6xDXypFzPSiXCv'
+address = 'oCqYsUMRqpRn2kSabH52Gt6FQCwH5JXj5MtRdYVtjMSJ73AFvdbPf98p3gz98fQwNy9ZBiDem6m9BivzURKFSKLYWP3N9JahSPZs9PnZ996P18rTGAjQTNFsxtbrKx79yWu'
 amount = 1_000_000_000_000
