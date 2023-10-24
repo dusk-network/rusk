@@ -1,9 +1,9 @@
 [acl.stake]
 owners = []
 allowlist = [
-    "21aLx16qNEyU14aCGzacr8efbwx7bEytxa2rT71XB24zGZrb6Y398ebg38My7aQikamhpdYzphUAMHfPhH3BWvwsG2G655Dr8gwmQLKH9nERiGmD79Jewkn4ZkMeptfYBMiS",
-    "z9Gbp4jW1rTJNQto4PHaJYxAUPS1EV5MW8SHvrgiS8XfVig5qEtdMN8PNoybBzMf115VTZ8opqVit93Pe9zRKP46NN94SGRQZtmDpokp7UiXcSNXUw6VsofJtFZj6fu2KMn",
-    "24gdSgib4nkYVWiZEKGauUpyhJJt6PLbnHwrqbcmhxZhfEQRcZqUe8GTkBcCG9p1VB7CwnR1ymFYSMFEC6bWCD81pTRYsFpQdUV2XfHjw1ieo57asYsy8vwRhQtB3R8qC2ta",
+    "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3",
+    "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv",
+    "mqL8WTruQUzafU8Q4bSFqTLMhHmB97DAGow73KRpDkDik5vqMD9EpGvyZc2j3TFaEh8hc6g3LJ5X3ox18HDDoVDj8MKaHPzphvdgyG4XmsFEafAiym6kqRPmB14QNRvkEK4",
 ]
 
 [[balance]]
@@ -23,10 +23,10 @@ notes = [
 ]
 
 [[stake]]
-address = "21aLx16qNEyU14aCGzacr8efbwx7bEytxa2rT71XB24zGZrb6Y398ebg38My7aQikamhpdYzphUAMHfPhH3BWvwsG2G655Dr8gwmQLKH9nERiGmD79Jewkn4ZkMeptfYBMiS"
+address = "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3"
 amount = 1_000_000_000_000
 
 [[stake]]
-address = "z9Gbp4jW1rTJNQto4PHaJYxAUPS1EV5MW8SHvrgiS8XfVig5qEtdMN8PNoybBzMf115VTZ8opqVit93Pe9zRKP46NN94SGRQZtmDpokp7UiXcSNXUw6VsofJtFZj6fu2KMn"
+address = "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv"
 amount = 1_000_000_000_000
 reward = 1_000_000_000_000

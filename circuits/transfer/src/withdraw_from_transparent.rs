@@ -47,7 +47,7 @@ impl Circuit for WithdrawFromTransparentCircuit {
         // Circuit
 
         // 1. commitment(Nc,Nv,Nb,64)
-        gadgets::commitment(composer, commitment, value, blinder, 64)?;
+        gadgets::commitment(composer, commitment, value, blinder)?;
 
         Ok(())
     }

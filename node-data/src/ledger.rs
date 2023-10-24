@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::{bls, Serializable};
-use dusk_bytes::Serializable as DuskBytesSerializable;
 use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};

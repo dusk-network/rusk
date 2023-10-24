@@ -151,7 +151,7 @@ pub fn verify_proof(
     let mut pis = Vec::with_capacity(n_pi);
 
     public_inputs.into_iter().for_each(|pi| match pi {
-        PublicInput::Point(p) => pis.extend([p.get_x(), p.get_y()]),
+        PublicInput::Point(p) => pis.extend([p.get_u(), p.get_v()]),
         PublicInput::BlsScalar(s) => pis.push(s),
         PublicInput::JubJubScalar(s) => {
             let s: BlsScalar = s.into();

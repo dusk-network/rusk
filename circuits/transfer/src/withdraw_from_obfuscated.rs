@@ -108,7 +108,6 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             input_commitment,
             input_value,
             input_blinder,
-            64,
         )?;
 
         // 2. commitment(Cc,Cv,Cb,64)
@@ -117,7 +116,6 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             change_commitment,
             change_value,
             change_blinder,
-            64,
         )?;
 
         // 3. commitment(Oc,Ov,Ob,64)
@@ -126,7 +124,6 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
             output_commitment,
             output_value,
             output_blinder,
-            64,
         )?;
 
         // 4. (pa,pb) := selectPair(Cx,I,Cp,Cs)

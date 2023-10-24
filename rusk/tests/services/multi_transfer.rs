@@ -11,6 +11,7 @@ use std::sync::{Arc, LazyLock, RwLock};
 use dusk_bls12_381::BlsScalar;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
+use ff::Field;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};

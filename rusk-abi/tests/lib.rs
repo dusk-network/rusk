@@ -19,6 +19,7 @@ use dusk_bytes::{ParseHexStr, Serializable};
 use dusk_pki::{PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;
+use ff::Field;
 use rusk_abi::hash::Hasher;
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
@@ -44,8 +45,8 @@ fn hash_host() {
     }
 
     assert_eq!(
-        "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
-        format!("{:#x}", Hasher::digest(input))
+        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
+        format!("{:?}", Hasher::digest(input))
     );
 }
 
@@ -100,8 +101,8 @@ fn hash() {
         .data;
 
     assert_eq!(
-        "0xb9cd735f1296d450b8c5c4b49b07e036b3086ee0e206d22325ecc30467c5170e",
-        format!("{scalar:#x}")
+        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
+        format!("{scalar:?}")
     );
 }
 
@@ -128,8 +129,8 @@ fn poseidon_hash() {
         .data;
 
     assert_eq!(
-        "0xe36f4ea9b858d5c85b02770823c7c5d8253c28787d17f283ca348b906dca8528",
-        format!("{scalar:#x}")
+        "0x2885ca6d908b34ca83f2177d78283c25d8c5c7230877025bc8d558b8a94e6fe3",
+        format!("{scalar:?}")
     );
 }
 

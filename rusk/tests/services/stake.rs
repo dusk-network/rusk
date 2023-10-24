@@ -60,9 +60,17 @@ fn wallet_stake(
 
     let tx = wallet
         .stake(&mut rng, 0, 2, &psk, value, GAS_LIMIT, 1)
-        .expect("Failed to stake");
-    generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
-        .expect("generator procedure to succeed");
+        .expect("Failed to create a stake transaction");
+    let executed_txs =
+        generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
+            .expect("generator procedure to succeed");
+    if let Some(e) = &executed_txs
+        .first()
+        .expect("Transaction must be executed")
+        .err
+    {
+        panic!("Stake transaction failed due to {e}")
+    }
 
     let stake = wallet.get_stake(2).expect("stake to be found");
     let stake_value = stake.amount.expect("stake should have an amount").0;
