@@ -23,6 +23,8 @@ use tracing::{debug, error, info};
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 
+pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
+
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
 
 enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
@@ -56,6 +58,38 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             network,
             blacklisted_blocks,
         }
+    }
+
+    pub async fn on_idle(&mut self, timeout_sec: u8) -> anyhow::Result<()> {
+        let acc = self.acc.read().await;
+        let height = acc.get_curr_height().await;
+        let iter = acc.get_curr_iteration().await;
+        let last_finalized = acc.get_finalized().await;
+
+        info!(
+            event = "fsm::idle",
+            height,
+            iter,
+            timeout_sec,
+            "finalized_height" = last_finalized.header().height,
+        );
+
+        // Clear up all blacklisted blocks
+        self.blacklisted_blocks.write().await.clear();
+
+        // Request missing blocks since my last finalized block
+        self.network
+            .write()
+            .await
+            .send_to_alive_peers(
+                &Message::new_get_blocks(GetBlocks {
+                    locator: last_finalized.header().hash,
+                }),
+                REDUNDANCY_PEER_FACTOR,
+            )
+            .await;
+
+        Ok(())
     }
 
     pub async fn on_event(
