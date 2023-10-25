@@ -33,8 +33,11 @@ use node_data::message::{Payload, Topics};
 use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
+use tokio::time::{sleep_until, Instant};
 
+use node_data::message::payload::GetBlocks;
 use std::any;
+use std::time::Duration;
 
 use self::acceptor::{Acceptor, RevertTarget};
 use self::consensus::Task;
@@ -47,6 +50,8 @@ const TOPICS: &[u8] = &[
     Topics::AggrAgreement as u8,
     Topics::Agreement as u8,
 ];
+
+const ACCEPT_BLOCK_TIMEOUT_SEC: u8 = 20;
 
 pub struct ChainSrv {
     /// Inbound wire messages queue
@@ -74,7 +79,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         .await?;
 
         // Restore/Load most recent block
-        let mrb = Self::load_most_recent_block(db.clone()).await?;
+        let (mrb, last_finalized) =
+            Self::load_most_recent_block(db.clone()).await?;
 
         let provisioners_list = vm.read().await.get_provisioners()?;
 
@@ -83,6 +89,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             Acceptor::new_with_run(
                 &self.keys_path,
                 &mrb,
+                &last_finalized,
                 &provisioners_list,
                 db.clone(),
                 network.clone(),
@@ -116,33 +123,56 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let outbound_chan = acc.read().await.get_outbound_chan().await;
         let result_chan = acc.read().await.get_result_chan().await;
 
+        // Accept_Block timeout is activated when a node is unable to accept a
+        // valid block within a specified time frame.
+        let mut timeout = Self::reset_timeout();
+
         // Message loop for Chain context
         loop {
             tokio::select! {
+                biased;
                 // Receives results from the upper layer
                 recv = &mut result_chan.recv() => {
                     match recv? {
                         Ok(blk) => {
-                            fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone())))
-                                .await
-                                .map_err(|e| error!("failed to process block: {}", e));
+                            info!(
+                                event = "block received",
+                                src = "consensus",
+                                blk_height = blk.header().height,
+                                blk_hash = to_str(&blk.header().hash),
+                            );
+
+                            // Handles a block that originates from local consensus
+                            // TODO: Remove the redundant blk.clone()
+                            if let Err(e) = fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone()))).await  {
+                                 error!(event = "fsm::on_event failed", src = "consensus",  err = format!("{}",e));
+                            } else {
+                                timeout = Self::reset_timeout();
+                            }
                         }
                         Err(e) => {
                              warn!("consensus err: {:?}", e);
                         }
                     }
                 },
-                // Receives inbound wire messages.
+                // Handles any inbound wire.
                 // Component should either process it or re-route it to the next upper layer
-                recv = &mut self.inbound.recv() => {
+                recv =  self.inbound.recv() => {
                     let msg = recv?;
                     match &msg.payload {
                         Payload::Block(blk) => {
-                            debug!("received block {:?}", blk);
+                           info!(
+                                event = "block received",
+                                src = "wire",
+                                blk_height = blk.header().height,
+                                blk_hash = to_str(&blk.header().hash),
+                            );
 
-                            fsm.on_event(blk, &msg)
-                                .await
-                                .map_err(|e| error!("failed to process block: {}", e));
+                            if let Err(e) = fsm.on_event(blk, &msg).await  {
+                                 error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
+                            } else {
+                                timeout = Self::reset_timeout();
+                            }
                         }
 
                         // Re-route message to the acceptor
@@ -159,6 +189,11 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 recv = &mut outbound_chan.recv() => {
                     let msg = recv?;
                     network.read().await.broadcast(&msg).await;
+                },
+                // Handles accept_block_timeout event
+                _ = sleep_until(timeout) => {
+                    fsm.on_idle(ACCEPT_BLOCK_TIMEOUT_SEC).await;
+                    timeout = Self::reset_timeout();
                 },
             }
         }
@@ -185,8 +220,9 @@ impl ChainSrv {
     /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
-    ) -> Result<Block> {
+    ) -> Result<(Block, Block)> {
         let mut mrb = Block::default();
+        let mut last_finalized = Block::default();
 
         db.read().await.update(|t| {
             mrb = match t.get_register()? {
@@ -202,16 +238,44 @@ impl ChainSrv {
                 }
             };
 
+            // Initialize last_finalized block
+            if mrb.header().iteration == 1 || mrb.header().height == 0 {
+                last_finalized = mrb.clone();
+            } else {
+                // scan
+                let mut h = mrb.header().height;
+                loop {
+                    h -= 1;
+                    if let Ok(Some(blk)) = t.fetch_block_by_height(h) {
+                        if blk.header().iteration == 1
+                            || blk.header().height == 0
+                        {
+                            last_finalized = blk;
+                            break;
+                        };
+                    } else {
+                        break;
+                    }
+                }
+            }
+
             Ok(())
         });
 
         tracing::info!(
             event = "Ledger block loaded",
             height = mrb.header().height,
+            finalized_height = last_finalized.header().height,
             hash = hex::encode(mrb.header().hash),
             state_root = hex::encode(mrb.header().state_hash)
         );
 
-        Ok(mrb)
+        Ok((mrb, last_finalized))
+    }
+
+    fn reset_timeout() -> Instant {
+        Instant::now()
+            .checked_add(Duration::from_secs(ACCEPT_BLOCK_TIMEOUT_SEC as u64))
+            .unwrap()
     }
 }
