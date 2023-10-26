@@ -4,9 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::RUSK_VERSION_HEADER;
 use futures_util::{stream, StreamExt};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::Body;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_with::{self, serde_as};
 use std::collections::HashMap;
@@ -143,6 +145,23 @@ impl MessageRequest {
 
         Ok((req, is_binary))
     }
+
+    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
+            let req = match v.as_str() {
+                Some(v) => VersionReq::from_str(v),
+                None => VersionReq::from_str(&v.to_string()),
+            }?;
+
+            let current = Version::from_str(&crate::VERSION)?;
+            if !req.matches(&current) {
+                return Err(anyhow::anyhow!(
+                    "Mismatched rusk version: requested {req} - current {current}",
+                ));
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -198,6 +217,20 @@ impl MessageResponse {
         };
 
         Ok(hyper::Response::new(body))
+    }
+
+    pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
+        // search for the key in a case-insensitive way
+        let v = self
+            .headers
+            .iter_mut()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(key).then_some(v));
+
+        if let Some(v) = v {
+            *v = value;
+        } else {
+            self.headers.insert(key.into(), value);
+        }
     }
 }
 
