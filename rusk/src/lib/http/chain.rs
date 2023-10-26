@@ -26,6 +26,7 @@ use super::event::{
     Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
 };
 use crate::http::RuskNode;
+use crate::{VERSION, VERSION_BUILD};
 
 const GQL_VAR_PREFIX: &str = "rusk-gqlvar-";
 
@@ -61,6 +62,7 @@ impl RuskNode {
                 let amount = request.event.data.as_string().trim().parse()?;
                 self.alive_nodes(amount).await
             }
+            (Target::Host(_), "Chain", "info") => self.get_info().await,
             _ => anyhow::bail!("Unsupported"),
         }
     }
@@ -109,5 +111,18 @@ impl RuskNode {
         let nodes = self.0.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
         Ok(serde_json::to_value(nodes)?.into())
+    }
+
+    async fn get_info(&self) -> anyhow::Result<ResponseData> {
+        let mut info: HashMap<&str, serde_json::Value> = HashMap::new();
+        info.insert("version", VERSION.as_str().into());
+        info.insert("version_build", VERSION_BUILD.as_str().into());
+
+        let n_conf = self.network().read().await.conf().clone();
+        info.insert("bootstrapping_nodes", n_conf.bootstrapping_nodes.into());
+        info.insert("chain_id", n_conf.kadcast_id.into());
+        info.insert("kadcast_address", n_conf.public_address.into());
+
+        Ok(serde_json::to_value(&info)?.into())
     }
 }
