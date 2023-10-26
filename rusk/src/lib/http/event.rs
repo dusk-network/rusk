@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::sync::mpsc;
+use tungstenite::http::HeaderValue;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -194,6 +195,8 @@ impl MessageResponse {
                 .body(hyper::Body::from(error.to_string()))?);
         }
 
+        let mut headers = HashMap::new();
+
         let body = {
             match self.data {
                 ResponseData::Binary(wrapper) => {
@@ -204,19 +207,28 @@ impl MessageResponse {
                     Body::from(data)
                 }
                 ResponseData::Text(text) => Body::from(text),
-                ResponseData::Channel(channel) => Body::wrap_stream(
-                    stream::iter(channel).map(move |e| match is_binary {
-                        true => Ok::<_, anyhow::Error>(e),
-                        false => Ok::<_, anyhow::Error>(
-                            hex::encode(e).as_bytes().to_vec(),
-                        ),
-                    }), // Ok::<_, anyhow::Error>),
-                ),
+                ResponseData::Json(value) => {
+                    headers.insert(CONTENT_TYPE, CONTENT_TYPE_JSON.clone());
+                    Body::from(value.to_string())
+                }
+                ResponseData::Channel(channel) => {
+                    Body::wrap_stream(stream::iter(channel).map(move |e| {
+                        match is_binary {
+                            true => Ok::<_, anyhow::Error>(e),
+                            false => Ok::<_, anyhow::Error>(
+                                hex::encode(e).as_bytes().to_vec(),
+                            ),
+                        }
+                    }))
+                }
                 ResponseData::None => Body::empty(),
             }
         };
-
-        Ok(hyper::Response::new(body))
+        let mut response = hyper::Response::new(body);
+        for (k, v) in headers {
+            response.headers_mut().insert(k, v);
+        }
+        Ok(response)
     }
 
     pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
@@ -276,10 +288,17 @@ impl From<Vec<u8>> for RequestData {
 pub enum ResponseData {
     Binary(BinaryWrapper),
     Text(String),
+    Json(serde_json::Value),
     #[serde(skip)]
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
+}
+
+impl From<serde_json::Value> for ResponseData {
+    fn from(value: serde_json::Value) -> Self {
+        Self::Json(value)
+    }
 }
 
 impl From<String> for ResponseData {
@@ -348,6 +367,8 @@ impl Event {
 }
 const CONTENT_TYPE: &str = "Content-Type";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
+static CONTENT_TYPE_JSON: HeaderValue =
+    HeaderValue::from_static("application/json");
 
 fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
     if bytes.len() < 4 {

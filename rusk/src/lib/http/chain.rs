@@ -88,7 +88,7 @@ impl RuskNode {
         if !errors.is_empty() {
             return Err(anyhow::anyhow!("{errors:?}"));
         }
-        let data = serde_json::to_string(&data)
+        let data = serde_json::to_value(&data)
             .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
         Ok(data.into())
     }
@@ -108,6 +108,6 @@ impl RuskNode {
     async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
         let nodes = self.0.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
-        Ok(serde_json::to_string(&nodes)?.into())
+        Ok(serde_json::to_value(nodes)?.into())
     }
 }
