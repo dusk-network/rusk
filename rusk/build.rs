@@ -12,18 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=../Cargo.lock");
 
     // Get crate version + commit + toolchain for `-v` arg support.
-    println!(
-        "cargo:rustc-env=GIT_HASH={}",
-        rustc_tools_util::get_commit_hash().unwrap_or_default()
-    );
-    println!(
-        "cargo:rustc-env=COMMIT_DATE={}",
-        rustc_tools_util::get_commit_date().unwrap_or_default()
-    );
-    println!(
-        "cargo:rustc-env=RUSTC_RELEASE_CHANNEL={}",
-        rustc_tools_util::get_channel().unwrap_or_default()
-    );
+    rustc_tools_util::setup_version_info!();
 
     Ok(())
 }
