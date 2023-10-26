@@ -125,11 +125,16 @@ impl MessageRequest {
         let headers = req
             .headers()
             .iter()
-            .filter_map(|(k, v)| {
-                let a = v.as_bytes();
-                serde_json::from_slice::<serde_json::Value>(a)
-                    .ok()
-                    .map(|v| (k.to_string(), v))
+            .map(|(k, v)| {
+                let v = if v.is_empty() {
+                    serde_json::Value::Null
+                } else {
+                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
+                        .unwrap_or(serde_json::Value::String(
+                            v.to_str().unwrap().to_string(),
+                        ))
+                };
+                (k.to_string().to_lowercase(), v)
             })
             .collect();
         let (event, is_binary) = Event::from_request(req).await?;

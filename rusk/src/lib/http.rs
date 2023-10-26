@@ -361,7 +361,11 @@ where
 
         for (k, v) in x_headers {
             let k = HeaderName::from_str(&k)?;
-            let v = HeaderValue::from_str(&v.to_string())?;
+            let v = match v {
+                serde_json::Value::String(s) => HeaderValue::from_str(&s),
+                serde_json::Value::Null => HeaderValue::from_str(""),
+                _ => HeaderValue::from_str(&v.to_string()),
+            }?;
             resp.headers_mut().append(k, v);
         }
 
