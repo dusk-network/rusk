@@ -10,7 +10,6 @@ mod args;
 mod config;
 #[cfg(feature = "ephemeral")]
 mod ephemeral;
-mod version;
 
 use clap::Parser;
 use node::database::rocksdb;
