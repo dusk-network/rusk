@@ -9,12 +9,10 @@ use std::path::PathBuf;
 use clap::builder::PossibleValuesParser;
 use clap::Parser;
 
-use crate::version::VERSION_BUILD;
-
 #[derive(Parser, Debug)]
 #[command(
     author="Dusk Network B.V. All Rights Reserved.",
-    version = &VERSION_BUILD[..],
+    version = &rusk::VERSION_BUILD[..],
     about = "Rusk server node",
 )]
 pub struct Args {
