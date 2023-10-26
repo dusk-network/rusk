@@ -346,9 +346,8 @@ impl Event {
         let is_binary = parts
             .headers
             .get(CONTENT_TYPE)
-            .and_then(|h| {
-                h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
-            })
+            .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default();
 
         let target = parts.uri.path().try_into()?;
