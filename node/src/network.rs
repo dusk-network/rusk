@@ -148,6 +148,10 @@ impl<const N: usize> Kadcast<N> {
     pub async fn alive_nodes(&self, amount: usize) -> Vec<SocketAddr> {
         self.peer.alive_nodes(amount).await
     }
+
+    pub fn conf(&self) -> &Config {
+        &self.conf
+    }
 }
 
 #[async_trait]

@@ -106,7 +106,7 @@ impl Rusk {
     }
 
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
-        let prov = self
+        let prov: Vec<_> = self
             .provisioners()
             .unwrap()
             .iter()
@@ -119,9 +119,9 @@ impl Rusk {
                     key,
                 })
             })
-            .collect::<Vec<_>>();
+            .collect();
 
-        Ok(serde_json::to_string(&prov)?.into())
+        Ok(serde_json::to_value(prov)?.into())
     }
 }
 

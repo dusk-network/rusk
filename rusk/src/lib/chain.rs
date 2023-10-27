@@ -13,8 +13,13 @@ use crate::Rusk;
 
 #[derive(Clone)]
 pub struct RuskNode(pub node::Node<Kadcast<255>, Backend, Rusk>);
+
 impl RuskNode {
     pub fn db(&self) -> Arc<tokio::sync::RwLock<Backend>> {
         self.0.database() as Arc<tokio::sync::RwLock<Backend>>
+    }
+
+    pub fn network(&self) -> Arc<tokio::sync::RwLock<Kadcast<255>>> {
+        self.0.network() as Arc<tokio::sync::RwLock<Kadcast<255>>>
     }
 }
