@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update `phoenix-core` to `0.13.0-rc` [#327]
 - Update `dusk-schnorr` to `0.8.0-rc` [#327]
 - Update the blindbid service to use the new API of `dusk-blindbid` [#327]
+- Update `dusk-abi` from `0.10.0-piecrust.0.6` to `0.11.0`
 
 ### Removed
 

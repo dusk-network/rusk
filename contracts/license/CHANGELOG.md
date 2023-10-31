@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed 'use_license' to check if license already nullified [#1051]
 - Changed 'get_licenses' to return values by adding 'pos' to every license returned [#1040]
 - Changed 'issue_license' by removing the 'pos' argument and self position determination [#1039]
+- Update `dusk-abi` from `0.10.0-piecrust.0.6` to `0.11.0`
 
 ## [0.1.0] - 2023-07-13
 

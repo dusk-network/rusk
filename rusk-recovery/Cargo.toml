@@ -31,7 +31,7 @@ phoenix-core = { version = "0.20.0-rc.0", features = ["rkyv-impl", "alloc"] }
 rand = "0.8"
 dusk-merkle = "0.5"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
-rusk-abi = { version = "0.10.0-piecrust.0.6", path = "../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.11.0", path = "../rusk-abi", default-features = false, features = ["host"] }
 once_cell = "1.13"
 dusk-bytes = "0.1"
 dusk-bls12_381 = "0.11"
