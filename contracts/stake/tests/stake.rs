@@ -12,6 +12,7 @@ use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
+use ff::Field;
 use phoenix_core::transaction::*;
 use phoenix_core::{Fee, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
@@ -202,7 +203,7 @@ fn stake_withdraw_unstake() {
     const WITHDRAW_FEE: u64 = dusk(1.0);
     const WFCT_FEE: u64 = dusk(1.0);
 
-    let rng = &mut StdRng::seed_from_u64(0xfeeb);
+    let mut rng = &mut StdRng::seed_from_u64(0xfeeb);
 
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
@@ -467,7 +468,7 @@ fn stake_withdraw_unstake() {
     let withdraw_address_r = JubJubScalar::random(rng);
     let withdraw_address = psk.gen_stealth_address(&withdraw_address_r);
 
-    let withdraw_nonce = BlsScalar::random(rng);
+    let withdraw_nonce = BlsScalar::random(&mut rng);
 
     let withdraw_digest = withdraw_signature_message(
         stake_data.counter,

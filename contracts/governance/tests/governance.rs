@@ -16,6 +16,7 @@ use dusk_bls12_381_sign::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use dusk_pki::{PublicKey, SecretKey};
+use ff::Field;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::{ContractData, ContractId, Session, VM};
@@ -84,7 +85,7 @@ fn balance(session: &mut Session, pk: &PublicKey) -> u64 {
 
 #[test]
 fn balance_overflow() {
-    let rng = &mut StdRng::seed_from_u64(0xbeef);
+    let mut rng = &mut StdRng::seed_from_u64(0xbeef);
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
@@ -103,7 +104,7 @@ fn balance_overflow() {
     assert_eq!(balance(session, &bob), 0);
 
     // Make a "mint" call
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = mint_msg(seed, alice, u64::MAX);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -124,7 +125,7 @@ fn balance_overflow() {
     let transfer = (Some(bob), Some(alice), 200u64, TIMESTAMP);
     let batch = vec![transfer];
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = transfer_msg(seed, &batch);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -144,7 +145,7 @@ fn balance_overflow() {
 
 #[test]
 fn same_seed() {
-    let rng = &mut StdRng::seed_from_u64(0xbeef);
+    let mut rng = &mut StdRng::seed_from_u64(0xbeef);
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
@@ -155,7 +156,7 @@ fn same_seed() {
 
     let session = &mut instantiate(vm, &authority, &broker);
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = pause_msg(seed);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -178,7 +179,7 @@ fn same_seed() {
 
 #[test]
 fn wrong_signature() {
-    let rng = &mut StdRng::seed_from_u64(0xbeef);
+    let mut rng = &mut StdRng::seed_from_u64(0xbeef);
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
@@ -189,7 +190,7 @@ fn wrong_signature() {
 
     let session = &mut instantiate(vm, &authority, &broker);
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let wrong_message = vec![1, 0, 1, 0, 1, 0];
     let wrong_sig = authority_sk.sign(&authority, &wrong_message);
 
@@ -200,7 +201,7 @@ fn wrong_signature() {
 
 #[test]
 fn mint_burn_transfer() {
-    let rng = &mut StdRng::seed_from_u64(0xbeef);
+    let mut rng = &mut StdRng::seed_from_u64(0xbeef);
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
@@ -219,7 +220,7 @@ fn mint_burn_transfer() {
     assert_eq!(balance(session, &bob), 0);
 
     // Make a "mint" call
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = mint_msg(seed, alice, 100);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -240,7 +241,7 @@ fn mint_burn_transfer() {
     let transfer = (Some(alice), Some(bob), 200, TIMESTAMP);
     let batch = vec![transfer];
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = transfer_msg(seed, &batch);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -261,7 +262,7 @@ fn mint_burn_transfer() {
     let transfer = (Some(bob), Some(alice), 200, TIMESTAMP);
     let batch = vec![transfer];
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = transfer_msg(seed, &batch);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -281,7 +282,7 @@ fn mint_burn_transfer() {
 
 #[test]
 fn fee() {
-    let rng = &mut StdRng::seed_from_u64(0xbeef);
+    let mut rng = &mut StdRng::seed_from_u64(0xbeef);
     let vm = &mut rusk_abi::new_ephemeral_vm()
         .expect("Creating ephemeral VM should work");
 
@@ -306,7 +307,7 @@ fn fee() {
         (Some(alice), Some(bob), 50, TIMESTAMP),
     ];
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = fee_msg(seed, &batch);
     let signature = authority_sk.sign(&authority, &msg);
 
@@ -332,7 +333,7 @@ fn fee() {
         (Some(alice), Some(broker), 100, TIMESTAMP),
     ];
 
-    let seed = BlsScalar::random(rng);
+    let seed = BlsScalar::random(&mut rng);
     let msg = transfer_msg(seed, &batch);
     let signature = authority_sk.sign(&authority, &msg);
 
