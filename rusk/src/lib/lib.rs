@@ -721,6 +721,8 @@ fn reward_and_update_root(
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
 
+    // TODO: Reward the generator and the contracts that were touched
+
     session.call::<_, ()>(
         STAKE_CONTRACT,
         "reward",
