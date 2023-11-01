@@ -7,6 +7,7 @@
 use transfer_circuits::SendToContractTransparentCircuit;
 
 use dusk_pki::SecretSpendKey;
+use ff::Field;
 use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
@@ -17,9 +18,9 @@ mod keys;
 use keys::load_keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
-    rng: &mut R,
+    mut rng: &mut R,
 ) -> SendToContractTransparentCircuit {
-    let address = BlsScalar::random(rng);
+    let address = BlsScalar::random(&mut rng);
     let value = rng.next_u64();
 
     let ssk = SecretSpendKey::random(rng);

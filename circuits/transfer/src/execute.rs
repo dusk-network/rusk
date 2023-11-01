@@ -243,7 +243,7 @@ impl<const I: usize, T, const H: usize, const A: usize>
 
         // 2. commitment(Cc,cv,cb,64)
         let crossover = JubJubAffine::from(self.crossover.value_commitment());
-        pi.extend([crossover.get_x(), crossover.get_y()]);
+        pi.extend([crossover.get_u(), crossover.get_v()]);
 
         pi.push(BlsScalar::from(self.crossover.fee()));
 
@@ -252,7 +252,7 @@ impl<const I: usize, T, const H: usize, const A: usize>
         for output in self.outputs().iter() {
             let commitment =
                 JubJubAffine::from(output.note().value_commitment());
-            outputs.extend([commitment.get_x(), commitment.get_y()]);
+            outputs.extend([commitment.get_u(), commitment.get_v()]);
         }
 
         pi.extend(outputs);
@@ -301,9 +301,7 @@ where
         composer: &mut C,
     ) -> Result<(), PlonkError> {
         if self.inputs.len() != I {
-            // TODO: change into InvalidCircuitSize error once plonk v0.15 is
-            // merged across the stack
-            return Err(PlonkError::CircuitInputsNotFound);
+            return Err(PlonkError::InvalidCircuitSize);
         }
 
         // Set the common root/anchor for all inputs
@@ -354,12 +352,11 @@ where
                 );
 
                 // 1.e commitment(ic,iv,ib,64)
-                gadgets::commitment(
+                gadgets::commitment::<_, 64>(
                     composer,
                     witness.value_commitment,
                     witness.value,
                     witness.blinding_factor,
-                    64,
                 )?;
 
                 let constraint =
@@ -374,12 +371,11 @@ where
         let commitment =
             composer.append_public_point(crossover.value_commitment);
 
-        gadgets::commitment(
+        gadgets::commitment::<_, 64>(
             composer,
             commitment,
             crossover.value,
             crossover.blinding_factor,
-            64,
         )?;
 
         composer.assert_equal_constant(
@@ -398,12 +394,11 @@ where
                 composer.append_public_point(witness.value_commitment);
 
             // 1.a commitment(oc,ov,ob,64)
-            gadgets::commitment(
+            gadgets::commitment::<_, 64>(
                 composer,
                 commitment,
                 witness.value,
                 witness.blinding_factor,
-                64,
             )?;
 
             let constraint = Constraint::new()

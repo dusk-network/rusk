@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_pki::{PublicSpendKey, SecretSpendKey};
+use ff::Field;
 use phoenix_core::Note;
 use poseidon_merkle::{Item, Tree};
 use transfer_circuits::Error;
@@ -147,9 +148,9 @@ pub fn create_test_circuit<const I: usize>(
 
 #[test]
 fn execute_1_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = &mut StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitOneTwo =
             create_test_circuit::<1>(rng, *use_crossover, tx_hash)
@@ -169,9 +170,9 @@ fn execute_1_2() {
 
 #[test]
 fn execute_2_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = &mut StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitTwoTwo =
             create_test_circuit::<2>(rng, *use_crossover, tx_hash)
@@ -191,9 +192,9 @@ fn execute_2_2() {
 
 #[test]
 fn execute_3_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = &mut StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitThreeTwo =
             create_test_circuit::<3>(rng, *use_crossover, tx_hash)
@@ -213,9 +214,9 @@ fn execute_3_2() {
 
 #[test]
 fn execute_4_2() {
-    let rng = &mut StdRng::seed_from_u64(424242u64);
+    let mut rng = &mut StdRng::seed_from_u64(424242u64);
 
-    let tx_hash = BlsScalar::random(rng);
+    let tx_hash = BlsScalar::random(&mut rng);
     for use_crossover in [true, false].iter() {
         let circuit: ExecuteCircuitFourTwo =
             create_test_circuit::<4>(rng, *use_crossover, tx_hash)

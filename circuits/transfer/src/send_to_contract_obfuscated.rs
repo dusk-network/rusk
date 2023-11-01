@@ -259,21 +259,19 @@ impl Circuit for SendToContractObfuscatedCircuit {
         // Circuit
 
         // 1. commitment(Cc,Cv,Cb,64)
-        gadgets::commitment(
+        gadgets::commitment::<_, 64>(
             composer,
             crossover_commitment,
             value,
             crossover_blinder,
-            64,
         )?;
 
         // 2. commitment(Mc,Mv,Mb,64)
-        gadgets::commitment(
+        gadgets::commitment::<_, 64>(
             composer,
             message_commitment,
             value,
             message_blinder,
-            64,
         )?;
 
         // 3. (pa,pb) := selectPair(Mx,I,Mp,Ms)

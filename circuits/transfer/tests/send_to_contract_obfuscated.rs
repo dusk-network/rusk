@@ -9,6 +9,7 @@ use transfer_circuits::{
 };
 
 use dusk_pki::SecretSpendKey;
+use ff::Field;
 use phoenix_core::{Message, Note};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
@@ -19,7 +20,7 @@ mod keys;
 use keys::load_keys;
 
 fn create_random_circuit<R: RngCore + CryptoRng>(
-    rng: &mut R,
+    mut rng: &mut R,
     public_derive_key: bool,
 ) -> SendToContractObfuscatedCircuit {
     let c_ssk = SecretSpendKey::random(rng);
@@ -43,7 +44,7 @@ fn create_random_circuit<R: RngCore + CryptoRng>(
     let r = JubJubScalar::random(rng);
     let message = Message::new(rng, &r, &m_psk, value);
 
-    let address = BlsScalar::random(rng);
+    let address = BlsScalar::random(&mut rng);
     let signature = SendToContractObfuscatedCircuit::sign(
         rng, &c_ssk, &fee, &crossover, &message, &address,
     );

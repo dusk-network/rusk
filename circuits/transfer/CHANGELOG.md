@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Update `dusk-bls12_381` to `0.12`
+- Update `dusk-jubjub` to `0.13`
+- Update `dusk-plonk` to `0.16`
+- Update `dusk-poseidon` to `0.31`
+- Update `poseidon-merkle` to `0.3`
+- Update `dusk-pki` to `0.13`
+- Update `dusk-schnorr` to `0.14`
+- Update `phoenix-core` to `0.21`
+- Add `ff` dev-dependency
+
 ## [0.2.0] - 2021-07-15
 
 ### Changed

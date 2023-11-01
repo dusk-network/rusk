@@ -69,7 +69,7 @@ where
     };
 
     // compress circuit and prepare for storage
-    let compressed = Compiler::compress::<C>(&PUB_PARAMS).map_err(|e| {
+    let compressed = Compiler::compress::<C>().map_err(|e| {
         io::Error::new(
             ErrorKind::InvalidData,
             format!("Plonk circuit couldn't be compressed: {e}"),

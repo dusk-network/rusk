@@ -18,14 +18,13 @@ pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
 /// range of `2^bits`.
 ///
 /// `commitment(p, v, b, s) → p == v · G + b · G′ ∧ v < 2^s`
-pub fn commitment<C: Composer>(
+pub fn commitment<C: Composer, const BIT_PAIR: usize>(
     composer: &mut C,
     p: WitnessPoint,
     v: Witness,
     b: Witness,
-    bits: usize,
 ) -> Result<(), Error> {
-    composer.component_range(v, bits);
+    composer.component_range::<BIT_PAIR>(v);
 
     let v = composer.component_mul_generator(v, GENERATOR_EXTENDED)?;
     let b = composer.component_mul_generator(b, GENERATOR_NUMS_EXTENDED)?;

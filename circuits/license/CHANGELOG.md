@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+ - Update `zk-citadel` from `0.4.0` to `0.5.0` and other dependencies [#1082]
+ - Adjust license contract tests to Citadel 0.5.0 [#1082] 
+
 ## [0.1.0] - 2023-05-02
 
 ### Added
@@ -16,3 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `license-circuits` to Rusk keys scheme [#865]
 
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/license-circuits-0.1.0
+
+[#1082]: https://github.com/dusk-network/rusk/issues/1082
+[#865]: https://github.com/dusk-network/rusk/issues/865
