@@ -5,5 +5,5 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 mod block_generator;
-mod handler;
+pub(crate) mod handler;
 pub mod step;

@@ -18,7 +18,7 @@ use node_data::ledger;
 use node_data::message::payload::NewBlock;
 use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 use tracing::{debug, info};
 
@@ -43,6 +43,8 @@ impl<T: Operations> Generator<T> {
             .sign(ru.pubkey_bls.inner(), &ru.seed.inner()[..])
             .to_bytes();
 
+        let start = Instant::now();
+
         let candidate = self
             .generate_block(
                 &ru.pubkey_bls,
@@ -54,6 +56,15 @@ impl<T: Operations> Generator<T> {
             )
             .await?;
 
+        info!(
+            event = "gen_candidate",
+            hash = &to_str(&candidate.header().hash),
+            state_hash = &to_str(&candidate.header().state_hash),
+            dur = format!("{:?}ms", start.elapsed().as_millis()),
+        );
+
+        debug!("block: {:?}", &candidate);
+
         let msg_header = Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
@@ -63,14 +74,6 @@ impl<T: Operations> Generator<T> {
         };
 
         let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
-
-        info!(
-            event = "gen_candidate",
-            hash = &to_str(&candidate.header().hash),
-            state_hash = &to_str(&candidate.header().state_hash),
-        );
-
-        debug!("block: {:?}", &candidate);
 
         Ok(Message::new_newblock(
             msg_header,
@@ -90,9 +93,7 @@ impl<T: Operations> Generator<T> {
         prev_block_timestamp: i64,
         iteration: u8,
     ) -> Result<Block, crate::contract_state::Error> {
-        // Delay next iteration execution so we avoid consensus-split situation.
-        tokio::time::sleep(Duration::from_millis(config::CONSENSUS_DELAY_MS))
-            .await;
+        let start_time = Instant::now();
 
         let result = self
             .executor
@@ -127,6 +128,15 @@ impl<T: Operations> Generator<T> {
             txroot,
             iteration,
         };
+
+        // Apply a delay in block generator accordingly
+        // In case EST call costs a second (assuming CONSENSUS_DELAY_MS=1000ms),
+        // we should not sleep here
+        if let Some(delay) = Duration::from_millis(config::CONSENSUS_DELAY_MS)
+            .checked_sub(start_time.elapsed())
+        {
+            tokio::time::sleep(delay).await;
+        }
 
         Ok(Block::new(blk_header, txs).expect("block should be valid"))
     }

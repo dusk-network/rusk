@@ -7,15 +7,17 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::step_votes_reg::SafeStepVotesRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
+
 use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[derive(Debug, Default)]
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
+    pub(crate) _sv_registry: SafeStepVotesRegistry,
 }
 
 #[async_trait]
@@ -65,6 +67,16 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
 }
 
 impl<D: Database> Selection<D> {
+    pub(crate) fn new(
+        db: Arc<Mutex<D>>,
+        sv_registry: SafeStepVotesRegistry,
+    ) -> Self {
+        Self {
+            db,
+            _sv_registry: sv_registry,
+        }
+    }
+
     fn verify_new_block(
         &self,
         msg: &Message,
