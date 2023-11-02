@@ -6,16 +6,18 @@
 
 use aes::Aes256;
 use block_modes::block_padding::Pkcs7;
-use block_modes::{BlockMode, Cbc};
+use block_modes::{BlockMode, BlockModeError, Cbc};
 use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable;
 
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
+use sha2::{Digest, Sha256};
 use std::cmp::Ordering;
 use std::fs;
 use std::path::PathBuf;
+use tracing::warn;
 
 pub const PUBLIC_BLS_SIZE: usize = dusk_bls12_381_sign::PublicKey::SIZE;
 
@@ -106,10 +108,8 @@ pub fn load_keys(
     path: String,
     pwd: String,
 ) -> (dusk_bls12_381_sign::SecretKey, PublicKey) {
-    let pwd = blake3::hash(pwd.as_bytes());
-
     let path_buf = PathBuf::from(path);
-    let (pk, sk) = read_from_file(path_buf, pwd);
+    let (pk, sk) = read_from_file(path_buf, &pwd);
 
     (sk, PublicKey::new(pk))
 }
@@ -119,13 +119,12 @@ pub fn load_keys(
 /// Panics on any error.
 fn read_from_file(
     path: PathBuf,
-    pwd: blake3::Hash,
+    pwd: &str,
 ) -> (
     dusk_bls12_381_sign::PublicKey,
     dusk_bls12_381_sign::SecretKey,
 ) {
     use serde::Deserialize;
-    type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
     /// Bls key pair helper structure
     #[derive(Deserialize)]
@@ -139,13 +138,18 @@ fn read_from_file(
     let ciphertext =
         fs::read(path).expect("path should be valid consensus keys file");
 
-    // Decrypt
-    let iv = &ciphertext[..16];
-    let enc = &ciphertext[16..];
+    let mut hasher = Sha256::new();
+    hasher.update(pwd.as_bytes());
+    let hashed_pwd = hasher.finalize().to_vec();
 
-    let cipher =
-        Aes256Cbc::new_from_slices(pwd.as_bytes(), iv).expect("valid data");
-    let bytes = cipher.decrypt_vec(enc).expect("pwd should be valid");
+    let bytes = decrypt(&ciphertext[..], &hashed_pwd).unwrap_or_else(|_| {
+        let hashed_pwd = blake3::hash(pwd.as_bytes());
+        let bytes = decrypt(&ciphertext[..], hashed_pwd.as_bytes())
+            .expect("Invalid consensus keys password");
+        warn!("Your consensus keys are in the old format");
+        warn!("Consider to export them using a new version of the wallet");
+        bytes
+    });
 
     let keys: BlsKeyPair =
         serde_json::from_slice(&bytes).expect("keys files should contain json");
@@ -163,6 +167,15 @@ fn read_from_file(
     (pk, sk)
 }
 
+fn decrypt(data: &[u8], pwd: &[u8]) -> Result<Vec<u8>, BlockModeError> {
+    type Aes256Cbc = Cbc<Aes256, Pkcs7>;
+    let iv = &data[..16];
+    let enc = &data[16..];
+
+    let cipher = Aes256Cbc::new_from_slices(pwd, iv).expect("valid data");
+    cipher.decrypt_vec(enc)
+}
+
 /// Loads wallet files from $DUSK_WALLET_DIR and returns a vector of all loaded
 /// consensus keys.
 ///
@@ -175,14 +188,12 @@ pub fn load_provisioners_keys(
     let dir = std::env::var("DUSK_WALLET_DIR").unwrap();
     let pwd = std::env::var("DUSK_CONSENSUS_KEYS_PASS").unwrap();
 
-    let pwd = blake3::hash(pwd.as_bytes());
-
     for i in 0..n {
         let mut path = dir.clone();
         path.push_str(&format!("node_{i}.keys"));
         let path_buf = PathBuf::from(path);
 
-        let (pk, sk) = read_from_file(path_buf, pwd);
+        let (pk, sk) = read_from_file(path_buf, &pwd);
 
         keys.push((sk, PublicKey::new(pk)));
     }

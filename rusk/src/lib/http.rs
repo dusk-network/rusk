@@ -44,9 +44,11 @@ use tungstenite::protocol::{CloseFrame, Message};
 use futures_util::{stream, SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
-use crate::Rusk;
+use crate::{Rusk, VERSION};
 
 use self::event::MessageRequest;
+
+const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
 pub struct HttpServer {
     handle: task::JoinHandle<()>,
@@ -92,6 +94,7 @@ impl HandleRequest for DataSources {
             "Received {:?}:{} request",
             request.event.target, request.event.topic
         );
+        request.check_rusk_version()?;
         match request.event.to_route() {
             (Target::Contract(_), ..) | (_, "rusk", _) => {
                 self.rusk.handle_request(request).await
@@ -348,7 +351,7 @@ where
         let (execution_request, is_binary) =
             MessageRequest::from_request(req).await?;
 
-        let x_headers = execution_request.x_headers();
+        let mut resp_headers = execution_request.x_headers();
 
         let (responder, mut receiver) = mpsc::unbounded_channel();
         handle_execution(sources, execution_request, responder).await;
@@ -357,11 +360,16 @@ where
             .recv()
             .await
             .expect("An execution should always return a response");
+        resp_headers.extend(execution_response.headers.clone());
         let mut resp = execution_response.into_http(is_binary)?;
 
-        for (k, v) in x_headers {
+        for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
-            let v = HeaderValue::from_str(&v.to_string())?;
+            let v = match v {
+                serde_json::Value::String(s) => HeaderValue::from_str(&s),
+                serde_json::Value::Null => HeaderValue::from_str(""),
+                _ => HeaderValue::from_str(&v.to_string()),
+            }?;
             resp.headers_mut().append(k, v);
         }
 
@@ -376,7 +384,7 @@ async fn handle_execution<H>(
 ) where
     H: HandleRequest,
 {
-    let rsp = sources
+    let mut rsp = sources
         .handle(&request)
         .await
         .map(|data| EventResponse {
@@ -386,6 +394,7 @@ async fn handle_execution<H>(
         })
         .unwrap_or_else(|e| request.to_error(e.to_string()));
 
+    rsp.set_header(RUSK_VERSION_HEADER, serde_json::json!(*VERSION));
     let _ = responder.send(rsp);
 }
 
@@ -495,27 +504,26 @@ mod tests {
             data: RequestData::Text("Not used".into()),
             topic: "stream".into(),
         };
-        let headers: serde_json::Map<String, serde_json::Value> =
+        let request_x_header: serde_json::Map<String, serde_json::Value> =
             serde_json::from_str(r#"{"X-requestid": "100"}"#)
                 .expect("headers to be serialized");
 
         let request = MessageRequest {
             event,
-            headers: headers.clone(),
+            headers: request_x_header.clone(),
         };
 
         let request = serde_json::to_string(&request).unwrap();
 
         stream
-            .write_message(Message::Text(request))
+            .send(Message::Text(request))
             .expect("Sending request to the server should succeed");
 
         let mut responses = vec![];
-        // Vec::<ExecutionResponse>::with_capacity(request_num);
 
         while responses.len() < STREAMED_DATA.len() {
             let msg = stream
-                .read_message()
+                .read()
                 .expect("Response should be received without error");
 
             let msg = match msg {
@@ -524,9 +532,12 @@ mod tests {
             };
             let response: EventResponse = serde_json::from_str(&msg)
                 .expect("Response should deserialize successfully");
+
+            let mut response_x_header = response.headers.clone();
+            response_x_header.retain(|k, _| k.to_lowercase().starts_with("x-"));
             assert_eq!(
-                response.headers, headers,
-                "x- headers to be propagated back"
+                response_x_header, request_x_header,
+                "x-headers to be propagated back"
             );
             assert!(matches!(response.error, None), "There should be noerror");
             match response.data {

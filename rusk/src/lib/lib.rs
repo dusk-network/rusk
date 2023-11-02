@@ -17,6 +17,7 @@ pub mod chain;
 pub mod error;
 pub mod http;
 pub mod prover;
+mod version;
 mod vm;
 
 use dusk_bytes::DeserializableSlice;
@@ -43,6 +44,8 @@ use rusk_abi::{
 };
 use rusk_profile::to_rusk_state_id_path;
 use sha3::{Digest, Sha3_256};
+
+pub use version::{VERSION, VERSION_BUILD};
 
 const A: usize = 4;
 

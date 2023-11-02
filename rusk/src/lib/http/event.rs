@@ -4,15 +4,18 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::RUSK_VERSION_HEADER;
 use futures_util::{stream, StreamExt};
 use hyper::header::{InvalidHeaderName, InvalidHeaderValue};
 use hyper::Body;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_with::{self, serde_as};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::sync::mpsc;
+use tungstenite::http::HeaderValue;
 
 /// A request sent by the websocket client.
 #[derive(Debug, Serialize, Deserialize)]
@@ -125,11 +128,16 @@ impl MessageRequest {
         let headers = req
             .headers()
             .iter()
-            .filter_map(|(k, v)| {
-                let a = v.as_bytes();
-                serde_json::from_slice::<serde_json::Value>(a)
-                    .ok()
-                    .map(|v| (k.to_string(), v))
+            .map(|(k, v)| {
+                let v = if v.is_empty() {
+                    serde_json::Value::Null
+                } else {
+                    serde_json::from_slice::<serde_json::Value>(v.as_bytes())
+                        .unwrap_or(serde_json::Value::String(
+                            v.to_str().unwrap().to_string(),
+                        ))
+                };
+                (k.to_string().to_lowercase(), v)
             })
             .collect();
         let (event, is_binary) = Event::from_request(req).await?;
@@ -137,6 +145,23 @@ impl MessageRequest {
         let req = MessageRequest { event, headers };
 
         Ok((req, is_binary))
+    }
+
+    pub fn check_rusk_version(&self) -> anyhow::Result<()> {
+        if let Some(v) = self.header(RUSK_VERSION_HEADER) {
+            let req = match v.as_str() {
+                Some(v) => VersionReq::from_str(v),
+                None => VersionReq::from_str(&v.to_string()),
+            }?;
+
+            let current = Version::from_str(&crate::VERSION)?;
+            if !req.matches(&current) {
+                return Err(anyhow::anyhow!(
+                    "Mismatched rusk version: requested {req} - current {current}",
+                ));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -170,6 +195,8 @@ impl MessageResponse {
                 .body(hyper::Body::from(error.to_string()))?);
         }
 
+        let mut headers = HashMap::new();
+
         let body = {
             match self.data {
                 ResponseData::Binary(wrapper) => {
@@ -180,19 +207,42 @@ impl MessageResponse {
                     Body::from(data)
                 }
                 ResponseData::Text(text) => Body::from(text),
-                ResponseData::Channel(channel) => Body::wrap_stream(
-                    stream::iter(channel).map(move |e| match is_binary {
-                        true => Ok::<_, anyhow::Error>(e),
-                        false => Ok::<_, anyhow::Error>(
-                            hex::encode(e).as_bytes().to_vec(),
-                        ),
-                    }), // Ok::<_, anyhow::Error>),
-                ),
+                ResponseData::Json(value) => {
+                    headers.insert(CONTENT_TYPE, CONTENT_TYPE_JSON.clone());
+                    Body::from(value.to_string())
+                }
+                ResponseData::Channel(channel) => {
+                    Body::wrap_stream(stream::iter(channel).map(move |e| {
+                        match is_binary {
+                            true => Ok::<_, anyhow::Error>(e),
+                            false => Ok::<_, anyhow::Error>(
+                                hex::encode(e).as_bytes().to_vec(),
+                            ),
+                        }
+                    }))
+                }
                 ResponseData::None => Body::empty(),
             }
         };
+        let mut response = hyper::Response::new(body);
+        for (k, v) in headers {
+            response.headers_mut().insert(k, v);
+        }
+        Ok(response)
+    }
 
-        Ok(hyper::Response::new(body))
+    pub fn set_header(&mut self, key: &str, value: serde_json::Value) {
+        // search for the key in a case-insensitive way
+        let v = self
+            .headers
+            .iter_mut()
+            .find_map(|(k, v)| k.eq_ignore_ascii_case(key).then_some(v));
+
+        if let Some(v) = v {
+            *v = value;
+        } else {
+            self.headers.insert(key.into(), value);
+        }
     }
 }
 
@@ -238,10 +288,17 @@ impl From<Vec<u8>> for RequestData {
 pub enum ResponseData {
     Binary(BinaryWrapper),
     Text(String),
+    Json(serde_json::Value),
     #[serde(skip)]
     Channel(mpsc::Receiver<Vec<u8>>),
     #[default]
     None,
+}
+
+impl From<serde_json::Value> for ResponseData {
+    fn from(value: serde_json::Value) -> Self {
+        Self::Json(value)
+    }
 }
 
 impl From<String> for ResponseData {
@@ -289,9 +346,8 @@ impl Event {
         let is_binary = parts
             .headers
             .get(CONTENT_TYPE)
-            .and_then(|h| {
-                h.to_str().ok().map(|s| s.starts_with(CONTENT_TYPE_BINARY))
-            })
+            .and_then(|h| h.to_str().ok())
+            .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
             .unwrap_or_default();
 
         let target = parts.uri.path().try_into()?;
@@ -310,6 +366,8 @@ impl Event {
 }
 const CONTENT_TYPE: &str = "Content-Type";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
+static CONTENT_TYPE_JSON: HeaderValue =
+    HeaderValue::from_static("application/json");
 
 fn parse_len(bytes: &[u8]) -> anyhow::Result<(usize, &[u8])> {
     if bytes.len() < 4 {
