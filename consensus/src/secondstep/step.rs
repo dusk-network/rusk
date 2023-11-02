@@ -4,44 +4,51 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_send_reduction, ConsensusError};
+use crate::commons::{spawn_send_reduction, ConsensusError, Database};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
+use std::marker::PhantomData;
+
 use crate::secondstep::handler;
 use crate::user::committee::Committee;
 use node_data::ledger::{to_str, Block};
-use node_data::message::{Message, Payload};
+use node_data::message::{Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[allow(unused)]
-pub struct Reduction<T> {
-    handler: handler::Reduction,
+pub struct Reduction<T, DB> {
+    handler: Arc<Mutex<handler::Reduction>>,
     candidate: Option<Block>,
     timeout_millis: u64,
     executor: Arc<Mutex<T>>,
+
+    marker: PhantomData<DB>,
 }
 
-impl<T: Operations + 'static> Reduction<T> {
-    pub fn new(executor: Arc<Mutex<T>>) -> Self {
+impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
+    pub(crate) fn new(
+        executor: Arc<Mutex<T>>,
+        handler: Arc<Mutex<handler::Reduction>>,
+    ) -> Self {
         Self {
-            handler: handler::Reduction {
-                aggr: Default::default(),
-                first_step_votes: Default::default(),
-            },
+            handler,
             candidate: None,
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             executor,
+            marker: PhantomData,
         }
     }
 
-    pub fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+        let mut handler = self.handler.lock().await;
+
         self.candidate = None;
-        self.handler.reset();
+        handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
-            self.handler.first_step_votes = p.sv;
+            handler.first_step_votes = p.sv;
             self.candidate = Some(p.candidate);
         }
 
@@ -59,13 +66,13 @@ impl<T: Operations + 'static> Reduction<T> {
                     .header()
                     .hash
             ),
-            fsv_bitset = self.handler.first_step_votes.bitset,
+            fsv_bitset = handler.first_step_votes.bitset,
         )
     }
 
     pub async fn run(
         &mut self,
-        mut ctx: ExecutionCtx<'_>,
+        mut ctx: ExecutionCtx<'_, DB, T>,
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
@@ -81,19 +88,25 @@ impl<T: Operations + 'static> Reduction<T> {
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
                     self.executor.clone(),
+                    Topics::SecondReduction,
                 );
             }
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) =
-            ctx.handle_future_msgs(&committee, &mut self.handler).await
+        if let Some(m) = ctx
+            .handle_future_msgs(&committee, self.handler.clone())
+            .await
         {
             return Ok(m);
         }
 
-        ctx.event_loop(&committee, &mut self.handler, &mut self.timeout_millis)
-            .await
+        ctx.event_loop(
+            &committee,
+            self.handler.clone(),
+            &mut self.timeout_millis,
+        )
+        .await
     }
 
     pub fn name(&self) -> &'static str {

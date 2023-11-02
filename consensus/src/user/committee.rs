@@ -10,7 +10,7 @@ use crate::user::sortition;
 use super::cluster::Cluster;
 use crate::config;
 use node_data::bls::PublicKey;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::mem;
 
@@ -20,6 +20,17 @@ pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     this_member_key: PublicKey,
     cfg: sortition::Config,
+}
+
+impl Iterator for Committee {
+    type Item = PublicKey;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.members
+            .iter()
+            .next()
+            .map(|(public_key, _)| public_key.clone())
+    }
 }
 
 #[allow(unused)]
@@ -174,6 +185,20 @@ impl CommitteeSet {
         cfg: &sortition::Config,
     ) -> bool {
         self.get_or_create(cfg).is_member(pubkey)
+    }
+
+    /// Returns number of all unique public keys
+    pub fn get_unique_members(&self) -> usize {
+        let mut merged = HashSet::new();
+        self.committees.iter().for_each(|(_, committee)| {
+            committee.members.iter().for_each(|(m, s)| {
+                if *s > 0 {
+                    merged.insert(m.bytes());
+                }
+            });
+        });
+
+        merged.len()
     }
 
     pub fn votes_for(

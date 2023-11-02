@@ -9,25 +9,29 @@
 
 use std::sync::LazyLock;
 
-use rustc_tools_util::VersionInfo;
-
 #[inline]
-pub(crate) fn show_version(info: VersionInfo) -> String {
-    let version = format!("{}.{}.{}", info.major, info.minor, info.patch);
+pub(crate) fn show_version(verbose: bool) -> String {
+    let info = rustc_tools_util::get_version_info!();
+    let pre = std::env!("CARGO_PKG_VERSION_PRE");
+    let version = if pre.is_empty() {
+        format!("{}.{}.{}", info.major, info.minor, info.patch)
+    } else {
+        format!("{}.{}.{}-{}", info.major, info.minor, info.patch, pre)
+    };
     let build = format!(
         "{} {}",
         info.commit_hash.unwrap_or_default(),
         info.commit_date.unwrap_or_default()
     );
 
-    if build.len() > 1 {
+    if verbose && build.trim().len() > 1 {
         format!("{version} ({build})")
     } else {
         version
     }
 }
 
-pub static VERSION_BUILD: LazyLock<String> = LazyLock::new(|| {
-    let info = rustc_tools_util::get_version_info!();
-    show_version(info)
-});
+pub static VERSION_BUILD: LazyLock<String> =
+    LazyLock::new(|| show_version(true));
+
+pub static VERSION: LazyLock<String> = LazyLock::new(|| show_version(false));

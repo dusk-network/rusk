@@ -242,7 +242,7 @@ impl Block {
     }
 }
 
-#[derive(Debug, Default, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, Hash, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct StepVotes {
     pub bitset: u64,

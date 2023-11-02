@@ -6,14 +6,15 @@
 
 use std::sync::Arc;
 
+use crate::aggregator::Aggregator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::step_votes_reg::{SafeStepVotesRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
 use tokio::sync::Mutex;
 
-use crate::aggregator::Aggregator;
 use crate::user::committee::Committee;
 use node_data::message::{payload, Message, Payload};
 
@@ -45,25 +46,32 @@ fn final_result_with_timeout(
     ))
 }
 
-#[derive(Default)]
 pub struct Reduction<DB: Database> {
+    sv_registry: SafeStepVotesRegistry,
+
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
+    curr_step: u8,
 }
 
 impl<DB: Database> Reduction<DB> {
-    pub(crate) fn new(db: Arc<Mutex<DB>>) -> Self {
+    pub(crate) fn new(
+        db: Arc<Mutex<DB>>,
+        sv_registry: SafeStepVotesRegistry,
+    ) -> Self {
         Self {
+            sv_registry,
             db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
+            curr_step: 0,
         }
     }
 
-    pub(crate) fn reset(&mut self) {
-        self.aggr = Aggregator::default();
+    pub(crate) fn reset(&mut self, curr_step: u8) {
         self.candidate = Block::default();
+        self.curr_step = curr_step;
     }
 }
 
@@ -95,7 +103,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
@@ -108,6 +116,24 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         if let Some((hash, sv)) =
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
+            // Record result in global round registry of all non-Nil step_votes
+            if hash != [0u8; 32] {
+                if let Some(m) = self.sv_registry.lock().await.add_step_votes(
+                    step,
+                    hash,
+                    sv,
+                    SvType::FirstReduction,
+                ) {
+                    return Ok(HandleMsgOutput::FinalResult(m));
+                }
+
+                // If step is different from the current one, this means
+                // * collect * func is being called from different iteration
+                if step != self.curr_step {
+                    return Ok(HandleMsgOutput::Result(msg));
+                }
+            }
+
             // if the votes converged for an empty hash we invoke halt
             if hash == [0u8; 32] {
                 tracing::warn!("votes converged for an empty hash");

@@ -4,7 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::commons::spawn_send_reduction;
+use crate::commons::Database;
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{
     FinalResult, FinalResultWithTimeoutIncrease,
 };
@@ -13,21 +17,27 @@ use crate::queue::Queue;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
+use crate::{firststep, secondstep, selection};
+use node_data::ledger::Block;
+use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
 use std::cmp;
-use tokio::task::JoinSet;
-
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
+use tokio::task::JoinSet;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
 
 /// Represents a shared state within a context of the exection of a single
 /// iteration.
-pub struct IterationCtx {
+pub struct IterationCtx<DB: Database> {
+    first_reduction_handler: Arc<Mutex<firststep::handler::Reduction<DB>>>,
+    sec_reduction_handler: Arc<Mutex<secondstep::handler::Reduction>>,
+    selection_handler: Arc<Mutex<selection::handler::Selection<DB>>>,
+
     pub join_set: JoinSet<()>,
 
     /// verified candidate hash
@@ -38,21 +48,78 @@ pub struct IterationCtx {
 
     round: u64,
     iter: u8,
+
+    /// Stores any committee already generated in the execution of any
+    /// iteration of current round
+    committees: HashMap<u8, Committee>,
 }
 
-impl IterationCtx {
-    pub fn new(round: u64, step: u8) -> Self {
+impl<D: Database> IterationCtx<D> {
+    pub fn new(
+        round: u64,
+        iter: u8,
+        selection_handler: Arc<Mutex<selection::handler::Selection<D>>>,
+        first_reduction_handler: Arc<Mutex<firststep::handler::Reduction<D>>>,
+        sec_reduction_handler: Arc<Mutex<secondstep::handler::Reduction>>,
+    ) -> Self {
         Self {
             round,
             join_set: JoinSet::new(),
-            iter: step / 3 + 1,
+            iter,
             verified_hash: Arc::new(Mutex::new([0u8; 32])),
+            selection_handler,
+            first_reduction_handler,
+            sec_reduction_handler,
+            committees: Default::default(),
         }
     }
-}
 
-impl Drop for IterationCtx {
-    fn drop(&mut self) {
+    pub(crate) async fn collect_past_event(
+        &self,
+        ru: &RoundUpdate,
+        msg: &Message,
+    ) -> Option<Message> {
+        let committee = self.committees.get(&msg.header.step)?;
+        match msg.topic() {
+            node_data::message::Topics::NewBlock => {
+                let mut handler = self.selection_handler.lock().await;
+                _ = handler
+                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .await;
+            }
+            node_data::message::Topics::FirstReduction => {
+                let mut handler = self.first_reduction_handler.lock().await;
+                if let Ok(FinalResult(m)) = handler
+                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .await
+                {
+                    return Some(m);
+                }
+            }
+            node_data::message::Topics::SecondReduction => {
+                let mut handler = self.sec_reduction_handler.lock().await;
+                if let Ok(FinalResult(m)) = handler
+                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .await
+                {
+                    return Some(m);
+                }
+            }
+            _ => {}
+        };
+
+        None
+    }
+
+    pub(crate) fn get_committee(&mut self, step: u8) -> Option<&Committee> {
+        self.committees.get(&step)
+    }
+
+    pub(crate) fn on_iteration_begin(&mut self, iter: u8) {
+        self.iter = iter;
+    }
+
+    pub(crate) fn on_iteration_end(&mut self) {
         debug!(
             event = "iter completed",
             len = self.join_set.len(),
@@ -63,10 +130,16 @@ impl Drop for IterationCtx {
     }
 }
 
+impl<DB: Database> Drop for IterationCtx<DB> {
+    fn drop(&mut self) {
+        self.on_iteration_end();
+    }
+}
+
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
-pub struct ExecutionCtx<'a> {
-    pub iter_ctx: &'a mut IterationCtx,
+pub struct ExecutionCtx<'a, DB: Database, T> {
+    pub iter_ctx: &'a mut IterationCtx<DB>,
 
     /// Messaging-related fields
     pub inbound: AsyncQueue<Message>,
@@ -79,19 +152,22 @@ pub struct ExecutionCtx<'a> {
     // Round/Step parameters
     pub round_update: RoundUpdate,
     pub step: u8,
+
+    executor: Arc<Mutex<T>>,
 }
 
-impl<'a> ExecutionCtx<'a> {
+impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// Creates step execution context.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        iter_ctx: &'a mut IterationCtx,
+        iter_ctx: &'a mut IterationCtx<DB>,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a mut Provisioners,
         round_update: RoundUpdate,
         step: u8,
+        executor: Arc<Mutex<T>>,
     ) -> Self {
         Self {
             iter_ctx,
@@ -101,7 +177,12 @@ impl<'a> ExecutionCtx<'a> {
             provisioners,
             round_update,
             step,
+            executor,
         }
+    }
+
+    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
+        self.iter_ctx.committees.insert(step, committee);
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -116,7 +197,7 @@ impl<'a> ExecutionCtx<'a> {
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
         committee: &Committee,
-        phase: &mut C,
+        phase: Arc<Mutex<C>>,
         timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "run event_loop");
@@ -137,7 +218,7 @@ impl<'a> ExecutionCtx<'a> {
                         if let Some(step_result) = self
                             .process_inbound_msg(
                                 committee,
-                                phase,
+                                phase.clone(),
                                 msg,
                                 timeout_millis,
                             )
@@ -153,10 +234,96 @@ impl<'a> ExecutionCtx<'a> {
                     info!(event = "timeout-ed");
                     Self::increase_timeout(timeout_millis);
 
-                    return self.process_timeout_event(phase);
+                    return self.process_timeout_event(phase.clone()).await;
                 }
             }
         }
+    }
+
+    pub(crate) async fn vote_for_former_candidate(
+        &mut self,
+        msg_step: u8,
+        candidate: &Block,
+    ) {
+        debug!(
+            event = "former candidate received",
+            hash = node_data::ledger::to_str(&candidate.header().hash),
+            msg_step,
+        );
+
+        if msg_step < self.step {
+            self.try_vote(msg_step + 1, candidate, Topics::FirstReduction);
+        }
+
+        if msg_step + 2 <= self.step {
+            self.try_vote(msg_step + 2, candidate, Topics::SecondReduction);
+        }
+    }
+
+    fn try_vote(&mut self, msg_step: u8, candidate: &Block, topic: Topics) {
+        if let Some(committee) = self.iter_ctx.get_committee(msg_step) {
+            if committee.am_member() {
+                debug!(
+                    event = "vote for former candidate",
+                    step_topic = format!("{:?}", topic),
+                    hash = node_data::ledger::to_str(&candidate.header().hash),
+                    msg_step,
+                );
+
+                spawn_send_reduction(
+                    &mut self.iter_ctx.join_set,
+                    Arc::new(Mutex::new([0u8; 32])),
+                    candidate.clone(),
+                    self.round_update.pubkey_bls.clone(),
+                    self.round_update.clone(),
+                    msg_step,
+                    self.outbound.clone(),
+                    self.inbound.clone(),
+                    self.executor.clone(),
+                    topic,
+                );
+            };
+        } else {
+            error!(event = "committee not found", step = self.step, msg_step);
+        }
+    }
+
+    /// Process messages from past
+    async fn process_past_events(&mut self, msg: &Message) -> Option<Message> {
+        if msg.header.block_hash == [0u8; 32]
+            || msg.header.round != self.round_update.round
+        {
+            return None;
+        }
+
+        if let Err(e) = self.outbound.send(msg.clone()).await {
+            error!("could not send msg due to {:?}", e);
+        }
+
+        // Try to vote for candidate block from former iteration
+        if let Payload::NewBlock(p) = &msg.payload {
+            // TODO: Perform block header/ Certificate full verification
+            // To be addressed with another PR
+
+            self.vote_for_former_candidate(msg.header.step, &p.candidate)
+                .await;
+        }
+
+        if let Some(m) = self
+            .iter_ctx
+            .collect_past_event(&self.round_update, msg)
+            .await
+        {
+            if m.header.topic == Topics::Agreement as u8 {
+                debug!(
+                    event = "agreement from former iter",
+                    msg_step = m.header.step
+                );
+                return Some(m);
+            }
+        }
+
+        None
     }
 
     /// Delegates the received message to the Phase handler for further
@@ -167,17 +334,19 @@ impl<'a> ExecutionCtx<'a> {
     async fn process_inbound_msg<C: MsgHandler<Message>>(
         &mut self,
         committee: &Committee,
-        phase: &mut C,
+        phase: Arc<Mutex<C>>,
         msg: Message,
         timeout_millis: &mut u64,
     ) -> Option<Message> {
-        // Check if a message is fully valid. If so, then it can be broadcast.
-        match phase.is_valid(
+        // Check if message is valid in the context of current step
+        let ret = phase.lock().await.is_valid(
             msg.clone(),
             &self.round_update,
             self.step,
             committee,
-        ) {
+        );
+
+        match ret {
             Ok(msg) => {
                 // Re-publish the returned message
                 self.outbound.send(msg).await.unwrap_or_else(|err| {
@@ -198,23 +367,27 @@ impl<'a> ExecutionCtx<'a> {
                             msg.header.step,
                             msg,
                         );
+
+                        return None;
                     }
                     ConsensusError::PastEvent => {
-                        trace!("discard message from past {:#?}", msg);
+                        return self.process_past_events(&msg).await;
                     }
                     _ => {
                         error!("phase handler err: {:?}", e);
+                        return None;
                     }
                 }
-
-                return None;
             }
         }
 
-        match phase
-            .collect(msg.clone(), &self.round_update, self.step, committee)
+        let ret = phase
+            .lock()
             .await
-        {
+            .collect(msg.clone(), &self.round_update, self.step, committee)
+            .await;
+
+        match ret {
             Ok(output) => {
                 trace!("message collected {:#?}", msg);
 
@@ -233,7 +406,13 @@ impl<'a> ExecutionCtx<'a> {
                 }
             }
             Err(e) => {
-                error!("phase collect return err: {:?}", e);
+                error!(
+                    event = "failed collect",
+                    err = format!("{:?}", e),
+                    msg_topic = format!("{:?}", msg.topic()),
+                    msg_step = msg.header.step,
+                    msg_round = msg.header.round,
+                );
             }
         }
 
@@ -242,12 +421,14 @@ impl<'a> ExecutionCtx<'a> {
 
     /// Delegates the received event of timeout to the Phase handler for further
     /// processing.
-    fn process_timeout_event<C: MsgHandler<Message>>(
+    async fn process_timeout_event<C: MsgHandler<Message>>(
         &mut self,
-        phase: &mut C,
+        phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        if let Ok(FinalResult(msg)) =
-            phase.handle_timeout(&self.round_update, self.step)
+        if let Ok(FinalResult(msg)) = phase
+            .lock()
+            .await
+            .handle_timeout(&self.round_update, self.step)
         {
             return Ok(msg);
         }
@@ -262,7 +443,7 @@ impl<'a> ExecutionCtx<'a> {
     pub async fn handle_future_msgs<C: MsgHandler<Message>>(
         &self,
         committee: &Committee,
-        phase: &mut C,
+        phase: Arc<Mutex<C>>,
     ) -> Option<Message> {
         if let Some(messages) = self
             .future_msgs
@@ -275,39 +456,36 @@ impl<'a> ExecutionCtx<'a> {
             }
 
             for msg in messages {
-                if let Ok(msg) = phase.is_valid(
+                let ret = phase.lock().await.is_valid(
                     msg,
                     &self.round_update,
                     self.step,
                     committee,
-                ) {
-                    // Check if a message is fully valid. If so, then it can be
-                    // broadcast.
-                    if let Ok(msg) = phase.is_valid(
-                        msg.clone(),
-                        &self.round_update,
-                        self.step,
-                        committee,
-                    ) {
-                        // Re-publish the drained message
-                        debug!(
-                            event = "republish",
-                            src = "future_msgs",
-                            msg_step = msg.header.step,
-                            msg_round = msg.header.round,
-                            msg_topic =
-                                format!("{:?}", Topics::from(msg.header.topic))
-                        );
+                );
 
-                        self.outbound.send(msg).await.unwrap_or_else(|err| {
+                if let Ok(msg) = ret {
+                    // Re-publish a drained message
+                    debug!(
+                        event = "republish",
+                        src = "future_msgs",
+                        msg_step = msg.header.step,
+                        msg_round = msg.header.round,
+                        msg_topic =
+                            format!("{:?}", Topics::from(msg.header.topic))
+                    );
+
+                    self.outbound.send(msg.clone()).await.unwrap_or_else(
+                        |err| {
                             error!(
                                 "unable to re-publish a drained msg {:?}",
                                 err
                             )
-                        });
-                    }
+                        },
+                    );
 
                     if let Ok(FinalResult(msg)) = phase
+                        .lock()
+                        .await
                         .collect(msg, &self.round_update, self.step, committee)
                         .await
                     {
