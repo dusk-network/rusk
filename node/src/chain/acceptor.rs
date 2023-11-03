@@ -48,6 +48,7 @@ pub(crate) enum RevertTarget {
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
     mrb: RwLock<Block>,
+    last_finalized: RwLock<Block>,
 
     /// List of provisioners of actual round
     pub(crate) provisioners_list: RwLock<Provisioners>,
@@ -74,6 +75,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn new_with_run(
         keys_path: &str,
         mrb: &Block,
+        last_finalized: Block,
         provisioners_list: &Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
@@ -86,6 +88,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             vm: vm.clone(),
             network: network.clone(),
             task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
+            last_finalized: RwLock::new(last_finalized),
         };
 
         acc.task.write().await.spawn(
@@ -164,6 +167,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         *provisioners_list = self.vm.read().await.get_provisioners()?;
         *mrb = blk.clone();
 
+        if blk.header().iteration == 1 {
+            *self.last_finalized.write().await = blk.clone();
+        }
+
         Ok(())
     }
 
@@ -177,6 +184,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
+        let block_time = blk.header().timestamp - mrb.header().timestamp;
 
         // Verify Block Header
         verify_block_header(
@@ -191,6 +199,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Reset Consensus
         task.abort_with_wait().await;
 
+        let start = std::time::Instant::now();
         // Persist block in consistency with the VM state update
         {
             let vm = self.vm.write().await;
@@ -224,7 +233,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 *provisioners_list = updated_prov?;
             };
 
+            // Update most_recent_block
             *mrb = blk.clone();
+
+            // Update last_finalized block
+            if blk.header().iteration == 1 {
+                *self.last_finalized.write().await = blk.clone();
+            }
 
             anyhow::Ok(())
         }?;
@@ -240,6 +255,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let fsv_bitset = blk.header().cert.first_reduction.bitset;
         let ssv_bitset = blk.header().cert.second_reduction.bitset;
 
+        let duration = start.elapsed();
         info!(
             event = "block accepted",
             height = blk.header().height,
@@ -249,6 +265,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             state_hash = to_str(&blk.header().state_hash),
             fsv_bitset,
             ssv_bitset,
+            block_time,
+            dur_ms = duration.as_millis(),
         );
 
         // Restart Consensus.
@@ -349,6 +367,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
         self.mrb.read().await.header().hash
+    }
+
+    pub(crate) async fn get_finalized(&self) -> Block {
+        self.last_finalized.read().await.clone()
     }
 
     pub(crate) async fn get_curr_timestamp(&self) -> i64 {
@@ -459,7 +481,15 @@ async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!("invalid first reduction votes"));
+        return Err(anyhow!(
+            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            to_str(&hdr.block_hash),
+            hdr.round,
+            iteration,
+            to_str(&curr_seed.inner()),
+            cert.first_reduction,
+            e
+        ));
     }
 
     // Verify second reduction
@@ -473,7 +503,15 @@ async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!("invalid second reduction votes"));
+        return Err(anyhow!(
+            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            to_str(&hdr.block_hash),
+            hdr.round,
+            iteration,
+            to_str(&curr_seed.inner()),
+            cert.second_reduction,
+            e,
+        ));
     }
 
     Ok(())
