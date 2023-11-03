@@ -60,7 +60,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
     }
 
-    pub async fn on_idle(&mut self, timeout_sec: u8) -> anyhow::Result<()> {
+    pub async fn on_idle(&mut self, timeout: Duration) -> anyhow::Result<()> {
         let acc = self.acc.read().await;
         let height = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
@@ -70,7 +70,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             event = "fsm::idle",
             height,
             iter,
-            timeout_sec,
+            timeout_sec = timeout.as_secs(),
             "finalized_height" = last_finalized.header().height,
         );
 

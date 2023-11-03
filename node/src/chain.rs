@@ -52,7 +52,7 @@ const TOPICS: &[u8] = &[
     Topics::Agreement as u8,
 ];
 
-const ACCEPT_BLOCK_TIMEOUT_SEC: u8 = 20;
+const ACCEPT_BLOCK_TIMEOUT_SEC: Duration = Duration::from_secs(20);
 
 pub struct ChainSrv {
     /// Inbound wire messages queue
@@ -90,7 +90,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             Acceptor::new_with_run(
                 &self.keys_path,
                 &mrb,
-                &last_finalized,
+                last_finalized,
                 &provisioners_list,
                 db.clone(),
                 network.clone(),
@@ -126,7 +126,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
         // Accept_Block timeout is activated when a node is unable to accept a
         // valid block within a specified time frame.
-        let mut timeout = Self::reset_timeout();
+        let mut timeout = Self::next_timeout();
 
         // Message loop for Chain context
         loop {
@@ -148,7 +148,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             if let Err(e) = fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone()))).await  {
                                  error!(event = "fsm::on_event failed", src = "consensus",  err = format!("{}",e));
                             } else {
-                                timeout = Self::reset_timeout();
+                                timeout = Self::next_timeout();
                             }
                         }
                         Err(e) => {
@@ -172,7 +172,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                             if let Err(e) = fsm.on_event(blk, &msg).await  {
                                  error!(event = "fsm::on_event failed", src = "wire", err = format!("{}",e));
                             } else {
-                                timeout = Self::reset_timeout();
+                                timeout = Self::next_timeout();
                             }
                         }
 
@@ -194,7 +194,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Handles accept_block_timeout event
                 _ = sleep_until(timeout) => {
                     fsm.on_idle(ACCEPT_BLOCK_TIMEOUT_SEC).await;
-                    timeout = Self::reset_timeout();
+                    timeout = Self::next_timeout();
                 },
             }
         }
@@ -214,7 +214,7 @@ impl ChainSrv {
         }
     }
 
-    /// Load most recent block from persisted ledger.
+    /// Load both most recent and last_finalized blocks from persisted ledger.
     ///
     /// Panics
     ///
@@ -274,9 +274,9 @@ impl ChainSrv {
         Ok((mrb, last_finalized))
     }
 
-    fn reset_timeout() -> Instant {
+    fn next_timeout() -> Instant {
         Instant::now()
-            .checked_add(Duration::from_secs(ACCEPT_BLOCK_TIMEOUT_SEC as u64))
+            .checked_add(ACCEPT_BLOCK_TIMEOUT_SEC)
             .unwrap()
     }
 }

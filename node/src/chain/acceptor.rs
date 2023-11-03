@@ -75,7 +75,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn new_with_run(
         keys_path: &str,
         mrb: &Block,
-        last_finalized: &Block,
+        last_finalized: Block,
         provisioners_list: &Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
@@ -88,7 +88,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             vm: vm.clone(),
             network: network.clone(),
             task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
-            last_finalized: RwLock::new(last_finalized.clone()),
+            last_finalized: RwLock::new(last_finalized),
         };
 
         acc.task.write().await.spawn(
@@ -266,7 +266,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             fsv_bitset,
             ssv_bitset,
             block_time,
-            dur = format!("{:?}ms", duration.as_millis()),
+            dur_ms = duration.as_millis(),
         );
 
         // Restart Consensus.
@@ -482,12 +482,13 @@ async fn verify_block_cert(
     .await
     {
         return Err(anyhow!(
-            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?} ",
+            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.first_reduction
+            cert.first_reduction,
+            e
         ));
     }
 
@@ -503,12 +504,13 @@ async fn verify_block_cert(
     .await
     {
         return Err(anyhow!(
-            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?} ",
+            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.second_reduction
+            cert.second_reduction,
+            e,
         ));
     }
 
