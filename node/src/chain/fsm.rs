@@ -9,11 +9,12 @@ use crate::chain::fallback;
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
 use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, Block, Hash, Transaction};
+use node_data::ledger::{self, to_str, Block, Hash, Transaction};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
@@ -97,6 +98,24 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<()> {
+        // Filter out blocks that have already been marked as
+        // blacklisted upon successful fallback execution.
+        if self
+            .blacklisted_blocks
+            .read()
+            .await
+            .contains(&blk.header().hash)
+        {
+            info!(
+                event = "block discarded",
+                reason = "blacklisted",
+                hash = to_str(&blk.header().hash),
+                height = blk.header().height,
+                iter = blk.header().iteration,
+            );
+            return Ok(());
+        }
+
         match &mut self.curr {
             State::InSync(ref mut curr) => {
                 if curr.on_event(blk, msg).await? {
@@ -184,17 +203,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             return Ok(false);
         }
 
-        // Filter out blocks that have already been marked as
-        // blacklisted upon successful fallback execution.
-        if self
-            .blacklisted_blocks
-            .read()
-            .await
-            .contains(&blk.header().hash)
-        {
-            return Ok(false);
-        }
-
         if h == curr_h {
             if blk.header().hash == curr_hash {
                 // Duplicated block.
@@ -216,21 +224,30 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 Err(e) => {
                     // Fallback execution has failed. The block is ignored and
                     // Node remains in InSync state.
-                    error!("{}", e);
+                    error!(event = "fallback failed", err = format!("{:?}", e));
                     return Ok(false);
                 }
                 Ok(_) => {
                     // Fallback has completed successfully. Node has managed to
                     // fallback to the most recent finalized block and state.
 
-                    self.blacklisted_blocks
-                        .write()
-                        .await
-                        .insert(blk.header().hash);
+                    // Blacklist the old-block hash so that if it's again
+                    // sent then this node does not try to accept it.
+                    self.blacklisted_blocks.write().await.insert(curr_hash);
+
+                    if h == acc.get_curr_height().await + 1 {
+                        // If we have fallback-ed to previous block only, then
+                        // accepting the new block would be enough to continue
+                        // in in_Sync mode instead of switching to Out-Of-Sync
+                        // mode.
+
+                        acc.try_accept_block(blk, true).await?;
+                        return Ok(false);
+                    }
 
                     // By switching to OutOfSync mode, we trigger the
-                    // sync-up procedure to download all missing ephemeral
-                    // blocks from the correct chain.
+                    // sync-up procedure to download all missing blocks from the
+                    // main chain.
                     return Ok(msg.metadata.is_some());
                 }
             }
@@ -274,6 +291,7 @@ struct OutOfSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
     range: (u64, u64),
     start_time: SystemTime,
     pool: HashMap<u64, Block>,
+    peer_addr: SocketAddr,
 
     acc: Arc<RwLock<Acceptor<N, DB, VM>>>,
     network: Arc<RwLock<N>>,
@@ -292,6 +310,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             pool: HashMap::new(),
             acc,
             network,
+            peer_addr: SocketAddr::V4(SocketAddrV4::new(
+                Ipv4Addr::new(127, 0, 0, 1),
+                8000,
+            )),
         }
     }
     /// performed when entering the OutOfSync state
@@ -322,7 +344,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
 
         // add to the pool
         let key = blk.header().height;
+        self.pool.clear();
         self.pool.insert(key, blk.clone());
+        self.peer_addr = dest_addr;
 
         info!(
             event = "entering out-of-sync",
@@ -360,17 +384,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             return Ok(false);
         }
 
+        let enable_consensus = true;
+
         // Try accepting consecutive block
         if h == acc.get_curr_height().await + 1 {
-            acc.try_accept_block(blk, (h == self.range.1)).await?;
+            acc.try_accept_block(blk, enable_consensus).await?;
 
-            self.start_time = SystemTime::now();
+            if let Some(metadata) = &msg.metadata {
+                if metadata.src_addr == self.peer_addr {
+                    // reset expiry_time only if we receive a valid block from
+                    // the syncing peer.
+                    self.start_time = SystemTime::now();
+                }
+            }
 
             // Try to accept other consecutive blocks from the pool, if
             // available
             for height in (h + 1)..(self.range.1 + 1) {
-                let enable_consensus = (height == self.range.1);
-
                 if let Some(blk) = self.pool.get(&height) {
                     acc.try_accept_block(blk, enable_consensus).await?;
                 } else {
@@ -391,8 +421,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         // add block to the pool
-        let key = blk.header().height;
-        self.pool.insert(key, blk.clone());
+        if self.pool.len() < MAX_BLOCKS_TO_REQUEST as usize {
+            let key = blk.header().height;
+            self.pool.insert(key, blk.clone());
+        }
+
+        error!(event = "block saved", len = self.pool.len());
 
         Ok(false)
     }
