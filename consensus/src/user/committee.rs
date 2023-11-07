@@ -103,6 +103,12 @@ impl Committee {
             .ceil() as usize
     }
 
+    /// Returns target NIL quorum for the generated committee.
+    pub fn nil_quorum(&self) -> usize {
+        (self.cfg.committee_size as f64 * config::CONSENSUS_NILQUORUM_THRESHOLD)
+            .ceil() as usize
+    }
+
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
         let mut bits: u64 = 0;
 

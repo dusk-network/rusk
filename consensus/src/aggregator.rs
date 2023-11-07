@@ -84,7 +84,17 @@ impl Aggregator {
                 signature = to_str(signature),
             );
 
-            if total >= committee.quorum() {
+            let quorum_reached = {
+                if hash == [0u8; 32] {
+                    // When collecting votes, there is no need to wait for the
+                    // full quorum (QUORUM=67) of NIL votes
+                    total >= committee.nil_quorum()
+                } else {
+                    total >= committee.quorum()
+                }
+            };
+
+            if quorum_reached {
                 let s = aggr_sign
                     .aggregated_bytes()
                     .expect("Signature to exist after quorum reached");
