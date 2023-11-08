@@ -32,6 +32,7 @@ test: keys wasm ## Run the tests
 	$(MAKE) -j -C ./circuits $@
 	$(MAKE) state
 	$(MAKE) -j1 -C ./contracts $@
+	$(MAKE) -C ./rusk-recovery $@
 	$(MAKE) -C ./rusk-prover/ $@
 	$(MAKE) -C ./node-data $@
 	$(MAKE) -C ./consensus $@
