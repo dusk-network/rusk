@@ -92,7 +92,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         };
 
         acc.task.write().await.spawn(
-            mrb.header(),
+            mrb,
             &provisioners_list.clone(),
             &db,
             &vm,
@@ -272,7 +272,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Restart Consensus.
         if enable_consensus {
             task.spawn(
-                mrb.header(),
+                &mrb,
                 &provisioners_list,
                 &self.db,
                 &self.vm,

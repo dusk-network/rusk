@@ -75,7 +75,7 @@ impl Task {
 
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
-        most_recent_block: &node_data::ledger::Header,
+        most_recent_block: &node_data::ledger::Block,
         provisioners: &Provisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
@@ -90,14 +90,11 @@ impl Task {
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
-        let ru = RoundUpdate {
-            round: most_recent_block.height + 1,
-            seed: most_recent_block.seed,
-            hash: most_recent_block.hash,
-            timestamp: most_recent_block.timestamp,
-            secret_key: self.keys.0,
-            pubkey_bls: self.keys.1.clone(),
-        };
+        let ru = RoundUpdate::new(
+            self.keys.1.clone(),
+            self.keys.0,
+            most_recent_block.clone(),
+        );
 
         self.task_id += 1;
 
