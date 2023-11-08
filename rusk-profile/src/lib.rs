@@ -20,7 +20,7 @@ mod circuit;
 pub use circuit::Circuit;
 
 static CRS_17: &str =
-    "314cb1b373350a1c139b249bf55ae733884759cf968529d963c5bd4a7a2ef7c4";
+    "18b48f588fd4d1e88ef9e7b3cacfa29046f6f489c5c237a4b01ee4f0334772a5";
 
 const CRS_FNAME: &str = "dev-piecrust.crs";
 
@@ -152,6 +152,12 @@ pub fn get_common_reference_string() -> io::Result<Vec<u8>> {
 }
 
 pub fn set_common_reference_string(buffer: Vec<u8>) -> io::Result<()> {
+    if !verify_common_reference_string(&buffer[..]) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "CRS Mismatch",
+        ));
+    }
     let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
     write(crs, buffer)?;
     info!("{} CRS to cache", Theme::default().success("Added"),);

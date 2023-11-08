@@ -136,3 +136,13 @@ pub fn exec(keep_circuits: bool) -> Result<(), io::Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn test_crs() {
+        Lazy::force(&PUB_PARAMS);
+    }
+}

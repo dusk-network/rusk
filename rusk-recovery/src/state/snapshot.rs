@@ -104,61 +104,11 @@ mod tests {
 
     use std::error::Error;
 
-    use super::{acl::Users, *};
+    use super::*;
 
-    use crate::{
-        provisioners,
-        state::{self, Balance, GenesisStake, MINIMUM_STAKE},
-    };
+    use crate::state;
     use rusk_abi::dusk::{dusk, Dusk};
 
-    /// Amount of the note inserted in the genesis state.
-    const GENESIS_DUSK: Dusk = dusk(1_000.0);
-
-    fn localnet_snapshot() -> Snapshot {
-        let users = provisioners::keys(false);
-        let owners = users.iter().map(|&p| p.into()).collect();
-        let allowlist = users.iter().map(|&p| p.into()).collect();
-        let stake = users
-            .iter()
-            .map(|&p| GenesisStake {
-                address: p.into(),
-                amount: MINIMUM_STAKE,
-                eligibility: None,
-                reward: None,
-            })
-            .collect();
-
-        Snapshot {
-            base_state: None,
-            balance: vec![Balance {
-                address: (*state::DUSK_KEY).into(),
-                seed: Some(0xdead_beef),
-                notes: vec![GENESIS_DUSK],
-            }],
-            stake,
-            acl: Acl {
-                stake: Users { allowlist, owners },
-            },
-            owner: None,
-            governance: vec![],
-        }
-    }
-
-    /// Returns a Snapshot compliant with the old hardcode localnet.
-    ///
-    /// This will be removed in a future version when will be possible to pass a
-    /// configuration file to rusk-recovery-state
-    pub(crate) fn localnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
-        let toml = include_str!("../../config/localnet.toml");
-        let snapshot = toml::from_str(toml)?;
-        Ok(snapshot)
-    }
-
-    /// Returns a Snapshot compliant with the old hardcode testnet.
-    ///
-    /// This will be removed in a future version when will be possible to pass a
-    /// configuration file to rusk-recovery-state
     pub(crate) fn testnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
         let toml = include_str!("../../config/testnet.toml");
         let snapshot = toml::from_str(toml)?;
@@ -185,19 +135,6 @@ mod tests {
             .next()
             .expect("Testnet must have at least a provisioner configured");
 
-        Ok(())
-    }
-
-    #[test]
-    fn localnet_toml() -> Result<(), Box<dyn Error>> {
-        let localnet = localnet_snapshot();
-        let str = toml::to_string_pretty(&localnet)?;
-        println!("{str}");
-
-        let back: Snapshot = toml::from_str(&str)?;
-        assert_eq!(localnet, back);
-
-        assert_eq!(localnet, localnet_from_file()?);
         Ok(())
     }
 
