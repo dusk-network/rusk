@@ -36,6 +36,7 @@ pub struct Header {
     pub txroot: Hash,
     pub gas_limit: u64,
     pub iteration: u8,
+    pub prev_block_cert: Certificate,
 
     // Block hash
     pub hash: Hash,
@@ -146,6 +147,7 @@ impl Header {
         w.write_all(&self.txroot[..])?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
         w.write_all(&self.iteration.to_le_bytes())?;
+        self.prev_block_cert.write(w)?;
 
         Ok(())
     }
@@ -191,6 +193,8 @@ impl Header {
         r.read_exact(&mut buf[..])?;
         let iteration = buf[0];
 
+        let prev_block_cert = Certificate::read(r)?;
+
         Ok(Header {
             version,
             height,
@@ -205,6 +209,7 @@ impl Header {
             txroot,
             hash: [0; 32],
             cert: Default::default(),
+            prev_block_cert,
         })
     }
 }
