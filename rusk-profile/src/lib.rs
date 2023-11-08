@@ -152,6 +152,12 @@ pub fn get_common_reference_string() -> io::Result<Vec<u8>> {
 }
 
 pub fn set_common_reference_string(buffer: Vec<u8>) -> io::Result<()> {
+    if !verify_common_reference_string(&buffer[..]) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "CRS Mismatch",
+        ));
+    }
     let crs = get_rusk_profile_dir()?.join(CRS_FNAME);
     write(crs, buffer)?;
     info!("{} CRS to cache", Theme::default().success("Added"),);
