@@ -19,7 +19,7 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
 use hex::ToHex;
 use node_data::ledger::{
-    self, to_str, Block, Hash, Header, Signature, SpentTransaction,
+    self, to_str, Block, Hash, Header, Seed, Signature, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -396,61 +396,87 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 /// local/current state.
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
-    curr_header: &ledger::Header,
-    curr_eligible_provisioners: Provisioners,
-    curr_public_key: &node_data::bls::PublicKey,
-    blk_header: &ledger::Header,
+    mrb: &ledger::Header,
+    mrb_eligible_provisioners: Provisioners,
+    public_key: &node_data::bls::PublicKey,
+    new_blk: &ledger::Header,
 ) -> anyhow::Result<()> {
-    if blk_header.version > 0 {
+    if new_blk.version > 0 {
         return Err(anyhow!("unsupported block version"));
     }
 
-    if blk_header.hash == [0u8; 32] {
+    if new_blk.hash == [0u8; 32] {
         return Err(anyhow!("empty block hash"));
     }
 
-    if blk_header.height != curr_header.height + 1 {
+    if new_blk.height != mrb.height + 1 {
         return Err(anyhow!(
             "invalid block height block_height: {:?}, curr_height: {:?}",
-            blk_header.height,
-            curr_header.height,
+            new_blk.height,
+            mrb.height,
         ));
     }
 
-    if blk_header.prev_block_hash != curr_header.hash {
+    if new_blk.prev_block_hash != mrb.hash {
         return Err(anyhow!("invalid previous block hash"));
     }
 
-    if blk_header.timestamp < curr_header.timestamp {
+    if new_blk.timestamp < mrb.timestamp {
         //TODO:
         return Err(anyhow!("invalid block timestamp"));
     }
 
     // Ensure block is not already in the ledger
     db.read().await.view(|v| {
-        if Ledger::get_block_exists(&v, &blk_header.hash)? {
+        if Ledger::get_block_exists(&v, &new_blk.hash)? {
             return Err(anyhow!("block already exists"));
         }
 
         Ok(())
     })?;
 
+    // Verify prev_block_cert field
+    if mrb.height >= 1 {
+        let prev_block_seed = db.read().await.view(|v| {
+            let prev_block = Ledger::fetch_block_by_height(&v, mrb.height - 1)?
+                .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
+
+            Ok::<_, anyhow::Error>(prev_block.header().seed)
+        })?;
+
+        // Terms in use
+        // genesis_blk -> ... -> prev_block -> most_recent_block(mrb) -> new_blk (pending to be accepted)
+        let prev_eligible_provisioners =  &mrb_eligible_provisioners;     /* TODO: This should be the set of
+                                                                              * actual eligible provisioners of    
+        // Verify Certificate                                                 * previous block. See also #1124 */  
+        verify_block_cert(
+            prev_block_seed,
+            prev_eligible_provisioners,
+            public_key,
+            mrb.hash,
+            mrb.height,
+            &new_blk.prev_block_cert,
+            mrb.iteration,
+        )
+        .await?;
+    }
+
     // Verify Certificate
     verify_block_cert(
-        curr_header.seed,
-        curr_eligible_provisioners,
-        curr_public_key,
-        blk_header.hash,
-        blk_header.height,
-        &blk_header.cert,
-        blk_header.iteration,
+        mrb.seed,
+        &mrb_eligible_provisioners,
+        public_key,
+        new_blk.hash,
+        new_blk.height,
+        &new_blk.cert,
+        new_blk.iteration,
     )
     .await
 }
 
 async fn verify_block_cert(
     curr_seed: Signature,
-    curr_eligible_provisioners: Provisioners,
+    curr_eligible_provisioners: &Provisioners,
     curr_public_key: &node_data::bls::PublicKey,
     block_hash: [u8; 32],
     height: u64,
