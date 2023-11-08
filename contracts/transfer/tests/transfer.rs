@@ -17,8 +17,10 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractData, Error, Session, VM};
-use rusk_abi::{ContractId, TRANSFER_CONTRACT};
+use rusk_abi::{
+    ContractData, ContractError, ContractId, Error, RawResult, Session,
+    TRANSFER_CONTRACT, VM,
+};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, DeriveKey, ExecuteCircuitOneTwo,
     ExecuteCircuitTwoTwo, SendToContractObfuscatedCircuit,
@@ -29,7 +31,6 @@ use transfer_circuits::{
 
 const GENESIS_VALUE: u64 = dusk(1_000.0);
 const POINT_LIMIT: u64 = 0x10000000;
-const GAS_PER_TX: u64 = 10_000;
 
 const ALICE_ID: ContractId = {
     let mut bytes = [0u8; 32];
@@ -210,24 +211,14 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 
 /// Executes a transaction, returning the gas spent.
 fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    session.call::<_, ()>(TRANSFER_CONTRACT, "spend", &tx, u64::MAX)?;
+    let receipt = session.call::<_, Result<RawResult, ContractError>>(
+        TRANSFER_CONTRACT,
+        "spend_and_execute",
+        &tx,
+        u64::MAX,
+    )?;
 
-    let mut gas_spent = GAS_PER_TX;
-    if let Some((contract_id, fn_name, fn_data)) = &tx.call {
-        let gas_limit = tx.fee.gas_limit - GAS_PER_TX;
-
-        let contract_id = ContractId::from_bytes(*contract_id);
-        println!("Calling '{fn_name}' of {contract_id} with {gas_limit} gas");
-
-        let r = session.call_raw(
-            contract_id,
-            fn_name,
-            fn_data.clone(),
-            gas_limit,
-        )?;
-
-        gas_spent += r.points_spent;
-    }
+    let gas_spent = receipt.points_spent;
 
     session
         .call::<_, ()>(
