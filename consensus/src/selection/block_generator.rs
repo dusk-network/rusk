@@ -13,7 +13,6 @@ use crate::contract_state::Operations;
 use crate::merkle::merkle_root;
 
 use dusk_bytes::Serializable;
-use node_data::bls::PublicKey;
 use node_data::ledger;
 use node_data::message::payload::NewBlock;
 use node_data::message::{Header, Message, Topics};
@@ -40,21 +39,13 @@ impl<T: Operations> Generator<T> {
         // Sign seed
         let seed = ru
             .secret_key
-            .sign(ru.pubkey_bls.inner(), &ru.seed.inner()[..])
+            .sign(ru.pubkey_bls.inner(), &ru.seed().inner()[..])
             .to_bytes();
 
         let start = Instant::now();
 
-        let candidate = self
-            .generate_block(
-                &ru.pubkey_bls,
-                ru.round,
-                Seed::from(seed),
-                ru.hash,
-                ru.timestamp,
-                iteration,
-            )
-            .await?;
+        let candidate =
+            self.generate_block(ru, Seed::from(seed), iteration).await?;
 
         info!(
             event = "gen_candidate",
@@ -86,11 +77,8 @@ impl<T: Operations> Generator<T> {
 
     async fn generate_block(
         &self,
-        pubkey: &PublicKey,
-        round: u64,
+        ru: &RoundUpdate,
         seed: Seed,
-        prev_block_hash: [u8; 32],
-        prev_block_timestamp: i64,
         iteration: u8,
     ) -> Result<Block, crate::contract_state::Error> {
         let start_time = Instant::now();
@@ -100,9 +88,9 @@ impl<T: Operations> Generator<T> {
             .lock()
             .await
             .execute_state_transition(CallParams {
-                round,
+                round: ru.round,
                 block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
-                generator_pubkey: pubkey.clone(),
+                generator_pubkey: ru.pubkey_bls.clone(),
             })
             .await?;
 
@@ -111,20 +99,22 @@ impl<T: Operations> Generator<T> {
         let txs: Vec<_> = result.txs.into_iter().map(|t| t.inner).collect();
         let txroot = merkle_root(&tx_hashes[..]);
 
+        let prev_block_hash = ru.hash();
         let blk_header = ledger::Header {
             version: 0,
-            height: round,
-            timestamp: self.get_timestamp(prev_block_timestamp) as i64,
+            height: ru.round,
+            timestamp: self.get_timestamp(ru.timestamp()) as i64,
             gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
             generator_bls_pubkey: node_data::bls::PublicKeyBytes(
-                *pubkey.bytes(),
+                *ru.pubkey_bls.bytes(),
             ),
             state_hash: result.verification_output.state_root,
             event_hash: result.verification_output.event_hash,
             hash: [0; 32],
             cert: Certificate::default(),
+            prev_block_cert: ru.cert().clone(),
             txroot,
             iteration,
         };
