@@ -12,10 +12,10 @@ circuits: ## Compress and store all circuits
 	$(MAKE) -C ./circuits $@
 
 keys: circuits ## Create the keys for the circuits
-	$(MAKE) -C ./rusk-recovery keys
+	$(MAKE) -C ./rusk recovery-keys
 
 state: keys wasm ## Create the network state
-	$(MAKE) -C ./rusk-recovery state
+	$(MAKE) -C ./rusk recovery-state
 
 wasm: ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@

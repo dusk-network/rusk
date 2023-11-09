@@ -2,7 +2,7 @@
 #
 # The url can be either remote or local (eg: file:///path/state.zip)
 # The content of the file shall be the same format generated 
-# by `rusk-recovery-state --output <state.zip>` command
+# by `rusk recovery-state --output <state.zip>` command
 # If no base_state is specified a local one will be generated
 base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/keys/genesis.zip"
 
