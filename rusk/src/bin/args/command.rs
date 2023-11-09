@@ -8,7 +8,6 @@ use clap::builder::BoolishValueParser;
 use clap::Subcommand;
 use rusk_recovery_tools::Theme;
 use std::io;
-use std::time::Instant;
 use tracing::info;
 
 #[allow(clippy::large_enum_variant)]
@@ -53,8 +52,6 @@ impl Command {
     }
 
     pub fn run(self) -> Result<(), Box<dyn std::error::Error>> {
-        let begin = Instant::now();
-
         let theme = Theme::default();
 
         Self::display_env(&theme)?;
@@ -75,10 +72,6 @@ impl Command {
         if let Err(e) = &result {
             tracing::error!("{} {e}", theme.error("Error"));
         }
-
-        let finished = theme.action("Finished");
-        let elapsed = begin.elapsed().as_secs_f32();
-        info!("{finished} task in {elapsed:.2}s",);
 
         result
     }
