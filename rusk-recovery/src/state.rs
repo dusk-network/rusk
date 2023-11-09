@@ -31,6 +31,8 @@ pub mod tar;
 mod zip;
 
 pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
+pub const DEFAULT_SNAPSHOT: &str =
+    include_str!("../config/testnet_remote.toml");
 
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 

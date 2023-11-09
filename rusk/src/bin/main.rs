@@ -46,6 +46,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(EnvFilter::new(log_filter).add_directive(log.into()));
 
+    #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
+    // Set custom tracing format if subcommand is specified
+    if let Some(command) = args.command {
+        let subscriber = subscriber
+            .with_level(false)
+            .without_time()
+            .with_target(false)
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)?;
+        command.run()?;
+        return Ok(());
+    }
+
     // Set the subscriber as global.
     // so this subscriber will be used as the default in all threads for the
     // remainder of the duration of the program, similar to how `loggers`

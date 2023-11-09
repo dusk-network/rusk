@@ -72,8 +72,8 @@ async-graphql = "5.0"
 
 
 ## Ephemeral dependencies
-rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"], optional = true}
 tempfile = { version = "3.2", optional = true }
+rusk-recovery = { version = "0.6", path = "../rusk-recovery", optional = true}
 
 [dev-dependencies]
 test-context = "0.1"
@@ -85,5 +85,7 @@ ff = { version = "0.13", default-features = false }
 rustc_tools_util = "0.3"
 
 [features]
-default = ["ephemeral"]
-ephemeral = ["dep:rusk-recovery", "dep:tempfile"]
+default = ["ephemeral", "recovery-state", "recovery-keys"]
+ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state"]
+recovery-state = ["rusk-recovery/state", "dep:tempfile"]
+recovery-keys = ["rusk-recovery/keys"]

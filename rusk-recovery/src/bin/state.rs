@@ -16,7 +16,9 @@ use std::{fs, path::PathBuf};
 use tracing::info;
 use version::VERSION_BUILD;
 
-use rusk_recovery_tools::state::{deploy, restore_state, tar, Snapshot};
+use rusk_recovery_tools::state::{
+    deploy, restore_state, tar, Snapshot, DEFAULT_SNAPSHOT,
+};
 
 #[derive(Parser, Debug)]
 #[clap(name = "rusk-recovery-state")]
@@ -55,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let config = match args.init {
         Some(path) => fs::read_to_string(path)?,
-        None => include_str!("../../config/testnet_remote.toml").into(),
+        None => DEFAULT_SNAPSHOT.into(),
     };
     let snapshot = toml::from_str(&config)?;
 
