@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::RoundUpdate;
+use crate::commons::{IterCounter, RoundUpdate, StepName};
 use crate::config::CONSENSUS_MAX_ITER;
 use node_data::ledger::to_str;
 use node_data::ledger::StepVotes;
@@ -104,7 +104,7 @@ impl StepVotesRegistry {
         sv: StepVotes,
         svt: SvType,
     ) -> Option<Message> {
-        let iter_num = (step - 1) / 3 + 1;
+        let iter_num = u8::from_step(step);
         if iter_num as usize >= self.sv_table.len() {
             return None;
         }
@@ -129,7 +129,7 @@ impl StepVotesRegistry {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            step: (iteration - 1) * 3 + 3,
+            step: iteration.step_from_name(StepName::SecondRed),
             block_hash: result.hash.unwrap_or_default(),
             topic: Topics::Agreement as u8,
         };

@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{ConsensusError, Database, IterCounter, RoundUpdate};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 
@@ -15,8 +15,8 @@ use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
 use crate::queue::Queue;
+use crate::selection;
 use crate::user::provisioners::Provisioners;
-use crate::{config, selection};
 use crate::{firststep, secondstep};
 use tracing::{error, Instrument};
 
@@ -206,25 +206,24 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // Consensus loop
             // Initialize and run consensus loop
 
-            let mut iter_num: u8 = 0;
+            let mut iteration_counter: u8 = 0;
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
-                iter_num,
+                iteration_counter,
                 sel_handler.clone(),
                 first_handler.clone(),
                 sec_handler.clone(),
             );
 
             loop {
-                iter_num += 1;
-                iter_ctx.on_iteration_begin(iter_num);
+                iter_ctx.on_begin(iteration_counter);
 
                 let mut msg = Message::empty();
                 // Execute a single iteration
                 for pos in 0..phases.len() {
                     let phase = phases.get_mut(pos).unwrap();
 
-                    let step = (iter_num - 1) * 3 + (pos as u8 + 1);
+                    let step = iteration_counter.step_from_pos(pos);
                     let name = phase.name();
 
                     // Initialize new phase with message returned by previous
@@ -268,14 +267,11 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         )
                         .await;
                     }
-
-                    if step >= config::CONSENSUS_MAX_STEP {
-                        return Err(ConsensusError::MaxStepReached);
-                    }
                 }
 
-                iter_ctx.on_iteration_end();
+                iter_ctx.on_end();
 
+                iteration_counter.next()?;
                 // Delegate (agreement) message result to agreement loop for
                 // further processing.
             }

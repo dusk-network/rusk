@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::RoundUpdate;
+use crate::commons::{IterCounter, RoundUpdate};
 use crate::contract_state::CallParams;
 use node_data::ledger::{to_str, Block, Certificate, Seed};
 
@@ -35,7 +35,7 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         step: u8,
     ) -> Result<Message, crate::contract_state::Error> {
-        let iteration = step / 3 + 1;
+        let iteration = u8::from_step(step);
         // Sign seed
         let seed = ru
             .secret_key
