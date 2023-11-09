@@ -46,7 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subscriber = tracing_subscriber::fmt::Subscriber::builder()
         .with_env_filter(EnvFilter::new(log_filter).add_directive(log.into()));
 
-    #[cfg(feature = "recovery")]
+    #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
     // Set custom tracing format if subcommand is specified
     if let Some(command) = args.command {
         let subscriber = subscriber

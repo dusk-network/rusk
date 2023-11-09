@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#[cfg(feature = "recovery")]
+#[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
 mod command;
-#[cfg(feature = "recovery")]
+#[cfg(feature = "recovery-state")]
 mod state;
 
 use std::path::PathBuf;
@@ -89,7 +89,7 @@ pub struct Args {
     /// Kadcast network id
     pub kadcast_network_id: Option<u8>,
 
-    #[cfg(feature = "recovery")]
+    #[cfg(any(feature = "recovery-state", feature = "recovery-keys"))]
     /// Command
     #[clap(subcommand)]
     pub command: Option<command::Command>,

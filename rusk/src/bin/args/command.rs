@@ -4,9 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::*;
-
-use super::state::recovery_state;
 use clap::builder::BoolishValueParser;
 use clap::Subcommand;
 use rusk_recovery_tools::Theme;
@@ -17,12 +14,14 @@ use tracing::info;
 #[allow(clippy::large_enum_variant)]
 #[derive(PartialEq, Eq, Hash, Clone, Subcommand, Debug)]
 pub enum Command {
+    #[cfg(feature = "recovery-keys")]
     RecoveryKeys {
         /// Keeps untracked keys
         #[clap(short, long, value_parser = BoolishValueParser::new(), env = "RUSK_KEEP_KEYS")]
         keep: bool,
     },
 
+    #[cfg(feature = "recovery-state")]
     RecoveryState {
         /// Forces a build/download even if the state is in the profile path.
         #[clap(short = 'f', value_parser = BoolishValueParser::new(), long, env = "RUSK_FORCE_STATE")]
@@ -30,12 +29,12 @@ pub enum Command {
 
         /// Create a state applying the init config specified in this file.
         #[clap(short, long, value_parser, env = "RUSK_RECOVERY_INPUT")]
-        init: Option<PathBuf>,
+        init: Option<super::PathBuf>,
 
         /// If specified, the generated state is written on this file instead
         /// of save the state in the profile path.
         #[clap(short, long, value_parser, num_args(1))]
-        output: Option<PathBuf>,
+        output: Option<super::PathBuf>,
     },
 }
 
@@ -61,11 +60,13 @@ impl Command {
         Self::display_env(&theme)?;
 
         let result = match self {
+            #[cfg(feature = "recovery-state")]
             Self::RecoveryState {
                 force,
                 init,
                 output,
-            } => recovery_state(init, force, output),
+            } => super::state::recovery_state(init, force, output),
+            #[cfg(feature = "recovery-keys")]
             Self::RecoveryKeys { keep } => {
                 rusk_recovery_tools::keys::exec(keep)
             }
