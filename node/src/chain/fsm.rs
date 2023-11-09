@@ -259,7 +259,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // On first finalized block accepted while we're inSync, clear
             // blacklisted blocks
-            if blk.header().iteration == 1 {
+            if blk.has_instant_finality() {
                 self.blacklisted_blocks.write().await.clear();
             }
 

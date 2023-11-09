@@ -252,7 +252,7 @@ impl Block {
             // also #1116
         }
 
-        return false;
+        false
     }
 
     pub fn set_certificate(&mut self, cert: Certificate) {
