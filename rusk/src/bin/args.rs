@@ -4,6 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#[cfg(feature = "recovery")]
+mod command;
+#[cfg(feature = "recovery")]
+mod state;
+
 use std::path::PathBuf;
 
 use clap::builder::PossibleValuesParser;
@@ -83,4 +88,9 @@ pub struct Args {
     #[clap(short = 'n', long = "network-id")]
     /// Kadcast network id
     pub kadcast_network_id: Option<u8>,
+
+    #[cfg(feature = "recovery")]
+    /// Command
+    #[clap(subcommand)]
+    pub command: Option<command::Command>,
 }
