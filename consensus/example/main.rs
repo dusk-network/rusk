@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bls12_381_sign::SecretKey;
-use node_data::ledger::Seed;
 use rand::rngs::StdRng;
 use rand_core::SeedableRng;
 use std::sync::Arc;
@@ -19,6 +18,7 @@ use dusk_consensus::user::provisioners::{Provisioners, DUSK};
 use node_data::message::{AsyncQueue, Message};
 
 use node_data::bls::PublicKey;
+use node_data::ledger;
 use tokio::time;
 
 mod mocks;
@@ -183,14 +183,30 @@ fn spawn_node(
                         .unwrap()
                         .as_secs();
 
+                    let blk = ledger::Block::new(
+                        ledger::Header {
+                            version: 0,
+                            height: i,
+                            timestamp: 0,
+                            prev_block_hash: [0u8; 32],
+                            seed: Default::default(),
+                            state_hash: [0u8; 32],
+                            event_hash: [0u8; 32],
+                            generator_bls_pubkey: Default::default(),
+                            txroot: [0u8; 32],
+                            gas_limit: 0,
+                            iteration: 0,
+                            prev_block_cert: Default::default(),
+                            hash: [0u8; 32],
+                            cert: Default::default(),
+                        },
+                        vec![],
+                    )
+                    .unwrap();
+
                     let _ = c
                         .spin(
-                            RoundUpdate::new(
-                                i,
-                                keys.1.clone(),
-                                keys.0,
-                                Seed::default(),
-                            ),
+                            RoundUpdate::new(keys.1.clone(), keys.0, blk),
                             p.clone(),
                             cancel_rx,
                         )
