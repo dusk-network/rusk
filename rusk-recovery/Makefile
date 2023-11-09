@@ -1,15 +1,7 @@
-INITFILE?=./config/localnet.toml
-
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-keys: ## Build circuit keys
-	cargo run --release --bin rusk-recovery-keys --features keys
-
-state: ## Build network state
-	cargo run --release --bin rusk-recovery-state --features state -- --init $(INITFILE)
-
-test: ## Run Rusk tests
+test: ## Run tests
 	@cargo test \
 		--release \
 		--all-features \
@@ -17,6 +9,9 @@ test: ## Run Rusk tests
 		--test-threads 1
 			
 clippy: ## Run clippy
-	@cargo clippy --all-features --release -- -D warnings
+	@cargo clippy --release --all-features -- -D warnings
+	@cargo clippy --release --no-default-features -- -D warnings
+	@cargo clippy --release --no-default-features --features state -- -D warnings
+	@cargo clippy --release --no-default-features --features keys -- -D warnings
 
-.PHONY: keys state test help
+.PHONY: test clippy help
