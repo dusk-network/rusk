@@ -109,10 +109,9 @@ fn spawn_consensus_in_thread_pool(
                     let res = c
                         .spin(
                             RoundUpdate::new(
-                                i,
                                 keys.1.clone(),
                                 keys.0,
-                                block: chain_tip.clone(),
+                                 chain_tip.clone(),
                             ),
                             p.clone(),
                             cancel_rx,

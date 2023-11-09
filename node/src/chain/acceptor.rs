@@ -445,10 +445,10 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         })?;
 
         // Terms in use
-        // genesis_blk -> ... -> prev_block -> most_recent_block(mrb) -> new_blk (pending to be accepted)
-        let prev_eligible_provisioners =  &mrb_eligible_provisioners;     /* TODO: This should be the set of
-                                                                              * actual eligible provisioners of    
-        // Verify Certificate                                                 * previous block. See also #1124 */  
+        // genesis_blk -> ... -> prev_block -> most_recent_block(mrb) -> new_blk
+        // (pending to be accepted)
+        let prev_eligible_provisioners = &mrb_eligible_provisioners; // TODO: This should be the set of  actual eligible provisioners of
+                                                                     // previous block. See also #1124
         verify_block_cert(
             prev_block_seed,
             prev_eligible_provisioners,
