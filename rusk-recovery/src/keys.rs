@@ -115,7 +115,7 @@ fn run_stored_circuits_checks(
     check_circuits_cache(circuit_list).map(|_| ())
 }
 
-pub fn exec(keep_circuits: bool) -> Result<(), io::Error> {
+pub fn exec(keep_circuits: bool) -> Result<(), Box<dyn std::error::Error>> {
     // This force init is needed to check CRS and create it (if not available)
     // See also: https://github.com/dusk-network/rusk/issues/767
     Lazy::force(&PUB_PARAMS);
