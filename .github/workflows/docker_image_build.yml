@@ -1,0 +1,27 @@
+name: Build and Upload Docker Image as Artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker image
+        run: docker build -t rusk .
+
+      - name: Save Docker image
+        run: docker save rusk:latest -o rusk_image.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: rusk-image
+          path: rusk_image.tar
