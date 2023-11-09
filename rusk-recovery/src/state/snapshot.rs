@@ -107,7 +107,6 @@ mod tests {
     use super::*;
 
     use crate::state;
-    use rusk_abi::dusk::{dusk, Dusk};
 
     pub(crate) fn testnet_from_file() -> Result<Snapshot, Box<dyn Error>> {
         let toml = include_str!("../../config/testnet.toml");

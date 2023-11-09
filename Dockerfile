@@ -29,7 +29,7 @@ RUN ARCH="$(echo $TARGETPLATFORM | sed 's/linux\///')" && \
 # Generate keys, compile genesis contracts and generate genesis state
 RUN make keys && make wasm
 RUN mkdir -p /.dusk/rusk && cp examples/consensus.keys /.dusk/rusk/consensus.keys
-RUN cargo r --release -p rusk-recovery --features state --bin rusk-recovery-state -- --init examples/genesis.toml -o /tmp/example.state
+RUN cargo r --release -p rusk -- recovery-state --init examples/genesis.toml -o /tmp/example.state
 RUN cargo b --release -p rusk
 
 # --- Run stage ---
