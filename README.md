@@ -100,8 +100,10 @@ docker build -t rusk .
 To run Rusk inside a Docker container:
 
 ```bash
-docker run -p 9000:9000/udp rusk
+docker run -p 9000:9000/udp -p 8080:8080/tcp rusk
 ```
+
+Port 9000 is used for Kadcast, port 8080 for the HTTP and GraphQL APIs.
 
 ## How to run a node
 
