@@ -54,6 +54,7 @@ impl Rusk {
             (Target::Host(_), "rusk", "provisioners") => {
                 self.get_provisioners()
             }
+            (Target::Host(_), "rusk", "crs") => self.get_crs(),
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
@@ -122,6 +123,11 @@ impl Rusk {
             .collect();
 
         Ok(serde_json::to_value(prov)?.into())
+    }
+
+    fn get_crs(&self) -> anyhow::Result<ResponseData> {
+        let crs = rusk_profile::get_common_reference_string()?;
+        Ok(crs.into())
     }
 }
 
