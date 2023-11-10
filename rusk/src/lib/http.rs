@@ -348,7 +348,7 @@ where
 
         Ok(response)
     } else {
-        let (execution_request, is_binary) =
+        let (execution_request, binary_resp) =
             MessageRequest::from_request(req).await?;
 
         let mut resp_headers = execution_request.x_headers();
@@ -361,7 +361,7 @@ where
             .await
             .expect("An execution should always return a response");
         resp_headers.extend(execution_response.headers.clone());
-        let mut resp = execution_response.into_http(is_binary)?;
+        let mut resp = execution_response.into_http(binary_resp)?;
 
         for (k, v) in resp_headers {
             let k = HeaderName::from_str(&k)?;
