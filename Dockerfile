@@ -4,8 +4,6 @@ FROM rust:latest AS build-stage
 WORKDIR /opt/rusk
 ENV RUSK_PROFILE_PATH /.dusk/rusk
 ENV DUSK_CONSENSUS_KEYS_PASS password
-# Expose necessary ports (assuming 9000 for Kadcast's UDP)
-EXPOSE 9000/udp
 
 RUN apt-get update && apt-get install -y clang && rm -rf /var/lib/apt/lists/*
 
@@ -40,6 +38,7 @@ WORKDIR /opt/rusk
 ENV RUSK_PROFILE_PATH /.dusk/rusk/
 ENV DUSK_CONSENSUS_KEYS_PASS password
 EXPOSE 9000/udp
+EXPOSE 8080/tcp
 
 RUN apt-get update && apt-get install -y libssl-dev  && rm -rf /var/lib/apt/lists/*
 
@@ -49,4 +48,4 @@ COPY --from=build-stage /opt/rusk/target/release/rusk /opt/rusk/
 COPY --from=build-stage /opt/rusk/examples/consensus.keys /opt/rusk/consensus.keys
 COPY --from=build-stage /tmp/example.state /tmp/example.state
 
-CMD ["./rusk", "-s", "/tmp/example.state", "--consensus-keys-path", "/opt/rusk/consensus.keys"]
+CMD ["./rusk", "-s", "/tmp/example.state", "--consensus-keys-path", "/opt/rusk/consensus.keys", "--http-listen-addr", "0.0.0.0:8080"]
