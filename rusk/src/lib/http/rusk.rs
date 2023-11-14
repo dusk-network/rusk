@@ -17,7 +17,8 @@ use rusk_abi::ContractId;
 use crate::Rusk;
 
 use super::event::{
-    Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
+    DataType, Event, MessageRequest, MessageResponse, RequestData,
+    ResponseData, Target,
 };
 
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
@@ -36,20 +37,22 @@ impl Rusk {
                 self.handle_preverify(request.event_data())
             }
             (Target::Host(_), "rusk", "prove_execute") => {
-                Ok(LocalProver.prove_execute(request.event_data())?.into())
+                Ok(ResponseData::new(
+                    LocalProver.prove_execute(request.event_data())?,
+                ))
             }
-            (Target::Host(_), "rusk", "prove_stct") => {
-                Ok(LocalProver.prove_stct(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_stco") => {
-                Ok(LocalProver.prove_stco(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_wfct") => {
-                Ok(LocalProver.prove_wfct(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_wfco") => {
-                Ok(LocalProver.prove_wfco(request.event_data())?.into())
-            }
+            (Target::Host(_), "rusk", "prove_stct") => Ok(ResponseData::new(
+                LocalProver.prove_stct(request.event_data())?,
+            )),
+            (Target::Host(_), "rusk", "prove_stco") => Ok(ResponseData::new(
+                LocalProver.prove_stco(request.event_data())?,
+            )),
+            (Target::Host(_), "rusk", "prove_wfct") => Ok(ResponseData::new(
+                LocalProver.prove_wfct(request.event_data())?,
+            )),
+            (Target::Host(_), "rusk", "prove_wfco") => Ok(ResponseData::new(
+                LocalProver.prove_wfco(request.event_data())?,
+            )),
 
             (Target::Host(_), "rusk", "provisioners") => {
                 self.get_provisioners()
@@ -86,7 +89,7 @@ impl Rusk {
                     sender,
                 );
             });
-            Ok(ResponseData::Channel(receiver))
+            Ok(ResponseData::new(receiver))
         } else {
             let data = self
                 .query_raw(
@@ -95,7 +98,7 @@ impl Rusk {
                     event.data.as_bytes(),
                 )
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
-            Ok(data.into())
+            Ok(ResponseData::new(data))
         }
     }
 
@@ -103,7 +106,7 @@ impl Rusk {
         let tx = phoenix_core::Transaction::from_slice(data)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         self.preverify(&tx.into())?;
-        Ok(ResponseData::None)
+        Ok(ResponseData::new(DataType::None))
     }
 
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
@@ -122,12 +125,12 @@ impl Rusk {
             })
             .collect();
 
-        Ok(serde_json::to_value(prov)?.into())
+        Ok(ResponseData::new(serde_json::to_value(prov)?))
     }
 
     fn get_crs(&self) -> anyhow::Result<ResponseData> {
         let crs = rusk_profile::get_common_reference_string()?;
-        Ok(crs.into())
+        Ok(ResponseData::new(crs))
     }
 }
 
