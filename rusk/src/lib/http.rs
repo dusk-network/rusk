@@ -11,8 +11,8 @@ mod event;
 mod rusk;
 
 pub(crate) use event::{
-    BinaryWrapper, Event as EventRequest, ExecutionError,
-    MessageResponse as EventResponse, RequestData, ResponseData, Target,
+    BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
+    RequestData, Target,
 };
 use hyper::http::{HeaderName, HeaderValue};
 use tracing::info;
@@ -46,7 +46,7 @@ use futures_util::{stream, SinkExt, StreamExt};
 use crate::chain::RuskNode;
 use crate::{Rusk, VERSION};
 
-use self::event::MessageRequest;
+use self::event::{MessageRequest, ResponseData};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
@@ -178,9 +178,9 @@ async fn handle_stream<H: HandleRequest>(
                 // `responder` is never dropped so this can never be `None`
                 let rsp = rsp.unwrap();
 
-                if let ResponseData::Channel(c) = rsp.data {
+                if let DataType::Channel(c) = rsp.data {
                     let mut datas = stream::iter(c).map(|e| {
-                       EventResponse {
+                        EventResponse {
                             data: e.into(),
                             headers: rsp.headers.clone(),
                             error: None
@@ -387,10 +387,14 @@ async fn handle_execution<H>(
     let mut rsp = sources
         .handle(&request)
         .await
-        .map(|data| EventResponse {
-            data,
-            error: None,
-            headers: request.x_headers(),
+        .map(|data| {
+            let (data, mut headers) = data.into_inner();
+            headers.append(&mut request.x_headers());
+            EventResponse {
+                data,
+                error: None,
+                headers,
+            }
         })
         .unwrap_or_else(|e| request.to_error(e.to_string()));
 
@@ -411,6 +415,7 @@ mod tests {
     use std::thread;
 
     use super::*;
+    use event::Event as EventRequest;
 
     use std::net::TcpStream;
     use tungstenite::client;
@@ -439,9 +444,9 @@ mod tests {
                             sender.send(f.to_vec()).unwrap()
                         }
                     });
-                    ResponseData::Channel(rec)
+                    ResponseData::new(rec)
                 }
-                _ => request.event_data().to_vec().into(),
+                _ => ResponseData::new(request.event_data().to_vec()),
             };
             Ok(response)
         }
@@ -541,7 +546,7 @@ mod tests {
             );
             assert!(matches!(response.error, None), "There should be noerror");
             match response.data {
-                ResponseData::Binary(BinaryWrapper { inner }) => {
+                DataType::Binary(BinaryWrapper { inner }) => {
                     responses.push(inner);
                 }
                 _ => panic!("WS stream is supposed to return binary data"),

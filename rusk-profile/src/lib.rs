@@ -19,7 +19,8 @@ pub use theme::Theme;
 mod circuit;
 pub use circuit::Circuit;
 
-static CRS_17: &str =
+/// HEX representaion of the SHA-256 hash of the CRS uncompressed bytes.
+pub static CRS_17_HASH: &str =
     "18b48f588fd4d1e88ef9e7b3cacfa29046f6f489c5c237a4b01ee4f0334772a5";
 
 const CRS_FNAME: &str = "dev-piecrust.crs";
@@ -179,7 +180,7 @@ pub fn verify_common_reference_string(buff: &[u8]) -> bool {
     hasher.update(buff);
     let hash = format!("{:x}", hasher.finalize());
 
-    hash == CRS_17
+    hash == CRS_17_HASH
 }
 
 pub fn clean_outdated(circuits: &[Circuit]) -> io::Result<()> {

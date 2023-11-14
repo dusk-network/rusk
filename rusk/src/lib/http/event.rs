@@ -46,7 +46,7 @@ impl MessageRequest {
     {
         MessageResponse {
             headers: self.x_headers(),
-            data: ResponseData::None,
+            data: DataType::None,
             error: Some(err.as_ref().to_string()),
         }
     }
@@ -170,7 +170,7 @@ pub struct MessageResponse {
     pub headers: serde_json::Map<String, serde_json::Value>,
 
     /// The data returned by the contract call.
-    pub data: ResponseData,
+    pub data: DataType,
 
     /// A possible error happening during the contract call.
     pub error: Option<String>,
@@ -180,7 +180,7 @@ impl MessageResponse {
     pub fn from_error(error: String) -> Self {
         Self {
             headers: serde_json::Map::default(),
-            data: ResponseData::None,
+            data: DataType::None,
             error: Some(error),
         }
     }
@@ -199,19 +199,19 @@ impl MessageResponse {
 
         let body = {
             match self.data {
-                ResponseData::Binary(wrapper) => {
+                DataType::Binary(wrapper) => {
                     let data = match is_binary {
                         true => wrapper.inner,
                         false => hex::encode(wrapper.inner).as_bytes().to_vec(),
                     };
                     Body::from(data)
                 }
-                ResponseData::Text(text) => Body::from(text),
-                ResponseData::Json(value) => {
+                DataType::Text(text) => Body::from(text),
+                DataType::Json(value) => {
                     headers.insert(CONTENT_TYPE, CONTENT_TYPE_JSON.clone());
                     Body::from(value.to_string())
                 }
-                ResponseData::Channel(channel) => {
+                DataType::Channel(channel) => {
                     Body::wrap_stream(stream::iter(channel).map(move |e| {
                         match is_binary {
                             true => Ok::<_, anyhow::Error>(e),
@@ -221,7 +221,7 @@ impl MessageResponse {
                         }
                     }))
                 }
-                ResponseData::None => Body::empty(),
+                DataType::None => Body::empty(),
             }
         };
         let mut response = hyper::Response::new(body);
@@ -282,10 +282,39 @@ impl From<Vec<u8>> for RequestData {
     }
 }
 
+pub struct ResponseData {
+    data: DataType,
+    header: serde_json::Map<String, serde_json::Value>,
+}
+
+impl ResponseData {
+    pub fn new<D: Into<DataType>>(data: D) -> Self {
+        Self {
+            data: data.into(),
+            header: serde_json::Map::new(),
+        }
+    }
+
+    pub fn with_header<K: Into<String>, V: Into<serde_json::Value>>(
+        mut self,
+        key: K,
+        value: V,
+    ) -> Self {
+        self.header.insert(key.into(), value.into());
+        self
+    }
+
+    pub fn into_inner(
+        self,
+    ) -> (DataType, serde_json::Map<String, serde_json::Value>) {
+        (self.data, self.header)
+    }
+}
+
 /// Data in a response.
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(untagged)]
-pub enum ResponseData {
+pub enum DataType {
     Binary(BinaryWrapper),
     Text(String),
     Json(serde_json::Value),
@@ -295,25 +324,25 @@ pub enum ResponseData {
     None,
 }
 
-impl From<serde_json::Value> for ResponseData {
+impl From<serde_json::Value> for DataType {
     fn from(value: serde_json::Value) -> Self {
         Self::Json(value)
     }
 }
 
-impl From<String> for ResponseData {
+impl From<String> for DataType {
     fn from(text: String) -> Self {
         Self::Text(text)
     }
 }
 
-impl From<Vec<u8>> for ResponseData {
+impl From<Vec<u8>> for DataType {
     fn from(bytes: Vec<u8>) -> Self {
         Self::Binary(BinaryWrapper { inner: bytes })
     }
 }
 
-impl From<mpsc::Receiver<Vec<u8>>> for ResponseData {
+impl From<mpsc::Receiver<Vec<u8>>> for DataType {
     fn from(receiver: mpsc::Receiver<Vec<u8>>) -> Self {
         Self::Channel(receiver)
     }
