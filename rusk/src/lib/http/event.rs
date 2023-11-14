@@ -140,11 +140,11 @@ impl MessageRequest {
                 (k.to_string().to_lowercase(), v)
             })
             .collect();
-        let (event, is_binary) = Event::from_request(req).await?;
+        let (event, binary_response) = Event::from_request(req).await?;
 
         let req = MessageRequest { event, headers };
 
-        Ok((req, is_binary))
+        Ok((req, binary_response))
     }
 
     pub fn check_rusk_version(&self) -> anyhow::Result<()> {
@@ -343,7 +343,7 @@ impl Event {
     ) -> anyhow::Result<(Self, bool)> {
         let (parts, req_body) = req.into_parts();
         // HTTP REQUEST
-        let is_binary = parts
+        let binary_request = parts
             .headers
             .get(CONTENT_TYPE)
             .and_then(|h| h.to_str().ok())
@@ -354,17 +354,27 @@ impl Event {
 
         let body = hyper::body::to_bytes(req_body).await?;
 
-        let mut event = match is_binary {
+        let mut event = match binary_request {
             true => Event::parse(&body)
                 .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
             false => serde_json::from_slice(&body)
                 .map_err(|e| anyhow::anyhow!("Invalid data {e}"))?,
         };
         event.target = target;
-        Ok((event, is_binary))
+
+        let binary_response = binary_request
+            || parts
+                .headers
+                .get(ACCEPT)
+                .and_then(|h| h.to_str().ok())
+                .map(|v| v.eq_ignore_ascii_case(CONTENT_TYPE_BINARY))
+                .unwrap_or_default();
+
+        Ok((event, binary_response))
     }
 }
 const CONTENT_TYPE: &str = "Content-Type";
+const ACCEPT: &str = "Accept";
 const CONTENT_TYPE_BINARY: &str = "application/octet-stream";
 static CONTENT_TYPE_JSON: HeaderValue =
     HeaderValue::from_static("application/json");

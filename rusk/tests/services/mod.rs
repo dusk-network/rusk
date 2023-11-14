@@ -10,3 +10,5 @@ pub mod multi_transfer;
 pub mod stake;
 // pub mod state_service;
 pub mod transfer;
+
+pub mod unspendable;
