@@ -6,6 +6,7 @@
 
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
+use rusk_profile::CRS_17_HASH;
 use rusk_prover::{LocalProver, Prover};
 use serde::Serialize;
 use std::sync::{mpsc, Arc};
@@ -130,7 +131,7 @@ impl Rusk {
 
     fn get_crs(&self) -> anyhow::Result<ResponseData> {
         let crs = rusk_profile::get_common_reference_string()?;
-        Ok(ResponseData::new(crs))
+        Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
     }
 }
 
