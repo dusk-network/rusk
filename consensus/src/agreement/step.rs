@@ -118,7 +118,7 @@ impl<D: Database> Executor<D> {
             config::ACCUMULATOR_WORKERS_AMOUNT,
             collected_votes_tx,
             self.committees_set.clone(),
-            self.ru.seed,
+            self.ru.seed(),
         );
 
         // drain future messages for current round and step.
@@ -281,7 +281,7 @@ impl<D: Database> Executor<D> {
         self.committees_set.lock().await.is_member(
             &hdr.pubkey_bls,
             &sortition::Config::new(
-                self.ru.seed,
+                self.ru.seed(),
                 hdr.round,
                 hdr.step,
                 COMMITTEE_SIZE,

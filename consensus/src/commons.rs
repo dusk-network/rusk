@@ -28,29 +28,46 @@ use tracing::{debug, error};
 #[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub struct RoundUpdate {
+    // Current round number of the ongoing consensus
     pub round: u64,
-    pub seed: Seed,
-    pub hash: [u8; 32],
-    pub timestamp: i64,
+
+    // Most recent block
+    block: Block,
+
+    // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
     pub secret_key: SecretKey,
 }
 
 impl RoundUpdate {
     pub fn new(
-        round: u64,
         pubkey_bls: PublicKey,
         secret_key: SecretKey,
-        seed: Seed,
+        block: Block,
     ) -> Self {
+        let round = &block.header().height + 1;
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            seed,
-            hash: [0u8; 32],
-            timestamp: 0,
+            block,
         }
+    }
+
+    pub fn seed(&self) -> Seed {
+        self.block.header().seed
+    }
+
+    pub fn hash(&self) -> [u8; 32] {
+        self.block.header().hash
+    }
+
+    pub fn timestamp(&self) -> i64 {
+        self.block.header().timestamp
+    }
+
+    pub fn cert(&self) -> &Certificate {
+        &self.block.header().cert
     }
 }
 

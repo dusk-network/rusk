@@ -31,7 +31,7 @@ pub(super) async fn verify(
         aggr.bitset,
         &aggr.aggregate_signature,
         &committees_set,
-        &sortition::Config::new(ru.seed, ru.round, hdr.step, 64),
+        &sortition::Config::new(ru.seed(), ru.round, hdr.step, 64),
     )
     .await?;
 
@@ -39,7 +39,7 @@ pub(super) async fn verify(
     verifiers::verify_agreement(
         Message::new_agreement(hdr.clone(), aggr.agreement.clone()),
         committees_set.clone(),
-        ru.seed,
+        ru.seed(),
     )
     .await?;
 
@@ -82,7 +82,7 @@ pub(super) async fn aggregate(
             committees_set.lock().await.bits(
                 voters,
                 &sortition::Config::new(
-                    ru.seed,
+                    ru.seed(),
                     ru.round,
                     first_agreement.header.step,
                     64,
