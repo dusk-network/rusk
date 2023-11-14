@@ -10,7 +10,9 @@ use crate::{LongLivedService, Message};
 use anyhow::{anyhow, bail, Result};
 use async_trait::async_trait;
 use dusk_bls12_381_sign::PublicKey;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
+use dusk_consensus::commons::{
+    ConsensusError, Database, IterCounter, RoundUpdate, StepName,
+};
 use dusk_consensus::consensus::{self, Consensus};
 use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
@@ -33,6 +35,7 @@ use tracing::{error, info, warn};
 
 use dusk_consensus::config;
 use std::any;
+use std::collections::HashMap;
 
 use super::consensus::Task;
 use super::genesis;
@@ -167,7 +170,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         *provisioners_list = self.vm.read().await.get_provisioners()?;
         *mrb = blk.clone();
 
-        if blk.header().iteration == 1 {
+        if blk.has_instant_finality() {
             *self.last_finalized.write().await = blk.clone();
         }
 
@@ -204,9 +207,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = match blk.header().iteration {
-                    1 => vm.finalize(blk)?,
-                    _ => vm.accept(blk)?,
+                let (txs, verification_output) = if blk.has_instant_finality() {
+                    vm.finalize(blk)?
+                } else {
+                    vm.accept(blk)?
                 };
 
                 assert_eq!(
@@ -237,7 +241,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             *mrb = blk.clone();
 
             // Update last_finalized block
-            if blk.header().iteration == 1 {
+            if blk.has_instant_finality() {
                 *self.last_finalized.write().await = blk.clone();
             }
 
@@ -492,7 +496,7 @@ async fn verify_block_cert(
         topic: 0,
         pubkey_bls: curr_public_key.clone(),
         round: height,
-        step: iteration * 3,
+        step: iteration.step_from_name(StepName::SecondRed),
         block_hash,
     };
 

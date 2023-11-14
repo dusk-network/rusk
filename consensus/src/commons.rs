@@ -19,6 +19,7 @@ use dusk_bls12_381_sign::SecretKey;
 use dusk_bytes::DeserializableSlice;
 use node_data::bls::PublicKey;
 
+use crate::config;
 use node_data::message::{AsyncQueue, Message};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -82,7 +83,7 @@ pub enum ConsensusError {
     NotCommitteeMember,
     NotImplemented,
     NotReady,
-    MaxStepReached,
+    MaxIterationReached,
     ChildTaskTerminated,
     Canceled,
 }
@@ -219,4 +220,53 @@ pub trait Database: Send + Sync {
         h: &Hash,
     ) -> anyhow::Result<Block>;
     fn delete_candidate_blocks(&mut self);
+}
+
+pub enum StepName {
+    Sel,
+    FirstRed,
+    SecondRed,
+}
+
+pub trait IterCounter {
+    /// Count of all steps per a single iteration
+    const STEP_NUM: u8 = 3;
+    type Step;
+    fn next(&mut self) -> Result<Self, ConsensusError>
+    where
+        Self: Sized;
+    fn from_step(step_num: Self::Step) -> Self;
+    fn step_from_name(&self, st: StepName) -> Self::Step;
+    fn step_from_pos(&self, pos: usize) -> Self::Step;
+}
+
+impl IterCounter for u8 {
+    type Step = u8;
+
+    fn next(&mut self) -> Result<Self, ConsensusError> {
+        let next = *self + 1;
+        if next >= config::CONSENSUS_MAX_ITER {
+            return Err(ConsensusError::MaxIterationReached);
+        }
+
+        *self = next;
+        Ok(next)
+    }
+
+    fn from_step(step: Self::Step) -> Self {
+        step / Self::STEP_NUM
+    }
+
+    fn step_from_name(&self, st: StepName) -> Self::Step {
+        let sel_num = self * Self::STEP_NUM;
+        match st {
+            StepName::Sel => sel_num,
+            StepName::FirstRed => sel_num + 1,
+            StepName::SecondRed => sel_num + 2,
+        }
+    }
+
+    fn step_from_pos(&self, pos: usize) -> Self::Step {
+        self * Self::STEP_NUM + pos as u8
+    }
 }

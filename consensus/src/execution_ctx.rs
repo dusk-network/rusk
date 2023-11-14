@@ -115,11 +115,11 @@ impl<D: Database> IterationCtx<D> {
         self.committees.get(&step)
     }
 
-    pub(crate) fn on_iteration_begin(&mut self, iter: u8) {
+    pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
     }
 
-    pub(crate) fn on_iteration_end(&mut self) {
+    pub(crate) fn on_end(&mut self) {
         debug!(
             event = "iter completed",
             len = self.join_set.len(),
@@ -132,7 +132,7 @@ impl<D: Database> IterationCtx<D> {
 
 impl<DB: Database> Drop for IterationCtx<DB> {
     fn drop(&mut self) {
-        self.on_iteration_end();
+        self.on_end();
     }
 }
 

@@ -240,7 +240,7 @@ impl ChainSrv {
             };
 
             // Initialize last_finalized block
-            if mrb.header().iteration == 1 || mrb.header().height == 0 {
+            if mrb.has_instant_finality() {
                 last_finalized = mrb.clone();
             } else {
                 // scan
@@ -248,9 +248,7 @@ impl ChainSrv {
                 loop {
                     h -= 1;
                     if let Ok(Some(blk)) = t.fetch_block_by_height(h) {
-                        if blk.header().iteration == 1
-                            || blk.header().height == 0
-                        {
+                        if blk.has_instant_finality() {
                             last_finalized = blk;
                             break;
                         };
