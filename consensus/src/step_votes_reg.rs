@@ -6,8 +6,8 @@
 
 use crate::commons::{IterCounter, RoundUpdate, StepName};
 use crate::config::CONSENSUS_MAX_ITER;
-use node_data::ledger::to_str;
 use node_data::ledger::StepVotes;
+use node_data::ledger::{to_str, Certificate};
 use node_data::message::{payload, Message, Topics};
 use std::fmt;
 use std::sync::Arc;
@@ -49,11 +49,6 @@ impl SvEntry {
         sv: StepVotes,
         svt: SvType,
     ) -> bool {
-        // Discard  empty hashes
-        if hash == [0u8; 32] {
-            return false;
-        }
-
         if let Some(h) = self.hash {
             if h != hash {
                 // Only one hash can be registered per a single iteration
@@ -78,11 +73,28 @@ impl SvEntry {
             && !self.first_red_sv.is_empty()
             && self.hash.is_some()
     }
+
+    fn is_nil(&self) -> bool {
+        if let Some(hash) = self.hash {
+            if hash == [0u8; 32] {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn convert_to_cert(&self) -> Certificate {
+        Certificate {
+            first_reduction: self.first_red_sv,
+            second_reduction: self.second_red_sv,
+        }
+    }
 }
 
-pub(crate) type SafeStepVotesRegistry = Arc<Mutex<StepVotesRegistry>>;
+pub type SafeStepVotesRegistry = Arc<Mutex<StepVotesRegistry>>;
 
-pub(crate) struct StepVotesRegistry {
+pub struct StepVotesRegistry {
     ru: RoundUpdate,
     sv_table: [SvEntry; CONSENSUS_MAX_ITER as usize],
 }
@@ -143,5 +155,24 @@ impl StepVotesRegistry {
         };
 
         Message::new_agreement(hdr, payload)
+    }
+
+    pub(crate) fn get_nil_certificates(
+        &mut self,
+        from: usize,
+        to: usize,
+    ) -> Vec<Option<Certificate>> {
+        let to = std::cmp::min(to, self.sv_table.len());
+        let mut res = Vec::with_capacity(to - from);
+
+        for item in &self.sv_table[from..to] {
+            if item.is_nil() {
+                res.push(Some(item.convert_to_cert()));
+            } else {
+                res.push(None)
+            }
+        }
+
+        res
     }
 }
