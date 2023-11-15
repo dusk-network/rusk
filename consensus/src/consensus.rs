@@ -240,6 +240,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         ru.clone(),
                         step,
                         executor.clone(),
+                        sv_registry.clone(),
                     );
 
                     // Execute a phase.
