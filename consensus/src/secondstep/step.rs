@@ -44,7 +44,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         let mut handler = self.handler.lock().await;
 
-        self.candidate = None;
+        self.candidate = Some(Block::default());
         handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
