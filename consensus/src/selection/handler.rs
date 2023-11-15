@@ -56,6 +56,16 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         Err(ConsensusError::InvalidMsgType)
     }
 
+    async fn collect_from_past(
+        &mut self,
+        msg: Message,
+        _ru: &RoundUpdate,
+        _step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        Ok(HandleMsgOutput::Pending(msg))
+    }
+
     /// Handles of an event of step execution timeout
     fn handle_timeout(
         &mut self,

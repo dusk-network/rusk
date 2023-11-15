@@ -11,7 +11,7 @@ use crate::contract_state::Operations;
 
 use node_data::ledger::*;
 use node_data::message;
-use node_data::message::Topics;
+use node_data::message::{Payload, Topics};
 use tracing::Instrument;
 
 use crate::contract_state::CallParams;

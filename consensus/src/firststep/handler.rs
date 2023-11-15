@@ -106,6 +106,8 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
+        assert_eq!(step, self.curr_step, "msg does not belong to curr step");
+
         let signature = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
@@ -117,20 +119,12 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
-            if let Some(m) = self.sv_registry.lock().await.add_step_votes(
+            _ = self.sv_registry.lock().await.add_step_votes(
                 step,
                 hash,
                 sv,
                 SvType::FirstReduction,
-            ) {
-                return Ok(HandleMsgOutput::Ready(m));
-            }
-
-            // If step is different from the current one, this means
-            // * collect * func is being called from different iteration
-            if step != self.curr_step {
-                return Ok(HandleMsgOutput::Pending(msg));
-            }
+            );
 
             // if the votes converged for an empty hash we invoke halt
             if hash == [0u8; 32] {
@@ -160,6 +154,38 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             }
 
             return Ok(final_result(sv, self.candidate.clone()));
+        }
+
+        Ok(HandleMsgOutput::Pending(msg))
+    }
+
+    /// Collects the reduction message from former iteration.
+    async fn collect_from_past(
+        &mut self,
+        msg: Message,
+        _ru: &RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        let signature = match &msg.payload {
+            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Empty => Ok(EMPTY_SIGNATURE),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }?;
+
+        // Collect vote, if msg payload is reduction type
+        if let Some((hash, sv)) =
+            self.aggr.collect_vote(committee, &msg.header, &signature)
+        {
+            // Record result in global round registry
+            if let Some(m) = self.sv_registry.lock().await.add_step_votes(
+                step,
+                hash,
+                sv,
+                SvType::FirstReduction,
+            ) {
+                // TODO: Send an agreement
+            }
         }
 
         Ok(HandleMsgOutput::Pending(msg))
