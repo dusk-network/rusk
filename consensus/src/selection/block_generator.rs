@@ -34,6 +34,7 @@ impl<T: Operations> Generator<T> {
         &self,
         ru: &RoundUpdate,
         step: u8,
+        _failed_certificates: Vec<Option<Certificate>>,
     ) -> Result<Message, crate::contract_state::Error> {
         let iteration = u8::from_step(step);
         // Sign seed

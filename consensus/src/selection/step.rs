@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database};
+use crate::commons::{ConsensusError, Database, IterCounter};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
@@ -60,9 +60,21 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
+            let iteration = u8::from_step(ctx.step) as usize;
+            // Fetch failed certificates from sv_registry
+            let failed_certificates = ctx
+                .sv_registry
+                .lock()
+                .await
+                .get_nil_certificates(0, iteration);
+
             if let Ok(msg) = self
                 .bg
-                .generate_candidate_message(&ctx.round_update, ctx.step)
+                .generate_candidate_message(
+                    &ctx.round_update,
+                    ctx.step,
+                    failed_certificates,
+                )
                 .await
             {
                 // Broadcast the candidate block for this round/iteration.
