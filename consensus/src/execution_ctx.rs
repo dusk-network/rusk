@@ -14,6 +14,7 @@ use crate::msg_handler::HandleMsgOutput::{
 };
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
+use crate::step_votes_reg::SafeStepVotesRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
@@ -154,6 +155,8 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub step: u8,
 
     executor: Arc<Mutex<T>>,
+
+    pub sv_registry: SafeStepVotesRegistry,
 }
 
 impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
@@ -168,6 +171,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         round_update: RoundUpdate,
         step: u8,
         executor: Arc<Mutex<T>>,
+        sv_registry: SafeStepVotesRegistry,
     ) -> Self {
         Self {
             iter_ctx,
@@ -178,6 +182,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             round_update,
             step,
             executor,
+            sv_registry,
         }
     }
 
