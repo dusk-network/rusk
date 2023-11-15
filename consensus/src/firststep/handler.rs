@@ -22,7 +22,7 @@ const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
 
 macro_rules! empty_result {
     (  ) => {
-        HandleMsgOutput::FinalResult(Message::from_stepvotes(
+        HandleMsgOutput::Ready(Message::from_stepvotes(
             payload::StepVotesWithCandidate {
                 sv: StepVotes::default(),
                 candidate: Block::default(),
@@ -32,7 +32,7 @@ macro_rules! empty_result {
 }
 
 fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
-    HandleMsgOutput::FinalResult(Message::from_stepvotes(
+    HandleMsgOutput::Ready(Message::from_stepvotes(
         payload::StepVotesWithCandidate { sv, candidate },
     ))
 }
@@ -41,7 +41,7 @@ fn final_result_with_timeout(
     sv: StepVotes,
     candidate: ledger::Block,
 ) -> HandleMsgOutput {
-    HandleMsgOutput::FinalResultWithTimeoutIncrease(Message::from_stepvotes(
+    HandleMsgOutput::ReadyWithTimeoutIncrease(Message::from_stepvotes(
         payload::StepVotesWithCandidate { sv, candidate },
     ))
 }
@@ -116,22 +116,20 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         if let Some((hash, sv)) =
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
-            // Record result in global round registry of all non-Nil step_votes
-            if hash != [0u8; 32] {
-                if let Some(m) = self.sv_registry.lock().await.add_step_votes(
-                    step,
-                    hash,
-                    sv,
-                    SvType::FirstReduction,
-                ) {
-                    return Ok(HandleMsgOutput::FinalResult(m));
-                }
+            // Record result in global round registry
+            if let Some(m) = self.sv_registry.lock().await.add_step_votes(
+                step,
+                hash,
+                sv,
+                SvType::FirstReduction,
+            ) {
+                return Ok(HandleMsgOutput::Ready(m));
+            }
 
-                // If step is different from the current one, this means
-                // * collect * func is being called from different iteration
-                if step != self.curr_step {
-                    return Ok(HandleMsgOutput::Result(msg));
-                }
+            // If step is different from the current one, this means
+            // * collect * func is being called from different iteration
+            if step != self.curr_step {
+                return Ok(HandleMsgOutput::Pending(msg));
             }
 
             // if the votes converged for an empty hash we invoke halt
@@ -164,7 +162,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             return Ok(final_result(sv, self.candidate.clone()));
         }
 
-        Ok(HandleMsgOutput::Result(msg))
+        Ok(HandleMsgOutput::Pending(msg))
     }
 
     /// Handles of an event of step execution timeout
