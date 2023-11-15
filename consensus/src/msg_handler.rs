@@ -80,6 +80,16 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
+    /// collect allows each Phase to process a verified message from a former
+    /// iteration
+    async fn collect_from_past(
+        &mut self,
+        msg: T,
+        ru: &RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError>;
+
     /// handle_timeout allows each Phase to handle a timeout event.
     fn handle_timeout(
         &mut self,

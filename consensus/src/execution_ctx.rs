@@ -83,13 +83,23 @@ impl<D: Database> IterationCtx<D> {
             node_data::message::Topics::NewBlock => {
                 let mut handler = self.selection_handler.lock().await;
                 _ = handler
-                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .collect_from_past(
+                        msg.clone(),
+                        ru,
+                        msg.header.step,
+                        committee,
+                    )
                     .await;
             }
             node_data::message::Topics::FirstReduction => {
                 let mut handler = self.first_reduction_handler.lock().await;
                 if let Ok(Ready(m)) = handler
-                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .collect_from_past(
+                        msg.clone(),
+                        ru,
+                        msg.header.step,
+                        committee,
+                    )
                     .await
                 {
                     return Some(m);
@@ -98,7 +108,12 @@ impl<D: Database> IterationCtx<D> {
             node_data::message::Topics::SecondReduction => {
                 let mut handler = self.sec_reduction_handler.lock().await;
                 if let Ok(Ready(m)) = handler
-                    .collect(msg.clone(), ru, msg.header.step, committee)
+                    .collect_from_past(
+                        msg.clone(),
+                        ru,
+                        msg.header.step,
+                        committee,
+                    )
                     .await
                 {
                     return Some(m);
