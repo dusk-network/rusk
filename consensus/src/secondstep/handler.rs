@@ -75,15 +75,15 @@ impl MsgHandler<Message> for Reduction {
                     second_step_votes,
                     SvType::SecondReduction,
                 ) {
-                    return Ok(HandleMsgOutput::FinalResult(m));
+                    return Ok(HandleMsgOutput::Ready(m));
                 }
 
                 if step != self.curr_step {
-                    return Ok(HandleMsgOutput::Result(msg));
+                    return Ok(HandleMsgOutput::Pending(msg));
                 }
             }
 
-            return Ok(HandleMsgOutput::FinalResult(self.build_agreement_msg(
+            return Ok(HandleMsgOutput::Ready(self.build_agreement_msg(
                 ru,
                 step,
                 block_hash,
@@ -91,7 +91,7 @@ impl MsgHandler<Message> for Reduction {
             )));
         }
 
-        Ok(HandleMsgOutput::Result(msg))
+        Ok(HandleMsgOutput::Pending(msg))
     }
 
     /// Handle of an event of step execution timeout
@@ -100,7 +100,7 @@ impl MsgHandler<Message> for Reduction {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::FinalResult(Message::empty()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
 

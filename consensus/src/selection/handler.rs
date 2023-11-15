@@ -50,7 +50,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
                 .await
                 .store_candidate_block(p.candidate.clone());
 
-            return Ok(HandleMsgOutput::FinalResult(msg));
+            return Ok(HandleMsgOutput::Ready(msg));
         }
 
         Err(ConsensusError::InvalidMsgType)
@@ -62,7 +62,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::FinalResult(Message::empty()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
 

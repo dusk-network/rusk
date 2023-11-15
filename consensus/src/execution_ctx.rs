@@ -9,9 +9,7 @@ use crate::commons::Database;
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
-use crate::msg_handler::HandleMsgOutput::{
-    FinalResult, FinalResultWithTimeoutIncrease,
-};
+use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
 use crate::step_votes_reg::SafeStepVotesRegistry;
@@ -90,7 +88,7 @@ impl<D: Database> IterationCtx<D> {
             }
             node_data::message::Topics::FirstReduction => {
                 let mut handler = self.first_reduction_handler.lock().await;
-                if let Ok(FinalResult(m)) = handler
+                if let Ok(Ready(m)) = handler
                     .collect(msg.clone(), ru, msg.header.step, committee)
                     .await
                 {
@@ -99,7 +97,7 @@ impl<D: Database> IterationCtx<D> {
             }
             node_data::message::Topics::SecondReduction => {
                 let mut handler = self.sec_reduction_handler.lock().await;
-                if let Ok(FinalResult(m)) = handler
+                if let Ok(Ready(m)) = handler
                     .collect(msg.clone(), ru, msg.header.step, committee)
                     .await
                 {
@@ -397,12 +395,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 trace!("message collected {:#?}", msg);
 
                 match output {
-                    FinalResult(m) => {
+                    Ready(m) => {
                         // Fully valid state reached on this step. Return it as
                         // an output to populate next step with it.
                         return Some(m);
                     }
-                    FinalResultWithTimeoutIncrease(m) => {
+                    ReadyWithTimeoutIncrease(m) => {
                         Self::increase_timeout(timeout_millis);
                         return Some(m);
                     }
@@ -430,7 +428,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        if let Ok(FinalResult(msg)) = phase
+        if let Ok(Ready(msg)) = phase
             .lock()
             .await
             .handle_timeout(&self.round_update, self.step)
@@ -488,7 +486,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         },
                     );
 
-                    if let Ok(FinalResult(msg)) = phase
+                    if let Ok(Ready(msg)) = phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, self.step, committee)

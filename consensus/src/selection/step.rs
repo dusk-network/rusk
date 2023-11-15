@@ -96,7 +96,7 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
                     .await
                 {
                     Ok(f) => {
-                        if let HandleMsgOutput::FinalResult(msg) = f {
+                        if let HandleMsgOutput::Ready(msg) = f {
                             return Ok(msg);
                         }
                     }

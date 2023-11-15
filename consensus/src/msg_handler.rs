@@ -12,10 +12,12 @@ use node_data::message::{Message, MessageTrait, Status, Topics};
 use std::fmt::Debug;
 use tracing::{debug, trace};
 
+/// Indicates whether an output value is available for current step execution
+/// (Step is Ready) or needs to collect data (Step is Pending)
 pub enum HandleMsgOutput {
-    Result(Message),
-    FinalResult(Message),
-    FinalResultWithTimeoutIncrease(Message),
+    Pending(Message),
+    Ready(Message),
+    ReadyWithTimeoutIncrease(Message),
 }
 
 /// MsgHandler must be implemented by any step that needs to handle an external
