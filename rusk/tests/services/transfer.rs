@@ -50,8 +50,7 @@ fn wallet_transfer(
     wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
     amount: u64,
     block_height: u64,
-    precomputed_tx: Option<PhoenixTransaction>,
-) -> PhoenixTransaction {
+) {
     // Sender psk
     let psk = SSK.public_spend_key();
 
@@ -87,20 +86,18 @@ fn wallet_transfer(
     );
 
     // Execute a transfer
-    let tx = precomputed_tx.unwrap_or_else(|| {
-        wallet
-            .transfer(
-                &mut rng,
-                0,
-                &psk,
-                &receiver,
-                amount,
-                1_000_000_000,
-                2,
-                nonce,
-            )
-            .expect("Failed to transfer")
-    });
+    let tx = wallet
+        .transfer(
+            &mut rng,
+            0,
+            &psk,
+            &receiver,
+            amount,
+            1_000_000_000,
+            2,
+            nonce,
+        )
+        .expect("Failed to transfer");
     info!("Tx: {}", hex::encode(tx.to_var_bytes()));
 
     let tx_hash_input_bytes = tx.to_hash_input_bytes();
@@ -140,7 +137,6 @@ fn wallet_transfer(
         sender_final_balance,
         "Final sender balance mismatch"
     );
-    tx.inner.inner.clone()
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -167,7 +163,7 @@ pub async fn wallet() -> Result<()> {
 
     info!("Original Root: {:?}", hex::encode(original_root));
 
-    let tx = wallet_transfer(&rusk, &wallet, 1_000, 2, None);
+    wallet_transfer(&rusk, &wallet, 1_000, 2);
 
     // Check the state's root is changed from the original one
     let new_root = rusk.state_root();
@@ -185,7 +181,7 @@ pub async fn wallet() -> Result<()> {
     info!("Root after reset: {:?}", hex::encode(rusk.state_root()));
     assert_eq!(original_root, rusk.state_root(), "Root be the same again");
 
-    wallet_transfer(&rusk, &wallet, 1_000, 2, Some(tx));
+    wallet_transfer(&rusk, &wallet, 1_000, 2);
 
     // Check the state's root is back to the original one
     info!(
