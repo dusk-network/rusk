@@ -16,7 +16,12 @@ use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
+
+#[cfg(not(feature = "no_random"))]
 use rand::rngs::OsRng;
+
+#[cfg(feature = "no_random")]
+use rand::{rngs::StdRng, SeedableRng};
 
 use dusk_plonk::prelude::*;
 use dusk_schnorr::Signature;

@@ -41,7 +41,13 @@ impl LocalProver {
         let circ =
             WithdrawFromTransparentCircuit::new(commitment, value, blinder);
 
-        let (proof, _) = WFCT_PROVER.prove(&mut OsRng, &circ).map_err(|e| {
+        #[cfg(not(feature = "no_random"))]
+        let rng = &mut OsRng;
+
+        #[cfg(feature = "no_random")]
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
+        let (proof, _) = WFCT_PROVER.prove(rng, &circ).map_err(|e| {
             ProverError::with_context("Failed proving the circuit", e)
         })?;
         Ok(proof.to_bytes().to_vec())
