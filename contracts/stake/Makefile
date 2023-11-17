@@ -23,5 +23,6 @@ wasm: ## Generate the optimized WASM for the contract given
 			
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
+	@cargo clippy -Z build-std=core,alloc --release --target wasm32-unknown-unknown -- -D warnings
 
 .PHONY: all check test wasm help
