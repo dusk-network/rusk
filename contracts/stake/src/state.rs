@@ -327,8 +327,8 @@ impl StakeState {
     /// Gets a vector of all allowlisted keys.
     pub fn stakers_allowlist(&self) -> Vec<PublicKey> {
         self.stakes
-            .iter()
-            .map(|(key, _)| PublicKey::from_bytes(key).unwrap())
+            .keys()
+            .map(|key| PublicKey::from_bytes(key).unwrap())
             .collect()
     }
 
