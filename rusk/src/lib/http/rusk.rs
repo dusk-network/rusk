@@ -4,10 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::event::Event;
+use super::*;
+
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk_profile::CRS_17_HASH;
-use rusk_prover::{LocalProver, Prover};
 use serde::Serialize;
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -17,15 +19,11 @@ use rusk_abi::ContractId;
 
 use crate::Rusk;
 
-use super::event::{
-    DataType, Event, MessageRequest, MessageResponse, RequestData,
-    ResponseData, Target,
-};
-
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
-impl Rusk {
-    pub(crate) async fn handle_request(
+#[async_trait]
+impl HandleRequest for Rusk {
+    async fn handle(
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
@@ -37,24 +35,6 @@ impl Rusk {
             (Target::Host(_), "rusk", "preverify") => {
                 self.handle_preverify(request.event_data())
             }
-            (Target::Host(_), "rusk", "prove_execute") => {
-                Ok(ResponseData::new(
-                    LocalProver.prove_execute(request.event_data())?,
-                ))
-            }
-            (Target::Host(_), "rusk", "prove_stct") => Ok(ResponseData::new(
-                LocalProver.prove_stct(request.event_data())?,
-            )),
-            (Target::Host(_), "rusk", "prove_stco") => Ok(ResponseData::new(
-                LocalProver.prove_stco(request.event_data())?,
-            )),
-            (Target::Host(_), "rusk", "prove_wfct") => Ok(ResponseData::new(
-                LocalProver.prove_wfct(request.event_data())?,
-            )),
-            (Target::Host(_), "rusk", "prove_wfco") => Ok(ResponseData::new(
-                LocalProver.prove_wfco(request.event_data())?,
-            )),
-
             (Target::Host(_), "rusk", "provisioners") => {
                 self.get_provisioners()
             }
@@ -62,7 +42,9 @@ impl Rusk {
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
+}
 
+impl Rusk {
     fn handle_contract_query(
         &self,
         event: &Event,

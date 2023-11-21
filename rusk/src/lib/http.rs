@@ -8,6 +8,8 @@
 
 mod chain;
 mod event;
+#[cfg(feature = "prover")]
+mod prover;
 mod rusk;
 
 pub(crate) use event::{
@@ -82,6 +84,8 @@ impl HttpServer {
 pub struct DataSources {
     pub rusk: Rusk,
     pub node: RuskNode,
+    #[cfg(feature = "prover")]
+    pub prover: rusk_prover::LocalProver,
 }
 
 #[async_trait]
@@ -96,10 +100,17 @@ impl HandleRequest for DataSources {
         );
         request.check_rusk_version()?;
         match request.event.to_route() {
-            (Target::Contract(_), ..) | (_, "rusk", _) => {
-                self.rusk.handle_request(request).await
+            #[cfg(feature = "prover")]
+            // target `rusk` shall be removed in future versions
+            (_, "rusk", topic) | (_, "prover", topic)
+                if topic.starts_with("prove_") =>
+            {
+                self.prover.handle(request).await
             }
-            (_, "Chain", _) => self.node.handle_request(request).await,
+            (Target::Contract(_), ..) | (_, "rusk", _) => {
+                self.rusk.handle(request).await
+            }
+            (_, "Chain", _) => self.node.handle(request).await,
             _ => Err(anyhow::anyhow!("unsupported target type")),
         }
     }

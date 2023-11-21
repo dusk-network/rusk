@@ -16,7 +16,7 @@ use std::{cmp, fs, io};
 pub mod chain;
 pub mod error;
 pub mod http;
-pub mod prover;
+pub mod verifier;
 mod version;
 mod vm;
 
