@@ -61,7 +61,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         msg: Message,
         _ru: &RoundUpdate,
         _step: u8,
-        committee: &Committee,
+        _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Pending(msg))
     }

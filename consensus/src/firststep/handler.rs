@@ -178,13 +178,13 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
-            if let Some(m) = self.sv_registry.lock().await.add_step_votes(
-                step,
-                hash,
-                sv,
-                SvType::FirstReduction,
-            ) {
-                // TODO: Send an agreement
+            if let Some(agreement) = self
+                .sv_registry
+                .lock()
+                .await
+                .add_step_votes(step, hash, sv, SvType::FirstReduction)
+            {
+                return Ok(HandleMsgOutput::Ready(agreement));
             }
         }
 

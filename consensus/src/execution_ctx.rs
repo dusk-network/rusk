@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::spawn_send_reduction;
 use crate::commons::Database;
+use crate::commons::{spawn_cast_vote, AgreementSender};
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
@@ -17,7 +17,7 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{firststep, secondstep, selection};
-use node_data::ledger::Block;
+use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
 use std::cmp;
@@ -170,12 +170,13 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeStepVotesRegistry,
+    agreement_sender: AgreementSender,
 }
 
 impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// Creates step execution context.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub(crate) fn new(
         iter_ctx: &'a mut IterationCtx<DB>,
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
@@ -185,6 +186,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         step: u8,
         executor: Arc<Mutex<T>>,
         sv_registry: SafeStepVotesRegistry,
+        agreement_sender: AgreementSender,
     ) -> Self {
         Self {
             iter_ctx,
@@ -196,6 +198,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             step,
             executor,
             sv_registry,
+            agreement_sender,
         }
     }
 
@@ -265,7 +268,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     ) {
         debug!(
             event = "former candidate received",
-            hash = node_data::ledger::to_str(&candidate.header().hash),
+            hash = to_str(&candidate.header().hash),
             msg_step,
         );
 
@@ -284,11 +287,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 debug!(
                     event = "vote for former candidate",
                     step_topic = format!("{:?}", topic),
-                    hash = node_data::ledger::to_str(&candidate.header().hash),
+                    hash = to_str(&candidate.header().hash),
                     msg_step,
                 );
 
-                spawn_send_reduction(
+                spawn_cast_vote(
                     &mut self.iter_ctx.join_set,
                     Arc::new(Mutex::new([0u8; 32])),
                     candidate.clone(),
@@ -308,9 +311,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     /// Process messages from past
     async fn process_past_events(&mut self, msg: &Message) -> Option<Message> {
-        if msg.header.block_hash == [0u8; 32]
-            || msg.header.round != self.round_update.round
-        {
+        if msg.header.round != self.round_update.round {
             return None;
         }
 
@@ -327,6 +328,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 .await;
         }
 
+        // Collect message from a previous reduction step/iteration.
         if let Some(m) = self
             .iter_ctx
             .collect_past_event(&self.round_update, msg)
@@ -334,10 +336,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         {
             if m.header.topic == Topics::Agreement as u8 {
                 debug!(
-                    event = "agreement from former iter",
-                    msg_step = m.header.step
+                    event = "agreement",
+                    src = "prev_step",
+                    msg_step = m.header.step,
+                    hash = to_str(&m.header.block_hash),
                 );
-                return Some(m);
+
+                self.agreement_sender.send(m.clone()).await;
             }
         }
 
