@@ -15,6 +15,7 @@ clippy: ## Run clippy
 	@cargo clippy --no-default-features --features ephemeral --release -- -D warnings
 	@cargo clippy --no-default-features --features recovery-keys --release -- -D warnings
 	@cargo clippy --no-default-features --features recovery-state --release -- -D warnings
+	@cargo clippy --no-default-features --features prover --release -- -D warnings
 
 build: ## Build rusk binary
 	@cargo build --release
