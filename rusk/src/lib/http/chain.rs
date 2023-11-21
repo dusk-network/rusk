@@ -22,10 +22,7 @@ use async_graphql::{
 };
 use serde_json::json;
 
-use super::event::{
-    DataType, Event, MessageRequest, MessageResponse, RequestData,
-    ResponseData, Target,
-};
+use super::*;
 use crate::http::RuskNode;
 use crate::{VERSION, VERSION_BUILD};
 
@@ -48,9 +45,9 @@ fn variables_from_request(request: &MessageRequest) -> Variables {
 
     var
 }
-
-impl RuskNode {
-    pub(crate) async fn handle_request(
+#[async_trait]
+impl HandleRequest for RuskNode {
+    async fn handle(
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
@@ -67,7 +64,8 @@ impl RuskNode {
             _ => anyhow::bail!("Unsupported"),
         }
     }
-
+}
+impl RuskNode {
     async fn handle_gql(
         &self,
         request: &MessageRequest,

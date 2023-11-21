@@ -127,6 +127,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let handler = DataSources {
             node: node.clone(),
             rusk,
+            #[cfg(feature = "prover")]
+            prover: rusk_prover::LocalProver,
         };
         _ws_server =
             Some(HttpServer::bind(handler, config.http.listen_addr()).await?);
