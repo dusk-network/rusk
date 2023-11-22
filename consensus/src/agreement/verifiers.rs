@@ -152,7 +152,13 @@ pub async fn verify_votes(
         let mut guard = committees_set.lock().await;
 
         let sub_committee = guard.intersect(bitset, cfg);
-        let target_quorum = guard.quorum(cfg);
+
+        let target_quorum = if *block_hash == [0u8; 32] {
+            guard.nil_quorum(cfg)
+        } else {
+            guard.quorum(cfg)
+        };
+
         let total = guard.total_occurrences(&sub_committee, cfg);
 
         if total < target_quorum {
