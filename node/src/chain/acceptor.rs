@@ -465,6 +465,23 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         .await?;
     }
 
+    // Verify Failed iterations
+    for iteration in 0..new_blk.failed_iterations.cert_list.len() {
+        if let Some(cert) = &new_blk.failed_iterations.cert_list[iteration] {
+            info!(event = "verify_cert", cert_type = "failed_cert");
+            verify_block_cert(
+                mrb.seed,
+                &mrb_eligible_provisioners,
+                public_key,
+                [0u8; 32],
+                new_blk.height,
+                cert,
+                iteration as u8,
+            )
+            .await?;
+        }
+    }
+
     // Verify Certificate
     verify_block_cert(
         mrb.seed,
