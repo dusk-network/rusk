@@ -306,7 +306,7 @@ impl<D: Database> Executor<D> {
         match self.db.lock().await.get_candidate_block_by_hash(hash).await {
             Ok(mut block) => {
                 debug!(event = "winner block retrieved", hash = to_str(hash));
-                block.set_certificate(cert.clone());
+                block.set_certificate(*cert);
 
                 Some(block)
             }

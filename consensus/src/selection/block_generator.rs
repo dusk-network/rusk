@@ -117,7 +117,7 @@ impl<T: Operations> Generator<T> {
             event_hash: result.verification_output.event_hash,
             hash: [0; 32],
             cert: Certificate::default(),
-            prev_block_cert: ru.cert().clone(),
+            prev_block_cert: *ru.cert(),
             txroot,
             iteration,
             failed_iterations: IterationsInfo::new(failed_iterations),

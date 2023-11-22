@@ -12,36 +12,35 @@ use node_data::message::{payload, Message, Topics};
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::debug;
 
 pub(crate) enum SvType {
     FirstReduction,
     SecondReduction,
 }
 
-#[derive(Default, Copy, Clone)]
-struct SvEntry {
-    // represents candidate block hash
+#[derive(Default, Clone, Copy)]
+struct AgreementInfo {
+    /// represents candidate block hash
     hash: Option<[u8; 32]>,
-    first_red_sv: StepVotes,
-    second_red_sv: StepVotes,
+    cert: Certificate,
 }
 
-impl fmt::Display for SvEntry {
+impl fmt::Display for AgreementInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hash = self.hash.unwrap_or_default();
 
         write!(
             f,
-            "SvEntry: hash: {}, 1st_red: {:?}, 2nd_red: {:?}",
+            "agreement_info: hash: {}, 1st_red: {:?}, 2nd_red: {:?}",
             to_str(&hash),
-            self.first_red_sv,
-            self.second_red_sv,
+            self.cert.first_reduction,
+            self.cert.second_reduction,
         )
     }
 }
 
-impl SvEntry {
+impl AgreementInfo {
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
@@ -51,8 +50,6 @@ impl SvEntry {
     ) -> bool {
         if let Some(h) = self.hash {
             if h != hash {
-                // Only one hash can be registered per a single iteration
-                error!(desc = "multiple candidates per iter");
                 return false;
             }
         } else {
@@ -60,20 +57,23 @@ impl SvEntry {
         }
 
         match svt {
-            SvType::FirstReduction => self.first_red_sv = sv,
-            SvType::SecondReduction => self.second_red_sv = sv,
+            SvType::FirstReduction => self.cert.first_reduction = sv,
+            SvType::SecondReduction => self.cert.second_reduction = sv,
         }
 
         debug!(event = "add_sv", iter, data = format!("{}", self));
         self.is_ready()
     }
 
+    /// Returns `true` if all fields are non-empty
     fn is_ready(&self) -> bool {
-        !self.second_red_sv.is_empty()
-            && !self.first_red_sv.is_empty()
+        !self.cert.first_reduction.is_empty()
+            && !self.cert.second_reduction.is_empty()
             && self.hash.is_some()
     }
 
+    /// Returns `true` if a nil_agreement is ready
+    /// NB: Nil agreement is an agreement for NIL hash
     fn is_nil(&self) -> bool {
         if let Some(hash) = self.hash {
             if hash == [0u8; 32] {
@@ -83,27 +83,24 @@ impl SvEntry {
 
         false
     }
-
-    fn convert_to_cert(&self) -> Certificate {
-        Certificate {
-            first_reduction: self.first_red_sv,
-            second_reduction: self.second_red_sv,
-        }
-    }
 }
 
-pub type SafeStepVotesRegistry = Arc<Mutex<StepVotesRegistry>>;
+pub type SafeAgreementInfoRegistry = Arc<Mutex<AgreementInfoRegistry>>;
 
-pub struct StepVotesRegistry {
+pub struct AgreementInfoRegistry {
     ru: RoundUpdate,
-    sv_table: [SvEntry; CONSENSUS_MAX_ITER as usize],
+
+    /// List of iterations agreements. Position in the array represents
+    /// iteration number.
+    agreement_reg: [AgreementInfo; CONSENSUS_MAX_ITER as usize],
 }
 
-impl StepVotesRegistry {
+impl AgreementInfoRegistry {
     pub(crate) fn new(ru: RoundUpdate) -> Self {
         Self {
             ru,
-            sv_table: [SvEntry::default(); CONSENSUS_MAX_ITER as usize],
+            agreement_reg: [AgreementInfo::default();
+                CONSENSUS_MAX_ITER as usize],
         }
     }
 
@@ -117,11 +114,11 @@ impl StepVotesRegistry {
         svt: SvType,
     ) -> Option<Message> {
         let iter_num = u8::from_step(step);
-        if iter_num as usize >= self.sv_table.len() {
+        if iter_num as usize >= self.agreement_reg.len() {
             return None;
         }
 
-        let r = &mut self.sv_table[iter_num as usize];
+        let r = &mut self.agreement_reg[iter_num as usize];
         if r.add_sv(iter_num, hash, sv, svt) {
             return Some(Self::build_agreement_msg(
                 self.ru.clone(),
@@ -136,7 +133,7 @@ impl StepVotesRegistry {
     fn build_agreement_msg(
         ru: RoundUpdate,
         iteration: u8,
-        result: SvEntry,
+        result: AgreementInfo,
     ) -> Message {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
@@ -150,8 +147,8 @@ impl StepVotesRegistry {
 
         let payload = payload::Agreement {
             signature,
-            first_step: result.first_red_sv,
-            second_step: result.second_red_sv,
+            first_step: result.cert.first_reduction,
+            second_step: result.cert.second_reduction,
         };
 
         Message::new_agreement(hdr, payload)
@@ -162,12 +159,12 @@ impl StepVotesRegistry {
         from: usize,
         to: usize,
     ) -> Vec<Option<Certificate>> {
-        let to = std::cmp::min(to, self.sv_table.len());
+        let to = std::cmp::min(to, self.agreement_reg.len());
         let mut res = Vec::with_capacity(to - from);
 
-        for item in &self.sv_table[from..to] {
+        for item in &self.agreement_reg[from..to] {
             if item.is_nil() {
-                res.push(Some(item.convert_to_cert()));
+                res.push(Some(item.cert));
             } else {
                 res.push(None)
             }
