@@ -9,7 +9,7 @@ use std::sync::Arc;
 use crate::aggregator::Aggregator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::{SafeStepVotesRegistry, SvType};
+use crate::step_votes_reg::{SafeAgreementInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
@@ -47,7 +47,7 @@ fn final_result_with_timeout(
 }
 
 pub struct Reduction<DB: Database> {
-    sv_registry: SafeStepVotesRegistry,
+    sv_registry: SafeAgreementInfoRegistry,
 
     pub(crate) db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
@@ -58,7 +58,7 @@ pub struct Reduction<DB: Database> {
 impl<DB: Database> Reduction<DB> {
     pub(crate) fn new(
         db: Arc<Mutex<DB>>,
-        sv_registry: SafeStepVotesRegistry,
+        sv_registry: SafeAgreementInfoRegistry,
     ) -> Self {
         Self {
             sv_registry,

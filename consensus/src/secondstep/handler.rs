@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::{SafeStepVotesRegistry, SvType};
+use crate::step_votes_reg::{SafeAgreementInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
@@ -18,7 +18,7 @@ use node_data::message::{payload, Message, Payload, Topics};
 use crate::user::committee::Committee;
 
 pub struct Reduction {
-    pub(crate) sv_registry: SafeStepVotesRegistry,
+    pub(crate) sv_registry: SafeAgreementInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
     pub(crate) first_step_votes: StepVotes,
@@ -132,7 +132,7 @@ impl MsgHandler<Message> for Reduction {
 }
 
 impl Reduction {
-    pub(crate) fn new(sv_registry: SafeStepVotesRegistry) -> Self {
+    pub(crate) fn new(sv_registry: SafeAgreementInfoRegistry) -> Self {
         Self {
             sv_registry,
             aggregator: Default::default(),
