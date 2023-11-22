@@ -37,6 +37,7 @@ pub struct Header {
     pub gas_limit: u64,
     pub iteration: u8,
     pub prev_block_cert: Certificate,
+    pub failed_iterations: IterationsInfo,
 
     // Block hash
     pub hash: Hash,
@@ -148,6 +149,7 @@ impl Header {
         w.write_all(&self.gas_limit.to_le_bytes())?;
         w.write_all(&self.iteration.to_le_bytes())?;
         self.prev_block_cert.write(w)?;
+        self.failed_iterations.write(w)?;
 
         Ok(())
     }
@@ -194,6 +196,7 @@ impl Header {
         let iteration = buf[0];
 
         let prev_block_cert = Certificate::read(r)?;
+        let failed_iterations = IterationsInfo::read(r)?;
 
         Ok(Header {
             version,
@@ -210,6 +213,7 @@ impl Header {
             hash: [0; 32],
             cert: Default::default(),
             prev_block_cert,
+            failed_iterations,
         })
     }
 }
@@ -338,6 +342,23 @@ impl PartialEq<Self> for SpentTransaction {
 }
 
 impl Eq for SpentTransaction {}
+
+/// Defines a set of certificates of any former iterations
+#[derive(Default, Eq, PartialEq, Clone)]
+#[cfg_attr(any(feature = "faker", test), derive(Dummy))]
+pub struct IterationsInfo {
+    /// Represents a list of certificates where position is the iteration
+    /// number
+    pub cert_list: Vec<Option<Certificate>>,
+}
+
+impl IterationsInfo {
+    pub fn new(certificates: Vec<Option<Certificate>>) -> Self {
+        Self {
+            cert_list: certificates,
+        }
+    }
+}
 
 /// Encode a byte array into a shortened HEX representation.
 pub fn to_str<const N: usize>(bytes: &[u8; N]) -> String {
