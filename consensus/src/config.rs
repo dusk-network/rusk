@@ -38,3 +38,5 @@ pub const ACCUMULATOR_QUEUE_CAP: usize = 100;
 pub const ENABLE_AGGR_AGREEMENT: bool = true;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
+
+pub const RELAX_ITERATION_THRESHOLD: u8 = 10;

@@ -9,6 +9,7 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use node_data::message::Message;
+use std::cmp;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -60,13 +61,17 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
-            let iteration = u8::from_step(ctx.step) as usize;
+            let iteration = cmp::min(
+                config::RELAX_ITERATION_THRESHOLD,
+                u8::from_step(ctx.step),
+            );
+
             // Fetch failed certificates from sv_registry
             let failed_certificates = ctx
                 .sv_registry
                 .lock()
                 .await
-                .get_nil_certificates(0, iteration);
+                .get_nil_certificates(0, iteration as usize);
 
             if let Ok(msg) = self
                 .bg
