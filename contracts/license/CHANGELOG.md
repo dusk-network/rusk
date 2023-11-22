@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Renamed method 'noop' to 'request_license' [#1151]
 - Added method 'get_info' [#1052]
 
 ### Changed
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `license` contract to Rusk [#960]
 
+[#1151]: https://github.com/dusk-network/rusk/issues/1151
 [#1054]: https://github.com/dusk-network/rusk/issues/1054
 [#1052]: https://github.com/dusk-network/rusk/issues/1052
 [#1051]: https://github.com/dusk-network/rusk/issues/1051
