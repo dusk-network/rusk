@@ -28,7 +28,7 @@ impl Aggregator {
         committee: &Committee,
         header: &Header,
         signature: &[u8; 48],
-    ) -> Option<(Hash, StepVotes)> {
+    ) -> Option<(Hash, StepVotes, bool)> {
         let msg_step = header.step;
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
@@ -94,17 +94,17 @@ impl Aggregator {
                 }
             };
 
+            let s = aggr_sign
+                .aggregated_bytes()
+                .expect("Signature to exist after quorum reached");
+            let bitset = committee.bits(cluster);
+
+            let step_votes = StepVotes {
+                bitset,
+                aggregate_signature: Signature::from(s),
+            };
+
             if quorum_reached {
-                let s = aggr_sign
-                    .aggregated_bytes()
-                    .expect("Signature to exist after quorum reached");
-                let bitset = committee.bits(cluster);
-
-                let step_votes = StepVotes {
-                    bitset,
-                    aggregate_signature: Signature::from(s),
-                };
-
                 tracing::info!(
                     event = "reduction, quorum reached",
                     hash = to_str(&hash),
@@ -114,9 +114,9 @@ impl Aggregator {
                     step = header.step,
                     signature = to_str(&s),
                 );
-
-                return Some((hash, step_votes));
             }
+
+            return Some((hash, step_votes, quorum_reached));
         }
 
         None
