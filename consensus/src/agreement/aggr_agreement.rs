@@ -32,6 +32,7 @@ pub(super) async fn verify(
         &aggr.aggregate_signature,
         &committees_set,
         &sortition::Config::new(ru.seed(), ru.round, hdr.step, 64),
+        true,
     )
     .await?;
 
