@@ -245,19 +245,21 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         msg_step: u8,
         candidate: &Block,
     ) {
-        return;
-        debug!(
-            event = "former candidate received",
-            hash = node_data::ledger::to_str(&candidate.header().hash),
-            msg_step,
-        );
+        let disable = true;
+        if !disable {
+            debug!(
+                event = "former candidate received",
+                hash = node_data::ledger::to_str(&candidate.header().hash),
+                msg_step,
+            );
 
-        if msg_step < self.step {
-            self.try_vote(msg_step + 1, candidate, Topics::FirstReduction);
-        }
+            if msg_step < self.step {
+                self.try_vote(msg_step + 1, candidate, Topics::FirstReduction);
+            }
 
-        if msg_step + 2 <= self.step {
-            self.try_vote(msg_step + 2, candidate, Topics::SecondReduction);
+            if msg_step + 2 <= self.step {
+                self.try_vote(msg_step + 2, candidate, Topics::SecondReduction);
+            }
         }
     }
 
