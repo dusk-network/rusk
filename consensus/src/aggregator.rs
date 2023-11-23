@@ -291,9 +291,11 @@ mod tests {
             // Last member's vote should reach the quorum
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
-                let (hash, sv) = a
+                let (hash, sv, quorum_reached) = a
                     .collect_vote(&c, h, signature)
                     .expect("failed to reach quorum");
+
+                assert_eq!(quorum_reached, true, "quorum should be reached");
 
                 // Check expected block hash
                 assert_eq!(hash, block_hash);
@@ -307,7 +309,14 @@ mod tests {
             }
 
             // Check collected votes
-            assert!(a.collect_vote(&c, h, signature).is_none());
+            let (_, _, quorum_reached) =
+                a.collect_vote(&c, h, signature).unwrap();
+
+            assert_eq!(
+                quorum_reached, false,
+                "quorum should not be reached yet"
+            );
+
             collected_votes += expected_votes[i];
             assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
 
