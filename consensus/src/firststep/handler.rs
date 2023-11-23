@@ -115,7 +115,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv)) =
+        if let Some((hash, sv, quorum_reached)) =
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
@@ -124,36 +124,39 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                 hash,
                 sv,
                 SvType::FirstReduction,
+                quorum_reached,
             );
 
-            // if the votes converged for an empty hash we invoke halt
-            if hash == [0u8; 32] {
-                tracing::warn!("votes converged for an empty hash");
+            if quorum_reached {
+                // if the votes converged for an empty hash we invoke halt
+                if hash == [0u8; 32] {
+                    tracing::warn!("votes converged for an empty hash");
 
-                return Ok(final_result_with_timeout(
-                    StepVotes::default(),
-                    ledger::Block::default(),
-                ));
-            }
-
-            if hash != self.candidate.header().hash {
-                // If the block generator is behind this node, we'll miss the
-                // candidate block.
-                if let Ok(block) = self
-                    .db
-                    .lock()
-                    .await
-                    .get_candidate_block_by_hash(&hash)
-                    .await
-                {
-                    return Ok(final_result(sv, block));
+                    return Ok(final_result_with_timeout(
+                        StepVotes::default(),
+                        ledger::Block::default(),
+                    ));
                 }
 
-                tracing::error!("Failed to retrieve candidate block.");
-                return Ok(empty_result!());
-            }
+                if hash != self.candidate.header().hash {
+                    // If the block generator is behind this node, we'll miss
+                    // the candidate block.
+                    if let Ok(block) = self
+                        .db
+                        .lock()
+                        .await
+                        .get_candidate_block_by_hash(&hash)
+                        .await
+                    {
+                        return Ok(final_result(sv, block));
+                    }
 
-            return Ok(final_result(sv, self.candidate.clone()));
+                    tracing::error!("Failed to retrieve candidate block.");
+                    return Ok(empty_result!());
+                }
+
+                return Ok(final_result(sv, self.candidate.clone()));
+            }
         }
 
         Ok(HandleMsgOutput::Pending(msg))
@@ -174,15 +177,18 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv)) =
+        if let Some((hash, sv, quorum_reached)) =
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
-            if let Some(agreement) = self
-                .sv_registry
-                .lock()
-                .await
-                .add_step_votes(step, hash, sv, SvType::FirstReduction)
+            if let Some(agreement) =
+                self.sv_registry.lock().await.add_step_votes(
+                    step,
+                    hash,
+                    sv,
+                    SvType::FirstReduction,
+                    quorum_reached,
+                )
             {
                 return Ok(HandleMsgOutput::Ready(agreement));
             }

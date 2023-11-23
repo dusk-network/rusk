@@ -65,24 +65,27 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is of reduction type
-        if let Some((block_hash, second_step_votes)) = self
+        if let Some((block_hash, second_step_votes, quorum_reached)) = self
             .aggregator
             .collect_vote(committee, &msg.header, &signature)
         {
-            // Record result in global round results registry
+            // Record any signature in global registry
             _ = self.sv_registry.lock().await.add_step_votes(
                 step,
                 block_hash,
                 second_step_votes,
                 SvType::SecondReduction,
+                quorum_reached,
             );
 
-            return Ok(HandleMsgOutput::Ready(self.build_agreement_msg(
-                ru,
-                step,
-                block_hash,
-                second_step_votes,
-            )));
+            if quorum_reached {
+                return Ok(HandleMsgOutput::Ready(self.build_agreement_msg(
+                    ru,
+                    step,
+                    block_hash,
+                    second_step_votes,
+                )));
+            }
         }
 
         Ok(HandleMsgOutput::Pending(msg))
@@ -103,16 +106,19 @@ impl MsgHandler<Message> for Reduction {
         }?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv)) =
+        if let Some((hash, sv, quorum_reached)) =
             self.aggregator
                 .collect_vote(committee, &msg.header, &signature)
         {
-            // Record result in global round registry
-            if let Some(agreement) = self
-                .sv_registry
-                .lock()
-                .await
-                .add_step_votes(step, hash, sv, SvType::SecondReduction)
+            // Record any signature in global registry
+            if let Some(agreement) =
+                self.sv_registry.lock().await.add_step_votes(
+                    step,
+                    hash,
+                    sv,
+                    SvType::SecondReduction,
+                    quorum_reached,
+                )
             {
                 return Ok(HandleMsgOutput::Ready(agreement));
             }
