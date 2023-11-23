@@ -33,6 +33,7 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
+use dusk_consensus::agreement::verifiers;
 use dusk_consensus::config;
 use std::any;
 use std::collections::HashMap;
@@ -461,6 +462,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
             mrb.height,
             &new_blk.prev_block_cert,
             mrb.iteration,
+            true,
         )
         .await?;
     }
@@ -468,7 +470,12 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     // Verify Failed iterations
     for iteration in 0..new_blk.failed_iterations.cert_list.len() {
         if let Some(cert) = &new_blk.failed_iterations.cert_list[iteration] {
-            info!(event = "verify_cert", cert_type = "failed_cert");
+            info!(
+                event = "verify_cert",
+                cert_type = "failed_cert",
+                iter = iteration
+            );
+
             verify_block_cert(
                 mrb.seed,
                 &mrb_eligible_provisioners,
@@ -477,6 +484,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
                 new_blk.height,
                 cert,
                 iteration as u8,
+                false,
             )
             .await?;
         }
@@ -491,10 +499,12 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         new_blk.height,
         &new_blk.cert,
         new_blk.iteration,
+        true,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn verify_block_cert(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
@@ -503,6 +513,7 @@ async fn verify_block_cert(
     height: u64,
     cert: &ledger::Certificate,
     iteration: u8,
+    enable_quorum_check: bool,
 ) -> anyhow::Result<()> {
     let committee = Arc::new(Mutex::new(CommitteeSet::new(
         curr_public_key.clone(),
@@ -518,13 +529,14 @@ async fn verify_block_cert(
     };
 
     // Verify first reduction
-    if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+    if let Err(e) = verifiers::verify_step_votes(
         &cert.first_reduction,
         &committee,
         curr_seed,
         &hdr,
         0,
         config::FIRST_REDUCTION_COMMITTEE_SIZE,
+        enable_quorum_check,
     )
     .await
     {
@@ -540,13 +552,14 @@ async fn verify_block_cert(
     }
 
     // Verify second reduction
-    if let Err(e) = dusk_consensus::agreement::verifiers::verify_step_votes(
+    if let Err(e) = verifiers::verify_step_votes(
         &cert.second_reduction,
         &committee,
         curr_seed,
         &hdr,
         1,
         config::SECOND_REDUCTION_COMMITTEE_SIZE,
+        enable_quorum_check,
     )
     .await
     {
