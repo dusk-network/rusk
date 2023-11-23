@@ -79,8 +79,8 @@ mod wasm {
     }
 
     #[no_mangle]
-    unsafe fn noop(arg_len: u32) -> u32 {
-        rusk_abi::wrap_call(arg_len, |_: ()| STATE.noop())
+    unsafe fn request_license(arg_len: u32) -> u32 {
+        rusk_abi::wrap_call(arg_len, |_: ()| STATE.request_license())
     }
 
     #[no_mangle]
