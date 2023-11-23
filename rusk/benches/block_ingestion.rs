@@ -4,7 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+#![feature(lazy_cell)]
+
 use criterion::{criterion_group, criterion_main, Criterion};
+
+#[path = "../tests/common/mod.rs"]
+mod common;
 
 pub fn accept_benchmark(c: &mut Criterion) {
     c.bench_function("AST", |b| b.iter(|| {}));
