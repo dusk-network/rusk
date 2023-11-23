@@ -17,7 +17,7 @@ pub const CONSENSUS_NILQUORUM_THRESHOLD: f64 =
     1f64 - CONSENSUS_QUORUM_THRESHOLD + 0.01;
 
 /// Initial step timeout in milliseconds.
-pub const CONSENSUS_TIMEOUT_MS: u64 = 5 * 1000;
+pub const CONSENSUS_TIMEOUT_MS: u64 = 20 * 1000;
 
 /// Maximum step timeout.
 pub const CONSENSUS_MAX_TIMEOUT_MS: u64 = 60 * 1000;
