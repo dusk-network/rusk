@@ -245,6 +245,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         msg_step: u8,
         candidate: &Block,
     ) {
+        return;
         debug!(
             event = "former candidate received",
             hash = node_data::ledger::to_str(&candidate.header().hash),
