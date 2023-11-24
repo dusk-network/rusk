@@ -11,7 +11,7 @@ mod common;
 
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
-use std::time;
+use std::time::Duration;
 
 use criterion::measurement::WallTime;
 use criterion::{
@@ -52,7 +52,6 @@ where
     F: FnOnce(&mut BenchmarkGroup<WallTime>) -> T,
 {
     let mut group = c.benchmark_group(name);
-    // group.measurement_time(time::Duration::from_secs(200));
     let r = closure(&mut group);
     group.finish();
     r
@@ -78,16 +77,15 @@ pub fn accept_benchmark(c: &mut Criterion) {
         const BLOCK_HEIGHT: u64 = 1;
         const BLOCK_GAS_LIMIT: u64 = 1_000_000_000_000;
 
-        const N_TXS: &[usize] =
-            &[1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-
-        for n_txs in N_TXS {
+        for input in INPUTS {
             let rusk = rusk.clone();
             let txs = txs.clone();
 
+            group.measurement_time(Duration::from_secs(input.measurement_time));
+
             group.bench_with_input(
-                BenchmarkId::new("AST", format!("{n_txs} TXs")),
-                n_txs,
+                BenchmarkId::new("AST", format!("{} TXs", input.n_txs)),
+                &input.n_txs,
                 move |b, n_txs| {
                     b.iter(|| {
                         let txs = txs.as_ref()[..*n_txs].to_vec();
@@ -111,3 +109,71 @@ pub fn accept_benchmark(c: &mut Criterion) {
 
 criterion_group!(benches, accept_benchmark);
 criterion_main!(benches);
+
+struct Input {
+    n_txs: usize,
+    measurement_time: u64, // secs
+}
+
+const INPUTS: &[Input] = &[
+    Input {
+        n_txs: 1,
+        measurement_time: 5,
+    },
+    Input {
+        n_txs: 2,
+        measurement_time: 7,
+    },
+    Input {
+        n_txs: 3,
+        measurement_time: 9,
+    },
+    Input {
+        n_txs: 4,
+        measurement_time: 10,
+    },
+    Input {
+        n_txs: 5,
+        measurement_time: 12,
+    },
+    Input {
+        n_txs: 10,
+        measurement_time: 20,
+    },
+    Input {
+        n_txs: 20,
+        measurement_time: 35,
+    },
+    Input {
+        n_txs: 30,
+        measurement_time: 60,
+    },
+    Input {
+        n_txs: 40,
+        measurement_time: 67,
+    },
+    Input {
+        n_txs: 50,
+        measurement_time: 84,
+    },
+    Input {
+        n_txs: 60,
+        measurement_time: 99,
+    },
+    Input {
+        n_txs: 70,
+        measurement_time: 115,
+    },
+    Input {
+        n_txs: 80,
+        measurement_time: 131,
+    },
+    Input {
+        n_txs: 90,
+        measurement_time: 150,
+    },
+    Input {
+        n_txs: 100,
+        measurement_time: 164,
+    },
+];
