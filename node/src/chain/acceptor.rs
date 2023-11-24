@@ -19,6 +19,7 @@ use dusk_consensus::contract_state::{
 };
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
+use dusk_consensus::user::sortition;
 use hex::ToHex;
 use node_data::ledger::{
     self, to_str, Block, Hash, Header, Seed, Signature, SpentTransaction,
@@ -33,7 +34,7 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
 
-use dusk_consensus::config;
+use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
 use std::any;
 use std::collections::HashMap;
 
@@ -177,6 +178,45 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(())
     }
 
+    fn log_missing_iterations(
+        &self,
+        provisioners_list: &Provisioners,
+        iteration: u8,
+        seed: Seed,
+        round: u64,
+    ) {
+        if iteration == 0 {
+            return;
+        }
+        let mut prov = provisioners_list.clone();
+        prov.update_eligibility_flag(round);
+        for iter in 0..iteration {
+            let committee_keys = prov.create_committee(&sortition::Config {
+                committee_size: SELECTION_COMMITTEE_SIZE,
+                round,
+                seed,
+                step: iter * 3,
+            });
+            if committee_keys.len() != 1 {
+                let len = committee_keys.len();
+                error!(
+                    "Unable to generate voting committee for missed block: {len}",
+                )
+            } else {
+                let generator = committee_keys
+                    .first()
+                    .expect("committee to have 1 entry")
+                    .to_bs58();
+                warn!(
+                    event = "missed iteration",
+                    height = round,
+                    iter,
+                    generator,
+                );
+            }
+        }
+    }
+
     pub(crate) async fn try_accept_block(
         &self,
         blk: &Block,
@@ -228,6 +268,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 Ok(txs)
             })?;
 
+            self.log_missing_iterations(
+                &provisioners_list,
+                blk.header().iteration,
+                mrb.header().seed,
+                blk.header().height,
+            );
+
             // Update provisioners list
             let updated_provisioners = {
                 Self::needs_update(blk, &txs).then(|| vm.get_provisioners())
@@ -270,6 +317,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             fsv_bitset,
             ssv_bitset,
             block_time,
+            generator = blk.header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
         );
 
