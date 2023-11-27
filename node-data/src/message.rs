@@ -942,22 +942,6 @@ mod tests {
             signature: [4; 48],
         });
 
-        assert_serialize(payload::AggrAgreement {
-            agreement: payload::Agreement {
-                first_step: StepVotes {
-                    bitset: 12345,
-                    aggregate_signature: Signature([1; 48]),
-                },
-                second_step: StepVotes {
-                    bitset: 98765,
-                    aggregate_signature: Signature([2; 48]),
-                },
-                signature: [3; 48],
-            },
-            aggregate_signature: [8; 48],
-            bitset: 10,
-        });
-
         assert_serialize(ledger::StepVotes {
             bitset: 12345,
             aggregate_signature: Signature([4; 48]),
