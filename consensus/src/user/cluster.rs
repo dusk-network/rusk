@@ -7,7 +7,7 @@
 use std::collections::btree_map::Iter;
 use std::collections::BTreeMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Cluster<T>(BTreeMap<T, usize>);
 
 impl<T> Cluster<T>
