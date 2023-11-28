@@ -4,30 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::agreement::accumulator::Accumulator;
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
-use crate::user::sortition;
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block, Certificate};
-use node_data::message::{
-    AsyncQueue, Header, Message, Payload, Status, Topics,
-};
+use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
 
-use crate::agreement::aggr_agreement;
-use crate::config;
+use crate::agreement::verifiers;
 use std::sync::Arc;
-use tokio::select;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
-use tracing::{debug, error, trace, Instrument};
-
-use super::accumulator;
-
-const COMMITTEE_SIZE: usize = 64;
+use tracing::{debug, error, Instrument};
 
 pub struct Agreement {
     pub inbound_queue: AsyncQueue<Message>,
@@ -108,19 +98,6 @@ impl<D: Database> Executor<D> {
         &mut self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
-        let (collected_votes_tx, mut collected_votes_rx) =
-            mpsc::channel::<accumulator::Output>(10);
-
-        // Accumulator
-        let mut acc = Accumulator::new(config::ACCUMULATOR_QUEUE_CAP);
-
-        acc.spawn_workers_pool(
-            config::ACCUMULATOR_WORKERS_AMOUNT,
-            collected_votes_tx,
-            self.committees_set.clone(),
-            self.ru.seed(),
-        );
-
         // drain future messages for current round and step.
         if self.ru.round > 0 {
             future_msgs.lock().await.clear_round(self.ru.round - 1);
@@ -130,54 +107,37 @@ impl<D: Database> Executor<D> {
             future_msgs.lock().await.drain_events(self.ru.round, 0)
         {
             for msg in messages {
-                self.collect_inbound_msg(&mut acc, msg).await;
+                self.collect_inbound_msg(msg).await;
             }
         }
 
-        // event_loop for agreements messages
+        // msg_loop for agreement messages
         loop {
-            select! {
-                biased;
-                 // Process the output message from the Accumulator
-                 result = collected_votes_rx.recv() => {
-                    if let Some(aggrements) = result {
-                        if let Some(block) = self.collect_votes(aggrements).await {
-                            // Winning block of this round found.
-                            future_msgs.lock().await.clear_round(self.ru.round);
-                            break Ok(block)
+            // Process messages from outside world
+            if let Ok(msg) = self.inbound_queue.recv().await {
+                match msg.header.compare_round(self.ru.round) {
+                    Status::Future => {
+                        // Future agreement message.
+                        // Keep it for processing when we reach this round.
+                        future_msgs.lock().await.put_event(
+                            msg.header.round,
+                            0,
+                            msg.clone(),
+                        );
+                    }
+                    Status::Present => {
+                        if let Some(block) = self.collect_inbound_msg(msg).await
+                        {
+                            break Ok(block);
                         }
                     }
-                 },
-                // Process messages from outside world
-                 msg = self.inbound_queue.recv() => {
-                    if let Ok(msg) = msg {
-                         match msg.header.compare_round(self.ru.round) {
-                            Status::Future => {
-                                // Future agreement message.
-                                // Keep it for processing when we reach this round.
-                                future_msgs
-                                    .lock()
-                                    .await
-                                    .put_event(msg.header.round, 0, msg.clone());
-                            }
-                            Status::Present => { if let Some(block) = self.collect_inbound_msg(&mut acc, msg).await {break Ok(block)}}
-                            _ => {}
-                        };
-                    }
-                 }
-            };
+                    _ => {}
+                };
+            }
         }
     }
 
-    async fn collect_inbound_msg(
-        &mut self,
-        acc: &mut Accumulator,
-        msg: Message,
-    ) -> Option<Block> {
-        if !self.is_member(&msg.header).await {
-            return None;
-        }
-
+    async fn collect_inbound_msg(&mut self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
         debug!(
             event = "msg received",
@@ -187,106 +147,33 @@ impl<D: Database> Executor<D> {
             step = hdr.step,
         );
 
-        match msg.payload {
-            Payload::AggrAgreement(_) => {
-                // process aggregated agreement
-                return self.collect_aggr_agreement(msg).await;
-            }
-            Payload::Agreement(_) => {
-                // Accumulate the agreement
-                self.collect_agreement(acc, msg).await;
-            }
-            _ => {}
-        };
-
-        None
+        self.collect_agreement(msg).await
     }
 
-    async fn collect_agreement(&mut self, acc: &mut Accumulator, msg: Message) {
-        // Publish the agreement
-        self.outbound_queue
-            .send(msg.clone())
-            .await
-            .unwrap_or_else(|err| {
-                error!("unable to publish a collected agreement msg {:?}", err)
-            });
-
-        // Accumulate the agreement
-        acc.process(msg.clone()).await;
-    }
-
-    /// Collects accumulator output (a list of agreements) and publishes
-    /// AggrAgreement.
-    ///
-    /// Returns the winning block.
-    async fn collect_votes(
-        &mut self,
-        agreements: accumulator::Output,
-    ) -> Option<Block> {
-        if config::ENABLE_AGGR_AGREEMENT {
-            let msg = aggr_agreement::aggregate(
-                &self.ru,
+    async fn collect_agreement(&mut self, msg: Message) -> Option<Block> {
+        if let Payload::Agreement(agreement) = &msg.payload {
+            // Verify agreement
+            verifiers::verify_agreement(
+                msg.clone(),
                 self.committees_set.clone(),
-                &agreements,
-            )
-            .await;
-
-            trace!("broadcast aggr_agreement {:#?}", msg);
-            // Broadcast AggrAgreement message
-            self.publish(msg).await;
-        }
-
-        let (cert, hash) = agreements
-            .into_iter()
-            .next()
-            .map(|a| (a.payload.generate_certificate(), a.header.block_hash))?;
-
-        // Create winning block
-        self.create_winning_block(&hash, &cert).await
-    }
-
-    async fn collect_aggr_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Payload::AggrAgreement(aggr) = &msg.payload {
-            // Perform verification of aggregated agreement message
-            if let Err(e) = aggr_agreement::verify(
-                aggr,
-                &self.ru,
-                self.committees_set.clone(),
-                &msg.header,
+                self.ru.seed(),
             )
             .await
-            {
-                error!(
-                    err = "invalid aggr agreement",
-                    desc = format!("{:?}", e)
-                );
-                return None;
-            }
+            .ok()?;
 
-            // Re-publish the agreement message
+            // Publish the agreement
             self.publish(msg.clone()).await;
 
-            // Generate certificate from an agreement
-            let cert = aggr.agreement.generate_certificate();
+            let (cert, hash) =
+                (agreement.generate_certificate(), &msg.header.block_hash);
 
-            return self
-                .create_winning_block(&msg.header.block_hash, &cert)
-                .await;
+            debug!("generate block from an agreement");
+
+            // Create winning block
+            return self.create_winning_block(hash, &cert).await;
         }
 
         None
-    }
-
-    async fn is_member(&self, hdr: &Header) -> bool {
-        self.committees_set.lock().await.is_member(
-            &hdr.pubkey_bls,
-            &sortition::Config::new(
-                self.ru.seed(),
-                hdr.round,
-                hdr.step,
-                COMMITTEE_SIZE,
-            ),
-        )
     }
 
     // Publishes a message

@@ -101,9 +101,7 @@ The implementation is fully based on Tokio-rs/Runtime. That said the recommended
 
  ```rust
   tokio::runtime::Builder::new_multi_thread()
-			// A thread per an accumulator worker so that CPU-bound operations 
-			// (the agreement verification) does not impact negatively main tokio tasks. 
-            .worker_threads(2 + consensus::config::ACCUMULATOR_WORKERS_AMOUNT)
+            .worker_threads(2)
 			// Enable the time driver so we can use timeout feature in all steps execution.
             .enable_time()
             .build()

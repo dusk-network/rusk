@@ -75,7 +75,6 @@ impl Serializable for Message {
             Payload::NewBlock(p) => p.write(w),
             Payload::Reduction(p) => p.write(w),
             Payload::Agreement(p) => p.write(w),
-            Payload::AggrAgreement(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
             Payload::GetCandidate(p) => p.write(w),
@@ -123,9 +122,6 @@ impl Serializable for Message {
             }
             Topics::Agreement => {
                 Payload::Agreement(payload::Agreement::read(r)?)
-            }
-            Topics::AggrAgreement => {
-                Payload::AggrAgreement(payload::AggrAgreement::read(r)?)
             }
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
             Topics::Tx => {
@@ -205,18 +201,6 @@ impl Message {
         Self {
             header,
             payload: Payload::Agreement(payload),
-            ..Default::default()
-        }
-    }
-
-    /// Creates topics.AggrAgreement message
-    pub fn new_aggr_agreement(
-        header: Header,
-        payload: payload::AggrAgreement,
-    ) -> Message {
-        Self {
-            header,
-            payload: Payload::AggrAgreement(payload),
             ..Default::default()
         }
     }
@@ -315,7 +299,6 @@ fn is_consensus_msg(topic: u8) -> bool {
             | Topics::FirstReduction
             | Topics::SecondReduction
             | Topics::Agreement
-            | Topics::AggrAgreement
     )
 }
 
@@ -468,7 +451,6 @@ pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
     Agreement(payload::Agreement),
-    AggrAgreement(payload::AggrAgreement),
 
     StepVotes(ledger::StepVotes),
     StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
@@ -645,54 +627,6 @@ pub mod payload {
             Certificate {
                 first_reduction: self.first_step,
                 second_reduction: self.second_step,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct AggrAgreement {
-        pub agreement: Agreement,
-        pub bitset: u64,
-        pub aggregate_signature: [u8; 48],
-    }
-
-    impl Serializable for AggrAgreement {
-        fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            self.agreement.write(w)?;
-            w.write_all(&self.bitset.to_le_bytes())?;
-            Self::write_var_bytes(w, &self.aggregate_signature[..])?;
-
-            Ok(())
-        }
-
-        fn read<R: Read>(r: &mut R) -> io::Result<Self>
-        where
-            Self: Sized,
-        {
-            let agreement = Agreement::read(r)?;
-
-            let mut buf = [0u8; 8];
-            r.read_exact(&mut buf)?;
-            let bitset = u64::from_le_bytes(buf);
-
-            let aggr_signature = Self::read_var_bytes(r)?
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-            Ok(AggrAgreement {
-                agreement,
-                bitset,
-                aggregate_signature: aggr_signature,
-            })
-        }
-    }
-
-    impl Default for AggrAgreement {
-        fn default() -> Self {
-            Self {
-                aggregate_signature: [0; 48],
-                agreement: Default::default(),
-                bitset: 0,
             }
         }
     }
@@ -904,7 +838,6 @@ pub enum Topics {
 
     // Consensus Agreement loop topics
     Agreement = 19,
-    AggrAgreement = 20,
 
     #[default]
     Unknown = 255,
@@ -924,7 +857,6 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::FirstReduction);
         map_topic!(v, Topics::SecondReduction);
         map_topic!(v, Topics::Agreement);
-        map_topic!(v, Topics::AggrAgreement);
 
         Topics::Unknown
     }
@@ -1008,22 +940,6 @@ mod tests {
         assert_serialize(payload::NewBlock {
             candidate: sample_block,
             signature: [4; 48],
-        });
-
-        assert_serialize(payload::AggrAgreement {
-            agreement: payload::Agreement {
-                first_step: StepVotes {
-                    bitset: 12345,
-                    aggregate_signature: Signature([1; 48]),
-                },
-                second_step: StepVotes {
-                    bitset: 98765,
-                    aggregate_signature: Signature([2; 48]),
-                },
-                signature: [3; 48],
-            },
-            aggregate_signature: [8; 48],
-            bitset: 10,
         });
 
         assert_serialize(ledger::StepVotes {
