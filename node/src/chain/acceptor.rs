@@ -17,7 +17,7 @@ use dusk_consensus::consensus::{self, Consensus};
 use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
-use dusk_consensus::user::committee::CommitteeSet;
+use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition;
 use hex::ToHex;
@@ -190,22 +190,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             return;
         }
         let mut prov = provisioners_list.clone();
-        prov.update_eligibility_flag(round);
         for iter in 0..iteration {
-            let committee_keys = prov.create_committee(&sortition::Config {
-                committee_size: SELECTION_COMMITTEE_SIZE,
-                round,
-                seed,
-                step: iter * 3,
-            });
-            if committee_keys.len() != 1 {
-                let len = committee_keys.len();
+            let committee_keys = Committee::new(
+                node_data::bls::PublicKey::default(),
+                &mut prov,
+                sortition::Config {
+                    committee_size: SELECTION_COMMITTEE_SIZE,
+                    round,
+                    seed,
+                    step: iter * 3,
+                },
+            );
+
+            if committee_keys.size() != 1 {
+                let len = committee_keys.size();
                 error!(
                     "Unable to generate voting committee for missed block: {len}",
                 )
             } else {
                 let generator = committee_keys
-                    .first()
+                    .iter()
+                    .next()
                     .expect("committee to have 1 entry")
                     .to_bs58();
                 warn!(
