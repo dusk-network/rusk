@@ -6,10 +6,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Cache .rusk profile
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-rusk-profile-v2
         with:
@@ -17,10 +17,6 @@ jobs:
           key: ${{ runner.os }}-build-${{ env.cache-name }}
           restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
 
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-      # This should not be required. But the workflow fails if we don't include it
-      - run: rustup component add rustfmt
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
       - run: RUSK_PROFILE_PATH=$GITHUB_WORKSPACE make keys

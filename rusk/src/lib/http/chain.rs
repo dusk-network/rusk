@@ -22,9 +22,7 @@ use async_graphql::{
 };
 use serde_json::json;
 
-use super::event::{
-    Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
-};
+use super::*;
 use crate::http::RuskNode;
 use crate::{VERSION, VERSION_BUILD};
 
@@ -47,9 +45,9 @@ fn variables_from_request(request: &MessageRequest) -> Variables {
 
     var
 }
-
-impl RuskNode {
-    pub(crate) async fn handle_request(
+#[async_trait]
+impl HandleRequest for RuskNode {
+    async fn handle(
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
@@ -66,7 +64,8 @@ impl RuskNode {
             _ => anyhow::bail!("Unsupported"),
         }
     }
-
+}
+impl RuskNode {
     async fn handle_gql(
         &self,
         request: &MessageRequest,
@@ -78,7 +77,7 @@ impl RuskNode {
             .finish();
 
         if gql_query.trim().is_empty() {
-            return Ok(schema.sdl().into());
+            return Ok(ResponseData::new(schema.sdl()));
         }
 
         let variables = variables_from_request(request);
@@ -92,7 +91,7 @@ impl RuskNode {
         }
         let data = serde_json::to_value(&data)
             .map_err(|e| anyhow::anyhow!("Cannot parse response {e}"))?;
-        Ok(data.into())
+        Ok(ResponseData::new(data))
     }
 
     async fn propagate_tx(&self, tx: &[u8]) -> anyhow::Result<ResponseData> {
@@ -104,13 +103,13 @@ impl RuskNode {
         let network = self.0.network();
         network.read().await.route_internal(tx_message);
 
-        Ok(ResponseData::None)
+        Ok(ResponseData::new(DataType::None))
     }
 
     async fn alive_nodes(&self, amount: usize) -> anyhow::Result<ResponseData> {
         let nodes = self.0.network().read().await.alive_nodes(amount).await;
         let nodes: Vec<_> = nodes.iter().map(|n| n.to_string()).collect();
-        Ok(serde_json::to_value(nodes)?.into())
+        Ok(ResponseData::new(serde_json::to_value(nodes)?))
     }
 
     async fn get_info(&self) -> anyhow::Result<ResponseData> {
@@ -123,6 +122,6 @@ impl RuskNode {
         info.insert("chain_id", n_conf.kadcast_id.into());
         info.insert("kadcast_address", n_conf.public_address.into());
 
-        Ok(serde_json::to_value(&info)?.into())
+        Ok(ResponseData::new(serde_json::to_value(&info)?))
     }
 }

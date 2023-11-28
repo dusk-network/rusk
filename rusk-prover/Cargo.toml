@@ -35,3 +35,4 @@ local_prover = [
     "rusk-profile",
     "transfer-circuits",
 ]
+no_random = []

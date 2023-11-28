@@ -7,30 +7,17 @@ jobs:
     name: Dusk Analyzer
     runs-on: core
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: nightly
-      - uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: --git https://github.com/dusk-network/cargo-dusk-analyzer
-      - uses: actions-rs/cargo@v1
-        with:
-          command: dusk-analyzer
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+      - run: cargo install --git https://github.com/dusk-network/cargo-dusk-analyzer
+      - run: cargo dusk-analyzer
 
   test_nightly:
     name: Nightly tests
     runs-on: core
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-      - run: rustup component add rustfmt
-      - run: rustup target add wasm32-unknown-unknown
-      - run: rustup component add rust-src
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
       - run: >
           RUSK_PROFILE_PATH="/var/opt/build-cache"
           RUSK_KEEP_KEYS="1"
@@ -42,7 +29,7 @@ jobs:
           RUSK_PROFILE_PATH: "/var/opt/build-cache"
         run: make clippy
       - name: "Upload Rusk Artifact"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: rusk-artifact
           path: ./target/release/rusk
@@ -51,12 +38,6 @@ jobs:
     name: Rustfmt
     runs-on: core
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-      - run: rustup component add rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+      - run: cargo fmt --all -- --check

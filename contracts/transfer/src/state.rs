@@ -208,14 +208,14 @@ impl TransferState {
             _ => panic!("The caller doesn't accept obfuscated notes"),
         };
 
-        let mut pi = Vec::with_capacity(4);
-
-        pi.push(wfco.message.value_commitment().into());
-        pi.push(wfco.change.value_commitment().into());
-        pi.push(change_psk_a.into());
-        pi.push(change_psk_b.into());
-        pi.push(wfco.change_address.pk_r().as_ref().into());
-        pi.push(wfco.change.nonce().into());
+        let mut pi = alloc::vec![
+            wfco.message.value_commitment().into(),
+            wfco.change.value_commitment().into(),
+            change_psk_a.into(),
+            change_psk_b.into(),
+            wfco.change_address.pk_r().as_ref().into(),
+            wfco.change.nonce().into(),
+        ];
         pi.extend(wfco.change.cipher().iter().map(|c| c.into()));
         pi.push(wfco.output.value_commitment().into());
 
@@ -349,8 +349,8 @@ impl TransferState {
     /// pushed.
     pub fn push_note(&mut self, block_height: u64, note: Note) -> Note {
         let tree_leaf = TreeLeaf { block_height, note };
-        let pos = self.tree.push(TreeLeaf { block_height, note });
-        rusk_abi::emit("TREE_LEAF", (pos, tree_leaf.clone()));
+        let pos = self.tree.push(tree_leaf.clone());
+        rusk_abi::emit("TREE_LEAF", (pos, tree_leaf));
         self.get_note(pos)
             .expect("There should be a note that was just inserted")
     }
@@ -535,7 +535,7 @@ impl TransferState {
         public_inputs: Vec<PublicInput>,
     ) -> Result<(), Error> {
         rusk_abi::verify_proof(verifier_data.to_vec(), proof, public_inputs)
-            .then(|| ())
+            .then_some(())
             .ok_or(Error::ProofVerificationError)
     }
 }
@@ -552,7 +552,7 @@ fn verify_tx_proof(tx: &Transaction) -> bool {
     let tx_hash = rusk_abi::hash(tx.to_hash_input_bytes());
     let crossover_commitment = tx
         .crossover
-        .map(|c| c.value_commitment().clone())
+        .map(|c| *c.value_commitment())
         .unwrap_or_default();
     let fee_value = tx.fee.gas_limit * tx.fee.gas_price;
 

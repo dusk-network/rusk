@@ -8,6 +8,7 @@ use super::*;
 use crate::prover::fetch_prover;
 use dusk_wallet_core::UnprovenTransaction;
 use phoenix_core::transaction::TRANSFER_TREE_DEPTH;
+use rand::{CryptoRng, RngCore};
 use transfer_circuits::{
     ExecuteCircuitFourTwo, ExecuteCircuitOneTwo, ExecuteCircuitThreeTwo,
     ExecuteCircuitTwoTwo,
@@ -79,11 +80,18 @@ impl LocalProver {
     ) -> Result<Vec<u8>, ProverError> {
         let utx = UnprovenTransaction::from_slice(circuit_inputs)
             .map_err(|e| ProverError::invalid_data("utx", e))?;
+
+        #[cfg(not(feature = "no_random"))]
+        let rng = &mut OsRng;
+
+        #[cfg(feature = "no_random")]
+        let rng = &mut StdRng::seed_from_u64(0xbeef);
+
         match utx.inputs().len() {
-            1 => local_prove_exec_1_2(&utx),
-            2 => local_prove_exec_2_2(&utx),
-            3 => local_prove_exec_3_2(&utx),
-            4 => local_prove_exec_4_2(&utx),
+            1 => local_prove_exec_1_2(&utx, rng),
+            2 => local_prove_exec_2_2(&utx, rng),
+            3 => local_prove_exec_3_2(&utx, rng),
+            4 => local_prove_exec_4_2(&utx, rng),
             _ => Err(ProverError::from(format!(
                 "Invalid I/O count: {}/{}",
                 utx.inputs().len(),
@@ -93,58 +101,70 @@ impl LocalProver {
     }
 }
 
-fn local_prove_exec_1_2(
+fn local_prove_exec_1_2<R>(
     utx: &UnprovenTransaction,
-) -> Result<Vec<u8>, ProverError> {
+    rng: &mut R,
+) -> Result<Vec<u8>, ProverError>
+where
+    R: RngCore + CryptoRng,
+{
     const I: usize = 1;
     let mut circuit = ExecuteCircuitOneTwo::new();
     fill_circuit::<I>(&mut circuit, utx)?;
 
-    let (proof, _) =
-        EXEC_1_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-            ProverError::with_context("Failed proving the circuit", e)
-        })?;
+    let (proof, _) = EXEC_1_2_PROVER.prove(rng, &circuit).map_err(|e| {
+        ProverError::with_context("Failed proving the circuit", e)
+    })?;
     Ok(proof.to_bytes().to_vec())
 }
 
-fn local_prove_exec_2_2(
+fn local_prove_exec_2_2<R>(
     utx: &UnprovenTransaction,
-) -> Result<Vec<u8>, ProverError> {
+    rng: &mut R,
+) -> Result<Vec<u8>, ProverError>
+where
+    R: RngCore + CryptoRng,
+{
     const I: usize = 2;
     let mut circuit = ExecuteCircuitTwoTwo::new();
     fill_circuit::<I>(&mut circuit, utx)?;
 
-    let (proof, _) =
-        EXEC_2_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-            ProverError::with_context("Failed proving the circuit", e)
-        })?;
+    let (proof, _) = EXEC_2_2_PROVER.prove(rng, &circuit).map_err(|e| {
+        ProverError::with_context("Failed proving the circuit", e)
+    })?;
     Ok(proof.to_bytes().to_vec())
 }
 
-fn local_prove_exec_3_2(
+fn local_prove_exec_3_2<R>(
     utx: &UnprovenTransaction,
-) -> Result<Vec<u8>, ProverError> {
+    rng: &mut R,
+) -> Result<Vec<u8>, ProverError>
+where
+    R: RngCore + CryptoRng,
+{
     const I: usize = 3;
     let mut circuit = ExecuteCircuitThreeTwo::new();
     fill_circuit::<I>(&mut circuit, utx)?;
 
-    let (proof, _) =
-        EXEC_3_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-            ProverError::with_context("Failed proving the circuit", e)
-        })?;
+    let (proof, _) = EXEC_3_2_PROVER.prove(rng, &circuit).map_err(|e| {
+        ProverError::with_context("Failed proving the circuit", e)
+    })?;
     Ok(proof.to_bytes().to_vec())
 }
 
-fn local_prove_exec_4_2(
+fn local_prove_exec_4_2<R>(
     utx: &UnprovenTransaction,
-) -> Result<Vec<u8>, ProverError> {
+    rng: &mut R,
+) -> Result<Vec<u8>, ProverError>
+where
+    R: RngCore + CryptoRng,
+{
     const I: usize = 4;
     let mut circuit = ExecuteCircuitFourTwo::new();
     fill_circuit::<I>(&mut circuit, utx)?;
 
-    let (proof, _) =
-        EXEC_4_2_PROVER.prove(&mut OsRng, &circuit).map_err(|e| {
-            ProverError::with_context("Failed proving the circuit", e)
-        })?;
+    let (proof, _) = EXEC_4_2_PROVER.prove(rng, &circuit).map_err(|e| {
+        ProverError::with_context("Failed proving the circuit", e)
+    })?;
     Ok(proof.to_bytes().to_vec())
 }

@@ -131,8 +131,8 @@ impl LicenseContractState {
         self.sessions.get(&session_id).cloned()
     }
 
-    /// Noop needed for inserting payloads into blockchain
-    pub fn noop(&self) {}
+    /// Method needed for inserting payloads into blockchain
+    pub fn request_license(&self) {}
 
     fn assert_proof(
         verifier_data: &[u8],

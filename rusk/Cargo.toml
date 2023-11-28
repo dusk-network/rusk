@@ -62,7 +62,7 @@ async-trait = "0.1"
 transfer-circuits = { version = "0.5", path = "../circuits/transfer" }
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.11", path = "../rusk-abi", default-features = false, features = ["host"] }
-rusk-prover = { version = "0.3", path = "../rusk-prover" }
+rusk-prover = { version = "0.3", path = "../rusk-prover", optional = true }
 node = { version = "0.1", path = "../node" }
 dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
 node-data = { version = "0.1", path = "../node-data" }
@@ -80,12 +80,19 @@ test-context = "0.1"
 reqwest = "0.11"
 rusk-recovery = { version = "0.6", path = "../rusk-recovery", features = ["state"] }
 ff = { version = "0.13", default-features = false }
+rusk-prover = { version = "0.3", path = "../rusk-prover", features = ["no_random"] }
+criterion = "0.5"
 
 [build-dependencies]
 rustc_tools_util = "0.3"
 
 [features]
-default = ["ephemeral", "recovery-state", "recovery-keys"]
+default = ["ephemeral", "recovery-state", "recovery-keys", "prover"]
 ephemeral = ["dep:rusk-recovery", "dep:tempfile", "recovery-state"]
 recovery-state = ["rusk-recovery/state", "dep:tempfile"]
 recovery-keys = ["rusk-recovery/keys"]
+prover = ["dep:rusk-prover"]
+
+[[bench]]
+name = "block_ingestion"
+harness = false

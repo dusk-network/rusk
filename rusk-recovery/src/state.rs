@@ -252,8 +252,8 @@ fn generate_empty_state<P: AsRef<Path>>(
     );
 
     session
-        .call::<_, ()>(LICENSE_CONTRACT, "noop", &(), u64::MAX)
-        .expect("license contract noop should succeed");
+        .call::<_, ()>(LICENSE_CONTRACT, "request_license", &(), u64::MAX)
+        .expect("license contract request license method should succeed");
 
     let commit_id = session.commit()?;
 

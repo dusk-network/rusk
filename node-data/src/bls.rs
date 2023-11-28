@@ -59,11 +59,14 @@ impl PublicKey {
         &self.inner
     }
 
-    /// Converts inner data in a truncated base58 string.
+    /// Truncated base58 representation of inner data
     pub fn to_bs58(&self) -> String {
-        let mut bs = bs58::encode(&self.as_bytes.inner()).into_string();
-        bs.truncate(16);
-        bs
+        self.as_bytes.to_bs58()
+    }
+
+    /// Full base58 representation of inner data
+    pub fn to_base58(&self) -> String {
+        self.as_bytes.to_base58()
     }
 }
 
@@ -81,7 +84,7 @@ impl Ord for PublicKey {
 
 impl std::fmt::Debug for PublicKey {
     fn fmt(&self, f: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
-        let bs = bs58::encode(&self.as_bytes.inner()).into_string();
+        let bs = self.to_base58();
         f.debug_struct("PublicKey").field("bs58", &bs).finish()
     }
 }
@@ -98,6 +101,18 @@ impl Default for PublicKeyBytes {
 impl PublicKeyBytes {
     pub fn inner(&self) -> &[u8; 96] {
         &self.0
+    }
+
+    /// Full base58 representation of inner data
+    pub fn to_base58(&self) -> String {
+        bs58::encode(&self.0).into_string()
+    }
+
+    /// Truncated base58 representation of inner data
+    pub fn to_bs58(&self) -> String {
+        let mut bs = self.to_base58();
+        bs.truncate(16);
+        bs
     }
 }
 

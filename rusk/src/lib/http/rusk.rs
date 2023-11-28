@@ -4,9 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use super::event::Event;
+use super::*;
+
 use dusk_bytes::Serializable;
 use node::vm::VMExecution;
-use rusk_prover::{LocalProver, Prover};
+use rusk_profile::CRS_17_HASH;
 use serde::Serialize;
 use std::sync::{mpsc, Arc};
 use std::thread;
@@ -16,14 +19,11 @@ use rusk_abi::ContractId;
 
 use crate::Rusk;
 
-use super::event::{
-    Event, MessageRequest, MessageResponse, RequestData, ResponseData, Target,
-};
-
 const RUSK_FEEDER_HEADER: &str = "Rusk-Feeder";
 
-impl Rusk {
-    pub(crate) async fn handle_request(
+#[async_trait]
+impl HandleRequest for Rusk {
+    async fn handle(
         &self,
         request: &MessageRequest,
     ) -> anyhow::Result<ResponseData> {
@@ -35,22 +35,6 @@ impl Rusk {
             (Target::Host(_), "rusk", "preverify") => {
                 self.handle_preverify(request.event_data())
             }
-            (Target::Host(_), "rusk", "prove_execute") => {
-                Ok(LocalProver.prove_execute(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_stct") => {
-                Ok(LocalProver.prove_stct(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_stco") => {
-                Ok(LocalProver.prove_stco(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_wfct") => {
-                Ok(LocalProver.prove_wfct(request.event_data())?.into())
-            }
-            (Target::Host(_), "rusk", "prove_wfco") => {
-                Ok(LocalProver.prove_wfco(request.event_data())?.into())
-            }
-
             (Target::Host(_), "rusk", "provisioners") => {
                 self.get_provisioners()
             }
@@ -58,7 +42,9 @@ impl Rusk {
             _ => Err(anyhow::anyhow!("Unsupported")),
         }
     }
+}
 
+impl Rusk {
     fn handle_contract_query(
         &self,
         event: &Event,
@@ -86,7 +72,7 @@ impl Rusk {
                     sender,
                 );
             });
-            Ok(ResponseData::Channel(receiver))
+            Ok(ResponseData::new(receiver))
         } else {
             let data = self
                 .query_raw(
@@ -95,7 +81,7 @@ impl Rusk {
                     event.data.as_bytes(),
                 )
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
-            Ok(data.into())
+            Ok(ResponseData::new(data))
         }
     }
 
@@ -103,7 +89,7 @@ impl Rusk {
         let tx = phoenix_core::Transaction::from_slice(data)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?;
         self.preverify(&tx.into())?;
-        Ok(ResponseData::None)
+        Ok(ResponseData::new(DataType::None))
     }
 
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
@@ -122,12 +108,12 @@ impl Rusk {
             })
             .collect();
 
-        Ok(serde_json::to_value(prov)?.into())
+        Ok(ResponseData::new(serde_json::to_value(prov)?))
     }
 
     fn get_crs(&self) -> anyhow::Result<ResponseData> {
         let crs = rusk_profile::get_common_reference_string()?;
-        Ok(crs.into())
+        Ok(ResponseData::new(crs).with_header("crs-hash", CRS_17_HASH))
     }
 }
 

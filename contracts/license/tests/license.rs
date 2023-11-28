@@ -424,9 +424,14 @@ fn use_license_get_session() {
 }
 
 #[test]
-fn test_noop() {
+fn test_request_license() {
     let mut session = initialize();
     session
-        .call::<(), ()>(LICENSE_CONTRACT_ID, "noop", &(), POINT_LIMIT)
-        .expect("Noop should succeed");
+        .call::<(), ()>(
+            LICENSE_CONTRACT_ID,
+            "request_license",
+            &(),
+            POINT_LIMIT,
+        )
+        .expect("Request license should succeed");
 }
