@@ -43,6 +43,8 @@ use self::acceptor::{Acceptor, RevertTarget};
 use self::consensus::Task;
 use self::fsm::SimpleFSM;
 
+pub use acceptor::verify_block_cert;
+
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
     Topics::NewBlock as u8,

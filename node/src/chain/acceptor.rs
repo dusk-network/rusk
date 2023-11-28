@@ -558,7 +558,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn verify_block_cert(
+pub async fn verify_block_cert(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
     curr_public_key: &node_data::bls::PublicKey,
