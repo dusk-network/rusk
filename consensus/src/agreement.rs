@@ -4,7 +4,5 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-mod accumulator;
-mod aggr_agreement;
 pub(crate) mod step;
 pub mod verifiers;

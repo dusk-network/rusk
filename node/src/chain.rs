@@ -48,7 +48,6 @@ const TOPICS: &[u8] = &[
     Topics::NewBlock as u8,
     Topics::FirstReduction as u8,
     Topics::SecondReduction as u8,
-    Topics::AggrAgreement as u8,
     Topics::Agreement as u8,
 ];
 
@@ -179,8 +178,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         // Re-route message to the acceptor
                         Payload::NewBlock(_)
                         | Payload::Reduction(_)
-                        | Payload::Agreement(_)
-                        | Payload::AggrAgreement(_) => {
+                        | Payload::Agreement(_) => {
                             acc.read().await.reroute_msg(msg).await;
                         }
                         _ => warn!("invalid inbound message"),

@@ -112,7 +112,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Payload::NewBlock(_) | Payload::Reduction(_) => {
                 self.task.read().await.main_inbound.send(msg).await;
             }
-            Payload::Agreement(_) | Payload::AggrAgreement(_) => {
+            Payload::Agreement(_) => {
                 self.task.read().await.agreement_inbound.send(msg).await;
             }
             _ => warn!("invalid inbound message"),

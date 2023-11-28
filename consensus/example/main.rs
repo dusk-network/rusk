@@ -157,9 +157,7 @@ fn spawn_node(
 ) {
     let _ = thread::spawn(move || {
         tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(
-                2 + dusk_consensus::config::ACCUMULATOR_WORKERS_AMOUNT,
-            )
+            .worker_threads(2)
             .enable_all()
             .build()
             .unwrap()
