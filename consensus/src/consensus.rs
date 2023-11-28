@@ -22,7 +22,7 @@ use crate::user::provisioners::Provisioners;
 use crate::{firststep, secondstep};
 use tracing::Instrument;
 
-use crate::step_votes_reg::AgreementInfoRegistry;
+use crate::step_votes_reg::CertInfoRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -170,7 +170,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             }
 
             let sv_registry =
-                Arc::new(Mutex::new(AgreementInfoRegistry::new(ru.clone())));
+                Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
             let sel_handler =
                 Arc::new(Mutex::new(selection::handler::Selection::new(

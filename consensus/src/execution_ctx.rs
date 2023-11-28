@@ -12,7 +12,7 @@ use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
-use crate::step_votes_reg::SafeAgreementInfoRegistry;
+use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
@@ -169,7 +169,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
 
     executor: Arc<Mutex<T>>,
 
-    pub sv_registry: SafeAgreementInfoRegistry,
+    pub sv_registry: SafeCertificateInfoRegistry,
     agreement_sender: AgreementSender,
 }
 
@@ -185,7 +185,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         round_update: RoundUpdate,
         step: u8,
         executor: Arc<Mutex<T>>,
-        sv_registry: SafeAgreementInfoRegistry,
+        sv_registry: SafeCertificateInfoRegistry,
         agreement_sender: AgreementSender,
     ) -> Self {
         Self {

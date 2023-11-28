@@ -20,7 +20,7 @@ pub(crate) enum SvType {
 }
 
 #[derive(Default, Clone, Copy)]
-struct AgreementInfo {
+struct CertificateInfo {
     /// represents candidate block hash
     hash: Option<[u8; 32]>,
     cert: Certificate,
@@ -29,13 +29,13 @@ struct AgreementInfo {
     quorum_reached_sec_reduction: bool,
 }
 
-impl fmt::Display for AgreementInfo {
+impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hash = self.hash.unwrap_or_default();
 
         write!(
             f,
-            "agreement_info: hash: {}, 1st_sv: {:?}, 2nd_sv: {:?}, 1st_quorum: {}, 2nd_quorum: {}",
+            "cert_info: hash: {}, 1st_sv: {:?}, 2nd_sv: {:?}, 1st_quorum: {}, 2nd_quorum: {}",
             to_str(&hash),
             self.cert.first_reduction,
             self.cert.second_reduction,
@@ -45,7 +45,7 @@ impl fmt::Display for AgreementInfo {
     }
 }
 
-impl AgreementInfo {
+impl CertificateInfo {
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
@@ -99,7 +99,7 @@ impl AgreementInfo {
             && self.quorum_reached_sec_reduction
     }
 
-    /// Returns `true` if it's a anreement for NIL hash
+    /// Returns `true` if the certificate has empty hash
     fn is_nil(&self) -> bool {
         if let Some(hash) = self.hash {
             return hash == [0u8; 32];
@@ -109,21 +109,21 @@ impl AgreementInfo {
     }
 }
 
-pub type SafeAgreementInfoRegistry = Arc<Mutex<AgreementInfoRegistry>>;
+pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
-pub struct AgreementInfoRegistry {
+pub struct CertInfoRegistry {
     ru: RoundUpdate,
 
     /// List of iterations agreements. Position in the array represents
     /// iteration number.
-    agreement_reg: [AgreementInfo; CONSENSUS_MAX_ITER as usize],
+    cert_list: [CertificateInfo; CONSENSUS_MAX_ITER as usize],
 }
 
-impl AgreementInfoRegistry {
+impl CertInfoRegistry {
     pub(crate) fn new(ru: RoundUpdate) -> Self {
         Self {
             ru,
-            agreement_reg: [AgreementInfo::default();
+            cert_list: [CertificateInfo::default();
                 CONSENSUS_MAX_ITER as usize],
         }
     }
@@ -139,11 +139,11 @@ impl AgreementInfoRegistry {
         quorum_reached: bool,
     ) -> Option<Message> {
         let iter_num = u8::from_step(step);
-        if iter_num as usize >= self.agreement_reg.len() {
+        if iter_num as usize >= self.cert_list.len() {
             return None;
         }
 
-        let r = &mut self.agreement_reg[iter_num as usize];
+        let r = &mut self.cert_list[iter_num as usize];
         if r.add_sv(iter_num, hash, sv, svt, quorum_reached) {
             return Some(Self::build_agreement_msg(
                 self.ru.clone(),
@@ -158,7 +158,7 @@ impl AgreementInfoRegistry {
     fn build_agreement_msg(
         ru: RoundUpdate,
         iteration: u8,
-        result: AgreementInfo,
+        result: CertificateInfo,
     ) -> Message {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
@@ -184,10 +184,10 @@ impl AgreementInfoRegistry {
         from: usize,
         to: usize,
     ) -> Vec<Option<Certificate>> {
-        let to = std::cmp::min(to, self.agreement_reg.len());
+        let to = std::cmp::min(to, self.cert_list.len());
         let mut res = Vec::with_capacity(to - from);
 
-        for item in &self.agreement_reg[from..to] {
+        for item in &self.cert_list[from..to] {
             if item.is_nil() {
                 res.push(Some(item.cert));
             } else {
