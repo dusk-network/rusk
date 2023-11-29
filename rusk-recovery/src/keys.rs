@@ -9,7 +9,7 @@ use dusk_plonk::prelude::{Compiler, PublicParameters};
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use std::io;
+use std::{fs, io};
 
 use rusk_profile::Circuit as CircuitProfile;
 
@@ -31,6 +31,13 @@ static PUB_PARAMS: Lazy<PublicParameters> = Lazy::new(|| {
 
         _ => {
             warn!("{} new CRS due to cache miss", theme.warn("Building"));
+
+            fs::remove_dir_all(
+                rusk_profile::get_rusk_keys_dir()
+                    .expect("Cannot find or create keys dir"),
+            )
+            .expect("Cannot remove key files");
+
             let mut rng = StdRng::seed_from_u64(0xbeef);
 
             let pp = PublicParameters::setup(1 << 17, &mut rng)
