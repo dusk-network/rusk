@@ -309,6 +309,8 @@ impl AgreementSender {
                 .send(msg.clone())
                 .await
                 .map_err(|e| error!("send agreement failed with {:?}", e));
+
+            return true;
         }
 
         false

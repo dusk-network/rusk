@@ -155,27 +155,26 @@ pub async fn verify_votes(
 ) -> Result<(), Error> {
     // TODO: This should be refactored into a structure when #1118 issue is
     // implemented
-    let sub_committee = 'label: {
+    let sub_committee = {
         let mut guard = committees_set.lock().await;
         let sub_committee = guard.intersect(bitset, cfg);
 
-        if !enable_quorum_check {
-            break 'label Ok(sub_committee);
-        }
-
-        let target_quorum = guard.quorum(cfg);
-        let total = guard.total_occurrences(&sub_committee, cfg);
-
-        if total < target_quorum {
-            tracing::error!(
-                desc = "vote_set_too_small",
-                committee = format!("{:#?}", sub_committee),
-                cfg = format!("{:#?}", cfg),
-                bitset = bitset,
-                target_quorum = target_quorum,
-                total = total,
-            );
-            Err(Error::VoteSetTooSmall(cfg.step))
+        if enable_quorum_check {
+            let target_quorum = guard.quorum(cfg);
+            let total = guard.total_occurrences(&sub_committee, cfg);
+            if total < target_quorum {
+                tracing::error!(
+                    desc = "vote_set_too_small",
+                    committee = format!("{:#?}", sub_committee),
+                    cfg = format!("{:#?}", cfg),
+                    bitset = bitset,
+                    target_quorum = target_quorum,
+                    total = total,
+                );
+                Err(Error::VoteSetTooSmall(cfg.step))
+            } else {
+                Ok(sub_committee)
+            }
         } else {
             Ok(sub_committee)
         }

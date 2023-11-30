@@ -10,7 +10,7 @@ use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::{Hash, Signature, StepVotes};
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::aggregator::Aggregator;
 use node_data::message::{payload, Message, Payload, Topics};
@@ -56,7 +56,16 @@ impl MsgHandler<Message> for Reduction {
         step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        assert_eq!(step, self.curr_step, "msg does not belong to curr step");
+        if step != self.curr_step {
+            // Message that belongs to step from the past must be handled with
+            // collect_from_past fn
+            warn!(
+                event = "drop message",
+                reason = "invalid step number",
+                msg_step = step,
+            );
+            return Ok(HandleMsgOutput::Pending(msg));
+        }
 
         let signature = match &msg.payload {
             Payload::Reduction(p) => Ok(p.signature),

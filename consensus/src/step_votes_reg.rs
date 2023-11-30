@@ -101,7 +101,7 @@ impl CertificateInfo {
 
     /// Returns `true` if the certificate has empty hash
     fn is_nil(&self) -> bool {
-       self.hash.map(|h| h == [0u8; 32]).unwrap_or_default()
+        self.hash.map(|h| h == [0u8; 32]).unwrap_or_default()
     }
 }
 

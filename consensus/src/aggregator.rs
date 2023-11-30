@@ -96,7 +96,7 @@ impl Aggregator {
 
             let s = aggr_sign
                 .aggregated_bytes()
-                .expect("Signature to exist after quorum reached");
+                .expect("Signature to exist after aggregating");
             let bitset = committee.bits(cluster);
 
             let step_votes = StepVotes {
@@ -323,10 +323,6 @@ mod tests {
             // Ensure a duplicated vote is discarded
             if i == 0 {
                 assert!(a.collect_vote(&c, h, signature).is_none());
-                assert_eq!(
-                    a.get_total(h.step, block_hash),
-                    Some(collected_votes)
-                );
             }
         }
     }
