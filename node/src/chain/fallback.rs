@@ -99,7 +99,6 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             self.acc.db.clone(),
             prev_block.header(),
             &provisioners_list,
-            &PublicKey::default(),
             blk.header(),
         )
         .await

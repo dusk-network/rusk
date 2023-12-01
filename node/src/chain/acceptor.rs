@@ -228,7 +228,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         enable_consensus: bool,
     ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
-        let (_, public_key) = task.keys.clone();
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
@@ -239,7 +238,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             self.db.clone(),
             &mrb.header().clone(),
             &provisioners_list,
-            &public_key,
             blk.header(),
         )
         .await?;
@@ -451,7 +449,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     mrb: &ledger::Header,
     mrb_eligible_provisioners: &Provisioners,
-    public_key: &node_data::bls::PublicKey,
     new_blk: &ledger::Header,
 ) -> anyhow::Result<()> {
     if new_blk.version > 0 {
@@ -505,7 +502,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         verify_block_cert(
             prev_block_seed,
             prev_eligible_provisioners,
-            public_key,
             mrb.hash,
             mrb.height,
             &new_blk.prev_block_cert,
@@ -527,7 +523,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
             verify_block_cert(
                 mrb.seed,
                 mrb_eligible_provisioners,
-                public_key,
                 [0u8; 32],
                 new_blk.height,
                 cert,
@@ -542,7 +537,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     verify_block_cert(
         mrb.seed,
         mrb_eligible_provisioners,
-        public_key,
         new_blk.hash,
         new_blk.height,
         &new_blk.cert,
@@ -552,11 +546,9 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     .await
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn verify_block_cert(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    curr_public_key: &node_data::bls::PublicKey,
     block_hash: [u8; 32],
     height: u64,
     cert: &ledger::Certificate,
@@ -564,13 +556,13 @@ pub async fn verify_block_cert(
     enable_quorum_check: bool,
 ) -> anyhow::Result<()> {
     let committee = Arc::new(Mutex::new(CommitteeSet::new(
-        curr_public_key.clone(),
+        node_data::bls::PublicKey::default(),
         curr_eligible_provisioners.clone(),
     )));
 
     let hdr = node_data::message::Header {
         topic: 0,
-        pubkey_bls: curr_public_key.clone(),
+        pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
         step: iteration.step_from_name(StepName::SecondRed),
         block_hash,

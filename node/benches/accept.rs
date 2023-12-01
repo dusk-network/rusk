@@ -96,7 +96,6 @@ pub fn verify_block_cert(c: &mut Criterion) {
             let height = 1;
             let seed = Signature([5; 48]);
             let block_hash = [1; 32];
-            let curr_public_key = keys.first().unwrap().0.clone();
             let iteration = 0;
             let mut cert = Certificate::default();
 
@@ -128,7 +127,6 @@ pub fn verify_block_cert(c: &mut Criterion) {
                         chain::verify_block_cert(
                             seed,
                             &provisioners,
-                            &curr_public_key,
                             block_hash,
                             height,
                             &cert,
