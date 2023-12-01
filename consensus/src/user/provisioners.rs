@@ -147,7 +147,7 @@ impl Provisioners {
     /// committee members for a given round, step and seed.
     ///
     /// Returns a vector of provisioners public keys.
-    pub fn create_committee(
+    pub(crate) fn create_committee(
         &mut self,
         cfg: &sortition::Config,
     ) -> Vec<PublicKey> {

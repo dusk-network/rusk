@@ -193,13 +193,13 @@ pub async fn verify_votes(
 
 impl Cluster<PublicKey> {
     fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
-        let pks: Vec<&dusk_bls12_381_sign::PublicKey> =
-            self.iter().map(|(pubkey, _)| pubkey.inner()).collect();
+        let pks: Vec<_> =
+            self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
 
         match pks.split_first() {
-            Some((&first, rest)) => {
+            Some((first, rest)) => {
                 let mut apk = dusk_bls12_381_sign::APK::from(first);
-                rest.iter().for_each(|&&p| apk.aggregate(&[p]));
+                apk.aggregate(rest);
                 Ok(apk)
             }
             None => Err(Error::EmptyApk),

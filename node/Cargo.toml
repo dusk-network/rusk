@@ -41,9 +41,15 @@ node-data = { version = "0.1", path = "../node-data", features = ["faker"] }
 rand = "0.8"
 rand_core = "0.6"
 tempdir = "0.3"
+criterion = { version = "0.5", features = ["async_futures"] }
 
 [build-dependencies]
 rustc_tools_util = "=0.2.0"
 
 [features]
 with_telemetry = ["dep:console-subscriber"]
+
+
+[[bench]]
+name = "accept"
+harness = false

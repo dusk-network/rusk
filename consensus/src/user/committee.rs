@@ -22,14 +22,9 @@ pub struct Committee {
     cfg: sortition::Config,
 }
 
-impl Iterator for Committee {
-    type Item = PublicKey;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.members
-            .iter()
-            .next()
-            .map(|(public_key, _)| public_key.clone())
+impl Committee {
+    pub fn iter(&self) -> impl Iterator<Item = &PublicKey> {
+        self.members.keys()
     }
 }
 
