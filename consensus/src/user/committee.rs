@@ -14,12 +14,12 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::mem;
 
-#[allow(unused)]
 #[derive(Default, Debug, Clone)]
 pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     this_member_key: PublicKey,
-    cfg: sortition::Config,
+    quorum: usize,
+    nil_quorum: usize,
 }
 
 impl Committee {
@@ -48,12 +48,18 @@ impl Committee {
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(&cfg);
 
+        let quorum = (cfg.committee_size as f64
+            * config::CONSENSUS_QUORUM_THRESHOLD)
+            .ceil() as usize;
+        let nil_quorum = quorum;
+
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
-            cfg,
+            nil_quorum,
+            quorum,
         };
 
         for member_key in res {
@@ -94,14 +100,12 @@ impl Committee {
 
     /// Returns target quorum for the generated committee.
     pub fn quorum(&self) -> usize {
-        (self.cfg.committee_size as f64 * config::CONSENSUS_QUORUM_THRESHOLD)
-            .ceil() as usize
+        self.quorum
     }
 
     /// Returns target NIL quorum for the generated committee.
     pub fn nil_quorum(&self) -> usize {
-        (self.cfg.committee_size as f64 * config::CONSENSUS_NILQUORUM_THRESHOLD)
-            .ceil() as usize
+        self.nil_quorum
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
