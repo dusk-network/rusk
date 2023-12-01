@@ -42,11 +42,11 @@ impl Committee {
     pub fn new(
         pubkey_bls: PublicKey,
         provisioners: &mut Provisioners,
-        cfg: sortition::Config,
+        cfg: &sortition::Config,
     ) -> Self {
         provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
-        let res = provisioners.create_committee(&cfg);
+        let res = provisioners.create_committee(cfg);
 
         let quorum = (cfg.committee_size as f64
             * config::CONSENSUS_QUORUM_THRESHOLD)
@@ -256,7 +256,7 @@ impl CommitteeSet {
                 Committee::new(
                     self.this_member_key.clone(),
                     &mut self.provisioners,
-                    config.clone(),
+                    config,
                 )
             })
     }

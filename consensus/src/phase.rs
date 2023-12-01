@@ -69,7 +69,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         let step_committee = Committee::new(
             ctx.round_update.pubkey_bls.clone(),
             ctx.provisioners,
-            ctx.get_sortition_config(size),
+            &ctx.get_sortition_config(size),
         );
 
         debug!(

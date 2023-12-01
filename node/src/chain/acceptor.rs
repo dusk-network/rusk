@@ -194,7 +194,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             let committee_keys = Committee::new(
                 node_data::bls::PublicKey::default(),
                 &mut prov,
-                sortition::Config {
+                &sortition::Config {
                     committee_size: SELECTION_COMMITTEE_SIZE,
                     round,
                     seed,
