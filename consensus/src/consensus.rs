@@ -99,13 +99,10 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     pub async fn spin(
         &mut self,
         ru: RoundUpdate,
-        mut provisioners: Provisioners,
+        provisioners: Provisioners,
         cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
         let round = ru.round;
-        // Enable/Disable all members stakes depending on the current round. If
-        // a stake is not eligible for this round, it's disabled.
-        provisioners.update_eligibility_flag(round);
 
         // Agreement loop Executes agreement loop in a separate tokio::task to
         // collect (aggr)Agreement messages.

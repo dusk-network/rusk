@@ -23,9 +23,8 @@ fn test_deterministic_sortition_1() {
 
     // Execute sortition with specific config
     let cfg = Config::new(Seed::default(), 1, 1, 64);
-    p.update_eligibility_flag(cfg.round);
 
-    let committee = Committee::new(PublicKey::default(), &mut p, cfg);
+    let committee = Committee::new(PublicKey::default(), &p, &cfg);
 
     // Verify expected committee size
     assert_eq!(
@@ -45,7 +44,7 @@ fn test_deterministic_sortition_2() {
     let committee_size = 45;
     let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size);
 
-    let committee = Committee::new(PublicKey::default(), &mut p, cfg);
+    let committee = Committee::new(PublicKey::default(), &p, &cfg);
     assert_eq!(
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
@@ -59,9 +58,8 @@ fn test_quorum() {
     let mut p = generate_provisioners(5);
 
     let cfg = Config::new(Seed::default(), 7777, 8, 64);
-    p.update_eligibility_flag(cfg.round);
 
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    let c = Committee::new(PublicKey::default(), &p, &cfg);
     assert_eq!(c.quorum(), 43);
 }
 
@@ -70,10 +68,9 @@ fn test_intersect() {
     let mut p = generate_provisioners(10);
 
     let cfg = Config::new(Seed::default(), 1, 3, 200);
-    p.update_eligibility_flag(cfg.round);
     // println!("{:#?}", p);
 
-    let c = Committee::new(PublicKey::default(), &mut p, cfg);
+    let c = Committee::new(PublicKey::default(), &p, &cfg);
     // println!("{:#?}", c);
 
     let max_bitset = (2_i32.pow((c.size()) as u32) - 1) as u64;

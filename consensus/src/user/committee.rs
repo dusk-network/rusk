@@ -41,10 +41,10 @@ impl Committee {
     ///   method.
     pub fn new(
         pubkey_bls: PublicKey,
-        provisioners: &mut Provisioners,
+        provisioners: &Provisioners,
         cfg: &sortition::Config,
     ) -> Self {
-        provisioners.update_eligibility_flag(cfg.round);
+        let mut provisioners = provisioners.clone();
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(cfg);
 
@@ -255,7 +255,7 @@ impl CommitteeSet {
             .or_insert_with_key(|config| {
                 Committee::new(
                     self.this_member_key.clone(),
-                    &mut self.provisioners,
+                    &self.provisioners,
                     config,
                 )
             })

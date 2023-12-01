@@ -248,14 +248,12 @@ mod tests {
             input.push((signature, header));
         }
 
-        p.update_eligibility_flag(round);
-
         // Execute sortition with specific config
         let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10);
         let c = Committee::new(
             node_data::bls::PublicKey::new(PublicKey::default()),
-            &mut p,
-            cfg,
+            &p,
+            &cfg,
         );
 
         let target_quorum = 7;
