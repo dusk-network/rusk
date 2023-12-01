@@ -12,9 +12,6 @@ pub struct Stake {
     // provisioners members and their stakes as it used to be.
     value: u64,
 
-    // TODO: Move intermediate_value to member struct so that we keep stake
-    // definition lean.
-    pub intermediate_value: u64,
     pub reward: u64,
     pub counter: u64,
     pub eligible_since: u64,
@@ -24,14 +21,13 @@ impl Stake {
     pub fn new(value: u64, reward: u64, eligible_since: u64) -> Self {
         Self {
             value,
-            intermediate_value: value,
             reward,
             eligible_since,
             counter: 0,
         }
     }
 
-    pub fn restore_intermediate_value(&mut self) {
-        self.intermediate_value = self.value;
+    pub fn value(&self) -> u64 {
+        self.value
     }
 }

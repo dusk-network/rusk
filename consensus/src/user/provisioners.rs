@@ -17,11 +17,17 @@ pub const DUSK: u64 = 1_000_000_000;
 pub struct Member {
     stake: Stake,
     pubkey_bls: PublicKey,
+    intermediate_value: u64,
 }
 
 impl Member {
     pub fn new(pubkey_bls: PublicKey, stake: Stake) -> Self {
-        Self { stake, pubkey_bls }
+        let intermediate_value = stake.value();
+        Self {
+            stake,
+            pubkey_bls,
+            intermediate_value,
+        }
     }
 
     pub fn stake(&self) -> &Stake {
@@ -37,26 +43,26 @@ impl Member {
     }
 
     pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
-        let stake_val = self.stake.intermediate_value;
+        let stake_val = self.intermediate_value;
         if stake_val > 0 {
             if stake_val < value {
-                self.stake.intermediate_value = 0;
+                self.intermediate_value = 0;
                 return stake_val;
             }
-            self.stake.intermediate_value -= value;
+            self.intermediate_value -= value;
             return value;
         }
 
         0
     }
 
-    pub fn restore_intermediate_value(&mut self) {
-        self.stake.restore_intermediate_value();
+    fn restore_intermediate_value(&mut self) {
+        self.intermediate_value = self.stake.value();
     }
 
     fn get_total_eligible_stake(&self, round: u64) -> BigInt {
         if self.stake.eligible_since <= round {
-            BigInt::from(self.stake.intermediate_value)
+            BigInt::from(self.intermediate_value)
         } else {
             BigInt::from(0u64)
         }
@@ -152,7 +158,7 @@ impl Provisioners {
             match provisioners.extract_and_subtract_member(score, cfg.round) {
                 Some((pk, value)) => {
                     // append the public key to the committee set.
-                    committee.push(pk.clone());
+                    committee.push(pk);
 
                     let subtracted_stake = value;
                     if total_amount_stake > subtracted_stake {
@@ -172,10 +178,9 @@ impl Provisioners {
     fn calc_total_eligible_weight(&self, round: u64) -> u64 {
         self.members
             .values()
-            .map(|m| &m.stake)
-            .filter_map(|stake| {
-                (stake.eligible_since <= round)
-                    .then_some(stake.intermediate_value)
+            .filter_map(|m| {
+                (m.stake.eligible_since <= round)
+                    .then_some(m.intermediate_value)
             })
             .sum()
     }
