@@ -6,7 +6,7 @@
 
 use dusk_bytes::DeserializableSlice;
 use dusk_consensus::contract_state::{CallParams, VerificationOutput};
-use dusk_consensus::user::provisioners::{Member, Provisioners};
+use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::stake::Stake;
 use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
@@ -139,21 +139,14 @@ impl VMExecution for Rusk {
             .into_iter()
             .filter_map(|(key, stake)| {
                 stake.amount.map(|(value, eligibility)| {
-                    let mut m =
-                        Member::new(node_data::bls::PublicKey::new(key));
-                    m.add_stake(Stake::new(value, stake.reward, eligibility));
-                    m
+                    let stake = Stake::new(value, stake.reward, eligibility);
+                    let pubkey_bls = node_data::bls::PublicKey::new(key);
+                    (pubkey_bls, stake)
                 })
             });
         let mut ret = Provisioners::new();
-        for p in provisioners {
-            let first_stake = p
-                .first_stake()
-                .expect("Provisioners must have at least one stake");
-            ret.add_member_with_stake(
-                p.public_key().clone(),
-                first_stake.clone(),
-            );
+        for (pubkey_bls, stake) in provisioners {
+            ret.add_member_with_stake(pubkey_bls, stake);
         }
 
         Ok(ret)
