@@ -238,7 +238,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         verify_block_header(
             self.db.clone(),
             &mrb.header().clone(),
-            provisioners_list.clone(),
+            &provisioners_list,
             &public_key,
             blk.header(),
         )
@@ -280,14 +280,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 blk.header().height,
             );
 
-            // Update provisioners list
-            let updated_provisioners = {
-                Self::needs_update(blk, &txs).then(|| vm.get_provisioners())
-            };
-
-            if let Some(updated_prov) = updated_provisioners {
-                *provisioners_list = updated_prov?;
-            };
+            if Self::needs_update(blk, &txs) {
+                // Update provisioners list
+                *provisioners_list = vm.get_provisioners()?;
+            }
 
             // Update most_recent_block
             *mrb = blk.clone();
@@ -454,7 +450,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     mrb: &ledger::Header,
-    mrb_eligible_provisioners: Provisioners,
+    mrb_eligible_provisioners: &Provisioners,
     public_key: &node_data::bls::PublicKey,
     new_blk: &ledger::Header,
 ) -> anyhow::Result<()> {
@@ -530,7 +526,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
 
             verify_block_cert(
                 mrb.seed,
-                &mrb_eligible_provisioners,
+                mrb_eligible_provisioners,
                 public_key,
                 [0u8; 32],
                 new_blk.height,
@@ -545,7 +541,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     // Verify Certificate
     verify_block_cert(
         mrb.seed,
-        &mrb_eligible_provisioners,
+        mrb_eligible_provisioners,
         public_key,
         new_blk.hash,
         new_blk.height,
