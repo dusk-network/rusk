@@ -37,17 +37,14 @@ fn create_step_votes(
     block_hash: [u8; 32],
     step: u8,
     iteration: u8,
-    provisioners: Provisioners,
+    provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
     let sortition_config =
         SortitionConfig::new(seed, round, iteration * 3 + step, 64);
 
-    let committee = Committee::new(
-        PublicKey::default(),
-        &mut provisioners.clone(),
-        sortition_config,
-    );
+    let committee =
+        Committee::new(PublicKey::default(), &provisioners, &sortition_config);
 
     let hdr = message::Header {
         round,
@@ -109,7 +106,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 block_hash,
                 1,
                 iteration,
-                provisioners.clone(),
+                &provisioners,
                 &keys[..],
             );
             cert.second_reduction = create_step_votes(
@@ -118,7 +115,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 block_hash,
                 2,
                 iteration,
-                provisioners.clone(),
+                &provisioners,
                 &keys[..],
             );
             group.bench_function(

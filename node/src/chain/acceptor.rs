@@ -98,7 +98,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         acc.task.write().await.spawn(
             mrb,
-            &provisioners_list.clone(),
+            provisioners_list,
             &db,
             &vm,
             &network,
@@ -189,11 +189,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if iteration == 0 {
             return;
         }
-        let mut prov = provisioners_list.clone();
         for iter in 0..iteration {
             let committee_keys = Committee::new(
                 node_data::bls::PublicKey::default(),
-                &mut prov,
+                provisioners_list,
                 &sortition::Config {
                     committee_size: SELECTION_COMMITTEE_SIZE,
                     round,
