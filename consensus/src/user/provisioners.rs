@@ -13,60 +13,9 @@ use std::collections::BTreeMap;
 
 pub const DUSK: u64 = 1_000_000_000;
 
-#[derive(Clone, Debug)]
-pub struct Member {
-    stake: Stake,
-    // ephemeral value used to perform deterministic sortition
-    intermediate_value: u64,
-}
-
-impl Member {
-    pub fn new(stake: Stake) -> Self {
-        let intermediate_value = stake.value();
-        Self {
-            stake,
-            intermediate_value,
-        }
-    }
-
-    pub fn stake(&self) -> &Stake {
-        &self.stake
-    }
-
-    pub fn is_eligible(&self, round: u64) -> bool {
-        self.stake.eligible_since <= round
-    }
-
-    pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
-        let stake_val = self.intermediate_value;
-        if stake_val > 0 {
-            if stake_val < value {
-                self.intermediate_value = 0;
-                return stake_val;
-            }
-            self.intermediate_value -= value;
-            return value;
-        }
-
-        0
-    }
-
-    fn restore_intermediate_value(&mut self) {
-        self.intermediate_value = self.stake.value();
-    }
-
-    fn get_total_eligible_stake(&self, round: u64) -> BigInt {
-        if self.stake.eligible_since <= round {
-            BigInt::from(self.intermediate_value)
-        } else {
-            BigInt::from(0u64)
-        }
-    }
-}
-
 #[derive(Clone, Default, Debug)]
 pub struct Provisioners {
-    members: BTreeMap<PublicKey, Member>,
+    members: BTreeMap<PublicKey, Stake>,
 }
 
 impl Provisioners {
@@ -84,9 +33,7 @@ impl Provisioners {
         pubkey_bls: PublicKey,
         stake: Stake,
     ) {
-        self.members
-            .entry(pubkey_bls)
-            .or_insert_with(|| Member::new(stake));
+        self.members.entry(pubkey_bls).or_insert_with(|| stake);
     }
 
     /// Adds a new member with reward=0 and elibile_since=0.
@@ -118,15 +65,10 @@ impl Provisioners {
     ) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
 
-        let mut provisioners = self.clone();
-
-        // Restore intermediate value of all stakes.
-        for (_, member) in provisioners.members.iter_mut() {
-            member.restore_intermediate_value();
-        }
+        let mut comm = CommitteeGenerator::from_provisioners(self, cfg.round);
 
         let mut total_amount_stake =
-            BigInt::from(provisioners.calc_total_eligible_weight(cfg.round));
+            BigInt::from(comm.calc_total_eligible_weight());
 
         let mut counter: u32 = 0;
         loop {
@@ -145,7 +87,7 @@ impl Provisioners {
                 sortition::generate_sortition_score(hash, &total_amount_stake);
 
             // NB: The public key can be extracted multiple times per committee.
-            match provisioners.extract_and_subtract_member(score, cfg.round) {
+            match comm.extract_and_subtract_member(score) {
                 Some((pk, value)) => {
                     // append the public key to the committee set.
                     committee.push(pk);
@@ -163,34 +105,43 @@ impl Provisioners {
 
         committee
     }
+}
+
+#[derive(Default)]
+struct CommitteeGenerator<'a> {
+    members: BTreeMap<&'a PublicKey, Stake>,
+}
+
+impl<'a> CommitteeGenerator<'a> {
+    fn from_provisioners(provisioners: &'a Provisioners, round: u64) -> Self {
+        let provs = provisioners.members.iter().filter_map(|(p, stake)| {
+            stake.is_eligible(round).then_some((p, stake.clone()))
+        });
+        Self {
+            members: BTreeMap::from_iter(provs),
+        }
+    }
 
     /// Sums up the total weight of all **eligible** stakes
-    fn calc_total_eligible_weight(&self, round: u64) -> u64 {
-        self.members
-            .values()
-            .filter_map(|m| {
-                m.is_eligible(round).then_some(m.intermediate_value)
-            })
-            .sum()
+    fn calc_total_eligible_weight(&self) -> u64 {
+        self.members.values().map(|m| m.value()).sum()
     }
 
     fn extract_and_subtract_member(
         &mut self,
         mut score: BigInt,
-        round: u64,
     ) -> Option<(PublicKey, BigInt)> {
         if self.members.is_empty() {
             return None;
         }
 
         loop {
-            for (pk, member) in self.members.iter_mut() {
-                let total_stake = member.get_total_eligible_stake(round);
+            for (&pk, stake) in self.members.iter_mut() {
+                let total_stake = BigInt::from(stake.value());
                 if total_stake >= score {
                     // Subtract 1 DUSK from the value extracted and rebalance
                     // accordingly.
-                    let subtracted_stake =
-                        BigInt::from(member.subtract_from_stake(DUSK));
+                    let subtracted_stake = BigInt::from(stake.subtract(DUSK));
 
                     return Some((pk.clone(), subtracted_stake));
                 }
