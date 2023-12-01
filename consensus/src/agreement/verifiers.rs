@@ -78,6 +78,7 @@ pub async fn verify_agreement(
                 &msg.header,
                 0,
                 config::FIRST_REDUCTION_COMMITTEE_SIZE,
+                true,
             )
             .await
             .map_err(|e| {
@@ -97,6 +98,7 @@ pub async fn verify_agreement(
                 &msg.header,
                 1,
                 config::SECOND_REDUCTION_COMMITTEE_SIZE,
+                true,
             )
             .await
             .map_err(|e| {
@@ -122,6 +124,7 @@ pub async fn verify_step_votes(
     hdr: &Header,
     step_offset: u8,
     committee_size: usize,
+    enable_quorum_check: bool,
 ) -> Result<(), Error> {
     if hdr.step == 0 {
         return Err(Error::InvalidStepNum);
@@ -136,35 +139,42 @@ pub async fn verify_step_votes(
         &sv.aggregate_signature.inner(),
         committees_set,
         &cfg,
+        enable_quorum_check,
     )
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
     signature: &[u8; 48],
     committees_set: &Arc<Mutex<CommitteeSet>>,
     cfg: &sortition::Config,
+    enable_quorum_check: bool,
 ) -> Result<(), Error> {
+    // TODO: This should be refactored into a structure when #1118 issue is
+    // implemented
     let sub_committee = {
-        // Scoped guard to fetch committee data quickly
         let mut guard = committees_set.lock().await;
-
         let sub_committee = guard.intersect(bitset, cfg);
-        let target_quorum = guard.quorum(cfg);
-        let total = guard.total_occurrences(&sub_committee, cfg);
 
-        if total < target_quorum {
-            tracing::error!(
-                desc = "vote_set_too_small",
-                committee = format!("{:#?}", sub_committee),
-                cfg = format!("{:#?}", cfg),
-                bitset = bitset,
-                target_quorum = target_quorum,
-                total = total,
-            );
-            Err(Error::VoteSetTooSmall(cfg.step))
+        if enable_quorum_check {
+            let target_quorum = guard.quorum(cfg);
+            let total = guard.total_occurrences(&sub_committee, cfg);
+            if total < target_quorum {
+                tracing::error!(
+                    desc = "vote_set_too_small",
+                    committee = format!("{:#?}", sub_committee),
+                    cfg = format!("{:#?}", cfg),
+                    bitset = bitset,
+                    target_quorum = target_quorum,
+                    total = total,
+                );
+                Err(Error::VoteSetTooSmall(cfg.step))
+            } else {
+                Ok(sub_committee)
+            }
         } else {
             Ok(sub_committee)
         }

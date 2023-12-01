@@ -28,7 +28,7 @@ impl Aggregator {
         committee: &Committee,
         header: &Header,
         signature: &[u8; 48],
-    ) -> Option<(Hash, StepVotes)> {
+    ) -> Option<(Hash, StepVotes, bool)> {
         let msg_step = header.step;
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
@@ -94,17 +94,17 @@ impl Aggregator {
                 }
             };
 
+            let s = aggr_sign
+                .aggregated_bytes()
+                .expect("Signature to exist after aggregating");
+            let bitset = committee.bits(cluster);
+
+            let step_votes = StepVotes {
+                bitset,
+                aggregate_signature: Signature::from(s),
+            };
+
             if quorum_reached {
-                let s = aggr_sign
-                    .aggregated_bytes()
-                    .expect("Signature to exist after quorum reached");
-                let bitset = committee.bits(cluster);
-
-                let step_votes = StepVotes {
-                    bitset,
-                    aggregate_signature: Signature::from(s),
-                };
-
                 tracing::info!(
                     event = "reduction, quorum reached",
                     hash = to_str(&hash),
@@ -114,9 +114,9 @@ impl Aggregator {
                     step = header.step,
                     signature = to_str(&s),
                 );
-
-                return Some((hash, step_votes));
             }
+
+            return Some((hash, step_votes, quorum_reached));
         }
 
         None
@@ -291,9 +291,11 @@ mod tests {
             // Last member's vote should reach the quorum
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
-                let (hash, sv) = a
+                let (hash, sv, quorum_reached) = a
                     .collect_vote(&c, h, signature)
                     .expect("failed to reach quorum");
+
+                assert_eq!(quorum_reached, true, "quorum should be reached");
 
                 // Check expected block hash
                 assert_eq!(hash, block_hash);
@@ -307,17 +309,20 @@ mod tests {
             }
 
             // Check collected votes
-            assert!(a.collect_vote(&c, h, signature).is_none());
+            let (_, _, quorum_reached) =
+                a.collect_vote(&c, h, signature).unwrap();
+
+            assert_eq!(
+                quorum_reached, false,
+                "quorum should not be reached yet"
+            );
+
             collected_votes += expected_votes[i];
             assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
                 assert!(a.collect_vote(&c, h, signature).is_none());
-                assert_eq!(
-                    a.get_total(h.step, block_hash),
-                    Some(collected_votes)
-                );
             }
         }
     }

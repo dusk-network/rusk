@@ -218,6 +218,9 @@ impl CommitteeSet {
     pub fn quorum(&mut self, cfg: &sortition::Config) -> usize {
         self.get_or_create(cfg).quorum()
     }
+    pub fn nil_quorum(&mut self, cfg: &sortition::Config) -> usize {
+        self.get_or_create(cfg).nil_quorum()
+    }
 
     pub fn intersect(
         &mut self,

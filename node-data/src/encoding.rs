@@ -234,6 +234,53 @@ impl Serializable for StepVotes {
     }
 }
 
+impl Serializable for IterationsInfo {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        let count = self.cert_list.len() as u8;
+        w.write_all(&count.to_le_bytes())?;
+
+        let count_of_some =
+            self.cert_list.iter().filter(|cert| cert.is_some()).count() as u8;
+
+        w.write_all(&count_of_some.to_le_bytes())?;
+
+        for i in 0..self.cert_list.len() as u8 {
+            if let Some(cert) = &self.cert_list[i as usize] {
+                w.write_all(&i.to_le_bytes())?;
+                cert.write(w)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+        let count = buf[0];
+
+        let mut certificates = vec![None; count as usize];
+
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+        let count_of_some = buf[0];
+
+        for _i in 0..count_of_some {
+            let mut buf = [0u8; 1];
+            r.read_exact(&mut buf[..])?;
+            let iter_num = buf[0] as usize;
+
+            certificates[iter_num] = Some(Certificate::read(r)?);
+        }
+
+        Ok(IterationsInfo {
+            cert_list: certificates,
+        })
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -247,6 +294,11 @@ mod tests {
 
         assert!(obj
             .eq(&S::read(&mut &buf.to_vec()[..]).expect("should be readable")));
+    }
+
+    #[test]
+    fn test_encoding_iterations_info() {
+        assert_serializable::<IterationsInfo>();
     }
 
     #[test]

@@ -6,58 +6,56 @@
 
 use crate::commons::{IterCounter, RoundUpdate, StepName};
 use crate::config::CONSENSUS_MAX_ITER;
-use node_data::ledger::to_str;
 use node_data::ledger::StepVotes;
+use node_data::ledger::{to_str, Certificate};
 use node_data::message::{payload, Message, Topics};
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::debug;
 
 pub(crate) enum SvType {
     FirstReduction,
     SecondReduction,
 }
 
-#[derive(Default, Copy, Clone)]
-struct SvEntry {
-    // represents candidate block hash
+#[derive(Default, Clone, Copy)]
+struct CertificateInfo {
+    /// represents candidate block hash
     hash: Option<[u8; 32]>,
-    first_red_sv: StepVotes,
-    second_red_sv: StepVotes,
+    cert: Certificate,
+
+    quorum_reached_first_reduction: bool,
+    quorum_reached_sec_reduction: bool,
 }
 
-impl fmt::Display for SvEntry {
+impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hash = self.hash.unwrap_or_default();
 
         write!(
             f,
-            "SvEntry: hash: {}, 1st_red: {:?}, 2nd_red: {:?}",
+            "cert_info: hash: {}, 1st_sv: {:?}, 2nd_sv: {:?}, 1st_quorum: {}, 2nd_quorum: {}",
             to_str(&hash),
-            self.first_red_sv,
-            self.second_red_sv,
+            self.cert.first_reduction,
+            self.cert.second_reduction,
+            self.quorum_reached_first_reduction,
+            self.quorum_reached_sec_reduction
         )
     }
 }
 
-impl SvEntry {
+impl CertificateInfo {
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
         hash: [u8; 32],
         sv: StepVotes,
         svt: SvType,
+        quorum_reached: bool,
     ) -> bool {
-        // Discard  empty hashes
-        if hash == [0u8; 32] {
-            return false;
-        }
-
         if let Some(h) = self.hash {
             if h != hash {
-                // Only one hash can be registered per a single iteration
-                error!(desc = "multiple candidates per iter");
                 return false;
             }
         } else {
@@ -65,33 +63,64 @@ impl SvEntry {
         }
 
         match svt {
-            SvType::FirstReduction => self.first_red_sv = sv,
-            SvType::SecondReduction => self.second_red_sv = sv,
+            SvType::FirstReduction => {
+                self.cert.first_reduction = sv;
+
+                if quorum_reached {
+                    self.quorum_reached_first_reduction = quorum_reached;
+                }
+            }
+            SvType::SecondReduction => {
+                self.cert.second_reduction = sv;
+
+                if quorum_reached {
+                    self.quorum_reached_sec_reduction = quorum_reached;
+                }
+            }
         }
 
-        debug!(event = "add_sv", iter, data = format!("{}", self));
+        debug!(
+            event = "add_sv",
+            iter,
+            data = format!("{}", self),
+            quorum_reached
+        );
+
         self.is_ready()
     }
 
+    /// Returns `true` if all fields are non-empty and quorum is reached for
+    /// both reductions
     fn is_ready(&self) -> bool {
-        !self.second_red_sv.is_empty()
-            && !self.first_red_sv.is_empty()
+        !self.cert.first_reduction.is_empty()
+            && !self.cert.second_reduction.is_empty()
             && self.hash.is_some()
+            && self.quorum_reached_first_reduction
+            && self.quorum_reached_sec_reduction
+    }
+
+    /// Returns `true` if the certificate has empty hash
+    fn is_nil(&self) -> bool {
+        self.hash.map(|h| h == [0u8; 32]).unwrap_or_default()
     }
 }
 
-pub(crate) type SafeStepVotesRegistry = Arc<Mutex<StepVotesRegistry>>;
+pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
-pub(crate) struct StepVotesRegistry {
+pub struct CertInfoRegistry {
     ru: RoundUpdate,
-    sv_table: [SvEntry; CONSENSUS_MAX_ITER as usize],
+
+    /// List of iterations agreements. Position in the array represents
+    /// iteration number.
+    cert_list: [CertificateInfo; CONSENSUS_MAX_ITER as usize],
 }
 
-impl StepVotesRegistry {
+impl CertInfoRegistry {
     pub(crate) fn new(ru: RoundUpdate) -> Self {
         Self {
             ru,
-            sv_table: [SvEntry::default(); CONSENSUS_MAX_ITER as usize],
+            cert_list: [CertificateInfo::default();
+                CONSENSUS_MAX_ITER as usize],
         }
     }
 
@@ -103,14 +132,15 @@ impl StepVotesRegistry {
         hash: [u8; 32],
         sv: StepVotes,
         svt: SvType,
+        quorum_reached: bool,
     ) -> Option<Message> {
         let iter_num = u8::from_step(step);
-        if iter_num as usize >= self.sv_table.len() {
+        if iter_num as usize >= self.cert_list.len() {
             return None;
         }
 
-        let r = &mut self.sv_table[iter_num as usize];
-        if r.add_sv(iter_num, hash, sv, svt) {
+        let r = &mut self.cert_list[iter_num as usize];
+        if r.add_sv(iter_num, hash, sv, svt, quorum_reached) {
             return Some(Self::build_agreement_msg(
                 self.ru.clone(),
                 iter_num,
@@ -124,7 +154,7 @@ impl StepVotesRegistry {
     fn build_agreement_msg(
         ru: RoundUpdate,
         iteration: u8,
-        result: SvEntry,
+        result: CertificateInfo,
     ) -> Message {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
@@ -138,10 +168,29 @@ impl StepVotesRegistry {
 
         let payload = payload::Agreement {
             signature,
-            first_step: result.first_red_sv,
-            second_step: result.second_red_sv,
+            first_step: result.cert.first_reduction,
+            second_step: result.cert.second_reduction,
         };
 
         Message::new_agreement(hdr, payload)
+    }
+
+    pub(crate) fn get_nil_certificates(
+        &mut self,
+        from: usize,
+        to: usize,
+    ) -> Vec<Option<Certificate>> {
+        let to = std::cmp::min(to, self.cert_list.len());
+        let mut res = Vec::with_capacity(to - from);
+
+        for item in &self.cert_list[from..to] {
+            if item.is_nil() {
+                res.push(Some(item.cert));
+            } else {
+                res.push(None)
+            }
+        }
+
+        res
     }
 }

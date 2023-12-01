@@ -194,9 +194,8 @@ fn spawn_node(
                             txroot: [0u8; 32],
                             gas_limit: 0,
                             iteration: 0,
-                            prev_block_cert: Default::default(),
                             hash: [0u8; 32],
-                            cert: Default::default(),
+                            ..Default::default()
                         },
                         vec![],
                     )

@@ -6,7 +6,7 @@
 
 use crate::commons::{IterCounter, RoundUpdate};
 use crate::contract_state::CallParams;
-use node_data::ledger::{to_str, Block, Certificate, Seed};
+use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
 
 use crate::config;
 use crate::contract_state::Operations;
@@ -34,6 +34,7 @@ impl<T: Operations> Generator<T> {
         &self,
         ru: &RoundUpdate,
         step: u8,
+        failed_iterations: Vec<Option<Certificate>>,
     ) -> Result<Message, crate::contract_state::Error> {
         let iteration = u8::from_step(step);
         // Sign seed
@@ -44,8 +45,9 @@ impl<T: Operations> Generator<T> {
 
         let start = Instant::now();
 
-        let candidate =
-            self.generate_block(ru, Seed::from(seed), iteration).await?;
+        let candidate = self
+            .generate_block(ru, Seed::from(seed), iteration, failed_iterations)
+            .await?;
 
         info!(
             event = "gen_candidate",
@@ -80,6 +82,7 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         seed: Seed,
         iteration: u8,
+        failed_iterations: Vec<Option<Certificate>>,
     ) -> Result<Block, crate::contract_state::Error> {
         let start_time = Instant::now();
 
@@ -114,9 +117,10 @@ impl<T: Operations> Generator<T> {
             event_hash: result.verification_output.event_hash,
             hash: [0; 32],
             cert: Certificate::default(),
-            prev_block_cert: ru.cert().clone(),
+            prev_block_cert: *ru.cert(),
             txroot,
             iteration,
+            failed_iterations: IterationsInfo::new(failed_iterations),
         };
 
         // Apply a delay in block generator accordingly

@@ -4,13 +4,15 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, IterCounter, RoundUpdate};
+use crate::commons::{
+    AgreementSender, ConsensusError, Database, IterCounter, RoundUpdate,
+};
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 
-use node_data::ledger::{to_str, Block};
+use node_data::ledger::Block;
 
-use node_data::message::{AsyncQueue, Message, Payload, Topics};
+use node_data::message::{AsyncQueue, Message, Topics};
 
 use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
@@ -18,9 +20,9 @@ use crate::queue::Queue;
 use crate::selection;
 use crate::user::provisioners::Provisioners;
 use crate::{firststep, secondstep};
-use tracing::{error, Instrument};
+use tracing::Instrument;
 
-use crate::step_votes_reg::StepVotesRegistry;
+use crate::step_votes_reg::CertInfoRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 use tokio::task::JoinHandle;
@@ -113,12 +115,12 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             self.db.clone(),
         );
 
+        let sender =
+            AgreementSender::new(self.agreement_process.inbound_queue.clone());
+
         // Consensus loop - generation-selection-reduction loop
-        let mut main_task_handle = self.spawn_main_loop(
-            ru,
-            provisioners,
-            self.agreement_process.inbound_queue.clone(),
-        );
+        let mut main_task_handle =
+            self.spawn_main_loop(ru, provisioners, sender);
 
         // Wait for any of the tasks to complete.
         let result;
@@ -154,7 +156,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        mut agr_inbound_queue: AsyncQueue<Message>,
+        sender: AgreementSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
@@ -168,7 +170,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             }
 
             let sv_registry =
-                Arc::new(Mutex::new(StepVotesRegistry::new(ru.clone())));
+                Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
             let sel_handler =
                 Arc::new(Mutex::new(selection::handler::Selection::new(
@@ -240,6 +242,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         ru.clone(),
                         step,
                         executor.clone(),
+                        sv_registry.clone(),
+                        sender.clone(),
                     );
 
                     // Execute a phase.
@@ -261,11 +265,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // During execution of any step we may encounter that an
                     // agreement is generated for a former or current iteration.
                     if msg.topic() == Topics::Agreement {
-                        Self::send_agreement(
-                            &mut agr_inbound_queue,
-                            msg.clone(),
-                        )
-                        .await;
+                        sender.send(msg.clone()).await;
                     }
                 }
 
@@ -276,37 +276,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 // further processing.
             }
         })
-    }
-
-    /// Sends an agreement (internally) to the agreement loop.
-    async fn send_agreement(
-        agr_inbound_queue: &mut AsyncQueue<Message>,
-        msg: Message,
-    ) {
-        if let Payload::Agreement(payload) = &msg.payload {
-            if payload.signature == [0u8; 48]
-                || payload.first_step.is_empty()
-                || payload.second_step.is_empty()
-                || msg.header.block_hash == [0; 32]
-            {
-                return;
-            }
-
-            tracing::debug!(
-                event = "send agreement",
-                hash = to_str(&msg.header.block_hash),
-                round = msg.header.round,
-                step = msg.header.step,
-                first = format!("{:#?}", payload.first_step),
-                second = format!("{:#?}", payload.second_step),
-                signature = to_str(&payload.signature),
-            );
-
-            let _ = agr_inbound_queue
-                .send(msg.clone())
-                .await
-                .map_err(|e| error!("send agreement failed with {:?}", e));
-        }
     }
 }
 

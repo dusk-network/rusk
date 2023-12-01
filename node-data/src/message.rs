@@ -931,7 +931,11 @@ mod tests {
                 second_reduction: ledger::StepVotes::new([7; 48], 3333333),
             },
             iteration: 1,
-            prev_block_cert: Default::default(),
+            prev_block_cert: Certificate {
+                first_reduction: ledger::StepVotes::new([6; 48], 444444444),
+                second_reduction: ledger::StepVotes::new([7; 48], 55555555),
+            },
+            failed_iterations: Default::default(),
         };
 
         let sample_block =

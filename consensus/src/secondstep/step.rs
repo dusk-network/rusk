@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_send_reduction, ConsensusError, Database};
+use crate::commons::{spawn_cast_vote, ConsensusError, Database};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
@@ -44,7 +44,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         let mut handler = self.handler.lock().await;
 
-        self.candidate = None;
+        self.candidate = Some(Block::default());
         handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
@@ -78,7 +78,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         if committee.am_member() {
             //  Send reduction in async way
             if let Some(b) = &self.candidate {
-                spawn_send_reduction(
+                spawn_cast_vote(
                     &mut ctx.iter_ctx.join_set,
                     ctx.iter_ctx.verified_hash.clone(),
                     b.clone(),

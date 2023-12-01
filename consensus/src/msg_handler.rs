@@ -12,10 +12,12 @@ use node_data::message::{Message, MessageTrait, Status, Topics};
 use std::fmt::Debug;
 use tracing::{debug, trace};
 
+/// Indicates whether an output value is available for current step execution
+/// (Step is Ready) or needs to collect data (Step is Pending)
 pub enum HandleMsgOutput {
-    Result(Message),
-    FinalResult(Message),
-    FinalResultWithTimeoutIncrease(Message),
+    Pending(Message),
+    Ready(Message),
+    ReadyWithTimeoutIncrease(Message),
 }
 
 /// MsgHandler must be implemented by any step that needs to handle an external
@@ -71,6 +73,16 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
 
     /// collect allows each Phase to process a verified inbound message.
     async fn collect(
+        &mut self,
+        msg: T,
+        ru: &RoundUpdate,
+        step: u8,
+        committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError>;
+
+    /// collect allows each Phase to process a verified message from a former
+    /// iteration
+    async fn collect_from_past(
         &mut self,
         msg: T,
         ru: &RoundUpdate,

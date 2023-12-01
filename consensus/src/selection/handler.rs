@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::merkle::merkle_root;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
-use crate::step_votes_reg::SafeStepVotesRegistry;
+use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 
@@ -17,7 +17,7 @@ use tokio::sync::Mutex;
 
 pub struct Selection<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
-    pub(crate) _sv_registry: SafeStepVotesRegistry,
+    pub(crate) _sv_registry: SafeCertificateInfoRegistry,
 }
 
 #[async_trait]
@@ -50,10 +50,20 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
                 .await
                 .store_candidate_block(p.candidate.clone());
 
-            return Ok(HandleMsgOutput::FinalResult(msg));
+            return Ok(HandleMsgOutput::Ready(msg));
         }
 
         Err(ConsensusError::InvalidMsgType)
+    }
+
+    async fn collect_from_past(
+        &mut self,
+        msg: Message,
+        _ru: &RoundUpdate,
+        _step: u8,
+        _committee: &Committee,
+    ) -> Result<HandleMsgOutput, ConsensusError> {
+        Ok(HandleMsgOutput::Pending(msg))
     }
 
     /// Handles of an event of step execution timeout
@@ -62,14 +72,14 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::FinalResult(Message::empty()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
 
 impl<D: Database> Selection<D> {
     pub(crate) fn new(
         db: Arc<Mutex<D>>,
-        sv_registry: SafeStepVotesRegistry,
+        sv_registry: SafeCertificateInfoRegistry,
     ) -> Self {
         Self {
             db,

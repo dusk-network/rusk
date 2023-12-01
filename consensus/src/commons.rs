@@ -11,7 +11,7 @@ use crate::contract_state::Operations;
 
 use node_data::ledger::*;
 use node_data::message;
-use node_data::message::Topics;
+use node_data::message::{Payload, Topics};
 use tracing::Instrument;
 
 use crate::contract_state::CallParams;
@@ -87,9 +87,11 @@ pub enum ConsensusError {
     ChildTaskTerminated,
     Canceled,
 }
-
+/// Makes an attempt to cast a vote for a specified candidate block if VST call
+/// passes. If candidate block is default, it casts a NIL vote, without calling
+/// VST API
 #[allow(clippy::too_many_arguments)]
-pub fn spawn_send_reduction<T: Operations + 'static>(
+pub fn spawn_cast_vote<T: Operations + 'static>(
     join_set: &mut JoinSet<()>,
     verified_hash: Arc<Mutex<[u8; 32]>>,
     candidate: Block,
@@ -268,5 +270,49 @@ impl IterCounter for u8 {
 
     fn step_from_pos(&self, pos: usize) -> Self::Step {
         self * Self::STEP_NUM + pos as u8
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct AgreementSender {
+    queue: AsyncQueue<Message>,
+}
+
+impl AgreementSender {
+    pub(crate) fn new(queue: AsyncQueue<Message>) -> Self {
+        Self { queue }
+    }
+
+    /// Sends an agreement (internally) to the agreement loop.
+    pub(crate) async fn send(&self, msg: Message) -> bool {
+        if let Payload::Agreement(agreement) = &msg.payload {
+            if agreement.signature == [0u8; 48]
+                || agreement.first_step.is_empty()
+                || agreement.second_step.is_empty()
+                || msg.header.block_hash == [0; 32]
+            {
+                return false;
+            }
+
+            tracing::debug!(
+                event = "send agreement",
+                hash = to_str(&msg.header.block_hash),
+                round = msg.header.round,
+                step = msg.header.step,
+                first = format!("{:#?}", agreement.first_step),
+                second = format!("{:#?}", agreement.second_step),
+                signature = to_str(&agreement.signature),
+            );
+
+            let _ = self
+                .queue
+                .send(msg.clone())
+                .await
+                .map_err(|e| error!("send agreement failed with {:?}", e));
+
+            return true;
+        }
+
+        false
     }
 }
