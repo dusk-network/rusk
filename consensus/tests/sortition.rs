@@ -17,7 +17,7 @@ use node_data::ledger::Seed;
 #[test]
 fn test_deterministic_sortition_1() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = generate_provisioners(5);
+    let p = generate_provisioners(5);
 
     let committee_size = 64;
 
@@ -39,7 +39,7 @@ fn test_deterministic_sortition_1() {
 #[test]
 fn test_deterministic_sortition_2() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = generate_provisioners(5);
+    let p = generate_provisioners(5);
 
     let committee_size = 45;
     let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size);
@@ -55,7 +55,7 @@ fn test_deterministic_sortition_2() {
 #[test]
 fn test_quorum() {
     // Create provisioners with bls keys read from an external file.
-    let mut p = generate_provisioners(5);
+    let p = generate_provisioners(5);
 
     let cfg = Config::new(Seed::default(), 7777, 8, 64);
 
@@ -65,7 +65,7 @@ fn test_quorum() {
 
 #[test]
 fn test_intersect() {
-    let mut p = generate_provisioners(10);
+    let p = generate_provisioners(10);
 
     let cfg = Config::new(Seed::default(), 1, 3, 200);
     // println!("{:#?}", p);

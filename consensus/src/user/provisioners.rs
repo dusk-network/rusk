@@ -14,68 +14,52 @@ use std::collections::BTreeMap;
 pub const DUSK: u64 = 1_000_000_000;
 
 #[derive(Clone, Debug)]
-#[allow(unused)]
 pub struct Member {
-    stakes: Vec<Stake>,
+    stake: Stake,
     pubkey_bls: PublicKey,
 }
 
 impl Member {
-    pub fn new(pubkey_bls: PublicKey) -> Self {
-        Self {
-            stakes: vec![],
-            pubkey_bls,
-        }
+    pub fn new(pubkey_bls: PublicKey, stake: Stake) -> Self {
+        Self { stake, pubkey_bls }
     }
 
-    pub fn first_stake(&self) -> Option<&Stake> {
-        self.stakes.first()
+    pub fn stake(&self) -> &Stake {
+        &self.stake
     }
 
     pub fn public_key(&self) -> &PublicKey {
         &self.pubkey_bls
     }
 
-    // AddStake appends a stake to the stake set with eligible_flag=false.
-    pub fn add_stake(&mut self, stake: Stake) {
-        self.stakes.push(stake);
-    }
-
     pub fn is_eligible(&self, round: u64) -> bool {
-        self.stakes.iter().any(|s| s.eligible_since <= round)
+        self.stake.eligible_since <= round
     }
 
     pub fn subtract_from_stake(&mut self, value: u64) -> u64 {
-        for stake in self.stakes.iter_mut() {
-            let stake_val = stake.intermediate_value;
-            if stake_val > 0 {
-                if stake_val < value {
-                    stake.intermediate_value = 0;
-                    return stake_val;
-                }
-                stake.intermediate_value -= value;
-                return value;
+        let stake_val = self.stake.intermediate_value;
+        if stake_val > 0 {
+            if stake_val < value {
+                self.stake.intermediate_value = 0;
+                return stake_val;
             }
+            self.stake.intermediate_value -= value;
+            return value;
         }
 
         0
     }
 
     pub fn restore_intermediate_value(&mut self) {
-        for stake in self.stakes.iter_mut() {
-            stake.restore_intermediate_value();
-        }
+        self.stake.restore_intermediate_value();
     }
 
     fn get_total_eligible_stake(&self, round: u64) -> BigInt {
-        let total: u64 = self
-            .stakes
-            .iter()
-            .filter(|stake| stake.eligible_since <= round)
-            .map(|s| s.intermediate_value)
-            .sum();
-
-        BigInt::from(total)
+        if self.stake.eligible_since <= round {
+            BigInt::from(self.stake.intermediate_value)
+        } else {
+            BigInt::from(0u64)
+        }
     }
 }
 
@@ -101,8 +85,7 @@ impl Provisioners {
     ) {
         self.members
             .entry(pubkey_bls)
-            .or_insert_with_key(|key| Member::new(key.clone()))
-            .add_stake(stake);
+            .or_insert_with_key(|key| Member::new(key.clone(), stake));
     }
 
     /// Adds a new member with reward=0 and elibile_since=0.
@@ -189,7 +172,7 @@ impl Provisioners {
     fn calc_total_eligible_weight(&self, round: u64) -> u64 {
         self.members
             .values()
-            .flat_map(|m| &m.stakes)
+            .map(|m| &m.stake)
             .filter_map(|stake| {
                 (stake.eligible_since <= round)
                     .then_some(stake.intermediate_value)
