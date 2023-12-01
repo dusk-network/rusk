@@ -30,4 +30,11 @@ impl Stake {
     pub fn value(&self) -> u64 {
         self.value
     }
+
+    pub fn from_value(value: u64) -> Self {
+        Self {
+            value,
+            ..Default::default()
+        }
+    }
 }

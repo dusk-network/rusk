@@ -16,26 +16,21 @@ pub const DUSK: u64 = 1_000_000_000;
 #[derive(Clone, Debug)]
 pub struct Member {
     stake: Stake,
-    pubkey_bls: PublicKey,
+    // ephemeral value used to perform deterministic sortition
     intermediate_value: u64,
 }
 
 impl Member {
-    pub fn new(pubkey_bls: PublicKey, stake: Stake) -> Self {
+    pub fn new(stake: Stake) -> Self {
         let intermediate_value = stake.value();
         Self {
             stake,
-            pubkey_bls,
             intermediate_value,
         }
     }
 
     pub fn stake(&self) -> &Stake {
         &self.stake
-    }
-
-    pub fn public_key(&self) -> &PublicKey {
-        &self.pubkey_bls
     }
 
     pub fn is_eligible(&self, round: u64) -> bool {
@@ -91,14 +86,14 @@ impl Provisioners {
     ) {
         self.members
             .entry(pubkey_bls)
-            .or_insert_with_key(|key| Member::new(key.clone(), stake));
+            .or_insert_with(|| Member::new(stake));
     }
 
     /// Adds a new member with reward=0 and elibile_since=0.
     ///
     /// Useful for implementing unit tests.
     pub fn add_member_with_value(&mut self, pubkey_bls: PublicKey, value: u64) {
-        self.add_member_with_stake(pubkey_bls, Stake::new(value, 0, 0));
+        self.add_member_with_stake(pubkey_bls, Stake::from_value(value));
     }
 
     // Returns a pair of count of all provisioners and count of eligible
@@ -111,11 +106,6 @@ impl Provisioners {
             .count();
 
         (self.members.len(), eligible_len)
-    }
-
-    /// Returns a member of Provisioner list by public key.
-    pub fn get_member(&self, key: &PublicKey) -> Option<&Member> {
-        self.members.get(key)
     }
 
     /// Runs the deterministic sortition algorithm which determines the
@@ -179,8 +169,7 @@ impl Provisioners {
         self.members
             .values()
             .filter_map(|m| {
-                (m.stake.eligible_since <= round)
-                    .then_some(m.intermediate_value)
+                m.is_eligible(round).then_some(m.intermediate_value)
             })
             .sum()
     }
@@ -195,7 +184,7 @@ impl Provisioners {
         }
 
         loop {
-            for member in self.members.values_mut() {
+            for (pk, member) in self.members.iter_mut() {
                 let total_stake = member.get_total_eligible_stake(round);
                 if total_stake >= score {
                     // Subtract 1 DUSK from the value extracted and rebalance
@@ -203,10 +192,7 @@ impl Provisioners {
                     let subtracted_stake =
                         BigInt::from(member.subtract_from_stake(DUSK));
 
-                    return Some((
-                        member.public_key().clone(),
-                        subtracted_stake,
-                    ));
+                    return Some((pk.clone(), subtracted_stake));
                 }
 
                 score -= total_stake;
