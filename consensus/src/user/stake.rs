@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #[derive(Clone, Default, Debug)]
-#[allow(unused)]
 pub struct Stake {
     // Value should be initialized only at constructor.
     // It's later used to restore intermediate_value on each new sortition

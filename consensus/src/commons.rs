@@ -27,7 +27,6 @@ use tokio::task::JoinSet;
 use tracing::{debug, error};
 
 #[derive(Clone, Default, Debug)]
-#[allow(unused)]
 pub struct RoundUpdate {
     // Current round number of the ongoing consensus
     pub round: u64,

@@ -28,7 +28,6 @@ impl Committee {
     }
 }
 
-#[allow(unused)]
 impl Committee {
     /// Generates a new committee from the given provisioners state and
     /// sortition config.
@@ -44,7 +43,6 @@ impl Committee {
         provisioners: &Provisioners,
         cfg: &sortition::Config,
     ) -> Self {
-        let mut provisioners = provisioners.clone();
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(cfg);
 
@@ -113,7 +111,6 @@ impl Committee {
 
         debug_assert!(self.members.len() <= mem::size_of_val(&bits) * 8);
 
-        let mut pos = 0;
         for (pk, _) in voters.iter() {
             for (pos, (member_pk, _)) in self.members.iter().enumerate() {
                 if member_pk.eq(pk) {
