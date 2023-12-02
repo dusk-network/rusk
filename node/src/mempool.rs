@@ -12,7 +12,7 @@ use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::warn;
+use tracing::{error, warn};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
@@ -21,7 +21,7 @@ enum TxAcceptanceError {
     AlreadyExistsInMempool,
     AlreadyExistsInLedger,
     NullifierExistsInMempool,
-    VerificationFailed,
+    VerificationFailed(String),
 }
 
 impl std::error::Error for TxAcceptanceError {}
@@ -35,8 +35,8 @@ impl std::fmt::Display for TxAcceptanceError {
             Self::AlreadyExistsInLedger => {
                 write!(f, "this transaction exists in the ledger")
             }
-            Self::VerificationFailed => {
-                write!(f, "this transaction is invalid")
+            Self::VerificationFailed(inner) => {
+                write!(f, "this transaction is invalid {inner}")
             }
             Self::NullifierExistsInMempool => {
                 write!(f, "this transaction's input(s) exists in the mempool")
@@ -52,7 +52,7 @@ pub struct MempoolSrv {
 
 pub struct TxFilter {}
 impl crate::Filter for TxFilter {
-    fn filter(&mut self, msg: &Message) -> anyhow::Result<()> {
+    fn filter(&mut self, _msg: &Message) -> anyhow::Result<()> {
         // TODO: Ensure transaction does not exist in the mempool state
         // TODO: Ensure transaction does not exist in blockchain
         // TODO: Check  Nullifier
@@ -92,15 +92,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             if let Ok(msg) = self.inbound.recv().await {
                 match &msg.payload {
                     Payload::Transaction(tx) => {
-                        if let Err(e) =
-                            self.accept_tx::<DB, VM>(&db, &vm, tx).await
-                        {
-                            tracing::error!("{}", e);
-                        } else {
-                            network.read().await.broadcast(&msg).await;
+                        let accept = self.accept_tx::<DB, VM>(&db, &vm, tx);
+                        if let Err(e) = accept.await {
+                            error!("{}", e);
+                            continue;
                         }
+
+                        let network = network.read().await;
+                        if let Err(e) = network.broadcast(&msg).await {
+                            warn!("Unable to broadcast accepted tx: {e}")
+                        };
                     }
-                    _ => tracing::error!("invalid inbound message payload"),
+                    _ => error!("invalid inbound message payload"),
                 }
             }
         }
@@ -152,7 +155,11 @@ impl MempoolSrv {
         })?;
 
         // VM Preverify call
-        vm.read().await.preverify(tx)?;
+        vm.read().await.preverify(tx).map_err(|e| {
+            anyhow::anyhow!(TxAcceptanceError::VerificationFailed(format!(
+                "{e:?}"
+            )))
+        })?;
 
         tracing::info!(
             event = "transaction accepted",

@@ -89,7 +89,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
         // NB. After restart, state_root returned by VM is always the last
         // finalized one.
-        let mut state_root = vm.read().await.get_state_root()?;
+        let state_root = vm.read().await.get_state_root()?;
 
         info!(
             event = "VM state loaded",
@@ -168,7 +168,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         Payload::NewBlock(_)
                         | Payload::Reduction(_)
                         | Payload::Agreement(_) => {
-                            acc.read().await.reroute_msg(msg).await;
+                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
+                                warn!("Unable to reroute_msg to the acceptor: {e}");
+                            }
                         }
                         _ => warn!("invalid inbound message"),
                     }
@@ -176,7 +178,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
                 recv = &mut outbound_chan.recv() => {
                     let msg = recv?;
-                    network.read().await.broadcast(&msg).await;
+                    if let Err(e) = network.read().await.broadcast(&msg).await {
+                        warn!("Unable to re-route message {e}");
+                    }
                 },
                 // Handles accept_block_timeout event
                 _ = sleep_until(timeout) => {
@@ -220,8 +224,8 @@ impl ChainSrv {
                     // either malformed or empty.
                     let genesis_blk = genesis::generate_state();
 
-                    /// Persist genesis block
-                    t.store_block(genesis_blk.header(), &[]);
+                    // Persist genesis block
+                    t.store_block(genesis_blk.header(), &[])?;
                     genesis_blk
                 }
             };
@@ -246,7 +250,7 @@ impl ChainSrv {
             }
 
             Ok(())
-        });
+        })?;
 
         tracing::info!(
             event = "Ledger block loaded",
