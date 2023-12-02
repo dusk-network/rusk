@@ -144,7 +144,7 @@ impl VMExecution for Rusk {
                     (pubkey_bls, stake)
                 })
             });
-        let mut ret = Provisioners::new();
+        let mut ret = Provisioners::default();
         for (pubkey_bls, stake) in provisioners {
             ret.add_member_with_stake(pubkey_bls, stake);
         }
