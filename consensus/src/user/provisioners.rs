@@ -19,12 +19,6 @@ pub struct Provisioners {
 }
 
 impl Provisioners {
-    pub fn new() -> Self {
-        Self {
-            members: BTreeMap::new(),
-        }
-    }
-
     /// Adds a provisioner with stake.
     ///
     /// It appends the stake if the given provisioner already exists.

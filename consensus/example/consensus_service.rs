@@ -53,7 +53,7 @@ pub fn run_main_loop(
     // Load provisioners keys from external consensus keys.
     // The loaded keys should be the same as the ones from Genesis State.
     let keys = load_provisioners_keys(provisioners_num);
-    let mut provisioners = Provisioners::new();
+    let mut provisioners = Provisioners::default();
 
     for (_, (_, pk)) in keys.iter().enumerate() {
         provisioners.add_member_with_value(pk.clone(), 1000 * DUSK * 10);

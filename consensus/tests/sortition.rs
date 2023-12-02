@@ -103,7 +103,7 @@ fn generate_provisioners(n: usize) -> Provisioners {
         .map(|data| SecretKey::from_slice(&data[..]).expect("valid secret key"))
         .collect();
 
-    let mut p = Provisioners::new();
+    let mut p = Provisioners::default();
     for (i, sk) in sks.iter().enumerate().skip(1) {
         let stake_value = 1000 * (i) as u64 * DUSK;
         let pubkey_bls = PublicKey::new(BlsPublicKey::from(sk));
