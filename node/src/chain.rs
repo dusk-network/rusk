@@ -10,37 +10,24 @@ mod fallback;
 mod fsm;
 mod genesis;
 
-use crate::database::{Candidate, Ledger, Mempool};
+use crate::database::Ledger;
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 
-use dusk_consensus::user::committee::CommitteeSet;
-use std::rc::Rc;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, to_str, Block, Hash, Header};
+use node_data::ledger::{to_str, Block};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
-use node_data::Serializable;
-use tokio::sync::{oneshot, Mutex, RwLock};
-use tokio::task::JoinHandle;
+use tokio::sync::RwLock;
 use tokio::time::{sleep_until, Instant};
 
-use node_data::message::payload::GetBlocks;
-use std::any;
 use std::time::Duration;
 
 use self::acceptor::{Acceptor, RevertTarget};
-use self::consensus::Task;
 use self::fsm::SimpleFSM;
 
 pub use acceptor::verify_block_cert;

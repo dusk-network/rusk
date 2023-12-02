@@ -4,28 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, vm, Network};
-use crate::{LongLivedService, Message};
-use anyhow::bail;
+use crate::database::{self, Candidate, Mempool};
+use crate::{vm, Message, Network};
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
+use dusk_consensus::commons::{ConsensusError, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot, VerificationOutput,
+    CallParams, Error, Operations, Output, VerificationOutput,
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Hash, Transaction};
-use node_data::message::payload::{self, GetCandidate};
+use node_data::message::payload::GetCandidate;
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
-use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, warn};
 
 use std::sync::Arc;
-use std::{any, vec};
 
 /// Consensus Service Task is responsible for running the consensus layer.
 ///

@@ -9,30 +9,18 @@ pub mod conf;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 
-use dusk_consensus::user::committee::CommitteeSet;
 use node_data::message::payload::InvType;
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Header};
-use node_data::message::{self, Payload, Topics};
-use node_data::message::{payload, AsyncQueue, Metadata};
-use node_data::Serializable;
-use tokio::sync::{oneshot, Mutex, RwLock, Semaphore};
-use tokio::task::JoinHandle;
-use tracing::{debug, info, trace, warn};
-
-use std::any;
+use node_data::message::{payload, AsyncQueue};
+use node_data::message::{Payload, Topics};
+use tokio::sync::{RwLock, Semaphore};
+use tracing::{info, warn};
 
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,

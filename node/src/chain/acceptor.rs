@@ -4,43 +4,26 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, vm, Network};
-use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
-use dusk_bls12_381_sign::PublicKey;
-use dusk_consensus::commons::{
-    ConsensusError, Database, IterCounter, RoundUpdate, StepName,
-};
-use dusk_consensus::consensus::{self, Consensus};
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
+use crate::database::{self, Ledger, Mempool};
+use crate::{vm, Message, Network};
+use anyhow::{anyhow, Result};
+use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition;
-use hex::ToHex;
 use node_data::ledger::{
-    self, to_str, Block, Hash, Header, Seed, Signature, SpentTransaction,
+    self, to_str, Block, Seed, Signature, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
-use node_data::message::{Payload, Topics};
-use node_data::Serializable;
-use std::cell::RefCell;
-use std::rc::Rc;
+use node_data::message::Payload;
 use std::sync::Arc;
-use tokio::sync::{oneshot, Mutex, RwLock};
-use tokio::task::JoinHandle;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
 use dusk_consensus::agreement::verifiers;
 use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
-use std::any;
-use std::collections::HashMap;
 
 use super::consensus::Task;
-use super::genesis;
 
 pub(crate) enum RevertTarget {
     LastFinalizedState = 0,

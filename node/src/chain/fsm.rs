@@ -4,22 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{acceptor::Acceptor, consensus, genesis};
+use super::acceptor::Acceptor;
 use crate::chain::fallback;
-use crate::database::{self, Ledger};
+use crate::database;
 use crate::{vm, Network};
-use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, to_str, Block, Hash, Transaction};
+use node_data::ledger::{to_str, Block};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
-use tracing::{debug, error, info};
+use tracing::{error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;

@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{any, default};
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
@@ -18,7 +17,7 @@ use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
-use tracing::{debug, error, info, trace};
+use tracing::{error, info, trace};
 
 mod frame;
 

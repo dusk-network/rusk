@@ -6,15 +6,13 @@
 
 use crate::database::{Ledger, Mempool};
 use crate::{database, vm, LongLivedService, Message, Network};
-use anyhow::{anyhow, bail};
+use anyhow::anyhow;
 use async_trait::async_trait;
-use dusk_bytes::Serializable;
 use node_data::ledger::Transaction;
-use node_data::message::AsyncQueue;
-use node_data::message::Payload;
-use node_data::message::Topics;
+use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::warn;
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 

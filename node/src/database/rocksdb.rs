@@ -5,33 +5,26 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{Candidate, Ledger, Persist, Register, DB};
-use anyhow::{Context, Result};
+use anyhow::Result;
 
-use node_data::encoding::*;
 use node_data::ledger::{self, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
 
-use dusk_bytes::Serializable as DuskBytesSerializable;
-
 use rocksdb_lib::{
-    ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon,
-    DBRawIteratorWithThreadMode, DBWithThreadMode, IteratorMode, MultiThreaded,
-    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    ReadOptions, SnapshotWithThreadMode, Transaction, TransactionDB,
+    ColumnFamily, ColumnFamilyDescriptor, DBAccess,
+    DBRawIteratorWithThreadMode, IteratorMode, OptimisticTransactionDB,
+    OptimisticTransactionOptions, Options, SnapshotWithThreadMode, Transaction,
     WriteOptions,
 };
 
 use std::io;
 use std::io::Read;
 use std::io::Write;
-use std::marker::PhantomData;
 use std::path::Path;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::vec;
-use tokio::io::AsyncWriteExt;
 
 use tracing::info;
 
