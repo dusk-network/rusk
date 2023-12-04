@@ -18,7 +18,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::debug;
 
-#[allow(unused)]
 pub struct Reduction<T, DB: Database> {
     timeout_millis: u64,
     handler: Arc<Mutex<handler::Reduction<DB>>>,

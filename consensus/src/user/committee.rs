@@ -14,12 +14,12 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fmt;
 use std::mem;
 
-#[allow(unused)]
 #[derive(Default, Debug, Clone)]
 pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     this_member_key: PublicKey,
-    cfg: sortition::Config,
+    quorum: usize,
+    nil_quorum: usize,
 }
 
 impl Committee {
@@ -28,7 +28,6 @@ impl Committee {
     }
 }
 
-#[allow(unused)]
 impl Committee {
     /// Generates a new committee from the given provisioners state and
     /// sortition config.
@@ -41,19 +40,24 @@ impl Committee {
     ///   method.
     pub fn new(
         pubkey_bls: PublicKey,
-        provisioners: &mut Provisioners,
-        cfg: sortition::Config,
+        provisioners: &Provisioners,
+        cfg: &sortition::Config,
     ) -> Self {
-        provisioners.update_eligibility_flag(cfg.round);
         // Generate committee using deterministic sortition.
-        let res = provisioners.create_committee(&cfg);
+        let res = provisioners.create_committee(cfg);
+
+        let quorum = (cfg.committee_size as f64
+            * config::CONSENSUS_QUORUM_THRESHOLD)
+            .ceil() as usize;
+        let nil_quorum = quorum;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
             this_member_key: pubkey_bls,
-            cfg,
+            nil_quorum,
+            quorum,
         };
 
         for member_key in res {
@@ -94,14 +98,12 @@ impl Committee {
 
     /// Returns target quorum for the generated committee.
     pub fn quorum(&self) -> usize {
-        (self.cfg.committee_size as f64 * config::CONSENSUS_QUORUM_THRESHOLD)
-            .ceil() as usize
+        self.quorum
     }
 
     /// Returns target NIL quorum for the generated committee.
     pub fn nil_quorum(&self) -> usize {
-        (self.cfg.committee_size as f64 * config::CONSENSUS_NILQUORUM_THRESHOLD)
-            .ceil() as usize
+        self.nil_quorum
     }
 
     pub fn bits(&self, voters: &Cluster<PublicKey>) -> u64 {
@@ -109,7 +111,6 @@ impl Committee {
 
         debug_assert!(self.members.len() <= mem::size_of_val(&bits) * 8);
 
-        let mut pos = 0;
         for (pk, _) in voters.iter() {
             for (pos, (member_pk, _)) in self.members.iter().enumerate() {
                 if member_pk.eq(pk) {
@@ -251,8 +252,8 @@ impl CommitteeSet {
             .or_insert_with_key(|config| {
                 Committee::new(
                     self.this_member_key.clone(),
-                    &mut self.provisioners,
-                    config.clone(),
+                    &self.provisioners,
+                    config,
                 )
             })
     }

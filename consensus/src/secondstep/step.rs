@@ -17,7 +17,6 @@ use node_data::message::{Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[allow(unused)]
 pub struct Reduction<T, DB> {
     handler: Arc<Mutex<handler::Reduction>>,
     candidate: Option<Block>,

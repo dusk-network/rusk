@@ -5,17 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #[derive(Clone, Default, Debug)]
-#[allow(unused)]
 pub struct Stake {
-    // Value should be initialized only at constructor.
-    // It's later used to restore intermediate_value on each new sortition
-    // execution. In that way, we don't need to perform a deep copy of all
-    // provisioners members and their stakes as it used to be.
     value: u64,
 
-    // TODO: Move intermediate_value to member struct so that we keep stake
-    // definition lean.
-    pub intermediate_value: u64,
     pub reward: u64,
     pub counter: u64,
     pub eligible_since: u64,
@@ -25,14 +17,39 @@ impl Stake {
     pub fn new(value: u64, reward: u64, eligible_since: u64) -> Self {
         Self {
             value,
-            intermediate_value: value,
             reward,
             eligible_since,
             counter: 0,
         }
     }
 
-    pub fn restore_intermediate_value(&mut self) {
-        self.intermediate_value = self.value;
+    pub fn value(&self) -> u64 {
+        self.value
+    }
+
+    pub fn from_value(value: u64) -> Self {
+        Self {
+            value,
+            ..Default::default()
+        }
+    }
+
+    pub fn is_eligible(&self, round: u64) -> bool {
+        self.eligible_since <= round
+    }
+
+    /// Subtract `sub` from the stake without overflowing if the stake is not
+    /// enough.
+    ///
+    /// Return the effective subtracted amount
+    pub fn subtract(&mut self, sub: u64) -> u64 {
+        if self.value <= sub {
+            let sub = self.value;
+            self.value = 0;
+            sub
+        } else {
+            self.value -= sub;
+            sub
+        }
     }
 }

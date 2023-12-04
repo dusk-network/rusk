@@ -37,17 +37,14 @@ fn create_step_votes(
     block_hash: [u8; 32],
     step: u8,
     iteration: u8,
-    provisioners: Provisioners,
+    provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
     let sortition_config =
         SortitionConfig::new(seed, round, iteration * 3 + step, 64);
 
-    let committee = Committee::new(
-        PublicKey::default(),
-        &mut provisioners.clone(),
-        sortition_config,
-    );
+    let committee =
+        Committee::new(PublicKey::default(), &provisioners, &sortition_config);
 
     let hdr = message::Header {
         round,
@@ -87,7 +84,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
         for input in INPUTS {
             group.measurement_time(Duration::from_secs(input.measurement_time));
             let mut keys = vec![];
-            let mut provisioners = Provisioners::new();
+            let mut provisioners = Provisioners::default();
             let rng = &mut StdRng::seed_from_u64(0xbeef);
             for _ in 0..input.provisioners {
                 let sk = BlsSecretKey::random(rng);
@@ -99,7 +96,6 @@ pub fn verify_block_cert(c: &mut Criterion) {
             let height = 1;
             let seed = Signature([5; 48]);
             let block_hash = [1; 32];
-            let curr_public_key = keys.first().unwrap().0.clone();
             let iteration = 0;
             let mut cert = Certificate::default();
 
@@ -109,7 +105,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 block_hash,
                 1,
                 iteration,
-                provisioners.clone(),
+                &provisioners,
                 &keys[..],
             );
             cert.second_reduction = create_step_votes(
@@ -118,7 +114,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 block_hash,
                 2,
                 iteration,
-                provisioners.clone(),
+                &provisioners,
                 &keys[..],
             );
             group.bench_function(
@@ -131,7 +127,6 @@ pub fn verify_block_cert(c: &mut Criterion) {
                         chain::verify_block_cert(
                             seed,
                             &provisioners,
-                            &curr_public_key,
                             block_hash,
                             height,
                             &cert,

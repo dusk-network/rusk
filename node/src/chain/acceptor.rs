@@ -98,7 +98,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         acc.task.write().await.spawn(
             mrb,
-            &provisioners_list.clone(),
+            provisioners_list,
             &db,
             &vm,
             &network,
@@ -189,12 +189,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if iteration == 0 {
             return;
         }
-        let mut prov = provisioners_list.clone();
         for iter in 0..iteration {
             let committee_keys = Committee::new(
                 node_data::bls::PublicKey::default(),
-                &mut prov,
-                sortition::Config {
+                provisioners_list,
+                &sortition::Config {
                     committee_size: SELECTION_COMMITTEE_SIZE,
                     round,
                     seed,
@@ -229,7 +228,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         enable_consensus: bool,
     ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
-        let (_, public_key) = task.keys.clone();
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
@@ -239,8 +237,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         verify_block_header(
             self.db.clone(),
             &mrb.header().clone(),
-            provisioners_list.clone(),
-            &public_key,
+            &provisioners_list,
             blk.header(),
         )
         .await?;
@@ -281,14 +278,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 blk.header().height,
             );
 
-            // Update provisioners list
-            let updated_provisioners = {
-                Self::needs_update(blk, &txs).then(|| vm.get_provisioners())
-            };
-
-            if let Some(updated_prov) = updated_provisioners {
-                *provisioners_list = updated_prov?;
-            };
+            if Self::needs_update(blk, &txs) {
+                // Update provisioners list
+                *provisioners_list = vm.get_provisioners()?;
+            }
 
             // Update most_recent_block
             *mrb = blk.clone();
@@ -455,8 +448,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     mrb: &ledger::Header,
-    mrb_eligible_provisioners: Provisioners,
-    public_key: &node_data::bls::PublicKey,
+    mrb_eligible_provisioners: &Provisioners,
     new_blk: &ledger::Header,
 ) -> anyhow::Result<()> {
     if new_blk.version > 0 {
@@ -510,7 +502,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         verify_block_cert(
             prev_block_seed,
             prev_eligible_provisioners,
-            public_key,
             mrb.hash,
             mrb.height,
             &new_blk.prev_block_cert,
@@ -531,8 +522,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
 
             verify_block_cert(
                 mrb.seed,
-                &mrb_eligible_provisioners,
-                public_key,
+                mrb_eligible_provisioners,
                 [0u8; 32],
                 new_blk.height,
                 cert,
@@ -546,8 +536,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     // Verify Certificate
     verify_block_cert(
         mrb.seed,
-        &mrb_eligible_provisioners,
-        public_key,
+        mrb_eligible_provisioners,
         new_blk.hash,
         new_blk.height,
         &new_blk.cert,
@@ -557,11 +546,9 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     .await
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn verify_block_cert(
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    curr_public_key: &node_data::bls::PublicKey,
     block_hash: [u8; 32],
     height: u64,
     cert: &ledger::Certificate,
@@ -569,13 +556,13 @@ pub async fn verify_block_cert(
     enable_quorum_check: bool,
 ) -> anyhow::Result<()> {
     let committee = Arc::new(Mutex::new(CommitteeSet::new(
-        curr_public_key.clone(),
+        node_data::bls::PublicKey::default(),
         curr_eligible_provisioners.clone(),
     )));
 
     let hdr = node_data::message::Header {
         topic: 0,
-        pubkey_bls: curr_public_key.clone(),
+        pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
         step: iteration.step_from_name(StepName::SecondRed),
         block_hash,

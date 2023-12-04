@@ -98,8 +98,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         acceptor::verify_block_header(
             self.acc.db.clone(),
             prev_block.header(),
-            provisioners_list.clone(),
-            &PublicKey::default(),
+            &provisioners_list,
             blk.header(),
         )
         .await
