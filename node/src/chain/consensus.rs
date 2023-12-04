@@ -4,28 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, vm, Network};
-use crate::{LongLivedService, Message};
-use anyhow::bail;
+use crate::database::{self, Candidate, Mempool};
+use crate::{vm, Message, Network};
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
+use dusk_consensus::commons::{ConsensusError, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot, VerificationOutput,
+    CallParams, Error, Operations, Output, VerificationOutput,
 };
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Hash, Transaction};
-use node_data::message::payload::{self, GetCandidate};
+use node_data::message::payload::GetCandidate;
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
-use node_data::Serializable;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace};
+use tracing::{error, info, trace, warn};
 
 use std::sync::Arc;
-use std::{any, vec};
 
 /// Consensus Service Task is responsible for running the consensus layer.
 ///
@@ -110,15 +106,16 @@ impl Task {
         );
 
         let id = self.task_id;
-        let mut result_queue = self.result.clone();
+        let result_queue = self.result.clone();
         let provisioners = provisioners.clone();
         let (cancel_tx, cancel_rx) = oneshot::channel::<i32>();
 
         self.running_task = Some((
             tokio::spawn(async move {
-                result_queue
-                    .send(c.spin(ru, provisioners, cancel_rx).await)
-                    .await;
+                let cons_result = c.spin(ru, provisioners, cancel_rx).await;
+                if let Err(e) = result_queue.send(cons_result).await {
+                    error!("Unable to send consensus result to queue {e}")
+                }
 
                 trace!("terminate consensus task: {}", id);
                 id
@@ -130,14 +127,20 @@ impl Task {
     /// Aborts the running consensus task and waits for its termination.
     pub(crate) async fn abort_with_wait(&mut self) {
         if let Some((handle, cancel_chan)) = self.running_task.take() {
-            cancel_chan.send(0);
-            handle.await;
+            if cancel_chan.send(0).is_err() {
+                warn!("Unable to send cancel for abort_with_wait")
+            }
+            if let Err(e) = handle.await {
+                warn!("Unable to wait for abort {e}")
+            }
         }
     }
 
     pub(crate) fn abort(&mut self) {
-        if let Some((handle, cancel_chan)) = self.running_task.take() {
-            cancel_chan.send(0);
+        if let Some((_, cancel_chan)) = self.running_task.take() {
+            if cancel_chan.send(0).is_err() {
+                warn!("Unable to send cancel for abort")
+            };
         }
     }
 }
@@ -163,8 +166,15 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
     fn store_candidate_block(&mut self, b: Block) {
         tracing::trace!("store candidate block: {:?}", b);
 
-        if let Ok(db) = self.db.try_read() {
-            db.update(|t| t.store_candidate_block(b));
+        match self.db.try_read() {
+            Ok(db) => {
+                if let Err(e) = db.update(|t| t.store_candidate_block(b)) {
+                    warn!("Unable to store candidate block: {e}");
+                };
+            }
+            Err(e) => {
+                warn!("Cannot acquire lock to store candidate block: {e}");
+            }
         }
     }
 
@@ -224,8 +234,15 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
     }
 
     fn delete_candidate_blocks(&mut self) {
-        if let Ok(db) = self.db.try_read() {
-            db.update(|t| t.clear_candidates());
+        match self.db.try_read() {
+            Ok(db) => {
+                if let Err(e) = db.update(|t| t.clear_candidates()) {
+                    warn!("Unable to cleare candidates: {e}");
+                };
+            }
+            Err(e) => {
+                warn!("Cannot acquire lock to clear_candidate: {e}");
+            }
         }
     }
 }

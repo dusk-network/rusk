@@ -10,37 +10,24 @@ mod fallback;
 mod fsm;
 mod genesis;
 
-use crate::database::{Candidate, Ledger, Mempool};
+use crate::database::Ledger;
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 
-use dusk_consensus::user::committee::CommitteeSet;
-use std::rc::Rc;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, to_str, Block, Hash, Header};
+use node_data::ledger::{to_str, Block};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
-use node_data::Serializable;
-use tokio::sync::{oneshot, Mutex, RwLock};
-use tokio::task::JoinHandle;
+use tokio::sync::RwLock;
 use tokio::time::{sleep_until, Instant};
 
-use node_data::message::payload::GetBlocks;
-use std::any;
 use std::time::Duration;
 
 use self::acceptor::{Acceptor, RevertTarget};
-use self::consensus::Task;
 use self::fsm::SimpleFSM;
 
 pub use acceptor::verify_block_cert;
@@ -102,7 +89,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
         // NB. After restart, state_root returned by VM is always the last
         // finalized one.
-        let mut state_root = vm.read().await.get_state_root()?;
+        let state_root = vm.read().await.get_state_root()?;
 
         info!(
             event = "VM state loaded",
@@ -181,7 +168,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         Payload::NewBlock(_)
                         | Payload::Reduction(_)
                         | Payload::Agreement(_) => {
-                            acc.read().await.reroute_msg(msg).await;
+                            if let Err(e) = acc.read().await.reroute_msg(msg).await {
+                                warn!("Unable to reroute_msg to the acceptor: {e}");
+                            }
                         }
                         _ => warn!("invalid inbound message"),
                     }
@@ -189,7 +178,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 // Re-routes messages originated from Consensus (upper) layer to the network layer.
                 recv = &mut outbound_chan.recv() => {
                     let msg = recv?;
-                    network.read().await.broadcast(&msg).await;
+                    if let Err(e) = network.read().await.broadcast(&msg).await {
+                        warn!("Unable to re-route message {e}");
+                    }
                 },
                 // Handles accept_block_timeout event
                 _ = sleep_until(timeout) => {
@@ -233,8 +224,8 @@ impl ChainSrv {
                     // either malformed or empty.
                     let genesis_blk = genesis::generate_state();
 
-                    /// Persist genesis block
-                    t.store_block(genesis_blk.header(), &[]);
+                    // Persist genesis block
+                    t.store_block(genesis_blk.header(), &[])?;
                     genesis_blk
                 }
             };
@@ -259,7 +250,7 @@ impl ChainSrv {
             }
 
             Ok(())
-        });
+        })?;
 
         tracing::info!(
             event = "Ledger block loaded",

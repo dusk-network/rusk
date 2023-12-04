@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-#![allow(unused)]
-
 pub mod chain;
 pub mod database;
 pub mod databroker;
@@ -21,7 +19,7 @@ use std::sync::Arc;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::sync::RwLock;
 use tokio::task::JoinSet;
-use tracing::{error, info, Instrument};
+use tracing::{error, info};
 
 /// Filter is used by Network implementor to filter messages before re-routing
 /// them. It's like the middleware in HTTP pipeline.
@@ -172,7 +170,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
             Ok(2)
         });
 
-        for (mut s) in service_list.into_iter() {
+        for mut s in service_list.into_iter() {
             let n = self.network.clone();
             let d = self.database.clone();
             let vm = self.vm_handler.clone();
