@@ -12,7 +12,7 @@ use std::{
 pub mod rocksdb;
 
 use anyhow::Result;
-use node_data::ledger::SpentTransaction;
+use node_data::ledger::{Label, SpentTransaction};
 use node_data::{ledger, Serializable};
 
 pub trait DB: Send + Sync + 'static {
@@ -52,6 +52,7 @@ pub trait Ledger {
         &self,
         header: &ledger::Header,
         txs: &[SpentTransaction],
+        label: Label,
     ) -> Result<()>;
 
     fn delete_block(&self, b: &ledger::Block) -> Result<()>;

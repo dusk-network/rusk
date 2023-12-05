@@ -8,7 +8,7 @@ use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::{Context, Result};
 
 use node_data::encoding::*;
-use node_data::ledger::{self, SpentTransaction};
+use node_data::ledger::{self, Label, SpentTransaction};
 use node_data::Serializable;
 
 use crate::database::Mempool;
@@ -31,7 +31,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::vec;
-use tokio::io::AsyncWriteExt;
 
 use tracing::info;
 
@@ -225,6 +224,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         &self,
         header: &ledger::Header,
         txs: &[SpentTransaction],
+        label: Label,
     ) -> Result<()> {
         // COLUMN FAMILY: CF_LEDGER_HEADER
         // It consists of one record per block - Header record
@@ -266,12 +266,15 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             }
         }
 
-        // CF: HEIGHT
-        // Relation: Map block height to block hash
+        // CF: HEIGHT -> (BLOCK_HASH, BLOCK_LABEL)
+        let mut buf = vec![];
+        buf.write_all(&header.hash[..])?;
+        label.write(&mut buf)?;
+
         self.inner.put_cf(
             self.ledger_height_cf,
             header.height.to_le_bytes(),
-            header.hash,
+            buf,
         )?;
 
         Ok(())
@@ -348,8 +351,9 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
             .map(|h| {
-                let mut hash = [0u8; 32];
-                hash.copy_from_slice(h.as_slice());
+                const LEN: usize = 32;
+                let mut hash = [0u8; LEN];
+                hash.copy_from_slice(&h.as_slice()[0..LEN]);
                 hash
             }))
     }
@@ -763,7 +767,11 @@ mod tests {
 
             assert!(db
                 .update(|txn| {
-                    txn.store_block(b.header(), &to_spent_txs(&b.txs()))?;
+                    txn.store_block(
+                        b.header(),
+                        &to_spent_txs(&b.txs()),
+                        Label::Final,
+                    )?;
                     Ok(())
                 })
                 .is_ok());
@@ -805,8 +813,12 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
-                txn.store_block(&b.header(), &to_spent_txs(&b.txs()))
-                    .expect("block to be stored");
+                txn.store_block(
+                    &b.header(),
+                    &to_spent_txs(&b.txs()),
+                    Label::Final,
+                )
+                .expect("block to be stored");
             });
             db.view(|txn| {
                 assert!(txn
@@ -829,7 +841,11 @@ mod tests {
                 // transaction
                 assert!(db
                     .update(|txn| {
-                        txn.store_block(&b.header(), &to_spent_txs(&b.txs()));
+                        txn.store_block(
+                            &b.header(),
+                            &to_spent_txs(&b.txs()),
+                            Label::Final,
+                        );
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -970,7 +986,11 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header(), &to_spent_txs(&b.txs()))?;
+                    txn.store_block(
+                        &b.header(),
+                        &to_spent_txs(&b.txs()),
+                        Label::Final,
+                    )?;
                     Ok(())
                 })
                 .is_ok());
@@ -999,7 +1019,11 @@ mod tests {
             // Store a block
             assert!(db
                 .update(|txn| {
-                    txn.store_block(&b.header(), &to_spent_txs(&b.txs()))?;
+                    txn.store_block(
+                        &b.header(),
+                        &to_spent_txs(&b.txs()),
+                        Label::Final,
+                    )?;
                     Ok(())
                 })
                 .is_ok());
@@ -1025,7 +1049,11 @@ mod tests {
 
             assert!(db
                 .update(|ut| {
-                    ut.store_block(b.header(), &to_spent_txs(b.txs()))?;
+                    ut.store_block(
+                        b.header(),
+                        &to_spent_txs(b.txs()),
+                        Label::Final,
+                    )?;
                     Ok(())
                 })
                 .is_ok());
