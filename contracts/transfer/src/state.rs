@@ -19,7 +19,10 @@ use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
-use rusk_abi::{ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT};
+use rusk_abi::{
+    ContractError, ContractId, PaymentInfo, PublicInput, RawCall, RawResult,
+    STAKE_CONTRACT,
+};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -269,13 +272,16 @@ impl TransferState {
         true
     }
 
-    /// Spend the inputs and process the outputs, together with the crossover.
-    /// It performs all checks necessary to ensure the transaction is valid -
-    /// hash matches, anchor has been a root of the tree, proof checks out,
-    /// etc...
+    /// Spends the inputs and creates the given UTXO, and executes the contract
+    /// call if present. It performs all checks necessary to ensure the
+    /// transaction is valid - hash matches, anchor has been a root of the
+    /// tree, proof checks out, etc...
     ///
-    /// This will emplace the crossover in the state, if it exists, and expect
-    /// [`refund`] to be called if it succeeds.
+    /// This will emplace the crossover in the state, if it exists - making it
+    /// available for any contracts called.
+    ///
+    /// [`refund`] **must** be called if this function succeeds, otherwise we
+    /// will have an inconsistent state.
     ///
     /// # Panics
     /// Any failure in the checks performed in processing the transaction will
@@ -283,7 +289,10 @@ impl TransferState {
     /// change in state.
     ///
     /// [`refund`]: [`TransferState::refund`]
-    pub fn spend(&mut self, tx: Transaction) {
+    pub fn spend_and_execute(
+        &mut self,
+        tx: Transaction,
+    ) -> Result<RawResult, ContractError> {
         //  1. α ∈ R
         if !self.root_exists(&tx.anchor) {
             panic!("Anchor not found in the state!");
@@ -316,6 +325,17 @@ impl TransferState {
         // 11. if ∣k∣≠0 then call(k)
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
+
+        let mut result = Ok(RawResult::new(&[]));
+
+        if let Some((contract_id, fn_name, fn_args)) = tx.call {
+            result = rusk_abi::call_raw(
+                ContractId::from_bytes(contract_id),
+                &RawCall::from_parts(&fn_name, fn_args),
+            );
+        }
+
+        result
     }
 
     /// Refund the previously performed transaction, taking into account the
