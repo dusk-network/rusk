@@ -414,6 +414,18 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         };
         Ok(block)
     }
+
+    fn fetch_block_label_by_height(
+        &self,
+        height: u64,
+    ) -> Result<Option<Label>> {
+        const LEN: usize = 32 + 1;
+        Ok(self
+            .snapshot
+            .get_cf(self.ledger_height_cf, height.to_le_bytes())?
+            .iter().find(|v| v.len() == LEN)
+            .map(|h| Label::from(h[LEN - 1])))
+    }
 }
 
 impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
@@ -761,7 +773,7 @@ mod tests {
             let db: Backend = Backend::create_or_open(path);
 
             let b: ledger::Block = Faker.fake();
-            assert!(b.txs().len() > 0);
+            assert!(!b.txs().is_empty());
 
             let hash = b.header().hash;
 
@@ -769,7 +781,7 @@ mod tests {
                 .update(|txn| {
                     txn.store_block(
                         b.header(),
-                        &to_spent_txs(&b.txs()),
+                        &to_spent_txs(b.txs()),
                         Label::Final,
                     )?;
                     Ok(())
@@ -814,8 +826,8 @@ mod tests {
             let b: ledger::Block = Faker.fake();
             db.view(|txn| {
                 txn.store_block(
-                    &b.header(),
-                    &to_spent_txs(&b.txs()),
+                    b.header(),
+                    &to_spent_txs(b.txs()),
                     Label::Final,
                 )
                 .expect("block to be stored");
@@ -842,8 +854,8 @@ mod tests {
                 assert!(db
                     .update(|txn| {
                         txn.store_block(
-                            &b.header(),
-                            &to_spent_txs(&b.txs()),
+                            b.header(),
+                            &to_spent_txs(b.txs()),
                             Label::Final,
                         );
 
@@ -981,14 +993,14 @@ mod tests {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             let mut b: ledger::Block = Faker.fake();
-            assert!(b.txs().len() > 0);
+            assert!(!b.txs().is_empty());
 
             // Store a block
             assert!(db
                 .update(|txn| {
                     txn.store_block(
-                        &b.header(),
-                        &to_spent_txs(&b.txs()),
+                        b.header(),
+                        &to_spent_txs(b.txs()),
                         Label::Final,
                     )?;
                     Ok(())
@@ -1004,7 +1016,7 @@ mod tests {
                         .expect("should not return error")
                         .expect("should find a transaction")
                         .inner
-                        .eq(&t));
+                        .eq(t));
                 }
             });
         });
@@ -1020,9 +1032,9 @@ mod tests {
             assert!(db
                 .update(|txn| {
                     txn.store_block(
-                        &b.header(),
-                        &to_spent_txs(&b.txs()),
-                        Label::Final,
+                        b.header(),
+                        &to_spent_txs(b.txs()),
+                        Label::Attested,
                     )?;
                     Ok(())
                 })
@@ -1035,6 +1047,35 @@ mod tests {
                     .expect("should not return error")
                     .expect("should find a block")
                     .eq(&b.header().hash));
+            });
+        });
+    }
+
+    #[test]
+    fn test_fetch_block_label_by_height() {
+        TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
+            let db: Backend = Backend::create_or_open(path);
+            let mut b: ledger::Block = Faker.fake();
+
+            // Store a block
+            assert!(db
+                .update(|txn| {
+                    txn.store_block(
+                        b.header(),
+                        &to_spent_txs(b.txs()),
+                        Label::Attested,
+                    )?;
+                    Ok(())
+                })
+                .is_ok());
+
+            // Assert block hash is accessible by height.
+            db.view(|v| {
+                assert!(v
+                    .fetch_block_label_by_height(b.header().height)
+                    .expect("should not return error")
+                    .expect("should find a block")
+                    .eq(&Label::Attested));
             });
         });
     }
@@ -1074,7 +1115,7 @@ mod tests {
         // REGISTER_KEY
 
         let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
-        assert!(vec.len() > 0);
+        assert!(!vec.is_empty());
 
         let mut db =
             rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();

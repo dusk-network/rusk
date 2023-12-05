@@ -81,6 +81,8 @@ pub trait Ledger {
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
     fn get_register(&self) -> Result<Option<Register>>;
     fn set_register(&self, header: &ledger::Header) -> Result<()>;
+    fn fetch_block_label_by_height(&self, height: u64)
+        -> Result<Option<Label>>;
 }
 
 pub trait Candidate {
