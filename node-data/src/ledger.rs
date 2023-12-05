@@ -247,6 +247,7 @@ impl Block {
     }
 
     pub fn has_instant_finality(&self) -> bool {
+        // TODO: Remove
         if self.header.height == 0 || self.header.iteration == 0 {
             return true;
         }
@@ -261,6 +262,35 @@ impl Block {
 
     pub fn set_certificate(&mut self, cert: Certificate) {
         self.header.cert = cert;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Label {
+    Accepted,
+    Attested,
+    Final,
+}
+
+/// Immutable view of a labelled block that is/(should be) persisted
+#[derive(Debug, Clone)]
+pub struct BlockWithLabel {
+    blk: Block,
+    label: Label,
+}
+
+impl BlockWithLabel {
+    pub fn new_with_label(blk: Block, label: Label) -> Self {
+        Self { blk, label }
+    }
+    pub fn inner(&self) -> &Block {
+        &self.blk
+    }
+    pub fn label(&self) -> Label {
+        self.label
+    }
+    pub fn is_final(&self) -> bool {
+        self.label() == Label::Final || self.blk.header().height == 0
     }
 }
 
