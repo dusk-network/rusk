@@ -27,7 +27,7 @@ use dusk_consensus::contract_state::{
     CallParams, Error, Operations, Output, StateRoot,
 };
 use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, to_str, Block, Hash, Header};
+use node_data::ledger::{self, to_str, Block, Hash, Header, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use node_data::Serializable;
@@ -234,7 +234,7 @@ impl ChainSrv {
                     let genesis_blk = genesis::generate_state();
 
                     /// Persist genesis block
-                    t.store_block(genesis_blk.header(), &[]);
+                    t.store_block(genesis_blk.header(), &[], Label::Final);
                     genesis_blk
                 }
             };

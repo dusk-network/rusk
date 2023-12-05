@@ -22,7 +22,8 @@ use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition;
 use hex::ToHex;
 use node_data::ledger::{
-    self, to_str, Block, Hash, Header, Seed, Signature, SpentTransaction,
+    self, to_str, Block, BlockWithLabel, Hash, Header, Label, Seed, Signature,
+    SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -52,7 +53,7 @@ pub(crate) enum RevertTarget {
 /// Acceptor also manages the initialization and lifespan of Consensus task.
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
-    mrb: RwLock<Block>,
+    mrb: RwLock<BlockWithLabel>,
     last_finalized: RwLock<Block>,
 
     /// List of provisioners of actual round
@@ -87,7 +88,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         vm: Arc<RwLock<VM>>,
     ) -> Self {
         let mut acc = Self {
-            mrb: RwLock::new(mrb.clone()),
+            mrb: RwLock::new(BlockWithLabel::new_with_label(
+                mrb.clone(),
+                Label::Accepted, // TODO: Load this from DB
+            )),
             provisioners_list: RwLock::new(provisioners_list.clone()),
             db: db.clone(),
             vm: vm.clone(),
@@ -170,7 +174,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .update(|t| t.set_register(blk.header()))?;
 
         *provisioners_list = self.vm.read().await.get_provisioners()?;
-        *mrb = blk.clone();
+        *mrb = BlockWithLabel::new_with_label(blk.clone(), Label::Final); // TODO: Is this correct
 
         if blk.has_instant_finality() {
             *self.last_finalized.write().await = blk.clone();
@@ -231,16 +235,34 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
-        let block_time = blk.header().timestamp - mrb.header().timestamp;
+        let block_time =
+            blk.header().timestamp - mrb.inner().header().timestamp;
 
         // Verify Block Header
         verify_block_header(
             self.db.clone(),
-            &mrb.header().clone(),
+            &mrb.inner().header().clone(),
             &provisioners_list,
             blk.header(),
         )
         .await?;
+
+        let verified_nil_quorum = true; // TODO: Get result from verify_block_header
+
+        // Define new block label depending on all params
+        // blk.iteration, NilQuorum and previous block label
+        let label = {
+            let mut label = Label::Accepted;
+            if verified_nil_quorum || blk.header().iteration == 0 {
+                label = Label::Attested;
+                if mrb.is_final() {
+                    label = Label::Final;
+                }
+            }
+            label
+        };
+
+        let new_block = BlockWithLabel::new_with_label(blk.clone(), label);
 
         // Reset Consensus
         task.abort_with_wait().await;
@@ -250,7 +272,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = if blk.has_instant_finality() {
+                let (txs, verification_output) = if new_block.is_final() {
                     vm.finalize(blk)?
                 } else {
                     vm.accept(blk)?
@@ -266,7 +288,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 );
 
                 // Store block with updated transactions with Error and GasSpent
-                t.store_block(blk.header(), &txs)?;
+                t.store_block(
+                    new_block.inner().header(),
+                    &txs,
+                    new_block.label(),
+                )?;
 
                 Ok(txs)
             })?;
@@ -274,7 +300,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             self.log_missing_iterations(
                 &provisioners_list,
                 blk.header().iteration,
-                mrb.header().seed,
+                mrb.inner().header().seed,
                 blk.header().height,
             );
 
@@ -284,10 +310,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             }
 
             // Update most_recent_block
-            *mrb = blk.clone();
+            *mrb = new_block.clone();
 
             // Update last_finalized block
-            if blk.has_instant_finality() {
+            if mrb.is_final() {
                 *self.last_finalized.write().await = blk.clone();
             }
 
@@ -323,7 +349,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Restart Consensus.
         if enable_consensus {
             task.spawn(
-                &mrb,
+                mrb.inner(),
                 &provisioners_list,
                 &self.db,
                 &self.vm,
@@ -413,11 +439,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_curr_height(&self) -> u64 {
-        self.mrb.read().await.header().height
+        self.mrb.read().await.inner().header().height
     }
 
     pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
-        self.mrb.read().await.header().hash
+        self.mrb.read().await.inner().header().hash
     }
 
     pub(crate) async fn get_finalized(&self) -> Block {
@@ -425,11 +451,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn get_curr_timestamp(&self) -> i64 {
-        self.mrb.read().await.header().timestamp
+        self.mrb.read().await.inner().header().timestamp
     }
 
     pub(crate) async fn get_curr_iteration(&self) -> u8 {
-        self.mrb.read().await.header().iteration
+        self.mrb.read().await.inner().header().iteration
     }
 
     pub(crate) async fn get_result_chan(
