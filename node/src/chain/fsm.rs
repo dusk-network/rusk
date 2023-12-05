@@ -4,22 +4,20 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{acceptor::Acceptor, consensus, genesis};
+use super::acceptor::Acceptor;
 use crate::chain::fallback;
-use crate::database::{self, Ledger};
+use crate::database;
 use crate::{vm, Network};
-use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, to_str, Block, Hash, Transaction};
+use node_data::ledger::{to_str, Block};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
-use tracing::{debug, error, info};
+use tracing::{error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
 const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
@@ -61,7 +59,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
     }
 
-    pub async fn on_idle(&mut self, timeout: Duration) -> anyhow::Result<()> {
+    pub async fn on_idle(&mut self, timeout: Duration) {
         let acc = self.acc.read().await;
         let height = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
@@ -79,18 +77,18 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         self.blacklisted_blocks.write().await.clear();
 
         // Request missing blocks since my last finalized block
-        self.network
-            .write()
+        let get_blocks = Message::new_get_blocks(GetBlocks {
+            locator: last_finalized.header().hash,
+        });
+        if let Err(e) = self
+            .network
+            .read()
             .await
-            .send_to_alive_peers(
-                &Message::new_get_blocks(GetBlocks {
-                    locator: last_finalized.header().hash,
-                }),
-                REDUNDANCY_PEER_FACTOR,
-            )
-            .await;
-
-        Ok(())
+            .send_to_alive_peers(&get_blocks, REDUNDANCY_PEER_FACTOR)
+            .await
+        {
+            warn!("Unable to request GetBlocks {e}");
+        }
     }
 
     pub async fn on_event(
@@ -119,8 +117,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         match &mut self.curr {
             State::InSync(ref mut curr) => {
                 if curr.on_event(blk, msg).await? {
-                    /// Transition from InSync to OutOfSync state
-                    curr.on_exiting();
+                    // Transition from InSync to OutOfSync state
+                    curr.on_exiting().await;
 
                     // Enter new state
                     let mut next = OutOfSyncImpl::new(
@@ -133,8 +131,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
             }
             State::OutOfSync(ref mut curr) => {
                 if curr.on_event(blk, msg).await? {
-                    /// Transition from OutOfSync to InSync state
-                    curr.on_exiting();
+                    // Transition from OutOfSync to InSync state
+                    curr.on_exiting().await;
 
                     // Enter new state
                     let mut next = InSyncImpl::new(
@@ -142,7 +140,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         self.network.clone(),
                         self.blacklisted_blocks.clone(),
                     );
-                    next.on_entering(blk).await;
+                    next.on_entering(blk).await.map_err(|e| {
+                        error!("Unable to enter in_sync state: {e}");
+                        e
+                    })?;
                     self.curr = State::InSync(next);
                 }
             }
@@ -173,7 +174,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
     /// performed when entering the state
     async fn on_entering(&mut self, blk: &Block) -> anyhow::Result<()> {
-        let acc = self.acc.write().await;
+        let mut acc = self.acc.write().await;
         let curr_h = acc.get_curr_height().await;
 
         if blk.header().height == curr_h + 1 {
@@ -193,7 +194,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<bool> {
-        let acc = self.acc.write().await;
+        let mut acc = self.acc.write().await;
         let h = blk.header().height;
         let curr_h = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
@@ -265,7 +266,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             // When accepting block from the wire in inSync state, we
             // rebroadcast it
-            self.network.write().await.broadcast(msg).await;
+            if let Err(e) = self.network.write().await.broadcast(msg).await {
+                warn!("Unable to broadcast accepted block: {e}");
+            }
 
             return Ok(false);
         }
@@ -275,7 +278,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
     }
 
     fn allow_transition(&self, msg: &Message) -> anyhow::Result<()> {
-        let recv_peer = msg
+        let _recv_peer = msg
             .metadata
             .as_ref()
             .map(|m| m.src_addr)
@@ -336,11 +339,15 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         // Request missing blocks from source peer
         let gb_msg = Message::new_get_blocks(GetBlocks { locator });
 
-        self.network
-            .write()
+        if let Err(e) = self
+            .network
+            .read()
             .await
             .send_to_peer(&gb_msg, dest_addr)
-            .await;
+            .await
+        {
+            warn!("Unable to send GetBlocks: {e}")
+        };
 
         // add to the pool
         let key = blk.header().height;
@@ -366,7 +373,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<bool> {
-        let acc = self.acc.write().await;
+        let mut acc = self.acc.write().await;
         let h = blk.header().height;
 
         if self

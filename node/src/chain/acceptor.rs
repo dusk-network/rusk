@@ -4,45 +4,29 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{Candidate, Ledger, Mempool};
-use crate::{database, vm, Network};
-use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
-use async_trait::async_trait;
-use dusk_bls12_381_sign::PublicKey;
-use dusk_consensus::commons::{
-    ConsensusError, Database, IterCounter, RoundUpdate, StepName,
-};
-use dusk_consensus::consensus::{self, Consensus};
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
+use crate::database::{self, Ledger, Mempool};
+use crate::{vm, Message, Network};
+use anyhow::{anyhow, Result};
+use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
 use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition;
-use hex::ToHex;
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Hash, Header, Label, Seed, Signature,
     SpentTransaction,
 };
 use node_data::message::AsyncQueue;
-use node_data::message::{Payload, Topics};
-use node_data::Serializable;
-use std::cell::RefCell;
-use std::rc::Rc;
+use node_data::message::Payload;
 use std::sync::Arc;
-use tokio::sync::{oneshot, Mutex, RwLock};
-use tokio::task::JoinHandle;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
 use dusk_consensus::agreement::verifiers;
 use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
-use std::any;
-use std::collections::HashMap;
 
 use super::consensus::Task;
-use super::genesis;
 
+#[allow(dead_code)]
 pub(crate) enum RevertTarget {
     LastFinalizedState = 0,
     LastEpoch = 1,
@@ -87,7 +71,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
     ) -> Self {
-        let mut acc = Self {
+
+        let  acc = Self {
             mrb: RwLock::new(BlockWithLabel::new_with_label(
                 mrb.clone(),
                 Label::Accepted, // TODO: Load this from DB
@@ -111,16 +96,20 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         acc
     }
     // Re-route message to consensus task
-    pub(crate) async fn reroute_msg(&self, msg: Message) {
+    pub(crate) async fn reroute_msg(
+        &self,
+        msg: Message,
+    ) -> Result<(), async_channel::SendError<Message>> {
         match &msg.payload {
             Payload::NewBlock(_) | Payload::Reduction(_) => {
-                self.task.read().await.main_inbound.send(msg).await;
+                self.task.read().await.main_inbound.send(msg).await?;
             }
             Payload::Agreement(_) => {
-                self.task.read().await.agreement_inbound.send(msg).await;
+                self.task.read().await.agreement_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
         }
+        Ok(())
     }
 
     pub fn needs_update(blk: &Block, txs: &[SpentTransaction]) -> bool {
@@ -148,7 +137,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         blk: &Block,
     ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
-        let (_, public_key) = task.keys.clone();
 
         let mut mrb = self.mrb.write().await;
         let mut provisioners_list = self.provisioners_list.write().await;
@@ -227,7 +215,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     pub(crate) async fn try_accept_block(
-        &self,
+        &mut self,
         blk: &Block,
         enable_consensus: bool,
     ) -> anyhow::Result<()> {
@@ -323,7 +311,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // Delete from mempool any transaction already included in the block
         self.db.read().await.update(|update| {
             for tx in blk.txs().iter() {
-                database::Mempool::delete_tx(update, tx.hash());
+                database::Mempool::delete_tx(update, tx.hash())?;
             }
             Ok(())
         })?;
@@ -365,7 +353,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// This incorporates both VM state revert and Ledger state revert.
     pub async fn try_revert(&self, target: RevertTarget) -> Result<()> {
         let curr_height = self.get_curr_height().await;
-        let curr_iteration = self.get_curr_iteration().await;
 
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
@@ -379,7 +366,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
                 anyhow::Ok(state_hash)
             }
-            RevertTarget::LastEpoch => panic!("not implemented"),
+            _ => unimplemented!(),
         }?;
 
         // Delete any block until we reach the target_state_hash, the
@@ -412,9 +399,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.
                 for tx in blk.txs().iter() {
-                    Mempool::add_tx(t, tx).map_err(|err| {
-                        error!("failed to resubmit transactions")
-                    });
+                    if let Err(e) = Mempool::add_tx(t, tx) {
+                        warn!("failed to resubmit transactions: {e}")
+                    };
                 }
 
                 height -= 1;
@@ -448,10 +435,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_finalized(&self) -> Block {
         self.last_finalized.read().await.clone()
-    }
-
-    pub(crate) async fn get_curr_timestamp(&self) -> i64 {
-        self.mrb.read().await.inner().header().timestamp
     }
 
     pub(crate) async fn get_curr_iteration(&self) -> u8 {

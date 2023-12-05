@@ -11,7 +11,7 @@ dusk-bytes = { version = "0.1" }
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }
 dusk-plonk = { version = "0.16", optional = true }
-dusk-wallet-core = { version = "0.22.0-plonk.0.16", default-features = false }
+dusk-wallet-core = { version = "0.23.0-plonk.0.16", default-features = false }
 phoenix-core = { version = "0.21", optional = true }
 dusk-pki = { version = "0.13", optional = true }
 dusk-schnorr = { version = "0.14", optional = true }

@@ -9,30 +9,18 @@ pub mod conf;
 use crate::database::{Candidate, Ledger, Mempool};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 
-use dusk_consensus::user::committee::CommitteeSet;
 use node_data::message::payload::InvType;
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, Block, Hash, Header};
-use node_data::message::{self, Payload, Topics};
-use node_data::message::{payload, AsyncQueue, Metadata};
-use node_data::Serializable;
-use tokio::sync::{oneshot, Mutex, RwLock, Semaphore};
-use tokio::task::JoinHandle;
-use tracing::{debug, info, trace, warn};
-
-use std::any;
+use node_data::message::{payload, AsyncQueue};
+use node_data::message::{Payload, Topics};
+use tokio::sync::{RwLock, Semaphore};
+use tracing::{info, warn};
 
 const TOPICS: &[u8] = &[
     Topics::GetBlocks as u8,
@@ -109,7 +97,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         &mut self,
         network: Arc<RwLock<N>>,
         db: Arc<RwLock<DB>>,
-        vm: Arc<RwLock<VM>>,
+        _vm: Arc<RwLock<VM>>,
     ) -> anyhow::Result<usize> {
         if self.conf.max_ongoing_requests == 0 {
             return Err(anyhow!("max_ongoing_requests must be greater than 0"));
@@ -127,8 +115,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         info!("data_broker service started");
 
         loop {
-            /// Wait until we can process a new request. We limit the number of
-            /// concurrent requests to mitigate a DoS attack.
+            // Wait until we can process a new request. We limit the number of
+            // concurrent requests to mitigate a DoS attack.
             let permit =
                 self.limit_ongoing_requests.clone().acquire_owned().await?;
 
@@ -141,15 +129,15 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
             // Spawn a task to handle the request asynchronously.
             tokio::spawn(async move {
-                match Self::handle_request(&network, &db, &msg, &conf).await {
+                match Self::handle_request(&db, &msg, &conf).await {
                     Ok(resp) => {
                         // Send response
+                        let net = network.read().await;
                         for msg in resp.msgs {
-                            network
-                                .read()
-                                .await
-                                .send_to_peer(&msg, resp.recv_peer)
-                                .await;
+                            let send = net.send_to_peer(&msg, resp.recv_peer);
+                            if let Err(e) = send.await {
+                                warn!("Unable to send_to_peer {e}")
+                            };
 
                             // Mitigate pressure on UDP buffers.
                             // Needed only in localnet.
@@ -180,14 +168,13 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
 impl DataBrokerSrv {
     /// Handles inbound messages.
-    async fn handle_request<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_request<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         msg: &Message,
         conf: &conf::Params,
     ) -> anyhow::Result<Response> {
-        /// source address of the request becomes the receiver address of the
-        /// response
+        // source address of the request becomes the receiver address of the
+        // response
         let recv_peer = msg
             .metadata
             .as_ref()
@@ -197,37 +184,29 @@ impl DataBrokerSrv {
         match &msg.payload {
             // Handle GetCandidate requests
             Payload::GetCandidate(m) => {
-                let msg = Self::handle_get_candidate(network, db, m).await?;
+                let msg = Self::handle_get_candidate(db, m).await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetBlocks requests
             Payload::GetBlocks(m) => {
-                let msg = Self::handle_get_blocks(
-                    network,
-                    db,
-                    m,
-                    conf.max_inv_entries,
-                )
-                .await?;
+                let msg = Self::handle_get_blocks(db, m, conf.max_inv_entries)
+                    .await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetMempool requests
-            Payload::GetMempool(m) => {
-                let msg = Self::handle_get_mempool(network, db, m).await?;
+            Payload::GetMempool(_) => {
+                let msg = Self::handle_get_mempool(db).await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetInv requests
             Payload::GetInv(m) => {
-                let msg =
-                    Self::handle_inv(network, db, m, conf.max_inv_entries)
-                        .await?;
+                let msg = Self::handle_inv(db, m, conf.max_inv_entries).await?;
                 Ok(Response::new_from_msg(msg, recv_peer))
             }
             // Handle GetData requests
             Payload::GetData(m) => {
                 let msgs =
-                    Self::handle_get_data(network, db, m, conf.max_inv_entries)
-                        .await?;
+                    Self::handle_get_data(db, m, conf.max_inv_entries).await?;
                 Ok(Response::new(msgs, recv_peer))
             }
             _ => Err(anyhow::anyhow!("unhandled message payload")),
@@ -237,8 +216,7 @@ impl DataBrokerSrv {
     /// Handles GetCandidate requests.
     ///
     /// Message flow: GetCandidate -> CandidateResp
-    async fn handle_get_candidate<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_get_candidate<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &payload::GetCandidate,
     ) -> Result<Message> {
@@ -260,10 +238,8 @@ impl DataBrokerSrv {
 
     /// Handles GetMempool requests.
     /// Message flow: GetMempool -> Inv -> GetData -> Tx
-    async fn handle_get_mempool<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_get_mempool<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
-        _m: &payload::GetMempool,
     ) -> Result<Message> {
         let mut inv = payload::Inv::default();
 
@@ -288,8 +264,7 @@ impl DataBrokerSrv {
     /// Handles GetBlocks message request.
     ///
     ///  Message flow: GetBlocks -> Inv -> GetData -> Block
-    async fn handle_get_blocks<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_get_blocks<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &payload::GetBlocks,
         max_entries: usize,
@@ -341,8 +316,7 @@ impl DataBrokerSrv {
     /// wire message, and sends it back to request the items in full.
     ///
     /// An item is a block or a transaction.
-    async fn handle_inv<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_inv<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::Inv,
         max_entries: usize,
@@ -382,8 +356,7 @@ impl DataBrokerSrv {
     ///
     /// The response to a GetData message is a vector of messages, each of which
     /// could be either topics.Block or topics.Tx.
-    async fn handle_get_data<N: Network, DB: database::DB>(
-        network: &Arc<RwLock<N>>,
+    async fn handle_get_data<DB: database::DB>(
         db: &Arc<RwLock<DB>>,
         m: &node_data::message::payload::GetData,
         max_entries: usize,

@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{Block, Header};
 
 /// Generates the genesis state for the chain per specified network type

@@ -4,10 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
-use std::{any, default};
 
 use crate::{BoxedFilter, Message};
 use async_trait::async_trait;
@@ -18,7 +17,7 @@ use node_data::message::{AsyncQueue, Topics};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::sync::RwLock;
 use tokio::time::{self, Instant};
-use tracing::{debug, error, info, trace};
+use tracing::{error, info, trace};
 
 mod frame;
 
@@ -36,7 +35,9 @@ impl<const N: usize> Listener<N> {
 
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic as usize) {
-                queue.send(msg.clone()).await;
+                if let Err(e) = queue.send(msg.clone()).await {
+                    error!("Unable to reroute message with topic {topic}: {e}");
+                };
             };
         });
 
@@ -125,7 +126,9 @@ impl<const N: usize> Kadcast<N> {
 
         tokio::spawn(async move {
             if let Some(Some(queue)) = routes.read().await.get(topic) {
-                queue.send(msg.clone()).await;
+                if let Err(e) = queue.send(msg.clone()).await {
+                    error!("Unable to route_internal message with topic {topic}: {e}");
+                };
             };
         });
     }
@@ -226,7 +229,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     ) -> anyhow::Result<()> {
         let mut guard = self.routes.write().await;
 
-        let mut route = guard
+        let route = guard
             .get_mut(topic as usize)
             .ok_or_else(|| anyhow::anyhow!("topic out of range: {}", topic))?;
 
@@ -244,13 +247,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         timeout_millis: u64,
         recv_peers_count: usize,
     ) -> anyhow::Result<Message> {
-        self.remove_route(response_msg_topic.into()).await;
+        self.remove_route(response_msg_topic.into()).await?;
 
         let res = {
             let queue = AsyncQueue::default();
             // register a temporary route that will be unregister on drop
             self.add_route(response_msg_topic.into(), queue.clone())
-                .await;
+                .await?;
 
             self.send_to_alive_peers(request_msg, recv_peers_count)
                 .await?;
@@ -269,7 +272,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             }
         };
 
-        self.remove_route(response_msg_topic.into()).await;
+        self.remove_route(response_msg_topic.into()).await?;
         res
     }
 
@@ -280,7 +283,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
     ) -> anyhow::Result<()> {
         let mut guard = self.filters.write().await;
 
-        let mut filter = guard
+        let filter = guard
             .get_mut(msg_type as usize)
             .expect("should be valid type");
 

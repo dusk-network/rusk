@@ -4,19 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::Arc;
-
-use anyhow::{anyhow, bail, Result};
-use node_data::{
-    bls::PublicKey,
-    ledger::{self, Block, Hash, Header},
-};
-use tokio::sync::RwLock;
-use tracing::{info, warn};
+use anyhow::{anyhow, Result};
+use node_data::ledger::Block;
+use tracing::info;
 
 use crate::{
     chain::acceptor,
-    database::{self, Ledger, Mempool},
+    database::{self, Ledger},
     vm, Network,
 };
 
