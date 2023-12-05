@@ -20,13 +20,7 @@ use tracing::{error, info, warn};
 
 use async_trait::async_trait;
 
-use dusk_consensus::commons::{ConsensusError, Database, RoundUpdate};
-use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
-    CallParams, Error, Operations, Output, StateRoot,
-};
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{self, to_str, Block, Hash, Header, Label};
+use node_data::ledger::{to_str, Block, Label};
 
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -76,7 +70,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         .await?;
 
         // Restore/Load most recent block
-        let (mrb) = Self::load_most_recent_block(db.clone()).await?;
+        let mrb = Self::load_most_recent_block(db.clone()).await?;
 
         let provisioners_list = vm.read().await.get_provisioners()?;
 
@@ -229,9 +223,9 @@ impl ChainSrv {
                     // either malformed or empty.
                     let genesis_blk = genesis::generate_state();
 
-                    /// Persist genesis block
+                    // Persist genesis block
                     t.store_block(genesis_blk.header(), &[], Label::Final)?;
-                  
+
                     genesis_blk
                 }
             };

@@ -12,7 +12,7 @@ use dusk_consensus::user::committee::{Committee, CommitteeSet};
 use dusk_consensus::user::provisioners::Provisioners;
 use dusk_consensus::user::sortition;
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Hash, Header, Label, Seed, Signature,
+    self, to_str, Block, BlockWithLabel, Label, Seed, Signature,
     SpentTransaction,
 };
 use node_data::message::AsyncQueue;
@@ -69,8 +69,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
     ) -> Self {
-
-        let  acc = Self {
+        let acc = Self {
             mrb: RwLock::new(BlockWithLabel::new_with_label(
                 mrb.clone(),
                 Label::Accepted, // TODO: Load this from DB

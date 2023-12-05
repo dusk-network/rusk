@@ -7,8 +7,6 @@
 use super::{Candidate, Ledger, Persist, Register, DB};
 use anyhow::Result;
 
-
-use node_data::encoding::*;
 use node_data::ledger::{self, Label, SpentTransaction};
 use node_data::Serializable;
 
@@ -409,7 +407,8 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
-            .iter().find(|v| v.len() == LEN)
+            .iter()
+            .find(|v| v.len() == LEN)
             .map(|h| Label::from(h[LEN - 1])))
     }
 }
@@ -739,13 +738,12 @@ impl node_data::Serializable for HeaderRecord {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hex::ToHex;
+
     use node_data::ledger;
 
-    use fake::{Dummy, Fake, Faker};
+    use fake::{Fake, Faker};
     use node_data::ledger::Transaction;
     use rand::prelude::*;
-    use rand::Rng;
 
     #[test]
     fn test_store_block() {
@@ -778,7 +776,7 @@ mod tests {
 
                 // Assert all transactions are fully fetched from ledger as
                 // well.
-                for pos in (0..b.txs().len()) {
+                for pos in 0..b.txs().len() {
                     assert_eq!(db_blk.txs()[pos].hash(), b.txs()[pos].hash());
                 }
             });
@@ -904,9 +902,9 @@ mod tests {
         TestWrapper::new("test_mempool_txs_sorted_by_fee").run(|path| {
             let db: Backend = Backend::create_or_open(path);
             // Populate mempool with N contract calls
-            let mut rng = rand::thread_rng();
+            let _rng = rand::thread_rng();
             db.update(|txn| {
-                for i in 0..10u32 {
+                for _i in 0..10u32 {
                     let t: ledger::Transaction = Faker.fake();
                     txn.add_tx(&t)?;
                 }
@@ -972,7 +970,7 @@ mod tests {
     fn test_get_ledger_tx_by_hash() {
         TestWrapper::new("test_get_ledger_tx_by_hash").run(|path| {
             let db: Backend = Backend::create_or_open(path);
-            let mut b: ledger::Block = Faker.fake();
+            let b: ledger::Block = Faker.fake();
             assert!(!b.txs().is_empty());
 
             // Store a block
@@ -1006,7 +1004,7 @@ mod tests {
     fn test_fetch_block_hash_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
             let db: Backend = Backend::create_or_open(path);
-            let mut b: ledger::Block = Faker.fake();
+            let b: ledger::Block = Faker.fake();
 
             // Store a block
             assert!(db
@@ -1035,7 +1033,7 @@ mod tests {
     fn test_fetch_block_label_by_height() {
         TestWrapper::new("test_fetch_block_hash_by_height").run(|path| {
             let db: Backend = Backend::create_or_open(path);
-            let mut b: ledger::Block = Faker.fake();
+            let b: ledger::Block = Faker.fake();
 
             // Store a block
             assert!(db
@@ -1066,7 +1064,7 @@ mod tests {
         let t = TestWrapper::new("test_fetch_block_hash_by_height");
         t.run(|path| {
             let db: Backend = Backend::create_or_open(path);
-            let mut b: ledger::Block = Faker.fake();
+            let b: ledger::Block = Faker.fake();
 
             assert!(db
                 .update(|ut| {
@@ -1088,7 +1086,7 @@ mod tests {
         });
 
         let path = t.get_path();
-        let mut opts = Options::default();
+        let opts = Options::default();
 
         // Iterate through all items, in all CFs.
         // Ensure that the only key available after deleting a block is
@@ -1097,8 +1095,7 @@ mod tests {
         let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
         assert!(!vec.is_empty());
 
-        let mut db =
-            rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
+        let db = rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
 
         vec.into_iter()
             .map(|cf_name| {

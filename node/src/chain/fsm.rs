@@ -9,8 +9,7 @@ use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
 
-use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, to_str, Block, Hash, Label, Transaction};
+use node_data::ledger::{to_str, Block, Label};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::collections::{HashMap, HashSet};
