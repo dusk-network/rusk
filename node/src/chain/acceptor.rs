@@ -54,7 +54,6 @@ pub(crate) enum RevertTarget {
 pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
     mrb: RwLock<BlockWithLabel>,
-    last_finalized: RwLock<Block>,
 
     /// List of provisioners of actual round
     pub(crate) provisioners_list: RwLock<Provisioners>,
@@ -81,7 +80,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn new_with_run(
         keys_path: &str,
         mrb: &Block,
-        last_finalized: Block,
         provisioners_list: &Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
@@ -97,7 +95,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             vm: vm.clone(),
             network: network.clone(),
             task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
-            last_finalized: RwLock::new(last_finalized),
         };
 
         acc.task.write().await.spawn(
@@ -176,10 +173,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         *provisioners_list = self.vm.read().await.get_provisioners()?;
         *mrb = BlockWithLabel::new_with_label(blk.clone(), Label::Final); // TODO: Is this correct
 
-        if blk.has_instant_finality() {
-            *self.last_finalized.write().await = blk.clone();
-        }
-
         Ok(())
     }
 
@@ -230,7 +223,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         &self,
         blk: &Block,
         enable_consensus: bool,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Label> {
         let mut task = self.task.write().await;
 
         let mut mrb = self.mrb.write().await;
@@ -312,11 +305,6 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             // Update most_recent_block
             *mrb = new_block.clone();
 
-            // Update last_finalized block
-            if mrb.is_final() {
-                *self.last_finalized.write().await = blk.clone();
-            }
-
             anyhow::Ok(())
         }?;
 
@@ -357,7 +345,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             );
         }
 
-        Ok(())
+        Ok(label)
     }
 
     /// Implements the algorithm of full revert to any of supported targets.
@@ -446,8 +434,34 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.mrb.read().await.inner().header().hash
     }
 
-    pub(crate) async fn get_finalized(&self) -> Block {
-        self.last_finalized.read().await.clone()
+    pub(crate) async fn get_latest_final_block(&self) -> Result<Block> {
+        let mrb = self.mrb.read().await;
+        if mrb.is_final() {
+            return Ok(mrb.inner().clone());
+        }
+
+        // Retrieve the latest final block from the database
+        let final_block = self.db.read().await.view(|v| {
+            let prev_height = mrb.inner().header().height - 1;
+
+            for height in (0..prev_height).rev() {
+                if let Ok(Some(Label::Final)) =
+                    v.fetch_block_label_by_height(height)
+                {
+                    if let Some(blk) = v.fetch_block_by_height(height)? {
+                        return Ok(blk);
+                    } else {
+                        return Err(anyhow::anyhow!(
+                            "could not fetch the latest final block by height"
+                        ));
+                    }
+                }
+            }
+
+            Err(anyhow::anyhow!("could not find the latest final block"))
+        })?;
+
+        Ok(final_block)
     }
 
     pub(crate) async fn get_curr_timestamp(&self) -> i64 {

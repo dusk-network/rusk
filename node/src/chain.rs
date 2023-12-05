@@ -81,8 +81,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         .await?;
 
         // Restore/Load most recent block
-        let (mrb, last_finalized) =
-            Self::load_most_recent_block(db.clone()).await?;
+        let (mrb) = Self::load_most_recent_block(db.clone()).await?;
 
         let provisioners_list = vm.read().await.get_provisioners()?;
 
@@ -91,7 +90,6 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
             Acceptor::new_with_run(
                 &self.keys_path,
                 &mrb,
-                last_finalized,
                 &provisioners_list,
                 db.clone(),
                 network.clone(),
@@ -221,9 +219,8 @@ impl ChainSrv {
     /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
-    ) -> Result<(Block, Block)> {
+    ) -> Result<Block> {
         let mut mrb = Block::default();
-        let mut last_finalized = Block::default();
 
         db.read().await.update(|t| {
             mrb = match t.get_register()? {
@@ -239,37 +236,17 @@ impl ChainSrv {
                 }
             };
 
-            // Initialize last_finalized block
-            if mrb.has_instant_finality() {
-                last_finalized = mrb.clone();
-            } else {
-                // scan
-                let mut h = mrb.header().height;
-                loop {
-                    h -= 1;
-                    if let Ok(Some(blk)) = t.fetch_block_by_height(h) {
-                        if blk.has_instant_finality() {
-                            last_finalized = blk;
-                            break;
-                        };
-                    } else {
-                        break;
-                    }
-                }
-            }
-
             Ok(())
         });
 
         tracing::info!(
             event = "Ledger block loaded",
             height = mrb.header().height,
-            finalized_height = last_finalized.header().height,
             hash = hex::encode(mrb.header().hash),
             state_root = hex::encode(mrb.header().state_hash)
         );
 
-        Ok((mrb, last_finalized))
+        Ok(mrb)
     }
 
     fn next_timeout() -> Instant {

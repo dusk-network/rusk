@@ -9,7 +9,7 @@ use crate::chain::fallback;
 use crate::database::{self, Ledger};
 use crate::{vm, Network};
 use dusk_consensus::user::provisioners::{self, Provisioners};
-use node_data::ledger::{self, to_str, Block, Hash, Transaction};
+use node_data::ledger::{self, to_str, Block, Hash, Label, Transaction};
 use node_data::message::payload::GetBlocks;
 use node_data::message::Message;
 use std::cell::RefCell;
@@ -65,7 +65,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         let acc = self.acc.read().await;
         let height = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
-        let last_finalized = acc.get_finalized().await;
+        let last_finalized = acc.get_latest_final_block().await?;
 
         info!(
             event = "fsm::idle",
@@ -255,11 +255,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
         // Try accepting consecutive block
         if h == curr_h + 1 {
-            acc.try_accept_block(blk, true).await?;
+            let label = acc.try_accept_block(blk, true).await?;
 
-            // On first finalized block accepted while we're inSync, clear
+            // On first final block accepted while we're inSync, clear
             // blacklisted blocks
-            if blk.has_instant_finality() {
+            if let Label::Final = label {
                 self.blacklisted_blocks.write().await.clear();
             }
 
