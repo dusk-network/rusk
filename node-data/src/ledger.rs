@@ -246,20 +246,6 @@ impl Block {
         &self.txs
     }
 
-    pub fn has_instant_finality(&self) -> bool {
-        // TODO: Remove
-        if self.header.height == 0 || self.header.iteration == 0 {
-            return true;
-        }
-
-        if self.header.iteration > 0 {
-            // TODO: check for instant finality after timed-out iterations See
-            // also #1116
-        }
-
-        false
-    }
-
     pub fn set_certificate(&mut self, cert: Certificate) {
         self.header.cert = cert;
     }
