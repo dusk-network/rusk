@@ -39,7 +39,7 @@ use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{
-    CallReceipt, ContractId, Error as PiecrustError, Event, Session,
+    CallReceipt, CallTree, ContractId, Error as PiecrustError, Event, Session,
     StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
@@ -742,6 +742,7 @@ fn execute(
         points_limit: tx.fee.gas_limit,
         events: vec![],
         data: Ok(None),
+        call_tree: CallTree::default(),
     };
 
     // If the gas given is less than the amount the node charges per input, then

@@ -5,7 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::{Candidate, Ledger, Persist, Register, DB};
-use anyhow::{Context, Result};
+use anyhow::Result;
+
 
 use node_data::encoding::*;
 use node_data::ledger::{self, Label, SpentTransaction};
@@ -13,31 +14,21 @@ use node_data::Serializable;
 
 use crate::database::Mempool;
 
-use dusk_bytes::Serializable as DuskBytesSerializable;
-
 use rocksdb_lib::{
-    ColumnFamily, ColumnFamilyDescriptor, DBAccess, DBCommon,
-    DBRawIteratorWithThreadMode, DBWithThreadMode, IteratorMode, MultiThreaded,
-    OptimisticTransactionDB, OptimisticTransactionOptions, Options,
-    ReadOptions, SnapshotWithThreadMode, Transaction, TransactionDB,
+    ColumnFamily, ColumnFamilyDescriptor, DBAccess,
+    DBRawIteratorWithThreadMode, IteratorMode, OptimisticTransactionDB,
+    OptimisticTransactionOptions, Options, SnapshotWithThreadMode, Transaction,
     WriteOptions,
 };
 
 use std::io;
 use std::io::Read;
 use std::io::Write;
-use std::marker::PhantomData;
 use std::path::Path;
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::vec;
 
 use tracing::info;
-
-enum TxType {
-    ReadWrite,
-    ReadOnly,
-}
 
 const CF_LEDGER_HEADER: &str = "cf_ledger_header";
 const CF_LEDGER_TXS: &str = "cf_ledger_txs";
@@ -58,13 +49,10 @@ pub struct Backend {
 }
 
 impl Backend {
-    fn begin_tx(
-        &self,
-        access_type: TxType,
-    ) -> DBTransaction<'_, OptimisticTransactionDB> {
+    fn begin_tx(&self) -> DBTransaction<'_, OptimisticTransactionDB> {
         // Create a new RocksDB transaction
         let write_options = WriteOptions::default();
-        let mut tx_options = OptimisticTransactionOptions::default();
+        let tx_options = OptimisticTransactionOptions::default();
 
         let inner = self.rocksdb.transaction_opt(&write_options, &tx_options);
 
@@ -108,7 +96,6 @@ impl Backend {
 
         DBTransaction::<'_, OptimisticTransactionDB> {
             inner,
-            access_type,
             candidates_cf,
             ledger_cf,
             ledger_txs_cf,
@@ -172,7 +159,7 @@ impl DB for Backend {
         F: for<'a> FnOnce(Self::P<'a>) -> T,
     {
         // Create a new read-only transaction
-        let tx = self.begin_tx(TxType::ReadOnly);
+        let tx = self.begin_tx();
 
         // Execute all read-only transactions in isolation
         f(tx)
@@ -183,7 +170,7 @@ impl DB for Backend {
         F: for<'a> FnOnce(&Self::P<'a>) -> Result<T>,
     {
         // Create read-write transaction
-        let tx = self.begin_tx(TxType::ReadWrite);
+        let tx = self.begin_tx();
 
         // If f returns err, no commit will be applied into backend
         // storage
@@ -200,7 +187,6 @@ impl DB for Backend {
 
 pub struct DBTransaction<'db, DB: DBAccess> {
     inner: rocksdb_lib::Transaction<'db, DB>,
-    access_type: TxType,
 
     // TODO: pack all column families into a single array
     // Candidates column family
@@ -240,7 +226,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
                     .map(|t| t.inner.hash())
                     .collect::<Vec<[u8; 32]>>(),
             }
-            .write(&mut buf);
+            .write(&mut buf)?;
 
             self.inner.put_cf(cf, header.hash, buf)?;
 
@@ -315,7 +301,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
                 let mut txs = vec![];
                 for buf in txs_buffers {
-                    let mut buf = buf?.unwrap();
+                    let buf = buf?.unwrap();
                     let tx =
                         ledger::SpentTransaction::read(&mut &buf.to_vec()[..])?;
                     txs.push(tx.inner);
@@ -382,7 +368,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
 
     /// Returns stored register data
     fn get_register(&self) -> Result<Option<Register>> {
-        if let Some(mut data) =
+        if let Some(data) =
             self.snapshot.get_cf(self.ledger_cf, REGISTER_KEY)?
         {
             return Ok(Some(Register::read(&mut &data[..])?));
@@ -459,11 +445,9 @@ impl<'db, DB: DBAccess> Candidate for DBTransaction<'db, DB> {
             .iterator_cf(self.candidates_cf, IteratorMode::Start);
 
         // Iterate through the CF_CANDIDATES column family and delete all items
-        iter.map(Result::unwrap)
-            .map(|(key, _)| {
-                self.inner.delete_cf(self.candidates_cf, key);
-            })
-            .collect::<Vec<_>>();
+        for (key, _) in iter.map(Result::unwrap) {
+            self.inner.delete_cf(self.candidates_cf, key)?;
+        }
 
         Ok(())
     }
@@ -476,11 +460,9 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
         let iter = self.inner.iterator_cf(self.ledger_cf, IteratorMode::Start);
 
         // Iterate through the CF_LEDGER column family and delete all items
-        iter.map(Result::unwrap)
-            .map(|(key, _)| {
-                self.inner.delete_cf(self.ledger_cf, key);
-            })
-            .collect::<Vec<_>>();
+        for (key, _) in iter.map(Result::unwrap) {
+            self.inner.delete_cf(self.ledger_cf, key)?;
+        }
 
         self.clear_candidates()?;
         Ok(())
@@ -590,8 +572,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         // Iterate all keys from the end in reverse lexicographic order
         while iter.valid() {
             if let Some(key) = iter.key() {
-                let (read_gp, tx_hash) =
-                    deserialize_fee_key(&mut &key.to_vec()[..])?;
+                let (_, tx_hash) = deserialize_fee_key(&mut &key.to_vec()[..])?;
 
                 txs_list.push(tx_hash);
             }
@@ -605,7 +586,6 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 
 pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
     iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
-    db: &'db Transaction<'db, DB>,
     mempool: &'db M,
 }
 
@@ -617,7 +597,7 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
     ) -> Self {
         let mut iter = db.raw_iterator_cf(fees_cf);
         iter.seek_to_last();
-        MemPoolIterator { db, iter, mempool }
+        MemPoolIterator { iter, mempool }
     }
 }
 
@@ -710,7 +690,7 @@ struct HeaderRecord {
     transactions_ids: Vec<[u8; 32]>,
 }
 
-impl Serializable for HeaderRecord {
+impl node_data::Serializable for HeaderRecord {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         // Write block header
         self.header.write(w)?;
@@ -742,7 +722,7 @@ impl Serializable for HeaderRecord {
 
         // Read transactions hashes
         let mut transactions_ids = vec![];
-        for pos in 0..len {
+        for _ in 0..len {
             let mut tx_id = [0u8; 32];
             r.read_exact(&mut tx_id[..])?;
 

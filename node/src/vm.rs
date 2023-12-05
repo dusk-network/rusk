@@ -4,8 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use async_trait::async_trait;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_consensus::{
     contract_state::CallParams, contract_state::VerificationOutput,
     user::provisioners::Provisioners,

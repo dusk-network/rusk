@@ -20,10 +20,10 @@ contract-helpers = { version = "0.1", path = "../../contract-helpers" }
 dusk-schnorr = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-rusk-abi = { version = "0.11", path = "../../rusk-abi" }
+rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi" }
 
 [dev-dependencies]
-rusk-abi = { version = "0.11", path = "../../rusk-abi", default-features = false, features = ["host"] }
+rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
 rusk-profile = { version = "0.6", path = "../../rusk-profile"}
 license-circuits = { version = "0.1", path = "../../circuits/license" }
 rkyv = { version = "0.7", default-features = false }
