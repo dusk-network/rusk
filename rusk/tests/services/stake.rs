@@ -7,6 +7,7 @@
 use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
+use dusk_bls12_381_sign::PublicKey;
 use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
 use rand::prelude::*;
@@ -56,7 +57,20 @@ fn wallet_stake(
 
     let mut rng = StdRng::seed_from_u64(0xdead);
 
-    wallet.get_stake(0).expect("stake to not be found");
+    wallet
+        .get_stake(0)
+        .expect("stakeinfo to be found")
+        .amount
+        .expect("stake amount to be found");
+
+    assert!(
+        wallet
+            .get_stake(2)
+            .expect("stakeinfo to be found")
+            .amount
+            .is_none(),
+        "stake amount to be found"
+    );
 
     let tx = wallet
         .stake(&mut rng, 0, 2, &psk, value, GAS_LIMIT, 1)
@@ -77,7 +91,11 @@ fn wallet_stake(
 
     assert_eq!(stake_value, value);
 
-    let _ = wallet.get_stake(0).expect("stake to be found");
+    wallet
+        .get_stake(0)
+        .expect("stakeinfo to be found")
+        .amount
+        .expect("stake amount to be found");
 
     let tx = wallet
         .unstake(&mut rng, 0, 0, &psk, GAS_LIMIT, 1)
@@ -137,6 +155,88 @@ pub async fn stake() -> Result<()> {
     // let (_, _, h) = recv.expect("Transaction has not been locally
     // propagated"); assert_eq!(h, 0, "Transaction locally propagated with
     // wrong height");
+
+    Ok(())
+}
+
+/// Attempt to submit a management transaction intending it to fail. Verify that
+/// the reward amount remains unchanged and confirm that the transaction indeed
+/// fails
+fn wallet_reward(
+    rusk: &Rusk,
+    wallet: &wallet::Wallet<TestStore, TestStateClient, TestProverClient>,
+) {
+    // Sender psk
+    let psk = SSK.public_spend_key();
+
+    let mut rng = StdRng::seed_from_u64(0xdead);
+
+    let bls_key = wallet.store().retrieve_sk(2).unwrap();
+    let bls_key = PublicKey::from(&bls_key);
+    let reward_calldata = (bls_key, 6u32);
+
+    let stake = wallet.get_stake(2).expect("stake to be found");
+    assert_eq!(stake.reward, 0, "stake reward must be empty");
+
+    let tx = wallet
+        .execute(
+            &mut rng,
+            rusk_abi::STAKE_CONTRACT,
+            String::from("reward"),
+            reward_calldata,
+            0,
+            &psk,
+            GAS_LIMIT,
+            1,
+        )
+        .expect("Failed to create a reward transaction");
+    let executed_txs =
+        generator_procedure(rusk, &[tx], BLOCK_HEIGHT, BLOCK_GAS_LIMIT, None)
+            .expect("generator procedure to succeed");
+    let _ = executed_txs
+        .first()
+        .expect("Transaction must be executed")
+        .err
+        .as_ref()
+        .expect("reward transaction to fail");
+    let stake = wallet.get_stake(2).expect("stake to be found");
+    assert_eq!(stake.reward, 0, "stake reward must be empty");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+pub async fn reward() -> Result<()> {
+    // Setup the logger
+    logger();
+
+    let tmp = tempdir().expect("Should be able to create temporary directory");
+    let rusk = initial_state(&tmp)?;
+
+    let cache = Arc::new(RwLock::new(HashMap::new()));
+
+    // Create a wallet
+    let wallet = wallet::Wallet::new(
+        TestStore,
+        TestStateClient {
+            rusk: rusk.clone(),
+            cache,
+        },
+        TestProverClient::default(),
+    );
+
+    let original_root = rusk.state_root();
+
+    info!("Original Root: {:?}", hex::encode(original_root));
+
+    // Perform some staking actions.
+    wallet_reward(&rusk, &wallet);
+
+    // Check the state's root is changed from the original one
+    let new_root = rusk.state_root();
+    info!(
+        "New root after the 1st transfer: {:?}",
+        hex::encode(new_root)
+    );
+    assert_ne!(original_root, new_root, "Root should have changed");
 
     Ok(())
 }
