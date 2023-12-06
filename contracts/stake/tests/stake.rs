@@ -46,7 +46,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     pk: &PublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
-        "../../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+        "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
     let stake_bytecode = include_bytes!(
         "../../../target/wasm32-unknown-unknown/release/stake_contract.wasm"
