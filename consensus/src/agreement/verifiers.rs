@@ -125,7 +125,7 @@ pub async fn verify_step_votes(
     step_offset: u8,
     committee_size: usize,
     enable_quorum_check: bool,
-) -> Result<(), Error> {
+) -> Result<QuorumResult, Error> {
     if hdr.step == 0 {
         return Err(Error::InvalidStepNum);
     }
@@ -144,6 +144,18 @@ pub async fn verify_step_votes(
     .await
 }
 
+#[derive(Default)]
+pub struct QuorumResult {
+    pub total: usize,
+    pub target_quorum: usize,
+}
+
+impl QuorumResult {
+    pub fn quorum_reached(&self) -> bool {
+        self.total < self.target_quorum
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn verify_votes(
     block_hash: &[u8; 32],
@@ -152,16 +164,18 @@ pub async fn verify_votes(
     committees_set: &Arc<Mutex<CommitteeSet>>,
     cfg: &sortition::Config,
     enable_quorum_check: bool,
-) -> Result<(), Error> {
-    // TODO: This should be refactored into a structure when #1118 issue is
-    // implemented
+) -> Result<QuorumResult, Error> {
+    let total: usize;
+    let target_quorum: usize;
+
     let sub_committee = {
         let mut guard = committees_set.lock().await;
         let sub_committee = guard.intersect(bitset, cfg);
+        total = guard.total_occurrences(&sub_committee, cfg);
+        target_quorum = guard.quorum(cfg);
 
         if enable_quorum_check {
             let target_quorum = guard.quorum(cfg);
-            let total = guard.total_occurrences(&sub_committee, cfg);
             if total < target_quorum {
                 tracing::error!(
                     desc = "vote_set_too_small",
@@ -188,7 +202,10 @@ pub async fn verify_votes(
     verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
 
     // Verification done
-    Ok(())
+    Ok(QuorumResult {
+        total,
+        target_quorum,
+    })
 }
 
 impl Cluster<PublicKey> {
