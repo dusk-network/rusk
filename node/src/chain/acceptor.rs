@@ -22,6 +22,7 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
 use dusk_consensus::agreement::verifiers;
+use dusk_consensus::agreement::verifiers::QuorumResult;
 use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
 
 use super::consensus::Task;
@@ -216,7 +217,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             blk.header().timestamp - mrb.inner().header().timestamp;
 
         // Verify Block Header
-        verify_block_header(
+        let nil_quorum = verify_block_header(
             self.db.clone(),
             &mrb.inner().header().clone(),
             &provisioners_list,
@@ -224,22 +225,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         )
         .await?;
 
-        let verified_nil_quorum = true; // TODO: Get result from verify_block_header
-
-        // Define new block label depending on all params
-        // blk.iteration, NilQuorum and previous block label
+        // Define new block label
         let label = {
             let mut label = Label::Accepted;
-            if verified_nil_quorum || blk.header().iteration == 0 {
+            if nil_quorum == Some(true) || blk.header().iteration == 0 {
                 label = Label::Attested;
                 if mrb.is_final() {
                     label = Label::Final;
                 }
             }
+
             label
         };
 
-        let new_block = BlockWithLabel::new_with_label(blk.clone(), label);
+        let blk = BlockWithLabel::new_with_label(blk.clone(), label);
+        let header = blk.inner().header();
 
         // Reset Consensus
         task.abort_with_wait().await;
@@ -249,72 +249,62 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         {
             let vm = self.vm.write().await;
             let txs = self.db.read().await.update(|t| {
-                let (txs, verification_output) = if new_block.is_final() {
-                    vm.finalize(blk)?
+                let (txs, verification_output) = if blk.is_final() {
+                    vm.finalize(blk.inner())?
                 } else {
-                    vm.accept(blk)?
+                    vm.accept(blk.inner())?
                 };
 
-                assert_eq!(
-                    blk.header().state_hash,
-                    verification_output.state_root
-                );
-                assert_eq!(
-                    blk.header().event_hash,
-                    verification_output.event_hash
-                );
+                assert_eq!(header.state_hash, verification_output.state_root);
+                assert_eq!(header.event_hash, verification_output.event_hash);
 
                 // Store block with updated transactions with Error and GasSpent
-                t.store_block(
-                    new_block.inner().header(),
-                    &txs,
-                    new_block.label(),
-                )?;
+                t.store_block(header, &txs, blk.label())?;
 
                 Ok(txs)
             })?;
 
             self.log_missing_iterations(
                 &provisioners_list,
-                blk.header().iteration,
-                mrb.inner().header().seed,
-                blk.header().height,
+                header.iteration,
+                header.seed,
+                header.height,
             );
 
-            if Self::needs_update(blk, &txs) {
+            if Self::needs_update(blk.inner(), &txs) {
                 // Update provisioners list
                 *provisioners_list = vm.get_provisioners()?;
             }
 
             // Update most_recent_block
-            *mrb = new_block.clone();
+            *mrb = blk;
 
             anyhow::Ok(())
         }?;
 
         // Delete from mempool any transaction already included in the block
         self.db.read().await.update(|update| {
-            for tx in blk.txs().iter() {
+            for tx in mrb.inner().txs().iter() {
                 database::Mempool::delete_tx(update, tx.hash())?;
             }
             Ok(())
         })?;
 
-        let fsv_bitset = blk.header().cert.first_reduction.bitset;
-        let ssv_bitset = blk.header().cert.second_reduction.bitset;
+        let fsv_bitset = mrb.inner().header().cert.first_reduction.bitset;
+        let ssv_bitset = mrb.inner().header().cert.second_reduction.bitset;
 
         let duration = start.elapsed();
         info!(
             event = "block accepted",
-            height = blk.header().height,
-            iter = blk.header().iteration,
-            hash = to_str(&blk.header().hash),
-            txs = blk.txs().len(),
-            state_hash = to_str(&blk.header().state_hash),
+            height = mrb.inner().header().height,
+            iter = mrb.inner().header().iteration,
+            hash = to_str(&mrb.inner().header().hash),
+            txs = mrb.inner().txs().len(),
+            state_hash = to_str(&mrb.inner().header().state_hash),
             fsv_bitset,
             ssv_bitset,
             block_time,
-            generator = blk.header().generator_bls_pubkey.to_bs58(),
+            generator = mrb.inner().header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
             label = format!("{:?}", label),
         );
@@ -470,7 +460,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     mrb: &ledger::Header,
     mrb_eligible_provisioners: &Provisioners,
     new_blk: &ledger::Header,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<Option<bool>> {
     if new_blk.version > 0 {
         return Err(anyhow!("unsupported block version"));
     }
@@ -532,6 +522,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     }
 
     // Verify Failed iterations
+    let mut failed_iterations_have_nil_quorum: Option<bool> = None;
     for iteration in 0..new_blk.failed_iterations.cert_list.len() {
         if let Some(cert) = &new_blk.failed_iterations.cert_list[iteration] {
             info!(
@@ -540,7 +531,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
                 iter = iteration
             );
 
-            verify_block_cert(
+            let quorums = verify_block_cert(
                 mrb.seed,
                 mrb_eligible_provisioners,
                 [0u8; 32],
@@ -550,6 +541,22 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
                 false,
             )
             .await?;
+
+            match failed_iterations_have_nil_quorum {
+                None => {
+                    failed_iterations_have_nil_quorum = Some(
+                        quorums.0.quorum_reached()
+                            && quorums.1.quorum_reached(),
+                    )
+                }
+                Some(true) => {
+                    failed_iterations_have_nil_quorum = Some(
+                        quorums.0.quorum_reached()
+                            && quorums.1.quorum_reached(),
+                    )
+                }
+                Some(false) => {}
+            }
         }
     }
 
@@ -563,7 +570,9 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         new_blk.iteration,
         true,
     )
-    .await
+    .await?;
+
+    Ok(failed_iterations_have_nil_quorum)
 }
 
 pub async fn verify_block_cert(
@@ -574,7 +583,7 @@ pub async fn verify_block_cert(
     cert: &ledger::Certificate,
     iteration: u8,
     enable_quorum_check: bool,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<(QuorumResult, QuorumResult)> {
     let committee = Arc::new(Mutex::new(CommitteeSet::new(
         node_data::bls::PublicKey::default(),
         curr_eligible_provisioners.clone(),
@@ -588,8 +597,10 @@ pub async fn verify_block_cert(
         block_hash,
     };
 
+    let mut result = (QuorumResult::default(), QuorumResult::default());
+
     // Verify first reduction
-    if let Err(e) = verifiers::verify_step_votes(
+    match verifiers::verify_step_votes(
         &cert.first_reduction,
         &committee,
         curr_seed,
@@ -600,7 +611,11 @@ pub async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!(
+        Ok(first_reduction_quorum_result) => {
+            result.0 = first_reduction_quorum_result;
+        }
+        Err(e) => {
+            return Err(anyhow!(
             "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
@@ -609,10 +624,11 @@ pub async fn verify_block_cert(
             cert.first_reduction,
             e
         ));
-    }
+        }
+    };
 
     // Verify second reduction
-    if let Err(e) = verifiers::verify_step_votes(
+    match verifiers::verify_step_votes(
         &cert.second_reduction,
         &committee,
         curr_seed,
@@ -623,7 +639,11 @@ pub async fn verify_block_cert(
     )
     .await
     {
-        return Err(anyhow!(
+        Ok(second_reduction_quorum_result) => {
+            result.1 = second_reduction_quorum_result;
+        }
+        Err(e) => {
+            return Err(anyhow!(
             "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
@@ -632,7 +652,8 @@ pub async fn verify_block_cert(
             cert.second_reduction,
             e,
         ));
+        }
     }
 
-    Ok(())
+    Ok(result)
 }
