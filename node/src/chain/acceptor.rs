@@ -63,17 +63,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub async fn new_with_run(
         keys_path: &str,
-        mrb: &Block,
+        mrb: &BlockWithLabel,
         provisioners_list: &Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
     ) -> Self {
         let acc = Self {
-            mrb: RwLock::new(BlockWithLabel::new_with_label(
-                mrb.clone(),
-                Label::Accepted, // TODO: Load this from DB
-            )),
+            mrb: RwLock::new(mrb.clone()),
             provisioners_list: RwLock::new(provisioners_list.clone()),
             db: db.clone(),
             vm: vm.clone(),
@@ -82,7 +79,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         };
 
         acc.task.write().await.spawn(
-            mrb,
+            mrb.inner(),
             provisioners_list,
             &db,
             &vm,
@@ -319,6 +316,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             block_time,
             generator = blk.header().generator_bls_pubkey.to_bs58(),
             dur_ms = duration.as_millis(),
+            label = format!("{:?}", label),
         );
 
         // Restart Consensus.

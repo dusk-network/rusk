@@ -20,7 +20,7 @@ use tracing::{error, info, warn};
 
 use async_trait::async_trait;
 
-use node_data::ledger::{to_str, Block, Label};
+use node_data::ledger::{to_str, Block, BlockWithLabel, Label};
 
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -97,7 +97,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         );
 
         // Detect a consistency issue between VM and Ledger states.
-        if mrb.header().height > 0 && mrb.header().state_hash != state_root {
+        if mrb.inner().header().height > 0
+            && mrb.inner().header().state_hash != state_root
+        {
             info!("revert to last finalized state");
             // Revert to last known finalized state.
             acc.read()
@@ -212,11 +214,11 @@ impl ChainSrv {
     /// If register entry is read but block is not found.
     async fn load_most_recent_block<DB: database::DB>(
         db: Arc<RwLock<DB>>,
-    ) -> Result<Block> {
-        let mut mrb = Block::default();
+    ) -> Result<BlockWithLabel> {
+        let mut blk = Block::default();
 
         db.read().await.update(|t| {
-            mrb = match t.get_register()? {
+            blk = match t.get_register()? {
                 Some(r) => t.fetch_block(&r.mrb_hash)?.unwrap(),
                 None => {
                     // Lack of register record means the loaded database is
@@ -229,18 +231,24 @@ impl ChainSrv {
                     genesis_blk
                 }
             };
-
             Ok(())
         })?;
 
+        let label = db
+            .read()
+            .await
+            .view(|t| t.fetch_block_label_by_height(blk.header().height))?
+            .unwrap();
+
         tracing::info!(
             event = "Ledger block loaded",
-            height = mrb.header().height,
-            hash = hex::encode(mrb.header().hash),
-            state_root = hex::encode(mrb.header().state_hash)
+            height = blk.header().height,
+            hash = hex::encode(blk.header().hash),
+            state_root = hex::encode(blk.header().state_hash),
+            label = format!("{:?}", label),
         );
 
-        Ok(mrb)
+        Ok(BlockWithLabel::new_with_label(blk, label))
     }
 
     fn next_timeout() -> Instant {
