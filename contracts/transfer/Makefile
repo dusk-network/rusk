@@ -19,7 +19,7 @@ wasm: ## Build the WASM files
 			--release \
 			--color=always \
 			-Z build-std=core,alloc \
-			--target wasm32-unknown-unknown
+			--target wasm64-unknown-unknown
 			
 clippy: ## Run clippy
 	@cargo clippy --all-features --release -- -D warnings
