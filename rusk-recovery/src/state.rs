@@ -198,7 +198,7 @@ fn generate_empty_state<P: AsRef<Path>>(
     let mut session = rusk_abi::new_genesis_session(&vm);
 
     let transfer_code = include_bytes!(
-        "../../target/wasm32-unknown-unknown/release/transfer_contract.wasm"
+        "../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
     );
 
     let stake_code = include_bytes!(
