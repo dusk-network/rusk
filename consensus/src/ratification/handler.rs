@@ -21,7 +21,7 @@ pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
-    pub(crate) first_step_votes: StepVotes,
+    pub(crate) validation: StepVotes,
     pub(crate) curr_step: u8,
 }
 
@@ -83,12 +83,12 @@ impl MsgHandler<Message> for RatificationHandler {
                 step,
                 block_hash,
                 second_step_votes,
-                SvType::SecondReduction,
+                SvType::Ratification,
                 quorum_reached,
             );
 
             if quorum_reached {
-                return Ok(HandleMsgOutput::Ready(self.build_agreement_msg(
+                return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
                     ru,
                     step,
                     block_hash,
@@ -125,7 +125,7 @@ impl MsgHandler<Message> for RatificationHandler {
                     step,
                     hash,
                     sv,
-                    SvType::SecondReduction,
+                    SvType::Ratification,
                     quorum_reached,
                 )
             {
@@ -151,17 +151,17 @@ impl RatificationHandler {
         Self {
             sv_registry,
             aggregator: Default::default(),
-            first_step_votes: Default::default(),
+            validation: Default::default(),
             curr_step: 0,
         }
     }
 
-    fn build_agreement_msg(
+    fn build_quorum_msg(
         &self,
         ru: &RoundUpdate,
         step: u8,
         block_hash: Hash,
-        second_step_votes: ledger::StepVotes,
+        ratification: ledger::StepVotes,
     ) -> Message {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
@@ -172,17 +172,17 @@ impl RatificationHandler {
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
-        let payload = payload::Agreement {
+        let payload = payload::Quorum {
             signature,
-            first_step: self.first_step_votes,
-            second_step: second_step_votes,
+            validation: self.validation,
+            ratification,
         };
 
-        Message::new_agreement(hdr, payload)
+        Message::new_quorum(hdr, payload)
     }
 
     pub(crate) fn reset(&mut self, step: u8) {
-        self.first_step_votes = StepVotes::default();
+        self.validation = StepVotes::default();
         self.curr_step = step;
     }
 }

@@ -47,7 +47,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
-            handler.first_step_votes = p.sv;
+            handler.validation = p.sv;
             self.candidate = Some(p.candidate);
         }
 
@@ -65,7 +65,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                     .header()
                     .hash
             ),
-            fsv_bitset = handler.first_step_votes.bitset,
+            fsv_bitset = handler.validation.bitset,
         )
     }
 

@@ -147,13 +147,13 @@ impl<D: Database> Executor<D> {
             step = hdr.step,
         );
 
-        self.collect_agreement(msg).await
+        self.collect_quorum(msg).await
     }
 
-    async fn collect_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Payload::Agreement(agreement) = &msg.payload {
+    async fn collect_quorum(&mut self, msg: Message) -> Option<Block> {
+        if let Payload::Quorum(quorum) = &msg.payload {
             // Verify agreement
-            verifiers::verify_agreement(
+            verifiers::verify_quorum(
                 msg.clone(),
                 self.committees_set.clone(),
                 self.ru.seed(),
@@ -165,9 +165,9 @@ impl<D: Database> Executor<D> {
             self.publish(msg.clone()).await;
 
             let (cert, hash) =
-                (agreement.generate_certificate(), &msg.header.block_hash);
+                (quorum.generate_certificate(), &msg.header.block_hash);
 
-            debug!("generate block from an agreement");
+            debug!("generate block from quarm msg");
 
             // Create winning block
             return self.create_winning_block(hash, &cert).await;

@@ -133,7 +133,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                 step,
                 hash,
                 sv,
-                SvType::FirstReduction,
+                SvType::Validation,
                 quorum_reached,
             );
 
@@ -196,7 +196,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                     step,
                     hash,
                     sv,
-                    SvType::FirstReduction,
+                    SvType::Validation,
                     quorum_reached,
                 )
             {

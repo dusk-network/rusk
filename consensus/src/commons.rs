@@ -224,9 +224,9 @@ pub trait Database: Send + Sync {
 }
 
 pub enum StepName {
-    Sel,
-    FirstRed,
-    SecondRed,
+    Proposal,
+    Validation,
+    Ratification,
 }
 
 pub trait IterCounter {
@@ -261,9 +261,9 @@ impl IterCounter for u8 {
     fn step_from_name(&self, st: StepName) -> Self::Step {
         let sel_num = self * Self::STEP_NUM;
         match st {
-            StepName::Sel => sel_num,
-            StepName::FirstRed => sel_num + 1,
-            StepName::SecondRed => sel_num + 2,
+            StepName::Proposal => sel_num,
+            StepName::Validation => sel_num + 1,
+            StepName::Ratification => sel_num + 2,
         }
     }
 
@@ -284,30 +284,30 @@ impl AgreementSender {
 
     /// Sends an agreement (internally) to the agreement loop.
     pub(crate) async fn send(&self, msg: Message) -> bool {
-        if let Payload::Agreement(agreement) = &msg.payload {
-            if agreement.signature == [0u8; 48]
-                || agreement.first_step.is_empty()
-                || agreement.second_step.is_empty()
+        if let Payload::Quorum(q) = &msg.payload {
+            if q.signature == [0u8; 48]
+                || q.validation.is_empty()
+                || q.ratification.is_empty()
                 || msg.header.block_hash == [0; 32]
             {
                 return false;
             }
 
             tracing::debug!(
-                event = "send agreement",
+                event = "send quorum_msg",
                 hash = to_str(&msg.header.block_hash),
                 round = msg.header.round,
                 step = msg.header.step,
-                first = format!("{:#?}", agreement.first_step),
-                second = format!("{:#?}", agreement.second_step),
-                signature = to_str(&agreement.signature),
+                first = format!("{:#?}", q.validation),
+                second = format!("{:#?}", q.ratification),
+                signature = to_str(&q.signature),
             );
 
             let _ = self
                 .queue
                 .send(msg.clone())
                 .await
-                .map_err(|e| error!("send agreement failed with {:?}", e));
+                .map_err(|e| error!("send quorum_msg failed with {:?}", e));
 
             return true;
         }
