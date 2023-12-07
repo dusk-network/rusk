@@ -15,7 +15,7 @@ use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
 
 use crate::quorum::verifiers;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, Instrument};
 
@@ -70,7 +70,7 @@ struct Executor<'p, D: Database> {
     inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
-    committees_set: Arc<Mutex<CommitteeSet<'p>>>,
+    committees_set: RwLock<CommitteeSet<'p>>,
     db: Arc<Mutex<D>>,
 }
 
@@ -86,10 +86,10 @@ impl<'p, D: Database> Executor<'p, D> {
             inbound_queue,
             outbound_queue,
             ru,
-            committees_set: Arc::new(Mutex::new(CommitteeSet::new(
+            committees_set: RwLock::new(CommitteeSet::new(
                 PublicKey::default(),
                 provisioners,
-            ))),
+            )),
             db,
         }
     }
@@ -155,7 +155,7 @@ impl<'p, D: Database> Executor<'p, D> {
             // Verify quorum
             verifiers::verify_quorum(
                 msg.clone(),
-                self.committees_set.clone(),
+                &self.committees_set,
                 self.ru.seed(),
             )
             .await

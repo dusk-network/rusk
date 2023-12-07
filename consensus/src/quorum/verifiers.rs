@@ -16,8 +16,7 @@ use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{marshal_signable_vote, Header, Message, Payload};
 use std::fmt::{self, Display};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tracing::error;
 
 #[derive(Debug)]
@@ -51,7 +50,7 @@ impl Display for Error {
 /// Performs all three-steps verification of a quorum msg.
 pub async fn verify_quorum(
     msg: Message,
-    committees_set: Arc<Mutex<CommitteeSet<'_>>>,
+    committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
     match msg.payload {
@@ -71,7 +70,7 @@ pub async fn verify_quorum(
             // Verify validation
             verify_step_votes(
                 &payload.validation,
-                &committees_set,
+                committees_set,
                 seed,
                 &msg.header,
                 0,
@@ -91,7 +90,7 @@ pub async fn verify_quorum(
             // Verify ratification
             verify_step_votes(
                 &payload.ratification,
-                &committees_set,
+                committees_set,
                 seed,
                 &msg.header,
                 1,
@@ -117,7 +116,7 @@ pub async fn verify_quorum(
 
 pub async fn verify_step_votes(
     sv: &StepVotes,
-    committees_set: &Arc<Mutex<CommitteeSet<'_>>>,
+    committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     hdr: &Header,
     step_offset: u8,
@@ -131,8 +130,12 @@ pub async fn verify_step_votes(
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
 
-    let mut set = committees_set.lock().await;
-    let committee = set.get_or_create(&cfg);
+    if committees_set.read().await.get(&cfg).is_none() {
+        let _ = committees_set.write().await.get_or_create(&cfg);
+    }
+
+    let set = committees_set.read().await;
+    let committee = set.get(&cfg).expect("committee to be created");
 
     verify_votes(
         &hdr.block_hash,

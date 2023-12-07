@@ -188,4 +188,8 @@ impl<'p> CommitteeSet<'p> {
                 )
             })
     }
+
+    pub fn get(&self, cfg: &sortition::Config) -> Option<&Committee> {
+        self.committees.get(cfg)
+    }
 }
