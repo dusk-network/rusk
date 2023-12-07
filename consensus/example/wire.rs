@@ -184,8 +184,8 @@ mod tests {
             state_hash: [13; 32],
             hash,
             cert: Certificate {
-                first_reduction: ([0; 48], 0),
-                second_reduction: ([0; 48], 0),
+                validation: ([0; 48], 0),
+                ratification: ([0; 48], 0),
                 step: 0,
             },
         };

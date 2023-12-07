@@ -37,8 +37,8 @@ impl fmt::Display for CertificateInfo {
             f,
             "cert_info: hash: {}, 1st_sv: {:?}, 2nd_sv: {:?}, 1st_quorum: {}, 2nd_quorum: {}",
             to_str(&hash),
-            self.cert.first_reduction,
-            self.cert.second_reduction,
+            self.cert.validation,
+            self.cert.ratification,
             self.quorum_reached_first_reduction,
             self.quorum_reached_sec_reduction
         )
@@ -64,14 +64,14 @@ impl CertificateInfo {
 
         match svt {
             SvType::FirstReduction => {
-                self.cert.first_reduction = sv;
+                self.cert.validation = sv;
 
                 if quorum_reached {
                     self.quorum_reached_first_reduction = quorum_reached;
                 }
             }
             SvType::SecondReduction => {
-                self.cert.second_reduction = sv;
+                self.cert.ratification = sv;
 
                 if quorum_reached {
                     self.quorum_reached_sec_reduction = quorum_reached;
@@ -92,8 +92,8 @@ impl CertificateInfo {
     /// Returns `true` if all fields are non-empty and quorum is reached for
     /// both reductions
     fn is_ready(&self) -> bool {
-        !self.cert.first_reduction.is_empty()
-            && !self.cert.second_reduction.is_empty()
+        !self.cert.validation.is_empty()
+            && !self.cert.ratification.is_empty()
             && self.hash.is_some()
             && self.quorum_reached_first_reduction
             && self.quorum_reached_sec_reduction
@@ -168,8 +168,8 @@ impl CertInfoRegistry {
 
         let payload = payload::Agreement {
             signature,
-            first_step: result.cert.first_reduction,
-            second_step: result.cert.second_reduction,
+            first_step: result.cert.validation,
+            second_step: result.cert.ratification,
         };
 
         Message::new_agreement(hdr, payload)
