@@ -74,7 +74,7 @@ impl Serializable for Message {
         match &self.payload {
             Payload::NewBlock(p) => p.write(w),
             Payload::Reduction(p) => p.write(w),
-            Payload::Agreement(p) => p.write(w),
+            Payload::Quorum(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
             Payload::GetCandidate(p) => p.write(w),
@@ -120,7 +120,7 @@ impl Serializable for Message {
             Topics::Validation | Topics::Ratification => {
                 Payload::Reduction(payload::Reduction::read(r)?)
             }
-            Topics::Quorum => Payload::Agreement(payload::Agreement::read(r)?),
+            Topics::Quorum => Payload::Quorum(payload::Quorum::read(r)?),
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
             Topics::Tx => {
                 Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
@@ -191,14 +191,11 @@ impl Message {
         }
     }
 
-    /// Creates topics.Agreement message
-    pub fn new_agreement(
-        header: Header,
-        payload: payload::Agreement,
-    ) -> Message {
+    /// Creates topics.Quorum message
+    pub fn new_quorum(header: Header, payload: payload::Quorum) -> Message {
         Self {
             header,
-            payload: Payload::Agreement(payload),
+            payload: Payload::Quorum(payload),
             ..Default::default()
         }
     }
@@ -448,7 +445,7 @@ impl Header {
 pub enum Payload {
     Reduction(payload::Reduction),
     NewBlock(Box<payload::NewBlock>),
-    Agreement(payload::Agreement),
+    Quorum(payload::Quorum),
 
     StepVotes(ledger::StepVotes),
     StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
@@ -565,15 +562,13 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]
-    pub struct Agreement {
+    pub struct Quorum {
         pub signature: [u8; 48],
-
-        /// StepVotes of both 1th and 2nd Reduction steps
-        pub first_step: StepVotes,
-        pub second_step: StepVotes,
+        pub validation: StepVotes,
+        pub ratification: StepVotes,
     }
 
-    impl Serializable for Agreement {
+    impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_bytes(w, &self.signature[..])?;
 
@@ -581,8 +576,8 @@ pub mod payload {
             let step_votes_len = 2u8;
             w.write_all(&step_votes_len.to_le_bytes())?;
 
-            self.first_step.write(w)?;
-            self.second_step.write(w)?;
+            self.validation.write(w)?;
+            self.ratification.write(w)?;
 
             Ok(())
         }
@@ -598,33 +593,33 @@ pub mod payload {
             let mut step_votes_len = [0u8; 1];
             r.read_exact(&mut step_votes_len)?;
 
-            let first_step = StepVotes::read(r)?;
-            let second_step = StepVotes::read(r)?;
+            let validation = StepVotes::read(r)?;
+            let ratification = StepVotes::read(r)?;
 
-            Ok(Agreement {
+            Ok(Quorum {
                 signature,
-                first_step,
-                second_step,
+                validation,
+                ratification,
             })
         }
     }
 
-    impl Default for Agreement {
+    impl Default for Quorum {
         fn default() -> Self {
             Self {
                 signature: [0; 48],
-                first_step: StepVotes::default(),
-                second_step: StepVotes::default(),
+                validation: StepVotes::default(),
+                ratification: StepVotes::default(),
             }
         }
     }
 
-    impl Agreement {
+    impl Quorum {
         /// Generates a certificate from agreement.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
-                validation: self.first_step,
-                ratification: self.second_step,
+                validation: self.validation,
+                ratification: self.ratification,
             }
         }
     }
@@ -956,12 +951,12 @@ mod tests {
             aggregate_signature: Signature([4; 48]),
         });
 
-        assert_serialize(payload::Agreement {
-            first_step: ledger::StepVotes {
+        assert_serialize(payload::Quorum {
+            validation: ledger::StepVotes {
                 bitset: 12345,
                 aggregate_signature: Signature([1; 48]),
             },
-            second_step: ledger::StepVotes {
+            ratification: ledger::StepVotes {
                 bitset: 98765,
                 aggregate_signature: Signature([2; 48]),
             },
