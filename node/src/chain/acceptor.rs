@@ -99,7 +99,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Payload::NewBlock(_) | Payload::Reduction(_) => {
                 self.task.read().await.main_inbound.send(msg).await?;
             }
-            Payload::Agreement(_) => {
+            Payload::Quorum(_) => {
                 self.task.read().await.agreement_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
@@ -546,7 +546,7 @@ pub async fn verify_block_cert(
         topic: 0,
         pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
-        step: iteration.step_from_name(StepName::SecondRed),
+        step: iteration.step_from_name(StepName::Ratification),
         block_hash,
     };
 
@@ -563,7 +563,7 @@ pub async fn verify_block_cert(
     .await
     {
         return Err(anyhow!(
-            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            "invalid validation, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
@@ -586,7 +586,7 @@ pub async fn verify_block_cert(
     .await
     {
         return Err(anyhow!(
-            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            "invalid ratification, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
