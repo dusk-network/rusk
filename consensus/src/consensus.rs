@@ -147,7 +147,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     fn spawn_main_loop(
         &mut self,
         ru: RoundUpdate,
-        mut provisioners: Provisioners,
+        provisioners: Provisioners,
         sender: QuorumMsgSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
@@ -233,7 +233,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         inbound.clone(),
                         outbound.clone(),
                         future_msgs.clone(),
-                        &mut provisioners,
+                        &provisioners,
                         ru.clone(),
                         step,
                         executor.clone(),

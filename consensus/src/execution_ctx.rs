@@ -166,7 +166,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub future_msgs: Arc<Mutex<Queue<Message>>>,
 
     /// State-related fields
-    pub provisioners: &'a mut Provisioners,
+    pub provisioners: &'a Provisioners,
 
     // Round/Step parameters
     pub round_update: RoundUpdate,
@@ -186,7 +186,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
         future_msgs: Arc<Mutex<Queue<Message>>>,
-        provisioners: &'a mut Provisioners,
+        provisioners: &'a Provisioners,
         round_update: RoundUpdate,
         step: u8,
         executor: Arc<Mutex<T>>,
