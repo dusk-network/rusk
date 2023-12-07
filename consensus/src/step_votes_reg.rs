@@ -15,8 +15,8 @@ use tokio::sync::Mutex;
 use tracing::debug;
 
 pub(crate) enum SvType {
-    FirstReduction,
-    SecondReduction,
+    Validation,
+    Ratification,
 }
 
 #[derive(Default, Clone, Copy)]
@@ -25,8 +25,8 @@ struct CertificateInfo {
     hash: Option<[u8; 32]>,
     cert: Certificate,
 
-    quorum_reached_first_reduction: bool,
-    quorum_reached_sec_reduction: bool,
+    quorum_reached_validation: bool,
+    quorum_reached_ratification: bool,
 }
 
 impl fmt::Display for CertificateInfo {
@@ -35,12 +35,12 @@ impl fmt::Display for CertificateInfo {
 
         write!(
             f,
-            "cert_info: hash: {}, 1st_sv: {:?}, 2nd_sv: {:?}, 1st_quorum: {}, 2nd_quorum: {}",
+            "cert_info: hash: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
             to_str(&hash),
             self.cert.validation,
+            self.quorum_reached_validation,
             self.cert.ratification,
-            self.quorum_reached_first_reduction,
-            self.quorum_reached_sec_reduction
+            self.quorum_reached_ratification
         )
     }
 }
@@ -63,18 +63,18 @@ impl CertificateInfo {
         }
 
         match svt {
-            SvType::FirstReduction => {
+            SvType::Validation => {
                 self.cert.validation = sv;
 
                 if quorum_reached {
-                    self.quorum_reached_first_reduction = quorum_reached;
+                    self.quorum_reached_validation = quorum_reached;
                 }
             }
-            SvType::SecondReduction => {
+            SvType::Ratification => {
                 self.cert.ratification = sv;
 
                 if quorum_reached {
-                    self.quorum_reached_sec_reduction = quorum_reached;
+                    self.quorum_reached_ratification = quorum_reached;
                 }
             }
         }
@@ -90,13 +90,13 @@ impl CertificateInfo {
     }
 
     /// Returns `true` if all fields are non-empty and quorum is reached for
-    /// both reductions
+    /// both validation and ratification
     fn is_ready(&self) -> bool {
         !self.cert.validation.is_empty()
             && !self.cert.ratification.is_empty()
             && self.hash.is_some()
-            && self.quorum_reached_first_reduction
-            && self.quorum_reached_sec_reduction
+            && self.quorum_reached_validation
+            && self.quorum_reached_ratification
     }
 
     /// Returns `true` if the certificate has empty hash
@@ -110,7 +110,7 @@ pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 pub struct CertInfoRegistry {
     ru: RoundUpdate,
 
-    /// List of iterations agreements. Position in the array represents
+    /// List of iterations certificates. Position in the array represents
     /// iteration number.
     cert_list: [CertificateInfo; CONSENSUS_MAX_ITER as usize],
 }
@@ -125,7 +125,8 @@ impl CertInfoRegistry {
     }
 
     /// Adds step votes per iteration
-    /// Returns an agreement if both reductions for an iteration are available
+    /// Returns a quorum if both validation and ratification for an iteration
+    /// exist
     pub(crate) fn add_step_votes(
         &mut self,
         step: u8,
@@ -141,17 +142,13 @@ impl CertInfoRegistry {
 
         let r = &mut self.cert_list[iter_num as usize];
         if r.add_sv(iter_num, hash, sv, svt, quorum_reached) {
-            return Some(Self::build_agreement_msg(
-                self.ru.clone(),
-                iter_num,
-                *r,
-            ));
+            return Some(Self::build_quorum_msg(self.ru.clone(), iter_num, *r));
         }
 
         None
     }
 
-    fn build_agreement_msg(
+    fn build_quorum_msg(
         ru: RoundUpdate,
         iteration: u8,
         result: CertificateInfo,
@@ -159,20 +156,20 @@ impl CertInfoRegistry {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            step: iteration.step_from_name(StepName::SecondRed),
+            step: iteration.step_from_name(StepName::Ratification),
             block_hash: result.hash.unwrap_or_default(),
             topic: Topics::Quorum as u8,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        let payload = payload::Agreement {
+        let payload = payload::Quorum {
             signature,
-            first_step: result.cert.validation,
-            second_step: result.cert.ratification,
+            validation: result.cert.validation,
+            ratification: result.cert.ratification,
         };
 
-        Message::new_agreement(hdr, payload)
+        Message::new_quorum(hdr, payload)
     }
 
     pub(crate) fn get_nil_certificates(
