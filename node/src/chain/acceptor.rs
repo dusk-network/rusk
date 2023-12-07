@@ -129,6 +129,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn update_most_recent_block(
         &self,
         blk: &Block,
+        label: Label,
     ) -> anyhow::Result<()> {
         let mut task = self.task.write().await;
 
@@ -156,7 +157,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .update(|t| t.set_register(blk.header()))?;
 
         *provisioners_list = self.vm.read().await.get_provisioners()?;
-        *mrb = BlockWithLabel::new_with_label(blk.clone(), Label::Final); // TODO: Is this correct
+        *mrb = BlockWithLabel::new_with_label(blk.clone(), label);
 
         Ok(())
     }
@@ -348,28 +349,36 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         // VM was reverted to.
 
         // The blockchain tip (most recent block) after reverting
-        let mut most_recent_block = Block::default();
+        let mut blk = Block::default();
+        let mut label: Label = Label::Attested;
 
         self.db.read().await.update(|t| {
             let mut height = curr_height;
             while height != 0 {
-                let blk = Ledger::fetch_block_by_height(t, height)?
+                let b = Ledger::fetch_block_by_height(t, height)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
+                let h = b.header();
 
-                if blk.header().state_hash == target_state_hash {
-                    most_recent_block = blk;
+                if h.state_hash == target_state_hash {
+                    label =
+                        t.fetch_block_label_by_height(h.height)?.ok_or_else(
+                            || anyhow::anyhow!("could not fetch block label"),
+                        )?;
+
+                    blk = b;
                     break;
                 }
 
                 info!(
-                    event = "deleted block height",
-                    height = blk.header().height,
-                    iter = blk.header().iteration,
-                    hash = hex::encode(blk.header().hash)
+                    event = "block deleted",
+                    height = h.height,
+                    iter = h.iteration,
+                    label = format!("{:?}", label),
+                    hash = hex::encode(h.hash)
                 );
 
                 // Delete any rocksdb record related to this block
-                Ledger::delete_block(t, &blk)?;
+                t.delete_block(&blk)?;
 
                 // Attempt to resubmit transactions back to mempool.
                 // An error here is not considered critical.
@@ -385,19 +394,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
-        if most_recent_block.header().state_hash != target_state_hash {
+        if blk.header().state_hash != target_state_hash {
             return Err(anyhow!("Failed to revert to proper state"));
         }
 
         // Update blockchain tip to be the one we reverted to.
         info!(
             event = "updating blockchain tip",
-            height = most_recent_block.header().height,
-            iter = most_recent_block.header().iteration,
-            state_root = hex::encode(most_recent_block.header().state_hash)
+            height = blk.header().height,
+            iter = blk.header().iteration,
+            state_root = hex::encode(blk.header().state_hash)
         );
 
-        self.update_most_recent_block(&most_recent_block).await
+        self.update_most_recent_block(&blk, label).await
     }
 
     pub(crate) async fn get_curr_height(&self) -> u64 {
