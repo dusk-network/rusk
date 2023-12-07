@@ -623,8 +623,8 @@ pub mod payload {
         /// Generates a certificate from agreement.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
-                first_reduction: self.first_step,
-                second_reduction: self.second_step,
+                validation: self.first_step,
+                ratification: self.second_step,
             }
         }
     }
@@ -925,13 +925,13 @@ mod tests {
             hash: [6; 32],
             txroot: [7; 32],
             cert: Certificate {
-                first_reduction: ledger::StepVotes::new([6; 48], 22222222),
-                second_reduction: ledger::StepVotes::new([7; 48], 3333333),
+                validation: ledger::StepVotes::new([6; 48], 22222222),
+                ratification: ledger::StepVotes::new([7; 48], 3333333),
             },
             iteration: 1,
             prev_block_cert: Certificate {
-                first_reduction: ledger::StepVotes::new([6; 48], 444444444),
-                second_reduction: ledger::StepVotes::new([7; 48], 55555555),
+                validation: ledger::StepVotes::new([6; 48], 444444444),
+                ratification: ledger::StepVotes::new([7; 48], 55555555),
             },
             failed_iterations: Default::default(),
         };

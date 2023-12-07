@@ -163,15 +163,15 @@ impl Serializable for Certificate {
         // we cannot use here StepVotes::write for now.
         Self::write_var_bytes(
             w,
-            &self.first_reduction.aggregate_signature.inner()[..],
+            &self.validation.aggregate_signature.inner()[..],
         )?;
         Self::write_var_bytes(
             w,
-            &self.second_reduction.aggregate_signature.inner()[..],
+            &self.ratification.aggregate_signature.inner()[..],
         )?;
 
-        w.write_all(&self.first_reduction.bitset.to_le_bytes())?;
-        w.write_all(&self.second_reduction.bitset.to_le_bytes())?;
+        w.write_all(&self.validation.bitset.to_le_bytes())?;
+        w.write_all(&self.ratification.bitset.to_le_bytes())?;
 
         Ok(())
     }
@@ -180,30 +180,30 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let first_red_signature: [u8; 48] = Self::read_var_bytes(r)?
+        let validation_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let second_red_signature: [u8; 48] = Self::read_var_bytes(r)?
+        let ratification_signature: [u8; 48] = Self::read_var_bytes(r)?
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        let first_red_bitset = u64::from_le_bytes(buf);
+        let validation_bitset = u64::from_le_bytes(buf);
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf)?;
-        let sec_red_bitset = u64::from_le_bytes(buf);
+        let ratification_bitset = u64::from_le_bytes(buf);
 
         Ok(Certificate {
-            first_reduction: StepVotes {
-                bitset: first_red_bitset,
-                aggregate_signature: Signature(first_red_signature),
+            validation: StepVotes {
+                bitset: validation_bitset,
+                aggregate_signature: Signature(validation_signature),
             },
-            second_reduction: StepVotes {
-                bitset: sec_red_bitset,
-                aggregate_signature: Signature(second_red_signature),
+            ratification: StepVotes {
+                bitset: ratification_bitset,
+                aggregate_signature: Signature(ratification_signature),
             },
         })
     }
