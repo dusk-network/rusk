@@ -51,7 +51,7 @@ impl Display for Error {
 /// Performs all three-steps verification of a quorum msg.
 pub async fn verify_quorum(
     msg: Message,
-    committees_set: Arc<Mutex<CommitteeSet>>,
+    committees_set: Arc<Mutex<CommitteeSet<'_>>>,
     seed: Seed,
 ) -> Result<(), Error> {
     match msg.payload {
@@ -117,7 +117,7 @@ pub async fn verify_quorum(
 
 pub async fn verify_step_votes(
     sv: &StepVotes,
-    committees_set: &Arc<Mutex<CommitteeSet>>,
+    committees_set: &Arc<Mutex<CommitteeSet<'_>>>,
     seed: Seed,
     hdr: &Header,
     step_offset: u8,
@@ -159,7 +159,7 @@ pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
     signature: &[u8; 48],
-    committees_set: &Arc<Mutex<CommitteeSet>>,
+    committees_set: &Arc<Mutex<CommitteeSet<'_>>>,
     cfg: &sortition::Config,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {

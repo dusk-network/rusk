@@ -54,7 +54,7 @@ impl Quorum {
             let round = ru.round;
             let pubkey = ru.pubkey_bls.to_bs58();
             // Run quorum life-cycle loop
-            Executor::new(ru, provisioners, inbound, outbound, db)
+            Executor::new(ru, &provisioners, inbound, outbound, db)
                 .run(future_msgs)
                 .instrument(tracing::info_span!("agr_task", round, pubkey))
                 .await
@@ -64,20 +64,20 @@ impl Quorum {
 
 /// Executor implements life-cycle loop of a single quorum instance. This
 /// should be started with each new round and dropped on round termination.
-struct Executor<D: Database> {
+struct Executor<'p, D: Database> {
     ru: RoundUpdate,
 
     inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
-    committees_set: Arc<Mutex<CommitteeSet>>,
+    committees_set: Arc<Mutex<CommitteeSet<'p>>>,
     db: Arc<Mutex<D>>,
 }
 
-impl<D: Database> Executor<D> {
+impl<'p, D: Database> Executor<'p, D> {
     fn new(
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: &'p Provisioners,
         inbound_queue: AsyncQueue<Message>,
         outbound_queue: AsyncQueue<Message>,
         db: Arc<Mutex<D>>,

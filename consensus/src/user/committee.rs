@@ -162,14 +162,14 @@ impl fmt::Display for &Committee {
 }
 
 /// Implements a cache of generated committees so that they can be reused.
-pub struct CommitteeSet {
+pub struct CommitteeSet<'p> {
     committees: HashMap<sortition::Config, Committee>,
-    provisioners: Provisioners,
+    provisioners: &'p Provisioners,
     this_member_key: PublicKey,
 }
 
-impl CommitteeSet {
-    pub fn new(pubkey: PublicKey, provisioners: Provisioners) -> Self {
+impl<'p> CommitteeSet<'p> {
+    pub fn new(pubkey: PublicKey, provisioners: &'p Provisioners) -> Self {
         CommitteeSet {
             provisioners,
             committees: HashMap::new(),
@@ -231,7 +231,7 @@ impl CommitteeSet {
     }
 
     pub fn get_provisioners(&self) -> &Provisioners {
-        &self.provisioners
+        self.provisioners
     }
 
     pub fn bits(
@@ -248,7 +248,7 @@ impl CommitteeSet {
             .or_insert_with_key(|config| {
                 Committee::new(
                     self.this_member_key.clone(),
-                    &self.provisioners,
+                    self.provisioners,
                     config,
                 )
             })
