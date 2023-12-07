@@ -209,6 +209,4 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> Node<N, DB, VM> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-}
+mod tests {}

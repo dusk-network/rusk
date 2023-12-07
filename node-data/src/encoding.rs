@@ -281,6 +281,36 @@ impl Serializable for IterationsInfo {
         })
     }
 }
+
+impl From<u8> for Label {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Label::Accepted,
+            1 => Label::Attested,
+            2 => Label::Final,
+            _ => panic!("Invalid u8 value for Label"),
+        }
+    }
+}
+
+impl Serializable for Label {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        let byte: u8 = (*self) as u8;
+        w.write_all(&byte.to_le_bytes())?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf[..])?;
+
+        Ok(buf[0].into())
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
