@@ -77,7 +77,7 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 0,
-                config::FIRST_REDUCTION_COMMITTEE_SIZE,
+                config::VALIDATION_COMMITTEE_SIZE,
                 true,
             )
             .await
@@ -97,7 +97,7 @@ pub async fn verify_agreement(
                 seed,
                 &msg.header,
                 1,
-                config::SECOND_REDUCTION_COMMITTEE_SIZE,
+                config::RATIFICATION_COMMITTEE_SIZE,
                 true,
             )
             .await

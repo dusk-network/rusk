@@ -63,7 +63,7 @@ impl<T: Operations> Generator<T> {
             round: ru.round,
             block_hash: candidate.header().hash,
             step,
-            topic: Topics::NewBlock as u8,
+            topic: Topics::Candidate as u8,
         };
 
         let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());

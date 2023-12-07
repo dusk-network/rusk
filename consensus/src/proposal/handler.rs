@@ -15,13 +15,13 @@ use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub struct Selection<D: Database> {
+pub struct ProposalHandler<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
     pub(crate) _sv_registry: SafeCertificateInfoRegistry,
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for Selection<D> {
+impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
         &mut self,
@@ -76,7 +76,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
     }
 }
 
-impl<D: Database> Selection<D> {
+impl<D: Database> ProposalHandler<D> {
     pub(crate) fn new(
         db: Arc<Mutex<D>>,
         sv_registry: SafeCertificateInfoRegistry,

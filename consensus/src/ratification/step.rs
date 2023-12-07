@@ -8,50 +8,64 @@ use crate::commons::{spawn_cast_vote, ConsensusError, Database};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
-use crate::firststep::handler;
+use std::marker::PhantomData;
 
+use crate::ratification::handler;
 use crate::user::committee::Committee;
-use node_data::ledger::to_str;
+use node_data::ledger::{to_str, Block};
 use node_data::message::{Message, Payload, Topics};
-use std::ops::Deref;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::debug;
 
-pub struct Reduction<T, DB: Database> {
+pub struct RatificationStep<T, DB> {
+    handler: Arc<Mutex<handler::RatificationHandler>>,
+    candidate: Option<Block>,
     timeout_millis: u64,
-    handler: Arc<Mutex<handler::Reduction<DB>>>,
     executor: Arc<Mutex<T>>,
+
+    marker: PhantomData<DB>,
 }
-impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
+
+impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
-        _db: Arc<Mutex<DB>>,
-        handler: Arc<Mutex<handler::Reduction<DB>>>,
+        handler: Arc<Mutex<handler::RatificationHandler>>,
     ) -> Self {
         Self {
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler,
+            candidate: None,
+            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             executor,
+            marker: PhantomData,
         }
     }
 
     pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         let mut handler = self.handler.lock().await;
 
+        self.candidate = Some(Block::default());
         handler.reset(step);
 
-        if let Payload::NewBlock(p) = msg.clone().payload {
-            handler.candidate = p.deref().candidate.clone();
+        if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
+            handler.first_step_votes = p.sv;
+            self.candidate = Some(p.candidate);
         }
 
-        debug!(
+        tracing::debug!(
             event = "init",
             name = self.name(),
             round = round,
             step = step,
             timeout = self.timeout_millis,
-            hash = to_str(&handler.candidate.header().hash),
+            hash = to_str(
+                &self
+                    .candidate
+                    .as_ref()
+                    .map_or(&Block::default(), |c| c)
+                    .header()
+                    .hash
+            ),
+            fsv_bitset = handler.first_step_votes.bitset,
         )
     }
 
@@ -61,20 +75,21 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         committee: Committee,
     ) -> Result<Message, ConsensusError> {
         if committee.am_member() {
-            let candidate = self.handler.lock().await.candidate.clone();
-            // Send reduction async
-            spawn_cast_vote(
-                &mut ctx.iter_ctx.join_set,
-                ctx.iter_ctx.verified_hash.clone(),
-                candidate,
-                committee.get_my_pubkey().clone(),
-                ctx.round_update.clone(),
-                ctx.step,
-                ctx.outbound.clone(),
-                ctx.inbound.clone(),
-                self.executor.clone(),
-                Topics::FirstReduction,
-            );
+            //  Send reduction in async way
+            if let Some(b) = &self.candidate {
+                spawn_cast_vote(
+                    &mut ctx.iter_ctx.join_set,
+                    ctx.iter_ctx.verified_hash.clone(),
+                    b.clone(),
+                    committee.get_my_pubkey().clone(),
+                    ctx.round_update.clone(),
+                    ctx.step,
+                    ctx.outbound.clone(),
+                    ctx.inbound.clone(),
+                    self.executor.clone(),
+                    Topics::Ratification,
+                );
+            }
         }
 
         // handle queued messages for current round and step.
@@ -94,12 +109,13 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     }
 
     pub fn name(&self) -> &'static str {
-        "1st_red"
+        "2nd_red"
     }
     pub fn get_timeout(&self) -> u64 {
         self.timeout_millis
     }
+
     pub fn get_committee_size(&self) -> usize {
-        config::FIRST_REDUCTION_COMMITTEE_SIZE
+        config::RATIFICATION_COMMITTEE_SIZE
     }
 }

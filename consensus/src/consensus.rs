@@ -16,10 +16,10 @@ use node_data::message::{AsyncQueue, Message, Topics};
 
 use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
+use crate::proposal;
 use crate::queue::Queue;
-use crate::selection;
 use crate::user::provisioners::Provisioners;
-use crate::{firststep, secondstep};
+use crate::{ratification, validation};
 use tracing::Instrument;
 
 use crate::step_votes_reg::CertInfoRegistry;
@@ -86,9 +86,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// Spins the consensus state machine. The consensus runs for the whole
     /// round until either a new round is produced or the node needs to re-sync.
     ///
-    /// The Agreement loop (acting roundwise) runs concurrently with the
-    /// generation-selection-reduction loop (acting step-wise).
-    ///
     /// # Arguments
     ///
     /// * `provisioner` - a list of the provisioners based on the most recent
@@ -115,7 +112,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         let sender =
             AgreementSender::new(self.agreement_process.inbound_queue.clone());
 
-        // Consensus loop - generation-selection-reduction loop
+        // Consensus loop - generation-proposal-reduction loop
         let mut main_task_handle =
             self.spawn_main_loop(ru, provisioners, sender);
 
@@ -170,33 +167,36 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
             let sel_handler =
-                Arc::new(Mutex::new(selection::handler::Selection::new(
+                Arc::new(Mutex::new(proposal::handler::ProposalHandler::new(
                     db.clone(),
                     sv_registry.clone(),
                 )));
 
-            let first_handler =
-                Arc::new(Mutex::new(firststep::handler::Reduction::new(
+            let first_handler = Arc::new(Mutex::new(
+                validation::handler::ValidationHandler::new(
                     db.clone(),
                     sv_registry.clone(),
-                )));
+                ),
+            ));
 
             let sec_handler = Arc::new(Mutex::new(
-                secondstep::handler::Reduction::new(sv_registry.clone()),
+                ratification::handler::RatificationHandler::new(
+                    sv_registry.clone(),
+                ),
             ));
 
             let mut phases = [
-                Phase::Selection(selection::step::Selection::new(
+                Phase::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
                     sel_handler.clone(),
                 )),
-                Phase::Reduction1(firststep::step::Reduction::new(
+                Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
                     db.clone(),
                     first_handler.clone(),
                 )),
-                Phase::Reduction2(secondstep::step::Reduction::new(
+                Phase::Ratification(ratification::step::RatificationStep::new(
                     executor.clone(),
                     sec_handler.clone(),
                 )),
@@ -261,7 +261,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                     // During execution of any step we may encounter that an
                     // agreement is generated for a former or current iteration.
-                    if msg.topic() == Topics::Agreement {
+                    if msg.topic() == Topics::Quorum {
                         sender.send(msg.clone()).await;
                     }
                 }

@@ -12,7 +12,7 @@ use node_data::message::Message;
 
 use crate::user::committee::Committee;
 
-use crate::{firststep, secondstep, selection};
+use crate::{proposal, ratification, validation};
 
 use tracing::{debug, trace};
 
@@ -20,9 +20,9 @@ macro_rules! await_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
         {
            match $e {
-                Phase::Selection(p) => p.$n($($args,)*).await,
-                Phase::Reduction1(p) => p.$n($($args,)*).await,
-                Phase::Reduction2(p) => p.$n($($args,)*).await,
+                Phase::Proposal(p) => p.$n($($args,)*).await,
+                Phase::Validation(p) => p.$n($($args,)*).await,
+                Phase::Ratification(p) => p.$n($($args,)*).await,
             }
         }
     };
@@ -32,18 +32,18 @@ macro_rules! call_phase {
     ($e:expr, $n:ident ( $($args:expr), *)) => {
         {
            match $e {
-                Phase::Selection(p) => p.$n($($args,)*),
-                Phase::Reduction1(p) => p.$n($($args,)*),
-                Phase::Reduction2(p) => p.$n($($args,)*),
+                Phase::Proposal(p) => p.$n($($args,)*),
+                Phase::Validation(p) => p.$n($($args,)*),
+                Phase::Ratification(p) => p.$n($($args,)*),
             }
         }
     };
 }
 
 pub enum Phase<T: Operations, D: Database> {
-    Selection(selection::step::Selection<T, D>),
-    Reduction1(firststep::step::Reduction<T, D>),
-    Reduction2(secondstep::step::Reduction<T, D>),
+    Proposal(proposal::step::ProposalStep<T, D>),
+    Validation(validation::step::ValidationStep<T, D>),
+    Ratification(ratification::step::RatificationStep<T, D>),
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
@@ -63,7 +63,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         // Perform deterministic_sortition to generate committee of size=N.
         // The extracted members are the provisioners eligible to vote on this
-        // particular round and step. In the context of Selection phase,
+        // particular round and step. In the context of Proposal phase,
         // the extracted member is the one eligible to generate the candidate
         // block.
         let step_committee = Committee::new(

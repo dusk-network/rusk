@@ -17,7 +17,7 @@ use node_data::message::{payload, Message, Payload, Topics};
 
 use crate::user::committee::Committee;
 
-pub struct Reduction {
+pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
@@ -26,7 +26,7 @@ pub struct Reduction {
 }
 
 #[async_trait]
-impl MsgHandler<Message> for Reduction {
+impl MsgHandler<Message> for RatificationHandler {
     fn verify(
         &mut self,
         msg: Message,
@@ -146,7 +146,7 @@ impl MsgHandler<Message> for Reduction {
     }
 }
 
-impl Reduction {
+impl RatificationHandler {
     pub(crate) fn new(sv_registry: SafeCertificateInfoRegistry) -> Self {
         Self {
             sv_registry,
@@ -168,7 +168,7 @@ impl Reduction {
             round: ru.round,
             step,
             block_hash,
-            topic: Topics::Agreement as u8,
+            topic: Topics::Quorum as u8,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());

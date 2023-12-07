@@ -47,7 +47,7 @@ fn final_result_with_timeout(
     ))
 }
 
-pub struct Reduction<DB: Database> {
+pub struct ValidationHandler<DB: Database> {
     sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) db: Arc<Mutex<DB>>,
@@ -56,7 +56,7 @@ pub struct Reduction<DB: Database> {
     curr_step: u8,
 }
 
-impl<DB: Database> Reduction<DB> {
+impl<DB: Database> ValidationHandler<DB> {
     pub(crate) fn new(
         db: Arc<Mutex<DB>>,
         sv_registry: SafeCertificateInfoRegistry,
@@ -77,7 +77,7 @@ impl<DB: Database> Reduction<DB> {
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for Reduction<D> {
+impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,

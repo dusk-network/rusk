@@ -204,7 +204,7 @@ mod tests {
                     round: 999999,
                     step: 255,
                     block_hash: candidate.header().hash,
-                    topic: Topics::NewBlock as u8,
+                    topic: Topics::Candidate as u8,
                 },
                 NewBlock {
                     prev_hash: [14; 32],
@@ -282,7 +282,7 @@ mod tests {
                     round: 99999,
                     step: 123,
                     block_hash: FIXED_HASH,
-                    topic: Topics::Agreement as u8,
+                    topic: Topics::Quorum as u8,
                 },
                 Agreement {
                     signature: [5u8; 48],

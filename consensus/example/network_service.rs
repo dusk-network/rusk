@@ -19,7 +19,7 @@ pub async fn run_main_loop(
 ) {
     // Initialize reader and its dispatcher
     let mut r = Reader::default();
-    r.msg_dispatcher.add(Topics::Agreement, agr_inbound.clone());
+    r.msg_dispatcher.add(Topics::Quorum, agr_inbound.clone());
     r.msg_dispatcher.add_default(inbound);
 
     let peer = Peer::new(conf, r);
