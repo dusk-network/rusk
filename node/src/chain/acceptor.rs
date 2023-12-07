@@ -268,7 +268,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             self.log_missing_iterations(
                 &provisioners_list,
                 header.iteration,
-                header.seed,
+                mrb.inner().header().seed,
                 header.height,
             );
 

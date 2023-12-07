@@ -407,8 +407,7 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
         Ok(self
             .snapshot
             .get_cf(self.ledger_height_cf, height.to_le_bytes())?
-            .iter()
-            .find(|v| v.len() == LEN)
+            .filter(|v| v.len() == LEN)
             .map(|h| Label::from(h[LEN - 1])))
     }
 }
