@@ -95,6 +95,8 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             &provisioners_list,
             blk.header(),
         )
-        .await
+        .await?;
+
+        Ok(())
     }
 }
