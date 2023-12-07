@@ -203,7 +203,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
             .await
             .send_and_wait(
                 &request,
-                Topics::Candidate,
+                Topics::GetCandidateResp,
                 TIMEOUT_MILLIS,
                 RECV_PEERS_COUNT,
             )

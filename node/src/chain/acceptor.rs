@@ -21,7 +21,7 @@ use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
 use dusk_consensus::agreement::verifiers;
-use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
+use dusk_consensus::config::{self, PROPOSAL_COMMITTEE_SIZE};
 
 use super::consensus::Task;
 
@@ -181,7 +181,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 node_data::bls::PublicKey::default(),
                 provisioners_list,
                 &sortition::Config {
-                    committee_size: SELECTION_COMMITTEE_SIZE,
+                    committee_size: PROPOSAL_COMMITTEE_SIZE,
                     round,
                     seed,
                     step: iter * 3,
@@ -557,7 +557,7 @@ pub async fn verify_block_cert(
         curr_seed,
         &hdr,
         0,
-        config::FIRST_REDUCTION_COMMITTEE_SIZE,
+        config::VALIDATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await
@@ -580,7 +580,7 @@ pub async fn verify_block_cert(
         curr_seed,
         &hdr,
         1,
-        config::SECOND_REDUCTION_COMMITTEE_SIZE,
+        config::RATIFICATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await
