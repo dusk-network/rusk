@@ -18,7 +18,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 use dusk_consensus::quorum::verifiers;
@@ -594,10 +594,10 @@ pub async fn verify_block_cert(
     iteration: u8,
     enable_quorum_check: bool,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
-    let committee = Arc::new(Mutex::new(CommitteeSet::new(
+    let committee = RwLock::new(CommitteeSet::new(
         node_data::bls::PublicKey::default(),
         curr_eligible_provisioners,
-    )));
+    ));
 
     let hdr = node_data::message::Header {
         topic: 0,
