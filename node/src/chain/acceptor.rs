@@ -596,7 +596,7 @@ pub async fn verify_block_cert(
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
     let committee = Arc::new(Mutex::new(CommitteeSet::new(
         node_data::bls::PublicKey::default(),
-        curr_eligible_provisioners.clone(),
+        curr_eligible_provisioners,
     )));
 
     let hdr = node_data::message::Header {
