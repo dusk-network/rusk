@@ -99,7 +99,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
             let iteration = 0;
             let mut cert = Certificate::default();
 
-            cert.first_reduction = create_step_votes(
+            cert.validation = create_step_votes(
                 seed,
                 height,
                 block_hash,
@@ -108,7 +108,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 &provisioners,
                 &keys[..],
             );
-            cert.second_reduction = create_step_votes(
+            cert.ratification = create_step_votes(
                 seed,
                 height,
                 block_hash,

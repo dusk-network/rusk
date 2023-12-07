@@ -289,8 +289,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
-        let fsv_bitset = blk.header().cert.first_reduction.bitset;
-        let ssv_bitset = blk.header().cert.second_reduction.bitset;
+        let fsv_bitset = blk.header().cert.validation.bitset;
+        let ssv_bitset = blk.header().cert.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
@@ -552,7 +552,7 @@ pub async fn verify_block_cert(
 
     // Verify first reduction
     if let Err(e) = verifiers::verify_step_votes(
-        &cert.first_reduction,
+        &cert.validation,
         &committee,
         curr_seed,
         &hdr,
@@ -568,14 +568,14 @@ pub async fn verify_block_cert(
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.first_reduction,
+            cert.validation,
             e
         ));
     }
 
     // Verify second reduction
     if let Err(e) = verifiers::verify_step_votes(
-        &cert.second_reduction,
+        &cert.ratification,
         &committee,
         curr_seed,
         &hdr,
@@ -591,7 +591,7 @@ pub async fn verify_block_cert(
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.second_reduction,
+            cert.ratification,
             e,
         ));
     }
