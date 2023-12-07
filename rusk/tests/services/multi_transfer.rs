@@ -25,8 +25,8 @@ use crate::common::wallet::{TestProverClient, TestStateClient, TestStore};
 const BLOCK_HEIGHT: u64 = 1;
 // This is purposefully chosen to be low to trigger the discarding of a
 // perfectly good transaction.
-const BLOCK_GAS_LIMIT: u64 = 2_500_000;
-const GAS_LIMIT: u64 = 1_000_000;
+const BLOCK_GAS_LIMIT: u64 = 24_000_000;
+const GAS_LIMIT: u64 = 12_000_000; // Lowest value for a transfer
 const INITIAL_BALANCE: u64 = 10_000_000_000;
 
 // Creates the Rusk initial state for the tests below

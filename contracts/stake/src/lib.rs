@@ -31,7 +31,7 @@ static mut STATE: StakeState = StakeState::new();
 #[no_mangle]
 unsafe fn stake(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| {
-        assert_external_caller();
+        assert_transfer_caller();
         STATE.stake(arg)
     })
 }
@@ -39,7 +39,7 @@ unsafe fn stake(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn unstake(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| {
-        assert_external_caller();
+        assert_transfer_caller();
         STATE.unstake(arg)
     })
 }
@@ -47,7 +47,7 @@ unsafe fn unstake(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn withdraw(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| {
-        assert_external_caller();
+        assert_transfer_caller();
         STATE.withdraw(arg)
     })
 }
@@ -55,7 +55,7 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
 #[no_mangle]
 unsafe fn allow(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| {
-        assert_external_caller();
+        assert_transfer_caller();
         STATE.allow(arg)
     })
 }
@@ -123,6 +123,16 @@ unsafe fn add_owner(arg_len: u32) -> u32 {
         assert_external_caller();
         STATE.add_owner(pk);
     })
+}
+
+/// Asserts the call is made via the transfer contract.
+///
+/// # Panics
+/// When the `caller` is not [`rusk_abi::TRANSFER_CONTRACT`].
+fn assert_transfer_caller() {
+    if rusk_abi::caller() != rusk_abi::TRANSFER_CONTRACT {
+        panic!("Can only be called from the transfer contract");
+    }
 }
 
 /// Asserts the call is made "from the outside", meaning that it's not an
