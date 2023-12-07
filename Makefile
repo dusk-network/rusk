@@ -17,7 +17,7 @@ keys: circuits ## Create the keys for the circuits
 state: keys wasm ## Create the network state
 	$(MAKE) -C ./rusk recovery-state
 
-wasm: ## Generate the WASM for all the contracts
+wasm: setup-compiler ## Generate the WASM for all the contracts
 	$(MAKE) -C ./contracts $@
 	$(MAKE) -C ./rusk-abi $@
 
@@ -57,4 +57,8 @@ run: keys state ## Run the server
 rusk: keys state ## Build rusk binary
 	$(MAKE) -C ./rusk build
 
-.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk
+COMPILER_VERSION=v0.1.0
+setup-compiler: ## Setup the Dusk Contract Compiler
+	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
+
+.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk setup-compiler
