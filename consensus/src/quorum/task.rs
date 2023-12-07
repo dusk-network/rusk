@@ -41,7 +41,7 @@ impl Quorum {
     /// Spawn a task to process quorum messages for a specified round
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn<D: Database + 'static>(
-        &mut self,
+        &self,
         ru: RoundUpdate,
         provisioners: Provisioners,
         db: Arc<Mutex<D>>,
@@ -95,7 +95,7 @@ impl<'p, D: Database> Executor<'p, D> {
     }
 
     async fn run(
-        &mut self,
+        &self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
         // drain future messages for current round and step.
@@ -137,7 +137,7 @@ impl<'p, D: Database> Executor<'p, D> {
         }
     }
 
-    async fn collect_inbound_msg(&mut self, msg: Message) -> Option<Block> {
+    async fn collect_inbound_msg(&self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
         debug!(
             event = "msg received",
@@ -150,7 +150,7 @@ impl<'p, D: Database> Executor<'p, D> {
         self.collect_quorum(msg).await
     }
 
-    async fn collect_quorum(&mut self, msg: Message) -> Option<Block> {
+    async fn collect_quorum(&self, msg: Message) -> Option<Block> {
         if let Payload::Quorum(quorum) = &msg.payload {
             // Verify quorum
             verifiers::verify_quorum(
@@ -177,7 +177,7 @@ impl<'p, D: Database> Executor<'p, D> {
     }
 
     // Publishes a message
-    async fn publish(&mut self, msg: Message) {
+    async fn publish(&self, msg: Message) {
         let topic = msg.header.topic;
         self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
             error!("unable to publish msg(id:{}) {:?}", topic, err)
