@@ -114,20 +114,18 @@ impl Serializable for Message {
         header.topic = buf[0];
 
         let payload = match topic {
-            Topics::NewBlock => {
+            Topics::Candidate => {
                 Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
-            Topics::FirstReduction | Topics::SecondReduction => {
+            Topics::Validation | Topics::Ratification => {
                 Payload::Reduction(payload::Reduction::read(r)?)
             }
-            Topics::Agreement => {
-                Payload::Agreement(payload::Agreement::read(r)?)
-            }
+            Topics::Quorum => Payload::Agreement(payload::Agreement::read(r)?),
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
             Topics::Tx => {
                 Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
             }
-            Topics::Candidate => Payload::CandidateResp(Box::new(
+            Topics::GetCandidateResp => Payload::CandidateResp(Box::new(
                 payload::CandidateResp::read(r)?,
             )),
             Topics::GetCandidate => {
@@ -226,7 +224,7 @@ impl Message {
     /// Creates topics.Candidate message
     pub fn new_candidate_resp(p: Box<payload::CandidateResp>) -> Message {
         Self {
-            header: Header::new(Topics::Candidate),
+            header: Header::new(Topics::GetCandidateResp),
             payload: Payload::CandidateResp(p),
             ..Default::default()
         }
@@ -295,10 +293,10 @@ impl Message {
 fn is_consensus_msg(topic: u8) -> bool {
     matches!(
         Topics::from(topic),
-        Topics::NewBlock
-            | Topics::FirstReduction
-            | Topics::SecondReduction
-            | Topics::Agreement
+        Topics::Candidate
+            | Topics::Validation
+            | Topics::Ratification
+            | Topics::Quorum
     )
 }
 
@@ -831,13 +829,13 @@ pub enum Topics {
     Block = 11,
 
     // Consensus main loop topics
-    Candidate = 15,
-    NewBlock = 16,
-    FirstReduction = 17,
-    SecondReduction = 18,
+    GetCandidateResp = 15,
+    Candidate = 16,
+    Validation = 17,
+    Ratification = 18,
 
-    // Consensus Agreement loop topics
-    Agreement = 19,
+    // Consensus Quorum loop topics
+    Quorum = 19,
 
     #[default]
     Unknown = 255,
@@ -851,12 +849,12 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Block);
         map_topic!(v, Topics::GetMempool);
         map_topic!(v, Topics::GetInv);
-        map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::GetCandidateResp);
         map_topic!(v, Topics::GetCandidate);
-        map_topic!(v, Topics::NewBlock);
-        map_topic!(v, Topics::FirstReduction);
-        map_topic!(v, Topics::SecondReduction);
-        map_topic!(v, Topics::Agreement);
+        map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::Validation);
+        map_topic!(v, Topics::Ratification);
+        map_topic!(v, Topics::Quorum);
 
         Topics::Unknown
     }
