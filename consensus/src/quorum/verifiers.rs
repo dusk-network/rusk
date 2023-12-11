@@ -7,7 +7,7 @@
 use node_data::ledger::{Seed, StepVotes};
 
 use crate::user::cluster::Cluster;
-use crate::user::committee::CommitteeSet;
+use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 use bytes::Buf;
 
@@ -131,11 +131,14 @@ pub async fn verify_step_votes(
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
 
+    let mut set = committees_set.lock().await;
+    let committee = set.get_or_create(&cfg);
+
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
         &sv.aggregate_signature.inner(),
-        committees_set,
+        committee,
         &cfg,
         enable_quorum_check,
     )
@@ -154,45 +157,37 @@ impl QuorumResult {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
     signature: &[u8; 48],
-    committees_set: &Arc<Mutex<CommitteeSet<'_>>>,
+    committee: &Committee,
     cfg: &sortition::Config,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    let (sub_committee, quorum_result) = {
-        let mut set = committees_set.lock().await;
-        let committee = set.get_or_create(cfg);
-        let sub_committee = committee.intersect(bitset);
+    let sub_committee = committee.intersect(bitset);
 
-        let total = committee.total_occurrences(&sub_committee);
-        let target_quorum = committee.quorum();
+    let total = committee.total_occurrences(&sub_committee);
+    let target_quorum = committee.quorum();
 
-        let quorum_result = QuorumResult {
-            total,
+    let quorum_result = QuorumResult {
+        total,
+        target_quorum,
+    };
+
+    if enable_quorum_check && !quorum_result.quorum_reached() {
+        tracing::error!(
+            desc = "vote_set_too_small",
+            committee = format!("{:#?}", sub_committee),
+            cfg = format!("{:#?}", cfg),
+            bitset,
             target_quorum,
-        };
-
-        if enable_quorum_check && total < target_quorum {
-            tracing::error!(
-                desc = "vote_set_too_small",
-                committee = format!("{:#?}", sub_committee),
-                cfg = format!("{:#?}", cfg),
-                bitset,
-                target_quorum,
-                total,
-            );
-            Err(Error::VoteSetTooSmall(cfg.step))
-        } else {
-            Ok((sub_committee, quorum_result))
-        }
-    }?;
+            total,
+        );
+        return Err(Error::VoteSetTooSmall(cfg.step));
+    }
 
     // aggregate public keys
-
     let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures

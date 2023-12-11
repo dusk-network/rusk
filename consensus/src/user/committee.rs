@@ -10,7 +10,7 @@ use crate::user::sortition;
 use super::cluster::Cluster;
 use crate::config;
 use node_data::bls::PublicKey;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::mem;
 
