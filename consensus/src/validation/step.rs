@@ -41,7 +41,7 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
 
         handler.reset(step);
 
-        if let Payload::NewBlock(p) = msg.clone().payload {
+        if let Payload::Candidate(p) = msg.clone().payload {
             handler.candidate = p.deref().candidate.clone();
         }
 

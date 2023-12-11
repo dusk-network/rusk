@@ -44,7 +44,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             self.db
                 .lock()
                 .await
@@ -92,7 +92,7 @@ impl<D: Database> ProposalHandler<D> {
         msg: &Message,
         committee: &Committee,
     ) -> Result<(), ConsensusError> {
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             //  Verify new_block msg signature
             if msg.header.verify_signature(&p.signature).is_err() {
                 return Err(ConsensusError::InvalidSignature);

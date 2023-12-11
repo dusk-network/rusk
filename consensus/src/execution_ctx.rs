@@ -325,7 +325,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
 
         // Try to vote for candidate block from former iteration
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             // TODO: Perform block header/ Certificate full verification
             // To be addressed with another PR
 
