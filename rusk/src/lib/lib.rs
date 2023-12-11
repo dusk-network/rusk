@@ -168,7 +168,7 @@ impl Rusk {
                         block_height,
                         // We're currently ignoring the result of successful
                         // calls
-                        err: receipt.data.err().map(|e| format!("{e:?}")),
+                        err: receipt.data.err().map(|e| format!("{e}")),
                     });
                 }
                 Err(_) => {
@@ -642,7 +642,7 @@ fn accept(
             gas_spent,
             block_height,
             // We're currently ignoring the result of successful calls
-            err: receipt.data.err().map(|e| format!("{e:?}")),
+            err: receipt.data.err().map(|e| format!("{e}")),
         });
     }
 
