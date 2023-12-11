@@ -73,7 +73,7 @@ impl Serializable for Message {
 
         match &self.payload {
             Payload::NewBlock(p) => p.write(w),
-            Payload::Reduction(p) => p.write(w),
+            Payload::Validation(p) => p.write(w),
             Payload::Quorum(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
@@ -118,7 +118,7 @@ impl Serializable for Message {
                 Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
             }
             Topics::Validation | Topics::Ratification => {
-                Payload::Reduction(payload::Reduction::read(r)?)
+                Payload::Validation(payload::Validation::read(r)?)
             }
             Topics::Quorum => Payload::Quorum(payload::Quorum::read(r)?),
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
@@ -182,11 +182,11 @@ impl Message {
     /// Creates topics.Reduction message
     pub fn new_reduction(
         header: Header,
-        payload: payload::Reduction,
+        payload: payload::Validation,
     ) -> Message {
         Self {
             header,
-            payload: Payload::Reduction(payload),
+            payload: Payload::Validation(payload),
             ..Default::default()
         }
     }
@@ -443,7 +443,7 @@ impl Header {
 
 #[derive(Default, Debug, Clone)]
 pub enum Payload {
-    Reduction(payload::Reduction),
+    Validation(payload::Validation),
     NewBlock(Box<payload::NewBlock>),
     Quorum(payload::Quorum),
 
@@ -469,11 +469,11 @@ pub mod payload {
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    pub struct Reduction {
+    pub struct Validation {
         pub signature: [u8; 48],
     }
 
-    impl Serializable for Reduction {
+    impl Serializable for Validation {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_bytes(w, &self.signature[..])?;
             Ok(())
@@ -487,11 +487,11 @@ pub mod payload {
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-            Ok(Reduction { signature })
+            Ok(Validation { signature })
         }
     }
 
-    impl Default for Reduction {
+    impl Default for Validation {
         fn default() -> Self {
             Self { signature: [0; 48] }
         }
@@ -944,7 +944,7 @@ mod tests {
             aggregate_signature: Signature([4; 48]),
         });
 
-        assert_serialize(payload::Reduction { signature: [4; 48] });
+        assert_serialize(payload::Validation { signature: [4; 48] });
 
         assert_serialize(ledger::StepVotes {
             bitset: 12345,
