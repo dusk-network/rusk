@@ -282,7 +282,7 @@ impl AgreementSender {
         Self { queue }
     }
 
-    /// Sends an agreement (internally) to the agreement loop.
+    /// Sends an quorum (internally) to the quorum loop.
     pub(crate) async fn send(&self, msg: Message) -> bool {
         if let Payload::Quorum(q) = &msg.payload {
             if q.signature == [0u8; 48]

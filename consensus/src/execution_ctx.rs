@@ -341,7 +341,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         {
             if m.header.topic == Topics::Quorum as u8 {
                 debug!(
-                    event = "agreement",
+                    event = "quorum",
                     src = "prev_step",
                     msg_step = m.header.step,
                     hash = to_str(&m.header.block_hash),

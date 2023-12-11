@@ -14,10 +14,10 @@ use node_data::ledger::Block;
 
 use node_data::message::{AsyncQueue, Message, Topics};
 
-use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
 use crate::proposal;
 use crate::queue::Queue;
+use crate::quorum::task;
 use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
 use tracing::Instrument;
@@ -38,9 +38,9 @@ pub struct Consensus<T: Operations, D: Database> {
     /// msgs are pending to be handled in a future round/step.
     future_msgs: Arc<Mutex<Queue<Message>>>,
 
-    /// agreement_layer implements Agreement message handler within the context
+    /// quorum_process implements Quorum message handler within the context
     /// of a separate task execution.
-    agreement_process: step::Agreement,
+    quorum_process: task::Agreement,
 
     /// Reference to the executor of any EST-related call
     executor: Arc<Mutex<T>>,
@@ -74,7 +74,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
-            agreement_process: step::Agreement::new(
+            quorum_process: task::Agreement::new(
                 agr_inbound_queue,
                 agr_outbound_queue,
             ),
@@ -101,16 +101,14 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     ) -> Result<Block, ConsensusError> {
         let round = ru.round;
 
-        // Agreement loop Executes agreement loop in a separate tokio::task to
-        // collect (aggr)Agreement messages.
-        let mut agreement_task_handle = self.agreement_process.spawn(
+        let mut quorum_task_handle = self.quorum_process.spawn(
             ru.clone(),
             provisioners.clone(),
             self.db.clone(),
         );
 
         let sender =
-            AgreementSender::new(self.agreement_process.inbound_queue.clone());
+            AgreementSender::new(self.quorum_process.inbound_queue.clone());
 
         // Consensus loop - proposal-validation-ratificaton loop
         let mut main_task_handle =
@@ -119,9 +117,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         // Wait for any of the tasks to complete.
         let result;
         tokio::select! {
-            recv = &mut agreement_task_handle => {
+            recv = &mut quorum_task_handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
-                tracing::trace!("agreement result: {:?}", result);
+                tracing::trace!("quorum result: {:?}", result);
             },
             recv = &mut main_task_handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
@@ -140,7 +138,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         self.db.lock().await.delete_candidate_blocks();
 
         // Abort all tasks
-        abort(&mut agreement_task_handle).await;
+        abort(&mut quorum_task_handle).await;
         abort(&mut main_task_handle).await;
 
         result
@@ -246,7 +244,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // Execute a phase.
                     // An error returned here terminates consensus
                     // round. This normally happens if consensus channel is
-                    // cancelled by agreement loop on
+                    // cancelled by quorum loop on
                     // finding the winning block for this round.
                     msg = phase
                         .run(ctx)
@@ -260,7 +258,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .await?;
 
                     // During execution of any step we may encounter that an
-                    // agreement is generated for a former or current iteration.
+                    // quorum is generated for a former or current iteration.
                     if msg.topic() == Topics::Quorum {
                         sender.send(msg.clone()).await;
                     }
@@ -269,7 +267,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 iter_ctx.on_end();
 
                 iteration_counter.next()?;
-                // Delegate (agreement) message result to agreement loop for
+                // Delegate (quorum) message result to quorum loop for
                 // further processing.
             }
         })

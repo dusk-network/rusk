@@ -11,7 +11,6 @@ pub mod consensus;
 pub mod user;
 
 mod aggregator;
-pub mod agreement;
 pub mod config;
 pub mod contract_state;
 mod execution_ctx;
@@ -19,6 +18,7 @@ mod msg_handler;
 mod phase;
 mod proposal;
 mod queue;
+pub mod quorum;
 mod ratification;
 mod step_votes_reg;
 mod validation;
