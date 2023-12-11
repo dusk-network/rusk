@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y clang && rm -rf /var/lib/apt/lists/*
 COPY . .
 
 ARG TARGETPLATFORM
+# See also https://github.com/docker/buildx/issues/510
+ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
+
 # Convert Docker platform arg to Rust target name,
 # and install nightly based on the Rust target
 RUN ARCH="$(echo $TARGETPLATFORM | sed 's/linux\///')" && \
