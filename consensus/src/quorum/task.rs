@@ -43,7 +43,7 @@ impl Quorum {
     pub(crate) fn spawn<D: Database + 'static>(
         &self,
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         db: Arc<Mutex<D>>,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let future_msgs = self.future_msgs.clone();

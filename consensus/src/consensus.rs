@@ -96,7 +96,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     pub async fn spin(
         &mut self,
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
         let round = ru.round;
@@ -147,7 +147,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     fn spawn_main_loop(
         &mut self,
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
@@ -233,7 +233,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         inbound.clone(),
                         outbound.clone(),
                         future_msgs.clone(),
-                        &provisioners,
+                        provisioners.as_ref(),
                         ru.clone(),
                         step,
                         executor.clone(),

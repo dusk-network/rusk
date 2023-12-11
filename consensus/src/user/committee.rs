@@ -88,7 +88,7 @@ impl Committee {
 
     // get_occurrences returns values in a vec
     pub fn get_occurrences(&self) -> Vec<usize> {
-        self.members.clone().into_values().collect()
+        self.members.values().copied().collect()
     }
 
     /// Returns number of unique members of the generated committee.
