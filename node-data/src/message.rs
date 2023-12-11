@@ -72,7 +72,7 @@ impl Serializable for Message {
         }
 
         match &self.payload {
-            Payload::NewBlock(p) => p.write(w),
+            Payload::Candidate(p) => p.write(w),
             Payload::Validation(p) => p.write(w),
             Payload::Quorum(p) => p.write(w),
             Payload::Block(p) => p.write(w),
@@ -115,7 +115,7 @@ impl Serializable for Message {
 
         let payload = match topic {
             Topics::Candidate => {
-                Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
+                Payload::Candidate(Box::new(payload::Candidate::read(r)?))
             }
             Topics::Validation | Topics::Ratification => {
                 Payload::Validation(payload::Validation::read(r)?)
@@ -171,16 +171,16 @@ impl MessageTrait for Message {
 
 impl Message {
     /// Creates topics.NewBlock message
-    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
+    pub fn new_newblock(header: Header, p: payload::Candidate) -> Message {
         Self {
             header,
-            payload: Payload::NewBlock(Box::new(p)),
+            payload: Payload::Candidate(Box::new(p)),
             ..Default::default()
         }
     }
 
-    /// Creates topics.Reduction message
-    pub fn new_reduction(
+    /// Creates topics.Validation message
+    pub fn new_validation(
         header: Header,
         payload: payload::Validation,
     ) -> Message {
@@ -444,7 +444,7 @@ impl Header {
 #[derive(Default, Debug, Clone)]
 pub enum Payload {
     Validation(payload::Validation),
-    NewBlock(Box<payload::NewBlock>),
+    Candidate(Box<payload::Candidate>),
     Quorum(payload::Quorum),
 
     StepVotes(ledger::StepVotes),
@@ -498,21 +498,21 @@ pub mod payload {
     }
 
     #[derive(Clone)]
-    pub struct NewBlock {
+    pub struct Candidate {
         pub signature: [u8; 48],
         pub candidate: Block,
     }
 
-    impl std::fmt::Debug for NewBlock {
+    impl std::fmt::Debug for Candidate {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("NewBlock")
+            f.debug_struct("Candidate")
                 .field("signature", &ledger::to_str(&self.signature))
-                .field("candidate", &self.candidate)
+                .field("block", &self.candidate)
                 .finish()
         }
     }
 
-    impl Default for NewBlock {
+    impl Default for Candidate {
         fn default() -> Self {
             Self {
                 candidate: Default::default(),
@@ -521,7 +521,7 @@ pub mod payload {
         }
     }
 
-    impl PartialEq<Self> for NewBlock {
+    impl PartialEq<Self> for Candidate {
         fn eq(&self, other: &Self) -> bool {
             self.signature.eq(&other.signature)
                 && self
@@ -532,9 +532,9 @@ pub mod payload {
         }
     }
 
-    impl Eq for NewBlock {}
+    impl Eq for Candidate {}
 
-    impl Serializable for NewBlock {
+    impl Serializable for Candidate {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.candidate.write(w)?;
             Self::write_var_bytes(w, &self.signature[..])?;
@@ -546,7 +546,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            Ok(NewBlock {
+            Ok(Candidate {
                 candidate: Block::read(r)?,
                 signature: Self::read_var_bytes(r)?
                     .try_into()
@@ -934,7 +934,7 @@ mod tests {
         let sample_block =
             ledger::Block::new(header, vec![]).expect("should be valid block");
 
-        assert_serialize(payload::NewBlock {
+        assert_serialize(payload::Candidate {
             candidate: sample_block,
             signature: [4; 48],
         });
