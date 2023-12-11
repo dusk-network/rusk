@@ -28,7 +28,8 @@ RUN ARCH="$(echo $TARGETPLATFORM | sed 's/linux\///')" && \
     rustup component add rust-src --toolchain nightly-2023-05-22-$RUST_TARGET
 
 # Generate keys, compile genesis contracts and generate genesis state
-RUN make keys && make wasm
+RUN make keys
+RUN make wasm
 RUN mkdir -p /.dusk/rusk && cp examples/consensus.keys /.dusk/rusk/consensus.keys
 RUN cargo r --release -p rusk -- recovery-state --init examples/genesis.toml -o /tmp/example.state
 RUN cargo b --release -p rusk
