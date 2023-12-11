@@ -38,7 +38,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::VoteSetTooSmall(step) => {
-                write!(f, "Failed to reach a quorum at step {}", step)
+                write!(f, "Failed to reach a quorum at step {step}")
             }
             Error::VerificationFailed(_) => write!(f, "Verification error"),
             Error::EmptyApk => write!(f, "Empty Apk instance"),
@@ -163,32 +163,31 @@ pub async fn verify_votes(
     cfg: &sortition::Config,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    let total: usize;
-    let target_quorum: usize;
+    let (sub_committee, quorum_result) = {
+        let mut set = committees_set.lock().await;
+        let committee = set.get_or_create(cfg);
+        let sub_committee = committee.intersect(bitset);
 
-    let sub_committee = {
-        let mut guard = committees_set.lock().await;
-        let sub_committee = guard.intersect(bitset, cfg);
-        total = guard.total_occurrences(&sub_committee, cfg);
-        target_quorum = guard.quorum(cfg);
+        let total = committee.total_occurrences(&sub_committee);
+        let target_quorum = committee.quorum();
 
-        if enable_quorum_check {
-            let target_quorum = guard.quorum(cfg);
-            if total < target_quorum {
-                tracing::error!(
-                    desc = "vote_set_too_small",
-                    committee = format!("{:#?}", sub_committee),
-                    cfg = format!("{:#?}", cfg),
-                    bitset = bitset,
-                    target_quorum = target_quorum,
-                    total = total,
-                );
-                Err(Error::VoteSetTooSmall(cfg.step))
-            } else {
-                Ok(sub_committee)
-            }
+        let quorum_result = QuorumResult {
+            total,
+            target_quorum,
+        };
+
+        if enable_quorum_check && total < target_quorum {
+            tracing::error!(
+                desc = "vote_set_too_small",
+                committee = format!("{:#?}", sub_committee),
+                cfg = format!("{:#?}", cfg),
+                bitset,
+                target_quorum,
+                total,
+            );
+            Err(Error::VoteSetTooSmall(cfg.step))
         } else {
-            Ok(sub_committee)
+            Ok((sub_committee, quorum_result))
         }
     }?;
 
@@ -200,10 +199,7 @@ pub async fn verify_votes(
     verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
 
     // Verification done
-    Ok(QuorumResult {
-        total,
-        target_quorum,
-    })
+    Ok(quorum_result)
 }
 
 impl Cluster<PublicKey> {

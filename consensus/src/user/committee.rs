@@ -177,72 +177,7 @@ impl<'p> CommitteeSet<'p> {
         }
     }
 
-    pub fn is_member(
-        &mut self,
-        pubkey: &PublicKey,
-        cfg: &sortition::Config,
-    ) -> bool {
-        self.get_or_create(cfg).is_member(pubkey)
-    }
-
-    /// Returns number of all unique public keys
-    pub fn get_unique_members(&self) -> usize {
-        let mut merged = HashSet::new();
-        self.committees.iter().for_each(|(_, committee)| {
-            committee.members.iter().for_each(|(m, s)| {
-                if *s > 0 {
-                    merged.insert(m.bytes());
-                }
-            });
-        });
-
-        merged.len()
-    }
-
-    pub fn votes_for(
-        &mut self,
-        pubkey: &PublicKey,
-        cfg: &sortition::Config,
-    ) -> Option<usize> {
-        self.get_or_create(cfg).votes_for(pubkey)
-    }
-
-    pub fn quorum(&mut self, cfg: &sortition::Config) -> usize {
-        self.get_or_create(cfg).quorum()
-    }
-    pub fn nil_quorum(&mut self, cfg: &sortition::Config) -> usize {
-        self.get_or_create(cfg).nil_quorum()
-    }
-
-    pub fn intersect(
-        &mut self,
-        bitset: u64,
-        cfg: &sortition::Config,
-    ) -> Cluster<PublicKey> {
-        self.get_or_create(cfg).intersect(bitset)
-    }
-
-    pub fn total_occurrences(
-        &mut self,
-        voters: &Cluster<PublicKey>,
-        cfg: &sortition::Config,
-    ) -> usize {
-        self.get_or_create(cfg).total_occurrences(voters)
-    }
-
-    pub fn get_provisioners(&self) -> &Provisioners {
-        self.provisioners
-    }
-
-    pub fn bits(
-        &mut self,
-        voters: &Cluster<PublicKey>,
-        cfg: &sortition::Config,
-    ) -> u64 {
-        self.get_or_create(cfg).bits(voters)
-    }
-
-    fn get_or_create(&mut self, cfg: &sortition::Config) -> &Committee {
+    pub fn get_or_create(&mut self, cfg: &sortition::Config) -> &Committee {
         self.committees
             .entry(cfg.clone())
             .or_insert_with_key(|config| {
