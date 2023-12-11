@@ -181,7 +181,7 @@ fn wallet_reward(
     let tx = wallet
         .execute(
             &mut rng,
-            rusk_abi::STAKE_CONTRACT,
+            rusk_abi::STAKE_CONTRACT.to_bytes().into(),
             String::from("reward"),
             reward_calldata,
             0,
