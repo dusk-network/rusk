@@ -195,7 +195,7 @@ pub fn spawn_cast_vote<T: Operations + 'static>(
             let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
             // Sign and construct reduction message
-            let msg = message::Message::new_reduction(
+            let msg = message::Message::new_validation(
                 hdr,
                 message::payload::Validation { signature },
             );
@@ -259,11 +259,11 @@ impl IterCounter for u8 {
     }
 
     fn step_from_name(&self, st: StepName) -> Self::Step {
-        let sel_num = self * Self::STEP_NUM;
+        let proposal_step_num = self * Self::STEP_NUM;
         match st {
-            StepName::Proposal => sel_num,
-            StepName::Validation => sel_num + 1,
-            StepName::Ratification => sel_num + 2,
+            StepName::Proposal => proposal_step_num,
+            StepName::Validation => proposal_step_num + 1,
+            StepName::Ratification => proposal_step_num + 2,
         }
     }
 
@@ -298,8 +298,8 @@ impl AgreementSender {
                 hash = to_str(&msg.header.block_hash),
                 round = msg.header.round,
                 step = msg.header.step,
-                first = format!("{:#?}", q.validation),
-                second = format!("{:#?}", q.ratification),
+                validation = format!("{:#?}", q.validation),
+                ratification = format!("{:#?}", q.ratification),
                 signature = to_str(&q.signature),
             );
 

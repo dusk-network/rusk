@@ -112,7 +112,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         let sender =
             AgreementSender::new(self.agreement_process.inbound_queue.clone());
 
-        // Consensus loop - generation-proposal-reduction loop
+        // Consensus loop - proposal-validation-ratificaton loop
         let mut main_task_handle =
             self.spawn_main_loop(ru, provisioners, sender);
 
@@ -166,20 +166,20 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let sv_registry =
                 Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
-            let sel_handler =
+            let proposal_handler =
                 Arc::new(Mutex::new(proposal::handler::ProposalHandler::new(
                     db.clone(),
                     sv_registry.clone(),
                 )));
 
-            let first_handler = Arc::new(Mutex::new(
+            let validation_handler = Arc::new(Mutex::new(
                 validation::handler::ValidationHandler::new(
                     db.clone(),
                     sv_registry.clone(),
                 ),
             ));
 
-            let sec_handler = Arc::new(Mutex::new(
+            let ratification_handler = Arc::new(Mutex::new(
                 ratification::handler::RatificationHandler::new(
                     sv_registry.clone(),
                 ),
@@ -189,16 +189,16 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 Phase::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
-                    sel_handler.clone(),
+                    proposal_handler.clone(),
                 )),
                 Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
                     db.clone(),
-                    first_handler.clone(),
+                    validation_handler.clone(),
                 )),
                 Phase::Ratification(ratification::step::RatificationStep::new(
                     executor.clone(),
-                    sec_handler.clone(),
+                    ratification_handler.clone(),
                 )),
             ];
 
@@ -209,9 +209,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
                 iteration_counter,
-                sel_handler.clone(),
-                first_handler.clone(),
-                sec_handler.clone(),
+                proposal_handler.clone(),
+                validation_handler.clone(),
+                ratification_handler.clone(),
             );
 
             loop {
