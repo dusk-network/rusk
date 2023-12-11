@@ -19,7 +19,7 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractData, ContractError, Error, RawResult, Session, VM};
+use rusk_abi::{ContractData, ContractError, Error, Session, VM};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
@@ -164,14 +164,14 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
 
 /// Executes a transaction, returning the gas spent.
 fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    let receipt = session.call::<_, Result<RawResult, ContractError>>(
+    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
         tx.fee.gas_limit,
     )?;
 
-    let gas_spent = receipt.points_spent;
+    let gas_spent = receipt.gas_spent;
 
     session
         .call::<_, ()>(

@@ -40,8 +40,7 @@ use rkyv::{Archive, Deserialize, Infallible, Serialize};
 use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{
     CallReceipt, ContractError, ContractId, Error as PiecrustError, Event,
-    RawResult, Session, StandardBufSerializer, STAKE_CONTRACT,
-    TRANSFER_CONTRACT, VM,
+    Session, StandardBufSerializer, STAKE_CONTRACT, TRANSFER_CONTRACT, VM,
 };
 use rusk_profile::to_rusk_state_id_path;
 use sha3::{Digest, Sha3_256};
@@ -134,7 +133,7 @@ impl Rusk {
             let tx = unspent_tx.inner.clone();
             match execute(&mut session, &tx) {
                 Ok(receipt) => {
-                    let gas_spent = receipt.points_spent;
+                    let gas_spent = receipt.gas_spent;
 
                     // If the transaction went over the block gas limit we
                     // re-execute all spent transactions. We don't discard the
@@ -169,7 +168,7 @@ impl Rusk {
                         block_height,
                         // We're currently ignoring the result of successful
                         // calls
-                        err: receipt.data.err().map(|e| format!("{e:?}")),
+                        err: receipt.data.err().map(|e| format!("{e}")),
                     });
                 }
                 Err(_) => {
@@ -631,7 +630,7 @@ fn accept(
         for event in receipt.events {
             update_hasher(&mut event_hasher, event);
         }
-        let gas_spent = receipt.points_spent;
+        let gas_spent = receipt.gas_spent;
 
         dusk_spent += gas_spent * tx.fee.gas_price;
         block_gas_left = block_gas_left
@@ -643,7 +642,7 @@ fn accept(
             gas_spent,
             block_height,
             // We're currently ignoring the result of successful calls
-            err: receipt.data.err().map(|e| format!("{e:?}")),
+            err: receipt.data.err().map(|e| format!("{e}")),
         });
     }
 
@@ -675,10 +674,10 @@ fn accept(
 fn execute(
     session: &mut Session,
     tx: &PhoenixTransaction,
-) -> Result<CallReceipt<Result<RawResult, ContractError>>, PiecrustError> {
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>, PiecrustError> {
     // Spend the inputs and execute the call. If this errors the transaction is
     // unspendable.
-    let mut receipt = session.call::<_, Result<RawResult, ContractError>>(
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         tx,
@@ -687,7 +686,7 @@ fn execute(
 
     // Ensure all gas is consumed if there's an error in the contract call
     if receipt.data.is_err() {
-        receipt.points_spent = receipt.points_limit;
+        receipt.gas_spent = receipt.gas_limit;
     }
 
     // Refund the appropriate amount to the transaction. This call is guaranteed
@@ -697,7 +696,7 @@ fn execute(
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.fee, receipt.points_spent),
+            &(tx.fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");

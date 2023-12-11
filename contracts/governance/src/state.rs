@@ -145,7 +145,7 @@ impl GovernanceState {
         // If the broker was already set we need to recoup the memory, otherwise
         // we will leak memory.
         if last_broker != ptr::null_mut() {
-            unsafe { Box::from_raw(last_broker) };
+            let _ = unsafe { Box::from_raw(last_broker) };
         }
     }
 
@@ -162,7 +162,7 @@ impl GovernanceState {
         // If the authority was already set we need to recoup the memory,
         // otherwise we will leak memory.
         if last_authority != ptr::null_mut() {
-            unsafe { Box::from_raw(last_authority) };
+            let _ = unsafe { Box::from_raw(last_authority) };
         }
     }
 

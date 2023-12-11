@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 #![no_std]
-#![feature(core_intrinsics, lang_items, alloc_error_handler)]
+#![feature(core_intrinsics, alloc_error_handler)]
 #![deny(clippy::all)]
 
 extern crate alloc;
