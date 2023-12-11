@@ -52,7 +52,7 @@ if [ ! -d "$EXTRACTED_DIR" ]; then
 fi
 
 # Ensure that the extracted compiler is symlinked in the toolchain directory
-TOOLCHAIN_DIR=$HOME/.rustup/toolchains
+TOOLCHAIN_DIR=${RUSTUP_HOME:-$HOME/.rustup}/toolchains
 TOOLCHAIN_LINK=$TOOLCHAIN_DIR/dusk
 
 rm -f "$TOOLCHAIN_LINK"
