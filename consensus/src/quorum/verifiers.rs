@@ -150,7 +150,7 @@ pub struct QuorumResult {
 
 impl QuorumResult {
     pub fn quorum_reached(&self) -> bool {
-        self.total < self.target_quorum
+        self.total >= self.target_quorum
     }
 }
 
