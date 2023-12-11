@@ -20,8 +20,7 @@ use phoenix_core::transaction::*;
 use phoenix_core::{Crossover, Fee, Message, Note};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{
-    ContractError, ContractId, PaymentInfo, PublicInput, RawCall, RawResult,
-    STAKE_CONTRACT,
+    ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
 
 /// Arity of the transfer tree.
@@ -292,7 +291,7 @@ impl TransferState {
     pub fn spend_and_execute(
         &mut self,
         tx: Transaction,
-    ) -> Result<RawResult, ContractError> {
+    ) -> Result<Vec<u8>, ContractError> {
         //  1. α ∈ R
         if !self.root_exists(&tx.anchor) {
             panic!("Anchor not found in the state!");
@@ -326,12 +325,13 @@ impl TransferState {
         self.var_crossover = tx.crossover;
         self.var_crossover_addr.replace(*tx.fee.stealth_address());
 
-        let mut result = Ok(RawResult::new(&[]));
+        let mut result = Ok(Vec::new());
 
         if let Some((contract_id, fn_name, fn_args)) = tx.call {
             result = rusk_abi::call_raw(
                 ContractId::from_bytes(contract_id),
-                &RawCall::from_parts(&fn_name, fn_args),
+                &fn_name,
+                &fn_args,
             );
         }
 
