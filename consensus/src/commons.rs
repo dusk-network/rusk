@@ -197,7 +197,7 @@ pub fn spawn_cast_vote<T: Operations + 'static>(
             // Sign and construct reduction message
             let msg = message::Message::new_reduction(
                 hdr,
-                message::payload::Reduction { signature },
+                message::payload::Validation { signature },
             );
 
             //   publish

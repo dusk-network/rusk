@@ -87,7 +87,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -119,7 +119,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         }
 
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -181,7 +181,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;

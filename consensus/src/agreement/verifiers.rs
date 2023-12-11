@@ -68,7 +68,7 @@ pub async fn verify_quorum(
                     e
                 })?;
 
-            // Verify 1st_reduction step_votes
+            // Verify validation
             verify_step_votes(
                 &payload.validation,
                 &committees_set,
@@ -88,7 +88,7 @@ pub async fn verify_quorum(
                 e
             })?;
 
-            // Verify 2th_reduction step_votes
+            // Verify ratification
             verify_step_votes(
                 &payload.ratification,
                 &committees_set,
