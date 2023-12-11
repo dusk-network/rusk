@@ -29,7 +29,7 @@ use tokio::time::{sleep_until, Instant};
 
 use std::time::Duration;
 
-use self::acceptor::{Acceptor, RevertTarget};
+use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
 
 pub use acceptor::verify_block_cert;
@@ -75,38 +75,16 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let provisioners_list = vm.read().await.get_provisioners()?;
 
         // Initialize Acceptor and trigger consensus task
-        let acc = Arc::new(RwLock::new(
-            Acceptor::new_with_run(
-                &self.keys_path,
-                &mrb,
-                &provisioners_list,
-                db.clone(),
-                network.clone(),
-                vm.clone(),
-            )
-            .await,
-        ));
-
-        // NB. After restart, state_root returned by VM is always the last
-        // finalized one.
-        let state_root = vm.read().await.get_state_root()?;
-
-        info!(
-            event = "VM state loaded",
-            state_root = hex::encode(state_root),
-        );
-
-        // Detect a consistency issue between VM and Ledger states.
-        if mrb.inner().header().height > 0
-            && mrb.inner().header().state_hash != state_root
-        {
-            info!("revert to last finalized state");
-            // Revert to last known finalized state.
-            acc.read()
-                .await
-                .try_revert(RevertTarget::LastFinalizedState)
-                .await?;
-        }
+        let acc = Acceptor::new_with_run(
+            &self.keys_path,
+            mrb,
+            &provisioners_list,
+            db,
+            network.clone(),
+            vm.clone(),
+        )
+        .await?;
+        let acc = Arc::new(RwLock::new(acc));
 
         // Start-up FSM instance
         let mut fsm = SimpleFSM::new(acc.clone(), network.clone());

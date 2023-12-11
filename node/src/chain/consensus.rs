@@ -72,7 +72,7 @@ impl Task {
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         most_recent_block: &node_data::ledger::Block,
-        provisioners: &Provisioners,
+        provisioners: Arc<Provisioners>,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
@@ -107,7 +107,6 @@ impl Task {
 
         let id = self.task_id;
         let result_queue = self.result.clone();
-        let provisioners = provisioners.clone();
         let (cancel_tx, cancel_rx) = oneshot::channel::<i32>();
 
         self.running_task = Some((
