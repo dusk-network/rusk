@@ -21,10 +21,10 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
-use dusk_consensus::agreement::verifiers;
+use dusk_consensus::quorum::verifiers;
 
-use dusk_consensus::agreement::verifiers::QuorumResult;
 use dusk_consensus::config::{self, PROPOSAL_COMMITTEE_SIZE};
+use dusk_consensus::quorum::verifiers::QuorumResult;
 
 use super::consensus::Task;
 
