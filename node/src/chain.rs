@@ -168,7 +168,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                         // Re-route message to the acceptor
                         Payload::NewBlock(_)
-                        | Payload::Reduction(_)
+                        | Payload::Validation(_)
                         | Payload::Quorum(_) => {
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
                                 warn!("Unable to reroute_msg to the acceptor: {e}");

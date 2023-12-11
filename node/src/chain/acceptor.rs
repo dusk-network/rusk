@@ -96,7 +96,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         msg: Message,
     ) -> Result<(), async_channel::SendError<Message>> {
         match &msg.payload {
-            Payload::NewBlock(_) | Payload::Reduction(_) => {
+            Payload::NewBlock(_) | Payload::Validation(_) => {
                 self.task.read().await.main_inbound.send(msg).await?;
             }
             Payload::Quorum(_) => {
@@ -609,10 +609,9 @@ pub async fn verify_block_cert(
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
-    // Verify first reduction
+    // Verify validation
     match verifiers::verify_step_votes(
         &cert.validation,
-
         &committee,
         curr_seed,
         &hdr,
@@ -622,12 +621,12 @@ pub async fn verify_block_cert(
     )
     .await
     {
-        Ok(first_reduction_quorum_result) => {
-            result.0 = first_reduction_quorum_result;
+        Ok(validation_quorum_result) => {
+            result.0 = validation_quorum_result;
         }
         Err(e) => {
             return Err(anyhow!(
-            "invalid validation, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            "invalid validation, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
@@ -638,7 +637,7 @@ pub async fn verify_block_cert(
         }
     };
 
-    // Verify second reduction
+    // Verify ratification
     match verifiers::verify_step_votes(
         &cert.ratification,
         &committee,
@@ -650,8 +649,8 @@ pub async fn verify_block_cert(
     )
     .await
     {
-        Ok(second_reduction_quorum_result) => {
-            result.1 = second_reduction_quorum_result;
+        Ok(ratification_quorum_result) => {
+            result.1 = ratification_quorum_result;
         }
         Err(e) => {
             return Err(anyhow!(
