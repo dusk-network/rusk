@@ -16,17 +16,17 @@ use rkyv::{Archive, Deserialize, Serialize};
 pub(crate) enum Query {}
 
 impl Query {
-    pub const HASH: &str = "hash";
-    pub const POSEIDON_HASH: &str = "poseidon_hash";
-    pub const VERIFY_PROOF: &str = "verify_proof";
-    pub const VERIFY_SCHNORR: &str = "verify_schnorr";
-    pub const VERIFY_BLS: &str = "verify_bls";
+    pub const HASH: &'static str = "hash";
+    pub const POSEIDON_HASH: &'static str = "poseidon_hash";
+    pub const VERIFY_PROOF: &'static str = "verify_proof";
+    pub const VERIFY_SCHNORR: &'static str = "verify_schnorr";
+    pub const VERIFY_BLS: &'static str = "verify_bls";
 }
 
 pub(crate) enum Metadata {}
 
 impl Metadata {
-    pub const BLOCK_HEIGHT: &str = "block_height";
+    pub const BLOCK_HEIGHT: &'static str = "block_height";
 }
 
 /// Enum representing all possible payment configurations.
