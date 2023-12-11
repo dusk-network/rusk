@@ -96,7 +96,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         msg: Message,
     ) -> Result<(), async_channel::SendError<Message>> {
         match &msg.payload {
-            Payload::NewBlock(_) | Payload::Validation(_) => {
+            Payload::Candidate(_) | Payload::Validation(_) => {
                 self.task.read().await.main_inbound.send(msg).await?;
             }
             Payload::Quorum(_) => {
