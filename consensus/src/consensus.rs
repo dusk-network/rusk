@@ -94,7 +94,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `cancel_rx` - a chan that allows the client to drop consensus
     ///   execution on demand.
     pub async fn spin(
-        &mut self,
+        &self,
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         cancel_rx: oneshot::Receiver<i32>,
@@ -145,7 +145,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     }
 
     fn spawn_main_loop(
-        &mut self,
+        &self,
         ru: RoundUpdate,
         provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
