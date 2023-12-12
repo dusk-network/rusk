@@ -75,10 +75,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         let provisioners_list = vm.read().await.get_provisioners()?;
 
         // Initialize Acceptor and trigger consensus task
-        let acc = Acceptor::new_with_run(
+        let acc = Acceptor::init_consensus(
             &self.keys_path,
             mrb,
-            &provisioners_list,
+            provisioners_list,
             db,
             network.clone(),
             vm.clone(),

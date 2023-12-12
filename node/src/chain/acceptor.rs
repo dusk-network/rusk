@@ -63,10 +63,16 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
-    pub async fn new_with_run(
+    /// Initializes a new `Acceptor` struct,
+    ///
+    /// The method loads the VM state, detects consistency issues between VM and
+    /// Ledger states, and may revert to the last known finalized state in
+    /// case of inconsistency.
+    /// Finally it spawns a new consensus [`Task`]
+    pub async fn init_consensus(
         keys_path: &str,
         mrb: BlockWithLabel,
-        provisioners_list: &Provisioners,
+        provisioners_list: Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
@@ -76,11 +82,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let acc = Self {
             mrb: RwLock::new(mrb),
-            provisioners_list: RwLock::new(provisioners_list.clone()),
+            provisioners_list: RwLock::new(provisioners_list),
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
-            task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
+            task: RwLock::new(Task::new_with_keys(keys_path.to_string())),
         };
 
         // NB. After restart, state_root returned by VM is always the last
@@ -104,7 +110,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     async fn spawn_task(&self) {
-        let provisioners = self.provisioners_list.read().await.to_owned();
+        let provisioners = self.provisioners_list.read().await.clone();
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
@@ -340,7 +346,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if enable_consensus {
             task.spawn(
                 mrb.inner(),
-                Arc::new(provisioners_list.to_owned()),
+                Arc::new(provisioners_list.clone()),
                 &self.db,
                 &self.vm,
                 &self.network,

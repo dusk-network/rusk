@@ -77,7 +77,7 @@ impl Task {
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
     ) {
-        let mut c = Consensus::new(
+        let c = Consensus::new(
             self.main_inbound.clone(),
             self.outbound.clone(),
             self.quorum_inbound.clone(),
