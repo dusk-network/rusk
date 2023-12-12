@@ -116,8 +116,8 @@ impl Transaction {
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 #[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct Certificate {
-    pub first_reduction: StepVotes,
-    pub second_reduction: StepVotes,
+    pub validation: StepVotes,
+    pub ratification: StepVotes,
 }
 
 impl Header {

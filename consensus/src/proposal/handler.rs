@@ -15,13 +15,13 @@ use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub struct Selection<D: Database> {
+pub struct ProposalHandler<D: Database> {
     pub(crate) db: Arc<Mutex<D>>,
     pub(crate) _sv_registry: SafeCertificateInfoRegistry,
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for Selection<D> {
+impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
         &mut self,
@@ -44,7 +44,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             self.db
                 .lock()
                 .await
@@ -76,7 +76,7 @@ impl<D: Database> MsgHandler<Message> for Selection<D> {
     }
 }
 
-impl<D: Database> Selection<D> {
+impl<D: Database> ProposalHandler<D> {
     pub(crate) fn new(
         db: Arc<Mutex<D>>,
         sv_registry: SafeCertificateInfoRegistry,
@@ -92,7 +92,7 @@ impl<D: Database> Selection<D> {
         msg: &Message,
         committee: &Committee,
     ) -> Result<(), ConsensusError> {
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             //  Verify new_block msg signature
             if msg.header.verify_signature(&p.signature).is_err() {
                 return Err(ConsensusError::InvalidSignature);

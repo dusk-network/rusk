@@ -21,9 +21,10 @@ use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use tracing::{error, info, warn};
 
-use dusk_consensus::agreement::verifiers;
-use dusk_consensus::agreement::verifiers::QuorumResult;
-use dusk_consensus::config::{self, SELECTION_COMMITTEE_SIZE};
+use dusk_consensus::quorum::verifiers;
+
+use dusk_consensus::config::{self, PROPOSAL_COMMITTEE_SIZE};
+use dusk_consensus::quorum::verifiers::QuorumResult;
 
 use super::consensus::Task;
 
@@ -95,11 +96,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         msg: Message,
     ) -> Result<(), async_channel::SendError<Message>> {
         match &msg.payload {
-            Payload::NewBlock(_) | Payload::Reduction(_) => {
+            Payload::Candidate(_) | Payload::Validation(_) => {
                 self.task.read().await.main_inbound.send(msg).await?;
             }
-            Payload::Agreement(_) => {
-                self.task.read().await.agreement_inbound.send(msg).await?;
+            Payload::Quorum(_) => {
+                self.task.read().await.quorum_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
         }
@@ -177,7 +178,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 node_data::bls::PublicKey::default(),
                 provisioners_list,
                 &sortition::Config {
-                    committee_size: SELECTION_COMMITTEE_SIZE,
+                    committee_size: PROPOSAL_COMMITTEE_SIZE,
                     round,
                     seed,
                     step: iter * 3,
@@ -291,8 +292,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             Ok(())
         })?;
 
-        let fsv_bitset = mrb.inner().header().cert.first_reduction.bitset;
-        let ssv_bitset = mrb.inner().header().cert.second_reduction.bitset;
+        let fsv_bitset = mrb.inner().header().cert.validation.bitset;
+        let ssv_bitset = mrb.inner().header().cert.ratification.bitset;
 
         let duration = start.elapsed();
         info!(
@@ -602,63 +603,63 @@ pub async fn verify_block_cert(
         topic: 0,
         pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
-        step: iteration.step_from_name(StepName::SecondRed),
+        step: iteration.step_from_name(StepName::Ratification),
         block_hash,
     };
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
-    // Verify first reduction
+    // Verify validation
     match verifiers::verify_step_votes(
-        &cert.first_reduction,
+        &cert.validation,
         &committee,
         curr_seed,
         &hdr,
         0,
-        config::FIRST_REDUCTION_COMMITTEE_SIZE,
+        config::VALIDATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await
     {
-        Ok(first_reduction_quorum_result) => {
-            result.0 = first_reduction_quorum_result;
+        Ok(validation_quorum_result) => {
+            result.0 = validation_quorum_result;
         }
         Err(e) => {
             return Err(anyhow!(
-            "invalid step votes, 1st reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            "invalid validation, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.first_reduction,
+            cert.validation,
             e
         ));
         }
     };
 
-    // Verify second reduction
+    // Verify ratification
     match verifiers::verify_step_votes(
-        &cert.second_reduction,
+        &cert.ratification,
         &committee,
         curr_seed,
         &hdr,
         1,
-        config::SECOND_REDUCTION_COMMITTEE_SIZE,
+        config::RATIFICATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await
     {
-        Ok(second_reduction_quorum_result) => {
-            result.1 = second_reduction_quorum_result;
+        Ok(ratification_quorum_result) => {
+            result.1 = ratification_quorum_result;
         }
         Err(e) => {
             return Err(anyhow!(
-            "invalid step votes, 2nd reduction, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+            "invalid ratification, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
             to_str(&hdr.block_hash),
             hdr.round,
             iteration,
             to_str(&curr_seed.inner()),
-            cert.second_reduction,
+            cert.ratification,
             e,
         ));
         }

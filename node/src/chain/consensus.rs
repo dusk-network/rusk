@@ -27,7 +27,7 @@ use std::sync::Arc;
 ///
 /// It manages consensus lifecycle and provides a way to interact with it.
 pub(crate) struct Task {
-    pub(crate) agreement_inbound: AsyncQueue<Message>,
+    pub(crate) quorum_inbound: AsyncQueue<Message>,
     pub(crate) main_inbound: AsyncQueue<Message>,
     pub(crate) outbound: AsyncQueue<Message>,
     pub(crate) result: AsyncQueue<Result<Block, ConsensusError>>,
@@ -59,7 +59,7 @@ impl Task {
         );
 
         Self {
-            agreement_inbound: AsyncQueue::default(),
+            quorum_inbound: AsyncQueue::default(),
             main_inbound: AsyncQueue::default(),
             outbound: AsyncQueue::default(),
             result: AsyncQueue::default(),
@@ -80,7 +80,7 @@ impl Task {
         let mut c = Consensus::new(
             self.main_inbound.clone(),
             self.outbound.clone(),
-            self.agreement_inbound.clone(),
+            self.quorum_inbound.clone(),
             self.outbound.clone(),
             Arc::new(Mutex::new(Executor::new(db, vm))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
@@ -203,7 +203,7 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
             .await
             .send_and_wait(
                 &request,
-                Topics::Candidate,
+                Topics::GetCandidateResp,
                 TIMEOUT_MILLIS,
                 RECV_PEERS_COUNT,
             )

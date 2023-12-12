@@ -11,17 +11,17 @@ pub mod consensus;
 pub mod user;
 
 mod aggregator;
-pub mod agreement;
 pub mod config;
 pub mod contract_state;
 mod execution_ctx;
-mod firststep;
 mod msg_handler;
 mod phase;
+mod proposal;
 mod queue;
-mod secondstep;
-mod selection;
+pub mod quorum;
+mod ratification;
 mod step_votes_reg;
+mod validation;
 
 pub mod merkle;
 

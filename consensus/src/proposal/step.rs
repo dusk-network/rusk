@@ -14,25 +14,25 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::config;
-use crate::selection::block_generator::Generator;
-use crate::selection::handler;
+use crate::proposal::block_generator::Generator;
+use crate::proposal::handler;
 use crate::user::committee::Committee;
 use tracing::{debug, error};
 
-pub struct Selection<T, D: Database>
+pub struct ProposalStep<T, D: Database>
 where
     T: Operations,
 {
-    handler: Arc<Mutex<handler::Selection<D>>>,
+    handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     bg: Generator<T>,
     timeout_millis: u64,
 }
 
-impl<T: Operations + 'static, D: Database> Selection<T, D> {
+impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     pub fn new(
         executor: Arc<Mutex<T>>,
         _db: Arc<Mutex<D>>,
-        handler: Arc<Mutex<handler::Selection<D>>>,
+        handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
@@ -42,7 +42,7 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
     }
 
     pub async fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
-        // To be aligned with the original impl, Selection does not double its
+        // To be aligned with the original impl, Proposal does not double its
         // timeout settings
         self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
 
@@ -137,6 +137,6 @@ impl<T: Operations + 'static, D: Database> Selection<T, D> {
         self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
-        config::SELECTION_COMMITTEE_SIZE
+        config::PROPOSAL_COMMITTEE_SIZE
     }
 }

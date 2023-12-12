@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{
-    AgreementSender, ConsensusError, Database, IterCounter, RoundUpdate,
+    ConsensusError, Database, IterCounter, QuorumMsgSender, RoundUpdate,
 };
 use crate::contract_state::Operations;
 use crate::phase::Phase;
@@ -14,12 +14,12 @@ use node_data::ledger::Block;
 
 use node_data::message::{AsyncQueue, Message, Topics};
 
-use crate::agreement::step;
 use crate::execution_ctx::{ExecutionCtx, IterationCtx};
+use crate::proposal;
 use crate::queue::Queue;
-use crate::selection;
+use crate::quorum::task;
 use crate::user::provisioners::Provisioners;
-use crate::{firststep, secondstep};
+use crate::{ratification, validation};
 use tracing::Instrument;
 
 use crate::step_votes_reg::CertInfoRegistry;
@@ -38,9 +38,9 @@ pub struct Consensus<T: Operations, D: Database> {
     /// msgs are pending to be handled in a future round/step.
     future_msgs: Arc<Mutex<Queue<Message>>>,
 
-    /// agreement_layer implements Agreement message handler within the context
+    /// quorum_process implements Quorum message handler within the context
     /// of a separate task execution.
-    agreement_process: step::Agreement,
+    quorum_process: task::Quorum,
 
     /// Reference to the executor of any EST-related call
     executor: Arc<Mutex<T>>,
@@ -58,15 +58,15 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `outbound` - a queue of output messages that  main loop broadcasts to
     ///   the outside world
     ///
-    /// * `agr_inbound_queue` - a queue of input messages consumed solely by
-    ///   Agreement loop
-    /// * `agr_outbound_queue` - a queue of output messages that Agreement loop
+    /// * `quorum_inbound_queue` - a queue of input messages consumed solely by
+    ///   Quorum loop
+    /// * `quorum_outbound_queue` - a queue of output messages that Quorum loop
     ///   broadcasts to the outside world
     pub fn new(
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
-        agr_inbound_queue: AsyncQueue<Message>,
-        agr_outbound_queue: AsyncQueue<Message>,
+        quorum_inbound_queue: AsyncQueue<Message>,
+        quorum_outbound_queue: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
         db: Arc<Mutex<D>>,
     ) -> Self {
@@ -74,9 +74,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
-            agreement_process: step::Agreement::new(
-                agr_inbound_queue,
-                agr_outbound_queue,
+            quorum_process: task::Quorum::new(
+                quorum_inbound_queue,
+                quorum_outbound_queue,
             ),
             executor,
             db,
@@ -85,9 +85,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
     /// Spins the consensus state machine. The consensus runs for the whole
     /// round until either a new round is produced or the node needs to re-sync.
-    ///
-    /// The Agreement loop (acting roundwise) runs concurrently with the
-    /// generation-selection-reduction loop (acting step-wise).
     ///
     /// # Arguments
     ///
@@ -104,27 +101,25 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     ) -> Result<Block, ConsensusError> {
         let round = ru.round;
 
-        // Agreement loop Executes agreement loop in a separate tokio::task to
-        // collect (aggr)Agreement messages.
-        let mut agreement_task_handle = self.agreement_process.spawn(
+        let mut quorum_task_handle = self.quorum_process.spawn(
             ru.clone(),
             provisioners.clone(),
             self.db.clone(),
         );
 
         let sender =
-            AgreementSender::new(self.agreement_process.inbound_queue.clone());
+            QuorumMsgSender::new(self.quorum_process.inbound_queue.clone());
 
-        // Consensus loop - generation-selection-reduction loop
+        // Consensus loop - proposal-validation-ratificaton loop
         let mut main_task_handle =
             self.spawn_main_loop(ru, provisioners, sender);
 
         // Wait for any of the tasks to complete.
         let result;
         tokio::select! {
-            recv = &mut agreement_task_handle => {
+            recv = &mut quorum_task_handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
-                tracing::trace!("agreement result: {:?}", result);
+                tracing::trace!("quorum result: {:?}", result);
             },
             recv = &mut main_task_handle => {
                 result = recv.map_err(|_| ConsensusError::Canceled)?;
@@ -143,7 +138,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         self.db.lock().await.delete_candidate_blocks();
 
         // Abort all tasks
-        abort(&mut agreement_task_handle).await;
+        abort(&mut quorum_task_handle).await;
         abort(&mut main_task_handle).await;
 
         result
@@ -153,7 +148,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        sender: AgreementSender,
+        sender: QuorumMsgSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();
@@ -169,36 +164,39 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let sv_registry =
                 Arc::new(Mutex::new(CertInfoRegistry::new(ru.clone())));
 
-            let sel_handler =
-                Arc::new(Mutex::new(selection::handler::Selection::new(
+            let proposal_handler =
+                Arc::new(Mutex::new(proposal::handler::ProposalHandler::new(
                     db.clone(),
                     sv_registry.clone(),
                 )));
 
-            let first_handler =
-                Arc::new(Mutex::new(firststep::handler::Reduction::new(
+            let validation_handler = Arc::new(Mutex::new(
+                validation::handler::ValidationHandler::new(
                     db.clone(),
                     sv_registry.clone(),
-                )));
+                ),
+            ));
 
-            let sec_handler = Arc::new(Mutex::new(
-                secondstep::handler::Reduction::new(sv_registry.clone()),
+            let ratification_handler = Arc::new(Mutex::new(
+                ratification::handler::RatificationHandler::new(
+                    sv_registry.clone(),
+                ),
             ));
 
             let mut phases = [
-                Phase::Selection(selection::step::Selection::new(
+                Phase::Proposal(proposal::step::ProposalStep::new(
                     executor.clone(),
                     db.clone(),
-                    sel_handler.clone(),
+                    proposal_handler.clone(),
                 )),
-                Phase::Reduction1(firststep::step::Reduction::new(
+                Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
                     db.clone(),
-                    first_handler.clone(),
+                    validation_handler.clone(),
                 )),
-                Phase::Reduction2(secondstep::step::Reduction::new(
+                Phase::Ratification(ratification::step::RatificationStep::new(
                     executor.clone(),
-                    sec_handler.clone(),
+                    ratification_handler.clone(),
                 )),
             ];
 
@@ -209,9 +207,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
                 iteration_counter,
-                sel_handler.clone(),
-                first_handler.clone(),
-                sec_handler.clone(),
+                proposal_handler.clone(),
+                validation_handler.clone(),
+                ratification_handler.clone(),
             );
 
             loop {
@@ -246,7 +244,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     // Execute a phase.
                     // An error returned here terminates consensus
                     // round. This normally happens if consensus channel is
-                    // cancelled by agreement loop on
+                    // cancelled by quorum loop on
                     // finding the winning block for this round.
                     msg = phase
                         .run(ctx)
@@ -260,8 +258,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .await?;
 
                     // During execution of any step we may encounter that an
-                    // agreement is generated for a former or current iteration.
-                    if msg.topic() == Topics::Agreement {
+                    // quorum is generated for a former or current iteration.
+                    if msg.topic() == Topics::Quorum {
                         sender.send(msg.clone()).await;
                     }
                 }
@@ -269,7 +267,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 iter_ctx.on_end();
 
                 iteration_counter.next()?;
-                // Delegate (agreement) message result to agreement loop for
+                // Delegate (quorum) message result to quorum loop for
                 // further processing.
             }
         })

@@ -10,15 +10,15 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use std::marker::PhantomData;
 
-use crate::secondstep::handler;
+use crate::ratification::handler;
 use crate::user::committee::Committee;
 use node_data::ledger::{to_str, Block};
 use node_data::message::{Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-pub struct Reduction<T, DB> {
-    handler: Arc<Mutex<handler::Reduction>>,
+pub struct RatificationStep<T, DB> {
+    handler: Arc<Mutex<handler::RatificationHandler>>,
     candidate: Option<Block>,
     timeout_millis: u64,
     executor: Arc<Mutex<T>>,
@@ -26,10 +26,10 @@ pub struct Reduction<T, DB> {
     marker: PhantomData<DB>,
 }
 
-impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
+impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
-        handler: Arc<Mutex<handler::Reduction>>,
+        handler: Arc<Mutex<handler::RatificationHandler>>,
     ) -> Self {
         Self {
             handler,
@@ -47,7 +47,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         handler.reset(step);
 
         if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
-            handler.first_step_votes = p.sv;
+            handler.validation = p.sv;
             self.candidate = Some(p.candidate);
         }
 
@@ -65,7 +65,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
                     .header()
                     .hash
             ),
-            fsv_bitset = handler.first_step_votes.bitset,
+            fsv_bitset = handler.validation.bitset,
         )
     }
 
@@ -87,7 +87,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
                     self.executor.clone(),
-                    Topics::SecondReduction,
+                    Topics::Ratification,
                 );
             }
         }
@@ -116,6 +116,6 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
     }
 
     pub fn get_committee_size(&self) -> usize {
-        config::SECOND_REDUCTION_COMMITTEE_SIZE
+        config::RATIFICATION_COMMITTEE_SIZE
     }
 }

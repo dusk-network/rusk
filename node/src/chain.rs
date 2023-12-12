@@ -36,10 +36,10 @@ pub use acceptor::verify_block_cert;
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
-    Topics::NewBlock as u8,
-    Topics::FirstReduction as u8,
-    Topics::SecondReduction as u8,
-    Topics::Agreement as u8,
+    Topics::Candidate as u8,
+    Topics::Validation as u8,
+    Topics::Ratification as u8,
+    Topics::Quorum as u8,
 ];
 
 const ACCEPT_BLOCK_TIMEOUT_SEC: Duration = Duration::from_secs(20);
@@ -167,9 +167,9 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                         }
 
                         // Re-route message to the acceptor
-                        Payload::NewBlock(_)
-                        | Payload::Reduction(_)
-                        | Payload::Agreement(_) => {
+                        Payload::Candidate(_)
+                        | Payload::Validation(_)
+                        | Payload::Quorum(_) => {
                             if let Err(e) = acc.read().await.reroute_msg(msg).await {
                                 warn!("Unable to reroute_msg to the acceptor: {e}");
                             }

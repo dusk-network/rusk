@@ -19,11 +19,11 @@ pub const CONSENSUS_TIMEOUT_MS: u64 = 5 * 1000;
 pub const CONSENSUS_MAX_TIMEOUT_MS: u64 = 60 * 1000;
 
 /// Steps committee sizes
-pub const SELECTION_COMMITTEE_SIZE: usize = 1;
-pub const FIRST_REDUCTION_COMMITTEE_SIZE: usize = 64;
-pub const SECOND_REDUCTION_COMMITTEE_SIZE: usize = 64;
+pub const PROPOSAL_COMMITTEE_SIZE: usize = 1;
+pub const VALIDATION_COMMITTEE_SIZE: usize = 64;
+pub const RATIFICATION_COMMITTEE_SIZE: usize = 64;
 
-/// Artifical delay on each selection step.
+/// Artifical delay on each Proposal step.
 pub const CONSENSUS_DELAY_MS: u64 = 1000;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;

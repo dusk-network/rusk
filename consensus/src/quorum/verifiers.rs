@@ -48,16 +48,14 @@ impl Display for Error {
     }
 }
 
-/// verify_agreement performs all three-steps verification of an agreement
-/// message. It is intended to be used in a context of tokio::spawn as per that
-/// it tries to yield before any CPU-bound operation.
-pub async fn verify_agreement(
+/// Performs all three-steps verification of a quorum msg.
+pub async fn verify_quorum(
     msg: Message,
     committees_set: Arc<Mutex<CommitteeSet>>,
     seed: Seed,
 ) -> Result<(), Error> {
     match msg.payload {
-        Payload::Agreement(payload) => {
+        Payload::Quorum(payload) => {
             msg.header
                 .verify_signature(&payload.signature)
                 .map_err(|e| {
@@ -70,41 +68,41 @@ pub async fn verify_agreement(
                     e
                 })?;
 
-            // Verify 1st_reduction step_votes
+            // Verify validation
             verify_step_votes(
-                &payload.first_step,
+                &payload.validation,
                 &committees_set,
                 seed,
                 &msg.header,
                 0,
-                config::FIRST_REDUCTION_COMMITTEE_SIZE,
+                config::VALIDATION_COMMITTEE_SIZE,
                 true,
             )
             .await
             .map_err(|e| {
                 error!(
-                    desc = "invalid 1st_reduction step_votes",
-                    sv = format!("{:?}", payload.first_step),
+                    desc = "invalid validation",
+                    sv = format!("{:?}", payload.validation),
                     hdr = format!("{:?}", msg.header),
                 );
                 e
             })?;
 
-            // Verify 2th_reduction step_votes
+            // Verify ratification
             verify_step_votes(
-                &payload.second_step,
+                &payload.ratification,
                 &committees_set,
                 seed,
                 &msg.header,
                 1,
-                config::SECOND_REDUCTION_COMMITTEE_SIZE,
+                config::RATIFICATION_COMMITTEE_SIZE,
                 true,
             )
             .await
             .map_err(|e| {
                 error!(
-                    desc = "invalid 2th_reduction step_votes",
-                    sv = format!("{:?}", payload.second_step),
+                    desc = "invalid ratification",
+                    sv = format!("{:?}", payload.ratification),
                     hdr = format!("{:?}", msg.header),
                 );
                 e

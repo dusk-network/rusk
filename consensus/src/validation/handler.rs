@@ -47,7 +47,7 @@ fn final_result_with_timeout(
     ))
 }
 
-pub struct Reduction<DB: Database> {
+pub struct ValidationHandler<DB: Database> {
     sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) db: Arc<Mutex<DB>>,
@@ -56,7 +56,7 @@ pub struct Reduction<DB: Database> {
     curr_step: u8,
 }
 
-impl<DB: Database> Reduction<DB> {
+impl<DB: Database> ValidationHandler<DB> {
     pub(crate) fn new(
         db: Arc<Mutex<DB>>,
         sv_registry: SafeCertificateInfoRegistry,
@@ -77,7 +77,7 @@ impl<DB: Database> Reduction<DB> {
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for Reduction<D> {
+impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
@@ -87,7 +87,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -119,7 +119,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         }
 
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -133,7 +133,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
                 step,
                 hash,
                 sv,
-                SvType::FirstReduction,
+                SvType::Validation,
                 quorum_reached,
             );
 
@@ -181,7 +181,7 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -191,16 +191,16 @@ impl<D: Database> MsgHandler<Message> for Reduction<D> {
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
-            if let Some(agreement) =
+            if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
                     step,
                     hash,
                     sv,
-                    SvType::FirstReduction,
+                    SvType::Validation,
                     quorum_reached,
                 )
             {
-                return Ok(HandleMsgOutput::Ready(agreement));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
         }
 

@@ -17,16 +17,16 @@ use node_data::message::{payload, Message, Payload, Topics};
 
 use crate::user::committee::Committee;
 
-pub struct Reduction {
+pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
-    pub(crate) first_step_votes: StepVotes,
+    pub(crate) validation: StepVotes,
     pub(crate) curr_step: u8,
 }
 
 #[async_trait]
-impl MsgHandler<Message> for Reduction {
+impl MsgHandler<Message> for RatificationHandler {
     fn verify(
         &mut self,
         msg: Message,
@@ -35,7 +35,7 @@ impl MsgHandler<Message> for Reduction {
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -68,7 +68,7 @@ impl MsgHandler<Message> for Reduction {
         }
 
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -83,12 +83,12 @@ impl MsgHandler<Message> for Reduction {
                 step,
                 block_hash,
                 second_step_votes,
-                SvType::SecondReduction,
+                SvType::Ratification,
                 quorum_reached,
             );
 
             if quorum_reached {
-                return Ok(HandleMsgOutput::Ready(self.build_agreement_msg(
+                return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
                     ru,
                     step,
                     block_hash,
@@ -109,7 +109,7 @@ impl MsgHandler<Message> for Reduction {
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
-            Payload::Reduction(p) => Ok(p.signature),
+            Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(Signature::default().0),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
@@ -120,16 +120,16 @@ impl MsgHandler<Message> for Reduction {
                 .collect_vote(committee, &msg.header, &signature)
         {
             // Record any signature in global registry
-            if let Some(agreement) =
+            if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
                     step,
                     hash,
                     sv,
-                    SvType::SecondReduction,
+                    SvType::Ratification,
                     quorum_reached,
                 )
             {
-                return Ok(HandleMsgOutput::Ready(agreement));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
         }
 
@@ -146,43 +146,43 @@ impl MsgHandler<Message> for Reduction {
     }
 }
 
-impl Reduction {
+impl RatificationHandler {
     pub(crate) fn new(sv_registry: SafeCertificateInfoRegistry) -> Self {
         Self {
             sv_registry,
             aggregator: Default::default(),
-            first_step_votes: Default::default(),
+            validation: Default::default(),
             curr_step: 0,
         }
     }
 
-    fn build_agreement_msg(
+    fn build_quorum_msg(
         &self,
         ru: &RoundUpdate,
         step: u8,
         block_hash: Hash,
-        second_step_votes: ledger::StepVotes,
+        ratification: ledger::StepVotes,
     ) -> Message {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             step,
             block_hash,
-            topic: Topics::Agreement as u8,
+            topic: Topics::Quorum as u8,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
-        let payload = payload::Agreement {
+        let payload = payload::Quorum {
             signature,
-            first_step: self.first_step_votes,
-            second_step: second_step_votes,
+            validation: self.validation,
+            ratification,
         };
 
-        Message::new_agreement(hdr, payload)
+        Message::new_quorum(hdr, payload)
     }
 
     pub(crate) fn reset(&mut self, step: u8) {
-        self.first_step_votes = StepVotes::default();
+        self.validation = StepVotes::default();
         self.curr_step = step;
     }
 }

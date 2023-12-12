@@ -8,7 +8,7 @@ use crate::commons::{spawn_cast_vote, ConsensusError, Database};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
-use crate::firststep::handler;
+use crate::validation::handler;
 
 use crate::user::committee::Committee;
 use node_data::ledger::to_str;
@@ -18,16 +18,16 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::debug;
 
-pub struct Reduction<T, DB: Database> {
+pub struct ValidationStep<T, DB: Database> {
     timeout_millis: u64,
-    handler: Arc<Mutex<handler::Reduction<DB>>>,
+    handler: Arc<Mutex<handler::ValidationHandler<DB>>>,
     executor: Arc<Mutex<T>>,
 }
-impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
+impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
         _db: Arc<Mutex<DB>>,
-        handler: Arc<Mutex<handler::Reduction<DB>>>,
+        handler: Arc<Mutex<handler::ValidationHandler<DB>>>,
     ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
@@ -41,7 +41,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
 
         handler.reset(step);
 
-        if let Payload::NewBlock(p) = msg.clone().payload {
+        if let Payload::Candidate(p) = msg.clone().payload {
             handler.candidate = p.deref().candidate.clone();
         }
 
@@ -73,7 +73,7 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
                 self.executor.clone(),
-                Topics::FirstReduction,
+                Topics::Validation,
             );
         }
 
@@ -100,6 +100,6 @@ impl<T: Operations + 'static, DB: Database> Reduction<T, DB> {
         self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
-        config::FIRST_REDUCTION_COMMITTEE_SIZE
+        config::VALIDATION_COMMITTEE_SIZE
     }
 }

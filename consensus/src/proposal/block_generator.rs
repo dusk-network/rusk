@@ -14,7 +14,7 @@ use crate::merkle::merkle_root;
 
 use dusk_bytes::Serializable;
 use node_data::ledger;
-use node_data::message::payload::NewBlock;
+use node_data::message::payload::Candidate;
 use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -63,14 +63,14 @@ impl<T: Operations> Generator<T> {
             round: ru.round,
             block_hash: candidate.header().hash,
             step,
-            topic: Topics::NewBlock as u8,
+            topic: Topics::Candidate as u8,
         };
 
         let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         Ok(Message::new_newblock(
             msg_header,
-            NewBlock {
+            Candidate {
                 candidate,
                 signature,
             },

@@ -13,20 +13,20 @@ use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block, Certificate};
 use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
 
-use crate::agreement::verifiers;
+use crate::quorum::verifiers;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, Instrument};
 
-pub struct Agreement {
+pub struct Quorum {
     pub inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
     future_msgs: Arc<Mutex<Queue<Message>>>,
 }
 
-impl Agreement {
+impl Quorum {
     pub fn new(
         inbound_queue: AsyncQueue<Message>,
         outbound_queue: AsyncQueue<Message>,
@@ -38,7 +38,7 @@ impl Agreement {
         }
     }
 
-    /// Spawn a task to process agreement messages for a specified round
+    /// Spawn a task to process quorum messages for a specified round
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn<D: Database + 'static>(
         &mut self,
@@ -53,7 +53,7 @@ impl Agreement {
         tokio::spawn(async move {
             let round = ru.round;
             let pubkey = ru.pubkey_bls.to_bs58();
-            // Run agreement life-cycle loop
+            // Run quorum life-cycle loop
             Executor::new(ru, provisioners, inbound, outbound, db)
                 .run(future_msgs)
                 .instrument(tracing::info_span!("agr_task", round, pubkey))
@@ -62,7 +62,7 @@ impl Agreement {
     }
 }
 
-/// Executor implements life-cycle loop of a single agreement instance. This
+/// Executor implements life-cycle loop of a single quorum instance. This
 /// should be started with each new round and dropped on round termination.
 struct Executor<D: Database> {
     ru: RoundUpdate,
@@ -111,13 +111,13 @@ impl<D: Database> Executor<D> {
             }
         }
 
-        // msg_loop for agreement messages
+        // msg_loop for quorum messages
         loop {
             // Process messages from outside world
             if let Ok(msg) = self.inbound_queue.recv().await {
                 match msg.header.compare_round(self.ru.round) {
                     Status::Future => {
-                        // Future agreement message.
+                        // Future quorum message.
                         // Keep it for processing when we reach this round.
                         future_msgs.lock().await.put_event(
                             msg.header.round,
@@ -147,13 +147,13 @@ impl<D: Database> Executor<D> {
             step = hdr.step,
         );
 
-        self.collect_agreement(msg).await
+        self.collect_quorum(msg).await
     }
 
-    async fn collect_agreement(&mut self, msg: Message) -> Option<Block> {
-        if let Payload::Agreement(agreement) = &msg.payload {
-            // Verify agreement
-            verifiers::verify_agreement(
+    async fn collect_quorum(&mut self, msg: Message) -> Option<Block> {
+        if let Payload::Quorum(quorum) = &msg.payload {
+            // Verify quorum
+            verifiers::verify_quorum(
                 msg.clone(),
                 self.committees_set.clone(),
                 self.ru.seed(),
@@ -161,13 +161,13 @@ impl<D: Database> Executor<D> {
             .await
             .ok()?;
 
-            // Publish the agreement
+            // Publish the quorum
             self.publish(msg.clone()).await;
 
             let (cert, hash) =
-                (agreement.generate_certificate(), &msg.header.block_hash);
+                (quorum.generate_certificate(), &msg.header.block_hash);
 
-            debug!("generate block from an agreement");
+            debug!("generate block from quorum msg");
 
             // Create winning block
             return self.create_winning_block(hash, &cert).await;

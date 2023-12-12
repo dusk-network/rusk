@@ -72,9 +72,9 @@ impl Serializable for Message {
         }
 
         match &self.payload {
-            Payload::NewBlock(p) => p.write(w),
-            Payload::Reduction(p) => p.write(w),
-            Payload::Agreement(p) => p.write(w),
+            Payload::Candidate(p) => p.write(w),
+            Payload::Validation(p) => p.write(w),
+            Payload::Quorum(p) => p.write(w),
             Payload::Block(p) => p.write(w),
             Payload::Transaction(p) => p.write(w),
             Payload::GetCandidate(p) => p.write(w),
@@ -114,20 +114,18 @@ impl Serializable for Message {
         header.topic = buf[0];
 
         let payload = match topic {
-            Topics::NewBlock => {
-                Payload::NewBlock(Box::new(payload::NewBlock::read(r)?))
+            Topics::Candidate => {
+                Payload::Candidate(Box::new(payload::Candidate::read(r)?))
             }
-            Topics::FirstReduction | Topics::SecondReduction => {
-                Payload::Reduction(payload::Reduction::read(r)?)
+            Topics::Validation | Topics::Ratification => {
+                Payload::Validation(payload::Validation::read(r)?)
             }
-            Topics::Agreement => {
-                Payload::Agreement(payload::Agreement::read(r)?)
-            }
+            Topics::Quorum => Payload::Quorum(payload::Quorum::read(r)?),
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
             Topics::Tx => {
                 Payload::Transaction(Box::new(ledger::Transaction::read(r)?))
             }
-            Topics::Candidate => Payload::CandidateResp(Box::new(
+            Topics::GetCandidateResp => Payload::CandidateResp(Box::new(
                 payload::CandidateResp::read(r)?,
             )),
             Topics::GetCandidate => {
@@ -173,34 +171,31 @@ impl MessageTrait for Message {
 
 impl Message {
     /// Creates topics.NewBlock message
-    pub fn new_newblock(header: Header, p: payload::NewBlock) -> Message {
+    pub fn new_newblock(header: Header, p: payload::Candidate) -> Message {
         Self {
             header,
-            payload: Payload::NewBlock(Box::new(p)),
+            payload: Payload::Candidate(Box::new(p)),
             ..Default::default()
         }
     }
 
-    /// Creates topics.Reduction message
-    pub fn new_reduction(
+    /// Creates topics.Validation message
+    pub fn new_validation(
         header: Header,
-        payload: payload::Reduction,
+        payload: payload::Validation,
     ) -> Message {
         Self {
             header,
-            payload: Payload::Reduction(payload),
+            payload: Payload::Validation(payload),
             ..Default::default()
         }
     }
 
-    /// Creates topics.Agreement message
-    pub fn new_agreement(
-        header: Header,
-        payload: payload::Agreement,
-    ) -> Message {
+    /// Creates topics.Quorum message
+    pub fn new_quorum(header: Header, payload: payload::Quorum) -> Message {
         Self {
             header,
-            payload: Payload::Agreement(payload),
+            payload: Payload::Quorum(payload),
             ..Default::default()
         }
     }
@@ -226,7 +221,7 @@ impl Message {
     /// Creates topics.Candidate message
     pub fn new_candidate_resp(p: Box<payload::CandidateResp>) -> Message {
         Self {
-            header: Header::new(Topics::Candidate),
+            header: Header::new(Topics::GetCandidateResp),
             payload: Payload::CandidateResp(p),
             ..Default::default()
         }
@@ -295,10 +290,10 @@ impl Message {
 fn is_consensus_msg(topic: u8) -> bool {
     matches!(
         Topics::from(topic),
-        Topics::NewBlock
-            | Topics::FirstReduction
-            | Topics::SecondReduction
-            | Topics::Agreement
+        Topics::Candidate
+            | Topics::Validation
+            | Topics::Ratification
+            | Topics::Quorum
     )
 }
 
@@ -448,9 +443,9 @@ impl Header {
 
 #[derive(Default, Debug, Clone)]
 pub enum Payload {
-    Reduction(payload::Reduction),
-    NewBlock(Box<payload::NewBlock>),
-    Agreement(payload::Agreement),
+    Validation(payload::Validation),
+    Candidate(Box<payload::Candidate>),
+    Quorum(payload::Quorum),
 
     StepVotes(ledger::StepVotes),
     StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
@@ -474,11 +469,11 @@ pub mod payload {
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    pub struct Reduction {
+    pub struct Validation {
         pub signature: [u8; 48],
     }
 
-    impl Serializable for Reduction {
+    impl Serializable for Validation {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_bytes(w, &self.signature[..])?;
             Ok(())
@@ -492,32 +487,32 @@ pub mod payload {
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-            Ok(Reduction { signature })
+            Ok(Validation { signature })
         }
     }
 
-    impl Default for Reduction {
+    impl Default for Validation {
         fn default() -> Self {
             Self { signature: [0; 48] }
         }
     }
 
     #[derive(Clone)]
-    pub struct NewBlock {
+    pub struct Candidate {
         pub signature: [u8; 48],
         pub candidate: Block,
     }
 
-    impl std::fmt::Debug for NewBlock {
+    impl std::fmt::Debug for Candidate {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            f.debug_struct("NewBlock")
+            f.debug_struct("Candidate")
                 .field("signature", &ledger::to_str(&self.signature))
-                .field("candidate", &self.candidate)
+                .field("block", &self.candidate)
                 .finish()
         }
     }
 
-    impl Default for NewBlock {
+    impl Default for Candidate {
         fn default() -> Self {
             Self {
                 candidate: Default::default(),
@@ -526,7 +521,7 @@ pub mod payload {
         }
     }
 
-    impl PartialEq<Self> for NewBlock {
+    impl PartialEq<Self> for Candidate {
         fn eq(&self, other: &Self) -> bool {
             self.signature.eq(&other.signature)
                 && self
@@ -537,9 +532,9 @@ pub mod payload {
         }
     }
 
-    impl Eq for NewBlock {}
+    impl Eq for Candidate {}
 
-    impl Serializable for NewBlock {
+    impl Serializable for Candidate {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.candidate.write(w)?;
             Self::write_var_bytes(w, &self.signature[..])?;
@@ -551,7 +546,7 @@ pub mod payload {
         where
             Self: Sized,
         {
-            Ok(NewBlock {
+            Ok(Candidate {
                 candidate: Block::read(r)?,
                 signature: Self::read_var_bytes(r)?
                     .try_into()
@@ -567,15 +562,13 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]
-    pub struct Agreement {
+    pub struct Quorum {
         pub signature: [u8; 48],
-
-        /// StepVotes of both 1th and 2nd Reduction steps
-        pub first_step: StepVotes,
-        pub second_step: StepVotes,
+        pub validation: StepVotes,
+        pub ratification: StepVotes,
     }
 
-    impl Serializable for Agreement {
+    impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_bytes(w, &self.signature[..])?;
 
@@ -583,8 +576,8 @@ pub mod payload {
             let step_votes_len = 2u8;
             w.write_all(&step_votes_len.to_le_bytes())?;
 
-            self.first_step.write(w)?;
-            self.second_step.write(w)?;
+            self.validation.write(w)?;
+            self.ratification.write(w)?;
 
             Ok(())
         }
@@ -600,33 +593,33 @@ pub mod payload {
             let mut step_votes_len = [0u8; 1];
             r.read_exact(&mut step_votes_len)?;
 
-            let first_step = StepVotes::read(r)?;
-            let second_step = StepVotes::read(r)?;
+            let validation = StepVotes::read(r)?;
+            let ratification = StepVotes::read(r)?;
 
-            Ok(Agreement {
+            Ok(Quorum {
                 signature,
-                first_step,
-                second_step,
+                validation,
+                ratification,
             })
         }
     }
 
-    impl Default for Agreement {
+    impl Default for Quorum {
         fn default() -> Self {
             Self {
                 signature: [0; 48],
-                first_step: StepVotes::default(),
-                second_step: StepVotes::default(),
+                validation: StepVotes::default(),
+                ratification: StepVotes::default(),
             }
         }
     }
 
-    impl Agreement {
-        /// Generates a certificate from agreement.
+    impl Quorum {
+        /// Generates a certificate from quorum.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
-                first_reduction: self.first_step,
-                second_reduction: self.second_step,
+                validation: self.validation,
+                ratification: self.ratification,
             }
         }
     }
@@ -831,13 +824,13 @@ pub enum Topics {
     Block = 11,
 
     // Consensus main loop topics
-    Candidate = 15,
-    NewBlock = 16,
-    FirstReduction = 17,
-    SecondReduction = 18,
+    GetCandidateResp = 15,
+    Candidate = 16,
+    Validation = 17,
+    Ratification = 18,
 
-    // Consensus Agreement loop topics
-    Agreement = 19,
+    // Consensus Quorum loop topics
+    Quorum = 19,
 
     #[default]
     Unknown = 255,
@@ -851,12 +844,12 @@ impl From<u8> for Topics {
         map_topic!(v, Topics::Block);
         map_topic!(v, Topics::GetMempool);
         map_topic!(v, Topics::GetInv);
-        map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::GetCandidateResp);
         map_topic!(v, Topics::GetCandidate);
-        map_topic!(v, Topics::NewBlock);
-        map_topic!(v, Topics::FirstReduction);
-        map_topic!(v, Topics::SecondReduction);
-        map_topic!(v, Topics::Agreement);
+        map_topic!(v, Topics::Candidate);
+        map_topic!(v, Topics::Validation);
+        map_topic!(v, Topics::Ratification);
+        map_topic!(v, Topics::Quorum);
 
         Topics::Unknown
     }
@@ -927,13 +920,13 @@ mod tests {
             hash: [6; 32],
             txroot: [7; 32],
             cert: Certificate {
-                first_reduction: ledger::StepVotes::new([6; 48], 22222222),
-                second_reduction: ledger::StepVotes::new([7; 48], 3333333),
+                validation: ledger::StepVotes::new([6; 48], 22222222),
+                ratification: ledger::StepVotes::new([7; 48], 3333333),
             },
             iteration: 1,
             prev_block_cert: Certificate {
-                first_reduction: ledger::StepVotes::new([6; 48], 444444444),
-                second_reduction: ledger::StepVotes::new([7; 48], 55555555),
+                validation: ledger::StepVotes::new([6; 48], 444444444),
+                ratification: ledger::StepVotes::new([7; 48], 55555555),
             },
             failed_iterations: Default::default(),
         };
@@ -941,7 +934,7 @@ mod tests {
         let sample_block =
             ledger::Block::new(header, vec![]).expect("should be valid block");
 
-        assert_serialize(payload::NewBlock {
+        assert_serialize(payload::Candidate {
             candidate: sample_block,
             signature: [4; 48],
         });
@@ -951,19 +944,19 @@ mod tests {
             aggregate_signature: Signature([4; 48]),
         });
 
-        assert_serialize(payload::Reduction { signature: [4; 48] });
+        assert_serialize(payload::Validation { signature: [4; 48] });
 
         assert_serialize(ledger::StepVotes {
             bitset: 12345,
             aggregate_signature: Signature([4; 48]),
         });
 
-        assert_serialize(payload::Agreement {
-            first_step: ledger::StepVotes {
+        assert_serialize(payload::Quorum {
+            validation: ledger::StepVotes {
                 bitset: 12345,
                 aggregate_signature: Signature([1; 48]),
             },
-            second_step: ledger::StepVotes {
+            ratification: ledger::StepVotes {
                 bitset: 98765,
                 aggregate_signature: Signature([2; 48]),
             },

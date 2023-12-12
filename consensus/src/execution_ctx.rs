@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::commons::{spawn_cast_vote, AgreementSender};
+use crate::commons::{spawn_cast_vote, QuorumMsgSender};
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
@@ -16,7 +16,7 @@ use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use crate::{firststep, secondstep, selection};
+use crate::{proposal, ratification, validation};
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
@@ -33,9 +33,10 @@ use tracing::{debug, error, info, trace};
 /// Represents a shared state within a context of the exection of a single
 /// iteration.
 pub struct IterationCtx<DB: Database> {
-    first_reduction_handler: Arc<Mutex<firststep::handler::Reduction<DB>>>,
-    sec_reduction_handler: Arc<Mutex<secondstep::handler::Reduction>>,
-    selection_handler: Arc<Mutex<selection::handler::Selection<DB>>>,
+    validation_handler: Arc<Mutex<validation::handler::ValidationHandler<DB>>>,
+    ratification_handler:
+        Arc<Mutex<ratification::handler::RatificationHandler>>,
+    proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
 
     pub join_set: JoinSet<()>,
 
@@ -57,18 +58,22 @@ impl<D: Database> IterationCtx<D> {
     pub fn new(
         round: u64,
         iter: u8,
-        selection_handler: Arc<Mutex<selection::handler::Selection<D>>>,
-        first_reduction_handler: Arc<Mutex<firststep::handler::Reduction<D>>>,
-        sec_reduction_handler: Arc<Mutex<secondstep::handler::Reduction>>,
+        proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<D>>>,
+        validation_handler: Arc<
+            Mutex<validation::handler::ValidationHandler<D>>,
+        >,
+        ratification_handler: Arc<
+            Mutex<ratification::handler::RatificationHandler>,
+        >,
     ) -> Self {
         Self {
             round,
             join_set: JoinSet::new(),
             iter,
             verified_hash: Arc::new(Mutex::new([0u8; 32])),
-            selection_handler,
-            first_reduction_handler,
-            sec_reduction_handler,
+            proposal_handler,
+            validation_handler,
+            ratification_handler,
             committees: Default::default(),
         }
     }
@@ -80,8 +85,8 @@ impl<D: Database> IterationCtx<D> {
     ) -> Option<Message> {
         let committee = self.committees.get(&msg.header.step)?;
         match msg.topic() {
-            node_data::message::Topics::NewBlock => {
-                let mut handler = self.selection_handler.lock().await;
+            node_data::message::Topics::Candidate => {
+                let mut handler = self.proposal_handler.lock().await;
                 _ = handler
                     .collect_from_past(
                         msg.clone(),
@@ -91,8 +96,8 @@ impl<D: Database> IterationCtx<D> {
                     )
                     .await;
             }
-            node_data::message::Topics::FirstReduction => {
-                let mut handler = self.first_reduction_handler.lock().await;
+            node_data::message::Topics::Validation => {
+                let mut handler = self.validation_handler.lock().await;
                 if let Ok(Ready(m)) = handler
                     .collect_from_past(
                         msg.clone(),
@@ -105,8 +110,8 @@ impl<D: Database> IterationCtx<D> {
                     return Some(m);
                 }
             }
-            node_data::message::Topics::SecondReduction => {
-                let mut handler = self.sec_reduction_handler.lock().await;
+            node_data::message::Topics::Ratification => {
+                let mut handler = self.ratification_handler.lock().await;
                 if let Ok(Ready(m)) = handler
                     .collect_from_past(
                         msg.clone(),
@@ -170,7 +175,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
-    agreement_sender: AgreementSender,
+    quorum_sender: QuorumMsgSender,
 }
 
 impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
@@ -186,7 +191,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         step: u8,
         executor: Arc<Mutex<T>>,
         sv_registry: SafeCertificateInfoRegistry,
-        agreement_sender: AgreementSender,
+        quorum_sender: QuorumMsgSender,
     ) -> Self {
         Self {
             iter_ctx,
@@ -198,7 +203,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             step,
             executor,
             sv_registry,
-            agreement_sender,
+            quorum_sender,
         }
     }
 
@@ -273,11 +278,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         );
 
         if msg_step < self.step {
-            self.try_vote(msg_step + 1, candidate, Topics::FirstReduction);
+            self.try_vote(msg_step + 1, candidate, Topics::Validation);
         }
 
         if msg_step + 2 <= self.step {
-            self.try_vote(msg_step + 2, candidate, Topics::SecondReduction);
+            self.try_vote(msg_step + 2, candidate, Topics::Ratification);
         }
     }
 
@@ -320,7 +325,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
 
         // Try to vote for candidate block from former iteration
-        if let Payload::NewBlock(p) = &msg.payload {
+        if let Payload::Candidate(p) = &msg.payload {
             // TODO: Perform block header/ Certificate full verification
             // To be addressed with another PR
 
@@ -334,15 +339,15 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .collect_past_event(&self.round_update, msg)
             .await
         {
-            if m.header.topic == Topics::Agreement as u8 {
+            if m.header.topic == Topics::Quorum as u8 {
                 debug!(
-                    event = "agreement",
+                    event = "quorum",
                     src = "prev_step",
                     msg_step = m.header.step,
                     hash = to_str(&m.header.block_hash),
                 );
 
-                self.agreement_sender.send(m.clone()).await;
+                self.quorum_sender.send(m.clone()).await;
             }
         }
 

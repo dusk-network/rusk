@@ -162,10 +162,6 @@ impl fmt::Display for &Committee {
 }
 
 /// Implements a cache of generated committees so that they can be reused.
-///
-/// This is useful in Agreement step where messages from different steps per a
-/// single round are concurrently processed. A committee is uniquely represented
-/// by sortition::Config.
 pub struct CommitteeSet {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: Provisioners,
