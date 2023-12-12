@@ -9,36 +9,24 @@ SA is permissionless, meaning that any eligible participant in the Dusk Network 
 
 The SA consensus is divided into _rounds_, each of which creates a new block. In turn, in each round, one or more _iterations_ of the following _phases_ are executed:
 
-  1. _Generation_: in this phase, a _generator_, extracted from the _Eligible Provisioners_, creates a new candidate block $B$ for the current round, and broadcasts it to the network;
+  1. _Proposal_: in this phase, a _generator_, extracted from the _Eligible Provisioners_, creates a new candidate block $B$ for the current round, and broadcasts it to the network;
   
-  2. _1st Reduction_: in this phase, the members of a _committee_, extracted from the _Eligible Provisioners_, vote on the validity of the candidate block $B$; 
-  if votes reach a quorum of $2/3$ (i.e., 67% of the committee), the reduction outputs $B$, otherwise NIL;
+  2. _Validation_: in this phase, the members of a _committee_, extracted from the _Eligible Provisioners_, vote on the validity of the candidate block $B$; 
+  if votes reach a quorum of $2/3$ (i.e., 67% of the committee), the validation outputs $B$, otherwise NIL;
 
-  3. _2nd Reduction_: in this phase, if the output of the 1st Reduction is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
-  if votes reach the quorum, an agreement message (containing the votes of the two Reduction phases) is broadcast;
+  3. _Ratification_: in this phase, if the output of the Validation is not NIL, a second _committee_, also extracted from the _Eligible Provisioners_, vote on the candidate block $B$;
+  if votes reach the quorum, an quorum message (containing the votes of the two Validation and Ratification phases) is broadcast;
 
-Agreement messages are processed by nodes in the _Agreement_ phase, which is run (in a loop) concurrently to the other phases. In this phase, nodes collect _agreement_ messages for the current round, and accept a new block if it reaches a quorum of votes (i.e., it reaches consensus).
-
-Note: the extraction process, used in the Generation and Reduction phases, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
+Note: the extraction process, used in the all phases, is implemented using the _Deterministic Sortition_ algorithm [^3]. 
 
 
 # Repository structure
-
-## Example Node
-The minimalistic and stateless version of the dusk-blockchain node allows for testing and diagnosing compatibility issues using the Consensus protocol in conjunction with Kadcast[^4]. It enables the node to join and participate in the dusk-blockchain/test-harness. Once the dusk-blockchain is fully migrated, this executable will no longer be needed and can be deprecated.
-
-## Example Testbed
-A multi-instance setup running 10 SA instances provisioned with 10 eligible participants. The setup is configured to run for up to 1000 rounds. Useful for any kind of testing (issues, stress, and performance testing).
 
 ## Consensus crate
 A full implementation of SA mechanism.
 
 # Implementation details
-The implementation of *SA* consists of two main `tokio-rs` tasks, the `Main_Loop` and `Agreement_Loop`, which communicate with external components through message queues/channels. The protocol parameters for *SA* are located in `src/config.rs`.
-
-- The `Main_Loop` is responsible for executing contract storage calls using the `Operations` trait and storing and retrieving candidate blocks using the `Database` trait. It performs the selection, first reduction, and second reduction steps in sequence and ultimately produces and broadcasts an `Agreement Message`. The inbound queue for the `Main_Loop` can contain either **NewBlock** or **Reduction** type messages.
-
-- The `Agreement_Loop` retrieves a candidate block using the `Database` trait when a winner hash is selected. It is responsible for verifying and accumulating **Agreement** messages from different consensus iterations and processing the **Aggregated Agreement** message. The inbound queue for the `Agreement_Loop` can contain either **Agreement** or **Aggregated Agreement** type messages. The messages are concurrently verified and accumulated by a pool of worker tasks in `tokio-rs`.
+The implementation of *SA* consists of two main `tokio-rs` tasks, the `Main_Loop` and `Quorum_Loop`, which communicate with external components through message queues/channels. The protocol parameters for *SA* are located in `src/config.rs`.
 
  ![Screenshot](node.png)
 
@@ -49,10 +37,10 @@ let mut consensus = Consensus::new(
 	inbound_msgs,
 	// Outbound messages for Main Loop
 	outbound_msgs,
-	// Inbound messages for Agreement Loop
-	agr_inbound_queue,
-	// Outbound messages for Agreement Loop
-	agr_outbound_queue,
+	// Inbound messages for Quorum Loop
+	quorum_inbound_queue,
+	// Outbound messages for Quorum Loop
+    quorum_outbound_queue,
 	// Implements Operations trait
 	Arc::new(Mutex::new(crate::mocks::Executor {})),
 	// Implements Database trait
@@ -94,20 +82,6 @@ loop {
 	/// They will be drained on running the round, that's why same consensus instance is used for all round executions.
 }
 ```
- 
- ### Tokio runtime
-
-The implementation is fully based on Tokio-rs/Runtime. That said the recommended way of setting up the runtime is shown below.
-
- ```rust
-  tokio::runtime::Builder::new_multi_thread()
-            .worker_threads(2)
-			// Enable the time driver so we can use timeout feature in all steps execution.
-            .enable_time()
-            .build()
-            .unwrap()
-            .block_on(async { ... } )
- ```
 
 # Build, Run and Test
 ```bash
@@ -118,24 +92,6 @@ cargo test
 ```bash
 # Build consensus
 cargo b --release
-```
-
-```bash
-# Build and Run in-process testbed example
-cargo run --release --example testbed
-```
-
-```bash
-# Build example node
-cargo b --release --example node
-
-# Run example node
-export DUSK_WALLET_DIR="TBD"
-export DUSK_CONSENSUS_KEYS_PASS="TBD"
-
-USAGE:
-    node --bootstrap <bootstrap>... --address <public_address>  --preloaded-num <preloaded-num> --provisioner-unique-id <prov-id>  --log-level <LOG>
-
 ```
 
 [^1]: A finality guarantee that is achieved through the accumulation of blocks over time, such that the probability of a block being reversed decreases exponentially as more blocks are added on top of it. This type of guarantee is in contrast to absolute finality, which is achieved when it is mathematically impossible for a block to be reversed.
