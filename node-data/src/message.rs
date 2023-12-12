@@ -615,7 +615,7 @@ pub mod payload {
     }
 
     impl Quorum {
-        /// Generates a certificate from agreement.
+        /// Generates a certificate from quorum.
         pub fn generate_certificate(&self) -> Certificate {
             Certificate {
                 validation: self.validation,
