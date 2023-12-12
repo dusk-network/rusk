@@ -19,14 +19,14 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, Instrument};
 
-pub struct Agreement {
+pub struct Quorum {
     pub inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
     future_msgs: Arc<Mutex<Queue<Message>>>,
 }
 
-impl Agreement {
+impl Quorum {
     pub fn new(
         inbound_queue: AsyncQueue<Message>,
         outbound_queue: AsyncQueue<Message>,

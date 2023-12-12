@@ -120,7 +120,7 @@ impl MsgHandler<Message> for RatificationHandler {
                 .collect_vote(committee, &msg.header, &signature)
         {
             // Record any signature in global registry
-            if let Some(agreement) =
+            if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
                     step,
                     hash,
@@ -129,7 +129,7 @@ impl MsgHandler<Message> for RatificationHandler {
                     quorum_reached,
                 )
             {
-                return Ok(HandleMsgOutput::Ready(agreement));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
         }
 

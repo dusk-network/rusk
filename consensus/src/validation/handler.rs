@@ -191,7 +191,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
             self.aggr.collect_vote(committee, &msg.header, &signature)
         {
             // Record result in global round registry
-            if let Some(agreement) =
+            if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
                     step,
                     hash,
@@ -200,7 +200,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                     quorum_reached,
                 )
             {
-                return Ok(HandleMsgOutput::Ready(agreement));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
         }
 

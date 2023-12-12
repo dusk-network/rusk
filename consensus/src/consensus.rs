@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{
-    AgreementSender, ConsensusError, Database, IterCounter, RoundUpdate,
+    ConsensusError, Database, IterCounter, QuorumMsgSender, RoundUpdate,
 };
 use crate::contract_state::Operations;
 use crate::phase::Phase;
@@ -40,7 +40,7 @@ pub struct Consensus<T: Operations, D: Database> {
 
     /// quorum_process implements Quorum message handler within the context
     /// of a separate task execution.
-    quorum_process: task::Agreement,
+    quorum_process: task::Quorum,
 
     /// Reference to the executor of any EST-related call
     executor: Arc<Mutex<T>>,
@@ -58,15 +58,15 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `outbound` - a queue of output messages that  main loop broadcasts to
     ///   the outside world
     ///
-    /// * `agr_inbound_queue` - a queue of input messages consumed solely by
-    ///   Agreement loop
-    /// * `agr_outbound_queue` - a queue of output messages that Agreement loop
+    /// * `quorum_inbound_queue` - a queue of input messages consumed solely by
+    ///   Quorum loop
+    /// * `quorum_outbound_queue` - a queue of output messages that Quorum loop
     ///   broadcasts to the outside world
     pub fn new(
         inbound: AsyncQueue<Message>,
         outbound: AsyncQueue<Message>,
-        agr_inbound_queue: AsyncQueue<Message>,
-        agr_outbound_queue: AsyncQueue<Message>,
+        quorum_inbound_queue: AsyncQueue<Message>,
+        quorum_outbound_queue: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
         db: Arc<Mutex<D>>,
     ) -> Self {
@@ -74,9 +74,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             inbound,
             outbound,
             future_msgs: Arc::new(Mutex::new(Queue::default())),
-            quorum_process: task::Agreement::new(
-                agr_inbound_queue,
-                agr_outbound_queue,
+            quorum_process: task::Quorum::new(
+                quorum_inbound_queue,
+                quorum_outbound_queue,
             ),
             executor,
             db,
@@ -108,7 +108,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         );
 
         let sender =
-            AgreementSender::new(self.quorum_process.inbound_queue.clone());
+            QuorumMsgSender::new(self.quorum_process.inbound_queue.clone());
 
         // Consensus loop - proposal-validation-ratificaton loop
         let mut main_task_handle =
@@ -148,7 +148,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
         &mut self,
         ru: RoundUpdate,
         mut provisioners: Provisioners,
-        sender: AgreementSender,
+        sender: QuorumMsgSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
         let outbound = self.outbound.clone();

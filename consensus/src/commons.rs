@@ -273,11 +273,11 @@ impl IterCounter for u8 {
 }
 
 #[derive(Clone)]
-pub(crate) struct AgreementSender {
+pub(crate) struct QuorumMsgSender {
     queue: AsyncQueue<Message>,
 }
 
-impl AgreementSender {
+impl QuorumMsgSender {
     pub(crate) fn new(queue: AsyncQueue<Message>) -> Self {
         Self { queue }
     }

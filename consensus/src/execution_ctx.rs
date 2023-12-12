@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::commons::{spawn_cast_vote, AgreementSender};
+use crate::commons::{spawn_cast_vote, QuorumMsgSender};
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
@@ -175,7 +175,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
-    agreement_sender: AgreementSender,
+    quorum_sender: QuorumMsgSender,
 }
 
 impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
@@ -191,7 +191,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         step: u8,
         executor: Arc<Mutex<T>>,
         sv_registry: SafeCertificateInfoRegistry,
-        agreement_sender: AgreementSender,
+        quorum_sender: QuorumMsgSender,
     ) -> Self {
         Self {
             iter_ctx,
@@ -203,7 +203,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             step,
             executor,
             sv_registry,
-            agreement_sender,
+            quorum_sender,
         }
     }
 
@@ -347,7 +347,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     hash = to_str(&m.header.block_hash),
                 );
 
-                self.agreement_sender.send(m.clone()).await;
+                self.quorum_sender.send(m.clone()).await;
             }
         }
 
