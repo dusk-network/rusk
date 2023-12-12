@@ -89,7 +89,7 @@ impl Task {
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
             self.keys.0,
-            most_recent_block.clone(),
+            most_recent_block,
         );
 
         self.task_id += 1;
