@@ -207,8 +207,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    pub(crate) fn save_committee(&mut self, step: u8, committee: Committee) {
-        self.iter_ctx.committees.insert(step, committee);
+    pub(crate) fn save_committee(&mut self, committee: Committee) {
+        self.iter_ctx.committees.insert(self.step, committee);
+    }
+
+    pub(crate) fn get_committee(&self) -> Option<&Committee> {
+        self.iter_ctx.committees.get(&self.step)
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -222,7 +226,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// By design, the loop is terminated by aborting the consensus task.
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
-        committee: &Committee,
         phase: Arc<Mutex<C>>,
         timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
@@ -243,7 +246,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Ok(msg) = result {
                         if let Some(step_result) = self
                             .process_inbound_msg(
-                                committee,
                                 phase.clone(),
                                 msg,
                                 timeout_millis,
@@ -361,11 +363,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// event_loop.
     async fn process_inbound_msg<C: MsgHandler<Message>>(
         &mut self,
-        committee: &Committee,
         phase: Arc<Mutex<C>>,
         msg: Message,
         timeout_millis: &mut u64,
     ) -> Option<Message> {
+        let committee = self
+            .get_committee()
+            .expect("committee to be created before run");
         // Check if message is valid in the context of current step
         let ret = phase.lock().await.is_valid(
             msg.clone(),
@@ -470,9 +474,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// Returns Some(msg) if the step is finalized.
     pub async fn handle_future_msgs<C: MsgHandler<Message>>(
         &self,
-        committee: &Committee,
         phase: Arc<Mutex<C>>,
     ) -> Option<Message> {
+        let committee = self
+            .get_committee()
+            .expect("committee to be created before run");
         if let Some(messages) = self
             .future_msgs
             .lock()

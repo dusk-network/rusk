@@ -16,7 +16,6 @@ use tokio::sync::Mutex;
 use crate::config;
 use crate::proposal::block_generator::Generator;
 use crate::proposal::handler;
-use crate::user::committee::Committee;
 use tracing::{debug, error};
 
 pub struct ProposalStep<T, D: Database>
@@ -58,8 +57,10 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     pub async fn run(
         &mut self,
         mut ctx: ExecutionCtx<'_, D, T>,
-        committee: Committee,
     ) -> Result<Message, ConsensusError> {
+        let committee = ctx
+            .get_committee()
+            .expect("committee to be created before run");
         if committee.am_member() {
             let iteration = cmp::min(
                 config::RELAX_ITERATION_THRESHOLD,
@@ -92,12 +93,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .handler
                     .lock()
                     .await
-                    .collect(
-                        msg.clone(),
-                        &ctx.round_update,
-                        ctx.step,
-                        &committee,
-                    )
+                    .collect(msg, &ctx.round_update, ctx.step, committee)
                     .await
                 {
                     Ok(f) => {
@@ -115,19 +111,12 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx
-            .handle_future_msgs(&committee, self.handler.clone())
-            .await
-        {
+        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
             return Ok(m);
         }
 
-        ctx.event_loop(
-            &committee,
-            self.handler.clone(),
-            &mut self.timeout_millis,
-        )
-        .await
+        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {

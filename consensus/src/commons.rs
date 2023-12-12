@@ -31,43 +31,48 @@ pub struct RoundUpdate {
     // Current round number of the ongoing consensus
     pub round: u64,
 
-    // Most recent block
-    block: Block,
-
     // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
     pub secret_key: SecretKey,
+
+    seed: Seed,
+    hash: [u8; 32],
+    timestamp: i64,
+    cert: Certificate,
 }
 
 impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
         secret_key: SecretKey,
-        block: Block,
+        mrb_block: &Block,
     ) -> Self {
-        let round = &block.header().height + 1;
+        let round = mrb_block.header().height + 1;
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            block,
+            cert: mrb_block.header().cert,
+            hash: mrb_block.header().hash,
+            seed: mrb_block.header().seed,
+            timestamp: mrb_block.header().timestamp,
         }
     }
 
     pub fn seed(&self) -> Seed {
-        self.block.header().seed
+        self.seed
     }
 
     pub fn hash(&self) -> [u8; 32] {
-        self.block.header().hash
+        self.hash
     }
 
     pub fn timestamp(&self) -> i64 {
-        self.block.header().timestamp
+        self.timestamp
     }
 
     pub fn cert(&self) -> &Certificate {
-        &self.block.header().cert
+        &self.cert
     }
 }
 

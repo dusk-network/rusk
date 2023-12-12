@@ -77,9 +77,9 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
             members = format!("{}", &step_committee)
         );
 
-        ctx.save_committee(ctx.step, step_committee.clone());
+        ctx.save_committee(step_committee);
 
-        await_phase!(self, run(ctx, step_committee))
+        await_phase!(self, run(ctx))
     }
 
     pub fn name(&self) -> &'static str {
