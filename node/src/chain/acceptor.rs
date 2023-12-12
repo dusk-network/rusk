@@ -100,7 +100,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 self.task.read().await.main_inbound.send(msg).await?;
             }
             Payload::Quorum(_) => {
-                self.task.read().await.agreement_inbound.send(msg).await?;
+                self.task.read().await.quorum_inbound.send(msg).await?;
             }
             _ => warn!("invalid inbound message"),
         }
