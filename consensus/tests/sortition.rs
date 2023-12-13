@@ -22,7 +22,7 @@ fn test_deterministic_sortition_1() {
     let committee_size = 64;
 
     // Execute sortition with specific config
-    let cfg = Config::new(Seed::default(), 1, 1, 64);
+    let cfg = Config::new(Seed::default(), 1, 1, 64, None);
 
     let committee = Committee::new(PublicKey::default(), &p, &cfg);
 
@@ -42,7 +42,7 @@ fn test_deterministic_sortition_2() {
     let p = generate_provisioners(5);
 
     let committee_size = 45;
-    let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size);
+    let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size, None);
 
     let committee = Committee::new(PublicKey::default(), &p, &cfg);
     assert_eq!(
@@ -57,7 +57,7 @@ fn test_quorum() {
     // Create provisioners with bls keys read from an external file.
     let p = generate_provisioners(5);
 
-    let cfg = Config::new(Seed::default(), 7777, 8, 64);
+    let cfg = Config::new(Seed::default(), 7777, 8, 64, None);
 
     let c = Committee::new(PublicKey::default(), &p, &cfg);
     assert_eq!(c.quorum(), 43);
@@ -67,7 +67,7 @@ fn test_quorum() {
 fn test_intersect() {
     let p = generate_provisioners(10);
 
-    let cfg = Config::new(Seed::default(), 1, 3, 200);
+    let cfg = Config::new(Seed::default(), 1, 3, 200, None);
     // println!("{:#?}", p);
 
     let c = Committee::new(PublicKey::default(), &p, &cfg);

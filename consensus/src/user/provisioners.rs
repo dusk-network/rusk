@@ -4,12 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::user::sortition;
+use crate::commons::{IterCounter, StepName};
 use crate::user::stake::Stake;
-use node_data::bls::PublicKey;
+use crate::{config::PROPOSAL_COMMITTEE_SIZE, user::sortition};
+use node_data::bls::{PublicKey, PublicKeyBytes};
 
+use node_data::ledger::Seed;
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
+
+use super::committee::Committee;
 
 pub const DUSK: u64 = 1_000_000_000;
 
@@ -98,6 +102,33 @@ impl Provisioners {
         }
 
         committee
+    }
+
+    pub fn get_generator(
+        &self,
+        iteration: u8,
+        seed: Seed,
+        round: u64,
+    ) -> PublicKeyBytes {
+        let step = iteration.step_from_name(StepName::Proposal);
+        let committee_keys = Committee::new(
+            node_data::bls::PublicKey::default(),
+            self,
+            &sortition::Config {
+                committee_size: PROPOSAL_COMMITTEE_SIZE,
+                round,
+                seed,
+                step,
+                exclusion: None,
+            },
+        );
+
+        let generator = *committee_keys
+            .iter()
+            .next()
+            .expect("committee to have 1 entry")
+            .bytes();
+        generator
     }
 }
 

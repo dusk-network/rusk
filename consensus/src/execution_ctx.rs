@@ -17,6 +17,7 @@ use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 use crate::{proposal, ratification, validation};
+use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
@@ -532,12 +533,17 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         None
     }
 
-    pub fn get_sortition_config(&self, size: usize) -> sortition::Config {
+    pub fn get_sortition_config(
+        &self,
+        size: usize,
+        exclusion: Option<PublicKeyBytes>,
+    ) -> sortition::Config {
         sortition::Config::new(
             self.round_update.seed(),
             self.round_update.round,
             self.step,
             size,
+            exclusion,
         )
     }
 

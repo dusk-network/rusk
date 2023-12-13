@@ -54,6 +54,7 @@ pub async fn verify_quorum(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
+    //TODO use if let
     match msg.payload {
         Payload::Quorum(payload) => {
             msg.header
@@ -127,9 +128,22 @@ pub async fn verify_step_votes(
     if hdr.step == 0 {
         return Err(Error::InvalidStepNum);
     }
+
     let iteration = u8::from_step(hdr.step);
     let step = iteration.step_from_name(step_name);
-    let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
+    let generator = committees_set
+        .read()
+        .await
+        .provisioners()
+        .get_generator(iteration, seed, hdr.round);
+
+    let cfg = sortition::Config::new(
+        seed,
+        hdr.round,
+        step,
+        committee_size,
+        Some(generator),
+    );
 
     if committees_set.read().await.get(&cfg).is_none() {
         let _ = committees_set.write().await.get_or_create(&cfg);

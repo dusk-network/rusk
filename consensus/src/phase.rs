@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database};
+use crate::commons::{ConsensusError, Database, IterCounter, StepName};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 
@@ -61,6 +61,15 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         let size = call_phase!(self, get_committee_size());
 
+        let exclusion = match ctx.step.to_step_name() {
+            StepName::Proposal => None,
+            _ => Some(ctx.provisioners.get_generator(
+                u8::from_step(ctx.step),
+                ctx.round_update.seed(),
+                ctx.round_update.round,
+            )),
+        };
+
         // Perform deterministic_sortition to generate committee of size=N.
         // The extracted members are the provisioners eligible to vote on this
         // particular round and step. In the context of Proposal phase,
@@ -69,7 +78,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         let step_committee = Committee::new(
             ctx.round_update.pubkey_bls.clone(),
             ctx.provisioners,
-            &ctx.get_sortition_config(size),
+            &ctx.get_sortition_config(size, exclusion),
         );
 
         debug!(

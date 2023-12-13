@@ -249,7 +249,7 @@ mod tests {
         }
 
         // Execute sortition with specific config
-        let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10);
+        let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10, None);
         let c = Committee::new(
             node_data::bls::PublicKey::new(PublicKey::default()),
             &p,
