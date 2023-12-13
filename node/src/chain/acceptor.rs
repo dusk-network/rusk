@@ -646,7 +646,7 @@ pub async fn verify_block_cert(
         &committee,
         curr_seed,
         &hdr,
-        0,
+        StepName::Validation,
         config::VALIDATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
@@ -674,7 +674,7 @@ pub async fn verify_block_cert(
         &committee,
         curr_seed,
         &hdr,
-        1,
+        StepName::Ratification,
         config::RATIFICATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
