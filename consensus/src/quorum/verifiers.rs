@@ -6,6 +6,7 @@
 
 use node_data::ledger::{Seed, StepVotes};
 
+use crate::commons::{IterCounter, StepName};
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -73,7 +74,7 @@ pub async fn verify_quorum(
                 committees_set,
                 seed,
                 &msg.header,
-                0,
+                StepName::Validation,
                 config::VALIDATION_COMMITTEE_SIZE,
                 true,
             )
@@ -93,7 +94,7 @@ pub async fn verify_quorum(
                 committees_set,
                 seed,
                 &msg.header,
-                1,
+                StepName::Ratification,
                 config::RATIFICATION_COMMITTEE_SIZE,
                 true,
             )
@@ -119,15 +120,15 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     hdr: &Header,
-    step_offset: u8,
+    step_name: StepName,
     committee_size: usize,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
     if hdr.step == 0 {
         return Err(Error::InvalidStepNum);
     }
-
-    let step = hdr.step - 1 + step_offset;
+    let iteration = u8::from_step(hdr.step);
+    let step = iteration.step_from_name(step_name);
     let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
 
     if committees_set.read().await.get(&cfg).is_none() {
