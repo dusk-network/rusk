@@ -57,7 +57,9 @@ impl TransferState {
         // Only the stake contract can mint notes to a particular stealth
         // address. This happens when the reward for staking and participating
         // in the consensus is withdrawn.
-        if rusk_abi::caller() != STAKE_CONTRACT {
+        if rusk_abi::caller() != STAKE_CONTRACT
+            && !rusk_abi::caller().is_uninitialized()
+        {
             panic!("Can only be called by the stake contract!")
         }
 
