@@ -742,7 +742,6 @@ mod tests {
 
     use fake::{Fake, Faker};
     use node_data::ledger::Transaction;
-    use rand::prelude::*;
 
     #[test]
     fn test_store_block() {
@@ -834,7 +833,8 @@ mod tests {
                             b.header(),
                             &to_spent_txs(b.txs()),
                             Label::Final,
-                        );
+                        )
+                        .unwrap();
 
                         // No need to support Read-Your-Own-Writes
                         assert!(txn.fetch_block(&hash)?.is_none());
@@ -892,7 +892,8 @@ mod tests {
             db.update(|txn| {
                 assert!(txn.delete_tx(t.hash()).expect("valid tx"));
                 Ok(())
-            });
+            })
+            .unwrap();
         });
     }
 
@@ -908,7 +909,8 @@ mod tests {
                     txn.add_tx(&t)?;
                 }
                 Ok(())
-            });
+            })
+            .unwrap();
 
             db.view(|txn| {
                 let txs =
@@ -939,7 +941,8 @@ mod tests {
                     txn.add_tx(&t)?;
                 }
                 Ok(())
-            });
+            })
+            .unwrap();
 
             let total_gas_price: u64 = 9 + 8 + 7 + 6 + 5 + 4 + 3 + 2 + 1;
             db.view(|txn| {
@@ -1105,9 +1108,9 @@ mod tests {
 
                 iter.map(Result::unwrap)
                     .map(|(key, _)| assert_eq!(&*key, REGISTER_KEY.as_slice()))
-                    .collect::<Vec<_>>();
+                    .for_each(drop);
             })
-            .collect::<Vec<_>>();
+            .for_each(drop);
     }
 
     struct TestWrapper(tempdir::TempDir);
