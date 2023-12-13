@@ -94,9 +94,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     /// * `cancel_rx` - a chan that allows the client to drop consensus
     ///   execution on demand.
     pub async fn spin(
-        &mut self,
+        &self,
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         cancel_rx: oneshot::Receiver<i32>,
     ) -> Result<Block, ConsensusError> {
         let round = ru.round;
@@ -145,9 +145,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
     }
 
     fn spawn_main_loop(
-        &mut self,
+        &self,
         ru: RoundUpdate,
-        mut provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         sender: QuorumMsgSender,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let inbound = self.inbound.clone();
@@ -233,7 +233,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         inbound.clone(),
                         outbound.clone(),
                         future_msgs.clone(),
-                        &mut provisioners,
+                        provisioners.as_ref(),
                         ru.clone(),
                         step,
                         executor.clone(),

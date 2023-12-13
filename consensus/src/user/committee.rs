@@ -10,7 +10,7 @@ use crate::user::sortition;
 use super::cluster::Cluster;
 use crate::config;
 use node_data::bls::PublicKey;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::mem;
 
@@ -88,7 +88,7 @@ impl Committee {
 
     // get_occurrences returns values in a vec
     pub fn get_occurrences(&self) -> Vec<usize> {
-        self.members.clone().into_values().collect()
+        self.members.values().copied().collect()
     }
 
     /// Returns number of unique members of the generated committee.
@@ -162,14 +162,14 @@ impl fmt::Display for &Committee {
 }
 
 /// Implements a cache of generated committees so that they can be reused.
-pub struct CommitteeSet {
+pub struct CommitteeSet<'p> {
     committees: HashMap<sortition::Config, Committee>,
-    provisioners: Provisioners,
+    provisioners: &'p Provisioners,
     this_member_key: PublicKey,
 }
 
-impl CommitteeSet {
-    pub fn new(pubkey: PublicKey, provisioners: Provisioners) -> Self {
+impl<'p> CommitteeSet<'p> {
+    pub fn new(pubkey: PublicKey, provisioners: &'p Provisioners) -> Self {
         CommitteeSet {
             provisioners,
             committees: HashMap::new(),
@@ -177,80 +177,19 @@ impl CommitteeSet {
         }
     }
 
-    pub fn is_member(
-        &mut self,
-        pubkey: &PublicKey,
-        cfg: &sortition::Config,
-    ) -> bool {
-        self.get_or_create(cfg).is_member(pubkey)
-    }
-
-    /// Returns number of all unique public keys
-    pub fn get_unique_members(&self) -> usize {
-        let mut merged = HashSet::new();
-        self.committees.iter().for_each(|(_, committee)| {
-            committee.members.iter().for_each(|(m, s)| {
-                if *s > 0 {
-                    merged.insert(m.bytes());
-                }
-            });
-        });
-
-        merged.len()
-    }
-
-    pub fn votes_for(
-        &mut self,
-        pubkey: &PublicKey,
-        cfg: &sortition::Config,
-    ) -> Option<usize> {
-        self.get_or_create(cfg).votes_for(pubkey)
-    }
-
-    pub fn quorum(&mut self, cfg: &sortition::Config) -> usize {
-        self.get_or_create(cfg).quorum()
-    }
-    pub fn nil_quorum(&mut self, cfg: &sortition::Config) -> usize {
-        self.get_or_create(cfg).nil_quorum()
-    }
-
-    pub fn intersect(
-        &mut self,
-        bitset: u64,
-        cfg: &sortition::Config,
-    ) -> Cluster<PublicKey> {
-        self.get_or_create(cfg).intersect(bitset)
-    }
-
-    pub fn total_occurrences(
-        &mut self,
-        voters: &Cluster<PublicKey>,
-        cfg: &sortition::Config,
-    ) -> usize {
-        self.get_or_create(cfg).total_occurrences(voters)
-    }
-
-    pub fn get_provisioners(&self) -> &Provisioners {
-        &self.provisioners
-    }
-
-    pub fn bits(
-        &mut self,
-        voters: &Cluster<PublicKey>,
-        cfg: &sortition::Config,
-    ) -> u64 {
-        self.get_or_create(cfg).bits(voters)
-    }
-
-    fn get_or_create(&mut self, cfg: &sortition::Config) -> &Committee {
+    pub fn get_or_create(&mut self, cfg: &sortition::Config) -> &Committee {
         self.committees
             .entry(cfg.clone())
             .or_insert_with_key(|config| {
                 Committee::new(
                     self.this_member_key.clone(),
-                    &self.provisioners,
+                    self.provisioners,
                     config,
                 )
             })
+    }
+
+    pub fn get(&self, cfg: &sortition::Config) -> Option<&Committee> {
+        self.committees.get(cfg)
     }
 }

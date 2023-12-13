@@ -15,7 +15,7 @@ use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
 
 use crate::quorum::verifiers;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, Instrument};
 
@@ -41,9 +41,9 @@ impl Quorum {
     /// Spawn a task to process quorum messages for a specified round
     /// There could be only one instance of this task per a time.
     pub(crate) fn spawn<D: Database + 'static>(
-        &mut self,
+        &self,
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: Arc<Provisioners>,
         db: Arc<Mutex<D>>,
     ) -> JoinHandle<Result<Block, ConsensusError>> {
         let future_msgs = self.future_msgs.clone();
@@ -54,7 +54,7 @@ impl Quorum {
             let round = ru.round;
             let pubkey = ru.pubkey_bls.to_bs58();
             // Run quorum life-cycle loop
-            Executor::new(ru, provisioners, inbound, outbound, db)
+            Executor::new(ru, &provisioners, inbound, outbound, db)
                 .run(future_msgs)
                 .instrument(tracing::info_span!("agr_task", round, pubkey))
                 .await
@@ -64,20 +64,20 @@ impl Quorum {
 
 /// Executor implements life-cycle loop of a single quorum instance. This
 /// should be started with each new round and dropped on round termination.
-struct Executor<D: Database> {
+struct Executor<'p, D: Database> {
     ru: RoundUpdate,
 
     inbound_queue: AsyncQueue<Message>,
     outbound_queue: AsyncQueue<Message>,
 
-    committees_set: Arc<Mutex<CommitteeSet>>,
+    committees_set: RwLock<CommitteeSet<'p>>,
     db: Arc<Mutex<D>>,
 }
 
-impl<D: Database> Executor<D> {
+impl<'p, D: Database> Executor<'p, D> {
     fn new(
         ru: RoundUpdate,
-        provisioners: Provisioners,
+        provisioners: &'p Provisioners,
         inbound_queue: AsyncQueue<Message>,
         outbound_queue: AsyncQueue<Message>,
         db: Arc<Mutex<D>>,
@@ -86,16 +86,16 @@ impl<D: Database> Executor<D> {
             inbound_queue,
             outbound_queue,
             ru,
-            committees_set: Arc::new(Mutex::new(CommitteeSet::new(
+            committees_set: RwLock::new(CommitteeSet::new(
                 PublicKey::default(),
                 provisioners,
-            ))),
+            )),
             db,
         }
     }
 
     async fn run(
-        &mut self,
+        &self,
         future_msgs: Arc<Mutex<Queue<Message>>>,
     ) -> Result<Block, ConsensusError> {
         // drain future messages for current round and step.
@@ -137,7 +137,7 @@ impl<D: Database> Executor<D> {
         }
     }
 
-    async fn collect_inbound_msg(&mut self, msg: Message) -> Option<Block> {
+    async fn collect_inbound_msg(&self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
         debug!(
             event = "msg received",
@@ -150,12 +150,12 @@ impl<D: Database> Executor<D> {
         self.collect_quorum(msg).await
     }
 
-    async fn collect_quorum(&mut self, msg: Message) -> Option<Block> {
+    async fn collect_quorum(&self, msg: Message) -> Option<Block> {
         if let Payload::Quorum(quorum) = &msg.payload {
             // Verify quorum
             verifiers::verify_quorum(
                 msg.clone(),
-                self.committees_set.clone(),
+                &self.committees_set,
                 self.ru.seed(),
             )
             .await
@@ -177,7 +177,7 @@ impl<D: Database> Executor<D> {
     }
 
     // Publishes a message
-    async fn publish(&mut self, msg: Message) {
+    async fn publish(&self, msg: Message) {
         let topic = msg.header.topic;
         self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
             error!("unable to publish msg(id:{}) {:?}", topic, err)

@@ -7,7 +7,7 @@
 use node_data::ledger::{Seed, StepVotes};
 
 use crate::user::cluster::Cluster;
-use crate::user::committee::CommitteeSet;
+use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 use bytes::Buf;
 
@@ -16,8 +16,7 @@ use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{marshal_signable_vote, Header, Message, Payload};
 use std::fmt::{self, Display};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tracing::error;
 
 #[derive(Debug)]
@@ -38,7 +37,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::VoteSetTooSmall(step) => {
-                write!(f, "Failed to reach a quorum at step {}", step)
+                write!(f, "Failed to reach a quorum at step {step}")
             }
             Error::VerificationFailed(_) => write!(f, "Verification error"),
             Error::EmptyApk => write!(f, "Empty Apk instance"),
@@ -51,7 +50,7 @@ impl Display for Error {
 /// Performs all three-steps verification of a quorum msg.
 pub async fn verify_quorum(
     msg: Message,
-    committees_set: Arc<Mutex<CommitteeSet>>,
+    committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
     match msg.payload {
@@ -71,7 +70,7 @@ pub async fn verify_quorum(
             // Verify validation
             verify_step_votes(
                 &payload.validation,
-                &committees_set,
+                committees_set,
                 seed,
                 &msg.header,
                 0,
@@ -91,7 +90,7 @@ pub async fn verify_quorum(
             // Verify ratification
             verify_step_votes(
                 &payload.ratification,
-                &committees_set,
+                committees_set,
                 seed,
                 &msg.header,
                 1,
@@ -117,7 +116,7 @@ pub async fn verify_quorum(
 
 pub async fn verify_step_votes(
     sv: &StepVotes,
-    committees_set: &Arc<Mutex<CommitteeSet>>,
+    committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     hdr: &Header,
     step_offset: u8,
@@ -131,11 +130,18 @@ pub async fn verify_step_votes(
     let step = hdr.step - 1 + step_offset;
     let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
 
+    if committees_set.read().await.get(&cfg).is_none() {
+        let _ = committees_set.write().await.get_or_create(&cfg);
+    }
+
+    let set = committees_set.read().await;
+    let committee = set.get(&cfg).expect("committee to be created");
+
     verify_votes(
         &hdr.block_hash,
         sv.bitset,
         &sv.aggregate_signature.inner(),
-        committees_set,
+        committee,
         &cfg,
         enable_quorum_check,
     )
@@ -154,56 +160,44 @@ impl QuorumResult {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub async fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
     signature: &[u8; 48],
-    committees_set: &Arc<Mutex<CommitteeSet>>,
+    committee: &Committee,
     cfg: &sortition::Config,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    let total: usize;
-    let target_quorum: usize;
+    let sub_committee = committee.intersect(bitset);
 
-    let sub_committee = {
-        let mut guard = committees_set.lock().await;
-        let sub_committee = guard.intersect(bitset, cfg);
-        total = guard.total_occurrences(&sub_committee, cfg);
-        target_quorum = guard.quorum(cfg);
+    let total = committee.total_occurrences(&sub_committee);
+    let target_quorum = committee.quorum();
 
-        if enable_quorum_check {
-            let target_quorum = guard.quorum(cfg);
-            if total < target_quorum {
-                tracing::error!(
-                    desc = "vote_set_too_small",
-                    committee = format!("{:#?}", sub_committee),
-                    cfg = format!("{:#?}", cfg),
-                    bitset = bitset,
-                    target_quorum = target_quorum,
-                    total = total,
-                );
-                Err(Error::VoteSetTooSmall(cfg.step))
-            } else {
-                Ok(sub_committee)
-            }
-        } else {
-            Ok(sub_committee)
-        }
-    }?;
+    let quorum_result = QuorumResult {
+        total,
+        target_quorum,
+    };
+
+    if enable_quorum_check && !quorum_result.quorum_reached() {
+        tracing::error!(
+            desc = "vote_set_too_small",
+            committee = format!("{:#?}", sub_committee),
+            cfg = format!("{:#?}", cfg),
+            bitset,
+            target_quorum,
+            total,
+        );
+        return Err(Error::VoteSetTooSmall(cfg.step));
+    }
 
     // aggregate public keys
-
     let apk = sub_committee.aggregate_pks()?;
 
     // verify signatures
     verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
 
     // Verification done
-    Ok(QuorumResult {
-        total,
-        target_quorum,
-    })
+    Ok(quorum_result)
 }
 
 impl Cluster<PublicKey> {

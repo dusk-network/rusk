@@ -18,7 +18,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
 use dusk_consensus::quorum::verifiers;
@@ -63,33 +63,64 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
-    pub async fn new_with_run(
+    /// Initializes a new `Acceptor` struct,
+    ///
+    /// The method loads the VM state, detects consistency issues between VM and
+    /// Ledger states, and may revert to the last known finalized state in
+    /// case of inconsistency.
+    /// Finally it spawns a new consensus [`Task`]
+    pub async fn init_consensus(
         keys_path: &str,
-        mrb: &BlockWithLabel,
-        provisioners_list: &Provisioners,
+        mrb: BlockWithLabel,
+        provisioners_list: Provisioners,
         db: Arc<RwLock<DB>>,
         network: Arc<RwLock<N>>,
         vm: Arc<RwLock<VM>>,
-    ) -> Self {
+    ) -> anyhow::Result<Self> {
+        let mrb_height = mrb.inner().header().height;
+        let mrb_state_hash = mrb.inner().header().state_hash;
+
         let acc = Self {
-            mrb: RwLock::new(mrb.clone()),
-            provisioners_list: RwLock::new(provisioners_list.clone()),
+            mrb: RwLock::new(mrb),
+            provisioners_list: RwLock::new(provisioners_list),
             db: db.clone(),
             vm: vm.clone(),
             network: network.clone(),
-            task: RwLock::new(Task::new_with_keys(keys_path.to_owned())),
+            task: RwLock::new(Task::new_with_keys(keys_path.to_string())),
         };
 
-        acc.task.write().await.spawn(
-            mrb.inner(),
-            provisioners_list,
-            &db,
-            &vm,
-            &network,
+        // NB. After restart, state_root returned by VM is always the last
+        // finalized one.
+        let state_root = vm.read().await.get_state_root()?;
+
+        info!(
+            event = "VM state loaded",
+            state_root = hex::encode(state_root),
         );
 
-        acc
+        // Detect a consistency issue between VM and Ledger states.
+        if mrb_height > 0 && mrb_state_hash != state_root {
+            info!("revert to last finalized state");
+            // Revert to last known finalized state.
+            acc.try_revert(RevertTarget::LastFinalizedState).await?;
+        }
+
+        acc.spawn_task().await;
+        Ok(acc)
     }
+
+    async fn spawn_task(&self) {
+        let provisioners = self.provisioners_list.read().await.clone();
+
+        self.task.write().await.spawn(
+            self.mrb.read().await.inner(),
+            Arc::new(provisioners),
+            &self.db,
+            &self.vm,
+            &self.network,
+        );
+    }
+
     // Re-route message to consensus task
     pub(crate) async fn reroute_msg(
         &self,
@@ -315,7 +346,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if enable_consensus {
             task.spawn(
                 mrb.inner(),
-                &provisioners_list,
+                Arc::new(provisioners_list.clone()),
                 &self.db,
                 &self.vm,
                 &self.network,
@@ -594,10 +625,10 @@ pub async fn verify_block_cert(
     iteration: u8,
     enable_quorum_check: bool,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
-    let committee = Arc::new(Mutex::new(CommitteeSet::new(
+    let committee = RwLock::new(CommitteeSet::new(
         node_data::bls::PublicKey::default(),
-        curr_eligible_provisioners.clone(),
-    )));
+        curr_eligible_provisioners,
+    ));
 
     let hdr = node_data::message::Header {
         topic: 0,

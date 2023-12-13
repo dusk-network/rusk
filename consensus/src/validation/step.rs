@@ -10,7 +10,6 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::validation::handler;
 
-use crate::user::committee::Committee;
 use node_data::ledger::to_str;
 use node_data::message::{Message, Payload, Topics};
 use std::ops::Deref;
@@ -58,8 +57,10 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
     pub async fn run(
         &mut self,
         mut ctx: ExecutionCtx<'_, DB, T>,
-        committee: Committee,
     ) -> Result<Message, ConsensusError> {
+        let committee = ctx
+            .get_committee()
+            .expect("committee to be created before run");
         if committee.am_member() {
             let candidate = self.handler.lock().await.candidate.clone();
             // Send reduction async
@@ -67,7 +68,7 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
                 &mut ctx.iter_ctx.join_set,
                 ctx.iter_ctx.verified_hash.clone(),
                 candidate,
-                committee.get_my_pubkey().clone(),
+                ctx.round_update.pubkey_bls.clone(),
                 ctx.round_update.clone(),
                 ctx.step,
                 ctx.outbound.clone(),
@@ -78,19 +79,12 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
         }
 
         // handle queued messages for current round and step.
-        if let Some(m) = ctx
-            .handle_future_msgs(&committee, self.handler.clone())
-            .await
-        {
+        if let Some(m) = ctx.handle_future_msgs(self.handler.clone()).await {
             return Ok(m);
         }
 
-        ctx.event_loop(
-            &committee,
-            self.handler.clone(),
-            &mut self.timeout_millis,
-        )
-        .await
+        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
+            .await
     }
 
     pub fn name(&self) -> &'static str {
