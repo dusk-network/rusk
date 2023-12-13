@@ -51,8 +51,8 @@ impl PublicKey {
     /// `bytes` returns a reference to the pk.to_bytes() initialized on
     /// PublicKey::new call. NB Frequent use of `to_bytes()` creates a
     /// noticeable perf overhead.
-    pub fn bytes(&self) -> &[u8; PUBLIC_BLS_SIZE] {
-        self.as_bytes.inner()
+    pub fn bytes(&self) -> &PublicKeyBytes {
+        &self.as_bytes
     }
 
     pub fn inner(&self) -> &dusk_bls12_381_sign::PublicKey {
@@ -61,12 +61,12 @@ impl PublicKey {
 
     /// Truncated base58 representation of inner data
     pub fn to_bs58(&self) -> String {
-        self.as_bytes.to_bs58()
+        self.bytes().to_bs58()
     }
 
     /// Full base58 representation of inner data
     pub fn to_base58(&self) -> String {
-        self.as_bytes.to_base58()
+        self.bytes().to_base58()
     }
 }
 

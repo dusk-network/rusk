@@ -311,7 +311,7 @@ impl std::fmt::Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Header")
             .field("topic", &self.topic)
-            .field("pubkey_bls", &to_str(self.pubkey_bls.bytes()))
+            .field("pubkey_bls", &to_str(self.pubkey_bls.bytes().inner()))
             .field("round", &self.round)
             .field("step", &self.step)
             .field("block_hash", &ledger::to_str(&self.block_hash))
@@ -321,7 +321,7 @@ impl std::fmt::Debug for Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_bytes(w, &self.pubkey_bls.bytes()[..])?;
+        Self::write_var_bytes(w, &self.pubkey_bls.bytes().inner()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.step])?;
         w.write_all(&self.block_hash[..])?;
