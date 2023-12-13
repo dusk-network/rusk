@@ -44,13 +44,18 @@ impl Provisioners {
     // Returns a pair of count of all provisioners and count of eligible
     // provisioners for the specified round.
     pub fn get_provisioners_info(&self, round: u64) -> (usize, usize) {
-        let eligible_len = self
-            .members
-            .iter()
-            .filter(|(_, m)| m.is_eligible(round))
-            .count();
+        let eligible_len = self.eligibles(round).count();
 
         (self.members.len(), eligible_len)
+    }
+
+    pub fn eligibles(
+        &self,
+        round: u64,
+    ) -> impl Iterator<Item = (&PublicKey, &Stake)> {
+        self.members
+            .iter()
+            .filter(move |(_, m)| m.is_eligible(round))
     }
 
     /// Runs the deterministic sortition algorithm which determines the
@@ -63,7 +68,11 @@ impl Provisioners {
     ) -> Vec<PublicKey> {
         let mut committee: Vec<PublicKey> = vec![];
 
-        let mut comm = CommitteeGenerator::from_provisioners(self, cfg.round);
+        let mut comm = CommitteeGenerator::from_provisioners(
+            self,
+            cfg.round,
+            cfg.exclusion.as_ref(),
+        );
 
         let mut total_amount_stake =
             BigInt::from(comm.calc_total_eligible_weight());
@@ -138,12 +147,36 @@ struct CommitteeGenerator<'a> {
 }
 
 impl<'a> CommitteeGenerator<'a> {
-    fn from_provisioners(provisioners: &'a Provisioners, round: u64) -> Self {
-        let provs = provisioners.members.iter().filter_map(|(p, stake)| {
-            stake.is_eligible(round).then_some((p, stake.clone()))
-        });
-        Self {
-            members: BTreeMap::from_iter(provs),
+    fn from_provisioners(
+        provisioners: &'a Provisioners,
+        round: u64,
+        exclusion: Option<&PublicKeyBytes>,
+    ) -> Self {
+        let eligibles = provisioners
+            .eligibles(round)
+            .map(|(p, stake)| (p, stake.clone()));
+
+        let members = match exclusion {
+            None => BTreeMap::from_iter(eligibles),
+            Some(excluded) => {
+                let eligibles =
+                    eligibles.filter(|(p, _)| p.bytes() != excluded);
+                BTreeMap::from_iter(eligibles)
+            }
+        };
+
+        if members.is_empty() {
+            // This is the edge case when there is only 1 active provisioner.
+            // Handling it just for single node cluster scenario
+            let eligibles = provisioners
+                .eligibles(round)
+                .map(|(p, stake)| (p, stake.clone()));
+
+            Self {
+                members: BTreeMap::from_iter(eligibles),
+            }
+        } else {
+            Self { members }
         }
     }
 
