@@ -16,7 +16,7 @@ pub struct Config {}
 pub trait VMExecution: Send + Sync + 'static {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: CallParams,
+        params: &CallParams,
         txs: I,
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,
