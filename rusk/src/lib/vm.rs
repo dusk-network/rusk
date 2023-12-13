@@ -17,7 +17,7 @@ use crate::Rusk;
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
         &self,
-        params: CallParams,
+        params: &CallParams,
         txs: I,
     ) -> anyhow::Result<(
         Vec<SpentTransaction>,

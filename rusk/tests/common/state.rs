@@ -13,7 +13,6 @@ use rusk_recovery_tools::state::{self, Snapshot};
 use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::contract_state::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
-use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Block, Header, SpentTransaction};
 use tracing::info;
 
@@ -70,19 +69,18 @@ pub fn generator_procedure(
 
     let generator = PublicKey::from(&*BLS_SK);
     let generator_pubkey = node_data::bls::PublicKey::new(generator);
-    let generator_pubkey_bytes = PublicKeyBytes(*generator_pubkey.bytes());
+    let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;
     // let txs = vec![];
 
+    let call_params = CallParams {
+        round,
+        block_gas_limit,
+        generator_pubkey,
+    };
+
     let (transfer_txs, discarded, execute_output) = rusk
-        .execute_state_transition(
-            CallParams {
-                round,
-                block_gas_limit,
-                generator_pubkey: generator_pubkey.clone(),
-            },
-            txs.into_iter(),
-        )
+        .execute_state_transition(&call_params, txs.into_iter())
         .expect("state transition to success");
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
@@ -94,13 +92,8 @@ pub fn generator_procedure(
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
-    let verify_param = CallParams {
-        round,
-        block_gas_limit,
-        generator_pubkey,
-    };
     let verify_output =
-        rusk.verify_state_transition(&verify_param, txs.clone())?;
+        rusk.verify_state_transition(&call_params, txs.clone())?;
     info!("verify_state_transition new verification: {verify_output}",);
 
     let block = Block::new(
