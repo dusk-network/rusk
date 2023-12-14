@@ -134,17 +134,11 @@ impl<const N: usize> Kadcast<N> {
     }
 
     /// Removes a route, if exists, for a given topic.
-    async fn remove_route(&mut self, topic: u8) -> anyhow::Result<()> {
+    async fn remove_route(&mut self, topic: u8) {
         let mut guard = self.routes.write().await;
 
-        match guard.get_mut(topic as usize) {
-            Some(Some(_)) => {
-                guard[topic as usize] = None;
-                Ok(())
-            }
-            _ => {
-                anyhow::bail!("route not registered for {:?} topic", topic)
-            }
+        if let Some(Some(_)) = guard.get_mut(topic as usize) {
+            guard[topic as usize] = None;
         }
     }
 
@@ -247,7 +241,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         timeout_millis: u64,
         recv_peers_count: usize,
     ) -> anyhow::Result<Message> {
-        self.remove_route(response_msg_topic.into()).await?;
+        self.remove_route(response_msg_topic.into()).await;
 
         let res = {
             let queue = AsyncQueue::default();
@@ -272,7 +266,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
             }
         };
 
-        self.remove_route(response_msg_topic.into()).await?;
+        self.remove_route(response_msg_topic.into()).await;
         res
     }
 
