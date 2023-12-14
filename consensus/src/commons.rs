@@ -98,9 +98,9 @@ pub trait Database: Send + Sync {
 }
 
 pub enum StepName {
-    Proposal,
-    Validation,
-    Ratification,
+    Proposal = 0,
+    Validation = 1,
+    Ratification = 2,
 }
 
 pub trait IterCounter {
@@ -113,6 +113,7 @@ pub trait IterCounter {
     fn from_step(step_num: Self::Step) -> Self;
     fn step_from_name(&self, st: StepName) -> Self::Step;
     fn step_from_pos(&self, pos: usize) -> Self::Step;
+    fn to_step_name(&self) -> StepName;
 }
 
 impl IterCounter for u8 {
@@ -133,16 +134,22 @@ impl IterCounter for u8 {
     }
 
     fn step_from_name(&self, st: StepName) -> Self::Step {
-        let proposal_step_num = self * Self::STEP_NUM;
-        match st {
-            StepName::Proposal => proposal_step_num,
-            StepName::Validation => proposal_step_num + 1,
-            StepName::Ratification => proposal_step_num + 2,
-        }
+        let iteration_step = self * Self::STEP_NUM;
+        let relative_step = st as u8;
+        iteration_step + relative_step
     }
 
     fn step_from_pos(&self, pos: usize) -> Self::Step {
         self * Self::STEP_NUM + pos as u8
+    }
+
+    fn to_step_name(&self) -> StepName {
+        match self % Self::STEP_NUM {
+            0 => StepName::Proposal,
+            1 => StepName::Validation,
+            2 => StepName::Ratification,
+            _ => panic!("STEP_NUM>3"),
+        }
     }
 }
 

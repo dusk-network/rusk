@@ -86,15 +86,17 @@ impl<T: Operations> Generator<T> {
     ) -> Result<Block, crate::contract_state::Error> {
         let start_time = Instant::now();
 
+        let call_params = CallParams {
+            round: ru.round,
+            block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
+            generator_pubkey: ru.pubkey_bls.clone(),
+        };
+
         let result = self
             .executor
             .lock()
             .await
-            .execute_state_transition(CallParams {
-                round: ru.round,
-                block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
-                generator_pubkey: ru.pubkey_bls.clone(),
-            })
+            .execute_state_transition(call_params)
             .await?;
 
         let tx_hashes: Vec<_> =
@@ -110,9 +112,7 @@ impl<T: Operations> Generator<T> {
             gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
-            generator_bls_pubkey: node_data::bls::PublicKeyBytes(
-                *ru.pubkey_bls.bytes(),
-            ),
+            generator_bls_pubkey: *ru.pubkey_bls.bytes(),
             state_hash: result.verification_output.state_root,
             event_hash: result.verification_output.event_hash,
             hash: [0; 32],

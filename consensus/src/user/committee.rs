@@ -72,6 +72,7 @@ impl Committee {
         self.members.contains_key(pubkey_bls)
     }
 
+    // TODO: remove this
     /// Returns true if `my pubkey` is a member of the generated committee.
     pub fn am_member(&self) -> bool {
         self.is_member(&self.this_member_key)
@@ -191,5 +192,9 @@ impl<'p> CommitteeSet<'p> {
 
     pub fn get(&self, cfg: &sortition::Config) -> Option<&Committee> {
         self.committees.get(cfg)
+    }
+
+    pub fn provisioners(&self) -> &Provisioners {
+        self.provisioners
     }
 }

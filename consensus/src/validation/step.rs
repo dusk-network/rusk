@@ -197,7 +197,7 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
         mut ctx: ExecutionCtx<'_, DB, T>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
-            .get_committee()
+            .get_current_committee()
             .expect("committee to be created before run");
         if committee.am_member() {
             let candidate = self.handler.lock().await.candidate.clone();

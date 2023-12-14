@@ -8,9 +8,8 @@ use crate::database::{self, Ledger, Mempool};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
-use dusk_consensus::user::committee::{Committee, CommitteeSet};
+use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
-use dusk_consensus::user::sortition;
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Signature,
     SpentTransaction,
@@ -19,11 +18,11 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 use dusk_consensus::quorum::verifiers;
 
-use dusk_consensus::config::{self, PROPOSAL_COMMITTEE_SIZE};
+use dusk_consensus::config;
 use dusk_consensus::quorum::verifiers::QuorumResult;
 
 use super::consensus::Task;
@@ -207,35 +206,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             return;
         }
         for iter in 0..iteration {
-            let committee_keys = Committee::new(
-                node_data::bls::PublicKey::default(),
-                provisioners_list,
-                &sortition::Config {
-                    committee_size: PROPOSAL_COMMITTEE_SIZE,
-                    round,
-                    seed,
-                    step: iter * 3,
-                },
-            );
-
-            if committee_keys.size() != 1 {
-                let len = committee_keys.size();
-                error!(
-                    "Unable to generate voting committee for missed block: {len}",
-                )
-            } else {
-                let generator = committee_keys
-                    .iter()
-                    .next()
-                    .expect("committee to have 1 entry")
-                    .to_bs58();
-                warn!(
-                    event = "missed iteration",
-                    height = round,
-                    iter,
-                    generator,
-                );
-            }
+            let generator =
+                provisioners_list.get_generator(iter, seed, round).to_bs58();
+            warn!(event = "missed iteration", height = round, iter, generator);
         }
     }
 
@@ -648,7 +621,7 @@ pub async fn verify_block_cert(
         &committee,
         curr_seed,
         &hdr,
-        0,
+        StepName::Validation,
         config::VALIDATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
@@ -676,7 +649,7 @@ pub async fn verify_block_cert(
         &committee,
         curr_seed,
         &hdr,
-        1,
+        StepName::Ratification,
         config::RATIFICATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )

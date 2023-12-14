@@ -291,7 +291,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                 let txs = view.get_txs_sorted_by_fee().map_err(|err| {
                     anyhow::anyhow!("failed to get mempool txs: {}", err)
                 })?;
-                let ret = vm.execute_state_transition(params, txs).map_err(
+                let ret = vm.execute_state_transition(&params, txs).map_err(
                     |err| anyhow::anyhow!("failed to call EST {}", err),
                 )?;
                 Ok(ret)
