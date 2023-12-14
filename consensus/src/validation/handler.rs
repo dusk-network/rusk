@@ -11,46 +11,48 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
-use node_data::ledger;
 use node_data::ledger::{Block, StepVotes};
 use tokio::sync::Mutex;
 use tracing::warn;
 
 use crate::user::committee::Committee;
+
 use node_data::message::{payload, Message, Payload};
 
 const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
 
-macro_rules! empty_result {
-    (  ) => {
-        HandleMsgOutput::Ready(Message::from_stepvotes(
-            payload::StepVotesWithCandidate {
-                sv: StepVotes::default(),
-                candidate: Block::default(),
-            },
-        ))
-    };
-}
+fn final_result(
+    sv: StepVotes,
+    hash: [u8; 32],
+    quorum: bool,
+) -> HandleMsgOutput {
+    let msg = Message::from_validation_result(payload::ValidationResult {
+        sv,
+        hash,
+        quorum,
+    });
 
-fn final_result(sv: StepVotes, candidate: ledger::Block) -> HandleMsgOutput {
-    HandleMsgOutput::Ready(Message::from_stepvotes(
-        payload::StepVotesWithCandidate { sv, candidate },
-    ))
+    HandleMsgOutput::Ready(msg)
 }
 
 fn final_result_with_timeout(
     sv: StepVotes,
-    candidate: ledger::Block,
+    hash: [u8; 32],
+    quorum: bool,
 ) -> HandleMsgOutput {
-    HandleMsgOutput::ReadyWithTimeoutIncrease(Message::from_stepvotes(
-        payload::StepVotesWithCandidate { sv, candidate },
-    ))
+    let msg = Message::from_validation_result(payload::ValidationResult {
+        sv,
+        hash,
+        quorum,
+    });
+
+    HandleMsgOutput::ReadyWithTimeoutIncrease(msg)
 }
 
 pub struct ValidationHandler<DB: Database> {
     sv_registry: SafeCertificateInfoRegistry,
 
-    pub(crate) db: Arc<Mutex<DB>>,
+    pub(crate) _db: Arc<Mutex<DB>>,
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
     curr_step: u8,
@@ -63,7 +65,7 @@ impl<DB: Database> ValidationHandler<DB> {
     ) -> Self {
         Self {
             sv_registry,
-            db,
+            _db: db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
             curr_step: 0,
@@ -120,7 +122,6 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
 
         let signature = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
@@ -141,31 +142,10 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                 // if the votes converged for an empty hash we invoke halt
                 if hash == [0u8; 32] {
                     tracing::warn!("votes converged for an empty hash");
-
-                    return Ok(final_result_with_timeout(
-                        StepVotes::default(),
-                        ledger::Block::default(),
-                    ));
+                    return Ok(final_result_with_timeout(sv, hash, true));
                 }
 
-                if hash != self.candidate.header().hash {
-                    // If the block generator is behind this node, we'll miss
-                    // the candidate block.
-                    if let Ok(block) = self
-                        .db
-                        .lock()
-                        .await
-                        .get_candidate_block_by_hash(&hash)
-                        .await
-                    {
-                        return Ok(final_result(sv, block));
-                    }
-
-                    tracing::error!("Failed to retrieve candidate block.");
-                    return Ok(empty_result!());
-                }
-
-                return Ok(final_result(sv, self.candidate.clone()));
+                return Ok(final_result(sv, hash, true));
             }
         }
 
@@ -182,7 +162,6 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(EMPTY_SIGNATURE),
             _ => Err(ConsensusError::InvalidMsgType),
         }?;
 
@@ -213,6 +192,6 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(final_result(StepVotes::default(), self.candidate.clone()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
