@@ -6,13 +6,13 @@
 
 use crate::Theme;
 
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
-use dusk_pki::PublicSpendKey;
-use once_cell::sync::Lazy;
-use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::JubJubScalar;
+use dusk_pki::PublicSpendKey;
 use ff::Field;
+use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
