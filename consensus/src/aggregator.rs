@@ -106,7 +106,7 @@ impl Aggregator {
 
             if quorum_reached {
                 tracing::info!(
-                    event = "reduction, quorum reached",
+                    event = "quorum reached",
                     hash = to_str(&hash),
                     total,
                     target = quorum_target,
@@ -293,7 +293,7 @@ mod tests {
                     .collect_vote(&c, h, signature)
                     .expect("failed to reach quorum");
 
-                assert_eq!(quorum_reached, true, "quorum should be reached");
+                assert!(quorum_reached, "quorum should be reached");
 
                 // Check expected block hash
                 assert_eq!(hash, block_hash);
@@ -310,10 +310,7 @@ mod tests {
             let (_, _, quorum_reached) =
                 a.collect_vote(&c, h, signature).unwrap();
 
-            assert_eq!(
-                quorum_reached, false,
-                "quorum should not be reached yet"
-            );
+            assert!(!quorum_reached, "quorum should not be reached yet");
 
             collected_votes += expected_votes[i];
             assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
