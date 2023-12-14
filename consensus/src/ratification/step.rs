@@ -109,6 +109,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             timeout = self.timeout_millis,
             hash = to_str(&handler.validation_result().hash),
             fsv_bitset = handler.validation_result().sv.bitset,
+            quorum_type = format!("{:?}", handler.validation_result().quorum)
         )
     }
 

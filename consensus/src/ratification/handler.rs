@@ -14,7 +14,7 @@ use tracing::warn;
 
 use crate::aggregator::Aggregator;
 
-use node_data::message::payload::{Ratification, ValidationResult};
+use node_data::message::payload::{QuorumType, Ratification, ValidationResult};
 use node_data::message::{payload, Message, Payload, Topics};
 
 use crate::user::committee::Committee;
@@ -195,9 +195,14 @@ impl RatificationHandler {
     fn verify_validation_result(
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
-        if result.quorum {
-            //TODO: verifiers::verify_step_votes()
-        }
+        match result.quorum {
+            QuorumType::CandidateQuorum => { /* TODO: verifiers::verify_step_votes() */
+            }
+            QuorumType::NilQuorum => { /* TODO: verifiers::verify_step_votes() */
+            }
+            QuorumType::NoQuorum => { /* TODO: */ }
+            _ => return Err(ConsensusError::InvalidQuorumType),
+        };
 
         Ok(())
     }

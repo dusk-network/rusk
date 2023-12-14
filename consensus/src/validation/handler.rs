@@ -17,6 +17,7 @@ use tracing::warn;
 
 use crate::user::committee::Committee;
 
+use node_data::message::payload::QuorumType;
 use node_data::message::{payload, Message, Payload};
 
 const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
@@ -24,7 +25,7 @@ const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
 fn final_result(
     sv: StepVotes,
     hash: [u8; 32],
-    quorum: bool,
+    quorum: QuorumType,
 ) -> HandleMsgOutput {
     let msg = Message::from_validation_result(payload::ValidationResult {
         sv,
@@ -38,7 +39,7 @@ fn final_result(
 fn final_result_with_timeout(
     sv: StepVotes,
     hash: [u8; 32],
-    quorum: bool,
+    quorum: QuorumType,
 ) -> HandleMsgOutput {
     let msg = Message::from_validation_result(payload::ValidationResult {
         sv,
@@ -142,10 +143,14 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                 // if the votes converged for an empty hash we invoke halt
                 if hash == [0u8; 32] {
                     tracing::warn!("votes converged for an empty hash");
-                    return Ok(final_result_with_timeout(sv, hash, true));
+                    return Ok(final_result_with_timeout(
+                        sv,
+                        hash,
+                        QuorumType::NilQuorum,
+                    ));
                 }
 
-                return Ok(final_result(sv, hash, true));
+                return Ok(final_result(sv, hash, QuorumType::CandidateQuorum));
             }
         }
 
@@ -192,6 +197,10 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         _ru: &RoundUpdate,
         _step: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::Ready(Message::empty()))
+        Ok(final_result(
+            StepVotes::default(),
+            [0u8; 32],
+            QuorumType::NoQuorum,
+        ))
     }
 }

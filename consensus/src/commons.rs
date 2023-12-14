@@ -77,6 +77,7 @@ pub enum ConsensusError {
     InvalidSignature,
     InvalidMsgType,
     InvalidValidation,
+    InvalidQuorumType,
     FutureEvent,
     PastEvent,
     NotCommitteeMember,
