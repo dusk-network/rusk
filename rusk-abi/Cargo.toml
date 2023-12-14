@@ -22,8 +22,9 @@ dusk-bytes = "0.1"
 bytecheck = { version = "0.6", default-features = false }
 dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
 
-piecrust-uplink = { version = "0.9.0-rc", features = ["debug"] }
-piecrust = { version = "0.14.0-rc", optional = true, features = ["debug"] }
+piecrust-uplink = "0.9.0-rc"
+piecrust = { version = "0.14.0-rc", optional = true }
+
 # These are patches since these crates don't seem to like semver.
 rkyv = { version = "=0.7.39", default-features = false }
 wasmer = { version = "=3.1", optional = true }
@@ -35,7 +36,7 @@ ff = { version = "0.13", default-features = false }
 
 [features]
 # By default, we include the contract writing features.
-default = ["abi", "dlmalloc", "debug"]
+default = ["abi", "dlmalloc"]
 
 # These are the features available for when one wishes to use `rusk-abi` as a
 # contract.
