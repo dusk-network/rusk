@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::ledger::*;
+use crate::message::payload::{Ratification, ValidationResult};
 use crate::Serializable;
 use std::io::{self, Read, Write};
 
@@ -311,6 +312,63 @@ impl Serializable for Label {
         Ok(buf[0].into())
     }
 }
+
+impl Serializable for Ratification {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        Self::write_var_bytes(w, &self.signature[..])?;
+        self.validation_result.write(w)?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let signature: [u8; 48] = Self::read_var_bytes(r)?
+            .try_into()
+            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
+        let validation_result = ValidationResult::read(r)?;
+
+        Ok(Ratification {
+            signature,
+            validation_result,
+        })
+    }
+}
+
+impl Serializable for ValidationResult {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        self.sv.write(w)?;
+        w.write_all(&self.hash[..])?;
+
+        if self.quorum {
+            w.write_all(&0u8.to_le_bytes())?;
+        } else {
+            w.write_all(&1u8.to_le_bytes())?;
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let sv = StepVotes::read(r)?;
+
+        let mut hash = [0u8; 32];
+        r.read_exact(&mut hash)?;
+
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+        let quorum = buf[0] == 1;
+
+        Ok(ValidationResult { sv, hash, quorum })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -83,9 +83,8 @@ impl Serializable for Message {
             Payload::GetInv(p) => p.write(w),
             Payload::GetBlocks(p) => p.write(w),
             Payload::GetData(p) => p.write(w),
-            Payload::Empty
-            | Payload::StepVotes(_)
-            | Payload::StepVotesWithCandidate(_) => Ok(()), /* interal message, not sent on the wire */
+            Payload::Ratification(p) => p.write(w),
+            Payload::Empty | Payload::ValidationResult(_) => Ok(()), /* internal message, not sent on the wire */
         }
     }
 
@@ -117,8 +116,11 @@ impl Serializable for Message {
             Topics::Candidate => {
                 Payload::Candidate(Box::new(payload::Candidate::read(r)?))
             }
-            Topics::Validation | Topics::Ratification => {
+            Topics::Validation => {
                 Payload::Validation(payload::Validation::read(r)?)
+            }
+            Topics::Ratification => {
+                Payload::Ratification(payload::Ratification::read(r)?)
             }
             Topics::Quorum => Payload::Quorum(payload::Quorum::read(r)?),
             Topics::Block => Payload::Block(Box::new(ledger::Block::read(r)?)),
@@ -175,6 +177,18 @@ impl Message {
         Self {
             header,
             payload: Payload::Candidate(Box::new(p)),
+            ..Default::default()
+        }
+    }
+
+    /// Creates topics.Ratification message
+    pub fn new_ratification(
+        header: Header,
+        payload: payload::Ratification,
+    ) -> Message {
+        Self {
+            header,
+            payload: Payload::Ratification(payload),
             ..Default::default()
         }
     }
@@ -263,12 +277,11 @@ impl Message {
         }
     }
 
-    /// Creates a message with a step votes payload
-    /// This is never sent on the wire, but used internally
-    pub fn from_stepvotes(p: payload::StepVotesWithCandidate) -> Message {
+    /// Creates a message with a validation_result
+    pub fn from_validation_result(p: payload::ValidationResult) -> Message {
         Self {
             header: Header::default(),
-            payload: Payload::StepVotesWithCandidate(Box::new(p)),
+            payload: Payload::ValidationResult(Box::new(p)),
             ..Default::default()
         }
     }
@@ -443,12 +456,10 @@ impl Header {
 
 #[derive(Default, Debug, Clone)]
 pub enum Payload {
+    Ratification(payload::Ratification),
     Validation(payload::Validation),
     Candidate(Box<payload::Candidate>),
     Quorum(payload::Quorum),
-
-    StepVotes(ledger::StepVotes),
-    StepVotesWithCandidate(Box<payload::StepVotesWithCandidate>),
 
     Block(Box<ledger::Block>),
     Transaction(Box<ledger::Transaction>),
@@ -459,6 +470,10 @@ pub enum Payload {
     GetData(payload::GetData),
     CandidateResp(Box<payload::CandidateResp>),
 
+    // Internal messages payload
+    /// Result message passed from Validation step to Ratification step
+    ValidationResult(Box<payload::ValidationResult>),
+
     #[default]
     Empty,
 }
@@ -468,6 +483,21 @@ pub mod payload {
     use crate::Serializable;
     use std::io::{self, Read, Write};
 
+    #[derive(Debug, Clone)]
+    pub struct Ratification {
+        pub signature: [u8; 48],
+        pub validation_result: ValidationResult,
+    }
+
+    impl Default for Ratification {
+        fn default() -> Self {
+            Self {
+                signature: [0; 48],
+                validation_result: ValidationResult::default(),
+            }
+        }
+    }
+
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Validation {
         pub signature: [u8; 48],
@@ -475,8 +505,7 @@ pub mod payload {
 
     impl Serializable for Validation {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_bytes(w, &self.signature[..])?;
-            Ok(())
+            Self::write_var_bytes(w, &self.signature[..])
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
@@ -555,10 +584,11 @@ pub mod payload {
         }
     }
 
-    #[derive(Debug, Clone)]
-    pub struct StepVotesWithCandidate {
+    #[derive(Debug, Clone, Default)]
+    pub struct ValidationResult {
         pub sv: StepVotes,
-        pub candidate: Block,
+        pub hash: [u8; 32],
+        pub quorum: bool,
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]
@@ -571,11 +601,6 @@ pub mod payload {
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             Self::write_var_bytes(w, &self.signature[..])?;
-
-            // Read this field for backward compatibility
-            let step_votes_len = 2u8;
-            w.write_all(&step_votes_len.to_le_bytes())?;
-
             self.validation.write(w)?;
             self.ratification.write(w)?;
 
@@ -589,9 +614,6 @@ pub mod payload {
             let signature = Self::read_var_bytes(r)?
                 .try_into()
                 .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-            let mut step_votes_len = [0u8; 1];
-            r.read_exact(&mut step_votes_len)?;
 
             let validation = StepVotes::read(r)?;
             let ratification = StepVotes::read(r)?;
