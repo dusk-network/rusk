@@ -365,7 +365,7 @@ impl Serializable for ValidationResult {
 impl Serializable for QuorumType {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         match self {
-            QuorumType::CandidateQuorum => w.write_all(&0u8.to_le_bytes())?,
+            QuorumType::ValidQuorum => w.write_all(&0u8.to_le_bytes())?,
             QuorumType::InvalidQuorum => w.write_all(&1u8.to_le_bytes())?,
             QuorumType::NilQuorum => w.write_all(&2u8.to_le_bytes())?,
             _ => w.write_all(&255u8.to_le_bytes())?,
@@ -382,7 +382,7 @@ impl Serializable for QuorumType {
         r.read_exact(&mut buf)?;
 
         Ok(match buf[0] {
-            0 => QuorumType::CandidateQuorum,
+            0 => QuorumType::ValidQuorum,
             1 => QuorumType::InvalidQuorum,
             2 => QuorumType::NilQuorum,
             _ => QuorumType::NoQuorum,

@@ -587,7 +587,7 @@ pub mod payload {
     #[derive(Clone, Default)]
     pub enum QuorumType {
         /// Quorum on Valid Candidate
-        CandidateQuorum,
+        ValidQuorum,
         // Quorum on Invalid Candidate
         InvalidQuorum,
         //Quorum on Timeout (NilQuorum)
@@ -600,7 +600,7 @@ pub mod payload {
     impl fmt::Debug for QuorumType {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let label = match self {
-                QuorumType::CandidateQuorum => "candidate_quorum",
+                QuorumType::ValidQuorum => "valid_quorum",
                 QuorumType::InvalidQuorum => "invalid_quorum",
                 QuorumType::NilQuorum => "nil_quorum",
                 QuorumType::NoQuorum => "no_quorum",
@@ -611,9 +611,9 @@ pub mod payload {
 
     #[derive(Debug, Clone, Default)]
     pub struct ValidationResult {
-        pub sv: StepVotes,
-        pub hash: [u8; 32],
         pub quorum: QuorumType,
+        pub hash: [u8; 32],
+        pub sv: StepVotes,
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]
