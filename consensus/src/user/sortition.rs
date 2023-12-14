@@ -9,7 +9,7 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-use node_data::ledger::Seed;
+use node_data::{bls::PublicKeyBytes, ledger::Seed};
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
@@ -17,6 +17,7 @@ pub struct Config {
     pub round: u64,
     pub step: u8,
     pub committee_size: usize,
+    pub exclusion: Option<PublicKeyBytes>,
 }
 
 impl Config {
@@ -25,12 +26,14 @@ impl Config {
         round: u64,
         step: u8,
         committee_size: usize,
+        exclusion: Option<PublicKeyBytes>,
     ) -> Config {
         Self {
             seed,
             round,
             step,
             committee_size,
+            exclusion,
         }
     }
 }
@@ -85,7 +88,7 @@ mod tests {
 
         assert_eq!(
             create_sortition_hash(
-                &Config::new(Seed::from([3; 48]), 10, 3, 0),
+                &Config::new(Seed::from([3; 48]), 10, 3, 0, None),
                 1
             )[..],
             hash[..],
@@ -101,7 +104,7 @@ mod tests {
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
-                &Config::new(Seed::from(seed), 10, 3, 0),
+                &Config::new(Seed::from(seed), 10, 3, 0, None),
                 1,
             );
 

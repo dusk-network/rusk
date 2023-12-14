@@ -6,6 +6,7 @@
 
 use node_data::ledger::{Seed, StepVotes};
 
+use crate::commons::{IterCounter, StepName};
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -53,6 +54,7 @@ pub async fn verify_quorum(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
+    //TODO use if let
     match msg.payload {
         Payload::Quorum(payload) => {
             msg.header
@@ -73,7 +75,7 @@ pub async fn verify_quorum(
                 committees_set,
                 seed,
                 &msg.header,
-                0,
+                StepName::Validation,
                 config::VALIDATION_COMMITTEE_SIZE,
                 true,
             )
@@ -93,7 +95,7 @@ pub async fn verify_quorum(
                 committees_set,
                 seed,
                 &msg.header,
-                1,
+                StepName::Ratification,
                 config::RATIFICATION_COMMITTEE_SIZE,
                 true,
             )
@@ -119,7 +121,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     hdr: &Header,
-    step_offset: u8,
+    step_name: StepName,
     committee_size: usize,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
@@ -127,8 +129,21 @@ pub async fn verify_step_votes(
         return Err(Error::InvalidStepNum);
     }
 
-    let step = hdr.step - 1 + step_offset;
-    let cfg = sortition::Config::new(seed, hdr.round, step, committee_size);
+    let iteration = u8::from_step(hdr.step);
+    let step = iteration.step_from_name(step_name);
+    let generator = committees_set
+        .read()
+        .await
+        .provisioners()
+        .get_generator(iteration, seed, hdr.round);
+
+    let cfg = sortition::Config::new(
+        seed,
+        hdr.round,
+        step,
+        committee_size,
+        Some(generator),
+    );
 
     if committees_set.read().await.get(&cfg).is_none() {
         let _ = committees_set.write().await.get_or_create(&cfg);
@@ -190,12 +205,18 @@ pub async fn verify_votes(
         return Err(Error::VoteSetTooSmall(cfg.step));
     }
 
-    // aggregate public keys
-    let apk = sub_committee.aggregate_pks()?;
+    // If bitset=0 this means that we are checking for failed iteration
+    // certificates. If a winning certificate is checked with bitset=0 it will
+    // fail to pass the quorum and results in VoteSetTooSmall.
+    // FIXME: Anyway this should be handled properly, maybe with a different
+    // function
+    if bitset > 0 {
+        // aggregate public keys
+        let apk = sub_committee.aggregate_pks()?;
 
-    // verify signatures
-    verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
-
+        // verify signatures
+        verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
+    }
     // Verification done
     Ok(quorum_result)
 }

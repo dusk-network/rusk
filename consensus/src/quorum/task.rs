@@ -161,16 +161,15 @@ impl<'p, D: Database> Executor<'p, D> {
             .await
             .ok()?;
 
-            // Publish the quorum
-            self.publish(msg.clone()).await;
-
-            let (cert, hash) =
-                (quorum.generate_certificate(), &msg.header.block_hash);
-
             debug!("generate block from quorum msg");
+            let (cert, hash) =
+                (quorum.generate_certificate(), msg.header.block_hash);
+
+            // Publish the quorum
+            self.publish(msg).await;
 
             // Create winning block
-            return self.create_winning_block(hash, &cert).await;
+            return self.create_winning_block(&hash, &cert).await;
         }
 
         None
