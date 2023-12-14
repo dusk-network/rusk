@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::ledger::*;
-use crate::message::payload::{Ratification, ValidationResult};
+use crate::message::payload::{QuorumType, Ratification, ValidationResult};
 use crate::Serializable;
 use std::io::{self, Read, Write};
 
@@ -342,12 +342,7 @@ impl Serializable for ValidationResult {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.sv.write(w)?;
         w.write_all(&self.hash[..])?;
-
-        if self.quorum {
-            w.write_all(&0u8.to_le_bytes())?;
-        } else {
-            w.write_all(&1u8.to_le_bytes())?;
-        }
+        self.quorum.write(w)?;
 
         Ok(())
     }
@@ -361,11 +356,37 @@ impl Serializable for ValidationResult {
         let mut hash = [0u8; 32];
         r.read_exact(&mut hash)?;
 
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-        let quorum = buf[0] == 1;
+        let quorum = QuorumType::read(r)?;
 
         Ok(ValidationResult { sv, hash, quorum })
+    }
+}
+
+impl Serializable for QuorumType {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        match self {
+            QuorumType::CandidateQuorum => w.write_all(&0u8.to_le_bytes())?,
+            QuorumType::InvalidQuorum => w.write_all(&1u8.to_le_bytes())?,
+            QuorumType::NilQuorum => w.write_all(&2u8.to_le_bytes())?,
+            _ => w.write_all(&255u8.to_le_bytes())?,
+        }
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut buf = [0u8; 1];
+        r.read_exact(&mut buf)?;
+
+        Ok(match buf[0] {
+            0 => QuorumType::CandidateQuorum,
+            1 => QuorumType::InvalidQuorum,
+            2 => QuorumType::NilQuorum,
+            _ => QuorumType::NoQuorum,
+        })
     }
 }
 

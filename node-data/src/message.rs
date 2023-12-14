@@ -481,6 +481,7 @@ pub enum Payload {
 pub mod payload {
     use crate::ledger::{self, Block, Certificate, StepVotes};
     use crate::Serializable;
+    use std::fmt;
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Clone)]
@@ -583,12 +584,36 @@ pub mod payload {
             })
         }
     }
+    #[derive(Clone, Default)]
+    pub enum QuorumType {
+        /// Quorum on Valid Candidate
+        CandidateQuorum,
+        // Quorum on Invalid Candidate
+        InvalidQuorum,
+        //Quorum on Timeout (NilQuorum)
+        NilQuorum,
+        // NoQuorum
+        #[default]
+        NoQuorum,
+    }
+
+    impl fmt::Debug for QuorumType {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let label = match self {
+                QuorumType::CandidateQuorum => "candidate_quorum",
+                QuorumType::InvalidQuorum => "invalid_quorum",
+                QuorumType::NilQuorum => "nil_quorum",
+                QuorumType::NoQuorum => "no_quorum",
+            };
+            f.write_str(label)
+        }
+    }
 
     #[derive(Debug, Clone, Default)]
     pub struct ValidationResult {
         pub sv: StepVotes,
         pub hash: [u8; 32],
-        pub quorum: bool,
+        pub quorum: QuorumType,
     }
 
     #[derive(Debug, Clone, Eq, Hash, PartialEq)]
