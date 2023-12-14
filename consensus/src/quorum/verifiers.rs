@@ -205,12 +205,18 @@ pub async fn verify_votes(
         return Err(Error::VoteSetTooSmall(cfg.step));
     }
 
-    // aggregate public keys
-    let apk = sub_committee.aggregate_pks()?;
+    // If bitset=0 this means that we are checking for failed iteration
+    // certificates. If a winning certificate is checked with bitset=0 it will
+    // fail to pass the quorum and results in VoteSetTooSmall.
+    // FIXME: Anyway this should be handled properly, maybe with a different
+    // function
+    if bitset > 0 {
+        // aggregate public keys
+        let apk = sub_committee.aggregate_pks()?;
 
-    // verify signatures
-    verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
-
+        // verify signatures
+        verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
+    }
     // Verification done
     Ok(quorum_result)
 }
