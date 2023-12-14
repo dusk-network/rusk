@@ -59,7 +59,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
         let committee = ctx
-            .get_committee()
+            .get_current_committee()
             .expect("committee to be created before run");
         if committee.am_member() {
             let iteration = cmp::min(

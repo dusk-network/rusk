@@ -4,9 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::Database;
 use crate::commons::{spawn_cast_vote, QuorumMsgSender};
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{Database, IterCounter, StepName};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
@@ -131,12 +131,18 @@ impl<D: Database> IterationCtx<D> {
         None
     }
 
-    pub(crate) fn get_committee(&mut self, step: u8) -> Option<&Committee> {
+    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
         self.committees.get(&step)
     }
 
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
+    }
+
+    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
+        let step = iter.step_from_name(StepName::Proposal);
+        self.get_committee(step)
+            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
 
     pub(crate) fn on_end(&mut self) {
@@ -212,7 +218,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         self.iter_ctx.committees.insert(self.step, committee);
     }
 
-    pub(crate) fn get_committee(&self) -> Option<&Committee> {
+    pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
         self.iter_ctx.committees.get(&self.step)
     }
 
@@ -369,7 +375,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         timeout_millis: &mut u64,
     ) -> Option<Message> {
         let committee = self
-            .get_committee()
+            .get_current_committee()
             .expect("committee to be created before run");
         // Check if message is valid in the context of current step
         let ret = phase.lock().await.is_valid(
@@ -478,7 +484,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         phase: Arc<Mutex<C>>,
     ) -> Option<Message> {
         let committee = self
-            .get_committee()
+            .get_current_committee()
             .expect("committee to be created before run");
         if let Some(messages) = self
             .future_msgs

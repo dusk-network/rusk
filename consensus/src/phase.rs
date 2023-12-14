@@ -63,11 +63,14 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         let exclusion = match ctx.step.to_step_name() {
             StepName::Proposal => None,
-            _ => Some(ctx.provisioners.get_generator(
-                u8::from_step(ctx.step),
-                ctx.round_update.seed(),
-                ctx.round_update.round,
-            )),
+            _ => {
+                let iteration = u8::from_step(ctx.step);
+                let generator = ctx
+                    .iter_ctx
+                    .get_generator(iteration)
+                    .expect("Proposal committee to be already generated");
+                Some(generator)
+            }
         };
 
         // Perform deterministic_sortition to generate committee of size=N.
