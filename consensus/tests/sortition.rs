@@ -16,7 +16,6 @@ use node_data::ledger::Seed;
 
 #[test]
 fn test_deterministic_sortition_1() {
-    // Create provisioners with bls keys read from an external file.
     let p = generate_provisioners(5);
 
     let committee_size = 64;
@@ -38,7 +37,6 @@ fn test_deterministic_sortition_1() {
 
 #[test]
 fn test_deterministic_sortition_2() {
-    // Create provisioners with bls keys read from an external file.
     let p = generate_provisioners(5);
 
     let committee_size = 45;
@@ -53,8 +51,50 @@ fn test_deterministic_sortition_2() {
 }
 
 #[test]
+fn test_deterministic_sortition_2_exclusion() {
+    let p = generate_provisioners(5);
+
+    let seed = Seed::from([3u8; 48]);
+    let round = 7777;
+    let committee_size = 45;
+    let iteration = 2;
+    let relative_step = 2;
+    let step = iteration * 3 + relative_step;
+
+    let mut cfg = Config::new(seed, round, step, committee_size, None);
+    let generator = p.get_generator(iteration, seed, round);
+    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+
+    committee
+        .iter()
+        .find(|&p| p.bytes() == &generator)
+        .expect("Generator to be included");
+    assert_eq!(
+        committee_size,
+        committee.get_occurrences().iter().sum::<usize>()
+    );
+    assert_eq!(vec![7, 15, 10, 13], committee.get_occurrences());
+
+    // Run the same extraction, with the generator excluded
+    cfg.exclusion = Some(generator);
+    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+
+    assert!(
+        committee
+            .iter()
+            .find(|&p| p.bytes() == &generator)
+            .is_none(),
+        "Generator to be excluded"
+    );
+    assert_eq!(
+        committee_size,
+        committee.get_occurrences().iter().sum::<usize>()
+    );
+    assert_eq!(vec![3, 23, 19], committee.get_occurrences());
+}
+
+#[test]
 fn test_quorum() {
-    // Create provisioners with bls keys read from an external file.
     let p = generate_provisioners(5);
 
     let cfg = Config::new(Seed::default(), 7777, 8, 64, None);
