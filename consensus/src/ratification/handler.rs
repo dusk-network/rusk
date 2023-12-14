@@ -69,7 +69,7 @@ impl MsgHandler<Message> for RatificationHandler {
 
         let ratification = Self::unwrap_msg(&msg)?;
 
-        // Collect vote, if msg payload is of reduction type
+        // Collect vote, if msg payload is of ratification type
         if let Some((block_hash, ratification_sv, quorum_reached)) = self
             .aggregator
             .collect_vote(committee, &msg.header, &ratification.signature)
@@ -196,7 +196,7 @@ impl RatificationHandler {
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
         match result.quorum {
-            QuorumType::CandidateQuorum => { /* TODO: verifiers::verify_step_votes() */
+            QuorumType::ValidQuorum => { /* TODO: verifiers::verify_step_votes() */
             }
             QuorumType::NilQuorum => { /* TODO: verifiers::verify_step_votes() */
             }

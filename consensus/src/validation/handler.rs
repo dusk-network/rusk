@@ -142,7 +142,9 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
             if quorum_reached {
                 // if the votes converged for an empty hash we invoke halt
                 if hash == [0u8; 32] {
-                    tracing::warn!("votes converged for an empty hash");
+                    tracing::warn!(
+                        "votes converged for an empty hash (timeout)"
+                    );
                     return Ok(final_result_with_timeout(
                         sv,
                         hash,
@@ -150,7 +152,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
                     ));
                 }
 
-                return Ok(final_result(sv, hash, QuorumType::CandidateQuorum));
+                return Ok(final_result(sv, hash, QuorumType::ValidQuorum));
             }
         }
 

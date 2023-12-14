@@ -31,7 +31,7 @@ pub struct RatificationStep<T, DB> {
 }
 
 impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
-    pub async fn cast_vote(
+    pub async fn try_vote(
         &self,
         ru: &RoundUpdate,
         step: u8,
@@ -125,7 +125,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             let mut handler = self.handler.lock().await;
 
             let vote_msg = self
-                .cast_vote(
+                .try_vote(
                     &ctx.round_update,
                     ctx.step,
                     handler.validation_result(),

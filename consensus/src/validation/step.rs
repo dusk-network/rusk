@@ -80,7 +80,7 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        // Sign and construct reduction message
+        // Sign and construct validation message
         let msg = message::Message::new_validation(
             hdr,
             message::payload::Validation { signature },
