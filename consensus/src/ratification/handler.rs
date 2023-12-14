@@ -9,10 +9,12 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
-use node_data::ledger::{Hash, Signature, StepVotes};
-use tracing::{error, warn};
+use node_data::ledger::Hash;
+use tracing::warn;
 
 use crate::aggregator::Aggregator;
+
+use node_data::message::payload::{Ratification, ValidationResult};
 use node_data::message::{payload, Message, Payload, Topics};
 
 use crate::user::committee::Committee;
@@ -21,7 +23,7 @@ pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
 
     pub(crate) aggregator: Aggregator,
-    pub(crate) validation: StepVotes,
+    pub(crate) validation_result: ValidationResult,
     pub(crate) curr_step: u8,
 }
 
@@ -34,21 +36,19 @@ impl MsgHandler<Message> for RatificationHandler {
         _step: u8,
         _committee: &Committee,
     ) -> Result<Message, ConsensusError> {
-        let signed_hash = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(Signature::default().0),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
+        if let Payload::Ratification(p) = &msg.payload {
+            if msg.header.verify_signature(&p.signature).is_err() {
+                return Err(ConsensusError::InvalidSignature);
+            }
 
-        if let Err(e) = msg.header.verify_signature(&signed_hash) {
-            error!("verify_signature err: {}", e);
-            return Err(ConsensusError::InvalidSignature);
+            Self::verify_validation_result(&p.validation_result)?;
+            return Ok(msg);
         }
 
-        Ok(msg)
+        Err(ConsensusError::InvalidMsgType)
     }
 
-    /// Collect the reduction message.
+    /// Collect the ratification message.
     async fn collect(
         &mut self,
         msg: Message,
@@ -67,22 +67,18 @@ impl MsgHandler<Message> for RatificationHandler {
             return Ok(HandleMsgOutput::Pending(msg));
         }
 
-        let signature = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(Signature::default().0),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
+        let ratification = Self::unwrap_msg(&msg)?;
 
         // Collect vote, if msg payload is of reduction type
-        if let Some((block_hash, second_step_votes, quorum_reached)) = self
+        if let Some((block_hash, ratification_sv, quorum_reached)) = self
             .aggregator
-            .collect_vote(committee, &msg.header, &signature)
+            .collect_vote(committee, &msg.header, &ratification.signature)
         {
             // Record any signature in global registry
             _ = self.sv_registry.lock().await.add_step_votes(
                 step,
                 block_hash,
-                second_step_votes,
+                ratification_sv,
                 SvType::Ratification,
                 quorum_reached,
             );
@@ -92,7 +88,8 @@ impl MsgHandler<Message> for RatificationHandler {
                     ru,
                     step,
                     block_hash,
-                    second_step_votes,
+                    ratification.validation_result.sv,
+                    ratification_sv,
                 )));
             }
         }
@@ -108,17 +105,14 @@ impl MsgHandler<Message> for RatificationHandler {
         step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        let signature = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(Signature::default().0),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
+        let ratification = Self::unwrap_msg(&msg)?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv, quorum_reached)) =
-            self.aggregator
-                .collect_vote(committee, &msg.header, &signature)
-        {
+        if let Some((hash, sv, quorum_reached)) = self.aggregator.collect_vote(
+            committee,
+            &msg.header,
+            &ratification.signature,
+        ) {
             // Record any signature in global registry
             if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
@@ -151,7 +145,7 @@ impl RatificationHandler {
         Self {
             sv_registry,
             aggregator: Default::default(),
-            validation: Default::default(),
+            validation_result: Default::default(),
             curr_step: 0,
         }
     }
@@ -161,6 +155,7 @@ impl RatificationHandler {
         ru: &RoundUpdate,
         step: u8,
         block_hash: Hash,
+        validation: ledger::StepVotes,
         ratification: ledger::StepVotes,
     ) -> Message {
         let hdr = node_data::message::Header {
@@ -174,7 +169,7 @@ impl RatificationHandler {
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
         let payload = payload::Quorum {
             signature,
-            validation: self.validation,
+            validation,
             ratification,
         };
 
@@ -182,7 +177,28 @@ impl RatificationHandler {
     }
 
     pub(crate) fn reset(&mut self, step: u8) {
-        self.validation = StepVotes::default();
+        self.validation_result = Default::default();
         self.curr_step = step;
+    }
+
+    pub(crate) fn validation_result(&self) -> &ValidationResult {
+        &self.validation_result
+    }
+
+    fn unwrap_msg(msg: &Message) -> Result<&Ratification, ConsensusError> {
+        match &msg.payload {
+            Payload::Ratification(r) => Ok(r),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }
+    }
+
+    fn verify_validation_result(
+        result: &ValidationResult,
+    ) -> Result<(), ConsensusError> {
+        if result.quorum {
+            //TODO: verifiers::verify_step_votes()
+        }
+
+        Ok(())
     }
 }
