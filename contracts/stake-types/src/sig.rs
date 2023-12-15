@@ -55,7 +55,7 @@ where
     let mut vec = Vec::new();
 
     vec.extend_from_slice(&counter.to_bytes());
-    vec.extend_from_slice(&note.as_ref());
+    vec.extend_from_slice(note.as_ref());
 
     vec
 }
