@@ -4,25 +4,73 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_cast_vote, ConsensusError, Database};
+use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use std::marker::PhantomData;
 
+use crate::msg_handler::MsgHandler;
 use crate::ratification::handler;
-use node_data::ledger::{to_str, Block};
-use node_data::message::{Message, Payload, Topics};
+use node_data::ledger::to_str;
+use node_data::message;
+use node_data::message::payload::{Ratification, ValidationResult};
+use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use tracing::{debug, error};
+
 pub struct RatificationStep<T, DB> {
     handler: Arc<Mutex<handler::RatificationHandler>>,
-    candidate: Option<Block>,
+
     timeout_millis: u64,
-    executor: Arc<Mutex<T>>,
+    _executor: Arc<Mutex<T>>,
 
     marker: PhantomData<DB>,
+}
+
+impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
+    pub async fn try_vote(
+        &self,
+        ru: &RoundUpdate,
+        step: u8,
+        result: &ValidationResult,
+        outbound: AsyncQueue<Message>,
+    ) -> Message {
+        let hdr = message::Header {
+            pubkey_bls: ru.pubkey_bls.clone(),
+            round: ru.round,
+            step,
+            block_hash: result.hash,
+            topic: Topics::Ratification.into(),
+        };
+
+        let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
+
+        // Sign and construct ratification message
+        let msg = Message::new_ratification(
+            hdr,
+            Ratification {
+                signature,
+                validation_result: result.clone(),
+            },
+        );
+
+        debug!(
+            event = "voting",
+            vtype = "ratification",
+            hash = to_str(&result.hash),
+            validation_bitset = result.sv.bitset
+        );
+
+        // Publish
+        outbound.send(msg.clone()).await.unwrap_or_else(|err| {
+            error!("could not publish ratification msg {:?}", err)
+        });
+
+        msg
+    }
 }
 
 impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
@@ -32,22 +80,25 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     ) -> Self {
         Self {
             handler,
-            candidate: None,
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            executor,
+            _executor: executor,
             marker: PhantomData,
         }
     }
 
     pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
         let mut handler = self.handler.lock().await;
-
-        self.candidate = Some(Block::default());
         handler.reset(step);
 
-        if let Payload::StepVotesWithCandidate(p) = msg.payload.clone() {
-            handler.validation = p.sv;
-            self.candidate = Some(p.candidate);
+        // The Validation output must be the vote to cast on the Ratification.
+        // There are these possible outputs:
+        //  - Quorum on Valid Candidate
+        //  - (unsupported) Quorum on Invalid Candidate
+        //  - Quorum on Timeout (NilQuorum)
+        //  - No Quorum (Validation step time-ed out)
+
+        if let Payload::ValidationResult(p) = &msg.payload {
+            handler.validation_result = p.as_ref().clone();
         }
 
         tracing::debug!(
@@ -56,15 +107,9 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             round = round,
             step = step,
             timeout = self.timeout_millis,
-            hash = to_str(
-                &self
-                    .candidate
-                    .as_ref()
-                    .map_or(&Block::default(), |c| c)
-                    .header()
-                    .hash
-            ),
-            fsv_bitset = handler.validation.bitset,
+            hash = to_str(&handler.validation_result().hash),
+            fsv_bitset = handler.validation_result().sv.bitset,
+            quorum_type = format!("{:?}", handler.validation_result().quorum)
         )
     }
 
@@ -75,22 +120,23 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
+
         if committee.am_member() {
-            //  Send reduction in async way
-            if let Some(b) = &self.candidate {
-                spawn_cast_vote(
-                    &mut ctx.iter_ctx.join_set,
-                    ctx.iter_ctx.verified_hash.clone(),
-                    b.clone(),
-                    ctx.round_update.pubkey_bls.clone(),
-                    ctx.round_update.clone(),
+            let mut handler = self.handler.lock().await;
+
+            let vote_msg = self
+                .try_vote(
+                    &ctx.round_update,
                     ctx.step,
+                    handler.validation_result(),
                     ctx.outbound.clone(),
-                    ctx.inbound.clone(),
-                    self.executor.clone(),
-                    Topics::Ratification,
-                );
-            }
+                )
+                .await;
+
+            // Collect my own vote
+            handler
+                .collect(vote_msg, &ctx.round_update, ctx.step, committee)
+                .await?;
         }
 
         // handle queued messages for current round and step.
@@ -103,7 +149,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     }
 
     pub fn name(&self) -> &'static str {
-        "2nd_red"
+        "ratification"
     }
     pub fn get_timeout(&self) -> u64 {
         self.timeout_millis

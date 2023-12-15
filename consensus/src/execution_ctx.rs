@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{spawn_cast_vote, QuorumMsgSender};
+use crate::commons::QuorumMsgSender;
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::commons::{Database, IterCounter, StepName};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
@@ -41,12 +41,6 @@ pub struct IterationCtx<DB: Database> {
 
     pub join_set: JoinSet<()>,
 
-    /// verified candidate hash
-    ///
-    /// An optimization to call VST once per a candidate block when this
-    /// provisioner is extracted for both reductions.
-    pub verified_hash: Arc<Mutex<[u8; 32]>>,
-
     round: u64,
     iter: u8,
 
@@ -71,7 +65,6 @@ impl<D: Database> IterationCtx<D> {
             round,
             join_set: JoinSet::new(),
             iter,
-            verified_hash: Arc::new(Mutex::new([0u8; 32])),
             proposal_handler,
             validation_handler,
             ratification_handler,
@@ -179,7 +172,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub round_update: RoundUpdate,
     pub step: u8,
 
-    executor: Arc<Mutex<T>>,
+    _executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
     quorum_sender: QuorumMsgSender,
@@ -208,7 +201,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             provisioners,
             round_update,
             step,
-            executor,
+            _executor: executor,
             sv_registry,
             quorum_sender,
         }
@@ -305,18 +298,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     msg_step,
                 );
 
-                spawn_cast_vote(
-                    &mut self.iter_ctx.join_set,
-                    Arc::new(Mutex::new([0u8; 32])),
-                    candidate.clone(),
-                    self.round_update.pubkey_bls.clone(),
-                    self.round_update.clone(),
-                    msg_step,
-                    self.outbound.clone(),
-                    self.inbound.clone(),
-                    self.executor.clone(),
-                    topic,
-                );
+                // TODO: Verify
             };
         } else {
             error!(event = "committee not found", step = self.step, msg_step);
