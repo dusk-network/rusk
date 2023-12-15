@@ -41,10 +41,6 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
     }
 
     pub async fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
-        // To be aligned with the original impl, Proposal does not double its
-        // timeout settings
-        self.timeout_millis = config::CONSENSUS_TIMEOUT_MS;
-
         debug!(
             event = "init",
             name = self.name(),
