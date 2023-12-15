@@ -13,7 +13,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
@@ -136,6 +136,18 @@ impl TransferState {
         true
     }
 
+    pub fn withdraw_from_contract_transparent2(
+        &mut self,
+        wfct: transfer_contract_types::Wfct,
+    ) -> bool {
+        let note = Note::from_slice(wfct.note.as_slice())
+            .expect("Failed to deserialize note");
+        self.withdraw_from_contract_transparent(Wfct {
+            value: wfct.value,
+            note,
+            proof: wfct.proof,
+        })
+    }
     pub fn send_to_contract_obfuscated(&mut self, stco: Stco) -> bool {
         let (crossover, stealth_addr) = self
             .take_crossover()

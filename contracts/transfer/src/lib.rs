@@ -43,6 +43,13 @@ unsafe fn wfct(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
+unsafe fn wfct2(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |arg| {
+        STATE.withdraw_from_contract_transparent2(arg)
+    })
+}
+
+#[no_mangle]
 unsafe fn stco(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |arg| STATE.send_to_contract_obfuscated(arg))
 }
