@@ -40,16 +40,6 @@ pub struct Stake {
     pub proof: Vec<u8>,
 }
 
-impl Stake {
-    /// Serializes stake in a vector of bytes
-    #[must_use]
-    pub fn serialize(&self) -> Vec<u8> {
-        rkyv::to_bytes::<_, 8192>(self)
-            .expect("Serializing stake transaction should succeed")
-            .to_vec()
-    }
-}
-
 /// Unstake a value from the stake contract.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
