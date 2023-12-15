@@ -17,6 +17,7 @@ use tracing::warn;
 
 use crate::user::committee::Committee;
 
+use crate::execution_ctx::RoundCommittees;
 use node_data::message::payload::QuorumType;
 use node_data::message::{payload, Message, Payload};
 
@@ -88,6 +89,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
+        _round_committees: &RoundCommittees,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
