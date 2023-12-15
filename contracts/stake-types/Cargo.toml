@@ -1,7 +1,9 @@
 [package]
 name = "stake-contract-types"
+description = "Stake contract types for the Dusk Network."
 version = "0.0.1-rc.0"
 edition = "2021"
+license = "MPL-2.0"
 
 [dependencies]
 dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
