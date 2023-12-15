@@ -10,8 +10,7 @@ use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::Hash;
-use tracing::log::error;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::aggregator::Aggregator;
 
