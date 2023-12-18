@@ -22,7 +22,7 @@ const WITHDRAW_MESSAGE_SIZE: usize =
 #[must_use]
 pub fn allow_signature_message(
     counter: u64,
-    staker: PublicKey,
+    staker: &PublicKey,
 ) -> [u8; ALLOW_MESSAGE_SIZE] {
     let mut bytes = [0u8; ALLOW_MESSAGE_SIZE];
 

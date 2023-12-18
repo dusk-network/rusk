@@ -887,7 +887,7 @@ fn allow() {
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
     // Fashion a Allow struct
-    let allow_digest = allow_signature_message(0, allow_pk);
+    let allow_digest = allow_signature_message(0, &allow_pk);
     let allow_sig = sk.sign(&pk, &allow_digest);
 
     let allow = Allow {

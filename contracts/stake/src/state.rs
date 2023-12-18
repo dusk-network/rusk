@@ -172,7 +172,7 @@ impl StakeState {
 
         // verify signature
         let digest =
-            allow_signature_message(owner_counter, allow.public_key).to_vec();
+            allow_signature_message(owner_counter, &allow.public_key).to_vec();
 
         if !rusk_abi::verify_bls(digest, allow.owner, allow.signature) {
             panic!("Invalid signature!");
