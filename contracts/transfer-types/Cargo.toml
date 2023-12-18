@@ -6,5 +6,7 @@ edition = "2021"
 [dependencies]
 dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-jubjub = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.31", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false }
 bytecheck = { version = "0.6", default-features = false }
