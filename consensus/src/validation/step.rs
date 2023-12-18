@@ -198,7 +198,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
-        if committee.am_member() {
+        if ctx.am_member(committee) {
             let candidate = self.handler.lock().await.candidate.clone();
 
             Self::spawn_try_vote(

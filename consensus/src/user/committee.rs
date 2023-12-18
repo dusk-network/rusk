@@ -17,7 +17,6 @@ use std::mem;
 #[derive(Default, Debug, Clone)]
 pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
-    this_member_key: PublicKey,
     quorum: usize,
     nil_quorum: usize,
 }
@@ -33,16 +32,7 @@ impl Committee {
     /// sortition config.
     ///
     /// It executes deterministic sortition algorithm.
-    ///
-    /// # Arguments
-    /// * `pubkey_bls` - This is the BLS public key of the (this node)
-    ///   provisioner running the consensus. It is mainly used in `am_member`
-    ///   method.
-    pub fn new(
-        pubkey_bls: PublicKey,
-        provisioners: &Provisioners,
-        cfg: &sortition::Config,
-    ) -> Self {
+    pub fn new(provisioners: &Provisioners, cfg: &sortition::Config) -> Self {
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(cfg);
 
@@ -55,7 +45,6 @@ impl Committee {
         // occurrences.
         let mut committee = Self {
             members: BTreeMap::new(),
-            this_member_key: pubkey_bls,
             nil_quorum,
             quorum,
         };
@@ -70,17 +59,6 @@ impl Committee {
     /// Returns true if `pubkey_bls` is a member of the generated committee.
     pub fn is_member(&self, pubkey_bls: &PublicKey) -> bool {
         self.members.contains_key(pubkey_bls)
-    }
-
-    // TODO: remove this
-    /// Returns true if `my pubkey` is a member of the generated committee.
-    pub fn am_member(&self) -> bool {
-        self.is_member(&self.this_member_key)
-    }
-
-    /// Returns this provisioner BLS public key.
-    pub fn get_my_pubkey(&self) -> &PublicKey {
-        &self.this_member_key
     }
 
     pub fn votes_for(&self, pubkey_bls: &PublicKey) -> Option<usize> {
@@ -166,15 +144,13 @@ impl fmt::Display for &Committee {
 pub struct CommitteeSet<'p> {
     committees: HashMap<sortition::Config, Committee>,
     provisioners: &'p Provisioners,
-    this_member_key: PublicKey,
 }
 
 impl<'p> CommitteeSet<'p> {
-    pub fn new(pubkey: PublicKey, provisioners: &'p Provisioners) -> Self {
+    pub fn new(provisioners: &'p Provisioners) -> Self {
         CommitteeSet {
             provisioners,
             committees: HashMap::new(),
-            this_member_key: pubkey,
         }
     }
 
@@ -182,11 +158,7 @@ impl<'p> CommitteeSet<'p> {
         self.committees
             .entry(cfg.clone())
             .or_insert_with_key(|config| {
-                Committee::new(
-                    self.this_member_key.clone(),
-                    self.provisioners,
-                    config,
-                )
+                Committee::new(self.provisioners, config)
             })
     }
 

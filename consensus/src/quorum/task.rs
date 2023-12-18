@@ -9,7 +9,6 @@ use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
-use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block, Certificate};
 use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
 
@@ -86,10 +85,7 @@ impl<'p, D: Database> Executor<'p, D> {
             inbound_queue,
             outbound_queue,
             ru,
-            committees_set: RwLock::new(CommitteeSet::new(
-                PublicKey::default(),
-                provisioners,
-            )),
+            committees_set: RwLock::new(CommitteeSet::new(provisioners)),
             db,
         }
     }

@@ -232,6 +232,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
+    /// Returns true if `my pubkey` is a member of [`committee`].
+    pub(crate) fn am_member(&self, committee: &Committee) -> bool {
+        committee.is_member(&self.round_update.pubkey_bls)
+    }
+
     pub(crate) fn save_committee(&mut self, committee: Committee) {
         self.iter_ctx.committees.insert(self.step, committee);
     }
@@ -317,7 +322,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         if let Some(committee) =
             self.iter_ctx.committees.get_committee(msg_step)
         {
-            if committee.am_member() {
+            if self.am_member(committee) {
                 debug!(
                     event = "vote for former candidate",
                     step_topic = format!("{:?}", topic),

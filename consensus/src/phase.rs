@@ -79,7 +79,6 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         // the extracted member is the one eligible to generate the candidate
         // block.
         let step_committee = Committee::new(
-            ctx.round_update.pubkey_bls.clone(),
             ctx.provisioners,
             &ctx.get_sortition_config(size, exclusion),
         );

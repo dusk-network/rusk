@@ -121,7 +121,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             .get_current_committee()
             .expect("committee to be created before run");
 
-        if committee.am_member() {
+        if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
 
             let vote_msg = self
