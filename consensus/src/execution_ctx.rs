@@ -31,10 +31,40 @@ use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
 
+/// A pool of all generated committees
+#[derive(Default)]
+pub struct RoundCommittees {
+    committees: HashMap<u8, Committee>,
+}
+
+impl RoundCommittees {
+    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
+        self.committees.get(&step)
+    }
+
+    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
+        let step = iter.step_from_name(StepName::Proposal);
+        self.get_committee(step)
+            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
+    }
+
+    pub(crate) fn get_validation_committee(
+        &self,
+        iter: u8,
+    ) -> Option<&Committee> {
+        let step = iter.step_from_name(StepName::Validation);
+        self.get_committee(step)
+    }
+
+    pub(crate) fn insert(&mut self, step: u8, committee: Committee) {
+        self.committees.insert(step, committee);
+    }
+}
+
 /// Represents a shared state within a context of the exection of a single
 /// iteration.
 pub struct IterationCtx<DB: Database> {
-    validation_handler: Arc<Mutex<validation::handler::ValidationHandler<DB>>>,
+    validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
     ratification_handler:
         Arc<Mutex<ratification::handler::RatificationHandler>>,
     proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
@@ -46,7 +76,7 @@ pub struct IterationCtx<DB: Database> {
 
     /// Stores any committee already generated in the execution of any
     /// iteration of current round
-    committees: HashMap<u8, Committee>,
+    committees: RoundCommittees,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -54,9 +84,7 @@ impl<D: Database> IterationCtx<D> {
         round: u64,
         iter: u8,
         proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<D>>>,
-        validation_handler: Arc<
-            Mutex<validation::handler::ValidationHandler<D>>,
-        >,
+        validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
@@ -77,7 +105,7 @@ impl<D: Database> IterationCtx<D> {
         ru: &RoundUpdate,
         msg: &Message,
     ) -> Option<Message> {
-        let committee = self.committees.get(&msg.header.step)?;
+        let committee = self.committees.get_committee(msg.header.step)?;
         match msg.topic() {
             node_data::message::Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
@@ -124,17 +152,14 @@ impl<D: Database> IterationCtx<D> {
         None
     }
 
-    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
-        self.committees.get(&step)
-    }
-
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
         let step = iter.step_from_name(StepName::Proposal);
-        self.get_committee(step)
+        self.committees
+            .get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
 
@@ -212,7 +237,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
-        self.iter_ctx.committees.get(&self.step)
+        self.iter_ctx.committees.get_committee(self.step)
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -289,7 +314,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     fn try_vote(&mut self, msg_step: u8, candidate: &Block, topic: Topics) {
-        if let Some(committee) = self.iter_ctx.get_committee(msg_step) {
+        if let Some(committee) =
+            self.iter_ctx.committees.get_committee(msg_step)
+        {
             if committee.am_member() {
                 debug!(
                     event = "vote for former candidate",
@@ -365,6 +392,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             &self.round_update,
             self.step,
             committee,
+            &self.iter_ctx.committees,
         );
 
         match ret {
@@ -484,6 +512,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     &self.round_update,
                     self.step,
                     committee,
+                    &self.iter_ctx.committees,
                 );
 
                 if let Ok(msg) = ret {

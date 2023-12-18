@@ -6,7 +6,7 @@
 
 use node_data::ledger::{Seed, StepVotes};
 
-use crate::commons::{IterCounter, StepName};
+use crate::commons::{Error, IterCounter, StepName};
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -16,37 +16,8 @@ use crate::config;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{marshal_signable_vote, Header, Message, Payload};
-use std::fmt::{self, Display};
 use tokio::sync::RwLock;
 use tracing::error;
-
-#[derive(Debug)]
-pub enum Error {
-    VoteSetTooSmall(u8),
-    VerificationFailed(dusk_bls12_381_sign::Error),
-    EmptyApk,
-    InvalidType,
-    InvalidStepNum,
-}
-
-impl From<dusk_bls12_381_sign::Error> for Error {
-    fn from(inner: dusk_bls12_381_sign::Error) -> Self {
-        Self::VerificationFailed(inner)
-    }
-}
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::VoteSetTooSmall(step) => {
-                write!(f, "Failed to reach a quorum at step {step}")
-            }
-            Error::VerificationFailed(_) => write!(f, "Verification error"),
-            Error::EmptyApk => write!(f, "Empty Apk instance"),
-            Error::InvalidType => write!(f, "Invalid Type"),
-            Error::InvalidStepNum => write!(f, "Invalid step number"),
-        }
-    }
-}
 
 /// Performs all three-steps verification of a quorum msg.
 pub async fn verify_quorum(
@@ -160,7 +131,6 @@ pub async fn verify_step_votes(
         &cfg,
         enable_quorum_check,
     )
-    .await
 }
 
 #[derive(Default)]
@@ -175,7 +145,7 @@ impl QuorumResult {
     }
 }
 
-pub async fn verify_votes(
+pub fn verify_votes(
     block_hash: &[u8; 32],
     bitset: u64,
     signature: &[u8; 48],
@@ -186,7 +156,11 @@ pub async fn verify_votes(
     let sub_committee = committee.intersect(bitset);
 
     let total = committee.total_occurrences(&sub_committee);
-    let target_quorum = committee.quorum();
+    let target_quorum = if block_hash == &[0u8; 32] {
+        committee.nil_quorum()
+    } else {
+        committee.quorum()
+    };
 
     let quorum_result = QuorumResult {
         total,

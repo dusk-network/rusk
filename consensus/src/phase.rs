@@ -42,7 +42,7 @@ macro_rules! call_phase {
 
 pub enum Phase<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
-    Validation(validation::step::ValidationStep<T, D>),
+    Validation(validation::step::ValidationStep<T>),
     Ratification(ratification::step::RatificationStep<T, D>),
 }
 

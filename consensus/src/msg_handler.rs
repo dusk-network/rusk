@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
+use crate::execution_ctx::RoundCommittees;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::ledger::to_str;
@@ -34,6 +35,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
+        round_committees: &RoundCommittees,
     ) -> Result<T, ConsensusError> {
         debug!(
             event = "msg received",
@@ -56,7 +58,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
                 // Delegate message final verification to the phase instance.
                 // It is the phase that knows what message type to expect and if
                 // it is valid or not.
-                self.verify(msg, ru, step, committee)
+                self.verify(msg, ru, step, committee, round_committees)
             }
             Status::Future => Err(ConsensusError::FutureEvent),
         }
@@ -69,6 +71,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
+        round_committees: &RoundCommittees,
     ) -> Result<T, ConsensusError>;
 
     /// collect allows each Phase to process a verified inbound message.

@@ -8,6 +8,8 @@
 // Provisioners, the BidList, the Seed and the Hash.
 
 use node_data::ledger::*;
+use std::fmt;
+use std::fmt::Display;
 
 use node_data::message::Payload;
 
@@ -70,12 +72,41 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+pub enum Error {
+    VoteSetTooSmall(u8),
+    VerificationFailed(dusk_bls12_381_sign::Error),
+    EmptyApk,
+    InvalidType,
+    InvalidStepNum,
+}
+
+impl From<dusk_bls12_381_sign::Error> for Error {
+    fn from(inner: dusk_bls12_381_sign::Error) -> Self {
+        Self::VerificationFailed(inner)
+    }
+}
+impl Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::VoteSetTooSmall(step) => {
+                write!(f, "Failed to reach a quorum at step {step}")
+            }
+            Error::VerificationFailed(_) => write!(f, "Verification error"),
+            Error::EmptyApk => write!(f, "Empty Apk instance"),
+            Error::InvalidType => write!(f, "Invalid Type"),
+            Error::InvalidStepNum => write!(f, "Invalid step number"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
     InvalidSignature,
     InvalidMsgType,
+    InvalidValidationStepVotes(Error),
     InvalidValidation,
     InvalidQuorumType,
     FutureEvent,
@@ -87,6 +118,13 @@ pub enum ConsensusError {
     ChildTaskTerminated,
     Canceled,
 }
+
+impl From<Error> for ConsensusError {
+    fn from(e: Error) -> Self {
+        Self::InvalidValidationStepVotes(e)
+    }
+}
+
 #[async_trait::async_trait]
 pub trait Database: Send + Sync {
     fn store_candidate_block(&mut self, b: Block);

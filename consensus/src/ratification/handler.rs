@@ -4,20 +4,24 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, RoundUpdate};
+use crate::commons::{ConsensusError, IterCounter, RoundUpdate, StepName};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger;
 use node_data::ledger::Hash;
-use tracing::warn;
+use tracing::{error, warn};
 
 use crate::aggregator::Aggregator;
 
+use crate::config;
+use crate::execution_ctx::RoundCommittees;
+use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{QuorumType, Ratification, ValidationResult};
 use node_data::message::{payload, Message, Payload, Topics};
 
 use crate::user::committee::Committee;
+use crate::user::sortition;
 
 pub struct RatificationHandler {
     pub(crate) sv_registry: SafeCertificateInfoRegistry,
@@ -32,16 +36,23 @@ impl MsgHandler<Message> for RatificationHandler {
     fn verify(
         &mut self,
         msg: Message,
-        _ru: &RoundUpdate,
-        _step: u8,
+        ru: &RoundUpdate,
+        step: u8,
         _committee: &Committee,
+        round_committees: &RoundCommittees,
     ) -> Result<Message, ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
             if msg.header.verify_signature(&p.signature).is_err() {
                 return Err(ConsensusError::InvalidSignature);
             }
 
-            Self::verify_validation_result(&p.validation_result)?;
+            Self::verify_validation_result(
+                ru,
+                step,
+                round_committees,
+                &p.validation_result,
+            )?;
+
             return Ok(msg);
         }
 
@@ -192,18 +203,49 @@ impl RatificationHandler {
         }
     }
 
+    /// Verifies either valid or nil quorum of validation output
     fn verify_validation_result(
+        ru: &RoundUpdate,
+        step: u8,
+        round_committees: &RoundCommittees,
         result: &ValidationResult,
     ) -> Result<(), ConsensusError> {
         match result.quorum {
-            QuorumType::ValidQuorum => { /* TODO: verifiers::verify_step_votes() */
-            }
-            QuorumType::NilQuorum => { /* TODO: verifiers::verify_step_votes() */
-            }
-            QuorumType::NoQuorum => { /* TODO: */ }
-            _ => return Err(ConsensusError::InvalidQuorumType),
-        };
+            QuorumType::ValidQuorum | QuorumType::NilQuorum => {
+                let iter = IterCounter::from_step(step);
+                if let Some(generator) = round_committees.get_generator(iter) {
+                    if let Some(validation_committee) =
+                        round_committees.get_validation_committee(iter)
+                    {
+                        let cfg = sortition::Config::new(
+                            ru.seed(),
+                            ru.round,
+                            iter.step_from_name(StepName::Validation),
+                            config::VALIDATION_COMMITTEE_SIZE,
+                            Some(generator),
+                        );
 
-        Ok(())
+                        verify_votes(
+                            &result.hash,
+                            result.sv.bitset,
+                            &result.sv.aggregate_signature.inner(),
+                            validation_committee,
+                            &cfg,
+                            true,
+                        )?;
+
+                        Ok(())
+                    } else {
+                        error!("could not get validation committee");
+                        Err(ConsensusError::InvalidValidation)
+                    }
+                } else {
+                    error!("could not get generator");
+                    Err(ConsensusError::InvalidValidation)
+                }
+            }
+            QuorumType::NoQuorum => Err(ConsensusError::InvalidValidation), /* TBD */
+            QuorumType::InvalidQuorum => Err(ConsensusError::InvalidValidation), /* Not supported */
+        }
     }
 }

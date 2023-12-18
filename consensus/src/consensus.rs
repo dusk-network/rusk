@@ -172,7 +172,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
             let validation_handler = Arc::new(Mutex::new(
                 validation::handler::ValidationHandler::new(
-                    db.clone(),
                     sv_registry.clone(),
                 ),
             ));
@@ -191,7 +190,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 )),
                 Phase::Validation(validation::step::ValidationStep::new(
                     executor.clone(),
-                    db.clone(),
                     validation_handler.clone(),
                 )),
                 Phase::Ratification(ratification::step::RatificationStep::new(

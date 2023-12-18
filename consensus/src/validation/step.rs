@@ -20,13 +20,13 @@ use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, Instrument};
 
-pub struct ValidationStep<T, DB: Database> {
+pub struct ValidationStep<T> {
     timeout_millis: u64,
-    handler: Arc<Mutex<handler::ValidationHandler<DB>>>,
+    handler: Arc<Mutex<handler::ValidationHandler>>,
     executor: Arc<Mutex<T>>,
 }
 
-impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
+impl<T: Operations + 'static> ValidationStep<T> {
     #[allow(clippy::too_many_arguments)]
     pub fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
@@ -91,12 +91,12 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
-            error!("could not publish validation {:?}", err)
+            error!("could not publish validation {err:?}")
         });
 
         // Register my vote locally
         inbound.send(msg).await.unwrap_or_else(|err| {
-            error!("could not register validation {:?}", err)
+            error!("could not register validation {err:?}")
         });
     }
 
@@ -161,11 +161,10 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
         Ok(())
     }
 }
-impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
+impl<T: Operations + 'static> ValidationStep<T> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
-        _db: Arc<Mutex<DB>>,
-        handler: Arc<Mutex<handler::ValidationHandler<DB>>>,
+        handler: Arc<Mutex<handler::ValidationHandler>>,
     ) -> Self {
         Self {
             timeout_millis: config::CONSENSUS_TIMEOUT_MS,
@@ -192,7 +191,7 @@ impl<T: Operations + 'static, DB: Database> ValidationStep<T, DB> {
         )
     }
 
-    pub async fn run(
+    pub async fn run<DB: Database>(
         &mut self,
         mut ctx: ExecutionCtx<'_, DB, T>,
     ) -> Result<Message, ConsensusError> {

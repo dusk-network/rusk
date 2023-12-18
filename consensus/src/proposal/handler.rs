@@ -11,6 +11,7 @@ use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 
+use crate::execution_ctx::RoundCommittees;
 use node_data::message::{Message, Payload};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -29,6 +30,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         _ru: &RoundUpdate,
         _step: u8,
         committee: &Committee,
+        _round_committees: &RoundCommittees,
     ) -> Result<Message, ConsensusError> {
         self.verify_new_block(&msg, committee)?;
 

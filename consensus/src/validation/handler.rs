@@ -4,19 +4,17 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::sync::Arc;
-
 use crate::aggregator::Aggregator;
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger::{Block, StepVotes};
-use tokio::sync::Mutex;
 use tracing::warn;
 
 use crate::user::committee::Committee;
 
+use crate::execution_ctx::RoundCommittees;
 use node_data::message::payload::QuorumType;
 use node_data::message::{payload, Message, Payload};
 
@@ -50,23 +48,17 @@ fn final_result_with_timeout(
     HandleMsgOutput::ReadyWithTimeoutIncrease(msg)
 }
 
-pub struct ValidationHandler<DB: Database> {
-    sv_registry: SafeCertificateInfoRegistry,
-
-    pub(crate) _db: Arc<Mutex<DB>>,
+pub struct ValidationHandler {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
+    sv_registry: SafeCertificateInfoRegistry,
     curr_step: u8,
 }
 
-impl<DB: Database> ValidationHandler<DB> {
-    pub(crate) fn new(
-        db: Arc<Mutex<DB>>,
-        sv_registry: SafeCertificateInfoRegistry,
-    ) -> Self {
+impl ValidationHandler {
+    pub(crate) fn new(sv_registry: SafeCertificateInfoRegistry) -> Self {
         Self {
             sv_registry,
-            _db: db,
             aggr: Aggregator::default(),
             candidate: Block::default(),
             curr_step: 0,
@@ -80,7 +72,7 @@ impl<DB: Database> ValidationHandler<DB> {
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
+impl MsgHandler<Message> for ValidationHandler {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
@@ -88,6 +80,7 @@ impl<D: Database> MsgHandler<Message> for ValidationHandler<D> {
         _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
+        _round_committees: &RoundCommittees,
     ) -> Result<Message, ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
