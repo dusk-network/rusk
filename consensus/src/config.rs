@@ -9,6 +9,9 @@ pub const CONSENSUS_MAX_STEP: u8 = 213;
 /// Maximum number of iterations Consensus runs per a single round.
 pub const CONSENSUS_MAX_ITER: u8 = CONSENSUS_MAX_STEP / 3;
 
+/// Number of consecutive attested blocks needed to consider a final block.
+pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 5;
+
 /// Percentage number that determines a quorum.
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
 
