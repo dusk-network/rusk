@@ -600,10 +600,7 @@ pub async fn verify_block_cert(
     iteration: u8,
     enable_quorum_check: bool,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
-    let committee = RwLock::new(CommitteeSet::new(
-        node_data::bls::PublicKey::default(),
-        curr_eligible_provisioners,
-    ));
+    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let hdr = node_data::message::Header {
         topic: 0,
