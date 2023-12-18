@@ -8,6 +8,7 @@ use crate::database::{self, Ledger, Mempool};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
+use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::Provisioners;
 use node_data::ledger::{
@@ -225,7 +226,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             blk.header().timestamp - mrb.inner().header().timestamp;
 
         // Verify Block Header
-        let nil_quorum = verify_block_header(
+        let attested = verify_block_header(
             self.db.clone(),
             &mrb.inner().header().clone(),
             &provisioners_list,
@@ -234,16 +235,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         .await?;
 
         // Define new block label
-        let label = {
-            let mut label = Label::Accepted;
-            if nil_quorum == Some(true) || blk.header().iteration == 0 {
-                label = Label::Attested;
-                if mrb.is_final() {
-                    label = Label::Final;
-                }
+        let label = match (attested, mrb.is_final()) {
+            (true, true) => Label::Final,
+            (false, _) => Label::Accepted,
+            (true, _) => {
+                let current = blk.header().height;
+                let target = current
+                    .checked_sub(CONSENSUS_ROLLING_FINALITY_THRESHOLD)
+                    .unwrap_or_default();
+                self.db.read().await.view(|t| {
+                    for h in (target..current).rev() {
+                        match t.fetch_block_label_by_height(h)? {
+                            None => panic!(
+                                "Cannot find block label for height: {h}"
+                            ),
+                            Some(Label::Final) => {
+                                warn!("Found Attested block following a Final one");
+                                break;
+                            }
+                            Some(Label::Accepted) => return Ok(Label::Attested),
+                            Some(Label::Attested) => {} // just continue scan
+                        };
+                    }
+                    anyhow::Ok(Label::Final)
+                })?
             }
-
-            label
         };
 
         let blk = BlockWithLabel::new_with_label(blk.clone(), label);
@@ -499,7 +515,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     mrb: &ledger::Header,
     mrb_eligible_provisioners: &Provisioners,
     new_blk: &ledger::Header,
-) -> anyhow::Result<Option<bool>> {
+) -> anyhow::Result<bool> {
     if new_blk.version > 0 {
         return Err(anyhow!("unsupported block version"));
     }
@@ -561,14 +577,11 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     }
 
     // Verify Failed iterations
-    let mut failed_iterations_have_nil_quorum: Option<bool> = None;
-    for iteration in 0..new_blk.failed_iterations.cert_list.len() {
-        if let Some(cert) = &new_blk.failed_iterations.cert_list[iteration] {
-            info!(
-                event = "verify_cert",
-                cert_type = "failed_cert",
-                iter = iteration
-            );
+    let mut attested = true;
+
+    for (iter, cert) in new_blk.failed_iterations.cert_list.iter().enumerate() {
+        if let Some(cert) = cert {
+            info!(event = "verify_cert", cert_type = "failed_cert", iter);
 
             let quorums = verify_block_cert(
                 mrb.seed,
@@ -576,26 +589,16 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
                 [0u8; 32],
                 new_blk.height,
                 cert,
-                iteration as u8,
+                iter as u8,
                 false,
             )
             .await?;
 
-            match failed_iterations_have_nil_quorum {
-                None => {
-                    failed_iterations_have_nil_quorum = Some(
-                        quorums.0.quorum_reached()
-                            && quorums.1.quorum_reached(),
-                    )
-                }
-                Some(true) => {
-                    failed_iterations_have_nil_quorum = Some(
-                        quorums.0.quorum_reached()
-                            && quorums.1.quorum_reached(),
-                    )
-                }
-                Some(false) => {}
-            }
+            attested = attested
+                && quorums.0.quorum_reached()
+                && quorums.1.quorum_reached();
+        } else {
+            attested = false;
         }
     }
 
@@ -611,7 +614,7 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     )
     .await?;
 
-    Ok(failed_iterations_have_nil_quorum)
+    Ok(attested)
 }
 
 pub async fn verify_block_cert(
