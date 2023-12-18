@@ -10,7 +10,7 @@ use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use std::marker::PhantomData;
 
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
 use node_data::ledger::to_str;
 use node_data::message;
@@ -134,9 +134,12 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                 .await;
 
             // Collect my own vote
-            handler
+            let res = handler
                 .collect(vote_msg, &ctx.round_update, ctx.step, committee)
                 .await?;
+            if let HandleMsgOutput::Ready(m) = res {
+                return Ok(m);
+            }
         }
 
         // handle queued messages for current round and step.
