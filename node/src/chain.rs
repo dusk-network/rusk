@@ -10,29 +10,23 @@ mod fallback;
 mod fsm;
 mod genesis;
 
+use self::acceptor::Acceptor;
+use self::fsm::SimpleFSM;
 use crate::database::Ledger;
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
+pub use acceptor::verify_block_cert;
 use anyhow::Result;
-
-use std::sync::Arc;
-use tracing::{error, info, warn};
-
 use async_trait::async_trait;
-
+use dusk_consensus::commons::ConsensusError;
 use node_data::ledger::{to_str, Block, BlockWithLabel, Label};
-
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::{sleep_until, Instant};
-
-use std::time::Duration;
-
-use self::acceptor::Acceptor;
-use self::fsm::SimpleFSM;
-
-pub use acceptor::verify_block_cert;
+use tracing::{error, info, warn};
 
 const TOPICS: &[u8] = &[
     Topics::Block as u8,
@@ -102,6 +96,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 biased;
                 // Receives results from the upper layer
                 recv = &mut result_chan.recv() => {
+                    let mut failed_consensus = false;
                     match recv? {
                         Ok(blk) => {
                             info!(
@@ -113,15 +108,26 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                             // Handles a block that originates from local consensus
                             // TODO: Remove the redundant blk.clone()
-                            if let Err(e) = fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone()))).await  {
-                                 error!(event = "fsm::on_event failed", src = "consensus",  err = format!("{}",e));
+                            if let Err(err) = fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone()))).await  {
+                                // Internal consensus execution has produced an invalid block
+                                error!(event = "failed_consensus",  ?err);
+                                failed_consensus = true;
                             } else {
                                 timeout = Self::next_timeout();
                             }
                         }
-                        Err(e) => {
-                             warn!("consensus err: {:?}", e);
+                        Err(ConsensusError::Canceled) => {
+                            info!("consensus canceled");
                         }
+                        Err(err) => {
+                            // Internal consensus execution has terminated with an error instead of a valid block
+                            failed_consensus = true;
+                            error!(event = "failed_consensus", ?err);
+                        }
+                    }
+
+                    if failed_consensus {
+                        fsm.on_failed_consensus().await;
                     }
                 },
                 // Handles any inbound wire.
