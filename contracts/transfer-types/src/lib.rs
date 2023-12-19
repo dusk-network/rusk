@@ -17,23 +17,11 @@ use dusk_bls12_381::BlsScalar;
 use dusk_pki::StealthAddress;
 
 use bytecheck::CheckBytes;
-use dusk_jubjub::JubJubExtended;
-use dusk_poseidon::cipher::PoseidonCipher;
+use phoenix_core::{Message, Note};
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// Module Id
 pub type ModuleId = [u8; 32];
-
-/// Message structure with value commitment
-#[derive(
-    Clone, Copy, Debug, Default, PartialEq, Archive, Serialize, Deserialize,
-)]
-#[archive_attr(derive(bytecheck::CheckBytes))]
-pub struct Message {
-    value_commitment: JubJubExtended,
-    nonce: BlsScalar,
-    encrypted_data: PoseidonCipher,
-}
 
 /// Send value to a contract transparently.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
@@ -68,6 +56,19 @@ pub struct Wfct {
     ///     The value to withdraw
     pub value: u64,
     /// The note to withdraw transparently to
+    pub note: Note,
+    /// A proof of the `WFCT` circuit.
+    pub proof: Vec<u8>,
+}
+
+/// Withdraw value from a contract transparently.
+/// Note is passed in a raw form.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct WfctRaw {
+    ///     The value to withdraw
+    pub value: u64,
+    /// The note to withdraw transparently to
     pub note: Vec<u8>,
     /// A proof of the `WFCT` circuit.
     pub proof: Vec<u8>,
@@ -86,9 +87,38 @@ pub struct Wfco {
     /// The stealth address of the change message.
     pub change_address: StealthAddress,
     /// The note to withdraw to.
+    pub output: Note,
+    /// Proof of the `WFCO` circuit.
+    pub proof: Vec<u8>,
+}
+
+/// Withdraw value from a contract anonymously.
+/// Note is passed in a raw form.
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(bytecheck::CheckBytes))]
+pub struct WfcoRaw {
+    /// Message containing the value commitment.
+    pub message: Message,
+    /// The stealth address of the message.
+    pub message_address: StealthAddress,
+    /// Message containing commitment on the change value.
+    pub change: Message,
+    /// The stealth address of the change message.
+    pub change_address: StealthAddress,
+    /// The note to withdraw to.
     pub output: Vec<u8>,
     /// Proof of the `WFCO` circuit.
     pub proof: Vec<u8>,
+}
+
+/// Withdraw value from the calling contract to another contract.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct Wfctc {
+    /// The contract to transfer value to.
+    pub module: ModuleId,
+    /// The value to transfer.
+    pub value: u64,
 }
 
 /// Mint value to a stealth address.

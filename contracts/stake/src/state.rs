@@ -98,8 +98,8 @@ impl StakeState {
         let transfer_module = TRANSFER_CONTRACT;
         let _: bool = rusk_abi::call(
             transfer_module,
-            "wfct2",
-            &Wfct {
+            "wfct_raw",
+            &WfctRaw {
                 value,
                 note: unstake.note,
                 proof: unstake.proof,
