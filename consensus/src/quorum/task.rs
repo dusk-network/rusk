@@ -103,7 +103,9 @@ impl<'p, D: Database> Executor<'p, D> {
             future_msgs.lock().await.drain_events(self.ru.round, 0)
         {
             for msg in messages {
-                self.collect_inbound_msg(msg).await;
+                if let Some(block) = self.collect_inbound_msg(msg).await {
+                    return Ok(block);
+                }
             }
         }
 
