@@ -240,15 +240,13 @@ impl Serializable for IterationsInfo {
         let count = self.cert_list.len() as u8;
         w.write_all(&count.to_le_bytes())?;
 
-        let count_of_some =
-            self.cert_list.iter().filter(|cert| cert.is_some()).count() as u8;
-
-        w.write_all(&count_of_some.to_le_bytes())?;
-
-        for i in 0..self.cert_list.len() as u8 {
-            if let Some(cert) = &self.cert_list[i as usize] {
-                w.write_all(&i.to_le_bytes())?;
-                cert.write(w)?;
+        for cert in &self.cert_list {
+            match cert {
+                Some(cert) => {
+                    w.write_all(&[1])?;
+                    cert.write(w)?;
+                }
+                None => w.write_all(&[0])?,
             }
         }
 
@@ -259,27 +257,30 @@ impl Serializable for IterationsInfo {
     where
         Self: Sized,
     {
+        let mut cert_list = vec![];
+
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf[..])?;
         let count = buf[0];
 
-        let mut certificates = vec![None; count as usize];
+        for _ in 0..count {
+            let mut opt = [0u8; 1];
+            r.read_exact(&mut opt[..])?;
 
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf[..])?;
-        let count_of_some = buf[0];
-
-        for _i in 0..count_of_some {
-            let mut buf = [0u8; 1];
-            r.read_exact(&mut buf[..])?;
-            let iter_num = buf[0] as usize;
-
-            certificates[iter_num] = Some(Certificate::read(r)?);
+            let cert = match opt[0] {
+                0 => None,
+                1 => Some(Certificate::read(r)?),
+                _ => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid option",
+                    ))
+                }
+            };
+            cert_list.push(cert)
         }
 
-        Ok(IterationsInfo {
-            cert_list: certificates,
-        })
+        Ok(IterationsInfo { cert_list })
     }
 }
 
