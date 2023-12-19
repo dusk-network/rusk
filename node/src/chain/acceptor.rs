@@ -416,6 +416,29 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.update_most_recent_block(&blk, label).await
     }
 
+    /// Spawns consensus algorithm after aborting currently running one
+    pub(crate) async fn restart_consensus(&mut self) {
+        let mut task = self.task.write().await;
+        let mrb = self.mrb.read().await;
+        let provisioners_list = self.provisioners_list.read().await;
+
+        task.abort_with_wait().await;
+        info!(
+            event = "restart consensus",
+            height = mrb.inner().header().height,
+            iter = mrb.inner().header().iteration,
+            hash = to_str(&mrb.inner().header().hash),
+        );
+
+        task.spawn(
+            mrb.inner(),
+            Arc::new(provisioners_list.clone()),
+            &self.db,
+            &self.vm,
+            &self.network,
+        );
+    }
+
     pub(crate) async fn get_curr_height(&self) -> u64 {
         self.mrb.read().await.inner().header().height
     }
