@@ -94,6 +94,10 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
     }
 
+    pub async fn on_failed_consensus(&mut self) {
+        self.acc.write().await.restart_consensus().await;
+    }
+
     pub async fn on_event(
         &mut self,
         blk: &Block,
@@ -394,11 +398,9 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             return Ok(false);
         }
 
-        let enable_consensus = true;
-
         // Try accepting consecutive block
         if h == acc.get_curr_height().await + 1 {
-            acc.try_accept_block(blk, enable_consensus).await?;
+            acc.try_accept_block(blk, false).await?;
 
             if let Some(metadata) = &msg.metadata {
                 if metadata.src_addr == self.peer_addr {
@@ -412,7 +414,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             // available
             for height in (h + 1)..(self.range.1 + 1) {
                 if let Some(blk) = self.pool.get(&height) {
-                    acc.try_accept_block(blk, enable_consensus).await?;
+                    acc.try_accept_block(blk, false).await?;
                 } else {
                     break;
                 }
@@ -422,6 +424,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             if acc.get_curr_height().await == self.range.1 {
                 // Block sync-up procedure manages to download all requested
                 // blocks
+                acc.restart_consensus().await;
 
                 // Transit to InSync mode
                 return Ok(true);
