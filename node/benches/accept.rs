@@ -43,8 +43,7 @@ fn create_step_votes(
     let sortition_config =
         SortitionConfig::new(seed, round, iteration * 3 + step, 64, None);
 
-    let committee =
-        Committee::new(PublicKey::default(), provisioners, &sortition_config);
+    let committee = Committee::new(provisioners, &sortition_config);
 
     let hdr = message::Header {
         round,

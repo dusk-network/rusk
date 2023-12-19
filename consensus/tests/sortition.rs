@@ -23,7 +23,7 @@ fn test_deterministic_sortition_1() {
     // Execute sortition with specific config
     let cfg = Config::new(Seed::default(), 1, 1, 64, None);
 
-    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+    let committee = Committee::new(&p, &cfg);
 
     // Verify expected committee size
     assert_eq!(
@@ -42,7 +42,7 @@ fn test_deterministic_sortition_2() {
     let committee_size = 45;
     let cfg = Config::new(Seed::from([3u8; 48]), 7777, 8, committee_size, None);
 
-    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+    let committee = Committee::new(&p, &cfg);
     assert_eq!(
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
@@ -63,7 +63,7 @@ fn test_deterministic_sortition_2_exclusion() {
 
     let mut cfg = Config::new(seed, round, step, committee_size, None);
     let generator = p.get_generator(iteration, seed, round);
-    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+    let committee = Committee::new(&p, &cfg);
 
     committee
         .iter()
@@ -77,7 +77,7 @@ fn test_deterministic_sortition_2_exclusion() {
 
     // Run the same extraction, with the generator excluded
     cfg.exclusion = Some(generator);
-    let committee = Committee::new(PublicKey::default(), &p, &cfg);
+    let committee = Committee::new(&p, &cfg);
 
     assert!(
         committee
@@ -99,7 +99,7 @@ fn test_quorum() {
 
     let cfg = Config::new(Seed::default(), 7777, 8, 64, None);
 
-    let c = Committee::new(PublicKey::default(), &p, &cfg);
+    let c = Committee::new(&p, &cfg);
     assert_eq!(c.quorum(), 43);
 }
 
@@ -110,7 +110,7 @@ fn test_intersect() {
     let cfg = Config::new(Seed::default(), 1, 3, 200, None);
     // println!("{:#?}", p);
 
-    let c = Committee::new(PublicKey::default(), &p, &cfg);
+    let c = Committee::new(&p, &cfg);
     // println!("{:#?}", c);
 
     let max_bitset = (2_i32.pow((c.size()) as u32) - 1) as u64;

@@ -57,7 +57,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         let committee = ctx
             .get_current_committee()
             .expect("committee to be created before run");
-        if committee.am_member() {
+        if ctx.am_member(committee) {
             let iteration = cmp::min(
                 config::RELAX_ITERATION_THRESHOLD,
                 u8::from_step(ctx.step),

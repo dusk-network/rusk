@@ -121,7 +121,6 @@ impl Provisioners {
     ) -> PublicKeyBytes {
         let step = iteration.step_from_name(StepName::Proposal);
         let committee_keys = Committee::new(
-            node_data::bls::PublicKey::default(),
             self,
             &sortition::Config {
                 committee_size: PROPOSAL_COMMITTEE_SIZE,
