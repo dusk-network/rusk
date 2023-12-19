@@ -361,7 +361,6 @@ impl Eq for SpentTransaction {}
 
 /// Defines a set of certificates of any former iterations
 #[derive(Default, Eq, PartialEq, Clone)]
-#[cfg_attr(any(feature = "faker", test), derive(Dummy))]
 pub struct IterationsInfo {
     /// Represents a list of certificates where position is the iteration
     /// number
@@ -445,6 +444,19 @@ pub mod faker {
             rand_signature[..32].copy_from_slice(&rand_val);
 
             Signature(rand_signature)
+        }
+    }
+
+    impl<T> Dummy<T> for IterationsInfo {
+        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
+            let cert_list = vec![
+                None,
+                Some(Faker.fake_with_rng(rng)),
+                None,
+                Some(Faker.fake_with_rng(rng)),
+                None,
+            ];
+            IterationsInfo { cert_list }
         }
     }
 
