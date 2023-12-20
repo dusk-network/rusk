@@ -19,7 +19,7 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
-use rusk_abi::{ContractData, ContractError, Error, Session, VM};
+use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
@@ -162,27 +162,40 @@ fn filter_notes_owned_by<I: IntoIterator<Item = Note>>(
     iter.into_iter().filter(|note| vk.owns(note)).collect()
 }
 
-/// Executes a transaction, returning the gas spent.
-fn execute(session: &mut Session, tx: Transaction) -> Result<u64> {
-    let receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
+/// Executes a transaction, returning the call receipt
+fn execute(
+    session: &mut Session,
+    tx: Transaction,
+) -> Result<CallReceipt<Result<Vec<u8>, ContractError>>> {
+    // Spend the inputs and execute the call. If this errors the transaction is
+    // unspendable.
+    let mut receipt = session.call::<_, Result<Vec<u8>, ContractError>>(
         TRANSFER_CONTRACT,
         "spend_and_execute",
         &tx,
         tx.fee.gas_limit,
     )?;
 
-    let gas_spent = receipt.gas_spent;
+    // Ensure all gas is consumed if there's an error in the contract call
+    if receipt.data.is_err() {
+        receipt.gas_spent = receipt.gas_limit;
+    }
 
-    session
+    // Refund the appropriate amount to the transaction. This call is guaranteed
+    // to never error. If it does, then a programming error has occurred. As
+    // such, the call to `Result::expect` is warranted.
+    let refund_receipt = session
         .call::<_, ()>(
             TRANSFER_CONTRACT,
             "refund",
-            &(tx.fee, gas_spent),
+            &(tx.fee, receipt.gas_spent),
             u64::MAX,
         )
         .expect("Refunding must succeed");
 
-    Ok(gas_spent)
+    receipt.events.extend(refund_receipt.events);
+
+    Ok(receipt)
 }
 
 #[test]
@@ -356,8 +369,10 @@ fn stake_withdraw_unstake() {
         call,
     };
 
-    let gas_spent =
+    let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+    let gas_spent = receipt.gas_spent;
+    receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
 
     println!("STAKE   : {gas_spent} gas");
@@ -571,8 +586,10 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 2)
         .expect("Instantiating new session should succeed");
 
-    let gas_spent =
+    let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+    let gas_spent = receipt.gas_spent;
+    receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
 
     println!("WITHDRAW: {gas_spent} gas");
@@ -797,8 +814,10 @@ fn stake_withdraw_unstake() {
     let mut session = rusk_abi::new_session(vm, base, 3)
         .expect("Instantiating new session should succeed");
 
-    let gas_spent =
+    let receipt =
         execute(&mut session, tx).expect("Executing TX should succeed");
+    let gas_spent = receipt.gas_spent;
+    receipt.data.expect("Executed TX should not error");
     update_root(&mut session).expect("Updating the root should succeed");
 
     println!("UNSTAKE : {gas_spent} gas");
@@ -950,7 +969,9 @@ fn allow() {
         call,
     };
 
-    let gas_spent = execute(session, tx).expect("Executing TX should succeed");
+    let receipt = execute(session, tx).expect("Executing TX should succeed");
+    let gas_spent = receipt.gas_spent;
+    receipt.data.expect("Executed TX should not error");
     update_root(session).expect("Updating the root should succeed");
 
     println!("ALLOW   : {gas_spent} gas");
