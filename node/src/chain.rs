@@ -37,6 +37,7 @@ const TOPICS: &[u8] = &[
 ];
 
 const ACCEPT_BLOCK_TIMEOUT_SEC: Duration = Duration::from_secs(20);
+const HEARTBEAT_SEC: Duration = Duration::from_secs(1);
 
 pub struct ChainSrv {
     /// Inbound wire messages queue
@@ -89,6 +90,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         // Accept_Block timeout is activated when a node is unable to accept a
         // valid block within a specified time frame.
         let mut timeout = Self::next_timeout();
+        let mut heartbeat = Instant::now().checked_add(HEARTBEAT_SEC).unwrap();
 
         // Message loop for Chain context
         loop {
@@ -173,6 +175,14 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
                 _ = sleep_until(timeout) => {
                     fsm.on_idle(ACCEPT_BLOCK_TIMEOUT_SEC).await;
                     timeout = Self::next_timeout();
+                },
+                 // Handles heartbeat event
+                _ = sleep_until(heartbeat) => {
+                    if let Err(err) = fsm.on_heartbeat_event().await {
+                        error!(event = "heartbeat_failed", ?err);
+                    }
+
+                    heartbeat = Instant::now().checked_add(HEARTBEAT_SEC).unwrap();
                 },
             }
         }
