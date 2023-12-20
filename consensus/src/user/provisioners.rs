@@ -17,12 +17,18 @@ use super::committee::Committee;
 
 pub const DUSK: u64 = 1_000_000_000;
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct Provisioners {
     members: BTreeMap<PublicKey, Stake>,
 }
 
 impl Provisioners {
+    pub fn empty() -> Self {
+        Self {
+            members: BTreeMap::default(),
+        }
+    }
+
     /// Adds a provisioner with stake.
     ///
     /// It appends the stake if the given provisioner already exists.

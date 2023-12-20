@@ -225,7 +225,7 @@ mod tests {
 
         // Create provisioners
         // Also populate a vector of headers
-        let mut p = Provisioners::default();
+        let mut p = Provisioners::empty();
         let mut input = vec![];
 
         for sk in sks {
