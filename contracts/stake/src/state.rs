@@ -92,6 +92,15 @@ impl StakeDataWrapper {
         let epoch = EPOCH - block_height % EPOCH;
         block_height + epoch + MATURITY
     }
+
+    /// Check if the stake eligibility is greater than [`block_height`].
+    #[must_use]
+    pub fn is_elibigle(&self, block_height: BlockHeight) -> bool {
+        self.0
+            .amount
+            .map(|(_, eligib)| block_height >= eligib)
+            .unwrap_or_default()
+    }
 }
 
 /// Contract keeping track of each public key's stake.
@@ -153,6 +162,18 @@ impl StakeState {
     }
 
     pub fn unstake(&mut self, unstake: Unstake) {
+        let block_height = rusk_abi::block_height();
+
+        let unstake_pk = &unstake.public_key.to_bytes();
+
+        if !self
+            .stakes
+            .iter()
+            .any(|(pk, v)| pk != unstake_pk && v.is_elibigle(block_height))
+        {
+            panic!("Cannot unstake, you're the last staker");
+        }
+
         // remove the stake from a key and increment the signature counter
         let loaded_stake = self
             .get_stake_mut(&unstake.public_key)

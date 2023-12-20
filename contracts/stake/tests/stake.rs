@@ -44,6 +44,7 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     vm: &VM,
     psk: &PublicSpendKey,
     pk: &PublicKey,
+    stakes: &[(PublicKey, StakeData)],
 ) -> Session {
     let transfer_bytecode = include_bytes!(
         "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -88,6 +89,21 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .call::<_, ()>(STAKE_CONTRACT, "add_owner", pk, POINT_LIMIT)
         .expect("Inserting APK into owners list should suceeed");
 
+    // allow given public key to stake
+    session
+        .call::<_, ()>(STAKE_CONTRACT, "insert_allowlist", pk, POINT_LIMIT)
+        .expect("Inserting APK into allowlist should succeed");
+
+    for (pk, stake) in stakes {
+        session
+            .call::<_, ()>(
+                STAKE_CONTRACT,
+                "insert_stake",
+                &(*pk, stake.clone()),
+                u64::MAX,
+            )
+            .expect("stake to be inserted into the state");
+    }
     // allow given public key to stake
     session
         .call::<_, ()>(STAKE_CONTRACT, "insert_allowlist", pk, POINT_LIMIT)
@@ -216,7 +232,15 @@ fn stake_withdraw_unstake() {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk, &pk);
+    let unstakable_sk = SecretKey::random(rng);
+    let unstakable_pk = PublicKey::from(&unstakable_sk);
+    let unstakable_stake = StakeData {
+        amount: Some((dusk(1000.0), 0)),
+        counter: 0,
+        reward: 0,
+    };
+    let unstakable = (unstakable_pk, unstakable_stake);
+    let mut session = instantiate(rng, vm, &psk, &pk, &[unstakable]);
 
     let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -842,7 +866,7 @@ fn allow() {
     let allow_sk = SecretKey::random(rng);
     let allow_pk = PublicKey::from(&allow_sk);
 
-    let session = &mut instantiate(rng, vm, &psk, &pk);
+    let session = &mut instantiate(rng, vm, &psk, &pk, &[]);
 
     let leaves = leaves_from_height(session, 0)
         .expect("Getting leaves in the given range should succeed");
