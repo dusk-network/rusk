@@ -305,7 +305,6 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             txs: executed_txs,
             verification_output,
             discarded_txs,
-            provisioners: Provisioners::default(),
         })
     }
 }
