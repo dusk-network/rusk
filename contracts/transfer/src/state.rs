@@ -13,7 +13,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bytes::Serializable;
+use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
 use dusk_pki::{Ownable, PublicKey, StealthAddress};
 use phoenix_core::transaction::*;
@@ -22,6 +22,7 @@ use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,
 };
+use transfer_contract_types::{Mint, Stct, Wfco, WfcoRaw, Wfct, Wfctc};
 
 /// Arity of the transfer tree.
 pub const A: usize = 4;
@@ -134,6 +135,19 @@ impl TransferState {
             .expect("Failed to verify the provided proof!");
 
         true
+    }
+
+    pub fn withdraw_from_contract_transparent_raw(
+        &mut self,
+        wfct_raw: transfer_contract_types::WfctRaw,
+    ) -> bool {
+        let note = Note::from_slice(wfct_raw.note.as_slice())
+            .expect("Failed to deserialize note");
+        self.withdraw_from_contract_transparent(Wfct {
+            value: wfct_raw.value,
+            note,
+            proof: wfct_raw.proof,
+        })
     }
 
     pub fn send_to_contract_obfuscated(&mut self, stco: Stco) -> bool {
@@ -250,6 +264,22 @@ impl TransferState {
             .expect("Failed to verify the provided proof!");
 
         true
+    }
+
+    pub fn withdraw_from_contract_obfuscated_raw(
+        &mut self,
+        wfco_raw: WfcoRaw,
+    ) -> bool {
+        let output = Note::from_slice(wfco_raw.output.as_slice())
+            .expect("Failed to deserialize note");
+        self.withdraw_from_contract_obfuscated(Wfco {
+            message: wfco_raw.message,
+            message_address: wfco_raw.message_address,
+            change: wfco_raw.change,
+            change_address: wfco_raw.change_address,
+            output,
+            proof: wfco_raw.proof,
+        })
     }
 
     pub fn withdraw_from_contract_transparent_to_contract(

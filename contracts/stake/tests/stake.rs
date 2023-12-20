@@ -13,14 +13,19 @@ use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
 use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use ff::Field;
-use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Note};
+use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
+use phoenix_core::{Fee, Note, Transaction};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
+use stake_contract_types::{
+    allow_signature_message, stake_signature_message,
+    unstake_signature_message, withdraw_signature_message, Allow, Stake,
+    StakeData, Unstake, Withdraw,
+};
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
     ExecuteCircuitThreeTwo, ExecuteCircuitTwoTwo,
@@ -676,13 +681,13 @@ fn stake_withdraw_unstake() {
         .expect("Proving WFCT circuit should succeed");
 
     let unstake_digest =
-        unstake_signature_message(stake_data.counter, withdraw_note);
-    let unstake_sig = sk.sign(&pk, &unstake_digest);
+        unstake_signature_message(stake_data.counter, withdraw_note.to_bytes());
+    let unstake_sig = sk.sign(&pk, unstake_digest.as_slice());
 
     let unstake = Unstake {
         public_key: pk,
         signature: unstake_sig,
-        note: withdraw_note,
+        note: withdraw_note.to_bytes().to_vec(),
         proof: wfct_proof.to_bytes().to_vec(),
     };
     let unstake_bytes = rkyv::to_bytes::<_, 2048>(&unstake)
@@ -882,7 +887,7 @@ fn allow() {
     let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
 
     // Fashion a Allow struct
-    let allow_digest = allow_signature_message(0, allow_pk);
+    let allow_digest = allow_signature_message(0, &allow_pk);
     let allow_sig = sk.sign(&pk, &allow_digest);
 
     let allow = Allow {

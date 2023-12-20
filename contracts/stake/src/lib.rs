@@ -64,9 +64,7 @@ unsafe fn allow(arg_len: u32) -> u32 {
 
 #[no_mangle]
 unsafe fn get_stake(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk: PublicKey| {
-        STATE.get_stake(&pk).cloned().map(|s| s.0)
-    })
+    rusk_abi::wrap_call(arg_len, |pk: PublicKey| STATE.get_stake(&pk).cloned())
 }
 
 #[no_mangle]

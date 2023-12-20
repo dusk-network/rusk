@@ -8,8 +8,10 @@ members = [
     "contracts/alice",
     "contracts/bob",
     "contracts/stake",
+    "contracts/stake-types",
     "contracts/governance",
     "contracts/transfer",
+    "contracts/transfer-types",
     "contracts/license",
 
     "rusk-prover",
