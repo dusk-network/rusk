@@ -23,6 +23,16 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// Module Id
 pub type ModuleId = [u8; 32];
 
+/// A leaf of the transfer tree.
+#[derive(Debug, Clone, PartialEq, Eq, Archive, Serialize, Deserialize)]
+#[archive_attr(derive(CheckBytes))]
+pub struct TreeLeaf {
+    /// The height of the block when the note was inserted in the tree.
+    pub block_height: u64,
+    /// The note inserted in the tree.
+    pub note: Note,
+}
+
 /// Send value to a contract transparently.
 #[derive(Debug, Clone, PartialEq, Eq, Archive, Deserialize, Serialize)]
 #[archive_attr(derive(CheckBytes))]
