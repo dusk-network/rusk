@@ -157,6 +157,40 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
         }
         Ok(())
     }
+
+    pub(crate) async fn on_heartbeat_event(&mut self) -> anyhow::Result<()> {
+        match &mut self.curr {
+            State::InSync(ref mut curr) => {
+                if curr.on_heartbeat().await? {
+                    // Transition from InSync to OutOfSync state
+                    curr.on_exiting().await;
+
+                    // Enter new state
+                    let next = OutOfSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                    );
+                    self.curr = State::OutOfSync(next);
+                }
+            }
+            State::OutOfSync(ref mut curr) => {
+                if curr.on_heartbeat().await? {
+                    // Transition from OutOfSync to InSync state
+                    curr.on_exiting().await;
+
+                    // Enter new state
+                    let next = InSyncImpl::new(
+                        self.acc.clone(),
+                        self.network.clone(),
+                        self.blacklisted_blocks.clone(),
+                    );
+                    self.curr = State::InSync(next);
+                }
+            }
+        };
+
+        Ok(())
+    }
 }
 
 struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
@@ -284,6 +318,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         Ok(self.allow_transition(msg).is_ok())
     }
 
+    async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
+        // TODO: Consider reporting metrics here
+        // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
+        Ok(false)
+    }
+
     fn allow_transition(&self, msg: &Message) -> anyhow::Result<()> {
         let _recv_peer = msg
             .metadata
@@ -389,6 +429,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
             .unwrap()
             <= SystemTime::now()
         {
+            acc.restart_consensus().await;
             // Timeout-ed sync-up
             // Transit back to InSync mode
             return Ok(true);
@@ -440,6 +481,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
 
         error!(event = "block saved", len = self.pool.len());
+
+        Ok(false)
+    }
+
+    async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
+        if self
+            .start_time
+            .checked_add(Duration::from_millis(EXPIRY_TIMEOUT_MILLIS as u64))
+            .unwrap()
+            <= SystemTime::now()
+        {
+            // sync-up has timed out, recover consensus task
+            self.acc.write().await.restart_consensus().await;
+
+            // Transit back to InSync mode
+            return Ok(true);
+        }
 
         Ok(false)
     }
