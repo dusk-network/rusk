@@ -14,8 +14,8 @@ path = "src/lib.rs"
 hex = "0.4"
 dusk-plonk = { version = "0.16", features = ["rkyv-impl"] }
 dusk-pki ="0.13"
-stake-contract-types = { path = "../contracts/stake-types", default-features = false }
-transfer-contract-types = { path = "../contracts/transfer-types", default-features = false }
+stake-contract-types = { version = "0.0.1-rc.2", path = "../contracts/stake-types", default-features = false }
+transfer-contract-types = { version = "0.1.0", path = "../contracts/transfer-types", default-features = false }
 rand = "0.8"
 rusk-profile = { version = "0.6", path = "../rusk-profile" }
 rusk-abi = { version = "0.12.0-rc", path = "../rusk-abi", default-features = false, features = ["host"] }
