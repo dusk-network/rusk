@@ -6,12 +6,13 @@
 
 use crate::Theme;
 
+use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
+use dusk_jubjub::JubJubScalar;
 use dusk_pki::PublicSpendKey;
+use ff::Field;
 use once_cell::sync::Lazy;
-use phoenix_core::transaction::*;
-use phoenix_core::Note;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::dusk::{dusk, Dusk};
@@ -24,6 +25,8 @@ use tracing::info;
 use url::Url;
 
 pub use snapshot::{Balance, GenesisStake, Governance, Snapshot};
+use stake_contract_types::StakeData;
+use transfer_contract_types::Mint;
 
 mod http;
 mod snapshot;
@@ -102,15 +105,17 @@ fn generate_transfer_state(
         };
 
         balance.notes.iter().for_each(|&amount| {
-            let note = Note::transparent(&mut rng, balance.address(), amount);
+            let r = JubJubScalar::random(&mut rng);
+            let address = balance.address().gen_stealth_address(&r);
+            let nonce = BlsScalar::random(&mut rng);
+            let mint = Mint {
+                address,
+                value: amount,
+                nonce,
+            };
             session
-                .call::<_, Note>(
-                    TRANSFER_CONTRACT,
-                    "push_note",
-                    &(GENESIS_BLOCK_HEIGHT, note),
-                    u64::MAX,
-                )
-                .expect("Genesis note to be pushed to the state");
+                .call::<Mint, bool>(TRANSFER_CONTRACT, "mint", &mint, u64::MAX)
+                .expect("Minting should succeed");
         });
     });
     if update_root {
