@@ -591,7 +591,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 }
 
 pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
-    iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
+    iter: MemPoolFeeIterator<'db, DB>,
     mempool: &'db M,
 }
 
@@ -601,8 +601,7 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
         fees_cf: &ColumnFamily,
         mempool: &'db M,
     ) -> Self {
-        let mut iter = db.raw_iterator_cf(fees_cf);
-        iter.seek_to_last();
+        let iter = MemPoolFeeIterator::new(db, fees_cf);
         MemPoolIterator { iter, mempool }
     }
 }
@@ -610,21 +609,9 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
     type Item = ledger::Transaction;
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.valid() {
-            true => {
-                if let Some(key) = self.iter.key() {
-                    let (_, tx_hash) =
-                        deserialize_fee_key(&mut &key.to_vec()[..]).ok()?;
-
-                    let tx = self.mempool.get_tx(tx_hash).ok().flatten();
-                    self.iter.prev();
-                    tx
-                } else {
-                    None
-                }
-            }
-            false => None,
-        }
+        self.iter.next().and_then(|(_, tx_hash)| {
+            self.mempool.get_tx(tx_hash).ok().flatten()
+        })
     }
 }
 
