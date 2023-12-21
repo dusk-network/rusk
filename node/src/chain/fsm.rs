@@ -10,7 +10,7 @@ use crate::database;
 use crate::{vm, Network};
 
 use node_data::ledger::{to_str, Block, Label};
-use node_data::message::payload::GetBlocks;
+use node_data::message::payload::{GetBlocks, Inv};
 use node_data::message::Message;
 use std::collections::{HashMap, HashSet};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -18,6 +18,7 @@ use std::ops::Deref;
 use std::time::Duration;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::RwLock;
+use tokio::time::Instant;
 use tracing::{error, info, warn};
 
 const MAX_BLOCKS_TO_REQUEST: i16 = 50;
@@ -26,6 +27,34 @@ const EXPIRY_TIMEOUT_MILLIS: i16 = 5000;
 pub(crate) const REDUNDANCY_PEER_FACTOR: usize = 5;
 
 type SharedHashSet = Arc<RwLock<HashSet<[u8; 32]>>>;
+
+#[derive(Clone)]
+struct PresyncInfo {
+    peer_addr: SocketAddr,
+    start_height: u64,
+    target_blk: Block,
+    expiry: Instant,
+}
+
+impl PresyncInfo {
+    const DEFAULT_TIMEOUT: Duration = Duration::from_secs(10);
+    fn new(
+        peer_addr: SocketAddr,
+        target_blk: Block,
+        start_height: u64,
+    ) -> Self {
+        Self {
+            peer_addr,
+            target_blk,
+            expiry: Instant::now().checked_add(Self::DEFAULT_TIMEOUT).unwrap(),
+            start_height,
+        }
+    }
+
+    fn start_height(&self) -> u64 {
+        self.start_height
+    }
+}
 
 enum State<N: Network, DB: database::DB, VM: vm::VMExecution> {
     InSync(InSyncImpl<DB, VM, N>),
@@ -123,7 +152,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
 
         match &mut self.curr {
             State::InSync(ref mut curr) => {
-                if curr.on_event(blk, msg).await? {
+                if let Some((b, peer_addr)) = curr.on_event(blk, msg).await? {
                     // Transition from InSync to OutOfSync state
                     curr.on_exiting().await;
 
@@ -132,7 +161,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution> SimpleFSM<N, DB, VM> {
                         self.acc.clone(),
                         self.network.clone(),
                     );
-                    next.on_entering(blk, msg).await;
+                    next.on_entering(&b, peer_addr).await;
                     self.curr = State::OutOfSync(next);
                 }
             }
@@ -198,6 +227,7 @@ struct InSyncImpl<DB: database::DB, VM: vm::VMExecution, N: Network> {
     network: Arc<RwLock<N>>,
 
     blacklisted_blocks: SharedHashSet,
+    presync: Option<PresyncInfo>,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
@@ -210,6 +240,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             acc,
             network,
             blacklisted_blocks,
+            presync: None,
         }
     }
 
@@ -234,27 +265,27 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         &mut self,
         blk: &Block,
         msg: &Message,
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
-        let h = blk.header().height;
-        let curr_h = acc.get_curr_height().await;
+        let height = blk.header().height;
+        let tip_height = acc.get_curr_height().await;
         let iter = acc.get_curr_iteration().await;
         let curr_hash = acc.get_curr_hash().await;
 
-        if h < curr_h {
-            return Ok(false);
+        if height < tip_height {
+            return Ok(None);
         }
 
-        if h == curr_h {
+        if height == tip_height {
             if blk.header().hash == curr_hash {
                 // Duplicated block.
                 // Node has already accepted it.
-                return Ok(false);
+                return Ok(None);
             }
 
             info!(
                 event = "entering fallback",
-                height = curr_h,
+                height = tip_height,
                 iter = iter,
                 new_iter = blk.header().iteration,
             );
@@ -267,7 +298,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // Fallback execution has failed. The block is ignored and
                     // Node remains in InSync state.
                     error!(event = "fallback failed", err = format!("{:?}", e));
-                    return Ok(false);
+                    return Ok(None);
                 }
                 Ok(_) => {
                     // Fallback has completed successfully. Node has managed to
@@ -277,26 +308,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // sent then this node does not try to accept it.
                     self.blacklisted_blocks.write().await.insert(curr_hash);
 
-                    if h == acc.get_curr_height().await + 1 {
+                    if height == acc.get_curr_height().await + 1 {
                         // If we have fallback-ed to previous block only, then
                         // accepting the new block would be enough to continue
                         // in in_Sync mode instead of switching to Out-Of-Sync
                         // mode.
 
                         acc.try_accept_block(blk, true).await?;
-                        return Ok(false);
+                        return Ok(None);
                     }
 
                     // By switching to OutOfSync mode, we trigger the
                     // sync-up procedure to download all missing blocks from the
                     // main chain.
-                    return Ok(msg.metadata.is_some());
+                    if let Some(metadata) = &msg.metadata {
+                        let res = (blk.clone(), metadata.src_addr);
+                        return Ok(Some(res));
+                    } else {
+                        return Ok(None);
+                    };
                 }
             }
         }
 
         // Try accepting consecutive block
-        if h == curr_h + 1 {
+        if height == tip_height + 1 {
             let label = acc.try_accept_block(blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
@@ -305,35 +341,76 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 self.blacklisted_blocks.write().await.clear();
             }
 
+            // If the accepted block is the one requested to presync peer,
+            // switch to OutOfSync/Syncing mode
+            if let Some(metadata) = &msg.metadata {
+                if let Some(presync) = &mut self.presync {
+                    if metadata.src_addr == presync.peer_addr
+                        && height == presync.start_height() + 1
+                    {
+                        let res =
+                            (presync.target_blk.clone(), presync.peer_addr);
+                        self.presync = None;
+                        return Ok(Some(res));
+                    }
+                }
+            }
+
             // When accepting block from the wire in inSync state, we
             // rebroadcast it
             if let Err(e) = self.network.write().await.broadcast(msg).await {
                 warn!("Unable to broadcast accepted block: {e}");
             }
 
-            return Ok(false);
+            return Ok(None);
         }
 
-        // Transition to OutOfSync
-        Ok(self.allow_transition(msg).is_ok())
+        // Block with height higher than (tip + 1) is received
+        // Before switching to outOfSync mode and download missing blocks,
+        // ensure that the Peer does know next valid block
+        if let Some(metadata) = &msg.metadata {
+            if self.presync.is_none() {
+                self.presync = Some(PresyncInfo::new(
+                    metadata.src_addr,
+                    blk.clone(),
+                    tip_height,
+                ));
+            }
+
+            self.request_block(tip_height + 1, metadata.src_addr).await;
+        }
+
+        Ok(None)
+    }
+
+    /// Requests a block by height from a specified peer
+    async fn request_block(&self, height: u64, peer_addr: SocketAddr) {
+        let mut inv = Inv::default();
+        inv.add_block_from_height(height);
+
+        if let Err(err) = self
+            .network
+            .read()
+            .await
+            .send_to_peer(&Message::new_get_data(inv), peer_addr)
+            .await
+        {
+            warn!("could not request block {err}")
+        };
     }
 
     async fn on_heartbeat(&mut self) -> anyhow::Result<bool> {
         // TODO: Consider reporting metrics here
         // TODO: Consider handling ACCEPT_BLOCK_TIMEOUT event here
+
+        if let Some(pre_sync) = &mut self.presync {
+            if pre_sync.expiry <= Instant::now() {
+                // Reset presync if it timed out
+                self.presync = None;
+            }
+        }
+
         Ok(false)
-    }
-
-    fn allow_transition(&self, msg: &Message) -> anyhow::Result<()> {
-        let _recv_peer = msg
-            .metadata
-            .as_ref()
-            .map(|m| m.src_addr)
-            .ok_or_else(|| anyhow::anyhow!("invalid metadata src_addr"))?;
-
-        // TODO: Consider verifying certificate here
-
-        Ok(())
     }
 }
 
@@ -367,13 +444,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network>
         }
     }
     /// performed when entering the OutOfSync state
-    async fn on_entering(&mut self, blk: &Block, msg: &Message) {
+    async fn on_entering(&mut self, blk: &Block, dest_addr: SocketAddr) {
         let (curr_height, locator) = {
             let acc = self.acc.read().await;
             (acc.get_curr_height().await, acc.get_curr_hash().await)
         };
-
-        let dest_addr = msg.metadata.as_ref().unwrap().src_addr;
 
         self.range = (
             curr_height,
