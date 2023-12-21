@@ -64,17 +64,13 @@ impl HandleRequest for RuskNode {
             }
             (Target::Host(_), "Chain", "info") => self.get_info().await,
             (Target::Host(_), "Chain", "gas") => {
-                let max_transactions = match request
+                let max_transactions = request
                     .event
                     .data
                     .as_string()
                     .trim()
                     .parse::<usize>()
-                {
-                    Ok(num) if num > 0 => Some(num),
-                    _ => None,
-                };
-
+                    .unwrap_or(usize::MAX);
                 self.get_gas_price(max_transactions).await
             }
             _ => anyhow::bail!("Unsupported"),
@@ -146,23 +142,19 @@ impl RuskNode {
     ///
     /// It retrieves a specified number of transactions, sorted by descending
     /// gas price, and calculates the average, maximum, minimum and median
-    /// prices. If `max_transactions` is not provided, defaults to all
-    /// transactions in the mempool. In the absence of transactions, will
+    /// prices. In the absence of transactions, will
     /// default to a gas price of 1.
     ///
     /// # Arguments
-    /// * `max_transactions` - Optional maximum number of transactions to
-    ///   consider.
+    /// * `max_transactions` - Maximum number of transactions to consider.
     ///
     /// # Returns
     /// A JSON object encapsulating the statistics, or an error if processing
     /// fails.
     async fn get_gas_price(
         &self,
-        max_transactions: Option<usize>,
+        max_transactions: usize,
     ) -> anyhow::Result<ResponseData> {
-        let max_transactions = max_transactions.unwrap_or(usize::MAX);
-
         let gas_prices: Vec<u64> =
             self.db()
                 .read()

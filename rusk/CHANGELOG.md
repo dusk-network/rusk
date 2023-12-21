@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Prover service implementation [#410]
-- Add gas price API [1219]
+- Add gas price API [#1219]
 
 ### Changed
 
