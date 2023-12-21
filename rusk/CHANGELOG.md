@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Prover service implementation [#410]
+- Add gas price API [1219]
 
 ### Changed
 
@@ -67,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
 [#327]: https://github.com/dusk-network/rusk/issues/327

@@ -10,9 +10,11 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use node::database::rocksdb::Backend;
+use node::database::rocksdb::{Backend, DBTransaction};
+use node::database::{Mempool, DB};
 use node::network::Kadcast;
 use node::Network;
+use node_data::ledger::Transaction;
 use node_data::message::Message;
 
 use graphql::{DBContext, Query};
@@ -61,6 +63,7 @@ impl HandleRequest for RuskNode {
                 self.alive_nodes(amount).await
             }
             (Target::Host(_), "Chain", "info") => self.get_info().await,
+            (Target::Host(_), "Chain", "gas") => self.get_gas_price().await,
             _ => anyhow::bail!("Unsupported"),
         }
     }
@@ -123,5 +126,31 @@ impl RuskNode {
         info.insert("kadcast_address", n_conf.public_address.into());
 
         Ok(ResponseData::new(serde_json::to_value(&info)?))
+    }
+
+    /// Calculates the average gas price of transactions in the mempool.
+    ///
+    /// It retrieves, at maximum, the top 100 transactions sorted by descending
+    /// order by the gas price, and calculates the average gas price. If there
+    /// are no transactions available in the mempool, it defaults to a gas price
+    /// of 1.
+    async fn get_gas_price(&self) -> anyhow::Result<ResponseData> {
+        let average_gas_price =
+            self.db().read().await.view(|t| -> anyhow::Result<u64> {
+                let (total, count) = t
+                    .get_txs_sorted_by_fee()?
+                    .take(100) // TODO: Figure out a sane default
+                    .map(|tx| tx.inner.fee().gas_price)
+                    .fold((0u64, 0u64), |(total, count), gas_price| {
+                        (total + gas_price, count + 1)
+                    });
+
+                match count {
+                    0 => Ok(1),
+                    _ => Ok(total / count), // TODO: Proper rounding up
+                }
+            })?;
+        // TODO: Consider returning more than a singular value
+        Ok(ResponseData::new(serde_json::to_value(average_gas_price)?))
     }
 }
