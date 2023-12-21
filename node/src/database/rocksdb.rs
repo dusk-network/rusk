@@ -561,6 +561,14 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(Box::new(iter))
     }
 
+    fn get_txs_hashes_sorted_by_fee(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>> {
+        let iter = MemPoolFeeIterator::new(&self.inner, self.fees_cf);
+
+        Ok(Box::new(iter))
+    }
+
     fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>> {
         let mut iter = self.inner.raw_iterator_cf(self.fees_cf);
         iter.seek_to_last();
@@ -583,7 +591,7 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
 }
 
 pub struct MemPoolIterator<'db, DB: DBAccess, M: Mempool> {
-    iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
+    iter: MemPoolFeeIterator<'db, DB>,
     mempool: &'db M,
 }
 
@@ -593,8 +601,7 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
         fees_cf: &ColumnFamily,
         mempool: &'db M,
     ) -> Self {
-        let mut iter = db.raw_iterator_cf(fees_cf);
-        iter.seek_to_last();
+        let iter = MemPoolFeeIterator::new(db, fees_cf);
         MemPoolIterator { iter, mempool }
     }
 }
@@ -602,15 +609,34 @@ impl<'db, DB: DBAccess, M: Mempool> MemPoolIterator<'db, DB, M> {
 impl<DB: DBAccess, M: Mempool> Iterator for MemPoolIterator<'_, DB, M> {
     type Item = ledger::Transaction;
     fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().and_then(|(_, tx_hash)| {
+            self.mempool.get_tx(tx_hash).ok().flatten()
+        })
+    }
+}
+
+pub struct MemPoolFeeIterator<'db, DB: DBAccess> {
+    iter: DBRawIteratorWithThreadMode<'db, rocksdb_lib::Transaction<'db, DB>>,
+}
+
+impl<'db, DB: DBAccess> MemPoolFeeIterator<'db, DB> {
+    fn new(db: &'db Transaction<DB>, fees_cf: &ColumnFamily) -> Self {
+        let mut iter = db.raw_iterator_cf(fees_cf);
+        iter.seek_to_last();
+        MemPoolFeeIterator { iter }
+    }
+}
+
+impl<DB: DBAccess> Iterator for MemPoolFeeIterator<'_, DB> {
+    type Item = (u64, [u8; 32]);
+    fn next(&mut self) -> Option<Self::Item> {
         match self.iter.valid() {
             true => {
                 if let Some(key) = self.iter.key() {
-                    let (_, tx_hash) =
+                    let (gas_price, hash) =
                         deserialize_fee_key(&mut &key.to_vec()[..]).ok()?;
-
-                    let tx = self.mempool.get_tx(tx_hash).ok().flatten();
                     self.iter.prev();
-                    tx
+                    Some((gas_price, hash))
                 } else {
                     None
                 }

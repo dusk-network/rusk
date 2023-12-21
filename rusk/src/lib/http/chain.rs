@@ -10,9 +10,11 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use node::database::rocksdb::Backend;
+use node::database::rocksdb::{Backend, DBTransaction};
+use node::database::{Mempool, DB};
 use node::network::Kadcast;
 use node::Network;
+use node_data::ledger::Transaction;
 use node_data::message::Message;
 
 use graphql::{DBContext, Query};
@@ -61,6 +63,16 @@ impl HandleRequest for RuskNode {
                 self.alive_nodes(amount).await
             }
             (Target::Host(_), "Chain", "info") => self.get_info().await,
+            (Target::Host(_), "Chain", "gas") => {
+                let max_transactions = request
+                    .event
+                    .data
+                    .as_string()
+                    .trim()
+                    .parse::<usize>()
+                    .unwrap_or(usize::MAX);
+                self.get_gas_price(max_transactions).await
+            }
             _ => anyhow::bail!("Unsupported"),
         }
     }
@@ -123,5 +135,69 @@ impl RuskNode {
         info.insert("kadcast_address", n_conf.public_address.into());
 
         Ok(ResponseData::new(serde_json::to_value(&info)?))
+    }
+
+    /// Calculates various statistics for gas prices of transactions in the
+    /// mempool.
+    ///
+    /// It retrieves a specified number of transactions, sorted by descending
+    /// gas price, and calculates the average, maximum, minimum and median
+    /// prices. In the absence of transactions, will
+    /// default to a gas price of 1.
+    ///
+    /// # Arguments
+    /// * `max_transactions` - Maximum number of transactions to consider.
+    ///
+    /// # Returns
+    /// A JSON object encapsulating the statistics, or an error if processing
+    /// fails.
+    async fn get_gas_price(
+        &self,
+        max_transactions: usize,
+    ) -> anyhow::Result<ResponseData> {
+        let gas_prices: Vec<u64> =
+            self.db()
+                .read()
+                .await
+                .view(|t| -> anyhow::Result<Vec<u64>> {
+                    Ok(t.get_txs_hashes_sorted_by_fee()?
+                        .take(max_transactions)
+                        .map(|(gas_price, _)| gas_price)
+                        .collect())
+                })?;
+
+        if gas_prices.is_empty() {
+            let stats = serde_json::json!({ "average": 1, "max": 1, "median": 1, "min": 1 });
+            return Ok(ResponseData::new(serde_json::to_value(stats)?));
+        }
+
+        let mean_gas_price = {
+            let total: u64 = gas_prices.iter().sum();
+            let count = gas_prices.len() as u64;
+            // ceiling division to round up
+            (total + count - 1) / count
+        };
+
+        let max_gas_price = *gas_prices.iter().max().unwrap();
+
+        let median_gas_price = {
+            let mid = gas_prices.len() / 2;
+            if gas_prices.len() % 2 == 0 {
+                (gas_prices[mid - 1] + gas_prices[mid]) / 2
+            } else {
+                gas_prices[mid]
+            }
+        };
+
+        let min_gas_price = *gas_prices.iter().min().unwrap();
+
+        let stats = serde_json::json!({
+            "average": mean_gas_price,
+            "max": max_gas_price,
+            "median": median_gas_price,
+            "min": min_gas_price
+        });
+
+        Ok(ResponseData::new(serde_json::to_value(stats)?))
     }
 }
