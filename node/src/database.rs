@@ -116,6 +116,11 @@ pub trait Mempool {
         &self,
     ) -> Result<Box<dyn Iterator<Item = ledger::Transaction> + '_>>;
 
+    /// Get an iterator over the mempool transactions hash by gas price
+    fn get_txs_hashes_sorted_by_fee(
+        &self,
+    ) -> Result<Box<dyn Iterator<Item = (u64, [u8; 32])> + '_>>;
+
     /// Get all transactions hashes.
     fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>>;
 }
