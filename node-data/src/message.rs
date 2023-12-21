@@ -734,13 +734,26 @@ pub mod payload {
     pub enum InvType {
         MempoolTx,
         #[default]
-        Block,
+        BlockFromHash,
+        BlockFromHeight,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub enum InvParam {
+        Hash([u8; 32]),
+        Height(u64),
+    }
+
+    impl Default for InvParam {
+        fn default() -> Self {
+            Self::Height(0)
+        }
     }
 
     #[derive(Default, Debug, Clone, Copy)]
     pub struct InvVect {
         pub inv_type: InvType,
-        pub hash: [u8; 32],
+        pub param: InvParam,
     }
 
     #[derive(Default, Debug, Clone)]
@@ -752,14 +765,21 @@ pub mod payload {
         pub fn add_tx_hash(&mut self, hash: [u8; 32]) {
             self.inv_list.push(InvVect {
                 inv_type: InvType::MempoolTx,
-                hash,
+                param: InvParam::Hash(hash),
             });
         }
 
-        pub fn add_block_hash(&mut self, hash: [u8; 32]) {
+        pub fn add_block_from_hash(&mut self, hash: [u8; 32]) {
             self.inv_list.push(InvVect {
-                inv_type: InvType::Block,
-                hash,
+                inv_type: InvType::BlockFromHash,
+                param: InvParam::Hash(hash),
+            });
+        }
+
+        pub fn add_block_from_height(&mut self, height: u64) {
+            self.inv_list.push(InvVect {
+                inv_type: InvType::BlockFromHeight,
+                param: InvParam::Height(height),
             });
         }
     }
@@ -770,7 +790,13 @@ pub mod payload {
 
             for item in &self.inv_list {
                 w.write_all(&[item.inv_type as u8])?;
-                w.write_all(&item.hash[..])?;
+
+                match &item.param {
+                    InvParam::Hash(hash) => w.write_all(&hash[..])?,
+                    InvParam::Height(height) => {
+                        w.write_all(&height.to_le_bytes())?
+                    }
+                };
             }
 
             Ok(())
@@ -789,16 +815,33 @@ pub mod payload {
 
                 let inv_type = match inv_type_buf[0] {
                     0 => InvType::MempoolTx,
-                    1 => InvType::Block,
+                    1 => InvType::BlockFromHash,
+                    2 => InvType::BlockFromHeight,
                     _ => {
                         return Err(io::Error::from(io::ErrorKind::InvalidData))
                     }
                 };
 
-                let mut hash = [0u8; 32];
-                r.read_exact(&mut hash)?;
+                match inv_type {
+                    InvType::MempoolTx => {
+                        let mut hash = [0u8; 32];
+                        r.read_exact(&mut hash)?;
 
-                inv.inv_list.push(InvVect { inv_type, hash });
+                        inv.add_tx_hash(hash);
+                    }
+                    InvType::BlockFromHash => {
+                        let mut hash = [0u8; 32];
+                        r.read_exact(&mut hash)?;
+
+                        inv.add_block_from_hash(hash);
+                    }
+                    InvType::BlockFromHeight => {
+                        let mut buf = [0u8; 8];
+                        r.read_exact(&mut buf)?;
+
+                        inv.add_block_from_height(u64::from_le_bytes(buf));
+                    }
+                }
             }
 
             Ok(inv)
