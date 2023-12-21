@@ -11,7 +11,7 @@ use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::{anyhow, Result};
 
-use node_data::message::payload::InvType;
+use node_data::message::payload::{InvParam, InvType};
 use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -285,7 +285,7 @@ impl DataBrokerSrv {
                     locator += 1;
                     match t.fetch_block_hash_by_height(locator)? {
                         Some(bh) => {
-                            inv.add_block_hash(bh);
+                            inv.add_block_from_hash(bh);
                         }
                         None => {
                             break;
@@ -325,14 +325,27 @@ impl DataBrokerSrv {
             let mut inv = payload::Inv::default();
             for i in &m.inv_list {
                 match i.inv_type {
-                    InvType::Block => {
-                        if Ledger::fetch_block(&t, &i.hash)?.is_none() {
-                            inv.add_block_hash(i.hash);
+                    InvType::BlockFromHeight => {
+                        if let InvParam::Height(height) = &i.param {
+                            if Ledger::fetch_block_by_height(&t, *height)?
+                                .is_none()
+                            {
+                                inv.add_block_from_height(*height);
+                            }
+                        }
+                    }
+                    InvType::BlockFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            if Ledger::fetch_block(&t, hash)?.is_none() {
+                                inv.add_block_from_hash(*hash);
+                            }
                         }
                     }
                     InvType::MempoolTx => {
-                        if Mempool::get_tx(&t, i.hash)?.is_none() {
-                            inv.add_tx_hash(i.hash);
+                        if let InvParam::Hash(hash) = &i.param {
+                            if Mempool::get_tx(&t, *hash)?.is_none() {
+                                inv.add_tx_hash(*hash);
+                            }
                         }
                     }
                 }
@@ -366,14 +379,35 @@ impl DataBrokerSrv {
                 .inv_list
                 .iter()
                 .filter_map(|i| match i.inv_type {
-                    InvType::Block => Ledger::fetch_block(&t, &i.hash)
-                        .ok()
-                        .flatten()
-                        .map(|blk| Message::new_block(Box::new(blk))),
-                    InvType::MempoolTx => Mempool::get_tx(&t, i.hash)
-                        .ok()
-                        .flatten()
-                        .map(|tx| Message::new_transaction(Box::new(tx))),
+                    InvType::BlockFromHeight => {
+                        if let InvParam::Height(height) = &i.param {
+                            Ledger::fetch_block_by_height(&t, *height)
+                                .ok()
+                                .flatten()
+                                .map(|blk| Message::new_block(Box::new(blk)))
+                        } else {
+                            None
+                        }
+                    }
+                    InvType::BlockFromHash => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            Ledger::fetch_block(&t, hash)
+                                .ok()
+                                .flatten()
+                                .map(|blk| Message::new_block(Box::new(blk)))
+                        } else {
+                            None
+                        }
+                    }
+                    InvType::MempoolTx => {
+                        if let InvParam::Hash(hash) = &i.param {
+                            Mempool::get_tx(&t, *hash).ok().flatten().map(
+                                |tx| Message::new_transaction(Box::new(tx)),
+                            )
+                        } else {
+                            None
+                        }
+                    }
                 })
                 .take(max_entries)
                 .collect())
