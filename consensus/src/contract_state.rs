@@ -8,8 +8,6 @@ use std::fmt;
 
 use node_data::ledger::{SpentTransaction, Transaction};
 
-use crate::user::provisioners::Provisioners;
-
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
 
@@ -29,7 +27,6 @@ pub struct CallParams {
 pub struct Output {
     pub txs: Vec<SpentTransaction>,
     pub verification_output: VerificationOutput,
-    pub provisioners: Provisioners,
     pub discarded_txs: Vec<Transaction>,
 }
 

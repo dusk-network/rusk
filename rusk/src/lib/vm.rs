@@ -131,25 +131,11 @@ impl VMExecution for Rusk {
         }
     }
 
-    fn get_provisioners(&self) -> anyhow::Result<Provisioners> {
-        info!("Received get_provisioners request");
-        let provisioners = self
-            .provisioners()
-            .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .into_iter()
-            .filter_map(|(key, stake)| {
-                stake.amount.map(|(value, eligibility)| {
-                    let stake = Stake::new(value, stake.reward, eligibility);
-                    let pubkey_bls = node_data::bls::PublicKey::new(key);
-                    (pubkey_bls, stake)
-                })
-            });
-        let mut ret = Provisioners::default();
-        for (pubkey_bls, stake) in provisioners {
-            ret.add_member_with_stake(pubkey_bls, stake);
-        }
-
-        Ok(ret)
+    fn get_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Provisioners> {
+        self.query_provisioners(Some(base_commit))
     }
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
@@ -162,5 +148,31 @@ impl VMExecution for Rusk {
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
 
         Ok(state_hash)
+    }
+}
+
+impl Rusk {
+    fn query_provisioners(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> anyhow::Result<Provisioners> {
+        info!("Received get_provisioners request");
+        let provisioners = self
+            .provisioners(base_commit)
+            .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
+            .into_iter()
+            .filter_map(|(key, stake)| {
+                stake.amount.map(|(value, eligibility)| {
+                    let stake = Stake::new(value, stake.reward, eligibility);
+                    let pubkey_bls = node_data::bls::PublicKey::new(key);
+                    (pubkey_bls, stake)
+                })
+            });
+        let mut ret = Provisioners::empty();
+        for (pubkey_bls, stake) in provisioners {
+            ret.add_member_with_stake(pubkey_bls, stake);
+        }
+
+        Ok(ret)
     }
 }

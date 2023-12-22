@@ -83,7 +83,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
         for input in INPUTS {
             group.measurement_time(Duration::from_secs(input.measurement_time));
             let mut keys = vec![];
-            let mut provisioners = Provisioners::default();
+            let mut provisioners = Provisioners::empty();
             let rng = &mut StdRng::seed_from_u64(0xbeef);
             for _ in 0..input.provisioners {
                 let sk = BlsSecretKey::random(rng);
