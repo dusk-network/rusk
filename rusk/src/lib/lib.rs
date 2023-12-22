@@ -298,8 +298,11 @@ impl Rusk {
         // Delete all commits except the previous base commit, and the current
         // commit
         let mut delete_commits = inner.vm.commits();
-        delete_commits
-            .retain(|c| c != &inner.current_commit && c != &inner.base_commit);
+        delete_commits.retain(|c| {
+            c != &inner.current_commit
+                && c != &inner.base_commit
+                && c != &current_commit
+        });
         for commit in delete_commits {
             inner.vm.delete_commit(commit)?;
         }
