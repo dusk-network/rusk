@@ -62,6 +62,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Drop
     }
 }
 
+const EPOCH: u64 = 2160;
+const STAKE_CONTRACT: [u8; 32] = stake_contract_id();
+const fn stake_contract_id() -> [u8; 32] {
+    let mut bytes = [0u8; 32];
+    bytes[0] = 2;
+    bytes
+}
+
 impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     /// Initializes a new `Acceptor` struct,
     ///
@@ -156,18 +164,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         Ok(())
     }
 
-    pub fn needs_update(blk: &Block, txs: &[SpentTransaction]) -> bool {
-        //TODO Remove hardcoded epoch
-        if blk.header().height % 2160 == 0 {
+    fn needs_update(blk: &Block, txs: &[SpentTransaction]) -> bool {
+        if blk.header().height % EPOCH == 0 {
             return true;
         }
         txs.iter().filter(|t| t.err.is_none()).any(|t| {
-            match &t.inner.inner.call {
-                //TODO Check for contractId too
-                Some((_, method, _)) if method == "stake" => true,
-                Some((_, method, _)) if method == "unstake" => true,
-                _ => false,
-            }
+            matches!(&t.inner.inner.call, Some((STAKE_CONTRACT, f, _)) if f == "unstake")
         })
     }
 
