@@ -12,6 +12,7 @@ use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::ledger::Seed;
 use num_bigint::BigInt;
 use std::collections::BTreeMap;
+use std::mem;
 
 use super::committee::Committee;
 
@@ -20,6 +21,51 @@ pub const DUSK: u64 = 1_000_000_000;
 #[derive(Clone, Debug)]
 pub struct Provisioners {
     members: BTreeMap<PublicKey, Stake>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ContextProvisioners {
+    current: Provisioners,
+    prev: Option<Provisioners>,
+}
+
+impl ContextProvisioners {
+    pub fn new(current: Provisioners) -> Self {
+        Self {
+            current,
+            prev: None,
+        }
+    }
+    pub fn current(&self) -> &Provisioners {
+        &self.current
+    }
+    pub fn to_current(&self) -> Provisioners {
+        self.current.clone()
+    }
+    pub fn prev(&self) -> &Provisioners {
+        self.prev.as_ref().unwrap_or(&self.current)
+    }
+    /// Swap `self.current` and `self.prev` and update `self.current` with [new]
+    pub fn update_and_swap(&mut self, mut new: Provisioners) {
+        mem::swap(&mut self.current, &mut new);
+
+        // `new` has been swapped, and now hold the previous `self.current`
+        self.prev = Some(new);
+    }
+
+    pub fn remove_previous(&mut self) {
+        self.prev = None;
+    }
+
+    pub fn set_previous(&mut self, prev: Provisioners) {
+        self.prev = Some(prev);
+    }
+
+    /// Change `self.current` with [new] and set `self.prev` to [None]
+    pub fn update(&mut self, new: Provisioners) {
+        self.current = new;
+        self.prev = None;
+    }
 }
 
 impl Provisioners {
