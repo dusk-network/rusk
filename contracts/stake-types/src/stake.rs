@@ -10,9 +10,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// Block height type alias
 pub type BlockHeight = u64;
 
-/// Maturity of the stake
-pub const MATURITY: u64 = 2 * EPOCH;
-
 /// Epoch used for stake operations
 pub const EPOCH: u64 = 2160;
 
@@ -143,7 +140,9 @@ impl StakeData {
     /// Compute the eligibility of a stake from the starting block height.
     #[must_use]
     pub const fn eligibility_from_height(block_height: BlockHeight) -> u64 {
-        let epoch = EPOCH - block_height % EPOCH;
-        block_height + MATURITY + epoch
+        let to_next_epoch = EPOCH - (block_height % EPOCH);
+        let maturity_blocks = EPOCH + to_next_epoch;
+
+        block_height + maturity_blocks
     }
 }
