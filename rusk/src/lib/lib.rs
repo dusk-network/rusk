@@ -363,6 +363,7 @@ impl Rusk {
             "leaves_from_height",
             &height,
             sender,
+            None,
         )
     }
 
@@ -409,9 +410,12 @@ impl Rusk {
     }
 
     /// Returns the stakes.
-    pub fn provisioners(&self) -> Result<Vec<(BlsPublicKey, StakeData)>> {
+    pub fn provisioners(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> Result<Vec<(BlsPublicKey, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
-        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender)?;
+        self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
         Ok(receiver
             .into_iter()
             .map(|bytes| {
@@ -517,6 +521,7 @@ impl Rusk {
         call_name: &str,
         call_arg: &A,
         feeder: mpsc::Sender<Vec<u8>>,
+        base_commit: Option<[u8; 32]>,
     ) -> Result<()>
     where
         A: for<'b> Serialize<StandardBufSerializer<'b>>,
@@ -525,7 +530,7 @@ impl Rusk {
 
         // For queries we set a point limit of effectively infinite and a block
         // height of zero since this doesn't affect the result.
-        let current_commit = inner.current_commit;
+        let current_commit = base_commit.unwrap_or(inner.current_commit);
         let mut session = rusk_abi::new_session(&inner.vm, current_commit, 0)?;
 
         session.feeder_call::<_, ()>(

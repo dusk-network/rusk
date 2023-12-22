@@ -94,7 +94,7 @@ impl Rusk {
 
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
         let prov: Vec<_> = self
-            .provisioners()
+            .provisioners(None)
             .unwrap()
             .iter()
             .filter_map(|(key, stake)| {

@@ -131,10 +131,34 @@ impl VMExecution for Rusk {
         }
     }
 
-    fn get_provisioners(&self) -> anyhow::Result<Provisioners> {
+    fn get_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Provisioners> {
+        self.query_provisioners(Some(base_commit))
+    }
+
+    fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
+        Ok(self.state_root())
+    }
+
+    fn revert(&self) -> anyhow::Result<[u8; 32]> {
+        let state_hash = self
+            .revert()
+            .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
+
+        Ok(state_hash)
+    }
+}
+
+impl Rusk {
+    fn query_provisioners(
+        &self,
+        base_commit: Option<[u8; 32]>,
+    ) -> anyhow::Result<Provisioners> {
         info!("Received get_provisioners request");
         let provisioners = self
-            .provisioners()
+            .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
             .into_iter()
             .filter_map(|(key, stake)| {
@@ -150,17 +174,5 @@ impl VMExecution for Rusk {
         }
 
         Ok(ret)
-    }
-
-    fn get_state_root(&self) -> anyhow::Result<[u8; 32]> {
-        Ok(self.state_root())
-    }
-
-    fn revert(&self) -> anyhow::Result<[u8; 32]> {
-        let state_hash = self
-            .revert()
-            .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
-
-        Ok(state_hash)
     }
 }

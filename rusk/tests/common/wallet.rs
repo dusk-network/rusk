@@ -117,7 +117,7 @@ impl wallet::StateClient for TestStateClient {
     fn fetch_stake(&self, _pk: &PublicKey) -> Result<StakeInfo, Self::Error> {
         let stake = self
             .rusk
-            .provisioners()?
+            .provisioners(None)?
             .iter()
             .find(|(pk, _)| pk == _pk)
             .map(|(_, stake)| StakeInfo {
