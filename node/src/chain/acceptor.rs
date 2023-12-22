@@ -10,7 +10,7 @@ use anyhow::{anyhow, Result};
 use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
 use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
 use dusk_consensus::user::committee::CommitteeSet;
-use dusk_consensus::user::provisioners::Provisioners;
+use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, Signature,
     SpentTransaction,
@@ -41,8 +41,8 @@ pub(crate) struct Acceptor<N: Network, DB: database::DB, VM: vm::VMExecution> {
     /// Most recently accepted block a.k.a blockchain tip
     mrb: RwLock<BlockWithLabel>,
 
-    /// List of provisioners of actual round
-    pub(crate) provisioners_list: RwLock<Provisioners>,
+    /// Provisioners needed to verify next block
+    pub(crate) provisioners_list: RwLock<ContextProvisioners>,
 
     /// Upper layer consensus task
     task: RwLock<super::consensus::Task>,
@@ -80,6 +80,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let mrb_height = mrb.inner().header().height;
         let mrb_state_hash = mrb.inner().header().state_hash;
 
+        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
+
+        let prev_block = db.read().await.view(|t| {
+            t.fetch_block_header(&mrb.inner().header().prev_block_hash)
+        })?;
+
+        if let Some((prev_header, _)) = prev_block {
+            let prev_provisioners =
+                vm.read().await.get_provisioners(prev_header.state_hash)?;
+            provisioners_list.set_previous(prev_provisioners);
+        }
+
         let acc = Self {
             mrb: RwLock::new(mrb),
             provisioners_list: RwLock::new(provisioners_list),
@@ -110,7 +122,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     async fn spawn_task(&self) {
-        let provisioners = self.provisioners_list.read().await.clone();
+        let provisioners = self.provisioners_list.read().await.to_current();
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
@@ -190,7 +202,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             .await
             .update(|t| t.set_register(blk.header()))?;
 
-        *provisioners_list = self.vm.read().await.get_provisioners()?;
+        let (prev_header, _) = self
+            .db
+            .read()
+            .await
+            .view(|t| t.fetch_block_header(&blk.header().prev_block_hash))?
+            .expect("Reverting to a block without previous");
+
+        let vm = self.vm.read().await;
+        let current_prov = vm.get_provisioners(blk.header().state_hash)?;
+        provisioners_list.update(current_prov);
+        let previous_prov = vm.get_provisioners(prev_header.state_hash)?;
+        provisioners_list.set_previous(previous_prov);
+
         *mrb = BlockWithLabel::new_with_label(blk.clone(), label);
 
         Ok(())
@@ -293,15 +317,19 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             })?;
 
             self.log_missing_iterations(
-                &provisioners_list,
+                provisioners_list.current(),
                 header.iteration,
                 mrb.inner().header().seed,
                 header.height,
             );
 
-            if Self::needs_update(blk.inner(), &txs) {
-                // Update provisioners list
-                *provisioners_list = vm.get_provisioners()?;
+            match Self::needs_update(blk.inner(), &txs) {
+                true => {
+                    let state_hash = blk.inner().header().state_hash;
+                    let new_prov = vm.get_provisioners(state_hash)?;
+                    provisioners_list.update_and_swap(new_prov)
+                }
+                false => provisioners_list.remove_previous(),
             }
 
             // Update most_recent_block
@@ -342,7 +370,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if enable_consensus {
             task.spawn(
                 mrb.inner(),
-                Arc::new(provisioners_list.clone()),
+                Arc::new(provisioners_list.to_current()),
                 &self.db,
                 &self.vm,
                 &self.network,
@@ -441,7 +469,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;
         let mrb = self.mrb.read().await;
-        let provisioners_list = self.provisioners_list.read().await;
+        let provisioners_list =
+            self.provisioners_list.read().await.to_current();
 
         task.abort_with_wait().await;
         info!(
@@ -453,7 +482,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         task.spawn(
             mrb.inner(),
-            Arc::new(provisioners_list.clone()),
+            Arc::new(provisioners_list),
             &self.db,
             &self.vm,
             &self.network,
@@ -518,9 +547,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     mrb: &ledger::Header,
-    mrb_eligible_provisioners: &Provisioners,
+    provisioners: &ContextProvisioners,
     new_blk: &ledger::Header,
 ) -> anyhow::Result<bool> {
+    let mrb_eligible_provisioners = provisioners.current();
+    let prev_eligible_provisioners = provisioners.prev();
     if new_blk.version > 0 {
         return Err(anyhow!("unsupported block version"));
     }
@@ -567,8 +598,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         // Terms in use
         // genesis_blk -> ... -> prev_block -> most_recent_block(mrb) -> new_blk
         // (pending to be accepted)
-        let prev_eligible_provisioners = &mrb_eligible_provisioners; // TODO: This should be the set of  actual eligible provisioners of
-                                                                     // previous block. See also #1124
         verify_block_cert(
             prev_block_seed,
             prev_eligible_provisioners,

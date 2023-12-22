@@ -67,7 +67,8 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
         // Restore/Load most recent block
         let mrb = Self::load_most_recent_block(db.clone()).await?;
 
-        let provisioners_list = vm.read().await.get_provisioners()?;
+        let state_hash = mrb.inner().header().state_hash;
+        let provisioners_list = vm.read().await.get_provisioners(state_hash)?;
 
         // Initialize Acceptor and trigger consensus task
         let acc = Acceptor::init_consensus(

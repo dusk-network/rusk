@@ -42,7 +42,10 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn preverify(&self, tx: &Transaction) -> anyhow::Result<()>;
 
-    fn get_provisioners(&self) -> anyhow::Result<Provisioners>;
+    fn get_provisioners(
+        &self,
+        base_commit: [u8; 32],
+    ) -> anyhow::Result<Provisioners>;
 
     fn get_state_root(&self) -> anyhow::Result<[u8; 32]>;
 
