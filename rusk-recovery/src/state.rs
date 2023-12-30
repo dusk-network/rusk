@@ -8,7 +8,7 @@ use crate::Theme;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
-use dusk_bytes::Serializable;
+use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::PublicSpendKey;
 use ff::Field;
@@ -40,13 +40,15 @@ pub const DEFAULT_SNAPSHOT: &str =
 const GENESIS_BLOCK_HEIGHT: u64 = 0;
 
 pub static DUSK_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
-    let bytes = include_bytes!("../assets/dusk.psk");
-    PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
+    let addr = include_str!("../assets/dusk.address");
+    let bytes = bs58::decode(addr).into_vec().expect("valid hex");
+    PublicSpendKey::from_slice(&bytes).expect("dusk should have a valid key")
 });
 
 pub static FAUCET_KEY: Lazy<PublicSpendKey> = Lazy::new(|| {
-    let bytes = include_bytes!("../assets/faucet.psk");
-    PublicSpendKey::from_bytes(bytes).expect("faucet should have a valid key")
+    let addr = include_str!("../assets/faucet.address");
+    let bytes = bs58::decode(addr).into_vec().expect("valid hex");
+    PublicSpendKey::from_slice(&bytes).expect("faucet should have a valid key")
 });
 
 fn deploy_governance_contract(
