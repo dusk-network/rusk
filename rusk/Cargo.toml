@@ -67,6 +67,9 @@ node = { version = "0.1", path = "../node" }
 dusk-consensus = { version = "0.1.1-rc.3", path = "../consensus" }
 node-data = { version = "0.1", path = "../node-data" }
 
+## Bump to 0.8.7 requires rust 1.71.0 due to `build_hasher_simple_hash_one` feature stabilization
+ahash = "=0.8.6"
+
 ## GraphQL deps
 async-graphql = "5.0"
 
