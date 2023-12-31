@@ -7,9 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.7.0] - 2023-12-31
+
+### Added
+
+- Add gas price API: max, min and mean gas prices
+- Add rolling finality
+- Add AST benchmarks
+- Add common module to benchmark
+- Add criterion dependency for benchmarks
+- Add `prover` feature flag as default
+- Add hash header to the CRS-via-HTTP api
+- Add support for HTTP response headers
+- Add test for unspendable transaction
+- Add HTTP `crs` topic
+- Add HTTP support for explicit binary response
+- Add `rusk-recovery` subcommands
+- Add `info` HTTP endpoint
+- Add HTTP support for `application/json` content type
+- Add HTTP version handshake
+- Add `network_id` config
+- Add `build` recipe to Makefile
+- Add `--profile` arg
+- Add GQL mempool API
+- Add `alive_nodes` api
+- Add `provisioners` api
+- Add GQL block state hash field
+- Add blocks by range graphql handler
+- Add transactions by block range graphql handler
+- Add tests for HTTP handler
+- Add `HandleRequest` trait
+- Add `propagate_tx` http handler
+- Add `prove_*` http handler
+- Add `preverify` http handler
+- Add `MessageRequest::to_error`
+- Add http format request
+- Add support for gql variables
+- Add various gql queries
+- Add support for binary http requests
+- Add handler for query_raw
+- Add basic graphql implementation
+- Add `multi_transfer` test
+- Add `gas_behaviour` test
+- Add `stake` test
+- Add `wallet` test (aka `wallet_grpc`)
+- Add `get_notes` functionality
+- Add `preverify` implementation of node's trait
+- Add client request parsing
+- Add default for WsConfig
+- Add listening for incoming websocket streams
+- Add node dependency
+
+### Changed
+
+- Change `dusk` key
+- Change `finalize` to not remove previous vm commit
+- Change `Provisioners::default()` to `Provisioners::empty()`
+- Change http `prover` to activate behind feature flag
+- Change `clippy` to cover all features
+- Change `stake.toml` configuration for tests
+- Change error messages while accepting blocks
+- Change VST to use candidate gas_limit
+- Change BlockGenerator to produce the correct gas_limit value
+- Change gql dep to `async-graphql`
+- Change external event system implementation
+- Change `consistency_check` to `Option`
+- Change codebase to support new `SpentTransaction`
+
+### Removed
+
+- Remove obsoleted test
+- Remove multiple stakes from provisioner member
+- Remove timing for subcommands
+- Remove `RUSK_PROFILE_PATH` dependency
+- Remove `rusk-recovery` as library dependency.
+- Remove tracing prefix
+- Remove unnecessary quotes from text response
+- Remove `Ws` prefix for `http` module structs
+- Remove manual async executor instantiation
+- Remove/disable deprecated tests
+- Remove dependencies from binary
+- Remove obsolete dependencies
+- Remove `rusk-schema` dependency
+- Remove grpc server
+
+### Fixed
+
+- Fix binary HTTP event detection
+- Fix HTTP header parsing for unquoted strings
+- Fix HTTP header parsing for empty values
+- Fix default HTTP_Listener
+- Fix graphql latest transaction filter
+- Fix http listener activation
+- Fix double execution for incoming request
+- Fix gas spent for ICC
+- Fix json response serialization
+- Fix Event::parse
+- Fix routing for Host("rusk")
+
+## [0.6.0] - 2023-06-21
+
+## [0.5.3] - 2022-03-21
+
+## [0.4.0] - 2021-08-13
+
+## [0.3.0] - 2021-07-15
+
 ### Added
 - Prover service implementation [#410]
-- Add gas price API [#1219]
 
 ### Changed
 
@@ -75,4 +180,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#307]: https://github.com/dusk-network/rusk/issues/307
 [#292]: https://github.com/dusk-network/rusk/issues/292
 [#290]: https://github.com/dusk-network/rusk/issues/290
+
+
+[unreleased]: https://github.com/dusk-network/rusk/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/dusk-network/rusk/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/dusk-network/rusk/compare/v0.5.3...v0.6.0
+[0.5.3]: https://github.com/dusk-network/rusk/compare/v0.4.0...v0.5.3
+[0.4.0]: https://github.com/dusk-network/rusk/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/dusk-network/rusk/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/dusk-network/rusk/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/dusk-network/rusk/releases/tag/rusk-0.1.0
