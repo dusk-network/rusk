@@ -14,7 +14,7 @@ use node_data::ledger::Block;
 
 use node_data::message::{AsyncQueue, Message, Topics};
 
-use crate::execution_ctx::{ExecutionCtx, IterationCtx};
+use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
 use crate::queue::Queue;
 use crate::quorum::task;
@@ -22,6 +22,7 @@ use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
 use tracing::Instrument;
 
+use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::CertInfoRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};

@@ -23,6 +23,7 @@ mod ratification;
 mod step_votes_reg;
 mod validation;
 
+mod iteration_ctx;
 pub mod merkle;
 
 #[cfg(test)]
