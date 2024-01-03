@@ -669,7 +669,7 @@ pub async fn verify_block_cert(
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let hdr = node_data::message::Header {
-        topic: 0,
+        topic: node_data::message::Topics::Unknown,
         pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
         step: iteration.step_from_name(StepName::Ratification),
