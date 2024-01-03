@@ -205,9 +205,9 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
                 iteration_counter,
-                proposal_handler.clone(),
-                validation_handler.clone(),
-                ratification_handler.clone(),
+                proposal_handler,
+                validation_handler,
+                ratification_handler,
             );
 
             loop {
@@ -215,9 +215,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 let mut msg = Message::empty();
                 // Execute a single iteration
-                for pos in 0..phases.len() {
-                    let phase = phases.get_mut(pos).unwrap();
-
+                for (pos, phase) in phases.iter_mut().enumerate() {
                     let step = iteration_counter.step_from_pos(pos);
                     let name = phase.name();
 
