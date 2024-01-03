@@ -25,7 +25,7 @@ pub struct ProposalHandler<D: Database> {
 impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
-        &mut self,
+        &self,
         msg: &Message,
         _ru: &RoundUpdate,
         _step: u8,

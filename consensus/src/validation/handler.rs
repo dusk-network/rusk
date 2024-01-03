@@ -75,7 +75,7 @@ impl ValidationHandler {
 impl MsgHandler<Message> for ValidationHandler {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
-        &mut self,
+        &self,
         msg: &Message,
         _ru: &RoundUpdate,
         _step: u8,

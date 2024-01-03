@@ -34,7 +34,7 @@ pub struct RatificationHandler {
 #[async_trait]
 impl MsgHandler<Message> for RatificationHandler {
     fn verify(
-        &mut self,
+        &self,
         msg: &Message,
         ru: &RoundUpdate,
         step: u8,

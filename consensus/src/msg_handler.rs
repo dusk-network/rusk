@@ -30,7 +30,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// Only if the message has correct round and step and is signed by a
     /// committee member then we delegate it to Phase::verify.
     fn is_valid(
-        &mut self,
+        &self,
         msg: &T,
         ru: &RoundUpdate,
         step: u8,
@@ -66,7 +66,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
 
     /// verify allows each Phase to fully verify the message payload.
     fn verify(
-        &mut self,
+        &self,
         msg: &T,
         ru: &RoundUpdate,
         step: u8,
