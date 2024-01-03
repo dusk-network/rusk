@@ -18,7 +18,6 @@ use tracing::{debug, trace};
 pub enum HandleMsgOutput {
     Pending(Message),
     Ready(Message),
-    ReadyWithTimeoutIncrease(Message),
 }
 
 /// MsgHandler must be implemented by any step that needs to handle an external

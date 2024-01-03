@@ -34,20 +34,6 @@ fn final_result(
     HandleMsgOutput::Ready(msg)
 }
 
-fn final_result_with_timeout(
-    sv: StepVotes,
-    hash: [u8; 32],
-    quorum: QuorumType,
-) -> HandleMsgOutput {
-    let msg = Message::from_validation_result(payload::ValidationResult {
-        sv,
-        hash,
-        quorum,
-    });
-
-    HandleMsgOutput::ReadyWithTimeoutIncrease(msg)
-}
-
 pub struct ValidationHandler {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
@@ -138,11 +124,7 @@ impl MsgHandler<Message> for ValidationHandler {
                     tracing::warn!(
                         "votes converged for an empty hash (timeout)"
                     );
-                    return Ok(final_result_with_timeout(
-                        sv,
-                        hash,
-                        QuorumType::NilQuorum,
-                    ));
+                    return Ok(final_result(sv, hash, QuorumType::NilQuorum));
                 }
 
                 return Ok(final_result(sv, hash, QuorumType::ValidQuorum));

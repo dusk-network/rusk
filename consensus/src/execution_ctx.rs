@@ -9,7 +9,7 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::commons::{Database, IterCounter, StepName};
 use crate::config::{INCREASE_TIMEOUT, MAX_STEP_TIMEOUT};
 use crate::contract_state::Operations;
-use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
+use crate::msg_handler::HandleMsgOutput::{Pending, Ready};
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
@@ -468,11 +468,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         // an output to populate next step with it.
                         return Some(m);
                     }
-                    ReadyWithTimeoutIncrease(m) => {
-                        return Some(m);
-                    }
-                    _ => {} /* Message collected but phase does not reach
-                             * a final result */
+                    Pending(_) => {} /* Message collected but phase does not
+                                      * reach
+                                      * a final result */
                 }
             }
             Err(e) => {
