@@ -208,6 +208,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 proposal_handler.clone(),
                 validation_handler.clone(),
                 ratification_handler.clone(),
+                ru.round_base_timeout,
             );
 
             loop {

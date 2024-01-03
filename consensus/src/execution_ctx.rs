@@ -7,7 +7,7 @@
 use crate::commons::QuorumMsgSender;
 use crate::commons::{ConsensusError, RoundUpdate};
 use crate::commons::{Database, IterCounter, StepName};
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+use crate::config::{INCREASE_TIMEOUT, MAX_STEP_TIMEOUT};
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
 use crate::msg_handler::MsgHandler;
@@ -61,7 +61,7 @@ impl RoundCommittees {
     }
 }
 
-/// Represents a shared state within a context of the exection of a single
+/// Represents a shared state within a context of the execution of a single
 /// iteration.
 pub struct IterationCtx<DB: Database> {
     validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
@@ -77,6 +77,8 @@ pub struct IterationCtx<DB: Database> {
     /// Stores any committee already generated in the execution of any
     /// iteration of current round
     committees: RoundCommittees,
+
+    step_base_timeout: Duration,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -88,6 +90,7 @@ impl<D: Database> IterationCtx<D> {
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
+        round_base_timeout: Duration,
     ) -> Self {
         Self {
             round,
@@ -97,6 +100,7 @@ impl<D: Database> IterationCtx<D> {
             validation_handler,
             ratification_handler,
             committees: Default::default(),
+            step_base_timeout: round_base_timeout,
         }
     }
 
@@ -154,6 +158,7 @@ impl<D: Database> IterationCtx<D> {
 
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
+        // TODO: Re-adjust step_base_timeout
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
@@ -171,6 +176,28 @@ impl<D: Database> IterationCtx<D> {
             iter = self.iter,
         );
         self.join_set.abort_all();
+    }
+
+    pub(crate) fn get_timeout(&self) -> Duration {
+        let step = self.iter.to_step_name();
+
+        match step {
+            StepName::Proposal => self.step_base_timeout,
+            StepName::Validation => self.step_base_timeout * 3,
+            StepName::Ratification => self.step_base_timeout * 3,
+        }
+    }
+
+    /// Handles an event of a Phase timeout
+    pub(crate) fn on_timeout_event(&mut self) {
+        self.increase_step_timeout();
+    }
+
+    pub(crate) fn increase_step_timeout(&mut self) {
+        self.step_base_timeout = cmp::min(
+            MAX_STEP_TIMEOUT,
+            self.step_base_timeout + INCREASE_TIMEOUT, // TODO:
+        );
     }
 }
 
@@ -257,14 +284,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
         phase: Arc<Mutex<C>>,
-        timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "run event_loop");
 
-        // Calculate timeout
-        let deadline = Instant::now()
-            .checked_add(Duration::from_millis(*timeout_millis))
-            .unwrap();
+        let timeout = self.iter_ctx.get_timeout();
+        let deadline = Instant::now().checked_add(timeout).unwrap();
 
         let inbound = self.inbound.clone();
 
@@ -274,13 +298,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Inbound message event
                 Ok(result) => {
                     if let Ok(msg) = result {
-                        if let Some(step_result) = self
-                            .process_inbound_msg(
-                                phase.clone(),
-                                msg,
-                                timeout_millis,
-                            )
-                            .await
+                        if let Some(step_result) =
+                            self.process_inbound_msg(phase.clone(), msg).await
                         {
                             return Ok(step_result);
                         }
@@ -290,7 +309,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "timeout-ed");
-                    Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase.clone()).await;
                 }
@@ -386,7 +404,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
         msg: Message,
-        timeout_millis: &mut u64,
     ) -> Option<Message> {
         let committee = self
             .get_current_committee()
@@ -452,7 +469,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         return Some(m);
                     }
                     ReadyWithTimeoutIncrease(m) => {
-                        Self::increase_timeout(timeout_millis);
                         return Some(m);
                     }
                     _ => {} /* Message collected but phase does not reach
@@ -479,6 +495,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
+        self.iter_ctx.on_timeout_event();
+
         if let Ok(Ready(msg)) = phase
             .lock()
             .await
@@ -567,11 +585,5 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             size,
             exclusion,
         )
-    }
-
-    fn increase_timeout(timeout_millis: &mut u64) {
-        // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
-        *timeout_millis =
-            cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
     }
 }

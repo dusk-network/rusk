@@ -57,7 +57,8 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         &mut self,
         mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
-        debug!(event = "execute_step", timeout = self.get_timeout());
+        let timeout = ctx.iter_ctx.get_timeout();
+        debug!(event = "execute_step", ?timeout);
 
         let size = call_phase!(self, get_committee_size());
 
@@ -95,9 +96,5 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
     pub fn name(&self) -> &'static str {
         call_phase!(self, name())
-    }
-
-    fn get_timeout(&self) -> u64 {
-        call_phase!(self, get_timeout())
     }
 }
