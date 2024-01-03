@@ -10,6 +10,7 @@
 use node_data::ledger::*;
 use std::fmt;
 use std::fmt::Display;
+use std::time::Duration;
 
 use node_data::message::Payload;
 
@@ -26,6 +27,7 @@ use tracing::error;
 pub struct RoundUpdate {
     // Current round number of the ongoing consensus
     pub round: u64,
+    pub round_base_timeout: Duration,
 
     // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
@@ -42,6 +44,7 @@ impl RoundUpdate {
         pubkey_bls: PublicKey,
         secret_key: SecretKey,
         mrb_block: &Block,
+        round_base_timeout: Duration,
     ) -> Self {
         let round = mrb_block.header().height + 1;
         RoundUpdate {
@@ -52,6 +55,7 @@ impl RoundUpdate {
             hash: mrb_block.header().hash,
             seed: mrb_block.header().seed,
             timestamp: mrb_block.header().timestamp,
+            round_base_timeout,
         }
     }
 
