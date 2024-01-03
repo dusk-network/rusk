@@ -174,7 +174,7 @@ impl RatificationHandler {
             round: ru.round,
             step,
             block_hash,
-            topic: Topics::Quorum as u8,
+            topic: Topics::Quorum,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());

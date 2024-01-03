@@ -238,7 +238,7 @@ mod tests {
                 round,
                 step,
                 block_hash,
-                topic: 0,
+                topic: message::Topics::Unknown,
             };
 
             let signature = header.sign(&sk, header.pubkey_bls.inner());

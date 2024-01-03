@@ -9,7 +9,7 @@ use crate::execution_ctx::RoundCommittees;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::ledger::to_str;
-use node_data::message::{Message, MessageTrait, Status, Topics};
+use node_data::message::{Message, MessageTrait, Status};
 use std::fmt::Debug;
 use tracing::{debug, trace};
 
@@ -41,7 +41,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
             event = "msg received",
             from = msg.get_pubkey_bls().to_bs58(),
             hash = to_str(&msg.get_block_hash()),
-            topic = format!("{:?}", Topics::from(msg.get_topic())),
+            topic = ?msg.get_topic(),
             step = msg.get_step(),
         );
 

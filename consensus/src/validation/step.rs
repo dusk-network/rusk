@@ -75,7 +75,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             round: ru.round,
             step,
             block_hash: hash,
-            topic: Topics::Validation.into(),
+            topic: Topics::Validation,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());

@@ -10,7 +10,7 @@ use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use node_data::ledger::{to_str, Block, Certificate};
-use node_data::message::{AsyncQueue, Message, Payload, Status, Topics};
+use node_data::message::{AsyncQueue, Message, Payload, Status};
 
 use crate::quorum::verifiers;
 use std::sync::Arc;
@@ -139,7 +139,7 @@ impl<'p, D: Database> Executor<'p, D> {
             event = "msg received",
             from = hdr.pubkey_bls.to_bs58(),
             hash = to_str(&hdr.block_hash),
-            topic = format!("{:?}", Topics::from(hdr.topic)),
+            topic = ?hdr.topic,
             step = hdr.step,
         );
 
@@ -175,7 +175,7 @@ impl<'p, D: Database> Executor<'p, D> {
     async fn publish(&self, msg: Message) {
         let topic = msg.header.topic;
         self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
-            error!("unable to publish msg(id:{}) {:?}", topic, err)
+            error!("unable to publish msg(topic:{topic:?}) {err:?}")
         });
     }
 

@@ -362,7 +362,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .collect_past_event(&self.round_update, msg)
             .await
         {
-            if m.header.topic == Topics::Quorum as u8 {
+            if m.header.topic == Topics::Quorum {
                 debug!(
                     event = "quorum",
                     src = "prev_step",
@@ -370,7 +370,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     hash = to_str(&m.header.block_hash),
                 );
 
-                self.quorum_sender.send(m.clone()).await;
+                self.quorum_sender.send(m).await;
             }
         }
 
@@ -527,8 +527,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         src = "future_msgs",
                         msg_step = msg.header.step,
                         msg_round = msg.header.round,
-                        msg_topic =
-                            format!("{:?}", Topics::from(msg.header.topic))
+                        msg_topic = ?msg.header.topic,
                     );
 
                     self.outbound.send(msg.clone()).await.unwrap_or_else(

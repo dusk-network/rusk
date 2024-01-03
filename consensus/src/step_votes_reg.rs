@@ -158,7 +158,7 @@ impl CertInfoRegistry {
             round: ru.round,
             step: iteration.step_from_name(StepName::Ratification),
             block_hash: result.hash.unwrap_or_default(),
-            topic: Topics::Quorum as u8,
+            topic: Topics::Quorum,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());

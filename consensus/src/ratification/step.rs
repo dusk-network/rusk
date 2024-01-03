@@ -43,7 +43,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             round: ru.round,
             step,
             block_hash: result.hash,
-            topic: Topics::Ratification.into(),
+            topic: Topics::Ratification,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
