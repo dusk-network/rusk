@@ -41,7 +41,7 @@ pub trait MessageTrait {
     fn compare(&self, round: u64, step: u8) -> Status;
     fn get_pubkey_bls(&self) -> &bls::PublicKey;
     fn get_block_hash(&self) -> [u8; 32];
-    fn get_topic(&self) -> u8;
+    fn get_topic(&self) -> Topics;
     fn get_step(&self) -> u8;
 }
 
@@ -64,10 +64,10 @@ pub struct Metadata {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&[self.header.topic])?;
+        w.write_all(&[self.header.topic as u8])?;
 
         // Optional header fields used only for consensus messages
-        if is_consensus_msg(self.header.topic) {
+        if self.header.topic.is_consensus_msg() {
             self.header.write(w)?;
         }
 
@@ -105,12 +105,14 @@ impl Serializable for Message {
         }
 
         // Decode message header only if the topic is supported
-        let mut header = Header::default();
-        if is_consensus_msg(buf[0]) {
-            header = Header::read(r)?;
-        }
-
-        header.topic = buf[0];
+        let header = match topic.is_consensus_msg() {
+            true => {
+                let mut header = Header::read(r)?;
+                header.topic = topic;
+                header
+            }
+            false => Header::new(topic),
+        };
 
         let payload = match topic {
             Topics::Candidate => {
@@ -162,7 +164,7 @@ impl MessageTrait for Message {
     fn get_block_hash(&self) -> [u8; 32] {
         self.header.block_hash
     }
-    fn get_topic(&self) -> u8 {
+    fn get_topic(&self) -> Topics {
         self.header.topic
     }
 
@@ -296,23 +298,13 @@ impl Message {
     }
 
     pub fn topic(&self) -> Topics {
-        Topics::from(self.header.topic)
+        self.header.topic
     }
-}
-
-fn is_consensus_msg(topic: u8) -> bool {
-    matches!(
-        Topics::from(topic),
-        Topics::Candidate
-            | Topics::Validation
-            | Topics::Ratification
-            | Topics::Quorum
-    )
 }
 
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct Header {
-    pub topic: u8,
+    pub topic: Topics,
 
     pub pubkey_bls: bls::PublicKey,
     pub round: u64,
@@ -382,7 +374,7 @@ impl Serializable for Header {
             round,
             step,
             block_hash,
-            topic: 0,
+            topic: Topics::default(),
         })
     }
 }
@@ -390,7 +382,7 @@ impl Serializable for Header {
 impl Header {
     pub fn new(topic: Topics) -> Self {
         Self {
-            topic: topic as u8,
+            topic,
             ..Default::default()
         }
     }
@@ -926,6 +918,18 @@ pub enum Topics {
     Unknown = 255,
 }
 
+impl Topics {
+    pub fn is_consensus_msg(&self) -> bool {
+        matches!(
+            &self,
+            Topics::Candidate
+                | Topics::Validation
+                | Topics::Ratification
+                | Topics::Quorum
+        )
+    }
+}
+
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
         map_topic!(v, Topics::GetData);
@@ -994,7 +998,7 @@ mod tests {
             round: 8,
             step: 7,
             block_hash: [3; 32],
-            topic: 0,
+            topic: Topics::Unknown,
         });
 
         let header = ledger::Header {
