@@ -393,7 +393,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .expect("committee to be created before run");
         // Check if message is valid in the context of current step
         let ret = phase.lock().await.is_valid(
-            msg.clone(),
+            &msg,
             &self.round_update,
             self.step,
             committee,
@@ -401,9 +401,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         );
 
         match ret {
-            Ok(msg) => {
+            Ok(_) => {
                 // Re-publish the returned message
-                self.outbound.send(msg).await.unwrap_or_else(|err| {
+                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
                     error!("unable to re-publish a handled msg {:?}", err)
                 });
             }
@@ -513,14 +513,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
             for msg in messages {
                 let ret = phase.lock().await.is_valid(
-                    msg,
+                    &msg,
                     &self.round_update,
                     self.step,
                     committee,
                     &self.iter_ctx.committees,
                 );
-
-                if let Ok(msg) = ret {
+                if ret.is_ok() {
                     // Re-publish a drained message
                     debug!(
                         event = "republish",

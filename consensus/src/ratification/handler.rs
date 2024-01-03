@@ -35,12 +35,12 @@ pub struct RatificationHandler {
 impl MsgHandler<Message> for RatificationHandler {
     fn verify(
         &mut self,
-        msg: Message,
+        msg: &Message,
         ru: &RoundUpdate,
         step: u8,
         _committee: &Committee,
         round_committees: &RoundCommittees,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         if let Payload::Ratification(p) = &msg.payload {
             if msg.header.verify_signature(&p.signature).is_err() {
                 return Err(ConsensusError::InvalidSignature);
@@ -53,7 +53,7 @@ impl MsgHandler<Message> for RatificationHandler {
                 &p.validation_result,
             )?;
 
-            return Ok(msg);
+            return Ok(());
         }
 
         Err(ConsensusError::InvalidMsgType)

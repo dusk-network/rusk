@@ -26,15 +26,15 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
         &mut self,
-        msg: Message,
+        msg: &Message,
         _ru: &RoundUpdate,
         _step: u8,
         committee: &Committee,
         _round_committees: &RoundCommittees,
-    ) -> Result<Message, ConsensusError> {
-        self.verify_new_block(&msg, committee)?;
+    ) -> Result<(), ConsensusError> {
+        self.verify_new_block(msg, committee)?;
 
-        Ok(msg)
+        Ok(())
     }
 
     /// Collects а new_block message.

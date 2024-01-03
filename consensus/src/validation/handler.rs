@@ -76,12 +76,12 @@ impl MsgHandler<Message> for ValidationHandler {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &mut self,
-        msg: Message,
+        msg: &Message,
         _ru: &RoundUpdate,
         _step: u8,
         _committee: &Committee,
         _round_committees: &RoundCommittees,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
@@ -92,7 +92,7 @@ impl MsgHandler<Message> for ValidationHandler {
             return Err(ConsensusError::InvalidSignature);
         }
 
-        Ok(msg)
+        Ok(())
     }
 
     /// Collects the reduction message.

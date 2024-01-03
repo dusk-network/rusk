@@ -31,12 +31,12 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// committee member then we delegate it to Phase::verify.
     fn is_valid(
         &mut self,
-        msg: T,
+        msg: &T,
         ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
         round_committees: &RoundCommittees,
-    ) -> Result<T, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         debug!(
             event = "msg received",
             from = msg.get_pubkey_bls().to_bs58(),
@@ -67,12 +67,12 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// verify allows each Phase to fully verify the message payload.
     fn verify(
         &mut self,
-        msg: T,
+        msg: &T,
         ru: &RoundUpdate,
         step: u8,
         committee: &Committee,
         round_committees: &RoundCommittees,
-    ) -> Result<T, ConsensusError>;
+    ) -> Result<(), ConsensusError>;
 
     /// collect allows each Phase to process a verified inbound message.
     async fn collect(
