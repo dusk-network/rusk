@@ -52,7 +52,7 @@ fn create_step_votes(
 
     let hdr = message::Header {
         round,
-        step: step % 3,
+        iteration,
         block_hash,
         ..Default::default()
     };
