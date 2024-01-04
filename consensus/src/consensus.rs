@@ -264,7 +264,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     }
                 }
 
-                iter_ctx.on_end();
+                iter_ctx.on_close();
 
                 iteration_counter.next()?;
                 // Delegate (quorum) message result to quorum loop for

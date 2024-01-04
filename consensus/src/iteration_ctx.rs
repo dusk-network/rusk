@@ -105,7 +105,7 @@ impl<D: Database> IterationCtx<D> {
     }
 
     /// Executed on closing an iteration, after Ratification step execution
-    pub(crate) fn on_end(&mut self) {
+    pub(crate) fn on_close(&mut self) {
         debug!(
             event = "iter completed",
             len = self.join_set.len(),
@@ -127,7 +127,7 @@ impl<D: Database> IterationCtx<D> {
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
 
-    /// Calculates and returns the adjusted timeout for current step
+    /// Calculates and returns the adjusted timeout for the specified step
     pub(crate) fn get_timeout(&self, step: u8) -> Duration {
         let step = step.to_step_name();
 
@@ -207,6 +207,6 @@ impl<D: Database> IterationCtx<D> {
 
 impl<DB: Database> Drop for IterationCtx<DB> {
     fn drop(&mut self) {
-        self.on_end();
+        self.on_close();
     }
 }
