@@ -40,8 +40,13 @@ fn create_step_votes(
     provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
+    let generator_cfg =
+        SortitionConfig::new(seed, round, iteration * 3, 1, None);
+    let generator = Committee::new(provisioners, &generator_cfg);
+    let exclusion = Some(generator.iter().next().unwrap().bytes().clone());
+
     let sortition_config =
-        SortitionConfig::new(seed, round, iteration * 3 + step, 64, None);
+        SortitionConfig::new(seed, round, iteration * 3 + step, 64, exclusion);
 
     let committee = Committee::new(provisioners, &sortition_config);
 
@@ -122,7 +127,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
-                    b.to_async(FuturesExecutor).iter(|| {
+                    b.to_async(FuturesExecutor).iter(|| async {
                         chain::verify_block_cert(
                             seed,
                             &provisioners,
@@ -132,6 +137,8 @@ pub fn verify_block_cert(c: &mut Criterion) {
                             iteration,
                             true,
                         )
+                        .await
+                        .expect("block to be verified")
                     })
                 },
             );
