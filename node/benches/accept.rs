@@ -122,7 +122,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                     format!("{} prov", input.provisioners),
                 ),
                 move |b| {
-                    b.to_async(FuturesExecutor).iter(|| {
+                    b.to_async(FuturesExecutor).iter(|| async {
                         chain::verify_block_cert(
                             seed,
                             &provisioners,
@@ -132,6 +132,8 @@ pub fn verify_block_cert(c: &mut Criterion) {
                             iteration,
                             true,
                         )
+                        .await
+                        .expect("block to be verified")
                     })
                 },
             );
