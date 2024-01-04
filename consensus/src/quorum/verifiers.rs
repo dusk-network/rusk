@@ -7,7 +7,7 @@
 use node_data::ledger::{Seed, StepVotes};
 use node_data::StepName;
 
-use crate::commons::{Error, IterCounter};
+use crate::commons::Error;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -102,7 +102,7 @@ pub async fn verify_step_votes(
     }
 
     let iteration = hdr.iteration;
-    let step = iteration.step_from_name(step_name);
+    let step = step_name.to_step(iteration);
     let generator = committees_set
         .read()
         .await

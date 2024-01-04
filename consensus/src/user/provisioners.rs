@@ -4,7 +4,6 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::IterCounter;
 use crate::user::stake::Stake;
 use crate::{config::PROPOSAL_COMMITTEE_SIZE, user::sortition};
 use node_data::bls::{PublicKey, PublicKeyBytes};
@@ -172,7 +171,7 @@ impl Provisioners {
         seed: Seed,
         round: u64,
     ) -> PublicKeyBytes {
-        let step = iteration.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iteration);
         let committee_keys = Committee::new(
             self,
             &sortition::Config {

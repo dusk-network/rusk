@@ -7,7 +7,7 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 
-use node_data::{ledger::*, StepName};
+use node_data::ledger::*;
 use std::fmt;
 use std::fmt::Display;
 
@@ -17,7 +17,6 @@ use dusk_bls12_381_sign::SecretKey;
 
 use node_data::bls::PublicKey;
 
-use crate::config;
 use node_data::message::{AsyncQueue, Message};
 
 use tracing::error;
@@ -133,56 +132,6 @@ pub trait Database: Send + Sync {
         h: &Hash,
     ) -> anyhow::Result<Block>;
     fn delete_candidate_blocks(&mut self);
-}
-
-pub trait IterCounter {
-    /// Count of all steps per a single iteration
-    const STEP_NUM: u8 = 3;
-    type Step;
-    fn next(&mut self) -> Result<Self, ConsensusError>
-    where
-        Self: Sized;
-    fn from_step(step_num: Self::Step) -> Self;
-    fn step_from_name(&self, st: StepName) -> Self::Step;
-    fn step_from_pos(&self, pos: usize) -> Self::Step;
-    fn to_step_name(&self) -> StepName;
-}
-
-impl IterCounter for u8 {
-    type Step = u8;
-
-    fn next(&mut self) -> Result<Self, ConsensusError> {
-        let next = *self + 1;
-        if next >= config::CONSENSUS_MAX_ITER {
-            return Err(ConsensusError::MaxIterationReached);
-        }
-
-        *self = next;
-        Ok(next)
-    }
-
-    fn from_step(step: Self::Step) -> Self {
-        step / Self::STEP_NUM
-    }
-
-    fn step_from_name(&self, st: StepName) -> Self::Step {
-        let iteration_step = self * Self::STEP_NUM;
-        let relative_step = st as u8;
-        iteration_step + relative_step
-    }
-
-    fn step_from_pos(&self, pos: usize) -> Self::Step {
-        self * Self::STEP_NUM + pos as u8
-    }
-
-    fn to_step_name(&self) -> StepName {
-        match self % Self::STEP_NUM {
-            0 => StepName::Proposal,
-            1 => StepName::Validation,
-            2 => StepName::Ratification,
-            _ => panic!("STEP_NUM>3"),
-        }
-    }
 }
 
 #[derive(Clone)]

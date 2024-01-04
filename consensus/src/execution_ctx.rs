@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::QuorumMsgSender;
-use crate::commons::{ConsensusError, RoundUpdate};
-use crate::commons::{Database, IterCounter};
+use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
@@ -44,7 +42,7 @@ impl RoundCommittees {
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iter);
         self.get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
@@ -53,7 +51,7 @@ impl RoundCommittees {
         &self,
         iter: u8,
     ) -> Option<&Committee> {
-        let step = iter.step_from_name(StepName::Validation);
+        let step = StepName::Validation.to_step(iter);
         self.get_committee(step)
     }
 
@@ -158,7 +156,7 @@ impl<D: Database> IterationCtx<D> {
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iter);
         self.committees
             .get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
@@ -237,7 +235,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     pub fn total_step(&self) -> u8 {
-        self.iteration.step_from_name(self.step)
+        self.step.to_step(self.iteration)
     }
 
     /// Returns true if `my pubkey` is a member of [`committee`].
