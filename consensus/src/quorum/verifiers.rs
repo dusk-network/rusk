@@ -5,8 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use node_data::ledger::{Seed, StepVotes};
+use node_data::StepName;
 
-use crate::commons::{Error, IterCounter, StepName};
+use crate::commons::{Error, IterCounter};
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;

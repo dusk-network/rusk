@@ -6,7 +6,7 @@
 
 use crate::commons::QuorumMsgSender;
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::commons::{Database, IterCounter, StepName};
+use crate::commons::{Database, IterCounter};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
@@ -21,6 +21,7 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
+use node_data::StepName;
 use std::cmp;
 use std::collections::HashMap;
 use std::sync::Arc;

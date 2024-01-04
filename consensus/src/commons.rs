@@ -7,7 +7,7 @@
 // RoundUpdate carries the data about the new Round, such as the active
 // Provisioners, the BidList, the Seed and the Hash.
 
-use node_data::ledger::*;
+use node_data::{ledger::*, StepName};
 use std::fmt;
 use std::fmt::Display;
 
@@ -133,12 +133,6 @@ pub trait Database: Send + Sync {
         h: &Hash,
     ) -> anyhow::Result<Block>;
     fn delete_candidate_blocks(&mut self);
-}
-
-pub enum StepName {
-    Proposal = 0,
-    Validation = 1,
-    Ratification = 2,
 }
 
 pub trait IterCounter {

@@ -4,10 +4,11 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{IterCounter, StepName};
+use crate::commons::IterCounter;
 use crate::user::stake::Stake;
 use crate::{config::PROPOSAL_COMMITTEE_SIZE, user::sortition};
 use node_data::bls::{PublicKey, PublicKeyBytes};
+use node_data::StepName;
 
 use node_data::ledger::Seed;
 use num_bigint::BigInt;

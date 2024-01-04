@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{IterCounter, RoundUpdate, StepName};
+use crate::commons::{IterCounter, RoundUpdate};
 use crate::config::CONSENSUS_MAX_ITER;
 use node_data::ledger::StepVotes;
 use node_data::ledger::{to_str, Certificate};

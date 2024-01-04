@@ -4,11 +4,12 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, IterCounter, StepName};
+use crate::commons::{ConsensusError, Database, IterCounter};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 
 use node_data::message::Message;
+use node_data::StepName;
 
 use crate::user::committee::Committee;
 
