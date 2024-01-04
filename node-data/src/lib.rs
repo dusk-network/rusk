@@ -18,6 +18,13 @@ pub enum StepName {
     Ratification = 2,
 }
 
+impl StepName {
+    //FIXME: This should return u16
+    pub fn to_step(self, iteration: u8) -> u8 {
+        iteration * 3 + (self as u8)
+    }
+}
+
 pub trait Serializable {
     fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
     fn read<R: Read>(reader: &mut R) -> io::Result<Self>
