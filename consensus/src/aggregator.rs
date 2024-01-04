@@ -19,7 +19,7 @@ use tracing::{debug, error, warn};
 /// and a cluster of bls voters.
 #[derive(Default)]
 pub struct Aggregator(
-    BTreeMap<(u8, Hash), (AggrSignature, Cluster<PublicKey>)>,
+    BTreeMap<(u16, Hash), (AggrSignature, Cluster<PublicKey>)>,
 );
 
 impl Aggregator {
@@ -185,7 +185,7 @@ mod tests {
     use node_data::ledger::Seed;
     use node_data::message;
     impl Aggregator {
-        pub fn get_total(&self, step: u8, hash: Hash) -> Option<usize> {
+        pub fn get_total(&self, step: u16, hash: Hash) -> Option<usize> {
             if let Some(value) = self.0.get(&(step, hash)) {
                 return Some(value.1.total_occurrences());
             }

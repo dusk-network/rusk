@@ -33,11 +33,11 @@ use tracing::{debug, error, info, trace};
 /// A pool of all generated committees
 #[derive(Default)]
 pub struct RoundCommittees {
-    committees: HashMap<u8, Committee>,
+    committees: HashMap<u16, Committee>,
 }
 
 impl RoundCommittees {
-    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
+    pub(crate) fn get_committee(&self, step: u16) -> Option<&Committee> {
         self.committees.get(&step)
     }
 
@@ -55,7 +55,7 @@ impl RoundCommittees {
         self.get_committee(step)
     }
 
-    pub(crate) fn insert(&mut self, step: u8, committee: Committee) {
+    pub(crate) fn insert(&mut self, step: u16, committee: Committee) {
         self.committees.insert(step, committee);
     }
 }
@@ -234,7 +234,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    pub fn total_step(&self) -> u8 {
+    pub fn total_step(&self) -> u16 {
         self.step.to_step(self.iteration)
     }
 
@@ -308,7 +308,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub(crate) async fn vote_for_former_candidate(
         &mut self,
-        msg_step: u8,
+        msg_step: u16,
         candidate: &Block,
     ) {
         debug!(
@@ -326,7 +326,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    fn try_vote(&mut self, msg_step: u8, candidate: &Block, topic: Topics) {
+    fn try_vote(&mut self, msg_step: u16, candidate: &Block, topic: Topics) {
         if let Some(committee) =
             self.iter_ctx.committees.get_committee(msg_step)
         {

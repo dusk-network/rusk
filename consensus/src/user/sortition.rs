@@ -15,7 +15,7 @@ use node_data::{bls::PublicKeyBytes, ledger::Seed};
 pub struct Config {
     pub seed: Seed,
     pub round: u64,
-    pub step: u8,
+    pub step: u16,
     pub committee_size: usize,
     pub exclusion: Option<PublicKeyBytes>,
 }
@@ -24,7 +24,7 @@ impl Config {
     pub fn new(
         seed: Seed,
         round: u64,
-        step: u8,
+        step: u16,
         committee_size: usize,
         exclusion: Option<PublicKeyBytes>,
     ) -> Config {

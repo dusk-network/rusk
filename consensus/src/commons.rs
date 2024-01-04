@@ -73,7 +73,7 @@ impl RoundUpdate {
 
 #[derive(Debug, Clone, Copy)]
 pub enum Error {
-    VoteSetTooSmall(u8),
+    VoteSetTooSmall(u16),
     VerificationFailed(dusk_bls12_381_sign::Error),
     EmptyApk,
     InvalidType,

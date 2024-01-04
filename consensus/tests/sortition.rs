@@ -59,7 +59,7 @@ fn test_deterministic_sortition_2_exclusion() {
     let committee_size = 45;
     let iteration = 2;
     let relative_step = 2;
-    let step = iteration * 3 + relative_step;
+    let step = iteration as u16 * 3 + relative_step;
 
     let mut cfg = Config::new(seed, round, step, committee_size, None);
     let generator = p.get_generator(iteration, seed, round);

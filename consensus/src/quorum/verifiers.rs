@@ -214,7 +214,7 @@ impl Cluster<PublicKey> {
 
 fn verify_step_signature(
     round: u64,
-    step: u8,
+    step: u16,
     block_hash: &[u8; 32],
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],
