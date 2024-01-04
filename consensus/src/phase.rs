@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, IterCounter};
+use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 
@@ -48,10 +48,23 @@ pub enum Phase<T: Operations, D: Database> {
 }
 
 impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
-    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+    pub fn to_step_name(&self) -> StepName {
+        match self {
+            Phase::Proposal(_) => StepName::Proposal,
+            Phase::Validation(_) => StepName::Validation,
+            Phase::Ratification(_) => StepName::Ratification,
+        }
+    }
+
+    pub async fn reinitialize(
+        &mut self,
+        msg: &Message,
+        round: u64,
+        iteration: u8,
+    ) {
         trace!(event = "init step", msg = format!("{:#?}", msg),);
 
-        await_phase!(self, reinitialize(msg, round, step))
+        await_phase!(self, reinitialize(msg, round, iteration))
     }
 
     pub async fn run(
@@ -62,13 +75,12 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         let size = call_phase!(self, get_committee_size());
 
-        let exclusion = match ctx.step.to_step_name() {
+        let exclusion = match ctx.step {
             StepName::Proposal => None,
             _ => {
-                let iteration = u8::from_step(ctx.step);
                 let generator = ctx
                     .iter_ctx
-                    .get_generator(iteration)
+                    .get_generator(ctx.iteration)
                     .expect("Proposal committee to be already generated");
                 Some(generator)
             }
@@ -92,10 +104,6 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         ctx.save_committee(step_committee);
 
         await_phase!(self, run(ctx))
-    }
-
-    pub fn name(&self) -> &'static str {
-        call_phase!(self, name())
     }
 
     fn get_timeout(&self) -> u64 {

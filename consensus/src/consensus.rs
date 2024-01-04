@@ -215,13 +215,11 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 let mut msg = Message::empty();
                 // Execute a single iteration
-                for (pos, phase) in phases.iter_mut().enumerate() {
-                    let step = iteration_counter.step_from_pos(pos);
-                    let name = phase.name();
-
+                for phase in phases.iter_mut() {
+                    let step_name = phase.to_step_name();
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.reinitialize(&msg, ru.round, step).await;
+                    phase.reinitialize(&msg, ru.round, iteration_counter).await;
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
@@ -231,7 +229,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         future_msgs.clone(),
                         provisioners.as_ref(),
                         ru.clone(),
-                        step,
+                        iteration_counter,
+                        step_name,
                         executor.clone(),
                         sv_registry.clone(),
                         sender.clone(),
@@ -247,8 +246,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .instrument(tracing::info_span!(
                             "main",
                             round = ru.round,
-                            step = step,
-                            name,
+                            iter = iteration_counter,
+                            name = ?step_name,
                             pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;

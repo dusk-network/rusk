@@ -29,7 +29,7 @@ impl Aggregator {
         header: &Header,
         signature: &[u8; 48],
     ) -> Option<(Hash, StepVotes, bool)> {
-        let msg_step = header.step;
+        let msg_step = header.get_step();
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
@@ -53,7 +53,7 @@ impl Aggregator {
                     event = "discarded duplicated vote",
                     from = header.pubkey_bls.to_bs58(),
                     hash = hex::encode(hash),
-                    msg_step = header.step,
+                    msg_step,
                     msg_round = header.round,
                 );
                 return None;
@@ -111,7 +111,7 @@ impl Aggregator {
                     total,
                     target = quorum_target,
                     bitset,
-                    step = header.step,
+                    step = msg_step,
                     signature = to_str(&s),
                 );
             }
@@ -216,7 +216,7 @@ mod tests {
             .collect();
 
         let round = 1;
-        let step = 1;
+        let iteration = 1;
 
         let block_hash = <[u8; 32]>::from_hex(
             "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
@@ -236,7 +236,7 @@ mod tests {
             let header = message::Header {
                 pubkey_bls: pk,
                 round,
-                step,
+                iteration,
                 block_hash,
                 topic: message::Topics::Unknown,
             };
@@ -249,7 +249,7 @@ mod tests {
         }
 
         // Execute sortition with specific config
-        let cfg = Config::new(Seed::from([4u8; 48]), round, step, 10, None);
+        let cfg = Config::new(Seed::from([4u8; 48]), round, 1, 10, None);
         let c = Committee::new(&p, &cfg);
 
         let target_quorum = 7;
@@ -309,7 +309,10 @@ mod tests {
             assert!(!quorum_reached, "quorum should not be reached yet");
 
             collected_votes += expected_votes[i];
-            assert_eq!(a.get_total(h.step, block_hash), Some(collected_votes));
+            assert_eq!(
+                a.get_total(h.get_step(), block_hash),
+                Some(collected_votes)
+            );
 
             // Ensure a duplicated vote is discarded
             if i == 0 {

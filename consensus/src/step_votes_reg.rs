@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{IterCounter, RoundUpdate};
+use crate::commons::RoundUpdate;
 use crate::config::CONSENSUS_MAX_ITER;
 use node_data::ledger::StepVotes;
 use node_data::ledger::{to_str, Certificate};
@@ -129,20 +129,23 @@ impl CertInfoRegistry {
     /// exist
     pub(crate) fn add_step_votes(
         &mut self,
-        step: u8,
+        iteration: u8,
         hash: [u8; 32],
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
     ) -> Option<Message> {
-        let iter_num = u8::from_step(step);
-        if iter_num as usize >= self.cert_list.len() {
+        if iteration as usize >= self.cert_list.len() {
             return None;
         }
 
-        let r = &mut self.cert_list[iter_num as usize];
-        if r.add_sv(iter_num, hash, sv, svt, quorum_reached) {
-            return Some(Self::build_quorum_msg(self.ru.clone(), iter_num, *r));
+        let r = &mut self.cert_list[iteration as usize];
+        if r.add_sv(iteration, hash, sv, svt, quorum_reached) {
+            return Some(Self::build_quorum_msg(
+                self.ru.clone(),
+                iteration,
+                *r,
+            ));
         }
 
         None
@@ -156,7 +159,7 @@ impl CertInfoRegistry {
         let hdr = node_data::message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            step: iteration.step_from_name(StepName::Ratification),
+            iteration,
             block_hash: result.hash.unwrap_or_default(),
             topic: Topics::Quorum,
         };

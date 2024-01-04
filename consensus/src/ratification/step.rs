@@ -34,14 +34,14 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     pub async fn try_vote(
         &self,
         ru: &RoundUpdate,
-        step: u8,
+        iteration: u8,
         result: &ValidationResult,
         outbound: AsyncQueue<Message>,
     ) -> Message {
         let hdr = message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            step,
+            iteration,
             block_hash: result.hash,
             topic: Topics::Ratification,
         };
@@ -86,9 +86,14 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         }
     }
 
-    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(
+        &mut self,
+        msg: &Message,
+        round: u64,
+        iteration: u8,
+    ) {
         let mut handler = self.handler.lock().await;
-        handler.reset(step);
+        handler.reset(iteration);
 
         // The Validation output must be the vote to cast on the Ratification.
         // There are these possible outputs:
@@ -105,7 +110,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             event = "init",
             name = self.name(),
             round = round,
-            step = step,
+            iteration = iteration,
             timeout = self.timeout_millis,
             hash = to_str(&handler.validation_result().hash),
             fsv_bitset = handler.validation_result().sv.bitset,
@@ -127,7 +132,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             let vote_msg = self
                 .try_vote(
                     &ctx.round_update,
-                    ctx.step,
+                    ctx.iteration,
                     handler.validation_result(),
                     ctx.outbound.clone(),
                 )
@@ -135,7 +140,13 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
             // Collect my own vote
             let res = handler
-                .collect(vote_msg, &ctx.round_update, ctx.step, committee)
+                .collect(
+                    vote_msg,
+                    &ctx.round_update,
+                    ctx.iteration,
+                    ctx.step,
+                    committee,
+                )
                 .await?;
             if let HandleMsgOutput::Ready(m) = res {
                 return Ok(m);

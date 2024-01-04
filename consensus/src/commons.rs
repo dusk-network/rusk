@@ -210,7 +210,7 @@ impl QuorumMsgSender {
                 event = "send quorum_msg",
                 hash = to_str(&msg.header.block_hash),
                 round = msg.header.round,
-                step = msg.header.step,
+                iteration = msg.header.iteration,
                 validation = format!("{:#?}", q.validation),
                 ratification = format!("{:#?}", q.ratification),
                 signature = to_str(&q.signature),

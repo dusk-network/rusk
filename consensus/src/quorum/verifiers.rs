@@ -97,11 +97,11 @@ pub async fn verify_step_votes(
     committee_size: usize,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    if hdr.step == 0 {
+    if step_name == StepName::Proposal {
         return Err(Error::InvalidStepNum);
     }
 
-    let iteration = u8::from_step(hdr.step);
+    let iteration = hdr.iteration;
     let step = iteration.step_from_name(step_name);
     let generator = committees_set
         .read()

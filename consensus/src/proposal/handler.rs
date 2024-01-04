@@ -10,6 +10,7 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
+use node_data::StepName;
 
 use crate::execution_ctx::RoundCommittees;
 use node_data::message::{Message, Payload};
@@ -28,7 +29,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &self,
         msg: &Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
         committee: &Committee,
         _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
@@ -42,7 +43,8 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
+        _step: StepName,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
@@ -62,7 +64,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Pending(msg))
@@ -72,7 +74,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     fn handle_timeout(
         &mut self,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Ready(Message::empty()))
     }

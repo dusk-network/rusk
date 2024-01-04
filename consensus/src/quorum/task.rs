@@ -135,12 +135,14 @@ impl<'p, D: Database> Executor<'p, D> {
 
     async fn collect_inbound_msg(&self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
+        let step = hdr.get_step();
         debug!(
             event = "msg received",
             from = hdr.pubkey_bls.to_bs58(),
             hash = to_str(&hdr.block_hash),
             topic = ?hdr.topic,
-            step = hdr.step,
+            iteration = hdr.iteration,
+            step,
         );
 
         self.collect_quorum(msg).await
