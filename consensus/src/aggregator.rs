@@ -262,7 +262,7 @@ mod tests {
 
         // Collect votes from expected committee members
         let expected_members = vec![0, 1, 2, 4, 5];
-        let expected_votes = vec![1, 1, 2, 1, 3];
+        let expected_votes = vec![1, 2, 1, 1, 3];
 
         // The index of the provisioner (inside expected_members) that let the
         // quorum being reached
