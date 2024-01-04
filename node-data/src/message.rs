@@ -38,12 +38,13 @@ impl From<Ordering> for Status {
 
 pub fn marshal_signable_vote(
     round: u64,
-    step: u8,
+    step: u16,
     block_hash: &[u8; 32],
 ) -> BytesMut {
-    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
+    const CAPACITY: usize = 32 + u64::SIZE + u16::SIZE;
+    let mut msg = BytesMut::with_capacity(CAPACITY);
     msg.put_u64_le(round);
-    msg.put_u8(step);
+    msg.put_u16_le(step);
     msg.put(&block_hash[..]);
 
     msg
@@ -54,8 +55,7 @@ pub trait MessageTrait {
     fn get_pubkey_bls(&self) -> &bls::PublicKey;
     fn get_block_hash(&self) -> [u8; 32];
     fn get_topic(&self) -> Topics;
-    // FIXME: This must be u16
-    fn get_step(&self) -> u8;
+    fn get_step(&self) -> u16;
 }
 
 /// Message definition
@@ -181,15 +181,14 @@ impl MessageTrait for Message {
         self.header.topic
     }
 
-    fn get_step(&self) -> u8 {
+    fn get_step(&self) -> u16 {
         self.header.get_step()
     }
 }
 
 impl Header {
-    // FIX_ME: This should be u16
-    pub fn get_step(&self) -> u8 {
-        let step = self.iteration * 3;
+    pub fn get_step(&self) -> u16 {
+        let step = self.iteration as u16 * 3;
         match self.topic {
             Topics::Validation => step + 1,
             Topics::Ratification | Topics::Quorum => step + 2,
@@ -452,10 +451,11 @@ impl Header {
         sk: &dusk_bls12_381_sign::SecretKey,
         pk: &dusk_bls12_381_sign::PublicKey,
     ) -> [u8; 48] {
-        let mut msg = BytesMut::with_capacity(self.block_hash.len() + 8 + 1);
-        msg.put_u64_le(self.round);
-        msg.put_u8(self.iteration);
-        msg.put(&self.block_hash[..]);
+        let msg = marshal_signable_vote(
+            self.round,
+            self.get_step(),
+            &self.block_hash,
+        );
 
         sk.sign(pk, msg.bytes()).to_bytes()
     }

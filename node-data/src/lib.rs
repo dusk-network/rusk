@@ -19,9 +19,8 @@ pub enum StepName {
 }
 
 impl StepName {
-    //FIXME: This should return u16
-    pub fn to_step(self, iteration: u8) -> u8 {
-        iteration * 3 + (self as u8)
+    pub fn to_step(self, iteration: u8) -> u16 {
+        iteration as u16 * 3 + (self as u16)
     }
 }
 
