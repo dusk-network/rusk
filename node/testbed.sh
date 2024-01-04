@@ -82,7 +82,7 @@ do
   #delay=$(($i))
   #sleep 20
 
-  run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "info" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" &
+  run_node "$BOOTSTRAP_ADDR" "127.0.0.1:$PORT" "debug" "$DUSK_WALLET_DIR" "$i" "$TEMPD" "127.0.0.1:$WS_PORT" &
 
   # wait for bootstrappers 
   # TODO

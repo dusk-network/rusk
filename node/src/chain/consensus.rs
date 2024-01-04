@@ -22,6 +22,7 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, trace, warn};
 
 use std::sync::Arc;
+use std::time::Duration;
 
 /// Consensus Service Task is responsible for running the consensus layer.
 ///
@@ -86,10 +87,13 @@ impl Task {
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
+        let round_base_timeout = self.adjust_round_base_timeout(db);
+
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
             self.keys.0,
             most_recent_block,
+            round_base_timeout,
         );
 
         self.task_id += 1;
@@ -141,6 +145,14 @@ impl Task {
                 warn!("Unable to send cancel for abort")
             };
         }
+    }
+
+    /// TBD
+    fn adjust_round_base_timeout<D: database::DB>(
+        &mut self,
+        _db: &Arc<RwLock<D>>,
+    ) -> Duration {
+        dusk_consensus::config::ROUND_BASE_TIMEOUT
     }
 }
 
