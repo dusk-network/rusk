@@ -9,6 +9,7 @@ use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::ledger::to_str;
+use crate::StepName;
 use crate::{bls, ledger, Serializable};
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
@@ -38,10 +39,11 @@ pub fn marshal_signable_vote(
 }
 
 pub trait MessageTrait {
-    fn compare(&self, round: u64, step: u8) -> Status;
+    fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status;
     fn get_pubkey_bls(&self) -> &bls::PublicKey;
     fn get_block_hash(&self) -> [u8; 32];
     fn get_topic(&self) -> Topics;
+    // FIXME: This must be u16
     fn get_step(&self) -> u8;
 }
 
@@ -155,8 +157,8 @@ impl Serializable for Message {
 }
 
 impl MessageTrait for Message {
-    fn compare(&self, round: u64, step: u8) -> Status {
-        self.header.compare(round, step)
+    fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
+        self.header.compare(round, iteration, step)
     }
     fn get_pubkey_bls(&self) -> &bls::PublicKey {
         &self.header.pubkey_bls
@@ -169,7 +171,19 @@ impl MessageTrait for Message {
     }
 
     fn get_step(&self) -> u8 {
-        self.header.step
+        self.header.get_step()
+    }
+}
+
+impl Header {
+    // FIX_ME: This should be u16
+    pub fn get_step(&self) -> u8 {
+        let step = self.iteration * 3;
+        match self.topic {
+            Topics::Validation => step + 1,
+            Topics::Ratification | Topics::Quorum => step + 2,
+            _ => step,
+        }
     }
 }
 
@@ -308,7 +322,7 @@ pub struct Header {
 
     pub pubkey_bls: bls::PublicKey,
     pub round: u64,
-    pub step: u8,
+    pub iteration: u8,
     pub block_hash: [u8; 32],
 }
 
@@ -318,7 +332,7 @@ impl std::fmt::Debug for Header {
             .field("topic", &self.topic)
             .field("pubkey_bls", &to_str(self.pubkey_bls.bytes().inner()))
             .field("round", &self.round)
-            .field("step", &self.step)
+            .field("iteration", &self.iteration)
             .field("block_hash", &ledger::to_str(&self.block_hash))
             .finish()
     }
@@ -328,7 +342,7 @@ impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         Self::write_var_bytes(w, &self.pubkey_bls.bytes().inner()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
-        w.write_all(&[self.step])?;
+        w.write_all(&[self.iteration])?;
         w.write_all(&self.block_hash[..])?;
 
         Ok(())
@@ -360,10 +374,10 @@ impl Serializable for Header {
         r.read_exact(&mut buf)?;
         let round = u64::from_le_bytes(buf);
 
-        // Read step
+        // Read iteration
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
-        let step = buf[0];
+        let iteration = buf[0];
 
         // Read block_hash
         let mut block_hash = [0u8; 32];
@@ -372,7 +386,7 @@ impl Serializable for Header {
         Ok(Header {
             pubkey_bls,
             round,
-            step,
+            iteration,
             block_hash,
             topic: Topics::default(),
         })
@@ -386,25 +400,19 @@ impl Header {
             ..Default::default()
         }
     }
-
-    pub fn compare(&self, round: u64, step: u8) -> Status {
-        if self.round == round {
-            if self.step == step {
-                return Status::Present;
+    pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
+        match self.round.cmp(&round) {
+            std::cmp::Ordering::Less => Status::Past,
+            std::cmp::Ordering::Greater => Status::Future,
+            std::cmp::Ordering::Equal => {
+                let total_step = iteration * 3 + step as u8;
+                match self.get_step().cmp(&total_step) {
+                    std::cmp::Ordering::Less => Status::Past,
+                    std::cmp::Ordering::Equal => Status::Present,
+                    std::cmp::Ordering::Greater => Status::Future,
+                }
             }
-
-            if self.step > step {
-                return Status::Future;
-            }
-
-            return Status::Past;
         }
-
-        if self.round > round {
-            return Status::Future;
-        }
-
-        Status::Past
     }
 
     pub fn compare_round(&self, round: u64) -> Status {
@@ -427,8 +435,12 @@ impl Header {
 
         dusk_bls12_381_sign::APK::from(self.pubkey_bls.inner()).verify(
             &sig,
-            marshal_signable_vote(self.round, self.step, &self.block_hash)
-                .bytes(),
+            marshal_signable_vote(
+                self.round,
+                self.get_step(),
+                &self.block_hash,
+            )
+            .bytes(),
         )
     }
 
@@ -439,7 +451,7 @@ impl Header {
     ) -> [u8; 48] {
         let mut msg = BytesMut::with_capacity(self.block_hash.len() + 8 + 1);
         msg.put_u64_le(self.round);
-        msg.put_u8(self.step);
+        msg.put_u8(self.iteration);
         msg.put(&self.block_hash[..]);
 
         sk.sign(pk, msg.bytes()).to_bytes()
@@ -996,7 +1008,7 @@ mod tests {
         assert_serialize(crate::message::Header {
             pubkey_bls: bls::PublicKey::from_sk_seed_u64(1),
             round: 8,
-            step: 7,
+            iteration: 7,
             block_hash: [3; 32],
             topic: Topics::Unknown,
         });
