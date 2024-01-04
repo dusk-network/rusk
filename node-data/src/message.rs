@@ -11,6 +11,7 @@ use dusk_bytes::Serializable as DuskSerializable;
 use crate::ledger::to_str;
 use crate::StepName;
 use crate::{bls, ledger, Serializable};
+use std::cmp::Ordering;
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
 
@@ -23,6 +24,16 @@ pub enum Status {
     Past,
     Present,
     Future,
+}
+
+impl From<Ordering> for Status {
+    fn from(value: Ordering) -> Self {
+        match value {
+            Ordering::Less => Self::Past,
+            Ordering::Equal => Self::Present,
+            Ordering::Greater => Self::Future,
+        }
+    }
 }
 
 pub fn marshal_signable_vote(
@@ -401,18 +412,10 @@ impl Header {
         }
     }
     pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
-        match self.round.cmp(&round) {
-            std::cmp::Ordering::Less => Status::Past,
-            std::cmp::Ordering::Greater => Status::Future,
-            std::cmp::Ordering::Equal => {
-                let total_step = iteration * 3 + step as u8;
-                match self.get_step().cmp(&total_step) {
-                    std::cmp::Ordering::Less => Status::Past,
-                    std::cmp::Ordering::Equal => Status::Present,
-                    std::cmp::Ordering::Greater => Status::Future,
-                }
-            }
-        }
+        self.round
+            .cmp(&round)
+            .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
+            .into()
     }
 
     pub fn compare_round(&self, round: u64) -> Status {
