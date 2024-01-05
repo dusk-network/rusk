@@ -13,11 +13,11 @@ use node_data::{bls::PublicKeyBytes, ledger::Seed};
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
-    pub seed: Seed,
-    pub round: u64,
-    pub step: u16,
-    pub committee_size: usize,
-    pub exclusion: Option<PublicKeyBytes>,
+    seed: Seed,
+    round: u64,
+    step: u16,
+    committee_size: usize,
+    exclusion: Option<PublicKeyBytes>,
 }
 
 impl Config {
@@ -35,6 +35,22 @@ impl Config {
             committee_size,
             exclusion,
         }
+    }
+
+    pub fn committee_size(&self) -> usize {
+        self.committee_size
+    }
+
+    pub fn step(&self) -> u16 {
+        self.step
+    }
+
+    pub fn round(&self) -> u64 {
+        self.round
+    }
+
+    pub fn exclusion(&self) -> Option<&PublicKeyBytes> {
+        self.exclusion.as_ref()
     }
 }
 

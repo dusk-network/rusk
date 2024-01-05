@@ -122,8 +122,8 @@ impl Provisioners {
 
         let mut comm = CommitteeGenerator::from_provisioners(
             self,
-            cfg.round,
-            cfg.exclusion.as_ref(),
+            cfg.round(),
+            cfg.exclusion(),
         );
 
         let mut total_amount_stake =
@@ -132,7 +132,7 @@ impl Provisioners {
         let mut counter: u32 = 0;
         loop {
             if total_amount_stake.eq(&BigInt::from(0))
-                || committee.len() == cfg.committee_size
+                || committee.len() == cfg.committee_size()
             {
                 break;
             }
@@ -172,16 +172,14 @@ impl Provisioners {
         round: u64,
     ) -> PublicKeyBytes {
         let step = StepName::Proposal.to_step(iteration);
-        let committee_keys = Committee::new(
-            self,
-            &sortition::Config {
-                committee_size: PROPOSAL_COMMITTEE_SIZE,
-                round,
-                seed,
-                step,
-                exclusion: None,
-            },
+        let cfg = sortition::Config::new(
+            seed,
+            round,
+            step,
+            PROPOSAL_COMMITTEE_SIZE,
+            None,
         );
+        let committee_keys = Committee::new(self, &cfg);
 
         let generator = *committee_keys
             .iter()

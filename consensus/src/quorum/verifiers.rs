@@ -177,7 +177,7 @@ pub fn verify_votes(
             target_quorum,
             total,
         );
-        return Err(Error::VoteSetTooSmall(cfg.step));
+        return Err(Error::VoteSetTooSmall(cfg.step()));
     }
 
     // If bitset=0 this means that we are checking for failed iteration
@@ -190,7 +190,13 @@ pub fn verify_votes(
         let apk = sub_committee.aggregate_pks()?;
 
         // verify signatures
-        verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
+        verify_step_signature(
+            cfg.round(),
+            cfg.step(),
+            block_hash,
+            apk,
+            signature,
+        )?;
     }
     // Verification done
     Ok(quorum_result)
