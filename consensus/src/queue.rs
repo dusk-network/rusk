@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Debug;
 
-type StepMap<T> = BTreeMap<u8, Vec<T>>;
+type StepMap<T> = BTreeMap<u16, Vec<T>>;
 type RoundMap<T> = BTreeMap<u64, StepMap<T>>;
 
 /// Atomic message queue to store messages by round and step
@@ -17,7 +17,7 @@ where
     T: Debug + Clone;
 
 impl<T: Debug + Clone> Queue<T> {
-    pub fn put_event(&mut self, round: u64, step: u8, msg: T) {
+    pub fn put_event(&mut self, round: u64, step: u16, msg: T) {
         // insert entry [round] -> [u8 -> Vec<T>]
         self.0
             .entry(round)
@@ -29,7 +29,7 @@ impl<T: Debug + Clone> Queue<T> {
         self.1 += 1;
     }
 
-    pub fn drain_events(&mut self, round: u64, step: u8) -> Option<Vec<T>> {
+    pub fn drain_events(&mut self, round: u64, step: u16) -> Option<Vec<T>> {
         self.0
             .get_mut(&round)
             .and_then(|r| r.remove_entry(&step).map(|(_, v)| v))
@@ -65,7 +65,7 @@ mod tests {
         assert!(queue.drain_events(4444, 2).is_none());
 
         for i in 1..100 {
-            queue.put_event(4444, i as u8, Item(i));
+            queue.put_event(4444, i as u16, Item(i));
         }
 
         assert_eq!(

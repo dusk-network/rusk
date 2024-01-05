@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{
-    ConsensusError, Database, IterCounter, QuorumMsgSender, RoundUpdate,
-};
+use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
+use crate::config::CONSENSUS_MAX_ITER;
 use crate::contract_state::Operations;
 use crate::phase::Phase;
 
@@ -202,30 +201,27 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
             // Consensus loop
             // Initialize and run consensus loop
 
-            let mut iteration_counter: u8 = 0;
+            let mut iter: u8 = 0;
             let mut iter_ctx = IterationCtx::new(
                 ru.round,
-                iteration_counter,
-                proposal_handler.clone(),
-                validation_handler.clone(),
-                ratification_handler.clone(),
+                iter,
+                proposal_handler,
+                validation_handler,
+                ratification_handler,
                 ru.round_base_timeout,
+
             );
 
-            loop {
-                iter_ctx.on_begin(iteration_counter);
+            while iter < CONSENSUS_MAX_ITER {
+                iter_ctx.on_begin(iter);
 
                 let mut msg = Message::empty();
                 // Execute a single iteration
-                for pos in 0..phases.len() {
-                    let phase = phases.get_mut(pos).unwrap();
-
-                    let step = iteration_counter.step_from_pos(pos);
-                    let name = phase.name();
-
+                for phase in phases.iter_mut() {
+                    let step_name = phase.to_step_name();
                     // Initialize new phase with message returned by previous
                     // phase.
-                    phase.reinitialize(&msg, ru.round, step).await;
+                    phase.reinitialize(&msg, ru.round, iter).await;
 
                     // Construct phase execution context
                     let ctx = ExecutionCtx::new(
@@ -235,7 +231,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         future_msgs.clone(),
                         provisioners.as_ref(),
                         ru.clone(),
-                        step,
+                        iter,
+                        step_name,
                         executor.clone(),
                         sv_registry.clone(),
                         sender.clone(),
@@ -251,8 +248,8 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                         .instrument(tracing::info_span!(
                             "main",
                             round = ru.round,
-                            step = step,
-                            name,
+                            iter = iter,
+                            name = ?step_name,
                             pk = ru.pubkey_bls.to_bs58(),
                         ))
                         .await?;
@@ -266,10 +263,11 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
 
                 iter_ctx.on_close();
 
-                iteration_counter.next()?;
+                iter += 1;
                 // Delegate (quorum) message result to quorum loop for
                 // further processing.
             }
+            Err(ConsensusError::MaxIterationReached)
         })
     }
 }

@@ -38,7 +38,7 @@ pub struct ValidationHandler {
     pub(crate) aggr: Aggregator,
     pub(crate) candidate: Block,
     sv_registry: SafeCertificateInfoRegistry,
-    curr_step: u8,
+    curr_iteration: u8,
 }
 
 impl ValidationHandler {
@@ -47,13 +47,13 @@ impl ValidationHandler {
             sv_registry,
             aggr: Aggregator::default(),
             candidate: Block::default(),
-            curr_step: 0,
+            curr_iteration: 0,
         }
     }
 
-    pub(crate) fn reset(&mut self, curr_step: u8) {
+    pub(crate) fn reset(&mut self, curr_iteration: u8) {
         self.candidate = Block::default();
-        self.curr_step = curr_step;
+        self.curr_iteration = curr_iteration;
     }
 }
 
@@ -61,13 +61,13 @@ impl ValidationHandler {
 impl MsgHandler<Message> for ValidationHandler {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
-        &mut self,
-        msg: Message,
+        &self,
+        msg: &Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
         _committee: &Committee,
         _round_committees: &RoundCommittees,
-    ) -> Result<Message, ConsensusError> {
+    ) -> Result<(), ConsensusError> {
         let signed_hash = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
             Payload::Empty => Ok(EMPTY_SIGNATURE),
@@ -78,7 +78,7 @@ impl MsgHandler<Message> for ValidationHandler {
             return Err(ConsensusError::InvalidSignature);
         }
 
-        Ok(msg)
+        Ok(())
     }
 
     /// Collects the reduction message.
@@ -86,16 +86,16 @@ impl MsgHandler<Message> for ValidationHandler {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        step: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        if step != self.curr_step {
+        let iteration = msg.header.iteration;
+        if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
             warn!(
                 event = "drop message",
-                reason = "invalid step number",
-                msg_step = step,
+                reason = "invalid iteration number",
+                msg_iteration = iteration,
             );
             return Ok(HandleMsgOutput::Pending(msg));
         }
@@ -111,7 +111,7 @@ impl MsgHandler<Message> for ValidationHandler {
         {
             // Record result in global round registry
             _ = self.sv_registry.lock().await.add_step_votes(
-                step,
+                iteration,
                 hash,
                 sv,
                 SvType::Validation,
@@ -139,7 +139,7 @@ impl MsgHandler<Message> for ValidationHandler {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        step: u8,
+        iteration: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let signature = match &msg.payload {
@@ -154,7 +154,7 @@ impl MsgHandler<Message> for ValidationHandler {
             // Record result in global round registry
             if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
-                    step,
+                    iteration,
                     hash,
                     sv,
                     SvType::Validation,
@@ -172,7 +172,7 @@ impl MsgHandler<Message> for ValidationHandler {
     fn handle_timeout(
         &mut self,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(final_result(
             StepVotes::default(),

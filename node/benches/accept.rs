@@ -23,6 +23,8 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
+use node_data::message::Topics;
+use node_data::StepName;
 use node_data::{
     bls::PublicKey,
     ledger::{Certificate, Signature, StepVotes},
@@ -35,25 +37,42 @@ fn create_step_votes(
     seed: Signature,
     round: u64,
     block_hash: [u8; 32],
-    step: u8,
+    step: StepName,
     iteration: u8,
     provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
-    let generator_cfg =
-        SortitionConfig::new(seed, round, iteration * 3, 1, None);
+    let generator_cfg = SortitionConfig::new(
+        seed,
+        round,
+        StepName::Proposal.to_step(iteration),
+        1,
+        None,
+    );
     let generator = Committee::new(provisioners, &generator_cfg);
     let exclusion = Some(generator.iter().next().unwrap().bytes().clone());
 
-    let sortition_config =
-        SortitionConfig::new(seed, round, iteration * 3 + step, 64, exclusion);
+    let sortition_config = SortitionConfig::new(
+        seed,
+        round,
+        step.to_step(iteration),
+        64,
+        exclusion,
+    );
 
     let committee = Committee::new(provisioners, &sortition_config);
 
+    let topic = match step {
+        StepName::Ratification => Topics::Ratification,
+        StepName::Validation => Topics::Validation,
+        _ => unreachable!(),
+    };
+
     let hdr = message::Header {
         round,
-        step: step % 3,
+        iteration,
         block_hash,
+        topic,
         ..Default::default()
     };
     let mut signatures = vec![];
@@ -107,7 +126,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 seed,
                 height,
                 block_hash,
-                1,
+                StepName::Validation,
                 iteration,
                 &provisioners,
                 &keys[..],
@@ -116,7 +135,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 seed,
                 height,
                 block_hash,
-                2,
+                StepName::Ratification,
                 iteration,
                 &provisioners,
                 &keys[..],

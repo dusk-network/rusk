@@ -32,7 +32,7 @@ fn test_deterministic_sortition_1() {
     );
 
     // Verify expected distribution
-    assert_eq!(vec![7, 32, 7, 18], committee.get_occurrences());
+    assert_eq!(vec![8, 18, 17, 21], committee.get_occurrences());
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn test_deterministic_sortition_2() {
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
     );
-    assert_eq!(vec![7, 15, 10, 13], committee.get_occurrences());
+    assert_eq!(vec![2, 18, 9, 16], committee.get_occurrences());
 }
 
 #[test]
@@ -59,7 +59,7 @@ fn test_deterministic_sortition_2_exclusion() {
     let committee_size = 45;
     let iteration = 2;
     let relative_step = 2;
-    let step = iteration * 3 + relative_step;
+    let step = iteration as u16 * 3 + relative_step;
 
     let mut cfg = Config::new(seed, round, step, committee_size, None);
     let generator = p.get_generator(iteration, seed, round);
@@ -73,7 +73,7 @@ fn test_deterministic_sortition_2_exclusion() {
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
     );
-    assert_eq!(vec![7, 15, 10, 13], committee.get_occurrences());
+    assert_eq!(vec![2, 18, 9, 16], committee.get_occurrences());
 
     // Run the same extraction, with the generator excluded
     cfg.exclusion = Some(generator);
@@ -90,7 +90,7 @@ fn test_deterministic_sortition_2_exclusion() {
         committee_size,
         committee.get_occurrences().iter().sum::<usize>()
     );
-    assert_eq!(vec![3, 23, 19], committee.get_occurrences());
+    assert_eq!(vec![6, 13, 26], committee.get_occurrences());
 }
 
 #[test]

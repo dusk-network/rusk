@@ -7,7 +7,7 @@
 use crate::database::{self, Ledger, Mempool};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::{ConsensusError, IterCounter, StepName};
+use dusk_consensus::commons::ConsensusError;
 use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
@@ -17,6 +17,7 @@ use node_data::ledger::{
 };
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
+use node_data::StepName;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -669,10 +670,10 @@ pub async fn verify_block_cert(
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
 
     let hdr = node_data::message::Header {
-        topic: 0,
+        topic: node_data::message::Topics::Unknown,
         pubkey_bls: node_data::bls::PublicKey::default(),
         round: height,
-        step: iteration.step_from_name(StepName::Ratification),
+        iteration,
         block_hash,
     };
 
