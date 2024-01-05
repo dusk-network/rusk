@@ -10,7 +10,6 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
-use node_data::StepName;
 
 use crate::execution_ctx::RoundCommittees;
 use node_data::message::{Message, Payload};
@@ -44,7 +43,6 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         msg: Message,
         _ru: &RoundUpdate,
         _iteration: u8,
-        _step: StepName,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block

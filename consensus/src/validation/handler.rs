@@ -10,7 +10,6 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger::{Block, StepVotes};
-use node_data::StepName;
 use tracing::warn;
 
 use crate::user::committee::Committee;
@@ -102,7 +101,6 @@ impl MsgHandler<Message> for ValidationHandler {
         msg: Message,
         _ru: &RoundUpdate,
         iteration: u8,
-        _step: StepName,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         if iteration != self.curr_iteration {

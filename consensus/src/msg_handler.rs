@@ -72,7 +72,6 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         msg: &T,
         ru: &RoundUpdate,
         iteration: u8,
-        // step: StepName,
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError>;
@@ -83,7 +82,6 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         msg: T,
         ru: &RoundUpdate,
         iteration: u8,
-        step: StepName,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 

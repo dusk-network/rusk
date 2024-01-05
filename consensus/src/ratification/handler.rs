@@ -65,7 +65,6 @@ impl MsgHandler<Message> for RatificationHandler {
         msg: Message,
         ru: &RoundUpdate,
         iteration: u8,
-        _step: StepName,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         if iteration != self.curr_iteration {

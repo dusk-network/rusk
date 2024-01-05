@@ -451,13 +451,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let ret = phase
             .lock()
             .await
-            .collect(
-                msg.clone(),
-                &self.round_update,
-                self.iteration,
-                self.step,
-                committee,
-            )
+            .collect(msg.clone(), &self.round_update, self.iteration, committee)
             .await;
 
         match ret {
@@ -566,7 +560,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                             msg,
                             &self.round_update,
                             self.iteration,
-                            self.step,
                             committee,
                         )
                         .await

@@ -140,13 +140,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
             // Collect my own vote
             let res = handler
-                .collect(
-                    vote_msg,
-                    &ctx.round_update,
-                    ctx.iteration,
-                    ctx.step,
-                    committee,
-                )
+                .collect(vote_msg, &ctx.round_update, ctx.iteration, committee)
                 .await?;
             if let HandleMsgOutput::Ready(m) = res {
                 return Ok(m);
