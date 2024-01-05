@@ -195,7 +195,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     // Round/Step parameters
     pub round_update: RoundUpdate,
     pub iteration: u8,
-    pub step: StepName,
+    step: StepName,
 
     _executor: Arc<Mutex<T>>,
 
@@ -234,7 +234,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    pub fn total_step(&self) -> u16 {
+    pub fn step_name(&self) -> StepName {
+        self.step
+    }
+
+    pub fn step(&self) -> u16 {
         self.step.to_step(self.iteration)
     }
 
@@ -244,13 +248,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     pub(crate) fn save_committee(&mut self, committee: Committee) {
-        self.iter_ctx
-            .committees
-            .insert(self.total_step(), committee);
+        self.iter_ctx.committees.insert(self.step(), committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
-        self.iter_ctx.committees.get_committee(self.total_step())
+        self.iter_ctx.committees.get_committee(self.step())
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -317,11 +319,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             msg_step,
         );
 
-        if msg_step < self.total_step() {
+        if msg_step < self.step() {
             self.try_vote(msg_step + 1, candidate, Topics::Validation);
         }
 
-        if msg_step + 2 <= self.total_step() {
+        if msg_step + 2 <= self.step() {
             self.try_vote(msg_step + 2, candidate, Topics::Ratification);
         }
     }
@@ -341,11 +343,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // TODO: Verify
             };
         } else {
-            error!(
-                event = "committee not found",
-                step = self.total_step(),
-                msg_step
-            );
+            error!(event = "committee not found", step = self.step(), msg_step);
         }
     }
 
@@ -519,7 +517,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .future_msgs
             .lock()
             .await
-            .drain_events(self.round_update.round, self.total_step())
+            .drain_events(self.round_update.round, self.step())
         {
             if !messages.is_empty() {
                 debug!(event = "drain future msgs", count = messages.len(),)
@@ -581,7 +579,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         sortition::Config::new(
             self.round_update.seed(),
             self.round_update.round,
-            self.total_step(),
+            self.step(),
             size,
             exclusion,
         )

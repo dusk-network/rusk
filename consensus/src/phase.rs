@@ -75,7 +75,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         let size = call_phase!(self, get_committee_size());
 
-        let exclusion = match ctx.step {
+        let exclusion = match ctx.step_name() {
             StepName::Proposal => None,
             _ => {
                 let generator = ctx
