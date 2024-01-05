@@ -71,7 +71,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         &mut self,
         mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
-        let timeout = ctx.iter_ctx.get_timeout(ctx.step);
+        let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());
         debug!(event = "execute_step", ?timeout);
 
         let size = call_phase!(self, get_committee_size());

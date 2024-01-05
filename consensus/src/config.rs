@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::time::Duration;
+
 /// Maximum number of iterations Consensus runs per a single round.
 pub const CONSENSUS_MAX_ITER: u8 = 255;
 

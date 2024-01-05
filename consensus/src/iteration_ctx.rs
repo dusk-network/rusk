@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::commons::Database;
 use crate::commons::RoundUpdate;
-use crate::commons::{Database, IterCounter, StepName};
 use crate::config::MAX_STEP_TIMEOUT;
 use crate::msg_handler::HandleMsgOutput::Ready;
 use crate::msg_handler::MsgHandler;
@@ -23,21 +23,22 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 
+use node_data::StepName;
 use tracing::debug;
 
 /// A pool of all generated committees
 #[derive(Default)]
 pub struct RoundCommittees {
-    committees: HashMap<u8, Committee>,
+    committees: HashMap<u16, Committee>,
 }
 
 impl RoundCommittees {
-    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
+    pub(crate) fn get_committee(&self, step: u16) -> Option<&Committee> {
         self.committees.get(&step)
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iter);
         self.get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
@@ -46,11 +47,11 @@ impl RoundCommittees {
         &self,
         iter: u8,
     ) -> Option<&Committee> {
-        let step = iter.step_from_name(StepName::Validation);
+        let step = StepName::Validation.to_step(iter);
         self.get_committee(step)
     }
 
-    pub(crate) fn insert(&mut self, step: u8, committee: Committee) {
+    pub(crate) fn insert(&mut self, step: u16, committee: Committee) {
         self.committees.insert(step, committee);
     }
 }
@@ -120,22 +121,20 @@ impl<D: Database> IterationCtx<D> {
         self.increase_step_timeout();
     }
 
-    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
-        self.committees
-            .get_committee(step)
-            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
-    }
-
     /// Calculates and returns the adjusted timeout for the specified step
-    pub(crate) fn get_timeout(&self, step: u8) -> Duration {
-        let step = step.to_step_name();
-
-        match step {
+    pub(crate) fn get_timeout(&self, step_name: StepName) -> Duration {
+        match step_name {
             StepName::Proposal => self.step_base_timeout,
             StepName::Validation => self.step_base_timeout * 3,
             StepName::Ratification => self.step_base_timeout * 3,
         }
+    }
+
+    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
+        let step = StepName::Proposal.to_step(iter);
+        self.committees
+            .get_committee(step)
+            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
 
     pub(crate) fn increase_step_timeout(&mut self) {
@@ -151,13 +150,13 @@ impl<D: Database> IterationCtx<D> {
         );
     }
 
-    /// Collects a message from a past iteration or step
+    /// Collects a message from a past iteration
     pub(crate) async fn collect_past_event(
         &self,
         ru: &RoundUpdate,
         msg: &Message,
     ) -> Option<Message> {
-        let committee = self.committees.get_committee(msg.header.step)?;
+        let committee = self.committees.get_committee(msg.header.get_step())?;
         match msg.topic() {
             node_data::message::Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
@@ -165,7 +164,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await;
@@ -176,7 +175,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await
@@ -190,7 +189,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await

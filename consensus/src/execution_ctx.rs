@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 
 use crate::contract_state::Operations;
 use crate::iteration_ctx::IterationCtx;
@@ -22,10 +21,7 @@ use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
 
-
 use node_data::StepName;
-use std::cmp;
-use std::collections::HashMap;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -124,7 +120,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     ) -> Result<Message, ConsensusError> {
         debug!(event = "run event_loop");
 
-        let timeout = self.iter_ctx.get_timeout(self.step);
+        let timeout = self.iter_ctx.get_timeout(self.step_name());
         let deadline = Instant::now().checked_add(timeout).unwrap();
 
         let inbound = self.inbound.clone();
