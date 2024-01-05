@@ -12,7 +12,7 @@ use crate::msg_handler::MsgHandler;
 
 use crate::user::committee::Committee;
 
-use crate::{config, proposal, ratification, validation};
+use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::message::Message;
@@ -138,16 +138,8 @@ impl<D: Database> IterationCtx<D> {
     }
 
     pub(crate) fn increase_step_timeout(&mut self) {
-        let increase_millis =
-            (f64::log2((config::CONSENSUS_MAX_ITER - self.iter) as f64)
-                * 1000.0)
-                .ceil();
-
-        self.step_base_timeout = cmp::min(
-            MAX_STEP_TIMEOUT,
-            self.step_base_timeout
-                + Duration::from_millis(increase_millis as u64),
-        );
+        self.step_base_timeout =
+            cmp::min(MAX_STEP_TIMEOUT, self.step_base_timeout * 2);
     }
 
     /// Collects a message from a past iteration

@@ -209,7 +209,6 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 validation_handler,
                 ratification_handler,
                 ru.round_base_timeout,
-
             );
 
             while iter < CONSENSUS_MAX_ITER {
