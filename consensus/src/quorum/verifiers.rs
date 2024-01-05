@@ -5,8 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use node_data::ledger::{Seed, StepVotes};
+use node_data::StepName;
 
-use crate::commons::{Error, IterCounter, StepName};
+use crate::commons::Error;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -96,12 +97,12 @@ pub async fn verify_step_votes(
     committee_size: usize,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    if hdr.step == 0 {
+    if step_name == StepName::Proposal {
         return Err(Error::InvalidStepNum);
     }
 
-    let iteration = u8::from_step(hdr.step);
-    let step = iteration.step_from_name(step_name);
+    let iteration = hdr.iteration;
+    let step = step_name.to_step(iteration);
     let generator = committees_set
         .read()
         .await
@@ -213,7 +214,7 @@ impl Cluster<PublicKey> {
 
 fn verify_step_signature(
     round: u64,
-    step: u8,
+    step: u16,
     block_hash: &[u8; 32],
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],

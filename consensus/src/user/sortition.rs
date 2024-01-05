@@ -15,7 +15,7 @@ use node_data::{bls::PublicKeyBytes, ledger::Seed};
 pub struct Config {
     pub seed: Seed,
     pub round: u64,
-    pub step: u8,
+    pub step: u16,
     pub committee_size: usize,
     pub exclusion: Option<PublicKeyBytes>,
 }
@@ -24,7 +24,7 @@ impl Config {
     pub fn new(
         seed: Seed,
         round: u64,
-        step: u8,
+        step: u16,
         committee_size: usize,
         exclusion: Option<PublicKeyBytes>,
     ) -> Config {
@@ -81,9 +81,9 @@ mod tests {
     #[test]
     pub fn test_sortition_hash() {
         let hash = [
-            134, 22, 162, 136, 186, 35, 16, 207, 237, 50, 11, 236, 74, 189, 37,
-            137, 101, 205, 53, 161, 248, 199, 195, 228, 68, 68, 95, 223, 239,
-            199, 1, 7,
+            247, 14, 92, 48, 116, 139, 3, 5, 171, 135, 3, 182, 119, 212, 157,
+            225, 128, 0, 254, 222, 137, 136, 24, 77, 124, 168, 221, 84, 82,
+            110, 159, 206,
         ];
 
         assert_eq!(
@@ -97,10 +97,8 @@ mod tests {
 
     #[test]
     pub fn test_generate_sortition_score() {
-        let dataset = vec![
-            ([3; 48], 123342342, 66422677),
-            ([4; 48], 44443333, 22757716),
-        ];
+        let dataset =
+            vec![([3; 48], 123342342, 6458782), ([4; 48], 44443333, 13070642)];
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(

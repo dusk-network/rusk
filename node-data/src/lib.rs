@@ -11,6 +11,19 @@ pub mod message;
 
 use std::io::{self, Read, Write};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StepName {
+    Proposal = 0,
+    Validation = 1,
+    Ratification = 2,
+}
+
+impl StepName {
+    pub fn to_step(self, iteration: u8) -> u16 {
+        iteration as u16 * 3 + (self as u16)
+    }
+}
+
 pub trait Serializable {
     fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
     fn read<R: Read>(reader: &mut R) -> io::Result<Self>

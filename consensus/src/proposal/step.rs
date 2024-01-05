@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, IterCounter};
+use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
@@ -40,12 +40,17 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         }
     }
 
-    pub async fn reinitialize(&mut self, _msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(
+        &mut self,
+        _msg: &Message,
+        round: u64,
+        iteration: u8,
+    ) {
         debug!(
             event = "init",
             name = self.name(),
-            round = round,
-            step = step,
+            round,
+            iteration,
             timeout = self.timeout_millis,
         )
     }
@@ -58,10 +63,8 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             .get_current_committee()
             .expect("committee to be created before run");
         if ctx.am_member(committee) {
-            let iteration = cmp::min(
-                config::RELAX_ITERATION_THRESHOLD,
-                u8::from_step(ctx.step),
-            );
+            let iteration =
+                cmp::min(config::RELAX_ITERATION_THRESHOLD, ctx.iteration);
 
             // Fetch failed certificates from sv_registry
             let failed_certificates = ctx
@@ -74,7 +77,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 .bg
                 .generate_candidate_message(
                     &ctx.round_update,
-                    ctx.step,
+                    ctx.iteration,
                     failed_certificates,
                 )
                 .await
@@ -89,7 +92,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .handler
                     .lock()
                     .await
-                    .collect(msg, &ctx.round_update, ctx.step, committee)
+                    .collect(msg, &ctx.round_update, committee)
                     .await
                 {
                     Ok(f) => {

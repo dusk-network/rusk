@@ -13,8 +13,7 @@ use anyhow::anyhow;
 use dusk_bytes::DeserializableSlice;
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block};
-use node_data::message;
-use node_data::message::{AsyncQueue, Message, Payload, Topics};
+use node_data::message::{self, AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -32,7 +31,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         join_set: &mut JoinSet<()>,
         candidate: Block,
         ru: RoundUpdate,
-        step: u8,
+        iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
@@ -40,8 +39,10 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let hash = to_str(&candidate.header().hash);
         join_set.spawn(
             async move {
-                Self::try_vote(candidate, ru, step, outbound, inbound, executor)
-                    .await
+                Self::try_vote(
+                    candidate, ru, iteration, outbound, inbound, executor,
+                )
+                .await
             }
             .instrument(tracing::info_span!("voting", hash)),
         );
@@ -50,7 +51,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
     async fn try_vote(
         candidate: Block,
         ru: RoundUpdate,
-        step: u8,
+        iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
@@ -59,9 +60,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
         // Call VST for non-empty blocks
         if hash != [0u8; 32] {
-            if let Err(err) =
-                Self::call_vst(&candidate, &ru, step, executor).await
-            {
+            if let Err(err) = Self::call_vst(&candidate, &ru, executor).await {
                 error!(
                     event = "failed_vst_call",
                     reason = format!("{:?}", err)
@@ -73,9 +72,9 @@ impl<T: Operations + 'static> ValidationStep<T> {
         let hdr = message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
-            step,
+            iteration,
             block_hash: hash,
-            topic: Topics::Validation.into(),
+            topic: Topics::Validation,
         };
 
         let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
@@ -103,7 +102,6 @@ impl<T: Operations + 'static> ValidationStep<T> {
     async fn call_vst(
         candidate: &Block,
         ru: &RoundUpdate,
-        _step: u8,
         executor: Arc<Mutex<T>>,
     ) -> anyhow::Result<()> {
         let pubkey = &candidate.header().generator_bls_pubkey.0;
@@ -173,9 +171,14 @@ impl<T: Operations + 'static> ValidationStep<T> {
         }
     }
 
-    pub async fn reinitialize(&mut self, msg: &Message, round: u64, step: u8) {
+    pub async fn reinitialize(
+        &mut self,
+        msg: &Message,
+        round: u64,
+        iteration: u8,
+    ) {
         let mut handler = self.handler.lock().await;
-        handler.reset(step);
+        handler.reset(iteration);
 
         if let Payload::Candidate(p) = msg.clone().payload {
             handler.candidate = p.candidate.clone();
@@ -184,8 +187,8 @@ impl<T: Operations + 'static> ValidationStep<T> {
         debug!(
             event = "init",
             name = self.name(),
-            round = round,
-            step = step,
+            round,
+            iteration,
             timeout = self.timeout_millis,
             hash = to_str(&handler.candidate.header().hash),
         )
@@ -205,7 +208,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
                 &mut ctx.iter_ctx.join_set,
                 candidate,
                 ctx.round_update.clone(),
-                ctx.step,
+                ctx.iteration,
                 ctx.outbound.clone(),
                 ctx.inbound.clone(),
                 self.executor.clone(),

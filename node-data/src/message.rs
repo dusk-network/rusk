@@ -9,7 +9,9 @@ use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::ledger::to_str;
+use crate::StepName;
 use crate::{bls, ledger, Serializable};
+use std::cmp::Ordering;
 use std::io::{self, Read, Write};
 use std::net::SocketAddr;
 
@@ -24,25 +26,36 @@ pub enum Status {
     Future,
 }
 
+impl From<Ordering> for Status {
+    fn from(value: Ordering) -> Self {
+        match value {
+            Ordering::Less => Self::Past,
+            Ordering::Equal => Self::Present,
+            Ordering::Greater => Self::Future,
+        }
+    }
+}
+
 pub fn marshal_signable_vote(
     round: u64,
-    step: u8,
+    step: u16,
     block_hash: &[u8; 32],
 ) -> BytesMut {
-    let mut msg = BytesMut::with_capacity(block_hash.len() + 8 + 1);
+    const CAPACITY: usize = 32 + u64::SIZE + u16::SIZE;
+    let mut msg = BytesMut::with_capacity(CAPACITY);
     msg.put_u64_le(round);
-    msg.put_u8(step);
+    msg.put_u16_le(step);
     msg.put(&block_hash[..]);
 
     msg
 }
 
 pub trait MessageTrait {
-    fn compare(&self, round: u64, step: u8) -> Status;
+    fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status;
     fn get_pubkey_bls(&self) -> &bls::PublicKey;
     fn get_block_hash(&self) -> [u8; 32];
-    fn get_topic(&self) -> u8;
-    fn get_step(&self) -> u8;
+    fn get_topic(&self) -> Topics;
+    fn get_step(&self) -> u16;
 }
 
 /// Message definition
@@ -64,10 +77,10 @@ pub struct Metadata {
 
 impl Serializable for Message {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&[self.header.topic])?;
+        w.write_all(&[self.header.topic as u8])?;
 
         // Optional header fields used only for consensus messages
-        if is_consensus_msg(self.header.topic) {
+        if self.header.topic.is_consensus_msg() {
             self.header.write(w)?;
         }
 
@@ -105,12 +118,14 @@ impl Serializable for Message {
         }
 
         // Decode message header only if the topic is supported
-        let mut header = Header::default();
-        if is_consensus_msg(buf[0]) {
-            header = Header::read(r)?;
-        }
-
-        header.topic = buf[0];
+        let header = match topic.is_consensus_msg() {
+            true => {
+                let mut header = Header::read(r)?;
+                header.topic = topic;
+                header
+            }
+            false => Header::new(topic),
+        };
 
         let payload = match topic {
             Topics::Candidate => {
@@ -153,8 +168,8 @@ impl Serializable for Message {
 }
 
 impl MessageTrait for Message {
-    fn compare(&self, round: u64, step: u8) -> Status {
-        self.header.compare(round, step)
+    fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
+        self.header.compare(round, iteration, step)
     }
     fn get_pubkey_bls(&self) -> &bls::PublicKey {
         &self.header.pubkey_bls
@@ -162,12 +177,23 @@ impl MessageTrait for Message {
     fn get_block_hash(&self) -> [u8; 32] {
         self.header.block_hash
     }
-    fn get_topic(&self) -> u8 {
+    fn get_topic(&self) -> Topics {
         self.header.topic
     }
 
-    fn get_step(&self) -> u8 {
-        self.header.step
+    fn get_step(&self) -> u16 {
+        self.header.get_step()
+    }
+}
+
+impl Header {
+    pub fn get_step(&self) -> u16 {
+        let step = self.iteration as u16 * 3;
+        match self.topic {
+            Topics::Validation => step + 1,
+            Topics::Ratification | Topics::Quorum => step + 2,
+            _ => step,
+        }
     }
 }
 
@@ -296,27 +322,17 @@ impl Message {
     }
 
     pub fn topic(&self) -> Topics {
-        Topics::from(self.header.topic)
+        self.header.topic
     }
-}
-
-fn is_consensus_msg(topic: u8) -> bool {
-    matches!(
-        Topics::from(topic),
-        Topics::Candidate
-            | Topics::Validation
-            | Topics::Ratification
-            | Topics::Quorum
-    )
 }
 
 #[derive(Default, Clone, PartialEq, Eq)]
 pub struct Header {
-    pub topic: u8,
+    pub topic: Topics,
 
     pub pubkey_bls: bls::PublicKey,
     pub round: u64,
-    pub step: u8,
+    pub iteration: u8,
     pub block_hash: [u8; 32],
 }
 
@@ -326,7 +342,7 @@ impl std::fmt::Debug for Header {
             .field("topic", &self.topic)
             .field("pubkey_bls", &to_str(self.pubkey_bls.bytes().inner()))
             .field("round", &self.round)
-            .field("step", &self.step)
+            .field("iteration", &self.iteration)
             .field("block_hash", &ledger::to_str(&self.block_hash))
             .finish()
     }
@@ -336,7 +352,7 @@ impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         Self::write_var_bytes(w, &self.pubkey_bls.bytes().inner()[..])?;
         w.write_all(&self.round.to_le_bytes())?;
-        w.write_all(&[self.step])?;
+        w.write_all(&[self.iteration])?;
         w.write_all(&self.block_hash[..])?;
 
         Ok(())
@@ -368,10 +384,10 @@ impl Serializable for Header {
         r.read_exact(&mut buf)?;
         let round = u64::from_le_bytes(buf);
 
-        // Read step
+        // Read iteration
         let mut buf = [0u8; 1];
         r.read_exact(&mut buf)?;
-        let step = buf[0];
+        let iteration = buf[0];
 
         // Read block_hash
         let mut block_hash = [0u8; 32];
@@ -380,9 +396,9 @@ impl Serializable for Header {
         Ok(Header {
             pubkey_bls,
             round,
-            step,
+            iteration,
             block_hash,
-            topic: 0,
+            topic: Topics::default(),
         })
     }
 }
@@ -390,29 +406,15 @@ impl Serializable for Header {
 impl Header {
     pub fn new(topic: Topics) -> Self {
         Self {
-            topic: topic as u8,
+            topic,
             ..Default::default()
         }
     }
-
-    pub fn compare(&self, round: u64, step: u8) -> Status {
-        if self.round == round {
-            if self.step == step {
-                return Status::Present;
-            }
-
-            if self.step > step {
-                return Status::Future;
-            }
-
-            return Status::Past;
-        }
-
-        if self.round > round {
-            return Status::Future;
-        }
-
-        Status::Past
+    pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
+        self.round
+            .cmp(&round)
+            .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
+            .into()
     }
 
     pub fn compare_round(&self, round: u64) -> Status {
@@ -435,8 +437,12 @@ impl Header {
 
         dusk_bls12_381_sign::APK::from(self.pubkey_bls.inner()).verify(
             &sig,
-            marshal_signable_vote(self.round, self.step, &self.block_hash)
-                .bytes(),
+            marshal_signable_vote(
+                self.round,
+                self.get_step(),
+                &self.block_hash,
+            )
+            .bytes(),
         )
     }
 
@@ -445,10 +451,11 @@ impl Header {
         sk: &dusk_bls12_381_sign::SecretKey,
         pk: &dusk_bls12_381_sign::PublicKey,
     ) -> [u8; 48] {
-        let mut msg = BytesMut::with_capacity(self.block_hash.len() + 8 + 1);
-        msg.put_u64_le(self.round);
-        msg.put_u8(self.step);
-        msg.put(&self.block_hash[..]);
+        let msg = marshal_signable_vote(
+            self.round,
+            self.get_step(),
+            &self.block_hash,
+        );
 
         sk.sign(pk, msg.bytes()).to_bytes()
     }
@@ -926,6 +933,18 @@ pub enum Topics {
     Unknown = 255,
 }
 
+impl Topics {
+    pub fn is_consensus_msg(&self) -> bool {
+        matches!(
+            &self,
+            Topics::Candidate
+                | Topics::Validation
+                | Topics::Ratification
+                | Topics::Quorum
+        )
+    }
+}
+
 impl From<u8> for Topics {
     fn from(v: u8) -> Self {
         map_topic!(v, Topics::GetData);
@@ -992,9 +1011,9 @@ mod tests {
         assert_serialize(crate::message::Header {
             pubkey_bls: bls::PublicKey::from_sk_seed_u64(1),
             round: 8,
-            step: 7,
+            iteration: 7,
             block_hash: [3; 32],
-            topic: 0,
+            topic: Topics::Unknown,
         });
 
         let header = ledger::Header {

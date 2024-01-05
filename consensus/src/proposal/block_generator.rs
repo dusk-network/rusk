@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{IterCounter, RoundUpdate};
+use crate::commons::RoundUpdate;
 use crate::contract_state::CallParams;
 use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
 
@@ -33,10 +33,9 @@ impl<T: Operations> Generator<T> {
     pub async fn generate_candidate_message(
         &self,
         ru: &RoundUpdate,
-        step: u8,
+        iteration: u8,
         failed_iterations: Vec<Option<Certificate>>,
     ) -> Result<Message, crate::contract_state::Error> {
-        let iteration = u8::from_step(step);
         // Sign seed
         let seed = ru
             .secret_key
@@ -62,8 +61,8 @@ impl<T: Operations> Generator<T> {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             block_hash: candidate.header().hash,
-            step,
-            topic: Topics::Candidate as u8,
+            iteration,
+            topic: Topics::Candidate,
         };
 
         let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());

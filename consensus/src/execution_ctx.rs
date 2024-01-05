@@ -4,9 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::QuorumMsgSender;
-use crate::commons::{ConsensusError, RoundUpdate};
-use crate::commons::{Database, IterCounter, StepName};
+use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
@@ -21,6 +19,7 @@ use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
+use node_data::StepName;
 use std::cmp;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -34,16 +33,16 @@ use tracing::{debug, error, info, trace};
 /// A pool of all generated committees
 #[derive(Default)]
 pub struct RoundCommittees {
-    committees: HashMap<u8, Committee>,
+    committees: HashMap<u16, Committee>,
 }
 
 impl RoundCommittees {
-    pub(crate) fn get_committee(&self, step: u8) -> Option<&Committee> {
+    pub(crate) fn get_committee(&self, step: u16) -> Option<&Committee> {
         self.committees.get(&step)
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iter);
         self.get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
     }
@@ -52,11 +51,11 @@ impl RoundCommittees {
         &self,
         iter: u8,
     ) -> Option<&Committee> {
-        let step = iter.step_from_name(StepName::Validation);
+        let step = StepName::Validation.to_step(iter);
         self.get_committee(step)
     }
 
-    pub(crate) fn insert(&mut self, step: u8, committee: Committee) {
+    pub(crate) fn insert(&mut self, step: u16, committee: Committee) {
         self.committees.insert(step, committee);
     }
 }
@@ -105,7 +104,7 @@ impl<D: Database> IterationCtx<D> {
         ru: &RoundUpdate,
         msg: &Message,
     ) -> Option<Message> {
-        let committee = self.committees.get_committee(msg.header.step)?;
+        let committee = self.committees.get_committee(msg.header.get_step())?;
         match msg.topic() {
             node_data::message::Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
@@ -113,7 +112,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await;
@@ -124,7 +123,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await
@@ -138,7 +137,7 @@ impl<D: Database> IterationCtx<D> {
                     .collect_from_past(
                         msg.clone(),
                         ru,
-                        msg.header.step,
+                        msg.header.iteration,
                         committee,
                     )
                     .await
@@ -157,7 +156,7 @@ impl<D: Database> IterationCtx<D> {
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = iter.step_from_name(StepName::Proposal);
+        let step = StepName::Proposal.to_step(iter);
         self.committees
             .get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
@@ -195,7 +194,8 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
 
     // Round/Step parameters
     pub round_update: RoundUpdate,
-    pub step: u8,
+    pub iteration: u8,
+    step: StepName,
 
     _executor: Arc<Mutex<T>>,
 
@@ -213,7 +213,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         future_msgs: Arc<Mutex<Queue<Message>>>,
         provisioners: &'a Provisioners,
         round_update: RoundUpdate,
-        step: u8,
+        iteration: u8,
+        step: StepName,
         executor: Arc<Mutex<T>>,
         sv_registry: SafeCertificateInfoRegistry,
         quorum_sender: QuorumMsgSender,
@@ -225,11 +226,20 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             future_msgs,
             provisioners,
             round_update,
+            iteration,
             step,
             _executor: executor,
             sv_registry,
             quorum_sender,
         }
+    }
+
+    pub fn step_name(&self) -> StepName {
+        self.step
+    }
+
+    pub fn step(&self) -> u16 {
+        self.step.to_step(self.iteration)
     }
 
     /// Returns true if `my pubkey` is a member of [`committee`].
@@ -238,11 +248,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     pub(crate) fn save_committee(&mut self, committee: Committee) {
-        self.iter_ctx.committees.insert(self.step, committee);
+        self.iter_ctx.committees.insert(self.step(), committee);
     }
 
     pub(crate) fn get_current_committee(&self) -> Option<&Committee> {
-        self.iter_ctx.committees.get_committee(self.step)
+        self.iter_ctx.committees.get_committee(self.step())
     }
 
     /// Runs a loop that collects both inbound messages and timeout event.
@@ -300,7 +310,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub(crate) async fn vote_for_former_candidate(
         &mut self,
-        msg_step: u8,
+        msg_step: u16,
         candidate: &Block,
     ) {
         debug!(
@@ -309,16 +319,16 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             msg_step,
         );
 
-        if msg_step < self.step {
+        if msg_step < self.step() {
             self.try_vote(msg_step + 1, candidate, Topics::Validation);
         }
 
-        if msg_step + 2 <= self.step {
+        if msg_step + 2 <= self.step() {
             self.try_vote(msg_step + 2, candidate, Topics::Ratification);
         }
     }
 
-    fn try_vote(&mut self, msg_step: u8, candidate: &Block, topic: Topics) {
+    fn try_vote(&mut self, msg_step: u16, candidate: &Block, topic: Topics) {
         if let Some(committee) =
             self.iter_ctx.committees.get_committee(msg_step)
         {
@@ -333,7 +343,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // TODO: Verify
             };
         } else {
-            error!(event = "committee not found", step = self.step, msg_step);
+            error!(event = "committee not found", step = self.step(), msg_step);
         }
     }
 
@@ -352,7 +362,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             // TODO: Perform block header/ Certificate full verification
             // To be addressed with another PR
 
-            self.vote_for_former_candidate(msg.header.step, &p.candidate)
+            self.vote_for_former_candidate(msg.header.get_step(), &p.candidate)
                 .await;
         }
 
@@ -362,15 +372,15 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .collect_past_event(&self.round_update, msg)
             .await
         {
-            if m.header.topic == Topics::Quorum as u8 {
+            if m.header.topic == Topics::Quorum {
                 debug!(
                     event = "quorum",
                     src = "prev_step",
-                    msg_step = m.header.step,
+                    msg_step = m.header.get_step(),
                     hash = to_str(&m.header.block_hash),
                 );
 
-                self.quorum_sender.send(m.clone()).await;
+                self.quorum_sender.send(m).await;
             }
         }
 
@@ -393,17 +403,18 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .expect("committee to be created before run");
         // Check if message is valid in the context of current step
         let ret = phase.lock().await.is_valid(
-            msg.clone(),
+            &msg,
             &self.round_update,
+            self.iteration,
             self.step,
             committee,
             &self.iter_ctx.committees,
         );
 
         match ret {
-            Ok(msg) => {
+            Ok(_) => {
                 // Re-publish the returned message
-                self.outbound.send(msg).await.unwrap_or_else(|err| {
+                self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
                     error!("unable to re-publish a handled msg {:?}", err)
                 });
             }
@@ -418,7 +429,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         // same round/step.
                         self.future_msgs.lock().await.put_event(
                             msg.header.round,
-                            msg.header.step,
+                            msg.header.get_step(),
                             msg,
                         );
 
@@ -438,7 +449,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let ret = phase
             .lock()
             .await
-            .collect(msg.clone(), &self.round_update, self.step, committee)
+            .collect(msg.clone(), &self.round_update, committee)
             .await;
 
         match ret {
@@ -464,7 +475,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     event = "failed collect",
                     err = format!("{:?}", e),
                     msg_topic = format!("{:?}", msg.topic()),
-                    msg_step = msg.header.step,
+                    msg_iter = msg.header.iteration,
+                    msg_step = msg.header.get_step(),
                     msg_round = msg.header.round,
                 );
             }
@@ -482,7 +494,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         if let Ok(Ready(msg)) = phase
             .lock()
             .await
-            .handle_timeout(&self.round_update, self.step)
+            .handle_timeout(&self.round_update, self.iteration)
         {
             return Ok(msg);
         }
@@ -505,7 +517,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .future_msgs
             .lock()
             .await
-            .drain_events(self.round_update.round, self.step)
+            .drain_events(self.round_update.round, self.step())
         {
             if !messages.is_empty() {
                 debug!(event = "drain future msgs", count = messages.len(),)
@@ -513,22 +525,21 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
             for msg in messages {
                 let ret = phase.lock().await.is_valid(
-                    msg,
+                    &msg,
                     &self.round_update,
+                    self.iteration,
                     self.step,
                     committee,
                     &self.iter_ctx.committees,
                 );
-
-                if let Ok(msg) = ret {
+                if ret.is_ok() {
                     // Re-publish a drained message
                     debug!(
                         event = "republish",
                         src = "future_msgs",
-                        msg_step = msg.header.step,
+                        msg_step = msg.header.get_step(),
                         msg_round = msg.header.round,
-                        msg_topic =
-                            format!("{:?}", Topics::from(msg.header.topic))
+                        msg_topic = ?msg.header.topic,
                     );
 
                     self.outbound.send(msg.clone()).await.unwrap_or_else(
@@ -543,7 +554,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Ok(Ready(msg)) = phase
                         .lock()
                         .await
-                        .collect(msg, &self.round_update, self.step, committee)
+                        .collect(msg, &self.round_update, committee)
                         .await
                     {
                         return Some(msg);
@@ -563,7 +574,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         sortition::Config::new(
             self.round_update.seed(),
             self.round_update.round,
-            self.step,
+            self.step(),
             size,
             exclusion,
         )

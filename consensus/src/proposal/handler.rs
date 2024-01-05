@@ -25,16 +25,16 @@ pub struct ProposalHandler<D: Database> {
 impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
-        &mut self,
-        msg: Message,
+        &self,
+        msg: &Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
         committee: &Committee,
         _round_committees: &RoundCommittees,
-    ) -> Result<Message, ConsensusError> {
-        self.verify_new_block(&msg, committee)?;
+    ) -> Result<(), ConsensusError> {
+        self.verify_new_block(msg, committee)?;
 
-        Ok(msg)
+        Ok(())
     }
 
     /// Collects а new_block message.
@@ -42,7 +42,6 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
@@ -62,7 +61,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Pending(msg))
@@ -72,7 +71,7 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
     fn handle_timeout(
         &mut self,
         _ru: &RoundUpdate,
-        _step: u8,
+        _iteration: u8,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Ready(Message::empty()))
     }
