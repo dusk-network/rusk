@@ -42,7 +42,6 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        _iteration: u8,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block

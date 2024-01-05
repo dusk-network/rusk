@@ -92,7 +92,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .handler
                     .lock()
                     .await
-                    .collect(msg, &ctx.round_update, ctx.iteration, committee)
+                    .collect(msg, &ctx.round_update, committee)
                     .await
                 {
                     Ok(f) => {

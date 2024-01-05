@@ -64,9 +64,9 @@ impl MsgHandler<Message> for RatificationHandler {
         &mut self,
         msg: Message,
         ru: &RoundUpdate,
-        iteration: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
+        let iteration = msg.header.iteration;
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn

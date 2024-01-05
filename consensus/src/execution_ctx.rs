@@ -449,7 +449,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         let ret = phase
             .lock()
             .await
-            .collect(msg.clone(), &self.round_update, self.iteration, committee)
+            .collect(msg.clone(), &self.round_update, committee)
             .await;
 
         match ret {
@@ -554,12 +554,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     if let Ok(Ready(msg)) = phase
                         .lock()
                         .await
-                        .collect(
-                            msg,
-                            &self.round_update,
-                            self.iteration,
-                            committee,
-                        )
+                        .collect(msg, &self.round_update, committee)
                         .await
                     {
                         return Some(msg);
