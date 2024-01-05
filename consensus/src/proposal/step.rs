@@ -11,6 +11,7 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 
 use crate::config;
@@ -24,7 +25,7 @@ where
 {
     handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     bg: Generator<T>,
-    timeout_millis: u64,
+    timeout: Duration,
 }
 
 impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
@@ -34,7 +35,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     ) -> Self {
         Self {
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
+            timeout: config::CONSENSUS_TIMEOUT,
             handler,
             bg: Generator::new(executor),
         }
@@ -51,7 +52,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             name = self.name(),
             round,
             iteration,
-            timeout = self.timeout_millis,
+            timeout = self.timeout.as_millis(),
         )
     }
 
@@ -114,15 +115,15 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
+        ctx.event_loop(self.handler.clone(), &mut self.timeout)
             .await
     }
 
     pub fn name(&self) -> &'static str {
         "sel"
     }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout_millis
+    pub fn get_timeout(&self) -> Duration {
+        self.timeout
     }
     pub fn get_committee_size(&self) -> usize {
         config::PROPOSAL_COMMITTEE_SIZE

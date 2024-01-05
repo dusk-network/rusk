@@ -15,12 +15,13 @@ use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block};
 use node_data::message::{self, AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::{debug, error, Instrument};
 
 pub struct ValidationStep<T> {
-    timeout_millis: u64,
+    timeout: Duration,
     handler: Arc<Mutex<handler::ValidationHandler>>,
     executor: Arc<Mutex<T>>,
 }
@@ -165,7 +166,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         handler: Arc<Mutex<handler::ValidationHandler>>,
     ) -> Self {
         Self {
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
+            timeout: config::CONSENSUS_TIMEOUT,
             handler,
             executor,
         }
@@ -189,7 +190,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             name = self.name(),
             round,
             iteration,
-            timeout = self.timeout_millis,
+            timeout = self.timeout.as_millis(),
             hash = to_str(&handler.candidate.header().hash),
         )
     }
@@ -220,15 +221,15 @@ impl<T: Operations + 'static> ValidationStep<T> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
+        ctx.event_loop(self.handler.clone(), &mut self.timeout)
             .await
     }
 
     pub fn name(&self) -> &'static str {
         "validation"
     }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout_millis
+    pub fn get_timeout(&self) -> Duration {
+        self.timeout
     }
     pub fn get_committee_size(&self) -> usize {
         config::VALIDATION_COMMITTEE_SIZE

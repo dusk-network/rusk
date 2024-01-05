@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+use crate::config::CONSENSUS_MAX_TIMEOUT;
 use crate::contract_state::Operations;
 use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
 use crate::msg_handler::MsgHandler;
@@ -267,13 +267,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
         phase: Arc<Mutex<C>>,
-        timeout_millis: &mut u64,
+        timeout_millis: &mut Duration,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "run event_loop");
 
         // Calculate timeout
         let deadline = Instant::now()
-            .checked_add(Duration::from_millis(*timeout_millis))
+            .checked_add(*timeout_millis)
             .unwrap();
 
         let inbound = self.inbound.clone();
@@ -396,7 +396,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
         msg: Message,
-        timeout_millis: &mut u64,
+        timeout_millis: &mut Duration,
     ) -> Option<Message> {
         let committee = self
             .get_current_committee()
@@ -580,9 +580,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         )
     }
 
-    fn increase_timeout(timeout_millis: &mut u64) {
+    fn increase_timeout(timeout_millis: &mut Duration) {
         // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
         *timeout_millis =
-            cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
+            cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT);
     }
 }

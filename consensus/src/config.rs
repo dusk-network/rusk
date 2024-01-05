@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::time::Duration;
+
 /// Maximum number of iterations Consensus runs per a single round.
 pub const CONSENSUS_MAX_ITER: u8 = 255;
 
@@ -13,11 +15,11 @@ pub const CONSENSUS_ROLLING_FINALITY_THRESHOLD: u64 = 5;
 /// Percentage number that determines a quorum.
 pub const CONSENSUS_QUORUM_THRESHOLD: f64 = 0.67;
 
-/// Initial step timeout in milliseconds.
-pub const CONSENSUS_TIMEOUT_MS: u64 = 5 * 1000;
+/// Initial step timeout.
+pub const CONSENSUS_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Maximum step timeout.
-pub const CONSENSUS_MAX_TIMEOUT_MS: u64 = 60 * 1000;
+pub const CONSENSUS_MAX_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// Steps committee sizes
 pub const PROPOSAL_COMMITTEE_SIZE: usize = 1;

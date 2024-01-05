@@ -9,6 +9,7 @@ use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
@@ -24,7 +25,7 @@ use tracing::{debug, error};
 pub struct RatificationStep<T, DB> {
     handler: Arc<Mutex<handler::RatificationHandler>>,
 
-    timeout_millis: u64,
+    timeout: Duration,
     _executor: Arc<Mutex<T>>,
 
     marker: PhantomData<DB>,
@@ -80,7 +81,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     ) -> Self {
         Self {
             handler,
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
+            timeout: config::CONSENSUS_TIMEOUT,
             _executor: executor,
             marker: PhantomData,
         }
@@ -111,7 +112,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             name = self.name(),
             round = round,
             iteration = iteration,
-            timeout = self.timeout_millis,
+            timeout = self.timeout.as_millis(),
             hash = to_str(&handler.validation_result().hash),
             fsv_bitset = handler.validation_result().sv.bitset,
             quorum_type = format!("{:?}", handler.validation_result().quorum)
@@ -152,15 +153,15 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
+        ctx.event_loop(self.handler.clone(), &mut self.timeout)
             .await
     }
 
     pub fn name(&self) -> &'static str {
         "ratification"
     }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout_millis
+    pub fn get_timeout(&self) -> Duration {
+        self.timeout
     }
 
     pub fn get_committee_size(&self) -> usize {

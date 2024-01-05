@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::time::Duration;
+
 use crate::commons::{ConsensusError, Database};
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
@@ -71,7 +73,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         &mut self,
         mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
-        debug!(event = "execute_step", timeout = self.get_timeout());
+        debug!(event = "execute_step", timeout = self.get_timeout().as_millis());
 
         let size = call_phase!(self, get_committee_size());
 
@@ -106,7 +108,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         await_phase!(self, run(ctx))
     }
 
-    fn get_timeout(&self) -> u64 {
+    fn get_timeout(&self) -> Duration {
         call_phase!(self, get_timeout())
     }
 }
