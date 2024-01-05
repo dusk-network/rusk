@@ -44,13 +44,8 @@ fn create_step_votes(
 ) -> StepVotes {
     let generator = provisioners.get_generator(iteration, seed, round);
 
-    let sortition_config = SortitionConfig::new(
-        seed,
-        round,
-        step.to_step(iteration),
-        64,
-        Some(generator),
-    );
+    let sortition_config =
+        SortitionConfig::new(seed, round, iteration, step, Some(generator));
 
     let committee = Committee::new(provisioners, &sortition_config);
 
