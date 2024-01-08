@@ -189,7 +189,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     }
 
     /// Process messages from past
-    async fn process_past_events(&mut self, msg: &Message) -> Option<Message> {
+    async fn process_past_events(&mut self, msg: Message) -> Option<Message> {
         if msg.header.round != self.round_update.round {
             return None;
         }
@@ -242,7 +242,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .get_current_committee()
             .expect("committee to be created before run");
         // Check if message is valid in the context of current step
-        let ret = phase.lock().await.is_valid(
+        let valid = phase.lock().await.is_valid(
             &msg,
             &self.round_update,
             self.iteration,
@@ -251,7 +251,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             &self.iter_ctx.committees,
         );
 
-        match ret {
+        match valid {
             Ok(_) => {
                 // Re-publish the returned message
                 self.outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -276,7 +276,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         return None;
                     }
                     ConsensusError::PastEvent => {
-                        return self.process_past_events(&msg).await;
+                        return self.process_past_events(msg).await;
                     }
                     _ => {
                         error!("phase handler err: {:?}", e);
@@ -286,40 +286,30 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             }
         }
 
-        let ret = phase
+        let msg_topic = msg.topic();
+        let msg_iter = msg.header.iteration;
+        let msg_step = msg.header.get_step();
+        let msg_round = msg.header.round;
+        trace!("collecting msg {msg:#?}");
+
+        let collected = phase
             .lock()
             .await
-            .collect(msg.clone(), &self.round_update, committee)
+            .collect(msg, &self.round_update, committee)
             .await;
 
-        match ret {
-            Ok(output) => {
-                trace!("message collected {:#?}", msg);
-
-                match output {
-                    Ready(m) => {
-                        // Fully valid state reached on this step. Return it as
-                        // an output to populate next step with it.
-                        return Some(m);
-                    }
-                    Pending(_) => {} /* Message collected but phase does not
-                                      * reach
-                                      * a final result */
-                }
-            }
-            Err(e) => {
-                error!(
-                    event = "failed collect",
-                    err = format!("{:?}", e),
-                    msg_topic = format!("{:?}", msg.topic()),
-                    msg_iter = msg.header.iteration,
-                    msg_step = msg.header.get_step(),
-                    msg_round = msg.header.round,
-                );
+        match collected {
+            // Fully valid state reached on this step. Return it as an output to
+            // populate next step with it.
+            Ok(Ready(m)) => Some(m),
+            // Message collected but phase didn't reach a final result
+            Ok(Pending(_)) => None,
+            Err(err) => {
+                let event = "failed collect";
+                error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_round,);
+                None
             }
         }
-
-        None
     }
 
     /// Delegates the received event of timeout to the Phase handler for further
