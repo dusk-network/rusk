@@ -8,7 +8,9 @@ use crate::database::{self, Ledger, Mempool};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::ConsensusError;
-use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
+use dusk_consensus::config::{
+    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MAX_BLOCK_SECS_DRIFT,
+};
 use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
@@ -19,6 +21,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 use node_data::StepName;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
@@ -576,8 +579,15 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         return Err(anyhow!("invalid previous block hash"));
     }
 
-    if new_blk.timestamp < mrb.timestamp {
-        //TODO:
+    // Get the current time as Unix timestamp
+    let current_time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Great Scott!")
+        .as_secs();
+
+    let max_accepted_ts = current_time + MAX_BLOCK_SECS_DRIFT;
+
+    if new_blk.timestamp > max_accepted_ts {
         return Err(anyhow!("invalid block timestamp"));
     }
 
