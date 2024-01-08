@@ -27,7 +27,7 @@ pub struct Header {
     // Hashable fields
     pub version: u8,
     pub height: u64,
-    pub timestamp: i64,
+    pub timestamp: u64,
     pub prev_block_hash: Hash,
     pub seed: Seed,
     pub state_hash: Hash,
@@ -49,7 +49,7 @@ pub struct Header {
 impl std::fmt::Debug for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let timestamp = chrono::NaiveDateTime::from_timestamp_opt(
-            self.timestamp,
+            self.timestamp as i64,
             0,
         )
         .map_or_else(
@@ -133,7 +133,7 @@ impl Header {
     ) -> io::Result<()> {
         w.write_all(&self.version.to_le_bytes())?;
         w.write_all(&self.height.to_le_bytes())?;
-        w.write_all(&(self.timestamp as u64).to_le_bytes())?;
+        w.write_all(&self.timestamp.to_le_bytes())?;
         w.write_all(&self.prev_block_hash[..])?;
 
         if fixed_size_seed {
@@ -165,7 +165,7 @@ impl Header {
 
         let mut buf = [0u8; 8];
         r.read_exact(&mut buf[..])?;
-        let timestamp = u64::from_le_bytes(buf) as i64;
+        let timestamp = u64::from_le_bytes(buf);
 
         let mut prev_block_hash = [0u8; 32];
         r.read_exact(&mut prev_block_hash[..])?;
