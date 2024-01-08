@@ -9,7 +9,12 @@ use num_bigint::Sign::Plus;
 
 use sha3::{Digest, Sha3_256};
 
-use node_data::{bls::PublicKeyBytes, ledger::Seed};
+use node_data::{bls::PublicKeyBytes, ledger::Seed, StepName};
+
+use crate::config::{
+    PROPOSAL_COMMITTEE_SIZE, RATIFICATION_COMMITTEE_SIZE,
+    VALIDATION_COMMITTEE_SIZE,
+};
 
 #[derive(Debug, Clone, Default, Eq, Hash, PartialEq)]
 pub struct Config {
@@ -24,10 +29,16 @@ impl Config {
     pub fn new(
         seed: Seed,
         round: u64,
-        step: u16,
-        committee_size: usize,
+        iteration: u8,
+        step: StepName,
         exclusion: Option<PublicKeyBytes>,
     ) -> Config {
+        let committee_size = match step {
+            StepName::Proposal => PROPOSAL_COMMITTEE_SIZE,
+            StepName::Ratification => RATIFICATION_COMMITTEE_SIZE,
+            StepName::Validation => VALIDATION_COMMITTEE_SIZE,
+        };
+        let step = step.to_step(iteration);
         Self {
             seed,
             round,

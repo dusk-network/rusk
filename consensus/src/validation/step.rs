@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-use crate::config;
 use crate::contract_state::{CallParams, Operations};
 use crate::execution_ctx::ExecutionCtx;
 use crate::validation::handler;
@@ -219,8 +218,5 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
     pub fn name(&self) -> &'static str {
         "validation"
-    }
-    pub fn get_committee_size(&self) -> usize {
-        config::VALIDATION_COMMITTEE_SIZE
     }
 }

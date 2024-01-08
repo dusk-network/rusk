@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-use crate::config;
 use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use std::marker::PhantomData;
@@ -154,9 +153,5 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
     pub fn name(&self) -> &'static str {
         "ratification"
-    }
-
-    pub fn get_committee_size(&self) -> usize {
-        config::RATIFICATION_COMMITTEE_SIZE
     }
 }

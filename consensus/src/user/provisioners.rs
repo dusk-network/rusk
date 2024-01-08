@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::user::sortition;
 use crate::user::stake::Stake;
-use crate::{config::PROPOSAL_COMMITTEE_SIZE, user::sortition};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::StepName;
 
@@ -171,12 +171,11 @@ impl Provisioners {
         seed: Seed,
         round: u64,
     ) -> PublicKeyBytes {
-        let step = StepName::Proposal.to_step(iteration);
         let cfg = sortition::Config::new(
             seed,
             round,
-            step,
-            PROPOSAL_COMMITTEE_SIZE,
+            iteration,
+            StepName::Proposal,
             None,
         );
         let committee_keys = Committee::new(self, &cfg);
