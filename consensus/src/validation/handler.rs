@@ -139,9 +139,9 @@ impl MsgHandler<Message> for ValidationHandler {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        iteration: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
+        let iteration = msg.header.iteration;
         let signature = match &msg.payload {
             Payload::Validation(p) => Ok(p.signature),
             _ => Err(ConsensusError::InvalidMsgType),
