@@ -19,12 +19,14 @@ use crate::user::sortition;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
-use node_data::message::{AsyncQueue, Message, Topics};
+use node_data::message::{AsyncQueue, Message};
 
 use node_data::StepName;
 
 use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
+use node_data::message::payload::ValidationResult;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time;
@@ -155,18 +157,17 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// iteration
     pub(crate) async fn try_cast_validation_vote(
         &mut self,
-        candidate_msg_step: u16,
+        msg_iterartion: u8,
         candidate: &Block,
     ) {
-        let validation_step = candidate_msg_step + 1;
-        if let Some(committee) =
-            self.iter_ctx.committees.get_committee(validation_step)
-        {
+        let step = StepName::Validation.to_step(msg_iterartion);
+
+        if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
                 ValidationStep::try_vote(
                     candidate,
                     &self.round_update,
-                    (candidate_msg_step / 3) as u8,
+                    msg_iterartion,
                     self.outbound.clone(),
                     self.inbound.clone(),
                     self.executor.clone(),
@@ -174,7 +175,27 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 .await;
             };
         } else {
-            error!(event = "committee not found", validation_step);
+            error!(event = "committee not found", msg_iterartion);
+        }
+    }
+
+    pub(crate) async fn try_cast_ratification_vote(
+        &self,
+        msg_iteration: u8,
+        validation: &ValidationResult,
+    ) {
+        let step = StepName::Ratification.to_step(msg_iteration);
+
+        if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
+            if self.am_member(committee) {
+                RatificationStep::<T, DB>::try_vote(
+                    &self.round_update,
+                    msg_iteration,
+                    validation,
+                    self.outbound.clone(),
+                )
+                .await;
+            }
         }
     }
 
@@ -197,10 +218,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
         // Try to vote for candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
-            self.try_cast_validation_vote(msg.header.get_step(), &p.candidate)
+            self.try_cast_validation_vote(msg.header.iteration, &p.candidate)
                 .await;
-
-            // TODO: try_cast_ratification_vote
         }
 
         // Collect message from a previous iteration/step.
@@ -209,15 +228,28 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .collect_past_event(&self.round_update, msg)
             .await
         {
-            if m.header.topic == Topics::Quorum {
-                debug!(
-                    event = "quorum",
-                    src = "prev_step",
-                    msg_step = m.header.get_step(),
-                    hash = to_str(&m.header.block_hash),
-                );
+            match &m.payload {
+                Payload::Quorum(_) => {
+                    debug!(
+                        event = "quorum",
+                        src = "prev_step",
+                        msg_step = m.header.get_step(),
+                        hash = to_str(&m.header.block_hash),
+                    );
 
-                self.quorum_sender.send(m).await;
+                    self.quorum_sender.send(m).await;
+                }
+
+                Payload::ValidationResult(validation_result) => {
+                    self.try_cast_ratification_vote(
+                        msg.header.iteration,
+                        validation_result,
+                    )
+                    .await
+                }
+                _ => {
+                    // Not supported.
+                }
             }
         }
 

@@ -163,6 +163,8 @@ impl MsgHandler<Message> for ValidationHandler {
             {
                 return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
+
+            return Ok(final_result(sv, hash, QuorumType::ValidQuorum));
         }
 
         Ok(HandleMsgOutput::Pending(msg))

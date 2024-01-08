@@ -29,7 +29,7 @@ pub struct RatificationStep<T, DB> {
 }
 
 impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
-    pub(crate) async fn try_vote(
+    pub async fn try_vote(
         ru: &RoundUpdate,
         iteration: u8,
         result: &ValidationResult,
