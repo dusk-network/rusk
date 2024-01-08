@@ -25,7 +25,7 @@ pub struct ValidationStep<T> {
 
 impl<T: Operations + 'static> ValidationStep<T> {
     #[allow(clippy::too_many_arguments)]
-    pub fn spawn_try_vote(
+    pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
         candidate: Block,
         ru: RoundUpdate,
@@ -38,7 +38,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         join_set.spawn(
             async move {
                 Self::try_vote(
-                    candidate, ru, iteration, outbound, inbound, executor,
+                    &candidate, &ru, iteration, outbound, inbound, executor,
                 )
                 .await
             }
@@ -46,9 +46,9 @@ impl<T: Operations + 'static> ValidationStep<T> {
         );
     }
 
-    async fn try_vote(
-        candidate: Block,
-        ru: RoundUpdate,
+    pub(crate) async fn try_vote(
+        candidate: &Block,
+        ru: &RoundUpdate,
         iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
@@ -58,7 +58,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
         // Call VST for non-empty blocks
         if hash != [0u8; 32] {
-            if let Err(err) = Self::call_vst(&candidate, &ru, executor).await {
+            if let Err(err) = Self::call_vst(candidate, ru, executor).await {
                 error!(
                     event = "failed_vst_call",
                     reason = format!("{:?}", err)

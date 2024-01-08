@@ -23,14 +23,16 @@ use node_data::message::{AsyncQueue, Message, Topics};
 
 use node_data::StepName;
 
+use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+use crate::validation::step::ValidationStep;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
 
-/// ExecutionCtx encapsulates all data needed by a single step to be fully
-/// executed.
+/// ExecutionCtx encapsulates all data needed in the execution of consensus
+/// messages handlers.
 pub struct ExecutionCtx<'a, DB: Database, T> {
     pub iter_ctx: &'a mut IterationCtx<DB>,
 
@@ -47,7 +49,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub iteration: u8,
     step: StepName,
 
-    _executor: Arc<Mutex<T>>,
+    executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
     quorum_sender: QuorumMsgSender,
@@ -78,7 +80,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             round_update,
             iteration,
             step,
-            _executor: executor,
+            executor,
             sv_registry,
             quorum_sender,
         }
@@ -149,65 +151,59 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         }
     }
 
-    pub(crate) async fn vote_for_former_candidate(
+    /// Cast a validation vote for a candidate that originates from former
+    /// iteration
+    pub(crate) async fn try_cast_validation_vote(
         &mut self,
-        msg_step: u16,
+        candidate_msg_step: u16,
         candidate: &Block,
     ) {
-        debug!(
-            event = "former candidate received",
-            hash = to_str(&candidate.header().hash),
-            msg_step,
-        );
-
-        if msg_step < self.step() {
-            self.try_vote(msg_step + 1, candidate, Topics::Validation);
-        }
-
-        if msg_step + 2 <= self.step() {
-            self.try_vote(msg_step + 2, candidate, Topics::Ratification);
-        }
-    }
-
-    fn try_vote(&mut self, msg_step: u16, candidate: &Block, topic: Topics) {
+        let validation_step = candidate_msg_step + 1;
         if let Some(committee) =
-            self.iter_ctx.committees.get_committee(msg_step)
+            self.iter_ctx.committees.get_committee(validation_step)
         {
             if self.am_member(committee) {
-                debug!(
-                    event = "vote for former candidate",
-                    step_topic = format!("{:?}", topic),
-                    hash = to_str(&candidate.header().hash),
-                    msg_step,
-                );
-
-                // TODO: Verify
+                ValidationStep::try_vote(
+                    candidate,
+                    &self.round_update,
+                    (candidate_msg_step / 3) as u8,
+                    self.outbound.clone(),
+                    self.inbound.clone(),
+                    self.executor.clone(),
+                )
+                .await;
             };
         } else {
-            error!(event = "committee not found", step = self.step(), msg_step);
+            error!(event = "committee not found", validation_step);
         }
     }
 
     /// Process messages from past
     async fn process_past_events(&mut self, msg: Message) -> Option<Message> {
-        if msg.header.round != self.round_update.round {
+        if msg.header.round != self.round_update.round
+            || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
+        {
             return None;
         }
 
+        self.on_emergency_mode(msg).await
+    }
+
+    /// Handles a consensus message in emergency mode
+    async fn on_emergency_mode(&mut self, msg: Message) -> Option<Message> {
         if let Err(e) = self.outbound.send(msg.clone()).await {
             error!("could not send msg due to {:?}", e);
         }
 
         // Try to vote for candidate block from former iteration
         if let Payload::Candidate(p) = &msg.payload {
-            // TODO: Perform block header/ Certificate full verification
-            // To be addressed with another PR
-
-            self.vote_for_former_candidate(msg.header.get_step(), &p.candidate)
+            self.try_cast_validation_vote(msg.header.get_step(), &p.candidate)
                 .await;
+
+            // TODO: try_cast_ratification_vote
         }
 
-        // Collect message from a previous reduction step/iteration.
+        // Collect message from a previous iteration/step.
         if let Some(m) = self
             .iter_ctx
             .collect_past_event(&self.round_update, msg)

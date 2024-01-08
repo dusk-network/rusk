@@ -29,6 +29,7 @@ pub const CONSENSUS_DELAY_MS: u64 = 1000;
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 5 * 1_000_000_000;
 
 pub const RELAX_ITERATION_THRESHOLD: u8 = 10;
+pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = CONSENSUS_MAX_ITER - 55;
 
 pub const ROUND_BASE_TIMEOUT: Duration = Duration::from_secs(5);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(60);
