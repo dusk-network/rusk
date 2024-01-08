@@ -407,14 +407,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     pub fn get_sortition_config(
         &self,
-        size: usize,
         exclusion: Option<PublicKeyBytes>,
     ) -> sortition::Config {
         sortition::Config::new(
             self.round_update.seed(),
             self.round_update.round,
-            self.step(),
-            size,
+            self.iteration,
+            self.step_name(),
             exclusion,
         )
     }

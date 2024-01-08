@@ -22,10 +22,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-use dusk_consensus::quorum::verifiers;
-
-use dusk_consensus::config;
-use dusk_consensus::quorum::verifiers::QuorumResult;
+use dusk_consensus::quorum::verifiers::{self, QuorumResult};
 
 use super::consensus::Task;
 
@@ -686,7 +683,6 @@ pub async fn verify_block_cert(
         curr_seed,
         &hdr,
         StepName::Validation,
-        config::VALIDATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await
@@ -714,7 +710,6 @@ pub async fn verify_block_cert(
         curr_seed,
         &hdr,
         StepName::Ratification,
-        config::RATIFICATION_COMMITTEE_SIZE,
         enable_quorum_check,
     )
     .await

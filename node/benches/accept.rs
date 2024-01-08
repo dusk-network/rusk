@@ -42,23 +42,10 @@ fn create_step_votes(
     provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
-    let generator_cfg = SortitionConfig::new(
-        seed,
-        round,
-        StepName::Proposal.to_step(iteration),
-        1,
-        None,
-    );
-    let generator = Committee::new(provisioners, &generator_cfg);
-    let exclusion = Some(generator.iter().next().unwrap().bytes().clone());
+    let generator = provisioners.get_generator(iteration, seed, round);
 
-    let sortition_config = SortitionConfig::new(
-        seed,
-        round,
-        step.to_step(iteration),
-        64,
-        exclusion,
-    );
+    let sortition_config =
+        SortitionConfig::new(seed, round, iteration, step, Some(generator));
 
     let committee = Committee::new(provisioners, &sortition_config);
 

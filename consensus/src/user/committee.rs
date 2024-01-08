@@ -36,10 +36,10 @@ impl Committee {
         // Generate committee using deterministic sortition.
         let res = provisioners.create_committee(cfg);
 
-        let quorum = (cfg.committee_size as f64
+        let quorum = (cfg.committee_size() as f64
             * config::CONSENSUS_QUORUM_THRESHOLD)
             .ceil() as usize;
-        let nil_quorum = cfg.committee_size - quorum + 1;
+        let nil_quorum = cfg.committee_size() - quorum + 1;
 
         // Turn the raw vector into a hashmap where we map a pubkey to its
         // occurrences.

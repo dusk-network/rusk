@@ -14,7 +14,6 @@ use tracing::{error, warn};
 
 use crate::aggregator::Aggregator;
 
-use crate::config;
 use crate::iteration_ctx::RoundCommittees;
 use crate::quorum::verifiers::verify_votes;
 use node_data::message::payload::{QuorumType, Ratification, ValidationResult};
@@ -219,8 +218,8 @@ impl RatificationHandler {
                         let cfg = sortition::Config::new(
                             ru.seed(),
                             ru.round,
-                            StepName::Validation.to_step(iter),
-                            config::VALIDATION_COMMITTEE_SIZE,
+                            iter,
+                            StepName::Validation,
                             Some(generator),
                         );
 

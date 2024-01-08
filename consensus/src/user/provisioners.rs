@@ -4,8 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::user::sortition;
 use crate::user::stake::Stake;
-use crate::{config::PROPOSAL_COMMITTEE_SIZE, user::sortition};
 use node_data::bls::{PublicKey, PublicKeyBytes};
 use node_data::StepName;
 
@@ -122,8 +122,8 @@ impl Provisioners {
 
         let mut comm = CommitteeGenerator::from_provisioners(
             self,
-            cfg.round,
-            cfg.exclusion.as_ref(),
+            cfg.round(),
+            cfg.exclusion(),
         );
 
         let mut total_amount_stake =
@@ -132,7 +132,7 @@ impl Provisioners {
         let mut counter: u32 = 0;
         loop {
             if total_amount_stake.eq(&BigInt::from(0))
-                || committee.len() == cfg.committee_size
+                || committee.len() == cfg.committee_size()
             {
                 break;
             }
@@ -171,17 +171,14 @@ impl Provisioners {
         seed: Seed,
         round: u64,
     ) -> PublicKeyBytes {
-        let step = StepName::Proposal.to_step(iteration);
-        let committee_keys = Committee::new(
-            self,
-            &sortition::Config {
-                committee_size: PROPOSAL_COMMITTEE_SIZE,
-                round,
-                seed,
-                step,
-                exclusion: None,
-            },
+        let cfg = sortition::Config::new(
+            seed,
+            round,
+            iteration,
+            StepName::Proposal,
+            None,
         );
+        let committee_keys = Committee::new(self, &cfg);
 
         let generator = *committee_keys
             .iter()

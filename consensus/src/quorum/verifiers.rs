@@ -13,7 +13,6 @@ use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
 use bytes::Buf;
 
-use crate::config;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::message::{marshal_signable_vote, Header, Message, Payload};
@@ -48,7 +47,6 @@ pub async fn verify_quorum(
                 seed,
                 &msg.header,
                 StepName::Validation,
-                config::VALIDATION_COMMITTEE_SIZE,
                 true,
             )
             .await
@@ -68,7 +66,6 @@ pub async fn verify_quorum(
                 seed,
                 &msg.header,
                 StepName::Ratification,
-                config::RATIFICATION_COMMITTEE_SIZE,
                 true,
             )
             .await
@@ -94,7 +91,6 @@ pub async fn verify_step_votes(
     seed: Seed,
     hdr: &Header,
     step_name: StepName,
-    committee_size: usize,
     enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
     if step_name == StepName::Proposal {
@@ -102,7 +98,6 @@ pub async fn verify_step_votes(
     }
 
     let iteration = hdr.iteration;
-    let step = step_name.to_step(iteration);
     let generator = committees_set
         .read()
         .await
@@ -112,8 +107,8 @@ pub async fn verify_step_votes(
     let cfg = sortition::Config::new(
         seed,
         hdr.round,
-        step,
-        committee_size,
+        hdr.iteration,
+        step_name,
         Some(generator),
     );
 
@@ -177,7 +172,7 @@ pub fn verify_votes(
             target_quorum,
             total,
         );
-        return Err(Error::VoteSetTooSmall(cfg.step));
+        return Err(Error::VoteSetTooSmall(cfg.step()));
     }
 
     // If bitset=0 this means that we are checking for failed iteration
@@ -190,7 +185,13 @@ pub fn verify_votes(
         let apk = sub_committee.aggregate_pks()?;
 
         // verify signatures
-        verify_step_signature(cfg.round, cfg.step, block_hash, apk, signature)?;
+        verify_step_signature(
+            cfg.round(),
+            cfg.step(),
+            block_hash,
+            apk,
+            signature,
+        )?;
     }
     // Verification done
     Ok(quorum_result)

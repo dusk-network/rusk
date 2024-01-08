@@ -29,18 +29,6 @@ macro_rules! await_phase {
     };
 }
 
-macro_rules! call_phase {
-    ($e:expr, $n:ident ( $($args:expr), *)) => {
-        {
-           match $e {
-                Phase::Proposal(p) => p.$n($($args,)*),
-                Phase::Validation(p) => p.$n($($args,)*),
-                Phase::Ratification(p) => p.$n($($args,)*),
-            }
-        }
-    };
-}
-
 pub enum Phase<T: Operations, D: Database> {
     Proposal(proposal::step::ProposalStep<T, D>),
     Validation(validation::step::ValidationStep<T>),
@@ -74,8 +62,6 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());
         debug!(event = "execute_step", ?timeout);
 
-        let size = call_phase!(self, get_committee_size());
-
         let exclusion = match ctx.step_name() {
             StepName::Proposal => None,
             _ => {
@@ -94,7 +80,7 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         // block.
         let step_committee = Committee::new(
             ctx.provisioners,
-            &ctx.get_sortition_config(size, exclusion),
+            &ctx.get_sortition_config(exclusion),
         );
 
         debug!(

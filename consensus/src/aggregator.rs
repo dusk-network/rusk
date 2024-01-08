@@ -249,7 +249,7 @@ mod tests {
         }
 
         // Execute sortition with specific config
-        let cfg = Config::new(Seed::from([4u8; 48]), round, 1, 10, None);
+        let cfg = Config::raw(Seed::from([4u8; 48]), round, 1, 10, None);
         let c = Committee::new(&p, &cfg);
 
         let target_quorum = 7;
