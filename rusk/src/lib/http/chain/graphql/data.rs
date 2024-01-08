@@ -131,7 +131,7 @@ impl Header<'_> {
         hex::encode(self.0.prev_block_hash)
     }
 
-    pub async fn timestamp(&self) -> i64 {
+    pub async fn timestamp(&self) -> u64 {
         self.0.timestamp
     }
 
@@ -202,7 +202,7 @@ impl SpentTransaction {
     pub async fn block_timestamp(
         &self,
         ctx: &async_graphql::Context<'_>,
-    ) -> FieldResult<i64> {
+    ) -> FieldResult<u64> {
         let db = ctx.data::<super::DBContext>()?.read().await;
         let block_height = self.0.block_height;
 
