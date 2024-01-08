@@ -20,7 +20,6 @@ use tokio::task::JoinSet;
 use tracing::{debug, error, Instrument};
 
 pub struct ValidationStep<T> {
-    timeout_millis: u64,
     handler: Arc<Mutex<handler::ValidationHandler>>,
     executor: Arc<Mutex<T>>,
 }
@@ -164,11 +163,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         executor: Arc<Mutex<T>>,
         handler: Arc<Mutex<handler::ValidationHandler>>,
     ) -> Self {
-        Self {
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
-            handler,
-            executor,
-        }
+        Self { handler, executor }
     }
 
     pub async fn reinitialize(
@@ -189,7 +184,6 @@ impl<T: Operations + 'static> ValidationStep<T> {
             name = self.name(),
             round,
             iteration,
-            timeout = self.timeout_millis,
             hash = to_str(&handler.candidate.header().hash),
         )
     }
@@ -220,15 +214,11 @@ impl<T: Operations + 'static> ValidationStep<T> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
-            .await
+        ctx.event_loop(self.handler.clone()).await
     }
 
     pub fn name(&self) -> &'static str {
         "validation"
-    }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
         config::VALIDATION_COMMITTEE_SIZE

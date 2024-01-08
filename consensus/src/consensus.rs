@@ -13,7 +13,7 @@ use node_data::ledger::Block;
 
 use node_data::message::{AsyncQueue, Message, Topics};
 
-use crate::execution_ctx::{ExecutionCtx, IterationCtx};
+use crate::execution_ctx::ExecutionCtx;
 use crate::proposal;
 use crate::queue::Queue;
 use crate::quorum::task;
@@ -21,6 +21,7 @@ use crate::user::provisioners::Provisioners;
 use crate::{ratification, validation};
 use tracing::Instrument;
 
+use crate::iteration_ctx::IterationCtx;
 use crate::step_votes_reg::CertInfoRegistry;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
@@ -207,6 +208,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                 proposal_handler,
                 validation_handler,
                 ratification_handler,
+                ru.round_base_timeout,
             );
 
             while iter < CONSENSUS_MAX_ITER {
@@ -258,7 +260,7 @@ impl<T: Operations + 'static, D: Database + 'static> Consensus<T, D> {
                     }
                 }
 
-                iter_ctx.on_end();
+                iter_ctx.on_close();
 
                 iter += 1;
                 // Delegate (quorum) message result to quorum loop for

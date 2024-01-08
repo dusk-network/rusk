@@ -5,179 +5,29 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
-use crate::config::CONSENSUS_MAX_TIMEOUT_MS;
+
 use crate::contract_state::Operations;
-use crate::msg_handler::HandleMsgOutput::{Ready, ReadyWithTimeoutIncrease};
+use crate::iteration_ctx::IterationCtx;
+use crate::msg_handler::HandleMsgOutput::{Pending, Ready};
 use crate::msg_handler::MsgHandler;
 use crate::queue::Queue;
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
-use crate::{proposal, ratification, validation};
+
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{to_str, Block};
 use node_data::message::Payload;
 use node_data::message::{AsyncQueue, Message, Topics};
+
 use node_data::StepName;
-use std::cmp;
-use std::collections::HashMap;
+
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio::task::JoinSet;
 use tokio::time;
 use tokio::time::Instant;
 use tracing::{debug, error, info, trace};
-
-/// A pool of all generated committees
-#[derive(Default)]
-pub struct RoundCommittees {
-    committees: HashMap<u16, Committee>,
-}
-
-impl RoundCommittees {
-    pub(crate) fn get_committee(&self, step: u16) -> Option<&Committee> {
-        self.committees.get(&step)
-    }
-
-    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = StepName::Proposal.to_step(iter);
-        self.get_committee(step)
-            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
-    }
-
-    pub(crate) fn get_validation_committee(
-        &self,
-        iter: u8,
-    ) -> Option<&Committee> {
-        let step = StepName::Validation.to_step(iter);
-        self.get_committee(step)
-    }
-
-    pub(crate) fn insert(&mut self, step: u16, committee: Committee) {
-        self.committees.insert(step, committee);
-    }
-}
-
-/// Represents a shared state within a context of the exection of a single
-/// iteration.
-pub struct IterationCtx<DB: Database> {
-    validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
-    ratification_handler:
-        Arc<Mutex<ratification::handler::RatificationHandler>>,
-    proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<DB>>>,
-
-    pub join_set: JoinSet<()>,
-
-    round: u64,
-    iter: u8,
-
-    /// Stores any committee already generated in the execution of any
-    /// iteration of current round
-    committees: RoundCommittees,
-}
-
-impl<D: Database> IterationCtx<D> {
-    pub fn new(
-        round: u64,
-        iter: u8,
-        proposal_handler: Arc<Mutex<proposal::handler::ProposalHandler<D>>>,
-        validation_handler: Arc<Mutex<validation::handler::ValidationHandler>>,
-        ratification_handler: Arc<
-            Mutex<ratification::handler::RatificationHandler>,
-        >,
-    ) -> Self {
-        Self {
-            round,
-            join_set: JoinSet::new(),
-            iter,
-            proposal_handler,
-            validation_handler,
-            ratification_handler,
-            committees: Default::default(),
-        }
-    }
-
-    pub(crate) async fn collect_past_event(
-        &self,
-        ru: &RoundUpdate,
-        msg: &Message,
-    ) -> Option<Message> {
-        let committee = self.committees.get_committee(msg.header.get_step())?;
-        match msg.topic() {
-            node_data::message::Topics::Candidate => {
-                let mut handler = self.proposal_handler.lock().await;
-                _ = handler
-                    .collect_from_past(
-                        msg.clone(),
-                        ru,
-                        msg.header.iteration,
-                        committee,
-                    )
-                    .await;
-            }
-            node_data::message::Topics::Validation => {
-                let mut handler = self.validation_handler.lock().await;
-                if let Ok(Ready(m)) = handler
-                    .collect_from_past(
-                        msg.clone(),
-                        ru,
-                        msg.header.iteration,
-                        committee,
-                    )
-                    .await
-                {
-                    return Some(m);
-                }
-            }
-            node_data::message::Topics::Ratification => {
-                let mut handler = self.ratification_handler.lock().await;
-                if let Ok(Ready(m)) = handler
-                    .collect_from_past(
-                        msg.clone(),
-                        ru,
-                        msg.header.iteration,
-                        committee,
-                    )
-                    .await
-                {
-                    return Some(m);
-                }
-            }
-            _ => {}
-        };
-
-        None
-    }
-
-    pub(crate) fn on_begin(&mut self, iter: u8) {
-        self.iter = iter;
-    }
-
-    pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
-        let step = StepName::Proposal.to_step(iter);
-        self.committees
-            .get_committee(step)
-            .and_then(|c| c.iter().next().map(|p| *p.bytes()))
-    }
-
-    pub(crate) fn on_end(&mut self) {
-        debug!(
-            event = "iter completed",
-            len = self.join_set.len(),
-            round = self.round,
-            iter = self.iter,
-        );
-        self.join_set.abort_all();
-    }
-}
-
-impl<DB: Database> Drop for IterationCtx<DB> {
-    fn drop(&mut self) {
-        self.on_end();
-    }
-}
 
 /// ExecutionCtx encapsulates all data needed by a single step to be fully
 /// executed.
@@ -267,14 +117,11 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     pub async fn event_loop<C: MsgHandler<Message>>(
         &mut self,
         phase: Arc<Mutex<C>>,
-        timeout_millis: &mut u64,
     ) -> Result<Message, ConsensusError> {
         debug!(event = "run event_loop");
 
-        // Calculate timeout
-        let deadline = Instant::now()
-            .checked_add(Duration::from_millis(*timeout_millis))
-            .unwrap();
+        let timeout = self.iter_ctx.get_timeout(self.step_name());
+        let deadline = Instant::now().checked_add(timeout).unwrap();
 
         let inbound = self.inbound.clone();
 
@@ -284,13 +131,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Inbound message event
                 Ok(result) => {
                     if let Ok(msg) = result {
-                        if let Some(step_result) = self
-                            .process_inbound_msg(
-                                phase.clone(),
-                                msg,
-                                timeout_millis,
-                            )
-                            .await
+                        if let Some(step_result) =
+                            self.process_inbound_msg(phase.clone(), msg).await
                         {
                             return Ok(step_result);
                         }
@@ -300,7 +142,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 // Increase timeout for next execution of this step and move on.
                 Err(_) => {
                     info!(event = "timeout-ed");
-                    Self::increase_timeout(timeout_millis);
 
                     return self.process_timeout_event(phase.clone()).await;
                 }
@@ -396,7 +237,6 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
         msg: Message,
-        timeout_millis: &mut u64,
     ) -> Option<Message> {
         let committee = self
             .get_current_committee()
@@ -462,12 +302,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         // an output to populate next step with it.
                         return Some(m);
                     }
-                    ReadyWithTimeoutIncrease(m) => {
-                        Self::increase_timeout(timeout_millis);
-                        return Some(m);
-                    }
-                    _ => {} /* Message collected but phase does not reach
-                             * a final result */
+                    Pending(_) => {} /* Message collected but phase does not
+                                      * reach
+                                      * a final result */
                 }
             }
             Err(e) => {
@@ -491,6 +328,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
+        self.iter_ctx.on_timeout_event();
+
         if let Ok(Ready(msg)) = phase
             .lock()
             .await
@@ -578,11 +417,5 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             size,
             exclusion,
         )
-    }
-
-    fn increase_timeout(timeout_millis: &mut u64) {
-        // Increase timeout up to CONSENSUS_MAX_TIMEOUT_MS
-        *timeout_millis =
-            cmp::min(*timeout_millis * 2, CONSENSUS_MAX_TIMEOUT_MS);
     }
 }

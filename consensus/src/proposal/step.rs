@@ -24,7 +24,6 @@ where
 {
     handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     bg: Generator<T>,
-    timeout_millis: u64,
 }
 
 impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
@@ -34,7 +33,6 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         handler: Arc<Mutex<handler::ProposalHandler<D>>>,
     ) -> Self {
         Self {
-            timeout_millis: config::CONSENSUS_TIMEOUT_MS,
             handler,
             bg: Generator::new(executor),
         }
@@ -46,13 +44,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         round: u64,
         iteration: u8,
     ) {
-        debug!(
-            event = "init",
-            name = self.name(),
-            round,
-            iteration,
-            timeout = self.timeout_millis,
-        )
+        debug!(event = "init", name = self.name(), round, iteration,)
     }
 
     pub async fn run(
@@ -114,15 +106,11 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
             return Ok(m);
         }
 
-        ctx.event_loop(self.handler.clone(), &mut self.timeout_millis)
-            .await
+        ctx.event_loop(self.handler.clone()).await
     }
 
     pub fn name(&self) -> &'static str {
         "sel"
-    }
-    pub fn get_timeout(&self) -> u64 {
-        self.timeout_millis
     }
     pub fn get_committee_size(&self) -> usize {
         config::PROPOSAL_COMMITTEE_SIZE

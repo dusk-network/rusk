@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, RoundUpdate};
-use crate::execution_ctx::RoundCommittees;
+use crate::iteration_ctx::RoundCommittees;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
 use node_data::ledger::to_str;
@@ -19,7 +19,6 @@ use tracing::{debug, trace};
 pub enum HandleMsgOutput {
     Pending(Message),
     Ready(Message),
-    ReadyWithTimeoutIncrease(Message),
 }
 
 /// MsgHandler must be implemented by any step that needs to handle an external

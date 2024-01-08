@@ -14,7 +14,7 @@ use tracing::warn;
 
 use crate::user::committee::Committee;
 
-use crate::execution_ctx::RoundCommittees;
+use crate::iteration_ctx::RoundCommittees;
 use node_data::message::payload::QuorumType;
 use node_data::message::{payload, Message, Payload};
 
@@ -32,20 +32,6 @@ fn final_result(
     });
 
     HandleMsgOutput::Ready(msg)
-}
-
-fn final_result_with_timeout(
-    sv: StepVotes,
-    hash: [u8; 32],
-    quorum: QuorumType,
-) -> HandleMsgOutput {
-    let msg = Message::from_validation_result(payload::ValidationResult {
-        sv,
-        hash,
-        quorum,
-    });
-
-    HandleMsgOutput::ReadyWithTimeoutIncrease(msg)
 }
 
 pub struct ValidationHandler {
@@ -138,11 +124,7 @@ impl MsgHandler<Message> for ValidationHandler {
                     tracing::warn!(
                         "votes converged for an empty hash (timeout)"
                     );
-                    return Ok(final_result_with_timeout(
-                        sv,
-                        hash,
-                        QuorumType::NilQuorum,
-                    ));
+                    return Ok(final_result(sv, hash, QuorumType::NilQuorum));
                 }
 
                 return Ok(final_result(sv, hash, QuorumType::ValidQuorum));
