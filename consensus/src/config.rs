@@ -32,3 +32,5 @@ pub const RELAX_ITERATION_THRESHOLD: u8 = 10;
 
 pub const ROUND_BASE_TIMEOUT: Duration = Duration::from_secs(5);
 pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(60);
+
+pub const MAX_BLOCK_SECS_DRIFT: u64 = 120;
