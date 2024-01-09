@@ -30,6 +30,15 @@ pub struct PublicKey {
     as_bytes: PublicKeyBytes,
 }
 
+impl TryFrom<[u8; 96]> for PublicKey {
+    type Error = dusk_bls12_381_sign::Error;
+    fn try_from(bytes: [u8; 96]) -> Result<Self, Self::Error> {
+        let inner = dusk_bls12_381_sign::PublicKey::from_slice(&bytes)?;
+        let as_bytes = PublicKeyBytes(bytes);
+        Ok(Self { as_bytes, inner })
+    }
+}
+
 impl PublicKey {
     pub fn new(inner: dusk_bls12_381_sign::PublicKey) -> Self {
         let b = inner.to_bytes();

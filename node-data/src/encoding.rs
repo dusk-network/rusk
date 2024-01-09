@@ -13,7 +13,8 @@ impl Serializable for Block {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header().write(w)?;
 
-        Self::write_varint(w, self.txs().len() as u64)?;
+        let txs_len = self.txs().len() as u32;
+        w.write_all(&txs_len.to_le_bytes())?;
 
         for t in self.txs().iter() {
             t.write(w)?;
@@ -29,9 +30,11 @@ impl Serializable for Block {
         let header = Header::read(r)?;
 
         // Read transactions count
-        let txlen = Self::read_varint(r)?;
+        let mut tx_len = [0u8; 4];
+        r.read_exact(&mut tx_len)?;
+        let tx_len = u32::from_le_bytes(tx_len);
 
-        let txs = (0..txlen)
+        let txs = (0..tx_len)
             .map(|_| Transaction::read(r))
             .collect::<Result<Vec<_>, _>>()?;
 
@@ -42,17 +45,15 @@ impl Serializable for Block {
 impl Serializable for Transaction {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         //Write version
-        w.write_all(&1u32.to_le_bytes())?;
+        w.write_all(&self.version.to_le_bytes())?;
 
         //Write TxType
-        w.write_all(&1u32.to_le_bytes())?;
+        w.write_all(&self.r#type.to_le_bytes())?;
 
         let data = self.inner.to_var_bytes();
 
         // Write inner transaction
-        let len = data.len() as u32;
-        w.write_all(&len.to_le_bytes())?;
-        w.write_all(&data)?;
+        Self::write_var_le_bytes32(w, &data)?;
 
         Ok(())
     }
@@ -61,13 +62,13 @@ impl Serializable for Transaction {
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 4];
-        r.read_exact(&mut buf)?;
-        let version = u32::from_le_bytes(buf);
+        let mut version = [0u8; 4];
+        r.read_exact(&mut version)?;
+        let version = u32::from_le_bytes(version);
 
-        let mut buf = [0u8; 4];
-        r.read_exact(&mut buf)?;
-        let tx_type = u32::from_le_bytes(buf);
+        let mut tx_type = [0u8; 4];
+        r.read_exact(&mut tx_type)?;
+        let tx_type = u32::from_le_bytes(tx_type);
 
         let tx_payload = Self::read_var_le_bytes32(r)?;
         let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
@@ -140,7 +141,7 @@ impl Serializable for SpentTransaction {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        self.marshal_hashable(w, false)?;
+        self.marshal_hashable(w)?;
         self.cert.write(w)?;
         w.write_all(&self.hash[..])?;
 
@@ -160,19 +161,8 @@ impl Serializable for Header {
 
 impl Serializable for Certificate {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        // In order to be aligned with golang impl,
-        // we cannot use here StepVotes::write for now.
-        Self::write_var_bytes(
-            w,
-            &self.validation.aggregate_signature.inner()[..],
-        )?;
-        Self::write_var_bytes(
-            w,
-            &self.ratification.aggregate_signature.inner()[..],
-        )?;
-
-        w.write_all(&self.validation.bitset.to_le_bytes())?;
-        w.write_all(&self.ratification.bitset.to_le_bytes())?;
+        self.validation.write(w)?;
+        self.ratification.write(w)?;
 
         Ok(())
     }
@@ -181,31 +171,12 @@ impl Serializable for Certificate {
     where
         Self: Sized,
     {
-        let validation_signature: [u8; 48] = Self::read_var_bytes(r)?
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let ratification_signature: [u8; 48] = Self::read_var_bytes(r)?
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let validation_bitset = u64::from_le_bytes(buf);
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let ratification_bitset = u64::from_le_bytes(buf);
+        let validation = StepVotes::read(r)?;
+        let ratification = StepVotes::read(r)?;
 
         Ok(Certificate {
-            validation: StepVotes {
-                bitset: validation_bitset,
-                aggregate_signature: Signature(validation_signature),
-            },
-            ratification: StepVotes {
-                bitset: ratification_bitset,
-                aggregate_signature: Signature(ratification_signature),
-            },
+            validation,
+            ratification,
         })
     }
 }
@@ -213,7 +184,7 @@ impl Serializable for Certificate {
 impl Serializable for StepVotes {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.bitset.to_le_bytes())?;
-        Self::write_var_bytes(w, &self.aggregate_signature.inner()[..])?;
+        w.write_all(&self.aggregate_signature.inner())?;
 
         Ok(())
     }
@@ -222,14 +193,14 @@ impl Serializable for StepVotes {
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf[..])?;
-        let aggregate_signature: [u8; 48] = Self::read_var_bytes(r)?
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+        let mut bitset = [0u8; 8];
+        r.read_exact(&mut bitset[..])?;
+        let bitset = u64::from_le_bytes(bitset);
+        let mut aggregate_signature = [0u8; 48];
+        r.read_exact(&mut aggregate_signature)?;
 
         Ok(StepVotes {
-            bitset: u64::from_le_bytes(buf),
+            bitset,
             aggregate_signature: Signature(aggregate_signature),
         })
     }
@@ -316,7 +287,7 @@ impl Serializable for Label {
 
 impl Serializable for Ratification {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_bytes(w, &self.signature[..])?;
+        w.write_all(&self.signature)?;
         self.validation_result.write(w)?;
 
         Ok(())
@@ -326,9 +297,8 @@ impl Serializable for Ratification {
     where
         Self: Sized,
     {
-        let signature: [u8; 48] = Self::read_var_bytes(r)?
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+        let mut signature = [0u8; 48];
+        r.read_exact(&mut signature[..])?;
 
         let validation_result = ValidationResult::read(r)?;
 
@@ -393,6 +363,8 @@ impl Serializable for QuorumType {
 
 #[cfg(test)]
 mod tests {
+    use crate::message::payload::{Candidate, Validation};
+
     use super::*;
     use fake::{Dummy, Fake, Faker};
 
@@ -409,6 +381,21 @@ mod tests {
     #[test]
     fn test_encoding_iterations_info() {
         assert_serializable::<IterationsInfo>();
+    }
+
+    #[test]
+    fn test_encoding_ratification() {
+        assert_serializable::<Ratification>();
+    }
+
+    #[test]
+    fn test_encoding_validation() {
+        assert_serializable::<Validation>();
+    }
+
+    #[test]
+    fn test_encoding_candidate() {
+        assert_serializable::<Candidate>();
     }
 
     #[test]

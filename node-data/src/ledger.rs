@@ -122,25 +122,16 @@ pub struct Certificate {
 
 impl Header {
     /// Marshal hashable fields.
-    ///
-    /// Param `fixed_size_seed` changes the way seed is marshaled.
-    /// In block hashing, header seed is fixed-size field while in wire
-    /// message marshaling it is variable-length field.
     pub(crate) fn marshal_hashable<W: Write>(
         &self,
         w: &mut W,
-        fixed_size_seed: bool,
     ) -> io::Result<()> {
         w.write_all(&self.version.to_le_bytes())?;
         w.write_all(&self.height.to_le_bytes())?;
         w.write_all(&self.timestamp.to_le_bytes())?;
         w.write_all(&self.prev_block_hash[..])?;
 
-        if fixed_size_seed {
-            w.write_all(&self.seed.inner()[..])?;
-        } else {
-            Self::write_var_bytes(w, &self.seed.inner()[..])?;
-        }
+        w.write_all(&self.seed.inner()[..])?;
 
         w.write_all(&self.state_hash[..])?;
         w.write_all(&self.event_hash[..])?;
@@ -170,10 +161,8 @@ impl Header {
         let mut prev_block_hash = [0u8; 32];
         r.read_exact(&mut prev_block_hash[..])?;
 
-        let value = Self::read_var_bytes(r)?;
-        let seed: [u8; 48] = value
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+        let mut seed = [0u8; 48];
+        r.read_exact(&mut seed[..])?;
 
         let mut state_hash = [0u8; 32];
         r.read_exact(&mut state_hash[..])?;
@@ -233,7 +222,7 @@ impl Block {
         }
 
         let mut hasher = sha3::Sha3_256::new();
-        self.header.marshal_hashable(&mut hasher, true)?;
+        self.header.marshal_hashable(&mut hasher)?;
 
         self.header.hash = hasher.finalize().into();
         Ok(())
