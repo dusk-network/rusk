@@ -54,6 +54,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
+        // TODO: Verify Block Header
         let hash = candidate.header().hash;
 
         // Call VST for non-empty blocks

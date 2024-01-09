@@ -157,17 +157,17 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// iteration
     pub(crate) async fn try_cast_validation_vote(
         &mut self,
-        msg_iterartion: u8,
+        msg_iteration: u8,
         candidate: &Block,
     ) {
-        let step = StepName::Validation.to_step(msg_iterartion);
+        let step = StepName::Validation.to_step(msg_iteration);
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
                 ValidationStep::try_vote(
                     candidate,
                     &self.round_update,
-                    msg_iterartion,
+                    msg_iteration,
                     self.outbound.clone(),
                     self.inbound.clone(),
                     self.executor.clone(),
@@ -175,7 +175,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                 .await;
             };
         } else {
-            error!(event = "committee not found", msg_iterartion);
+            error!(event = "committee not found", msg_iteration);
         }
     }
 
@@ -204,6 +204,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         if msg.header.round != self.round_update.round
             || self.iteration < EMERGENCY_MODE_ITERATION_THRESHOLD
         {
+            // Discard messages from past if current iteration is not considered
+            // an emergency iteration
             return None;
         }
 
@@ -216,11 +218,14 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             error!("could not send msg due to {:?}", e);
         }
 
-        // Try to vote for candidate block from former iteration
+        // Try to cast validation vote for a candidate block from former
+        // iteration
         if let Payload::Candidate(p) = &msg.payload {
             self.try_cast_validation_vote(msg.header.iteration, &p.candidate)
                 .await;
         }
+
+        let msg_iteration = msg.header.iteration;
 
         // Collect message from a previous iteration/step.
         if let Some(m) = self
@@ -242,7 +247,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
                 Payload::ValidationResult(validation_result) => {
                     self.try_cast_ratification_vote(
-                        msg.header.iteration,
+                        msg_iteration,
                         validation_result,
                     )
                     .await
