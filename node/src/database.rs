@@ -142,19 +142,16 @@ pub struct Register {
 
 impl Serializable for Register {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&self.mrb_hash[..])?;
-        w.write_all(&self.state_hash[..])
+        w.write_all(&self.mrb_hash)?;
+        w.write_all(&self.state_hash)
     }
 
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
     {
-        let mut mrb_hash = [0u8; 32];
-        r.read_exact(&mut mrb_hash[..])?;
-
-        let mut state_hash = [0u8; 32];
-        r.read_exact(&mut state_hash[..])?;
+        let mrb_hash = Self::read_bytes(r)?;
+        let state_hash = Self::read_bytes(r)?;
 
         Ok(Self {
             mrb_hash,
