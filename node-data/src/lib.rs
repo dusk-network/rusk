@@ -30,6 +30,27 @@ pub trait Serializable {
     where
         Self: Sized;
 
+    fn read_bytes<R: Read, const N: usize>(r: &mut R) -> io::Result<[u8; N]> {
+        let mut buffer = [0u8; N];
+        r.read_exact(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    fn read_u8<R: Read>(r: &mut R) -> io::Result<u8> {
+        let mut num = [0u8; 1];
+        r.read_exact(&mut num)?;
+        Ok(num[0])
+    }
+
+    fn read_u64_le<R: Read>(r: &mut R) -> io::Result<u64> {
+        let data = Self::read_bytes(r)?;
+        Ok(u64::from_le_bytes(data))
+    }
+    fn read_u32_le<R: Read>(r: &mut R) -> io::Result<u32> {
+        let data = Self::read_bytes(r)?;
+        Ok(u32::from_le_bytes(data))
+    }
+
     /// Writes length-prefixed fields
     fn write_var_le_bytes32<W: Write>(w: &mut W, buf: &[u8]) -> io::Result<()> {
         let len = buf.len() as u32;
@@ -40,9 +61,7 @@ pub trait Serializable {
 
     /// Reads length-prefixed fields
     fn read_var_le_bytes32<R: Read>(r: &mut R) -> io::Result<Vec<u8>> {
-        let mut len = [0u8; 4];
-        r.read_exact(&mut len)?;
-        let len = u32::from_le_bytes(len) as usize;
+        let len = Self::read_u32_le(r)? as usize;
 
         let mut buf = vec![0u8; len];
         r.read_exact(&mut buf)?;

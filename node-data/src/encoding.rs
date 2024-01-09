@@ -30,9 +30,7 @@ impl Serializable for Block {
         let header = Header::read(r)?;
 
         // Read transactions count
-        let mut tx_len = [0u8; 4];
-        r.read_exact(&mut tx_len)?;
-        let tx_len = u32::from_le_bytes(tx_len);
+        let tx_len = Self::read_u32_le(r)?;
 
         let txs = (0..tx_len)
             .map(|_| Transaction::read(r))
@@ -62,13 +60,8 @@ impl Serializable for Transaction {
     where
         Self: Sized,
     {
-        let mut version = [0u8; 4];
-        r.read_exact(&mut version)?;
-        let version = u32::from_le_bytes(version);
-
-        let mut tx_type = [0u8; 4];
-        r.read_exact(&mut tx_type)?;
-        let tx_type = u32::from_le_bytes(tx_type);
+        let version = Self::read_u32_le(r)?;
+        let tx_type = Self::read_u32_le(r)?;
 
         let tx_payload = Self::read_var_le_bytes32(r)?;
         let inner = phoenix_core::Transaction::from_slice(&tx_payload[..])
@@ -91,7 +84,7 @@ impl Serializable for SpentTransaction {
         match &self.err {
             Some(e) => {
                 let b = e.as_bytes();
-                w.write_all(&(b.len() as u64).to_le_bytes())?;
+                w.write_all(&(b.len() as u32).to_le_bytes())?;
                 w.write_all(b)?;
             }
             None => {
@@ -108,18 +101,9 @@ impl Serializable for SpentTransaction {
     {
         let inner = Transaction::read(r)?;
 
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let block_height = u64::from_le_bytes(buf);
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let gas_spent = u64::from_le_bytes(buf);
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-
-        let error_len = u64::from_le_bytes(buf);
+        let block_height = Self::read_u64_le(r)?;
+        let gas_spent = Self::read_u64_le(r)?;
+        let error_len = Self::read_u32_le(r)?;
 
         let err = if error_len > 0 {
             let mut buf = vec![0u8; error_len as usize];
@@ -143,7 +127,7 @@ impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.marshal_hashable(w)?;
         self.cert.write(w)?;
-        w.write_all(&self.hash[..])?;
+        w.write_all(&self.hash)?;
 
         Ok(())
     }
@@ -154,7 +138,7 @@ impl Serializable for Header {
     {
         let mut header = Self::unmarshal_hashable(r)?;
         header.cert = Certificate::read(r)?;
-        r.read_exact(&mut header.hash[..])?;
+        header.hash = Self::read_bytes(r)?;
         Ok(header)
     }
 }
@@ -193,11 +177,8 @@ impl Serializable for StepVotes {
     where
         Self: Sized,
     {
-        let mut bitset = [0u8; 8];
-        r.read_exact(&mut bitset[..])?;
-        let bitset = u64::from_le_bytes(bitset);
-        let mut aggregate_signature = [0u8; 48];
-        r.read_exact(&mut aggregate_signature)?;
+        let bitset = Self::read_u64_le(r)?;
+        let aggregate_signature = Self::read_bytes(r)?;
 
         Ok(StepVotes {
             bitset,
@@ -230,15 +211,12 @@ impl Serializable for IterationsInfo {
     {
         let mut cert_list = vec![];
 
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf[..])?;
-        let count = buf[0];
+        let count = Self::read_u8(r)?;
 
         for _ in 0..count {
-            let mut opt = [0u8; 1];
-            r.read_exact(&mut opt[..])?;
+            let opt = Self::read_u8(r)?;
 
-            let cert = match opt[0] {
+            let cert = match opt {
                 0 => None,
                 1 => Some(Certificate::read(r)?),
                 _ => {
@@ -278,10 +256,8 @@ impl Serializable for Label {
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf[..])?;
-
-        Ok(buf[0].into())
+        let label = Self::read_u8(r)?;
+        Ok(label.into())
     }
 }
 
@@ -297,8 +273,7 @@ impl Serializable for Ratification {
     where
         Self: Sized,
     {
-        let mut signature = [0u8; 48];
-        r.read_exact(&mut signature[..])?;
+        let signature = Self::read_bytes(r)?;
 
         let validation_result = ValidationResult::read(r)?;
 
@@ -312,7 +287,7 @@ impl Serializable for Ratification {
 impl Serializable for ValidationResult {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.sv.write(w)?;
-        w.write_all(&self.hash[..])?;
+        w.write_all(&self.hash)?;
         self.quorum.write(w)?;
 
         Ok(())
@@ -323,10 +298,7 @@ impl Serializable for ValidationResult {
         Self: Sized,
     {
         let sv = StepVotes::read(r)?;
-
-        let mut hash = [0u8; 32];
-        r.read_exact(&mut hash)?;
-
+        let hash = Self::read_bytes(r)?;
         let quorum = QuorumType::read(r)?;
 
         Ok(ValidationResult { sv, hash, quorum })
@@ -335,29 +307,15 @@ impl Serializable for ValidationResult {
 
 impl Serializable for QuorumType {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        match self {
-            QuorumType::ValidQuorum => w.write_all(&0u8.to_le_bytes())?,
-            QuorumType::InvalidQuorum => w.write_all(&1u8.to_le_bytes())?,
-            QuorumType::NilQuorum => w.write_all(&2u8.to_le_bytes())?,
-            _ => w.write_all(&255u8.to_le_bytes())?,
-        }
-
-        Ok(())
+        let val: u8 = *self as u8;
+        w.write_all(&val.to_le_bytes())
     }
 
     fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized,
     {
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-
-        Ok(match buf[0] {
-            0 => QuorumType::ValidQuorum,
-            1 => QuorumType::InvalidQuorum,
-            2 => QuorumType::NilQuorum,
-            _ => QuorumType::NoQuorum,
-        })
+        Ok(Self::read_u8(r)?.into())
     }
 }
 

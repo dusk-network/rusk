@@ -105,10 +105,7 @@ impl Serializable for Message {
         Self: Sized,
     {
         // Read topic
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-
-        let topic = Topics::from(buf[0]);
+        let topic = Topics::from(Self::read_u8(r)?);
         if topic == Topics::Unknown {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -369,14 +366,10 @@ impl Serializable for Header {
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
         // Read round
-        let mut round = [0u8; 8];
-        r.read_exact(&mut round)?;
-        let round = u64::from_le_bytes(round);
+        let round = Self::read_u64_le(r)?;
 
         // Read iteration
-        let mut iteration = [0u8; 1];
-        r.read_exact(&mut iteration)?;
-        let iteration = iteration[0];
+        let iteration = Self::read_u8(r)?;
 
         // Read block_hash
         let mut block_hash = [0u8; 32];
@@ -564,21 +557,32 @@ pub mod payload {
             })
         }
     }
-    #[derive(Clone, Default)]
+    #[derive(Clone, Copy, Default)]
     #[cfg_attr(
         any(feature = "faker", test),
         derive(fake::Dummy, Eq, PartialEq)
     )]
     pub enum QuorumType {
         /// Quorum on Valid Candidate
-        ValidQuorum,
+        ValidQuorum = 0,
         // Quorum on Invalid Candidate
-        InvalidQuorum,
+        InvalidQuorum = 1,
         //Quorum on Timeout (NilQuorum)
-        NilQuorum,
+        NilQuorum = 2,
         // NoQuorum
         #[default]
-        NoQuorum,
+        NoQuorum = 255,
+    }
+
+    impl From<u8> for QuorumType {
+        fn from(v: u8) -> QuorumType {
+            match v {
+                0 => QuorumType::ValidQuorum,
+                1 => QuorumType::InvalidQuorum,
+                2 => QuorumType::NilQuorum,
+                _ => QuorumType::NoQuorum,
+            }
+        }
     }
 
     impl fmt::Debug for QuorumType {
@@ -784,16 +788,13 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let mut items_len = [0u8; 4];
-            r.read_exact(&mut items_len)?;
-            let items_len = u32::from_le_bytes(items_len);
+            let items_len = Self::read_u32_le(r)?;
 
             let mut inv = Inv::default();
             for _ in 0..items_len {
-                let mut inv_type_buf = [0u8; 1];
-                r.read_exact(&mut inv_type_buf)?;
+                let inv_type = Self::read_u8(r)?;
 
-                let inv_type = match inv_type_buf[0] {
+                let inv_type = match inv_type {
                     0 => InvType::MempoolTx,
                     1 => InvType::BlockFromHash,
                     2 => InvType::BlockFromHeight,
@@ -816,10 +817,7 @@ pub mod payload {
                         inv.add_block_from_hash(hash);
                     }
                     InvType::BlockFromHeight => {
-                        let mut buf = [0u8; 8];
-                        r.read_exact(&mut buf)?;
-
-                        inv.add_block_from_height(u64::from_le_bytes(buf));
+                        inv.add_block_from_height(Self::read_u64_le(r)?);
                     }
                 }
             }
