@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::config;
 use crate::contract_state::{CallParams, Operations};
 use crate::execution_ctx::ExecutionCtx;
 use crate::validation::handler;
@@ -198,15 +199,21 @@ impl<T: Operations + 'static> ValidationStep<T> {
         if ctx.am_member(committee) {
             let candidate = self.handler.lock().await.candidate.clone();
 
-            Self::spawn_try_vote(
-                &mut ctx.iter_ctx.join_set,
-                candidate,
-                ctx.round_update.clone(),
-                ctx.iteration,
-                ctx.outbound.clone(),
-                ctx.inbound.clone(),
-                self.executor.clone(),
-            );
+            // Casting a NIL vote is disabled in Emergency Mode
+            let voting_enabled = candidate.header().hash != [0u8; 32]
+                || ctx.iteration < config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+
+            if voting_enabled {
+                Self::spawn_try_vote(
+                    &mut ctx.iter_ctx.join_set,
+                    candidate,
+                    ctx.round_update.clone(),
+                    ctx.iteration,
+                    ctx.outbound.clone(),
+                    ctx.inbound.clone(),
+                    self.executor.clone(),
+                );
+            }
         }
 
         // handle queued messages for current round and step.
