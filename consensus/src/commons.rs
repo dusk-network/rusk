@@ -34,7 +34,6 @@ pub struct RoundUpdate {
 
     seed: Seed,
     hash: [u8; 32],
-    timestamp: i64,
     cert: Certificate,
 }
 
@@ -53,7 +52,6 @@ impl RoundUpdate {
             cert: mrb_block.header().cert,
             hash: mrb_block.header().hash,
             seed: mrb_block.header().seed,
-            timestamp: mrb_block.header().timestamp,
             round_base_timeout,
         }
     }
@@ -64,10 +62,6 @@ impl RoundUpdate {
 
     pub fn hash(&self) -> [u8; 32] {
         self.hash
-    }
-
-    pub fn timestamp(&self) -> i64 {
-        self.timestamp
     }
 
     pub fn cert(&self) -> &Certificate {

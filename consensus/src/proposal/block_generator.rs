@@ -107,7 +107,7 @@ impl<T: Operations> Generator<T> {
         let blk_header = ledger::Header {
             version: 0,
             height: ru.round,
-            timestamp: self.get_timestamp(ru.timestamp()) as i64,
+            timestamp: self.get_timestamp(),
             gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
@@ -134,11 +134,10 @@ impl<T: Operations> Generator<T> {
         Ok(Block::new(blk_header, txs).expect("block should be valid"))
     }
 
-    fn get_timestamp(&self, _prev_block_timestamp: i64) -> u64 {
-        // TODO: use config.MaxBlockTime
-        if let Ok(n) = SystemTime::now().duration_since(UNIX_EPOCH) {
-            return n.as_secs();
-        }
-        0
+    fn get_timestamp(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|n| n.as_secs())
+            .expect("This is heavy.")
     }
 }

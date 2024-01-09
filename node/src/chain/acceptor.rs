@@ -576,11 +576,6 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
         return Err(anyhow!("invalid previous block hash"));
     }
 
-    if new_blk.timestamp < mrb.timestamp {
-        //TODO:
-        return Err(anyhow!("invalid block timestamp"));
-    }
-
     // Ensure block is not already in the ledger
     db.read().await.view(|v| {
         if Ledger::get_block_exists(&v, &new_blk.hash)? {
