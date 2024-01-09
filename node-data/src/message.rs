@@ -497,15 +497,6 @@ pub mod payload {
         pub validation_result: ValidationResult,
     }
 
-    impl Default for Ratification {
-        fn default() -> Self {
-            Self {
-                signature: [0; 48],
-                validation_result: ValidationResult::default(),
-            }
-        }
-    }
-
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     pub struct Validation {
         pub signature: [u8; 48],
@@ -528,12 +519,6 @@ pub mod payload {
         }
     }
 
-    impl Default for Validation {
-        fn default() -> Self {
-            Self { signature: [0; 48] }
-        }
-    }
-
     #[derive(Clone)]
     pub struct Candidate {
         pub signature: [u8; 48],
@@ -546,15 +531,6 @@ pub mod payload {
                 .field("signature", &ledger::to_str(&self.signature))
                 .field("block", &self.candidate)
                 .finish()
-        }
-    }
-
-    impl Default for Candidate {
-        fn default() -> Self {
-            Self {
-                candidate: Default::default(),
-                signature: [0; 48],
-            }
         }
     }
 
@@ -655,16 +631,6 @@ pub mod payload {
                 validation,
                 ratification,
             })
-        }
-    }
-
-    impl Default for Quorum {
-        fn default() -> Self {
-            Self {
-                signature: [0; 48],
-                validation: StepVotes::default(),
-                ratification: StepVotes::default(),
-            }
         }
     }
 
