@@ -4,20 +4,19 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::RoundUpdate;
-use crate::operations::CallParams;
+use crate::commons::{get_current_timestamp, RoundUpdate};
+use crate::operations::{CallParams, Operations};
 use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
 
 use crate::config;
 use crate::merkle::merkle_root;
-use crate::operations::Operations;
 
 use dusk_bytes::Serializable;
 use node_data::ledger;
 use node_data::message::payload::Candidate;
 use node_data::message::{Header, Message, Topics};
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::{debug, info};
 
@@ -107,7 +106,7 @@ impl<T: Operations> Generator<T> {
         let blk_header = ledger::Header {
             version: 0,
             height: ru.round,
-            timestamp: self.get_timestamp(),
+            timestamp: get_current_timestamp(),
             gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             prev_block_hash,
             seed,
@@ -132,12 +131,5 @@ impl<T: Operations> Generator<T> {
         }
 
         Ok(Block::new(blk_header, txs).expect("block should be valid"))
-    }
-
-    fn get_timestamp(&self) -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|n| n.as_secs())
-            .expect("This is heavy.")
     }
 }
