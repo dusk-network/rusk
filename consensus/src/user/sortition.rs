@@ -74,7 +74,6 @@ pub fn create_sortition_hash(cfg: &Config, counter: u32) -> [u8; 32] {
 
     // write input message
     hasher.update(&cfg.seed.inner()[..]);
-    hasher.update(cfg.round.to_le_bytes());
     hasher.update(cfg.step.to_le_bytes());
     hasher.update(counter.to_le_bytes());
 
@@ -132,9 +131,9 @@ mod tests {
     #[test]
     pub fn test_sortition_hash() {
         let hash = [
-            247, 14, 92, 48, 116, 139, 3, 5, 171, 135, 3, 182, 119, 212, 157,
-            225, 128, 0, 254, 222, 137, 136, 24, 77, 124, 168, 221, 84, 82,
-            110, 159, 206,
+            102, 194, 89, 58, 228, 163, 25, 223, 222, 214, 246, 137, 213, 168,
+            65, 13, 83, 130, 73, 187, 213, 145, 71, 20, 64, 167, 93, 251, 151,
+            200, 167, 168,
         ];
 
         assert_eq!(
@@ -148,8 +147,10 @@ mod tests {
 
     #[test]
     pub fn test_generate_sortition_score() {
-        let dataset =
-            vec![([3; 48], 123342342, 6458782), ([4; 48], 44443333, 13070642)];
+        let dataset = vec![
+            ([3; 48], 123342342, 40818748),
+            ([4; 48], 44443333, 26458886),
+        ];
 
         for (seed, total_weight, expected_score) in dataset {
             let hash = create_sortition_hash(
@@ -182,7 +183,7 @@ mod tests {
         );
 
         // Verify expected distribution
-        assert_eq!(vec![8, 18, 17, 21], committee.get_occurrences());
+        assert_eq!(vec![8, 20, 14, 22], committee.get_occurrences());
     }
 
     #[test]
@@ -198,7 +199,7 @@ mod tests {
             committee_size,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![2, 18, 9, 16], committee.get_occurrences());
+        assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
     }
 
     #[test]
@@ -224,7 +225,7 @@ mod tests {
             committee_size,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![2, 18, 9, 16], committee.get_occurrences());
+        assert_eq!(vec![3, 17, 9, 16], committee.get_occurrences());
 
         // Run the same extraction, with the generator excluded
         let cfg =
@@ -242,7 +243,7 @@ mod tests {
             committee_size,
             committee.get_occurrences().iter().sum::<usize>()
         );
-        assert_eq!(vec![6, 13, 26], committee.get_occurrences());
+        assert_eq!(vec![5, 23, 17], committee.get_occurrences());
     }
 
     #[test]
