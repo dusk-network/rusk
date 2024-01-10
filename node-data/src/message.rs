@@ -480,6 +480,7 @@ pub mod payload {
     )]
     pub struct Ratification {
         pub signature: [u8; 48],
+        pub timestamp: u64,
         pub validation_result: ValidationResult,
     }
 

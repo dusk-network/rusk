@@ -264,6 +264,7 @@ impl Serializable for Label {
 impl Serializable for Ratification {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.signature)?;
+        w.write_all(&self.timestamp.to_le_bytes())?;
         self.validation_result.write(w)?;
 
         Ok(())
@@ -274,11 +275,12 @@ impl Serializable for Ratification {
         Self: Sized,
     {
         let signature = Self::read_bytes(r)?;
-
+        let timestamp = Self::read_u64_le(r)?;
         let validation_result = ValidationResult::read(r)?;
 
         Ok(Ratification {
             signature,
+            timestamp,
             validation_result,
         })
     }
