@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
-use crate::contract_state::{CallParams, Operations};
 use crate::execution_ctx::ExecutionCtx;
+use crate::operations::{CallParams, Operations};
 use crate::validation::handler;
 use anyhow::anyhow;
 use dusk_bytes::DeserializableSlice;
@@ -56,17 +56,36 @@ impl<T: Operations + 'static> ValidationStep<T> {
     ) {
         let hash = candidate.header().hash;
 
-        // Call VST for non-empty blocks
-        if hash != [0u8; 32] {
-            if let Err(err) = Self::call_vst(&candidate, &ru, executor).await {
-                error!(
-                    event = "failed_vst_call",
-                    reason = format!("{:?}", err)
-                );
-                return;
-            }
+        if hash == [0u8; 32] {
+            // Vote Nil
+            Self::cast_vote([0u8; 32], ru, iteration, outbound, inbound).await;
+            return;
         }
 
+        // Verify candidate header all fields except the winning certificate
+        if let Err(err) = executor
+            .lock()
+            .await
+            .verify_block_header(candidate.header(), true)
+            .await
+        {
+            error!(event = "invalid_header", ?err);
+            return;
+        };
+
+        // Call VST for non-empty blocks
+        if let Err(err) = Self::call_vst(&candidate, &ru, executor).await {
+            error!(event = "failed_vst_call", ?err);
+        }
+    }
+
+    async fn cast_vote(
+        hash: [u8; 32],
+        ru: RoundUpdate,
+        iteration: u8,
+        outbound: AsyncQueue<Message>,
+        inbound: AsyncQueue<Message>,
+    ) {
         let hdr = message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
