@@ -25,7 +25,6 @@ pub struct ValidationStep<T> {
 }
 
 impl<T: Operations + 'static> ValidationStep<T> {
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
         candidate: Block,
