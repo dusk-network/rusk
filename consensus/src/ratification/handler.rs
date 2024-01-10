@@ -232,18 +232,16 @@ impl RatificationHandler {
                             true,
                         )?;
 
-                        Ok(())
+                        return Ok(());
                     } else {
                         error!("could not get validation committee");
-                        Err(ConsensusError::InvalidValidation)
                     }
                 } else {
                     error!("could not get generator");
-                    Err(ConsensusError::InvalidValidation)
                 }
             }
-            QuorumType::NoQuorum => Err(ConsensusError::InvalidValidation), /* TBD */
-            QuorumType::InvalidQuorum => Err(ConsensusError::InvalidValidation), /* Not supported */
+            _ => {}
         }
+        Err(ConsensusError::InvalidValidation(result.quorum))
     }
 }
