@@ -1,4 +1,10 @@
-on: [pull_request]
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
 
 name: Continuous integration
 
@@ -13,6 +19,7 @@ jobs:
       - run: cargo dusk-analyzer
 
   test_nightly:
+    if: github.event.pull_request.draft == false
     name: Nightly tests
     runs-on: core
     steps:
