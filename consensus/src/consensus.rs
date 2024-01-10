@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 use crate::config::CONSENSUS_MAX_ITER;
-use crate::contract_state::Operations;
+use crate::operations::Operations;
 use crate::phase::Phase;
 
 use node_data::ledger::Block;

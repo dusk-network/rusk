@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database};
-use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
+use crate::operations::Operations;
 
 use node_data::message::Message;
 use node_data::StepName;
