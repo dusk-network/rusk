@@ -104,6 +104,11 @@ unsafe fn existing_nullifiers(arg_len: u32) -> u32 {
     })
 }
 
+#[no_mangle]
+unsafe fn num_notes(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.num_notes())
+}
+
 // "Feeder" queries
 
 #[no_mangle]
