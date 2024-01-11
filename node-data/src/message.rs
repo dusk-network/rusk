@@ -5,7 +5,6 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use bytes::{Buf, BufMut, BytesMut};
-use dusk_bytes::DeserializableSlice;
 use dusk_bytes::Serializable as DuskSerializable;
 
 use crate::ledger::to_str;
@@ -106,10 +105,7 @@ impl Serializable for Message {
         Self: Sized,
     {
         // Read topic
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-
-        let topic = Topics::from(buf[0]);
+        let topic = Topics::from(Self::read_u8(r)?);
         if topic == Topics::Unknown {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -350,7 +346,7 @@ impl std::fmt::Debug for Header {
 
 impl Serializable for Header {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        Self::write_var_bytes(w, &self.pubkey_bls.bytes().inner()[..])?;
+        w.write_all(self.pubkey_bls.bytes().inner())?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.iteration])?;
         w.write_all(&self.block_hash[..])?;
@@ -363,35 +359,21 @@ impl Serializable for Header {
         Self: Sized,
     {
         // Read bls pubkey
-        let buf: [u8; 96] = Self::read_var_bytes(r)?
+        let mut pubkey_bls = [0u8; 96];
+        r.read_exact(&mut pubkey_bls)?;
+        let pubkey_bls = pubkey_bls
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
 
-        let mut pubkey_bls = bls::PublicKey::default();
-        if buf != [0u8; 96] {
-            pubkey_bls = match dusk_bls12_381_sign::PublicKey::from_slice(&buf)
-            {
-                Ok(pk) => bls::PublicKey::new(pk),
-                Err(_) => {
-                    return Ok(Header::default()); // TODO: This should be an
-                                                  // error
-                }
-            }
-        }
-
         // Read round
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf)?;
-        let round = u64::from_le_bytes(buf);
+        let round = Self::read_u64_le(r)?;
 
         // Read iteration
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf)?;
-        let iteration = buf[0];
+        let iteration = Self::read_u8(r)?;
 
         // Read block_hash
         let mut block_hash = [0u8; 32];
-        r.read_exact(&mut block_hash[..])?;
+        r.read_exact(&mut block_hash)?;
 
         Ok(Header {
             pubkey_bls,
@@ -492,49 +474,42 @@ pub mod payload {
     use std::io::{self, Read, Write};
 
     #[derive(Debug, Clone)]
+    #[cfg_attr(
+        any(feature = "faker", test),
+        derive(fake::Dummy, Eq, PartialEq)
+    )]
     pub struct Ratification {
         pub signature: [u8; 48],
         pub validation_result: ValidationResult,
     }
 
-    impl Default for Ratification {
-        fn default() -> Self {
-            Self {
-                signature: [0; 48],
-                validation_result: ValidationResult::default(),
-            }
-        }
-    }
-
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[derive(Debug, Copy, Clone)]
+    #[cfg_attr(
+        any(feature = "faker", test),
+        derive(fake::Dummy, Eq, PartialEq)
+    )]
     pub struct Validation {
         pub signature: [u8; 48],
     }
 
     impl Serializable for Validation {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_bytes(w, &self.signature[..])
+            w.write_all(&self.signature)
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
-            let signature: [u8; 48] = Self::read_var_bytes(r)?
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+            let mut signature = [0u8; 48];
+            r.read_exact(&mut signature)?;
 
             Ok(Validation { signature })
         }
     }
 
-    impl Default for Validation {
-        fn default() -> Self {
-            Self { signature: [0; 48] }
-        }
-    }
-
     #[derive(Clone)]
+    #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
     pub struct Candidate {
         pub signature: [u8; 48],
         pub candidate: Block,
@@ -546,15 +521,6 @@ pub mod payload {
                 .field("signature", &ledger::to_str(&self.signature))
                 .field("block", &self.candidate)
                 .finish()
-        }
-    }
-
-    impl Default for Candidate {
-        fn default() -> Self {
-            Self {
-                candidate: Default::default(),
-                signature: [0; 48],
-            }
         }
     }
 
@@ -574,34 +540,49 @@ pub mod payload {
     impl Serializable for Candidate {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.candidate.write(w)?;
-            Self::write_var_bytes(w, &self.signature[..])?;
-
-            Ok(())
+            w.write_all(&self.signature)
         }
 
         fn read<R: Read>(r: &mut R) -> io::Result<Self>
         where
             Self: Sized,
         {
+            let candidate = Block::read(r)?;
+            let mut signature = [0u8; 48];
+            r.read_exact(&mut signature)?;
+
             Ok(Candidate {
-                candidate: Block::read(r)?,
-                signature: Self::read_var_bytes(r)?
-                    .try_into()
-                    .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
+                candidate,
+                signature,
             })
         }
     }
-    #[derive(Clone, Default)]
+    #[derive(Clone, Copy, Default)]
+    #[cfg_attr(
+        any(feature = "faker", test),
+        derive(fake::Dummy, Eq, PartialEq)
+    )]
     pub enum QuorumType {
         /// Quorum on Valid Candidate
-        ValidQuorum,
+        ValidQuorum = 0,
         // Quorum on Invalid Candidate
-        InvalidQuorum,
+        InvalidQuorum = 1,
         //Quorum on Timeout (NilQuorum)
-        NilQuorum,
+        NilQuorum = 2,
         // NoQuorum
         #[default]
-        NoQuorum,
+        NoQuorum = 255,
+    }
+
+    impl From<u8> for QuorumType {
+        fn from(v: u8) -> QuorumType {
+            match v {
+                0 => QuorumType::ValidQuorum,
+                1 => QuorumType::InvalidQuorum,
+                2 => QuorumType::NilQuorum,
+                _ => QuorumType::NoQuorum,
+            }
+        }
     }
 
     impl fmt::Debug for QuorumType {
@@ -617,6 +598,10 @@ pub mod payload {
     }
 
     #[derive(Debug, Clone, Default)]
+    #[cfg_attr(
+        any(feature = "faker", test),
+        derive(fake::Dummy, Eq, PartialEq)
+    )]
     pub struct ValidationResult {
         pub quorum: QuorumType,
         pub hash: [u8; 32],
@@ -632,7 +617,7 @@ pub mod payload {
 
     impl Serializable for Quorum {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_var_bytes(w, &self.signature[..])?;
+            w.write_all(&self.signature)?;
             self.validation.write(w)?;
             self.ratification.write(w)?;
 
@@ -643,9 +628,8 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let signature = Self::read_var_bytes(r)?
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+            let mut signature = [0u8; 48];
+            r.read_exact(&mut signature)?;
 
             let validation = StepVotes::read(r)?;
             let ratification = StepVotes::read(r)?;
@@ -655,16 +639,6 @@ pub mod payload {
                 validation,
                 ratification,
             })
-        }
-    }
-
-    impl Default for Quorum {
-        fn default() -> Self {
-            Self {
-                signature: [0; 48],
-                validation: StepVotes::default(),
-                ratification: StepVotes::default(),
-            }
         }
     }
 
@@ -793,7 +767,8 @@ pub mod payload {
 
     impl Serializable for Inv {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_varint(w, self.inv_list.len() as u64)?;
+            let items_len = self.inv_list.len() as u32;
+            w.write_all(&items_len.to_le_bytes())?;
 
             for item in &self.inv_list {
                 w.write_all(&[item.inv_type as u8])?;
@@ -813,14 +788,13 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let items_len = Self::read_varint(r)?;
+            let items_len = Self::read_u32_le(r)?;
 
             let mut inv = Inv::default();
             for _ in 0..items_len {
-                let mut inv_type_buf = [0u8; 1];
-                r.read_exact(&mut inv_type_buf)?;
+                let inv_type = Self::read_u8(r)?;
 
-                let inv_type = match inv_type_buf[0] {
+                let inv_type = match inv_type {
                     0 => InvType::MempoolTx,
                     1 => InvType::BlockFromHash,
                     2 => InvType::BlockFromHeight,
@@ -843,10 +817,7 @@ pub mod payload {
                         inv.add_block_from_hash(hash);
                     }
                     InvType::BlockFromHeight => {
-                        let mut buf = [0u8; 8];
-                        r.read_exact(&mut buf)?;
-
-                        inv.add_block_from_height(u64::from_le_bytes(buf));
+                        inv.add_block_from_height(Self::read_u64_le(r)?);
                     }
                 }
             }
@@ -862,7 +833,6 @@ pub mod payload {
 
     impl Serializable for GetBlocks {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-            Self::write_varint(w, 1)?;
             w.write_all(&self.locator[..])
         }
 
@@ -870,11 +840,10 @@ pub mod payload {
         where
             Self: Sized,
         {
-            let mut result = GetBlocks::default();
-            Self::read_varint(r)?;
-            r.read_exact(&mut result.locator[..])?;
+            let mut locator = [0u8; 32];
+            r.read_exact(&mut locator)?;
 
-            Ok(result)
+            Ok(Self { locator })
         }
     }
 

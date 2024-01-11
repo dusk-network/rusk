@@ -122,30 +122,21 @@ pub struct Certificate {
 
 impl Header {
     /// Marshal hashable fields.
-    ///
-    /// Param `fixed_size_seed` changes the way seed is marshaled.
-    /// In block hashing, header seed is fixed-size field while in wire
-    /// message marshaling it is variable-length field.
     pub(crate) fn marshal_hashable<W: Write>(
         &self,
         w: &mut W,
-        fixed_size_seed: bool,
     ) -> io::Result<()> {
         w.write_all(&self.version.to_le_bytes())?;
         w.write_all(&self.height.to_le_bytes())?;
         w.write_all(&self.timestamp.to_le_bytes())?;
-        w.write_all(&self.prev_block_hash[..])?;
+        w.write_all(&self.prev_block_hash)?;
 
-        if fixed_size_seed {
-            w.write_all(&self.seed.inner()[..])?;
-        } else {
-            Self::write_var_bytes(w, &self.seed.inner()[..])?;
-        }
+        w.write_all(&self.seed.inner())?;
 
-        w.write_all(&self.state_hash[..])?;
-        w.write_all(&self.event_hash[..])?;
-        w.write_all(&self.generator_bls_pubkey.inner()[..])?;
-        w.write_all(&self.txroot[..])?;
+        w.write_all(&self.state_hash)?;
+        w.write_all(&self.event_hash)?;
+        w.write_all(self.generator_bls_pubkey.inner())?;
+        w.write_all(&self.txroot)?;
         w.write_all(&self.gas_limit.to_le_bytes())?;
         w.write_all(&self.iteration.to_le_bytes())?;
         self.prev_block_cert.write(w)?;
@@ -155,45 +146,18 @@ impl Header {
     }
 
     pub(crate) fn unmarshal_hashable<R: Read>(r: &mut R) -> io::Result<Self> {
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf[..])?;
-        let version = buf[0];
+        let version = Self::read_u8(r)?;
+        let height = Self::read_u64_le(r)?;
+        let timestamp = Self::read_u64_le(r)?;
 
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf[..])?;
-        let height = u64::from_le_bytes(buf);
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf[..])?;
-        let timestamp = u64::from_le_bytes(buf);
-
-        let mut prev_block_hash = [0u8; 32];
-        r.read_exact(&mut prev_block_hash[..])?;
-
-        let value = Self::read_var_bytes(r)?;
-        let seed: [u8; 48] = value
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let mut state_hash = [0u8; 32];
-        r.read_exact(&mut state_hash[..])?;
-
-        let mut event_hash = [0u8; 32];
-        r.read_exact(&mut event_hash[..])?;
-
-        let mut generator_bls_pubkey = [0u8; 96];
-        r.read_exact(&mut generator_bls_pubkey[..])?;
-
-        let mut txroot = [0u8; 32];
-        r.read_exact(&mut txroot[..])?;
-
-        let mut buf = [0u8; 8];
-        r.read_exact(&mut buf[..])?;
-        let gas_limit = u64::from_le_bytes(buf);
-
-        let mut buf = [0u8; 1];
-        r.read_exact(&mut buf[..])?;
-        let iteration = buf[0];
+        let prev_block_hash = Self::read_bytes(r)?;
+        let seed = Self::read_bytes(r)?;
+        let state_hash = Self::read_bytes(r)?;
+        let event_hash = Self::read_bytes(r)?;
+        let generator_bls_pubkey = Self::read_bytes(r)?;
+        let txroot = Self::read_bytes(r)?;
+        let gas_limit = Self::read_u64_le(r)?;
+        let iteration = Self::read_u8(r)?;
 
         let prev_block_cert = Certificate::read(r)?;
         let failed_iterations = IterationsInfo::read(r)?;
@@ -233,7 +197,7 @@ impl Block {
         }
 
         let mut hasher = sha3::Sha3_256::new();
-        self.header.marshal_hashable(&mut hasher, true)?;
+        self.header.marshal_hashable(&mut hasher)?;
 
         self.header.hash = hasher.finalize().into();
         Ok(())
