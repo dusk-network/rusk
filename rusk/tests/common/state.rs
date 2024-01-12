@@ -11,7 +11,7 @@ use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
 
 use dusk_bls12_381_sign::PublicKey;
-use dusk_consensus::contract_state::CallParams;
+use dusk_consensus::operations::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
 use node_data::ledger::{Block, Header, SpentTransaction};
 use tracing::info;

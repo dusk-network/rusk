@@ -28,7 +28,7 @@ use tracing::{error, info};
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
 use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
-use dusk_consensus::contract_state::VerificationOutput;
+use dusk_consensus::operations::VerificationOutput;
 use dusk_pki::{PublicKey, ViewKey};
 use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};

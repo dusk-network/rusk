@@ -7,7 +7,7 @@
 use std::{fmt, io};
 
 use dusk_bls12_381::BlsScalar;
-use dusk_consensus::contract_state::VerificationOutput;
+use dusk_consensus::operations::VerificationOutput;
 use rusk_abi::dusk::Dusk;
 
 #[derive(Debug)]
