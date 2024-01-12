@@ -12,7 +12,7 @@ use node_data::message::{payload, Message, Topics};
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, error};
 
 pub(crate) enum SvType {
     Validation,
@@ -56,6 +56,7 @@ impl CertificateInfo {
     ) -> bool {
         if let Some(h) = self.hash {
             if h != hash {
+                error!("Attempting to replace {h:?} with {hash:?}");
                 return false;
             }
         } else {
