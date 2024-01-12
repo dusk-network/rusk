@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::config;
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::{CallParams, Operations};
 use crate::validation::handler;
@@ -24,8 +25,7 @@ pub struct ValidationStep<T> {
 }
 
 impl<T: Operations + 'static> ValidationStep<T> {
-    #[allow(clippy::too_many_arguments)]
-    pub fn spawn_try_vote(
+    pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
         candidate: Block,
         ru: RoundUpdate,
@@ -38,7 +38,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         join_set.spawn(
             async move {
                 Self::try_vote(
-                    candidate, ru, iteration, outbound, inbound, executor,
+                    &candidate, &ru, iteration, outbound, inbound, executor,
                 )
                 .await
             }
@@ -46,14 +46,15 @@ impl<T: Operations + 'static> ValidationStep<T> {
         );
     }
 
-    async fn try_vote(
-        candidate: Block,
-        ru: RoundUpdate,
+    pub(crate) async fn try_vote(
+        candidate: &Block,
+        ru: &RoundUpdate,
         iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
+        // TODO: Verify Block Header
         let hash = candidate.header().hash;
 
         if hash == [0u8; 32] {
@@ -74,7 +75,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         };
 
         // Call VST for non-empty blocks
-        if let Err(err) = Self::call_vst(&candidate, &ru, executor).await {
+        if let Err(err) = Self::call_vst(&candidate, ru, executor).await {
             error!(event = "failed_vst_call", ?err);
         }
     }
@@ -216,15 +217,21 @@ impl<T: Operations + 'static> ValidationStep<T> {
         if ctx.am_member(committee) {
             let candidate = self.handler.lock().await.candidate.clone();
 
-            Self::spawn_try_vote(
-                &mut ctx.iter_ctx.join_set,
-                candidate,
-                ctx.round_update.clone(),
-                ctx.iteration,
-                ctx.outbound.clone(),
-                ctx.inbound.clone(),
-                self.executor.clone(),
-            );
+            // Casting a NIL vote is disabled in Emergency Mode
+            let voting_enabled = candidate.header().hash != [0u8; 32]
+                || ctx.iteration < config::EMERGENCY_MODE_ITERATION_THRESHOLD;
+
+            if voting_enabled {
+                Self::spawn_try_vote(
+                    &mut ctx.iter_ctx.join_set,
+                    candidate,
+                    ctx.round_update.clone(),
+                    ctx.iteration,
+                    ctx.outbound.clone(),
+                    ctx.inbound.clone(),
+                    self.executor.clone(),
+                );
+            }
         }
 
         // handle queued messages for current round and step.

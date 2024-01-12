@@ -30,7 +30,6 @@ pub struct RatificationStep<T, DB> {
 
 impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
     pub async fn try_vote(
-        &self,
         ru: &RoundUpdate,
         iteration: u8,
         result: &ValidationResult,
@@ -125,14 +124,13 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
 
-            let vote_msg = self
-                .try_vote(
-                    &ctx.round_update,
-                    ctx.iteration,
-                    handler.validation_result(),
-                    ctx.outbound.clone(),
-                )
-                .await;
+            let vote_msg = Self::try_vote(
+                &ctx.round_update,
+                ctx.iteration,
+                handler.validation_result(),
+                ctx.outbound.clone(),
+            )
+            .await;
 
             // Collect my own vote
             let res = handler
