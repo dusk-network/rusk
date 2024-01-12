@@ -132,11 +132,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     async fn spawn_task(&self) {
-        let provisioners = self.provisioners_list.read().await.to_current();
+        let provisioners_list = self.provisioners_list.read().await.clone();
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
-            Arc::new(provisioners),
+            provisioners_list,
             &self.db,
             &self.vm,
             &self.network,
@@ -374,7 +374,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         if enable_consensus {
             task.spawn(
                 mrb.inner(),
-                Arc::new(provisioners_list.to_current()),
+                provisioners_list.clone(),
                 &self.db,
                 &self.vm,
                 &self.network,
@@ -473,8 +473,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     pub(crate) async fn restart_consensus(&mut self) {
         let mut task = self.task.write().await;
         let mrb = self.mrb.read().await;
-        let provisioners_list =
-            self.provisioners_list.read().await.to_current();
+        let provisioners_list = self.provisioners_list.read().await.clone();
 
         task.abort_with_wait().await;
         info!(
@@ -486,7 +485,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         task.spawn(
             mrb.inner(),
-            Arc::new(provisioners_list),
+            provisioners_list,
             &self.db,
             &self.vm,
             &self.network,

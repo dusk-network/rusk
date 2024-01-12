@@ -10,6 +10,8 @@ mod fallback;
 mod fsm;
 mod genesis;
 
+mod header_validation;
+
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
 use crate::database::Ledger;
