@@ -106,7 +106,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             event = "init",
             name = self.name(),
             round = round,
-            iteration = iteration,
+            iter = iteration,
             hash = to_str(&handler.validation_result().hash),
             fsv_bitset = handler.validation_result().sv.bitset,
             quorum_type = format!("{:?}", handler.validation_result().quorum)

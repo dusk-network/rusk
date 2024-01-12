@@ -44,7 +44,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         round: u64,
         iteration: u8,
     ) {
-        debug!(event = "init", name = self.name(), round, iteration,)
+        debug!(event = "init", name = self.name(), round, iter = iteration,)
     }
 
     pub async fn run(

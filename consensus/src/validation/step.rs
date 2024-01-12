@@ -54,16 +54,16 @@ impl<T: Operations + 'static> ValidationStep<T> {
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
-        // TODO: Verify Block Header
         let hash = candidate.header().hash;
 
+        // A Validation step with empty/default Block produces a Nil Vote
         if hash == [0u8; 32] {
-            // Vote Nil
             Self::cast_vote([0u8; 32], ru, iteration, outbound, inbound).await;
             return;
         }
 
         // Verify candidate header all fields except the winning certificate
+        // NB: Winning certificate is produced only on reaching consensus
         if let Err(err) = executor
             .lock()
             .await
@@ -74,15 +74,17 @@ impl<T: Operations + 'static> ValidationStep<T> {
             return;
         };
 
-        // Call VST for non-empty blocks
-        if let Err(err) = Self::call_vst(&candidate, ru, executor).await {
+        // Call Verify State Transition to make sure transactions set is valid
+        if let Err(err) = Self::call_vst(candidate, ru, executor).await {
             error!(event = "failed_vst_call", ?err);
         }
+
+        Self::cast_vote(hash, ru, iteration, outbound, inbound).await;
     }
 
     async fn cast_vote(
         hash: [u8; 32],
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
@@ -202,7 +204,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             event = "init",
             name = self.name(),
             round,
-            iteration,
+            iter = iteration,
             hash = to_str(&handler.candidate.header().hash),
         )
     }
