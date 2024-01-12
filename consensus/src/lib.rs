@@ -12,9 +12,9 @@ pub mod user;
 
 mod aggregator;
 pub mod config;
-pub mod contract_state;
 mod execution_ctx;
 mod msg_handler;
+pub mod operations;
 mod phase;
 mod proposal;
 mod queue;

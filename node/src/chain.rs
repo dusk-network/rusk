@@ -10,12 +10,13 @@ mod fallback;
 mod fsm;
 mod genesis;
 
+mod header_validation;
+
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
 use crate::database::Ledger;
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-pub use acceptor::verify_block_cert;
 use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;

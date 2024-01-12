@@ -6,10 +6,10 @@
 
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 
-use crate::contract_state::Operations;
 use crate::iteration_ctx::IterationCtx;
 use crate::msg_handler::HandleMsgOutput::{Pending, Ready};
 use crate::msg_handler::MsgHandler;
+use crate::operations::Operations;
 use crate::queue::Queue;
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;

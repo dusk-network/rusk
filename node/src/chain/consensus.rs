@@ -9,11 +9,11 @@ use crate::{vm, Message, Network};
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate};
 use dusk_consensus::consensus::Consensus;
-use dusk_consensus::contract_state::{
+use dusk_consensus::operations::{
     CallParams, Error, Operations, Output, VerificationOutput,
 };
-use dusk_consensus::user::provisioners::Provisioners;
-use node_data::ledger::{Block, Hash, Transaction};
+use dusk_consensus::user::provisioners::ContextProvisioners;
+use node_data::ledger::{Block, Hash, Header, Transaction};
 use node_data::message::payload::GetCandidate;
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -21,6 +21,8 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{error, info, trace, warn};
 
+use crate::chain::header_validation::Validator;
+use node_data::ledger;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -73,17 +75,23 @@ impl Task {
     pub(crate) fn spawn<D: database::DB, VM: vm::VMExecution, N: Network>(
         &mut self,
         most_recent_block: &node_data::ledger::Block,
-        provisioners: Arc<Provisioners>,
+        provisioners_list: ContextProvisioners,
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
     ) {
+        let current = provisioners_list.to_current();
         let c = Consensus::new(
             self.main_inbound.clone(),
             self.outbound.clone(),
             self.quorum_inbound.clone(),
             self.outbound.clone(),
-            Arc::new(Mutex::new(Executor::new(db, vm))),
+            Arc::new(Mutex::new(Executor::new(
+                db,
+                vm,
+                most_recent_block.header().clone(),
+                provisioners_list, // TODO: Avoid cloning
+            ))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
 
@@ -98,8 +106,7 @@ impl Task {
 
         self.task_id += 1;
 
-        let (all_num, eligible_num) =
-            provisioners.get_provisioners_info(ru.round);
+        let (all_num, eligible_num) = current.get_provisioners_info(ru.round);
 
         info!(
             event = "spawn consensus",
@@ -115,7 +122,7 @@ impl Task {
 
         self.running_task = Some((
             tokio::spawn(async move {
-                let cons_result = c.spin(ru, provisioners, cancel_rx).await;
+                let cons_result = c.spin(ru, current.into(), cancel_rx).await;
                 if let Err(e) = result_queue.send(cons_result).await {
                     error!("Unable to send consensus result to queue {e}")
                 }
@@ -262,24 +269,55 @@ impl<DB: database::DB, N: Network> dusk_consensus::commons::Database
 pub struct Executor<DB: database::DB, VM: vm::VMExecution> {
     db: Arc<RwLock<DB>>,
     vm: Arc<RwLock<VM>>,
+    mrb_header: ledger::Header,
+    provisioners: ContextProvisioners,
 }
 
 impl<DB: database::DB, VM: vm::VMExecution> Executor<DB, VM> {
-    fn new(db: &Arc<RwLock<DB>>, vm: &Arc<RwLock<VM>>) -> Self {
+    fn new(
+        db: &Arc<RwLock<DB>>,
+        vm: &Arc<RwLock<VM>>,
+        mrb_header: ledger::Header,
+        provisioners: ContextProvisioners,
+    ) -> Self {
         Executor {
             db: db.clone(),
             vm: vm.clone(),
+            mrb_header,
+            provisioners,
         }
     }
 }
 
 #[async_trait::async_trait]
 impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
+    async fn verify_block_header(
+        &self,
+        candidate_header: &Header,
+        disable_winning_cert_check: bool,
+    ) -> Result<(), Error> {
+        let validator = Validator::new(
+            self.db.clone(),
+            &self.mrb_header,
+            &self.provisioners,
+        );
+
+        validator
+            .execute_checks(candidate_header, disable_winning_cert_check)
+            .await
+            .map_err(|err| {
+                error!("failed to verify header {}", err);
+                Error::Failed
+            })?;
+
+        Ok(())
+    }
+
     async fn verify_state_transition(
         &self,
         params: CallParams,
         txs: Vec<Transaction>,
-    ) -> Result<VerificationOutput, dusk_consensus::contract_state::Error> {
+    ) -> Result<VerificationOutput, dusk_consensus::operations::Error> {
         info!("verifying state");
 
         let vm = self.vm.read().await;

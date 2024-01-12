@@ -6,8 +6,8 @@
 
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config;
-use crate::contract_state::{CallParams, Operations};
 use crate::execution_ctx::ExecutionCtx;
+use crate::operations::{CallParams, Operations};
 use crate::validation::handler;
 use anyhow::anyhow;
 use dusk_bytes::DeserializableSlice;
@@ -17,7 +17,7 @@ use node_data::message::{self, AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
-use tracing::{debug, error, Instrument};
+use tracing::{debug, error, info, Instrument};
 
 pub struct ValidationStep<T> {
     handler: Arc<Mutex<handler::ValidationHandler>>,
@@ -42,7 +42,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
                 )
                 .await
             }
-            .instrument(tracing::info_span!("voting", hash)),
+            .instrument(tracing::info_span!("validation", hash,)),
         );
     }
 
@@ -54,20 +54,42 @@ impl<T: Operations + 'static> ValidationStep<T> {
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
-        // TODO: Verify Block Header
-        let hash = candidate.header().hash;
+        let header = candidate.header();
 
-        // Call VST for non-empty blocks
-        if hash != [0u8; 32] {
-            if let Err(err) = Self::call_vst(candidate, ru, executor).await {
-                error!(
-                    event = "failed_vst_call",
-                    reason = format!("{:?}", err)
-                );
-                return;
-            }
+        // A Validation step with empty/default Block produces a Nil Vote
+        if header.hash == [0u8; 32] {
+            Self::cast_vote([0u8; 32], ru, iteration, outbound, inbound).await;
+            return;
         }
 
+        // Verify candidate header (all fields except the winning certificate)
+        // NB: Winning certificate is produced only on reaching consensus
+        if let Err(err) = executor
+            .lock()
+            .await
+            .verify_block_header(header, true)
+            .await
+        {
+            error!(event = "invalid_header", ?err, ?header);
+            return;
+        };
+
+        // Call Verify State Transition to make sure transactions set is valid
+        if let Err(err) = Self::call_vst(candidate, ru, executor).await {
+            error!(event = "failed_vst_call", ?err);
+            return;
+        }
+
+        Self::cast_vote(header.hash, ru, iteration, outbound, inbound).await;
+    }
+
+    async fn cast_vote(
+        hash: [u8; 32],
+        ru: &RoundUpdate,
+        iteration: u8,
+        outbound: AsyncQueue<Message>,
+        inbound: AsyncQueue<Message>,
+    ) {
         let hdr = message::Header {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
@@ -85,7 +107,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         );
 
         // Publish validation vote
-        debug!(event = "voting", vtype = "validation", hash = to_str(&hash));
+        info!(event = "send_vote");
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -183,7 +205,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             event = "init",
             name = self.name(),
             round,
-            iteration,
+            iter = iteration,
             hash = to_str(&handler.candidate.header().hash),
         )
     }

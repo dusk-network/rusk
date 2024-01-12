@@ -5,12 +5,12 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use crate::contract_state::CallParams;
+use crate::operations::CallParams;
 use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
 
 use crate::config;
-use crate::contract_state::Operations;
 use crate::merkle::merkle_root;
+use crate::operations::Operations;
 
 use dusk_bytes::Serializable;
 use node_data::ledger;
@@ -35,7 +35,7 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         iteration: u8,
         failed_iterations: Vec<Option<Certificate>>,
-    ) -> Result<Message, crate::contract_state::Error> {
+    ) -> Result<Message, crate::operations::Error> {
         // Sign seed
         let seed = ru
             .secret_key
@@ -82,7 +82,7 @@ impl<T: Operations> Generator<T> {
         seed: Seed,
         iteration: u8,
         failed_iterations: Vec<Option<Certificate>>,
-    ) -> Result<Block, crate::contract_state::Error> {
+    ) -> Result<Block, crate::operations::Error> {
         let start_time = Instant::now();
 
         let call_params = CallParams {

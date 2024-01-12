@@ -51,7 +51,7 @@
 	  RUSK_STATE_PATH=${RUSK_STATE_PATH} cargo r --release -p rusk -- recovery-state --init $GENESIS_PATH
 	  echo "starting node $ID ..."
     echo "${KEYS_PATH}/node_$ID.keys"
-	  RUSK_STATE_PATH=${RUSK_STATE_PATH} ./target/release/rusk --kadcast-bootstrap "$BOOTSTRAP_ADDR" --kadcast-public-address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="$NODE_FOLDER" --http-listen-addr "$WS_LISTEN_ADDR" --delay-on-resp-msg=10 > "${TEMPD}/node_${ID}.log" &
+	  RUSK_STATE_PATH=${RUSK_STATE_PATH} ./target/release/rusk --kadcast-bootstrap "$BOOTSTRAP_ADDR" --kadcast-public-address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --log-filter="dusk_consensus=debug"  --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="$NODE_FOLDER" --http-listen-addr "$WS_LISTEN_ADDR" --delay-on-resp-msg=10 > "${TEMPD}/node_${ID}.log" &
 	}
 
 	## Use ~/.cargo/bin/tokio-console --retain-for 0s http://127.0.0.1:10000 to connect console to first node
@@ -69,7 +69,7 @@
 
 	  RUST_LOG="info" TOKIO_CONSOLE_BIND="127.0.0.1:$T_BIND_PORT" \
 	  cargo --config 'build.rustflags = ["--cfg", "tokio_unstable"]' run --features with_telemetry --bin rusk-node --\
-	  --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" \
+	  --kadcast_bootstrap "$BOOTSTRAP_ADDR" --kadcast_public_address "$PUBLIC_ADDR" --log-level="$LOG_LEVEL" --log-filter="dusk_consensus=debug" \
   --consensus-keys-path="${KEYS_PATH}/node_$ID.keys" --db-path="${TEMPD}/db/${ID}" --config="default.config.toml" > "${TEMPD}/node_${ID}.log" &
 }
 

@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use node_data::ledger::{SpentTransaction, Transaction};
+use node_data::ledger::{Header, SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
@@ -49,6 +49,12 @@ impl fmt::Display for VerificationOutput {
 
 #[async_trait::async_trait]
 pub trait Operations: Send + Sync {
+    async fn verify_block_header(
+        &self,
+        candidate_header: &Header,
+        disable_winning_cert_check: bool,
+    ) -> Result<(), Error>;
+
     async fn verify_state_transition(
         &self,
         params: CallParams,

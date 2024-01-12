@@ -5,9 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::{ConsensusError, Database};
-use crate::contract_state::Operations;
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
+use crate::operations::Operations;
 use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
@@ -44,7 +44,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
         round: u64,
         iteration: u8,
     ) {
-        debug!(event = "init", name = self.name(), round, iteration,)
+        debug!(event = "init", name = self.name(), round, iter = iteration,)
     }
 
     pub async fn run(

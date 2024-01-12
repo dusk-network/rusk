@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_consensus::{
-    contract_state::CallParams, contract_state::VerificationOutput,
+    operations::CallParams, operations::VerificationOutput,
     user::provisioners::Provisioners,
 };
 use node_data::ledger::{Block, SpentTransaction, Transaction};
