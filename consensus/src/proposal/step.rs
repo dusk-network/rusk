@@ -59,11 +59,8 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 cmp::min(config::RELAX_ITERATION_THRESHOLD, ctx.iteration);
 
             // Fetch failed certificates from sv_registry
-            let failed_certificates = ctx
-                .sv_registry
-                .lock()
-                .await
-                .get_nil_certificates(0, iteration as usize);
+            let failed_certificates =
+                ctx.sv_registry.lock().await.get_nil_certificates(iteration);
 
             if let Ok(msg) = self
                 .bg
