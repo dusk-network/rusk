@@ -9,22 +9,19 @@ use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::ConsensusError;
 use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
-use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
-    self, to_str, Block, BlockWithLabel, Label, Seed, Signature,
-    SpentTransaction,
+    self, to_str, Block, BlockWithLabel, Label, Seed, SpentTransaction,
 };
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
-use node_data::StepName;
+
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-use dusk_consensus::quorum::verifiers::{self, QuorumResult};
-
 use super::consensus::Task;
+use crate::chain::header_validation::Validator;
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -551,178 +548,9 @@ pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
     mrb: &ledger::Header,
     provisioners: &ContextProvisioners,
-    new_blk: &ledger::Header,
+    candidate_header: &ledger::Header,
 ) -> anyhow::Result<bool> {
-    let mrb_eligible_provisioners = provisioners.current();
-    let prev_eligible_provisioners = provisioners.prev();
-    if new_blk.version > 0 {
-        return Err(anyhow!("unsupported block version"));
-    }
+    let validator = Validator::new(db, mrb, provisioners);
 
-    if new_blk.hash == [0u8; 32] {
-        return Err(anyhow!("empty block hash"));
-    }
-
-    if new_blk.height != mrb.height + 1 {
-        return Err(anyhow!(
-            "invalid block height block_height: {:?}, curr_height: {:?}",
-            new_blk.height,
-            mrb.height,
-        ));
-    }
-
-    if new_blk.prev_block_hash != mrb.hash {
-        return Err(anyhow!("invalid previous block hash"));
-    }
-
-    // Ensure block is not already in the ledger
-    db.read().await.view(|v| {
-        if Ledger::get_block_exists(&v, &new_blk.hash)? {
-            return Err(anyhow!("block already exists"));
-        }
-
-        Ok(())
-    })?;
-
-    // Verify prev_block_cert field
-    if mrb.height >= 1 {
-        let prev_block_seed = db.read().await.view(|v| {
-            let prev_block = Ledger::fetch_block_by_height(&v, mrb.height - 1)?
-                .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
-
-            Ok::<_, anyhow::Error>(prev_block.header().seed)
-        })?;
-
-        // Terms in use
-        // genesis_blk -> ... -> prev_block -> most_recent_block(mrb) -> new_blk
-        // (pending to be accepted)
-        verify_block_cert(
-            prev_block_seed,
-            prev_eligible_provisioners,
-            mrb.hash,
-            mrb.height,
-            &new_blk.prev_block_cert,
-            mrb.iteration,
-            true,
-        )
-        .await?;
-    }
-
-    // Verify Failed iterations
-    let mut attested = true;
-
-    for (iter, cert) in new_blk.failed_iterations.cert_list.iter().enumerate() {
-        if let Some(cert) = cert {
-            info!(event = "verify_cert", cert_type = "failed_cert", iter);
-
-            let quorums = verify_block_cert(
-                mrb.seed,
-                mrb_eligible_provisioners,
-                [0u8; 32],
-                new_blk.height,
-                cert,
-                iter as u8,
-                false,
-            )
-            .await?;
-
-            attested = attested
-                && quorums.0.quorum_reached()
-                && quorums.1.quorum_reached();
-        } else {
-            attested = false;
-        }
-    }
-
-    // Verify Certificate
-    verify_block_cert(
-        mrb.seed,
-        mrb_eligible_provisioners,
-        new_blk.hash,
-        new_blk.height,
-        &new_blk.cert,
-        new_blk.iteration,
-        true,
-    )
-    .await?;
-
-    Ok(attested)
-}
-
-pub async fn verify_block_cert(
-    curr_seed: Signature,
-    curr_eligible_provisioners: &Provisioners,
-    block_hash: [u8; 32],
-    height: u64,
-    cert: &ledger::Certificate,
-    iteration: u8,
-    enable_quorum_check: bool,
-) -> anyhow::Result<(QuorumResult, QuorumResult)> {
-    let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
-
-    let hdr = node_data::message::Header {
-        topic: node_data::message::Topics::Unknown,
-        pubkey_bls: node_data::bls::PublicKey::default(),
-        round: height,
-        iteration,
-        block_hash,
-    };
-
-    let mut result = (QuorumResult::default(), QuorumResult::default());
-
-    // Verify validation
-    match verifiers::verify_step_votes(
-        &cert.validation,
-        &committee,
-        curr_seed,
-        &hdr,
-        StepName::Validation,
-        enable_quorum_check,
-    )
-    .await
-    {
-        Ok(validation_quorum_result) => {
-            result.0 = validation_quorum_result;
-        }
-        Err(e) => {
-            return Err(anyhow!(
-            "invalid validation, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-            to_str(&hdr.block_hash),
-            hdr.round,
-            iteration,
-            to_str(&curr_seed.inner()),
-            cert.validation,
-            e
-        ));
-        }
-    };
-
-    // Verify ratification
-    match verifiers::verify_step_votes(
-        &cert.ratification,
-        &committee,
-        curr_seed,
-        &hdr,
-        StepName::Ratification,
-        enable_quorum_check,
-    )
-    .await
-    {
-        Ok(ratification_quorum_result) => {
-            result.1 = ratification_quorum_result;
-        }
-        Err(e) => {
-            return Err(anyhow!(
-            "invalid ratification, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-            to_str(&hdr.block_hash),
-            hdr.round,
-            iteration,
-            to_str(&curr_seed.inner()),
-            cert.ratification,
-            e,
-        ));
-        }
-    }
-
-    Ok(result)
+    validator.execute_checks(candidate_header, false).await
 }

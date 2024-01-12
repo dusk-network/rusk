@@ -20,17 +20,17 @@ use tracing::info;
 
 /// An implementation of the all validation checks of a candidate block header
 /// according to current context
-pub(crate) struct Validator<DB: database::DB> {
+pub(crate) struct Validator<'a, DB: database::DB> {
     pub(crate) db: Arc<RwLock<DB>>,
-    block: ledger::Header,
-    provisioners: ContextProvisioners,
+    block: &'a ledger::Header,
+    provisioners: &'a ContextProvisioners,
 }
 
-impl<'a, DB: database::DB> Validator<DB> {
+impl<'a, DB: database::DB> Validator<'a, DB> {
     pub fn new(
         db: Arc<RwLock<DB>>,
-        block: ledger::Header,
-        provisioners: ContextProvisioners,
+        block: &'a ledger::Header,
+        provisioners: &'a ContextProvisioners,
     ) -> Self {
         Self {
             db,

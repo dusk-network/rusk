@@ -17,7 +17,6 @@ use self::fsm::SimpleFSM;
 use crate::database::Ledger;
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
-pub use acceptor::verify_block_cert;
 use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;

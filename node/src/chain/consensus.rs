@@ -298,8 +298,8 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
     ) -> Result<(), Error> {
         let validator = Validator::new(
             self.db.clone(),
-            self.mrb_header.clone(),
-            self.provisioners.clone(),
+            &self.mrb_header,
+            &self.provisioners,
         );
 
         validator
