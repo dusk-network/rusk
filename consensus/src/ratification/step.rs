@@ -18,7 +18,7 @@ use node_data::message::{AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use tracing::{debug, error};
+use tracing::{error, info, Instrument};
 
 pub struct RatificationStep<T, DB> {
     handler: Arc<Mutex<handler::RatificationHandler>>,
@@ -54,12 +54,8 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             },
         );
 
-        debug!(
-            event = "voting",
-            vtype = "ratification",
-            hash = to_str(&result.hash),
-            validation_bitset = result.sv.bitset
-        );
+        // Publish ratification vote
+        info!(event = "send_vote", validation_bitset = result.sv.bitset);
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -123,6 +119,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
         if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
+            let hash = to_str(&handler.validation_result().hash);
 
             let vote_msg = Self::try_vote(
                 &ctx.round_update,
@@ -130,6 +127,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                 handler.validation_result(),
                 ctx.outbound.clone(),
             )
+            .instrument(tracing::info_span!("ratification", hash,))
             .await;
 
             // Collect my own vote
