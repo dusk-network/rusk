@@ -4,6 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::cmp::min;
+
 use crate::*;
 
 use alloc::collections::BTreeMap;
@@ -11,7 +13,7 @@ use alloc::collections::BTreeMap;
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 
-use rusk_abi::TRANSFER_CONTRACT;
+use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use stake_contract_types::*;
 use transfer_contract_types::*;
 
@@ -26,12 +28,14 @@ use transfer_contract_types::*;
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     stakes: BTreeMap<[u8; PublicKey::SIZE], StakeData>,
+    slashed_amount: u64,
 }
 
 impl StakeState {
     pub const fn new() -> Self {
         Self {
             stakes: BTreeMap::new(),
+            slashed_amount: 0u64,
         }
     }
 
@@ -188,6 +192,52 @@ impl StakeState {
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
         let stake = self.load_or_create_stake_mut(public_key);
         stake.increase_reward(value);
+    }
+
+    /// Total amount slashed from the genesis
+    pub fn slashed_amount(&self) -> u64 {
+        self.slashed_amount
+    }
+
+    /// Slash the given `to_subtract` amount from a `public_key` stake (if
+    /// any). Firstly the amount is subtracted from the reward, if that's
+    /// not enough the stake amount is touched.
+    pub fn slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+        let stake = self
+            .get_stake_mut(public_key)
+            .expect("The stake to slash should exist");
+
+        let staker_funds = stake.reward + stake.amount.unwrap_or_default().0;
+
+        // Cannot slash more than the staker funds
+        let to_slash = min(to_slash, staker_funds);
+
+        if to_slash <= stake.reward {
+            stake.reward -= to_slash;
+        } else {
+            // Deplete reward and update `to_slash` with the remaining amount to
+            // slash from the stake amount.
+            let remaining_slash = to_slash - stake.reward;
+            stake.reward = 0;
+            let (stake_amt, _) = stake
+                .amount
+                .as_mut()
+                .expect("Trying to slash more than slashable_amount");
+
+            *stake_amt -= remaining_slash;
+
+            // Update the module balance to reflect the change in the amount
+            // withdrawable from the contract
+            let _: bool = rusk_abi::call(
+                TRANSFER_CONTRACT,
+                "sub_module_balance",
+                &(STAKE_CONTRACT, remaining_slash),
+            )
+            .expect("Subtracting balance should succeed");
+        }
+
+        // Update the total slashed amount
+        self.slashed_amount += to_slash;
     }
 
     /// Feeds the host with the stakes.

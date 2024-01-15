@@ -59,6 +59,11 @@ unsafe fn get_stake(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |pk: PublicKey| STATE.get_stake(&pk).cloned())
 }
 
+#[no_mangle]
+unsafe fn slashed_amount(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.slashed_amount())
+}
+
 // "Feeder" queries
 
 #[no_mangle]
@@ -81,6 +86,14 @@ unsafe fn reward(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(pk, value)| {
         assert_external_caller();
         STATE.reward(&pk, value);
+    })
+}
+
+#[no_mangle]
+unsafe fn slash(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(pk, value)| {
+        assert_external_caller();
+        STATE.slash(&pk, value);
     })
 }
 
