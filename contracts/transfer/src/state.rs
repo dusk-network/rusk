@@ -523,7 +523,7 @@ impl TransferState {
         self.push_note(block_height, note)
     }
 
-    fn sub_balance(
+    pub(crate) fn sub_balance(
         &mut self,
         address: &ContractId,
         value: u64,
