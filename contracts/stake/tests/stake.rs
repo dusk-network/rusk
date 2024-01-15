@@ -22,9 +22,8 @@ use rusk_abi::dusk::{dusk, LUX};
 use rusk_abi::{CallReceipt, ContractData, ContractError, Error, Session, VM};
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use stake_contract_types::{
-    allow_signature_message, stake_signature_message,
-    unstake_signature_message, withdraw_signature_message, Allow, Stake,
-    StakeData, Unstake, Withdraw,
+    stake_signature_message, unstake_signature_message,
+    withdraw_signature_message, Stake, StakeData, Unstake, Withdraw,
 };
 use transfer_circuits::{
     CircuitInput, CircuitInputSignature, ExecuteCircuitOneTwo,
@@ -48,7 +47,6 @@ fn instantiate<Rng: RngCore + CryptoRng>(
     rng: &mut Rng,
     vm: &VM,
     psk: &PublicSpendKey,
-    pk: &PublicKey,
 ) -> Session {
     let transfer_bytecode = include_bytes!(
         "../../../target/wasm64-unknown-unknown/release/transfer_contract.wasm"
@@ -88,15 +86,6 @@ fn instantiate<Rng: RngCore + CryptoRng>(
         .expect("Pushing genesis note should succeed");
 
     update_root(&mut session).expect("Updating the root should succeed");
-
-    session
-        .call::<_, ()>(STAKE_CONTRACT, "add_owner", pk, POINT_LIMIT)
-        .expect("Inserting APK into owners list should suceeed");
-
-    // allow given public key to stake
-    session
-        .call::<_, ()>(STAKE_CONTRACT, "insert_allowlist", pk, POINT_LIMIT)
-        .expect("Inserting APK into allowlist should succeed");
 
     // sets the block height for all subsequent operations to 1
     let base = session.commit().expect("Committing should succeed");
@@ -221,7 +210,7 @@ fn stake_withdraw_unstake() {
     let sk = SecretKey::random(rng);
     let pk = PublicKey::from(&sk);
 
-    let mut session = instantiate(rng, vm, &psk, &pk);
+    let mut session = instantiate(rng, vm, &psk);
 
     let leaves = leaves_from_height(&mut session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -826,165 +815,4 @@ fn stake_withdraw_unstake() {
     update_root(&mut session).expect("Updating the root should succeed");
 
     println!("UNSTAKE : {gas_spent} gas");
-}
-
-#[test]
-fn allow() {
-    const ALLOW_FEE: u64 = dusk(1.0);
-
-    let rng = &mut StdRng::seed_from_u64(0xfeeb);
-
-    let vm = &mut rusk_abi::new_ephemeral_vm()
-        .expect("Creating ephemeral VM should work");
-
-    let ssk = SecretSpendKey::random(rng);
-    // let vk = ssk.view_key();
-    let psk = PublicSpendKey::from(&ssk);
-
-    let sk = SecretKey::random(rng);
-    let pk = PublicKey::from(&sk);
-
-    let allow_sk = SecretKey::random(rng);
-    let allow_pk = PublicKey::from(&allow_sk);
-
-    let session = &mut instantiate(rng, vm, &psk, &pk);
-
-    let leaves = leaves_from_height(session, 0)
-        .expect("Getting leaves in the given range should succeed");
-
-    assert_eq!(leaves.len(), 1, "There should be one note in the state");
-
-    let input_note = leaves[0].note;
-    let input_value = input_note
-        .value(None)
-        .expect("The value should be transparent");
-    let input_blinder = input_note
-        .blinding_factor(None)
-        .expect("The blinder should be transparent");
-    let input_nullifier = input_note.gen_nullifier(&ssk);
-
-    let gas_limit = ALLOW_FEE;
-    let gas_price = LUX;
-
-    // Since we're transferring value to a contract, a crossover is needed. Here
-    // we transfer half of the input note to the stake contract, so the
-    // crossover value is `input_value/2`.
-    let crossover_value = input_value / 2;
-    let crossover_blinder = JubJubScalar::random(rng);
-
-    let (mut fee, crossover) =
-        Note::obfuscated(rng, &psk, crossover_value, crossover_blinder)
-            .try_into()
-            .expect("Getting a fee and a crossover should succeed");
-
-    fee.gas_limit = gas_limit;
-    fee.gas_price = gas_price;
-
-    // The change note should have the value of the input note, minus what is
-    // maximally spent.
-    let change_value = input_value - crossover_value - gas_price * gas_limit;
-    let change_blinder = JubJubScalar::random(rng);
-    let change_note = Note::obfuscated(rng, &psk, change_value, change_blinder);
-
-    // Fashion a Allow struct
-    let allow_digest = allow_signature_message(0, &allow_pk);
-    let allow_sig = sk.sign(&pk, &allow_digest);
-
-    let allow = Allow {
-        public_key: allow_pk,
-        owner: pk,
-        signature: allow_sig,
-    };
-    let allow_bytes = rkyv::to_bytes::<_, 2048>(&allow)
-        .expect("Should serialize Allow correctly")
-        .to_vec();
-
-    let call = Some((
-        STAKE_CONTRACT.to_bytes(),
-        String::from("allow"),
-        allow_bytes,
-    ));
-
-    // Compose the circuit. In this case we're using one input and one output.
-    let mut execute_circuit = ExecuteCircuitOneTwo::new();
-
-    execute_circuit.set_fee_crossover(
-        &fee,
-        &crossover,
-        crossover_value,
-        crossover_blinder,
-    );
-
-    execute_circuit
-        .add_output_with_data(change_note, change_value, change_blinder)
-        .expect("appending output should succeed");
-
-    let input_opening = opening(session, *input_note.pos())
-        .expect("Querying the opening for the given position should succeed")
-        .expect("An opening should exist for a note in the tree");
-
-    // Generate pk_r_p
-    let sk_r = ssk.sk_r(input_note.stealth_address());
-    let pk_r_p = GENERATOR_NUMS_EXTENDED * sk_r.as_ref();
-
-    // The transaction hash must be computed before signing
-    let anchor =
-        root(session).expect("Getting the anchor should be successful");
-
-    let tx_hash_input_bytes = Transaction::hash_input_bytes_from_components(
-        &[input_nullifier],
-        &[change_note],
-        &anchor,
-        &fee,
-        &Some(crossover),
-        &call,
-    );
-    let tx_hash = rusk_abi::hash(tx_hash_input_bytes);
-
-    execute_circuit.set_tx_hash(tx_hash);
-
-    let circuit_input_signature =
-        CircuitInputSignature::sign(rng, &ssk, &input_note, tx_hash);
-    let circuit_input = CircuitInput::new(
-        input_opening,
-        input_note,
-        pk_r_p.into(),
-        input_value,
-        input_blinder,
-        input_nullifier,
-        circuit_input_signature,
-    );
-
-    execute_circuit
-        .add_input(circuit_input)
-        .expect("appending input should succeed");
-
-    let (prover_key, _) = prover_verifier("ExecuteCircuitOneTwo");
-    let (execute_proof, _) = prover_key
-        .prove(rng, &execute_circuit)
-        .expect("Proving should be successful");
-
-    let tx = Transaction {
-        anchor,
-        nullifiers: vec![input_nullifier],
-        outputs: vec![change_note],
-        fee,
-        crossover: Some(crossover),
-        proof: execute_proof.to_bytes().to_vec(),
-        call,
-    };
-
-    let receipt = execute(session, tx).expect("Executing TX should succeed");
-    let gas_spent = receipt.gas_spent;
-    receipt.data.expect("Executed TX should not error");
-    update_root(session).expect("Updating the root should succeed");
-
-    println!("ALLOW   : {gas_spent} gas");
-
-    let is_allowed: bool = session
-        .call(STAKE_CONTRACT, "is_allowlisted", &allow_pk, POINT_LIMIT)
-        .expect("Querying the allowlist should succeed")
-        .data;
-
-    assert!(is_allowed, "The new public key should now be allowed");
 }
