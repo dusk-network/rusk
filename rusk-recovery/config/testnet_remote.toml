@@ -1,5 +1,2 @@
 base_state = "https://dusk-infra.ams3.digitaloceanspaces.com/rusk-state/piecrust-state-20230711"
 
-[acl.stake]
-owners = []
-allowlist = []

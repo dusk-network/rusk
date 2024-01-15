@@ -6,19 +6,16 @@
 
 use std::fmt::Debug;
 
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::PublicSpendKey;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};
 
-mod acl;
 mod governance;
 mod stake;
 mod wrapper;
 
 use crate::state;
-use acl::Acl;
 pub use stake::GenesisStake;
 use wrapper::Wrapper;
 
@@ -41,7 +38,6 @@ impl Balance {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Snapshot {
     base_state: Option<String>,
-    acl: Acl,
     owner: Option<Wrapper<PublicSpendKey, { PublicSpendKey::SIZE }>>,
 
     // This "serde skip" workaround seems needed as per https://github.com/toml-rs/toml-rs/issues/384
@@ -80,16 +76,6 @@ impl Snapshot {
         self.owner.as_ref().unwrap_or(&dusk).to_bytes()
     }
 
-    /// Returns an iterator of the owners of the staking contract
-    pub fn owners(&self) -> impl Iterator<Item = &BlsPublicKey> {
-        self.acl.stake.owners.iter().map(|pk| &**pk)
-    }
-
-    /// Returns an iterator of the allowed staking addresses
-    pub fn allowlist(&self) -> impl Iterator<Item = &BlsPublicKey> {
-        self.acl.stake.allowlist.iter().map(|pk| &**pk)
-    }
-
     pub fn base_state(&self) -> Option<&str> {
         self.base_state.as_deref()
     }
@@ -118,11 +104,6 @@ mod tests {
     fn testnet_toml() -> Result<(), Box<dyn Error>> {
         let testnet = testnet_from_file()?;
 
-        assert_eq!(
-            testnet.owner(),
-            (*state::DUSK_KEY).to_bytes(),
-            "Testnet owner must be dusk"
-        );
         testnet
             .balance
             .iter()

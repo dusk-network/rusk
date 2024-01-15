@@ -7,7 +7,6 @@
 use crate::Theme;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_bytes::DeserializableSlice;
 use dusk_jubjub::JubJubScalar;
 use dusk_pki::PublicSpendKey;
@@ -151,30 +150,6 @@ fn generate_stake_state(
                 u64::MAX,
             )
             .expect("stake to be inserted into the state");
-        session
-            .call::<_, ()>(
-                STAKE_CONTRACT,
-                "insert_allowlist",
-                staker.address(),
-                u64::MAX,
-            )
-            .expect("staker to be inserted into the allowlist");
-    });
-    snapshot.owners().for_each(|provisioner| {
-        session
-            .call::<_, ()>(STAKE_CONTRACT, "add_owner", provisioner, u64::MAX)
-            .expect("owner to be added into the state");
-    });
-
-    snapshot.allowlist().for_each(|provisioner| {
-        session
-            .call::<_, ()>(
-                STAKE_CONTRACT,
-                "insert_allowlist",
-                provisioner,
-                u64::MAX,
-            )
-            .expect("provisioner to be inserted into the allowlist");
     });
 
     let stake_balance: u64 = snapshot.stakes().map(|s| s.amount).sum();
@@ -249,14 +224,6 @@ fn generate_empty_state<P: AsRef<Path>>(
     session
         .call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)
         .expect("root to be updated after pushing genesis note");
-
-    let owners = session
-        .call::<_, Vec<BlsPublicKey>>(STAKE_CONTRACT, "owners", &(), u64::MAX)
-        .expect("Querying the stake owners should succeed");
-    assert!(
-        owners.data.is_empty(),
-        "Genesis stake should have no owners"
-    );
 
     session
         .call::<_, ()>(LICENSE_CONTRACT, "request_license", &(), u64::MAX)
