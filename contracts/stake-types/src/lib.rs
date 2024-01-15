@@ -67,15 +67,3 @@ pub struct Withdraw {
     /// A nonce to prevent replay.
     pub nonce: BlsScalar,
 }
-
-/// Allow a public key to stake.
-#[derive(Debug, Clone, Archive, Deserialize, Serialize)]
-#[archive_attr(derive(CheckBytes))]
-pub struct Allow {
-    /// The public key to allow staking to.
-    pub public_key: PublicKey,
-    /// The "owner" of the smart contract.
-    pub owner: PublicKey,
-    /// Signature of the `owner` key.
-    pub signature: Signature,
-}
