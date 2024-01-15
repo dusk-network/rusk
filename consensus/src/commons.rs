@@ -8,6 +8,7 @@
 // Provisioners, the BidList, the Seed and the Hash.
 
 use node_data::ledger::*;
+use node_data::message::payload::QuorumType;
 use std::fmt;
 use std::fmt::Display;
 use std::time::Duration;
@@ -104,7 +105,7 @@ pub enum ConsensusError {
     InvalidSignature,
     InvalidMsgType,
     InvalidValidationStepVotes(Error),
-    InvalidValidation,
+    InvalidValidation(QuorumType),
     InvalidQuorumType,
     FutureEvent,
     PastEvent,

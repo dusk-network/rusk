@@ -5,14 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use crate::config::CONSENSUS_MAX_ITER;
 use node_data::ledger::StepVotes;
 use node_data::ledger::{to_str, Certificate};
 use node_data::message::{payload, Message, Topics};
+use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::debug;
+use tracing::{debug, error};
 
 pub(crate) enum SvType {
     Validation,
@@ -21,8 +21,8 @@ pub(crate) enum SvType {
 
 #[derive(Default, Clone, Copy)]
 struct CertificateInfo {
-    /// represents candidate block hash
-    hash: Option<[u8; 32]>,
+    /// represents vote (candidate hash or nil)
+    hash: [u8; 32],
     cert: Certificate,
 
     quorum_reached_validation: bool,
@@ -31,12 +31,10 @@ struct CertificateInfo {
 
 impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let hash = self.hash.unwrap_or_default();
-
         write!(
             f,
             "cert_info: hash: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            to_str(&hash),
+            to_str(&self.hash),
             self.cert.validation,
             self.quorum_reached_validation,
             self.cert.ratification,
@@ -49,19 +47,10 @@ impl CertificateInfo {
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
-        hash: [u8; 32],
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
     ) -> bool {
-        if let Some(h) = self.hash {
-            if h != hash {
-                return false;
-            }
-        } else {
-            self.hash = Some(hash);
-        }
-
         match svt {
             SvType::Validation => {
                 self.cert.validation = sv;
@@ -92,35 +81,56 @@ impl CertificateInfo {
     /// Returns `true` if all fields are non-empty and quorum is reached for
     /// both validation and ratification
     fn is_ready(&self) -> bool {
-        !self.cert.validation.is_empty()
-            && !self.cert.ratification.is_empty()
-            && self.hash.is_some()
+        self.has_votes()
             && self.quorum_reached_validation
             && self.quorum_reached_ratification
     }
 
-    /// Returns `true` if the certificate has empty hash
-    fn is_nil(&self) -> bool {
-        self.hash.map(|h| h == [0u8; 32]).unwrap_or_default()
+    /// Returns `true` if the certificate contains at least one vote
+    fn has_votes(&self) -> bool {
+        !self.cert.validation.is_empty() && !self.cert.ratification.is_empty()
     }
 }
 
 pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
+#[derive(Default, Clone)]
+struct IterationCerts {
+    valid: Option<CertificateInfo>,
+    nil: CertificateInfo,
+}
+
+impl IterationCerts {
+    fn for_hash(&mut self, hash: [u8; 32]) -> Option<&mut CertificateInfo> {
+        if hash == [0u8; 32] {
+            return Some(&mut self.nil);
+        }
+        let cert = self.valid.get_or_insert_with(|| CertificateInfo {
+            hash,
+            ..Default::default()
+        });
+        match cert.hash == hash {
+            true => Some(cert),
+            false => {
+                error!("Cannot add step votes for hash {hash:?}");
+                None
+            }
+        }
+    }
+}
+
 pub struct CertInfoRegistry {
     ru: RoundUpdate,
 
-    /// List of iterations certificates. Position in the array represents
-    /// iteration number.
-    cert_list: [CertificateInfo; CONSENSUS_MAX_ITER as usize],
+    /// Iterations certificates for current round keyed by iteration
+    cert_list: HashMap<u8, IterationCerts>,
 }
 
 impl CertInfoRegistry {
     pub(crate) fn new(ru: RoundUpdate) -> Self {
         Self {
             ru,
-            cert_list: [CertificateInfo::default();
-                CONSENSUS_MAX_ITER as usize],
+            cert_list: HashMap::new(),
         }
     }
 
@@ -135,20 +145,13 @@ impl CertInfoRegistry {
         svt: SvType,
         quorum_reached: bool,
     ) -> Option<Message> {
-        if iteration as usize >= self.cert_list.len() {
-            return None;
-        }
+        let cert = self.cert_list.entry(iteration).or_default();
 
-        let r = &mut self.cert_list[iteration as usize];
-        if r.add_sv(iteration, hash, sv, svt, quorum_reached) {
-            return Some(Self::build_quorum_msg(
-                self.ru.clone(),
-                iteration,
-                *r,
-            ));
-        }
-
-        None
+        cert.for_hash(hash).and_then(|cert| {
+            cert.add_sv(iteration, sv, svt, quorum_reached).then(|| {
+                Self::build_quorum_msg(self.ru.clone(), iteration, *cert)
+            })
+        })
     }
 
     fn build_quorum_msg(
@@ -160,7 +163,7 @@ impl CertInfoRegistry {
             pubkey_bls: ru.pubkey_bls.clone(),
             round: ru.round,
             iteration,
-            block_hash: result.hash.unwrap_or_default(),
+            block_hash: result.hash,
             topic: Topics::Quorum,
         };
 
@@ -177,18 +180,18 @@ impl CertInfoRegistry {
 
     pub(crate) fn get_nil_certificates(
         &mut self,
-        from: usize,
-        to: usize,
+        to: u8,
     ) -> Vec<Option<Certificate>> {
-        let to = std::cmp::min(to, self.cert_list.len());
-        let mut res = Vec::with_capacity(to - from);
+        let mut res = Vec::with_capacity(to as usize);
 
-        for item in &self.cert_list[from..to] {
-            if item.is_nil() {
-                res.push(Some(item.cert));
-            } else {
-                res.push(None)
-            }
+        for iteration in 0u8..to {
+            res.push(
+                self.cert_list
+                    .get(&iteration)
+                    .map(|c| c.nil)
+                    .filter(|ci| ci.has_votes())
+                    .map(|ci| ci.cert),
+            );
         }
 
         res

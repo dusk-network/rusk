@@ -17,7 +17,7 @@ use std::net::SocketAddr;
 use async_channel::TrySendError;
 
 /// Topic field position in the message binary representation
-pub const TOPIC_FIELD_POS: usize = 8 + 8 + 8 + 4;
+pub const TOPIC_FIELD_POS: usize = 8 + 8 + 4;
 
 pub enum Status {
     Past,
