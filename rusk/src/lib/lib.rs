@@ -46,6 +46,7 @@ use rusk_profile::to_rusk_state_id_path;
 use sha3::{Digest, Sha3_256};
 
 pub use version::{VERSION, VERSION_BUILD};
+pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
 const A: usize = 4;
 
@@ -413,17 +414,14 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<Vec<(BlsPublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
-        Ok(receiver
-            .into_iter()
-            .map(|bytes| {
-                rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
-                    "The contract should only return (pk, stake_data) tuples",
-                )
-            })
-            .collect())
+        Ok(receiver.into_iter().map(|bytes| {
+            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
+                "The contract should only return (pk, stake_data) tuples",
+            )
+        }))
     }
 
     pub fn query_raw<S, V>(
