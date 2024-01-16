@@ -13,7 +13,7 @@ use dusk_consensus::operations::{
     CallParams, Error, Operations, Output, VerificationOutput,
 };
 use dusk_consensus::user::provisioners::ContextProvisioners;
-use node_data::ledger::{Block, Hash, Header, Transaction};
+use node_data::ledger::{Block, Hash, Header};
 use node_data::message::payload::GetCandidate;
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -315,14 +315,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
     async fn verify_state_transition(
         &self,
-        params: CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> Result<VerificationOutput, dusk_consensus::operations::Error> {
         info!("verifying state");
 
         let vm = self.vm.read().await;
 
-        Ok(vm.verify_state_transition(&params, txs).map_err(|err| {
+        Ok(vm.verify_state_transition(blk).map_err(|err| {
             error!("failed to call VST {}", err);
             Error::Failed
         })?)
