@@ -4,7 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::commons::{ConsensusError, Database, RoundUpdate};
+use crate::commons::{
+    get_current_timestamp, ConsensusError, Database, RoundUpdate,
+};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use std::marker::PhantomData;
@@ -51,6 +53,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             Ratification {
                 signature,
                 validation_result: result.clone(),
+                timestamp: get_current_timestamp(),
             },
         );
 

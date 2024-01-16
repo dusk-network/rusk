@@ -11,7 +11,7 @@ use node_data::ledger::*;
 use node_data::message::payload::QuorumType;
 use std::fmt;
 use std::fmt::Display;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use node_data::message::Payload;
 
@@ -175,4 +175,11 @@ impl QuorumMsgSender {
 
         false
     }
+}
+
+pub fn get_current_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|n| n.as_secs())
+        .expect("This is heavy.")
 }
