@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use node_data::ledger::{Header, SpentTransaction, Transaction};
+use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
@@ -57,8 +57,7 @@ pub trait Operations: Send + Sync {
 
     async fn verify_state_transition(
         &self,
-        params: CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> Result<VerificationOutput, Error>;
 
     async fn execute_state_transition(

@@ -7,11 +7,9 @@
 use crate::commons::{ConsensusError, Database, RoundUpdate};
 use crate::config;
 use crate::execution_ctx::ExecutionCtx;
-use crate::operations::{CallParams, Operations};
+use crate::operations::Operations;
 use crate::validation::handler;
 use anyhow::anyhow;
-use dusk_bytes::DeserializableSlice;
-use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Block};
 use node_data::message::{self, AsyncQueue, Message, Payload, Topics};
 use std::sync::Arc;
@@ -75,7 +73,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         };
 
         // Call Verify State Transition to make sure transactions set is valid
-        if let Err(err) = Self::call_vst(candidate, ru, executor).await {
+        if let Err(err) = Self::call_vst(candidate, executor).await {
             error!(event = "failed_vst_call", ?err);
             return;
         }
@@ -122,33 +120,12 @@ impl<T: Operations + 'static> ValidationStep<T> {
 
     async fn call_vst(
         candidate: &Block,
-        ru: &RoundUpdate,
         executor: Arc<Mutex<T>>,
     ) -> anyhow::Result<()> {
-        let pubkey = &candidate.header().generator_bls_pubkey.0;
-        let generator = match dusk_bls12_381_sign::PublicKey::from_slice(pubkey)
-        {
-            Ok(pubkey) => pubkey,
-            Err(e) => {
-                return Err(anyhow::anyhow!(
-                    "invalid bls key {}, err: {:?}",
-                    hex::encode(pubkey),
-                    e,
-                ));
-            }
-        };
-
         match executor
             .lock()
             .await
-            .verify_state_transition(
-                CallParams {
-                    round: ru.round,
-                    block_gas_limit: candidate.header().gas_limit,
-                    generator_pubkey: PublicKey::new(generator),
-                },
-                candidate.txs().clone(),
-            )
+            .verify_state_transition(candidate)
             .await
         {
             Ok(output) => {
