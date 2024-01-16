@@ -92,9 +92,6 @@ pub fn generator_procedure(
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
-    let verify_output =
-        rusk.verify_state_transition(&call_params, txs.clone())?;
-    info!("verify_state_transition new verification: {verify_output}",);
 
     let block = Block::new(
         Header {
@@ -108,6 +105,9 @@ pub fn generator_procedure(
         txs,
     )
     .expect("valid block");
+
+    let verify_output = rusk.verify_state_transition(&block)?;
+    info!("verify_state_transition new verification: {verify_output}",);
 
     let (accept_txs, accept_output) = rusk.accept(&block)?;
 

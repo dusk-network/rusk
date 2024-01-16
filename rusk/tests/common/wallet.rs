@@ -118,7 +118,6 @@ impl wallet::StateClient for TestStateClient {
         let stake = self
             .rusk
             .provisioners(None)?
-            .iter()
             .find(|(pk, _)| pk == _pk)
             .map(|(_, stake)| StakeInfo {
                 amount: stake.amount,

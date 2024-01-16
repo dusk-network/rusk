@@ -42,17 +42,20 @@ impl VMExecution for Rusk {
 
     fn verify_state_transition(
         &self,
-        params: &CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
+        let generator = blk.header().generator_bls_pubkey;
+        let generator =
+            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
+                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (_, verification_output) = self
             .verify_transactions(
-                params.round,
-                params.block_gas_limit,
-                params.generator_pubkey.inner(),
-                &txs[..],
+                blk.header().height,
+                blk.header().gas_limit,
+                &generator,
+                blk.txs(),
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
