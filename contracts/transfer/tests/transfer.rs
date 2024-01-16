@@ -149,6 +149,12 @@ fn leaves_from_pos(session: &mut Session, pos: u64) -> Result<Vec<TreeLeaf>> {
         .collect())
 }
 
+fn num_notes(session: &mut Session) -> Result<u64> {
+    session
+        .call(TRANSFER_CONTRACT, "num_notes", &(), u64::MAX)
+        .map(|r| r.data)
+}
+
 fn update_root(session: &mut Session) -> Result<()> {
     session
         .call(TRANSFER_CONTRACT, "update_root", &(), POINT_LIMIT)
@@ -253,6 +259,13 @@ fn transfer() {
         .expect("Getting leaves in the given range should succeed");
 
     assert_eq!(leaves.len(), 1, "There should be one note in the state");
+
+    let pos = num_notes(session).expect("Getting num_notes should succeed");
+    assert_eq!(
+        pos,
+        leaves.last().expect("note to exists").note.pos() + 1,
+        "num_notes should match position of last note + 1"
+    );
 
     let leaves = leaves_from_pos(session, 0)
         .expect("Getting leaves in the given range should succeed");
@@ -364,7 +377,14 @@ fn transfer() {
         "There should be three notes in the tree at this block height"
     );
 
-    let leaves = leaves_from_height(session, input_note.pos() + 1)
+    let pos = num_notes(session).expect("Getting num_notes should succeed");
+    assert_eq!(
+        pos,
+        leaves.last().expect("note to exists").note.pos() + 1,
+        "num_notes should match position of last note + 1"
+    );
+
+    let leaves = leaves_from_pos(session, input_note.pos() + 1)
         .expect("Getting the notes should succeed");
     assert_eq!(
         leaves.len(),

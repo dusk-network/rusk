@@ -97,4 +97,8 @@ impl Tree {
     ) -> Option<PoseidonOpening<(), TRANSFER_TREE_DEPTH, A>> {
         self.tree.opening(pos)
     }
+
+    pub fn leaves_len(&self) -> u64 {
+        self.leaves.len() as u64
+    }
 }

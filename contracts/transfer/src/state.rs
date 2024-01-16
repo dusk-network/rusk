@@ -434,6 +434,11 @@ impl TransferState {
         self.tree.root()
     }
 
+    /// Get the count of the notes in the tree.
+    pub fn num_notes(&self) -> u64 {
+        self.tree.leaves_len()
+    }
+
     /// Get the opening
     pub fn opening(
         &self,
