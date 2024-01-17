@@ -138,8 +138,16 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             .iter()
             .enumerate()
         {
-            if let Some(cert) = cert {
+            if let Some((cert, pk)) = cert {
                 info!(event = "verify_cert", cert_type = "failed_cert", iter);
+                let expected_pk = self.provisioners.current().get_generator(
+                    candidate_block.iteration,
+                    candidate_block.seed,
+                    candidate_block.height,
+                );
+                if pk != &expected_pk {
+                    anyhow::bail!("Invalid generator. Expected {expected_pk:?}, actual {pk:?}");
+                }
 
                 let quorums = verify_block_cert(
                     self.block.seed,
