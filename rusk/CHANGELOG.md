@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add iteration generator to FailedIterations [#1257]
+
+### Changed
+
+- Change rusk::provisioners to filter out slashed stakes [#1257]
+- Change block processing to slash failed-iteration provisioners [#1257]
+- Change FailedIterations to include only nil quorum certificates [#1257]
+
+### Removed
+
+- Remove allowlist [#1257]
+
 ## [0.7.0] - 2023-12-31
 
 ### Added
@@ -173,6 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add linking between Rusk and Protobuff structs
 - Add build system that generates keys for circuits and caches them.
 
+[#1257]: https://github.com/dusk-network/rusk/pull/1257
 [#1219]: https://github.com/dusk-network/rusk/issues/1219
 [#401]: https://github.com/dusk-network/rusk/issues/401
 [#369]: https://github.com/dusk-network/rusk/issues/369
