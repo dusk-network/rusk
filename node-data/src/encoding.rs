@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use crate::bls::PublicKeyBytes;
 use crate::ledger::*;
 use crate::message::payload::{QuorumType, Ratification, ValidationResult};
 use crate::Serializable;
@@ -192,11 +193,12 @@ impl Serializable for IterationsInfo {
         let count = self.cert_list.len() as u8;
         w.write_all(&count.to_le_bytes())?;
 
-        for cert in &self.cert_list {
-            match cert {
-                Some(cert) => {
+        for iter in &self.cert_list {
+            match iter {
+                Some((cert, pk)) => {
                     w.write_all(&[1])?;
                     cert.write(w)?;
+                    w.write_all(pk.inner())?;
                 }
                 None => w.write_all(&[0])?,
             }
@@ -218,7 +220,11 @@ impl Serializable for IterationsInfo {
 
             let cert = match opt {
                 0 => None,
-                1 => Some(Certificate::read(r)?),
+                1 => {
+                    let cert = Certificate::read(r)?;
+                    let pk = Self::read_bytes(r)?;
+                    Some((cert, PublicKeyBytes(pk)))
+                }
                 _ => {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,

@@ -4,7 +4,10 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::{bls, Serializable};
+use crate::bls::{self, PublicKeyBytes};
+use crate::Serializable;
+
+use dusk_bytes::DeserializableSlice;
 use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};
@@ -323,19 +326,36 @@ impl PartialEq<Self> for SpentTransaction {
 
 impl Eq for SpentTransaction {}
 
+/// Includes a `NilQuorum` certificate and the key of the expected block
+/// generator
+pub type IterationInfo = (Certificate, PublicKeyBytes);
+
 /// Defines a set of certificates of any former iterations
 #[derive(Default, Eq, PartialEq, Clone)]
 pub struct IterationsInfo {
     /// Represents a list of certificates where position is the iteration
     /// number
-    pub cert_list: Vec<Option<Certificate>>,
+    pub cert_list: Vec<Option<IterationInfo>>,
 }
 
 impl IterationsInfo {
-    pub fn new(certificates: Vec<Option<Certificate>>) -> Self {
+    pub fn new(certificates: Vec<Option<IterationInfo>>) -> Self {
         Self {
             cert_list: certificates,
         }
+    }
+
+    pub fn to_missed_generators(
+        &self,
+    ) -> Result<Vec<dusk_bls12_381_sign::PublicKey>, io::Error> {
+        self.cert_list
+        .iter()
+        .flatten()
+        .map(|(_, pk)| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
+            tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
+            io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
+        }))
+        .collect()
     }
 }
 
