@@ -202,7 +202,7 @@ impl CertInfoRegistry {
                 self.cert_list
                     .get(&iteration)
                     .map(|c| (c.nil, c.generator))
-                    .filter(|(ci, _)| ci.has_votes())
+                    .filter(|(ci, _)| ci.is_ready())
                     .map(|(ci, pk)| (ci.cert, pk)),
             );
         }
