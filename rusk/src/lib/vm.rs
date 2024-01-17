@@ -32,6 +32,7 @@ impl VMExecution for Rusk {
                 params.block_gas_limit,
                 params.generator_pubkey.inner(),
                 txs,
+                &params.missed_generators[..],
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -56,6 +57,7 @@ impl VMExecution for Rusk {
                 blk.header().gas_limit,
                 &generator,
                 blk.txs(),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
@@ -82,6 +84,7 @@ impl VMExecution for Rusk {
                     state_root: blk.header().state_hash,
                     event_hash: blk.header().event_hash,
                 }),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
@@ -108,6 +111,7 @@ impl VMExecution for Rusk {
                     state_root: blk.header().state_hash,
                     event_hash: blk.header().event_hash,
                 }),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")

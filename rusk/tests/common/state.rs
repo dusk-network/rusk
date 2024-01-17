@@ -77,6 +77,7 @@ pub fn generator_procedure(
         round,
         block_gas_limit,
         generator_pubkey,
+        missed_generators: vec![],
     };
 
     let (transfer_txs, discarded, execute_output) = rusk
