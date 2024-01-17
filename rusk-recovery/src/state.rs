@@ -14,7 +14,6 @@ use ff::Field;
 use once_cell::sync::Lazy;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use rusk_abi::dusk::{dusk, Dusk};
 use rusk_abi::{ContractData, ContractId, Session, VM};
 use rusk_abi::{LICENSE_CONTRACT, STAKE_CONTRACT, TRANSFER_CONTRACT};
 use std::error::Error;
@@ -32,7 +31,6 @@ mod snapshot;
 pub mod tar;
 mod zip;
 
-pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 pub const DEFAULT_SNAPSHOT: &str =
     include_str!("../config/testnet_remote.toml");
 
