@@ -5,8 +5,8 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::RoundUpdate;
-use node_data::ledger::StepVotes;
-use node_data::ledger::{to_str, Certificate};
+use node_data::bls::PublicKeyBytes;
+use node_data::ledger::{to_str, Certificate, IterationInfo, StepVotes};
 use node_data::message::{payload, Message, Topics};
 use std::collections::HashMap;
 use std::fmt;
@@ -94,13 +94,22 @@ impl CertificateInfo {
 
 pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 struct IterationCerts {
     valid: Option<CertificateInfo>,
     nil: CertificateInfo,
+    generator: PublicKeyBytes,
 }
 
 impl IterationCerts {
+    fn new(generator: PublicKeyBytes) -> Self {
+        Self {
+            valid: None,
+            nil: CertificateInfo::default(),
+            generator,
+        }
+    }
+
     fn for_hash(&mut self, hash: [u8; 32]) -> Option<&mut CertificateInfo> {
         if hash == [0u8; 32] {
             return Some(&mut self.nil);
@@ -144,8 +153,12 @@ impl CertInfoRegistry {
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
+        generator: &PublicKeyBytes,
     ) -> Option<Message> {
-        let cert = self.cert_list.entry(iteration).or_default();
+        let cert = self
+            .cert_list
+            .entry(iteration)
+            .or_insert_with(|| IterationCerts::new(*generator));
 
         cert.for_hash(hash).and_then(|cert| {
             cert.add_sv(iteration, sv, svt, quorum_reached).then(|| {
@@ -181,16 +194,16 @@ impl CertInfoRegistry {
     pub(crate) fn get_nil_certificates(
         &mut self,
         to: u8,
-    ) -> Vec<Option<Certificate>> {
+    ) -> Vec<Option<IterationInfo>> {
         let mut res = Vec::with_capacity(to as usize);
 
         for iteration in 0u8..to {
             res.push(
                 self.cert_list
                     .get(&iteration)
-                    .map(|c| c.nil)
-                    .filter(|ci| ci.has_votes())
-                    .map(|ci| ci.cert),
+                    .map(|c| (c.nil, c.generator))
+                    .filter(|(ci, _)| ci.has_votes())
+                    .map(|(ci, pk)| (ci.cert, pk)),
             );
         }
 

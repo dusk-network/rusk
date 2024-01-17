@@ -6,6 +6,7 @@
 
 use std::fmt;
 
+use dusk_bls12_381_sign::PublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];
@@ -14,6 +15,7 @@ pub type EventHash = [u8; 32];
 #[derive(Debug)]
 pub enum Error {
     Failed,
+    InvalidIterationInfo,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -21,6 +23,7 @@ pub struct CallParams {
     pub round: u64,
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
+    pub missed_generators: Vec<PublicKey>,
 }
 
 #[derive(Default)]

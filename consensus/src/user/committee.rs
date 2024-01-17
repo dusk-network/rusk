@@ -9,7 +9,7 @@ use crate::user::sortition;
 
 use super::cluster::Cluster;
 use crate::config;
-use node_data::bls::PublicKey;
+use node_data::bls::{PublicKey, PublicKeyBytes};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::mem;
@@ -19,6 +19,7 @@ pub struct Committee {
     members: BTreeMap<PublicKey, usize>,
     quorum: usize,
     nil_quorum: usize,
+    excluded: Option<PublicKeyBytes>,
 }
 
 impl Committee {
@@ -47,6 +48,7 @@ impl Committee {
             members: BTreeMap::new(),
             nil_quorum,
             quorum,
+            excluded: cfg.exclusion().copied(),
         };
 
         for member_key in res {
@@ -54,6 +56,10 @@ impl Committee {
         }
 
         committee
+    }
+
+    pub fn excluded(&self) -> Option<&PublicKeyBytes> {
+        self.excluded.as_ref()
     }
 
     /// Returns true if `pubkey_bls` is a member of the generated committee.
