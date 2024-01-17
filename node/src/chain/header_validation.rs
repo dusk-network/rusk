@@ -156,7 +156,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     candidate_block.height,
                     cert,
                     iter as u8,
-                    false,
+                    true,
                 )
                 .await?;
 
