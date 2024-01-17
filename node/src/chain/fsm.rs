@@ -9,6 +9,7 @@ use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
 
+use crate::database::Ledger;
 use node_data::ledger::{to_str, Block, Label};
 use node_data::message::payload::{GetBlocks, Inv};
 use node_data::message::Message;
@@ -273,6 +274,46 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         let curr_hash = acc.get_curr_hash().await;
 
         if height < tip_height {
+            let exists = acc
+                .db
+                .read()
+                .await
+                .view(|t| t.get_block_exists(&blk.header().hash))?;
+
+            if exists {
+                // Already exists in local state
+                return Ok(None);
+            }
+
+            // If our local chain has a block L_B with ConsensusState not Final,
+            // and we receive a block N_B such that:
+            //
+            // N_B.PrevBlock == L_B.PrevBlock
+            // N_B.Iteration < L_B.Iteration
+            //
+            // Then we fallback to N_B.PrevBlock and accept N_B
+            acc.db.read().await.view(|t| {
+                if let Some((header, _)) =
+                    t.fetch_block_header(&blk.header().prev_block_hash)?
+                {
+                    let l_b_height = header.height + 1;
+                    if let Some(Label::Final) =
+                        t.fetch_block_label_by_height(l_b_height)?
+                    {
+                        // L_B is already final
+                        return Ok(());
+                    }
+
+                    if let Some(l_b) = t.fetch_block_by_height(l_b_height)? {
+                        if blk.header().iteration < l_b.header().iteration {
+                            // TODO: Trigger fallback to l_b_height - 1
+                        }
+                    }
+                }
+
+                anyhow::Ok(())
+            })?;
+
             return Ok(None);
         }
 
