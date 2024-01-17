@@ -1,11 +1,3 @@
-[acl.stake]
-owners = []
-allowlist = [
-    "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3",
-    "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv",
-    "mqL8WTruQUzafU8Q4bSFqTLMhHmB97DAGow73KRpDkDik5vqMD9EpGvyZc2j3TFaEh8hc6g3LJ5X3ox18HDDoVDj8MKaHPzphvdgyG4XmsFEafAiym6kqRPmB14QNRvkEK4",
-]
-
 [[balance]]
 address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
 seed = 57005

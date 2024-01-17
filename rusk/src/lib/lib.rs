@@ -426,16 +426,6 @@ impl Rusk {
             .collect())
     }
 
-    /// Returns the keys allowed to stake.
-    pub fn stake_allowlist(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(STAKE_CONTRACT, "allowlist", &())
-    }
-
-    /// Returns the keys that own the stake contract.
-    pub fn stake_owners(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(STAKE_CONTRACT, "owners", &())
-    }
-
     pub fn query_raw<S, V>(
         &self,
         contract_id: ContractId,

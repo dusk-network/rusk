@@ -1,7 +1,3 @@
-[acl.stake]
-owners = []
-allowlist = []
-
 [[balance]]
 address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
 seed = 57005
