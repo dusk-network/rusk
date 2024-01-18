@@ -493,6 +493,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.mrb.read().await.inner().header().height
     }
 
+    /// Returns chain tip header
+    pub(crate) async fn header(&self) -> ledger::Header {
+        self.mrb.read().await.inner().header().clone()
+    }
+
     pub(crate) async fn get_curr_hash(&self) -> [u8; 32] {
         self.mrb.read().await.inner().header().hash
     }
