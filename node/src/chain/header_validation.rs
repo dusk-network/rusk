@@ -141,8 +141,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             if let Some((cert, pk)) = cert {
                 info!(event = "verify_cert", cert_type = "failed_cert", iter);
                 let expected_pk = self.provisioners.current().get_generator(
-                    candidate_block.iteration,
-                    candidate_block.seed,
+                    iter as u8,
+                    self.block.seed,
                     candidate_block.height,
                 );
                 if pk != &expected_pk {
