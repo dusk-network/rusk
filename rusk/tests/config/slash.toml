@@ -1,0 +1,20 @@
+[[balance]]
+address = "ivmscertKgRyX8wNMJJsQcSVEyPsfSMUQXSAgeAPQXsndqFq9Pmknzhm61QvcEEdxPaGgxDS4RHpb6KKccrnSKN"
+seed = 57005
+notes = [
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+    10_000_000_000_000,
+]
+
+[[stake]]
+address = "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3"
+amount = 20_000_000_000
+reward = 3_000_000_000

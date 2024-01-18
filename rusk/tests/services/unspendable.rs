@@ -148,6 +148,7 @@ fn make_transactions(
         &[tx_0, tx_1, tx_2],
         BLOCK_HEIGHT,
         BLOCK_GAS_LIMIT,
+        vec![],
         Some(expected),
     )
     .expect("generator procedure should succeed");
