@@ -36,14 +36,16 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         Self { acc }
     }
 
-    ///
-    pub(crate) async fn try_execute_fallback(
+    /// Makes an attempt to revert to the specified Target, if remote header is
+    /// fully valid
+    pub(crate) async fn try_revert(
         &self,
         local: &Header,
         remote: &Header,
+        revert_target: RevertTarget,
     ) -> Result<()> {
         self.verify_header(local, remote).await?;
-        self.acc.try_revert(RevertTarget::LastFinalizedState).await
+        self.acc.try_revert(revert_target).await
     }
 
     /// Verifies if a block of header `local` can be replaced with a block with
