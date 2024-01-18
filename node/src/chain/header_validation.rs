@@ -22,19 +22,19 @@ use tracing::info;
 /// according to current context
 pub(crate) struct Validator<'a, DB: database::DB> {
     pub(crate) db: Arc<RwLock<DB>>,
-    block: &'a ledger::Header,
+    prev_header: &'a ledger::Header,
     provisioners: &'a ContextProvisioners,
 }
 
 impl<'a, DB: database::DB> Validator<'a, DB> {
     pub fn new(
         db: Arc<RwLock<DB>>,
-        block: &'a ledger::Header,
+        prev_header: &'a ledger::Header,
         provisioners: &'a ContextProvisioners,
     ) -> Self {
         Self {
             db,
-            block,
+            prev_header,
             provisioners,
         }
     }
@@ -71,15 +71,15 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             return Err(anyhow!("empty block hash"));
         }
 
-        if candidate_block.height != self.block.height + 1 {
+        if candidate_block.height != self.prev_header.height + 1 {
             return Err(anyhow!(
                 "invalid block height block_height: {:?}, curr_height: {:?}",
                 candidate_block.height,
-                self.block.height,
+                self.prev_header.height,
             ));
         }
 
-        if candidate_block.prev_block_hash != self.block.hash {
+        if candidate_block.prev_block_hash != self.prev_header.hash {
             return Err(anyhow!("invalid previous block hash"));
         }
 
@@ -99,13 +99,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         &self,
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
-        if self.block.height == 0 {
+        if self.prev_header.height == 0 {
             return Ok(());
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
             let prev_block =
-                Ledger::fetch_block_by_height(&v, self.block.height - 1)?
+                Ledger::fetch_block_by_height(&v, self.prev_header.height - 1)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
             Ok::<_, anyhow::Error>(prev_block.header().seed)
@@ -114,10 +114,10 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         verify_block_cert(
             prev_block_seed,
             self.provisioners.prev(),
-            self.block.hash,
-            self.block.height,
+            self.prev_header.hash,
+            self.prev_header.height,
             &candidate_block.prev_block_cert,
-            self.block.iteration,
+            self.prev_header.iteration,
             true,
         )
         .await?;
@@ -141,8 +141,8 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             if let Some((cert, pk)) = cert {
                 info!(event = "verify_cert", cert_type = "failed_cert", iter);
                 let expected_pk = self.provisioners.current().get_generator(
-                    candidate_block.iteration,
-                    candidate_block.seed,
+                    iter as u8,
+                    self.prev_header.seed,
                     candidate_block.height,
                 );
                 if pk != &expected_pk {
@@ -150,7 +150,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 }
 
                 let quorums = verify_block_cert(
-                    self.block.seed,
+                    self.prev_header.seed,
                     self.provisioners.current(),
                     [0u8; 32],
                     candidate_block.height,
@@ -176,7 +176,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
         verify_block_cert(
-            self.block.seed,
+            self.prev_header.seed,
             self.provisioners.current(),
             candidate_block.hash,
             candidate_block.height,
