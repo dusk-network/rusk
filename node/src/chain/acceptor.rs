@@ -569,10 +569,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 /// prev_block is usually the blockchain tip
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
-    prev_block: &ledger::Header,
+    prev_header: &ledger::Header,
     provisioners: &ContextProvisioners,
     header: &ledger::Header,
 ) -> anyhow::Result<bool> {
-    let validator = Validator::new(db, prev_block, provisioners);
+    let validator = Validator::new(db, prev_header, provisioners);
     validator.execute_checks(header, false).await
 }
