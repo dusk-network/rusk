@@ -268,7 +268,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         msg: &Message,
     ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
-        let local_header = acc.header().await;
+        let local_header = acc.tip_header().await;
         let remote_height = remote_blk.header().height;
 
         if remote_height < local_header.height {
@@ -293,18 +293,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             }
 
             // If our local chain has a block L_B with ConsensusState not Final,
-            // and we receive a block N_B such that:
+            // and we receive a block R_B such that:
             //
-            // N_B.PrevBlock == L_B.PrevBlock
-            // N_B.Iteration < L_B.Iteration
+            // R_B.PrevBlock == L_B.PrevBlock
+            // R_B.Iteration < L_B.Iteration
             //
             // Then we fallback to N_B.PrevBlock and accept N_B
-            let header = acc.db.read().await.view(|t| {
+            let local_header = acc.db.read().await.view(|t| {
                 if let Some((prev_header, _)) =
                     t.fetch_block_header(&remote_blk.header().prev_block_hash)?
                 {
-                    let l_b_height = prev_header.height + 1;
-                    if let Some(l_b) = t.fetch_block_by_height(l_b_height)? {
+                    let local_height = prev_header.height + 1;
+                    if let Some(l_b) = t.fetch_block_by_height(local_height)? {
                         if remote_blk.header().iteration
                             < l_b.header().iteration
                         {
@@ -316,10 +316,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 anyhow::Ok(None)
             })?;
 
-            if let Some(header) = header {
+            if let Some(local_header) = local_header {
                 match fallback::WithContext::new(acc.deref())
                     .try_revert(
-                        &header,
+                        &local_header,
                         remote_blk.header(),
                         RevertTarget::LastFinalizedState,
                     )
@@ -356,7 +356,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             info!(
                 event = "entering fallback",
                 height = local_header.height,
-                iter = local_header.height,
+                iter = local_header.iteration,
                 new_iter = remote_blk.header().iteration,
             );
 

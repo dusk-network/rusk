@@ -48,8 +48,8 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         self.acc.try_revert(revert_target).await
     }
 
-    /// Verifies if a block of header `local` can be replaced with a block with
-    /// header `remote`
+    /// Verifies if a block with header `local` can be replaced with a block
+    /// with header `remote`
     async fn verify_header(
         &self,
         local: &Header,
@@ -65,7 +65,7 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
             (_, Ordering::Equal) => Err(anyhow!(
                 "iteration is equal to the current {:?}",
                 local.iteration
-            )),
+            )), // TODO: This may be a slashing condition
             _ => Ok(()),
         }?;
 

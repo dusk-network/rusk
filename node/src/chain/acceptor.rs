@@ -494,7 +494,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     /// Returns chain tip header
-    pub(crate) async fn header(&self) -> ledger::Header {
+    pub(crate) async fn tip_header(&self) -> ledger::Header {
         self.mrb.read().await.inner().header().clone()
     }
 
@@ -547,15 +547,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 }
 
-/// Performs full verification of block header (blk_header) against
-/// local/current state.
+/// Performs full verification of block header against prev_block header where
+/// prev_block is usually the blockchain tip
 pub(crate) async fn verify_block_header<DB: database::DB>(
     db: Arc<RwLock<DB>>,
-    mrb: &ledger::Header,
+    prev_block: &ledger::Header,
     provisioners: &ContextProvisioners,
-    candidate_header: &ledger::Header,
+    header: &ledger::Header,
 ) -> anyhow::Result<bool> {
-    let validator = Validator::new(db, mrb, provisioners);
-
-    validator.execute_checks(candidate_header, false).await
+    let validator = Validator::new(db, prev_block, provisioners);
+    validator.execute_checks(header, false).await
 }
