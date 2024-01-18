@@ -112,10 +112,10 @@ impl MsgHandler<Message> for RatificationHandler {
         &mut self,
         msg: Message,
         _ru: &RoundUpdate,
-        iteration: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         let ratification = Self::unwrap_msg(&msg)?;
+        let iteration = msg.header.iteration;
 
         // Collect vote, if msg payload is reduction type
         if let Some((hash, sv, quorum_reached)) = self.aggregator.collect_vote(

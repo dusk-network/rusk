@@ -149,28 +149,23 @@ impl<D: Database> IterationCtx<D> {
         msg: Message,
     ) -> Option<Message> {
         let committee = self.committees.get_committee(msg.header.get_step())?;
-        let iteration = msg.header.iteration;
         match msg.topic() {
             node_data::message::Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;
-                _ = handler
-                    .collect_from_past(msg, ru, iteration, committee)
-                    .await;
+                _ = handler.collect_from_past(msg, ru, committee).await;
             }
             node_data::message::Topics::Validation => {
                 let mut handler = self.validation_handler.lock().await;
-                if let Ok(Ready(m)) = handler
-                    .collect_from_past(msg, ru, iteration, committee)
-                    .await
+                if let Ok(Ready(m)) =
+                    handler.collect_from_past(msg, ru, committee).await
                 {
                     return Some(m);
                 }
             }
             node_data::message::Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
-                if let Ok(Ready(m)) = handler
-                    .collect_from_past(msg, ru, iteration, committee)
-                    .await
+                if let Ok(Ready(m)) =
+                    handler.collect_from_past(msg, ru, committee).await
                 {
                     return Some(m);
                 }

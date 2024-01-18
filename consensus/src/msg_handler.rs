@@ -89,7 +89,6 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         &mut self,
         msg: T,
         ru: &RoundUpdate,
-        iteration: u8,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
