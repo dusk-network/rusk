@@ -5,7 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use anyhow::{anyhow, Result};
-use node_data::ledger::Block;
+use dusk_consensus::user::provisioners::ContextProvisioners;
+use node_data::ledger;
+use node_data::ledger::Header;
+use std::cmp::Ordering;
 use tracing::info;
 
 use crate::{
@@ -33,67 +36,84 @@ impl<'a, N: Network, DB: database::DB, VM: vm::VMExecution>
         Self { acc }
     }
 
-    pub(crate) async fn try_execute_fallback(&self, blk: &Block) -> Result<()> {
-        self.sanity_checks(blk).await?;
+    ///
+    pub(crate) async fn try_execute_fallback(
+        &self,
+        local: &Header,
+        remote: &Header,
+    ) -> Result<()> {
+        self.verify_header(local, remote).await?;
         self.acc.try_revert(RevertTarget::LastFinalizedState).await
     }
 
-    /// Performs a serias of checks to securely allow fallback execution.
-    async fn sanity_checks(&self, blk: &Block) -> Result<()> {
-        let acc = self.acc;
+    /// Verifies if a block of header `local` can be replaced with a block with
+    /// header `remote`
+    async fn verify_header(
+        &self,
+        local: &Header,
+        remote: &Header,
+    ) -> Result<()> {
+        match (local.height, remote.iteration.cmp(&local.iteration)) {
+            (0, _) => Err(anyhow!("cannot fallback over genesis block")),
+            (_, Ordering::Greater) => Err(anyhow!(
+                "iteration {:?} is higher than the current {:?}",
+                remote.iteration,
+                local.iteration
+            )),
+            (_, Ordering::Equal) => Err(anyhow!(
+                "iteration is equal to the current {:?}",
+                local.iteration
+            )),
+            _ => Ok(()),
+        }?;
 
-        let curr_height = acc.get_curr_height().await;
-        let curr_iteration = acc.get_curr_iteration().await;
+        let (prev_header, prev_prev_header) =
+            self.acc.db.read().await.view(|t| {
+                let (prev_block_header, _) = t
+                    .fetch_block_header(&local.prev_block_hash)?
+                    .expect("block must exist");
 
-        if curr_height < 1 {
-            return Err(anyhow!("cannot fallback over genesis block"));
-        }
+                let (prev_prev_block_header, _) = t
+                    .fetch_block_header(&prev_block_header.prev_block_hash)?
+                    .expect("block must exist");
 
-        if blk.header().iteration > curr_iteration {
-            return Err(anyhow!("iteration is higher than current"));
-        }
-
-        if blk.header().iteration == curr_iteration {
-            // This may happen only if:
-            //
-            // we have more than one winner blocks per a single iteration, same
-            // round.
-
-            // An invalid block was received.
-            return Err(anyhow!("iteration is equal to the current"));
-        }
+                Ok::<(ledger::Header, ledger::Header), anyhow::Error>((
+                    prev_block_header,
+                    prev_prev_block_header,
+                ))
+            })?;
 
         info!(
-            event = "starting fallback",
-            height = curr_height,
-            iter = curr_iteration,
-            target_iter = blk.header().iteration,
+            event = "execute fallback checks",
+            height = local.height,
+            iter = local.iteration,
+            target_iter = remote.iteration,
         );
 
-        let prev_block_height = curr_height - 1;
-        let prev_block = acc.db.read().await.view(|v| {
-            Ledger::fetch_block_by_height(&v, prev_block_height)?
-                .ok_or_else(|| anyhow::anyhow!("could not fetch block"))
-        })?;
+        let provisioners_list = self
+            .acc
+            .vm
+            .read()
+            .await
+            .get_provisioners(prev_header.state_hash)?;
 
-        info!(
-            event = "fallback checking block",
-            height = curr_height,
-            iter = curr_iteration,
-            target_iter = blk.header().iteration,
-        );
+        let prev_provisioners_list = self
+            .acc
+            .vm
+            .read()
+            .await
+            .get_provisioners(prev_prev_header.state_hash)?;
 
-        // Validate Header/Certificate of the new block upon previous block and
-        // provisioners.
+        let mut provisioners_list = ContextProvisioners::new(provisioners_list);
+        provisioners_list.set_previous(prev_provisioners_list);
 
-        // In an edge case, this may fail on performing fallback between two
-        // epochs.
-        let provisioners_list = acc.provisioners_list.read().await;
-        acceptor::verify_block_header(
+        // Ensure header of the new block is valid according to prev_block
+        // header
+        let _ = acceptor::verify_block_header(
             self.acc.db.clone(),
-            prev_block.header(),
+            &prev_header,
             &provisioners_list,
-            blk.header(),
+            remote,
         )
         .await?;
 
