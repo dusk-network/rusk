@@ -264,24 +264,31 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
     async fn on_event(
         &mut self,
-        blk: &Block,
+        remote_blk: &Block,
         msg: &Message,
     ) -> anyhow::Result<Option<(Block, SocketAddr)>> {
         let mut acc = self.acc.write().await;
-        let height = blk.header().height;
-        let tip_height = acc.get_curr_height().await;
-        let iter = acc.get_curr_iteration().await;
-        let curr_hash = acc.get_curr_hash().await;
+        let local_header = acc.header().await;
+        let remote_height = remote_blk.header().height;
 
-        if height < tip_height {
+        if remote_height < local_header.height {
+            // Ensure that the block does not exist in the local state
             let exists = acc
                 .db
                 .read()
                 .await
-                .view(|t| t.get_block_exists(&blk.header().hash))?;
+                .view(|t| t.get_block_exists(&remote_blk.header().hash))?;
 
             if exists {
                 // Already exists in local state
+                return Ok(None);
+            }
+
+            // Ensure that the block height is higher than the last finalized
+            // TODO: Retrieve the block from memory
+            if remote_height
+                <= acc.get_latest_final_block().await?.header().height
+            {
                 return Ok(None);
             }
 
@@ -292,33 +299,51 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             // N_B.Iteration < L_B.Iteration
             //
             // Then we fallback to N_B.PrevBlock and accept N_B
-            acc.db.read().await.view(|t| {
-                if let Some((header, _)) =
-                    t.fetch_block_header(&blk.header().prev_block_hash)?
+            let header = acc.db.read().await.view(|t| {
+                if let Some((prev_header, _)) =
+                    t.fetch_block_header(&remote_blk.header().prev_block_hash)?
                 {
-                    let l_b_height = header.height + 1;
-                    if let Some(Label::Final) =
-                        t.fetch_block_label_by_height(l_b_height)?
-                    {
-                        // L_B is already final
-                        return Ok(());
-                    }
-
+                    let l_b_height = prev_header.height + 1;
                     if let Some(l_b) = t.fetch_block_by_height(l_b_height)? {
-                        if blk.header().iteration < l_b.header().iteration {
-                            // TODO: Trigger fallback to l_b_height - 1
+                        if remote_blk.header().iteration
+                            < l_b.header().iteration
+                        {
+                            return Ok(Some(l_b.header().clone()));
                         }
                     }
                 }
 
-                anyhow::Ok(())
+                anyhow::Ok(None)
             })?;
+
+            if let Some(header) = header {
+                match fallback::WithContext::new(acc.deref())
+                    .try_execute_fallback(&header, remote_blk.header())
+                    .await
+                {
+                    Ok(_) => {
+                        if remote_height == acc.get_curr_height().await + 1 {
+                            acc.try_accept_block(remote_blk, true).await?;
+                            return Ok(None);
+                        }
+                    }
+                    Err(e) => {
+                        error!(
+                            event = "fallback failed",
+                            height = local_header.height,
+                            remote_height,
+                            err = format!("{:?}", e)
+                        );
+                        return Ok(None);
+                    }
+                }
+            }
 
             return Ok(None);
         }
 
-        if height == tip_height {
-            if blk.header().hash == curr_hash {
+        if remote_height == local_header.height {
+            if remote_blk.header().hash == local_header.hash {
                 // Duplicated block.
                 // Node has already accepted it.
                 return Ok(None);
@@ -326,13 +351,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             info!(
                 event = "entering fallback",
-                height = tip_height,
-                iter = iter,
-                new_iter = blk.header().iteration,
+                height = local_header.height,
+                iter = local_header.height,
+                new_iter = remote_blk.header().iteration,
             );
 
             match fallback::WithContext::new(acc.deref())
-                .try_execute_fallback(blk)
+                .try_execute_fallback(&local_header, remote_blk.header())
                 .await
             {
                 Err(e) => {
@@ -347,15 +372,18 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
                     // Blacklist the old-block hash so that if it's again
                     // sent then this node does not try to accept it.
-                    self.blacklisted_blocks.write().await.insert(curr_hash);
+                    self.blacklisted_blocks
+                        .write()
+                        .await
+                        .insert(local_header.hash);
 
-                    if height == acc.get_curr_height().await + 1 {
+                    if remote_height == acc.get_curr_height().await + 1 {
                         // If we have fallback-ed to previous block only, then
                         // accepting the new block would be enough to continue
                         // in in_Sync mode instead of switching to Out-Of-Sync
                         // mode.
 
-                        acc.try_accept_block(blk, true).await?;
+                        acc.try_accept_block(remote_blk, true).await?;
                         return Ok(None);
                     }
 
@@ -363,7 +391,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                     // sync-up procedure to download all missing blocks from the
                     // main chain.
                     if let Some(metadata) = &msg.metadata {
-                        let res = (blk.clone(), metadata.src_addr);
+                        let res = (remote_blk.clone(), metadata.src_addr);
                         return Ok(Some(res));
                     } else {
                         return Ok(None);
@@ -373,8 +401,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
         }
 
         // Try accepting consecutive block
-        if height == tip_height + 1 {
-            let label = acc.try_accept_block(blk, true).await?;
+        if remote_height == local_header.height + 1 {
+            let label = acc.try_accept_block(remote_blk, true).await?;
 
             // On first final block accepted while we're inSync, clear
             // blacklisted blocks
@@ -387,7 +415,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             if let Some(metadata) = &msg.metadata {
                 if let Some(presync) = &mut self.presync {
                     if metadata.src_addr == presync.peer_addr
-                        && height == presync.start_height() + 1
+                        && remote_height == presync.start_height() + 1
                     {
                         let res =
                             (presync.target_blk.clone(), presync.peer_addr);
@@ -413,12 +441,13 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             if self.presync.is_none() {
                 self.presync = Some(PresyncInfo::new(
                     metadata.src_addr,
-                    blk.clone(),
-                    tip_height,
+                    remote_blk.clone(),
+                    local_header.height,
                 ));
             }
 
-            self.request_block(tip_height + 1, metadata.src_addr).await;
+            self.request_block(local_header.height + 1, metadata.src_addr)
+                .await;
         }
 
         Ok(None)
