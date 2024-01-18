@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::acceptor::Acceptor;
+use super::acceptor::{Acceptor, RevertTarget};
 use crate::chain::fallback;
 use crate::database;
 use crate::{vm, Network};
@@ -318,7 +318,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
 
             if let Some(header) = header {
                 match fallback::WithContext::new(acc.deref())
-                    .try_execute_fallback(&header, remote_blk.header())
+                    .try_revert(
+                        &header,
+                        remote_blk.header(),
+                        RevertTarget::LastFinalizedState,
+                    )
                     .await
                 {
                     Ok(_) => {
@@ -357,7 +361,11 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             );
 
             match fallback::WithContext::new(acc.deref())
-                .try_execute_fallback(&local_header, remote_blk.header())
+                .try_revert(
+                    &local_header,
+                    remote_blk.header(),
+                    RevertTarget::LastFinalizedState,
+                )
                 .await
             {
                 Err(e) => {
