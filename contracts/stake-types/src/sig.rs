@@ -9,28 +9,12 @@
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 use dusk_pki::StealthAddress;
 
-const ALLOW_MESSAGE_SIZE: usize = u64::SIZE + PublicKey::SIZE;
 const STAKE_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
 const WITHDRAW_MESSAGE_SIZE: usize =
     u64::SIZE + StealthAddress::SIZE + BlsScalar::SIZE;
-
-/// Signature message used for [`Allow`].
-#[must_use]
-pub fn allow_signature_message(
-    counter: u64,
-    staker: &PublicKey,
-) -> [u8; ALLOW_MESSAGE_SIZE] {
-    let mut bytes = [0u8; ALLOW_MESSAGE_SIZE];
-
-    bytes[..u64::SIZE].copy_from_slice(&counter.to_bytes());
-    bytes[u64::SIZE..].copy_from_slice(&staker.to_bytes());
-
-    bytes
-}
 
 /// Return the digest to be signed in the `stake` function of the stake
 /// contract.

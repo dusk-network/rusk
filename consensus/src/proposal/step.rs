@@ -8,6 +8,7 @@ use crate::commons::{ConsensusError, Database};
 use crate::execution_ctx::ExecutionCtx;
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
+use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
 use std::cmp;
 use std::sync::Arc;
@@ -67,7 +68,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                 .generate_candidate_message(
                     &ctx.round_update,
                     ctx.iteration,
-                    failed_certificates,
+                    IterationsInfo::new(failed_certificates),
                 )
                 .await
             {

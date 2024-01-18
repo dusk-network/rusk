@@ -1,11 +1,3 @@
-[acl.stake]
-owners = [
-    '22p9MSeCwzrGtSff3TYPELufsGxU4oumgkHd4XqNTq5tuHmJ3aTPJErA7nF6ns4vqW295y3SXY9FdZd68bXP5q82AAEmCustZvD3mbb8K32Eawm3GNmUkzVLU7t24tCe5atj',
-]
-allowlist = [
-    'rm6jwcM9xQChnVeHYw6W8HP7kW3E8nejgs4XhmKoYspQnrZL5dDcQjVR5e2UmbyNNF4DJDRdZGdYLgJfZ3qQXuhSCL6UTDkcQ2QEf6RW3aCtfqQMKCFMNaBsfNrZuzrP23Z',
-]
-
 [[balance]]
 address = '5i9RZjT87TLa1BtWXRRoFy3FoMzFHiXT3GWasHdUaxuo3YapUKYeXXiY1yuAeKng2hmxxaYsGNhKhjyrE9KYTSE7'
 seed = 0xdead_beef

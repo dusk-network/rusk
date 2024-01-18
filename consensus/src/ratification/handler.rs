@@ -91,6 +91,7 @@ impl MsgHandler<Message> for RatificationHandler {
                 ratification_sv,
                 SvType::Ratification,
                 quorum_reached,
+                committee.excluded().expect("Generator to be excluded"),
             );
 
             if quorum_reached {
@@ -131,6 +132,7 @@ impl MsgHandler<Message> for RatificationHandler {
                     sv,
                     SvType::Ratification,
                     quorum_reached,
+                    committee.excluded().expect("Generator to be excluded"),
                 )
             {
                 return Ok(HandleMsgOutput::Ready(quorum_msg));

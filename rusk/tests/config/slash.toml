@@ -16,9 +16,5 @@ notes = [
 
 [[stake]]
 address = "qe1FbZxf6YaCAeFNSvL1G82cBhG4Q4gBf4vKYo527Vws3b23jdbBuzKSFsdUHnZeBgsTnyNJLkApEpRyJw87sdzR9g9iESJrG5ZgpCs9jq88m6d4qMY5txGpaXskRQmkzE3"
-amount = 1_000_000_000_000
-
-[[stake]]
-address = "25omWWRyfcMjYNbQZVyc3rypYLi8UqZuthoJHqbCEriRX3z2EmnBaXWZLFL2NvzvDnkoYoHLGiSYQpmupNJj1sSdWNstqzfFEpiqvSNYw7gqvoEiU9FsEHUMG1ZyG3XgL8Rv"
-amount = 1_000_000_000_000
-reward = 1_000_000_000_000
+amount = 20_000_000_000
+reward = 3_000_000_000

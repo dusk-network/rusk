@@ -33,7 +33,7 @@ impl<T: Operations> Generator<T> {
         &self,
         ru: &RoundUpdate,
         iteration: u8,
-        failed_iterations: Vec<Option<Certificate>>,
+        failed_iterations: IterationsInfo,
     ) -> Result<Message, crate::operations::Error> {
         // Sign seed
         let seed = ru
@@ -80,14 +80,19 @@ impl<T: Operations> Generator<T> {
         ru: &RoundUpdate,
         seed: Seed,
         iteration: u8,
-        failed_iterations: Vec<Option<Certificate>>,
+        failed_iterations: IterationsInfo,
     ) -> Result<Block, crate::operations::Error> {
         let start_time = Instant::now();
+
+        let missed_generators = failed_iterations
+            .to_missed_generators()
+            .map_err(|_| crate::operations::Error::InvalidIterationInfo)?;
 
         let call_params = CallParams {
             round: ru.round,
             block_gas_limit: config::DEFAULT_BLOCK_GAS_LIMIT,
             generator_pubkey: ru.pubkey_bls.clone(),
+            missed_generators,
         };
 
         let result = self
@@ -118,7 +123,7 @@ impl<T: Operations> Generator<T> {
             prev_block_cert: *ru.cert(),
             txroot,
             iteration,
-            failed_iterations: IterationsInfo::new(failed_iterations),
+            failed_iterations,
         };
 
         // Apply a delay in block generator accordingly

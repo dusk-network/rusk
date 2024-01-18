@@ -46,6 +46,7 @@ use rusk_profile::to_rusk_state_id_path;
 use sha3::{Digest, Sha3_256};
 
 pub use version::{VERSION, VERSION_BUILD};
+pub const MINIMUM_STAKE: Dusk = dusk(1000.0);
 
 const A: usize = 4;
 
@@ -112,6 +113,7 @@ impl Rusk {
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: I,
+        missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, Vec<Transaction>, VerificationOutput)>
     {
         let inner = self.inner.lock();
@@ -179,11 +181,12 @@ impl Rusk {
             }
         }
 
-        reward_and_update_root(
+        reward_slash_and_update_root(
             &mut session,
             block_height,
             dusk_spent,
             generator,
+            missed_generators,
         )?;
 
         let state_root = session.root();
@@ -206,6 +209,7 @@ impl Rusk {
         block_gas_limit: u64,
         generator: &BlsPublicKey,
         txs: &[Transaction],
+        missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let inner = self.inner.lock();
 
@@ -213,7 +217,14 @@ impl Rusk {
         let mut session =
             rusk_abi::new_session(&inner.vm, current_commit, block_height)?;
 
-        accept(&mut session, block_height, block_gas_limit, generator, txs)
+        accept(
+            &mut session,
+            block_height,
+            block_gas_limit,
+            generator,
+            txs,
+            missed_generators,
+        )
     }
 
     /// Accept the given transactions.
@@ -228,6 +239,7 @@ impl Rusk {
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
+        missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let mut inner = self.inner.lock();
 
@@ -241,6 +253,7 @@ impl Rusk {
             block_gas_limit,
             &generator,
             &txs[..],
+            missed_generators,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -269,6 +282,7 @@ impl Rusk {
         generator: BlsPublicKey,
         txs: Vec<Transaction>,
         consistency_check: Option<VerificationOutput>,
+        missed_generators: &[BlsPublicKey],
     ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
         let mut inner = self.inner.lock();
 
@@ -282,6 +296,7 @@ impl Rusk {
             block_gas_limit,
             &generator,
             &txs[..],
+            missed_generators,
         )?;
 
         if let Some(expected_verification) = consistency_check {
@@ -413,27 +428,14 @@ impl Rusk {
     pub fn provisioners(
         &self,
         base_commit: Option<[u8; 32]>,
-    ) -> Result<Vec<(BlsPublicKey, StakeData)>> {
+    ) -> Result<impl Iterator<Item = (BlsPublicKey, StakeData)>> {
         let (sender, receiver) = mpsc::channel();
         self.feeder_query(STAKE_CONTRACT, "stakes", &(), sender, base_commit)?;
-        Ok(receiver
-            .into_iter()
-            .map(|bytes| {
-                rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
-                    "The contract should only return (pk, stake_data) tuples",
-                )
-            })
-            .collect())
-    }
-
-    /// Returns the keys allowed to stake.
-    pub fn stake_allowlist(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(STAKE_CONTRACT, "allowlist", &())
-    }
-
-    /// Returns the keys that own the stake contract.
-    pub fn stake_owners(&self) -> Result<Vec<BlsPublicKey>> {
-        self.query(STAKE_CONTRACT, "owners", &())
+        Ok(receiver.into_iter().map(|bytes| {
+            rkyv::from_bytes::<(BlsPublicKey, StakeData)>(&bytes).expect(
+                "The contract should only return (pk, stake_data) tuples",
+            )
+        }))
     }
 
     pub fn query_raw<S, V>(
@@ -623,6 +625,7 @@ fn accept(
     block_gas_limit: u64,
     generator: &BlsPublicKey,
     txs: &[Transaction],
+    missed_generators: &[BlsPublicKey],
 ) -> Result<(Vec<SpentTransaction>, VerificationOutput)> {
     let mut block_gas_left = block_gas_limit;
 
@@ -654,7 +657,13 @@ fn accept(
         });
     }
 
-    reward_and_update_root(session, block_height, dusk_spent, generator)?;
+    reward_slash_and_update_root(
+        session,
+        block_height,
+        dusk_spent,
+        generator,
+        missed_generators,
+    )?;
 
     let state_root = session.root();
     let event_hash = event_hasher.finalize().into();
@@ -720,11 +729,12 @@ fn update_hasher(hasher: &mut Sha3_256, event: Event) {
     hasher.update(event.data);
 }
 
-fn reward_and_update_root(
+fn reward_slash_and_update_root(
     session: &mut Session,
     block_height: u64,
     dusk_spent: Dusk,
     generator: &BlsPublicKey,
+    slashing: &[BlsPublicKey],
 ) -> Result<()> {
     let (dusk_value, generator_value) =
         coinbase_value(block_height, dusk_spent);
@@ -741,6 +751,16 @@ fn reward_and_update_root(
         &(*generator, generator_value),
         u64::MAX,
     )?;
+    let slash_amount = emission_amount(block_height);
+
+    for to_slash in slashing {
+        session.call::<_, ()>(
+            STAKE_CONTRACT,
+            "slash",
+            &(*to_slash, slash_amount),
+            u64::MAX,
+        )?;
+    }
 
     session.call::<_, ()>(TRANSFER_CONTRACT, "update_root", &(), u64::MAX)?;
 

@@ -140,6 +140,7 @@ fn wallet_transfer(
         &txs[..],
         BLOCK_HEIGHT,
         BLOCK_GAS_LIMIT,
+        vec![],
         Some(expected),
     )
     .expect("generator procedure to succeed");

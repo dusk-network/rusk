@@ -95,8 +95,7 @@ impl Rusk {
     fn get_provisioners(&self) -> anyhow::Result<ResponseData> {
         let prov: Vec<_> = self
             .provisioners(None)
-            .unwrap()
-            .iter()
+            .expect("Cannot query state for provisioners")
             .filter_map(|(key, stake)| {
                 let key = bs58::encode(key.to_bytes()).into_string();
                 let (amount, eligibility) = stake.amount.unwrap_or_default();

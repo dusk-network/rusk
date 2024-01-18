@@ -160,9 +160,21 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     fn needs_update(blk: &Block, txs: &[SpentTransaction]) -> bool {
+        // Update provisioners at every epoch (where new stakes take effect)
         if blk.header().height % EPOCH == 0 {
             return true;
         }
+        // Update provisioners if a slash has been applied
+        if blk
+            .header()
+            .failed_iterations
+            .cert_list
+            .iter()
+            .any(|i| i.is_some())
+        {
+            return true;
+        };
+        // Update provisioners if there is a processed unstake transaction
         txs.iter().filter(|t| t.err.is_none()).any(|t| {
             matches!(&t.inner.inner.call, Some((STAKE_CONTRACT, f, _)) if f == "unstake")
         })
@@ -323,6 +335,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
                 mrb.inner().header().seed,
                 header.height,
             );
+
+            for (_, slashed) in
+                header.failed_iterations.cert_list.iter().flatten()
+            {
+                info!("Slashed {}", slashed.to_base58())
+            }
 
             match Self::needs_update(blk.inner(), &txs) {
                 true => {

@@ -4,15 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use core::cmp::min;
+
 use crate::*;
 
-use alloc::collections::{BTreeMap, BTreeSet};
-use alloc::vec::Vec;
+use alloc::collections::BTreeMap;
 
 use dusk_bls12_381_sign::PublicKey;
 use dusk_bytes::Serializable;
 
-use rusk_abi::TRANSFER_CONTRACT;
+use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};
 use stake_contract_types::*;
 use transfer_contract_types::*;
 
@@ -27,14 +28,14 @@ use transfer_contract_types::*;
 #[derive(Debug, Default, Clone)]
 pub struct StakeState {
     stakes: BTreeMap<[u8; PublicKey::SIZE], StakeData>,
-    owners: BTreeSet<[u8; PublicKey::SIZE]>,
+    slashed_amount: u64,
 }
 
 impl StakeState {
     pub const fn new() -> Self {
         Self {
             stakes: BTreeMap::new(),
-            owners: BTreeSet::new(),
+            slashed_amount: 0u64,
         }
     }
 
@@ -44,9 +45,7 @@ impl StakeState {
         }
 
         // allot a stake to the given key and increment the signature counter
-        let loaded_stake = self
-            .load_stake_mut(&stake.public_key)
-            .expect("The address is not allowed");
+        let loaded_stake = self.load_or_create_stake_mut(&stake.public_key);
 
         let counter = loaded_stake.counter();
 
@@ -155,32 +154,6 @@ impl StakeState {
         .expect("Minting a reward note should succeed");
     }
 
-    pub fn allow(&mut self, allow: Allow) {
-        if self.is_allowlisted(&allow.public_key) {
-            panic!("Address already allowed!");
-        }
-
-        if !self.is_owner(&allow.owner) {
-            panic!("Can only be called by a contract owner!");
-        }
-
-        // increment the signature counter
-        let owner_stake = self.load_or_create_stake_mut(&allow.owner);
-
-        let owner_counter = owner_stake.counter();
-        owner_stake.increment_counter();
-
-        // verify signature
-        let digest =
-            allow_signature_message(owner_counter, &allow.public_key).to_vec();
-
-        if !rusk_abi::verify_bls(digest, allow.owner, allow.signature) {
-            panic!("Invalid signature!");
-        }
-
-        self.insert_allowlist(allow.public_key);
-    }
-
     /// Gets a reference to a stake.
     pub fn get_stake(&self, key: &PublicKey) -> Option<&StakeData> {
         self.stakes.get(&key.to_bytes())
@@ -214,19 +187,57 @@ impl StakeState {
         self.stakes.get_mut(&pk.to_bytes()).unwrap()
     }
 
-    /// Gets a mutable reference to the stake of a given key.
-    pub(crate) fn load_stake_mut(
-        &mut self,
-        pk: &PublicKey,
-    ) -> Option<&mut StakeData> {
-        self.stakes.get_mut(&pk.to_bytes())
-    }
-
     /// Rewards a `public_key` with the given `value`. If a stake does not exist
     /// in the map for the key one will be created.
     pub fn reward(&mut self, public_key: &PublicKey, value: u64) {
         let stake = self.load_or_create_stake_mut(public_key);
         stake.increase_reward(value);
+    }
+
+    /// Total amount slashed from the genesis
+    pub fn slashed_amount(&self) -> u64 {
+        self.slashed_amount
+    }
+
+    /// Slash the given `to_subtract` amount from a `public_key` stake (if
+    /// any). Firstly the amount is subtracted from the reward, if that's
+    /// not enough the stake amount is touched.
+    pub fn slash(&mut self, public_key: &PublicKey, to_slash: u64) {
+        let stake = self
+            .get_stake_mut(public_key)
+            .expect("The stake to slash should exist");
+
+        let staker_funds = stake.reward + stake.amount.unwrap_or_default().0;
+
+        // Cannot slash more than the staker funds
+        let to_slash = min(to_slash, staker_funds);
+
+        if to_slash <= stake.reward {
+            stake.reward -= to_slash;
+        } else {
+            // Deplete reward and update `to_slash` with the remaining amount to
+            // slash from the stake amount.
+            let remaining_slash = to_slash - stake.reward;
+            stake.reward = 0;
+            let (stake_amt, _) = stake
+                .amount
+                .as_mut()
+                .expect("Trying to slash more than slashable_amount");
+
+            *stake_amt -= remaining_slash;
+
+            // Update the module balance to reflect the change in the amount
+            // withdrawable from the contract
+            let _: bool = rusk_abi::call(
+                TRANSFER_CONTRACT,
+                "sub_module_balance",
+                &(STAKE_CONTRACT, remaining_slash),
+            )
+            .expect("Subtracting balance should succeed");
+        }
+
+        // Update the total slashed amount
+        self.slashed_amount += to_slash;
     }
 
     /// Feeds the host with the stakes.
@@ -236,42 +247,5 @@ impl StakeState {
             let stake_data = v.clone();
             rusk_abi::feed((pk, stake_data));
         }
-    }
-
-    /// Gets a vector of all allowlisted keys.
-    pub fn stakers_allowlist(&self) -> Vec<PublicKey> {
-        self.stakes
-            .keys()
-            .map(|key| PublicKey::from_bytes(key).unwrap())
-            .collect()
-    }
-
-    /// Gets a vector of all owner keys.
-    pub fn owners(&self) -> Vec<PublicKey> {
-        self.owners
-            .iter()
-            .map(|e| PublicKey::from_bytes(e).unwrap())
-            .collect()
-    }
-
-    pub fn add_owner(&mut self, owner: PublicKey) {
-        if !self.is_owner(&owner) {
-            self.owners.insert(owner.to_bytes());
-        }
-    }
-
-    pub fn is_owner(&self, owner: &PublicKey) -> bool {
-        self.owners.get(&owner.to_bytes()).is_some()
-    }
-
-    pub fn insert_allowlist(&mut self, staker: PublicKey) {
-        if !self.is_allowlisted(&staker) {
-            let stake = StakeData::default();
-            self.stakes.insert(staker.to_bytes(), stake);
-        }
-    }
-
-    pub fn is_allowlisted(&self, staker: &PublicKey) -> bool {
-        self.stakes.get(&staker.to_bytes()).is_some()
     }
 }

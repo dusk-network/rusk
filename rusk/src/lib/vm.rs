@@ -12,7 +12,7 @@ use node::vm::VMExecution;
 use node_data::ledger::{Block, SpentTransaction, Transaction};
 use tracing::info;
 
-use crate::Rusk;
+use crate::{Rusk, MINIMUM_STAKE};
 
 impl VMExecution for Rusk {
     fn execute_state_transition<I: Iterator<Item = Transaction>>(
@@ -32,6 +32,7 @@ impl VMExecution for Rusk {
                 params.block_gas_limit,
                 params.generator_pubkey.inner(),
                 txs,
+                &params.missed_generators[..],
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot execute txs: {inner}!!")
@@ -42,17 +43,21 @@ impl VMExecution for Rusk {
 
     fn verify_state_transition(
         &self,
-        params: &CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
+        let generator = blk.header().generator_bls_pubkey;
+        let generator =
+            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
+                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (_, verification_output) = self
             .verify_transactions(
-                params.round,
-                params.block_gas_limit,
-                params.generator_pubkey.inner(),
-                &txs[..],
+                blk.header().height,
+                blk.header().gas_limit,
+                &generator,
+                blk.txs(),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot verify txs: {inner}!!"))?;
 
@@ -79,6 +84,7 @@ impl VMExecution for Rusk {
                     state_root: blk.header().state_hash,
                     event_hash: blk.header().event_hash,
                 }),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| anyhow::anyhow!("Cannot accept txs: {inner}!!"))?;
 
@@ -105,6 +111,7 @@ impl VMExecution for Rusk {
                     state_root: blk.header().state_hash,
                     event_hash: blk.header().event_hash,
                 }),
+                &blk.header().failed_iterations.to_missed_generators()?,
             )
             .map_err(|inner| {
                 anyhow::anyhow!("Cannot finalize txs: {inner}!!")
@@ -160,7 +167,12 @@ impl Rusk {
         let provisioners = self
             .provisioners(base_commit)
             .map_err(|e| anyhow::anyhow!("Cannot get provisioners {e}"))?
-            .into_iter()
+            .filter(|(_, stake)| {
+                stake
+                    .amount
+                    .map(|(amount, _)| amount >= MINIMUM_STAKE)
+                    .unwrap_or_default()
+            })
             .filter_map(|(key, stake)| {
                 stake.amount.map(|(value, eligibility)| {
                     let stake = Stake::new(value, stake.reward, eligibility);

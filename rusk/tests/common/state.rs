@@ -6,6 +6,7 @@
 
 use std::path::Path;
 
+use dusk_bytes::Serializable;
 use node::vm::VMExecution;
 use rusk::{Result, Rusk};
 use rusk_recovery_tools::state::{self, Snapshot};
@@ -13,7 +14,10 @@ use rusk_recovery_tools::state::{self, Snapshot};
 use dusk_bls12_381_sign::PublicKey;
 use dusk_consensus::operations::CallParams;
 use dusk_wallet_core::Transaction as PhoenixTransaction;
-use node_data::ledger::{Block, Header, SpentTransaction};
+use node_data::{
+    bls::PublicKeyBytes,
+    ledger::{Block, Certificate, Header, IterationsInfo, SpentTransaction},
+};
 use tracing::info;
 
 use crate::common::keys::BLS_SK;
@@ -55,6 +59,7 @@ pub fn generator_procedure(
     txs: &[PhoenixTransaction],
     block_height: u64,
     block_gas_limit: u64,
+    missed_generators: Vec<PublicKey>,
     expected: Option<ExecuteResult>,
 ) -> anyhow::Result<Vec<SpentTransaction>> {
     let expected = expected.unwrap_or(ExecuteResult {
@@ -71,17 +76,24 @@ pub fn generator_procedure(
     let generator_pubkey = node_data::bls::PublicKey::new(generator);
     let generator_pubkey_bytes = *generator_pubkey.bytes();
     let round = block_height;
-    // let txs = vec![];
+
+    let mut failed_iterations = IterationsInfo::default();
+    for to_slash in &missed_generators {
+        failed_iterations.cert_list.push(Some((
+            Certificate::default(),
+            PublicKeyBytes(to_slash.to_bytes()),
+        )));
+    }
 
     let call_params = CallParams {
         round,
         block_gas_limit,
         generator_pubkey,
+        missed_generators,
     };
 
-    let (transfer_txs, discarded, execute_output) = rusk
-        .execute_state_transition(&call_params, txs.into_iter())
-        .expect("state transition to success");
+    let (transfer_txs, discarded, execute_output) =
+        rusk.execute_state_transition(&call_params, txs.into_iter())?;
 
     assert_eq!(transfer_txs.len(), expected.executed, "all txs accepted");
     assert_eq!(discarded.len(), expected.discarded, "no discarded tx");
@@ -92,9 +104,6 @@ pub fn generator_procedure(
     );
 
     let txs: Vec<_> = transfer_txs.into_iter().map(|tx| tx.inner).collect();
-    let verify_output =
-        rusk.verify_state_transition(&call_params, txs.clone())?;
-    info!("verify_state_transition new verification: {verify_output}",);
 
     let block = Block::new(
         Header {
@@ -103,11 +112,15 @@ pub fn generator_procedure(
             generator_bls_pubkey: generator_pubkey_bytes,
             state_hash: execute_output.state_root,
             event_hash: execute_output.event_hash,
+            failed_iterations,
             ..Default::default()
         },
         txs,
     )
     .expect("valid block");
+
+    let verify_output = rusk.verify_state_transition(&block)?;
+    info!("verify_state_transition new verification: {verify_output}",);
 
     let (accept_txs, accept_output) = rusk.accept(&block)?;
 

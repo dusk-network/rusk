@@ -6,7 +6,8 @@
 
 use std::fmt;
 
-use node_data::ledger::{Header, SpentTransaction, Transaction};
+use dusk_bls12_381_sign::PublicKey;
+use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
@@ -14,6 +15,7 @@ pub type EventHash = [u8; 32];
 #[derive(Debug)]
 pub enum Error {
     Failed,
+    InvalidIterationInfo,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -21,6 +23,7 @@ pub struct CallParams {
     pub round: u64,
     pub block_gas_limit: u64,
     pub generator_pubkey: node_data::bls::PublicKey,
+    pub missed_generators: Vec<PublicKey>,
 }
 
 #[derive(Default)]
@@ -57,8 +60,7 @@ pub trait Operations: Send + Sync {
 
     async fn verify_state_transition(
         &self,
-        params: CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> Result<VerificationOutput, Error>;
 
     async fn execute_state_transition(

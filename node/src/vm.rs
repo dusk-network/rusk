@@ -26,8 +26,7 @@ pub trait VMExecution: Send + Sync + 'static {
 
     fn verify_state_transition(
         &self,
-        params: &CallParams,
-        txs: Vec<Transaction>,
+        blk: &Block,
     ) -> anyhow::Result<VerificationOutput>;
 
     fn accept(

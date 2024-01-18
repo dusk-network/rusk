@@ -52,14 +52,6 @@ unsafe fn withdraw(arg_len: u32) -> u32 {
     })
 }
 
-#[no_mangle]
-unsafe fn allow(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |arg| {
-        assert_transfer_caller();
-        STATE.allow(arg)
-    })
-}
-
 // Queries
 
 #[no_mangle]
@@ -68,18 +60,8 @@ unsafe fn get_stake(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn allowlist(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.stakers_allowlist())
-}
-
-#[no_mangle]
-unsafe fn is_allowlisted(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| STATE.is_allowlisted(&pk))
-}
-
-#[no_mangle]
-unsafe fn owners(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |_: ()| STATE.owners())
+unsafe fn slashed_amount(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |_: ()| STATE.slashed_amount())
 }
 
 // "Feeder" queries
@@ -100,14 +82,6 @@ unsafe fn insert_stake(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn insert_allowlist(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| {
-        assert_external_caller();
-        STATE.insert_allowlist(pk);
-    })
-}
-
-#[no_mangle]
 unsafe fn reward(arg_len: u32) -> u32 {
     rusk_abi::wrap_call(arg_len, |(pk, value)| {
         assert_external_caller();
@@ -116,10 +90,10 @@ unsafe fn reward(arg_len: u32) -> u32 {
 }
 
 #[no_mangle]
-unsafe fn add_owner(arg_len: u32) -> u32 {
-    rusk_abi::wrap_call(arg_len, |pk| {
+unsafe fn slash(arg_len: u32) -> u32 {
+    rusk_abi::wrap_call(arg_len, |(pk, value)| {
         assert_external_caller();
-        STATE.add_owner(pk);
+        STATE.slash(&pk, value);
     })
 }
 
