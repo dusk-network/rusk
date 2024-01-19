@@ -185,7 +185,8 @@ pub async fn wallet() -> Result<()> {
     assert_ne!(original_root, new_root, "Root should have changed");
 
     // Revert the state
-    rusk.revert().expect("Reverting should succeed");
+    let base_root = rusk.base_root();
+    rusk.revert(base_root).expect("Reverting should succeed");
     cache.write().unwrap().clear();
 
     // Check the state's root is back to the original one
