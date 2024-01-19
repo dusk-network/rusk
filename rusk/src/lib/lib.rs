@@ -337,7 +337,7 @@ impl Rusk {
     pub fn revert(&self, state_hash: [u8; 32]) -> Result<[u8; 32]> {
         let mut inner = self.inner.lock();
 
-        let mut commits = &inner.vm.commits();
+        let commits = &inner.vm.commits();
         if !commits.contains(&state_hash) {
             return Err(Error::CommitNotFound(state_hash));
         }

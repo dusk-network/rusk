@@ -99,7 +99,9 @@ pub fn accept_benchmark(c: &mut Criterion) {
                         )
                         .expect("Accepting transactions should succeed");
 
-                        rusk.revert().expect("Reverting should succeed");
+                        let base_root = rusk.base_root();
+                        rusk.revert(base_root)
+                            .expect("Reverting should succeed");
                     })
                 },
             );
