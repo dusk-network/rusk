@@ -363,11 +363,28 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 new_iter = remote_blk.header().iteration,
             );
 
+            let state_hash = acc
+                .db
+                .read()
+                .await
+                .view(|t| {
+                    let res = t
+                        .fetch_block_header(
+                            &remote_blk.header().prev_block_hash,
+                        )?
+                        .map(|(prev_header, _)| prev_header.state_hash);
+
+                    anyhow::Ok::<Option<[u8; 32]>>(res)
+                })?
+                .ok_or_else(|| {
+                    anyhow::anyhow!("could not retrieve state_hash")
+                })?;
+
             match fallback::WithContext::new(acc.deref())
                 .try_revert(
                     &local_header,
                     remote_blk.header(),
-                    RevertTarget::LastFinalizedState,
+                    RevertTarget::Commit(state_hash),
                 )
                 .await
             {
