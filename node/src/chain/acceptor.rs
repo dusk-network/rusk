@@ -25,8 +25,9 @@ use crate::chain::header_validation::Validator;
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
-    LastFinalizedState = 0,
-    LastEpoch = 1,
+    Commit([u8; 32]),
+    LastFinalizedState,
+    LastEpoch,
 }
 
 /// Implements block acceptance procedure. This includes block header,
@@ -407,17 +408,32 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
-                info!(event = "vm_revert to last finalized state");
-                let state_hash = self.vm.read().await.revert()?;
+                let vm = self.vm.read().await;
+                let base_root = vm.get_base_state_root()?;
+                let state_hash = vm.revert(base_root)?;
 
                 info!(
                     event = "vm reverted",
-                    state_root = hex::encode(state_hash)
+                    state_root = hex::encode(state_hash),
+                    is_final = "true",
                 );
 
                 anyhow::Ok(state_hash)
             }
-            _ => unimplemented!(),
+            RevertTarget::Commit(state_hash) => {
+                let vm = self.vm.read().await;
+                let state_hash = vm.revert(state_hash)?;
+                let is_final = vm.get_base_state_root()? == state_hash;
+
+                info!(
+                    event = "vm reverted",
+                    state_root = hex::encode(state_hash),
+                    is_final,
+                );
+
+                anyhow::Ok(state_hash)
+            }
+            RevertTarget::LastEpoch => unimplemented!(),
         }?;
 
         // Delete any block until we reach the target_state_hash, the
