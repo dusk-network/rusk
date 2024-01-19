@@ -49,6 +49,8 @@ pub enum Error {
     InconsistentState(VerificationOutput),
     /// Other
     Other(Box<dyn std::error::Error>),
+    /// Commit not found amongst existing commits
+    CommitNotFound([u8; 32]),
 }
 
 impl std::error::Error for Error {}
@@ -139,6 +141,9 @@ impl fmt::Display for Error {
                     f,
                     "Inconsistent state verification data {verification_output}",
                 )
+            }
+            Error::CommitNotFound(commit_id) => {
+                write!(f, "Commit not found, id = {}", hex::encode(commit_id),)
             }
         }
     }
