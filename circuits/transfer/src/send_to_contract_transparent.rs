@@ -7,12 +7,11 @@
 use crate::gadgets;
 use dusk_bytes::ParseHexStr;
 
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
-use dusk_plonk::error::Error as PlonkError;
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
 use dusk_poseidon::sponge;
-use dusk_schnorr::Signature;
-use phoenix_core::{Crossover, Fee};
+use jubjub_schnorr::{SecretKey, Signature};
+use phoenix_core::{Crossover, Fee, Ownable, SecretKey as SecretSpendKey};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
@@ -108,7 +107,7 @@ impl SendToContractTransparentCircuit {
 
         let message = Self::sign_message(crossover, value, address);
 
-        Signature::new(&secret, rng, message)
+        secret.sign(rng, message)
     }
 
     pub fn new(
@@ -146,19 +145,19 @@ impl SendToContractTransparentCircuit {
 
 #[allow(clippy::option_map_unit_fn)]
 impl Circuit for SendToContractTransparentCircuit {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
         // Witnesses
 
         let blinder = composer.append_witness(self.blinder);
         let nonce = composer.append_witness(self.nonce);
 
-        let mut cipher = [C::ZERO; PoseidonCipher::cipher_size()];
+        let mut cipher = [Composer::ZERO; PoseidonCipher::cipher_size()];
         self.cipher
             .iter()
             .zip(cipher.iter_mut())
             .for_each(|(c, w)| *w = composer.append_witness(*c));
 
-        let (schnorr_u, schnorr_r) = self.signature.to_witness(composer);
+        let (schnorr_u, schnorr_r) = self.signature.append(composer);
         let address = composer.append_witness(self.address);
 
         // Public inputs
@@ -172,7 +171,7 @@ impl Circuit for SendToContractTransparentCircuit {
         gadgets::commitment(composer, commitment, value, blinder)?;
 
         // 2. S == H(Cc,Cn,Cψ,Cv,A)
-        let mut s = [C::ZERO; MESSAGE_SIZE];
+        let mut s = [Composer::ZERO; MESSAGE_SIZE];
         let mut i_s = s.iter_mut();
 
         i_s.next().map(|s| *s = *commitment.x());

@@ -43,21 +43,54 @@ pub fn verify_proof(tx: &Transaction) -> Result<bool> {
         Vec::with_capacity(9 + inputs.len());
 
     pi.push(tx_hash.into());
-    pi.push(tx.anchor.into());
-    pi.extend(inputs.iter().map(|n| n.into()));
 
-    pi.push(
-        tx.crossover()
-            .copied()
-            .unwrap_or_default()
-            .value_commitment()
-            .into(),
+    #[allow(deprecated)]
+    // wallet-core is using outdated bls version
+    pi.push(rusk_abi::PublicInput::from_bls_scalar_bytes(
+        &tx.anchor.to_bytes(),
+    ));
+
+    pi.extend(inputs.iter().map(|n| {
+        #[allow(deprecated)]
+        // wallet-core is using outdated bls version
+        rusk_abi::PublicInput::from_bls_scalar_bytes(&n.to_bytes())
+    }));
+
+    let crossover_affine = tx
+        .crossover()
+        .copied()
+        .unwrap_or_default()
+        .value_commitment()
+        .to_hash_inputs();
+    let crossover_affine_u =
+        dusk_bls12_381::BlsScalar::from_bytes(&crossover_affine[0].to_bytes())
+            .unwrap_or_else(|| dusk_bls12_381::BlsScalar::zero());
+    let crossover_affine_v =
+        dusk_bls12_381::BlsScalar::from_bytes(&crossover_affine[1].to_bytes())
+            .unwrap_or_else(|| dusk_bls12_381::BlsScalar::zero());
+    let crossover_affine = dusk_jubjub::JubJubAffine::from_raw_unchecked(
+        crossover_affine_u,
+        crossover_affine_v,
     );
+    pi.push(crossover_affine.into());
 
     let fee_value = tx.fee().gas_limit * tx.fee().gas_price;
 
     pi.push(fee_value.into());
-    pi.extend(outputs.iter().map(|n| n.value_commitment().into()));
+    pi.extend(outputs.iter().map(|n| {
+        let output_affine = n.value_commitment().to_hash_inputs();
+        let output_affine_u =
+            dusk_bls12_381::BlsScalar::from_bytes(&output_affine[0].to_bytes())
+                .unwrap_or_else(|| dusk_bls12_381::BlsScalar::zero());
+        let output_affine_v =
+            dusk_bls12_381::BlsScalar::from_bytes(&output_affine[1].to_bytes())
+                .unwrap_or_else(|| dusk_bls12_381::BlsScalar::zero());
+        dusk_jubjub::JubJubAffine::from_raw_unchecked(
+            output_affine_u,
+            output_affine_v,
+        )
+        .into()
+    }));
     pi.extend(
         (0usize..2usize.saturating_sub(outputs.len()))
             .map(|_| CircuitOutput::ZERO_COMMITMENT.into()),

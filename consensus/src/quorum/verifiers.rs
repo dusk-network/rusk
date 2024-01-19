@@ -198,13 +198,13 @@ pub fn verify_votes(
 }
 
 impl Cluster<PublicKey> {
-    fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
+    fn aggregate_pks(&self) -> Result<bls12_381_bls::APK, Error> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
 
         match pks.split_first() {
             Some((first, rest)) => {
-                let mut apk = dusk_bls12_381_sign::APK::from(first);
+                let mut apk = bls12_381_bls::APK::from(first);
                 apk.aggregate(rest);
                 Ok(apk)
             }
@@ -217,11 +217,11 @@ fn verify_step_signature(
     round: u64,
     step: u16,
     block_hash: &[u8; 32],
-    apk: dusk_bls12_381_sign::APK,
+    apk: bls12_381_bls::APK,
     signature: &[u8; 48],
-) -> Result<(), dusk_bls12_381_sign::Error> {
+) -> Result<(), bls12_381_bls::Error> {
     // Compile message to verify
 
-    let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
+    let sig = bls12_381_bls::Signature::from_bytes(signature)?;
     apk.verify(&sig, marshal_signable_vote(round, step, block_hash).bytes())
 }

@@ -6,8 +6,7 @@
 
 use transfer_circuits::WithdrawFromTransparentCircuit;
 
-use dusk_pki::SecretSpendKey;
-use phoenix_core::Note;
+use phoenix_core::{Note, SecretKey as SecretSpendKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 

@@ -13,12 +13,10 @@ use std::io::{BufRead, BufReader};
 use std::sync::Arc;
 use std::time::Duration;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
 use criterion::measurement::WallTime;
 use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
-};
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
 };
 use node_data::ledger::Transaction;
 use phoenix_core::Transaction as PhoenixTransaction;

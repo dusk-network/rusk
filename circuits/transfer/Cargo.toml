@@ -7,15 +7,14 @@ edition = "2021"
 rand_core = "0.6"
 
 dusk-bytes = "0.1"
-dusk-bls12_381 = "0.12"
-dusk-jubjub = "0.13"
-dusk-plonk = "0.16"
-dusk-poseidon = "0.31"
-poseidon-merkle = { version = "0.3", features = ["zk"] }
+dusk-bls12_381 = "0.13"
+dusk-jubjub = "0.14"
+dusk-plonk = "0.19"
+dusk-poseidon = "0.33"
+poseidon-merkle = { version = "0.5", features = ["zk"] }
 dusk-merkle = "0.5"
-dusk-pki ="0.13"
-dusk-schnorr = "0.14"
-phoenix-core = { version = "0.21", features = ["alloc"] }
+jubjub-schnorr = { version = "0.1", features = ["double"] }
+phoenix-core = { version = "0.25.0-rc.0", features = ["alloc"] }
 
 rusk-profile = { version = "0.6", path = "../../rusk-profile", optional = true }
 storage = { version = "0.1", path = "../storage", optional = true }
@@ -23,6 +22,7 @@ storage = { version = "0.1", path = "../storage", optional = true }
 [dev-dependencies]
 rand = "0.8"
 ff = { version = "0.13", default-features = false }
+rusk-profile = { version = "0.6", path = "../../rusk-profile" }
 
 [features]
 store = ["rusk-profile", "storage"]

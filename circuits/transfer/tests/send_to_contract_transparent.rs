@@ -6,9 +6,8 @@
 
 use transfer_circuits::SendToContractTransparentCircuit;
 
-use dusk_pki::SecretSpendKey;
 use ff::Field;
-use phoenix_core::Note;
+use phoenix_core::{Note, SecretKey as SecretSpendKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 

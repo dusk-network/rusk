@@ -6,7 +6,7 @@
 
 use crate::{gadgets, DeriveKey};
 
-use dusk_plonk::error::Error as PlonkError;
+use dusk_plonk::prelude::Error as PlonkError;
 use dusk_poseidon::cipher::PoseidonCipher;
 use phoenix_core::Message;
 
@@ -55,8 +55,8 @@ pub struct WithdrawFromObfuscatedCircuit {
 }
 
 impl Circuit for WithdrawFromObfuscatedCircuit {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), PlonkError> {
-        let zero = C::ZERO;
+    fn circuit(&self, composer: &mut Composer) -> Result<(), PlonkError> {
+        let zero = Composer::ZERO;
 
         // Witnesses
 
@@ -130,7 +130,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_derive_key_a = gadgets::identity_select_point(
             composer,
             change_derive_key_is_public,
-            C::IDENTITY,
+            Composer::IDENTITY,
             change_derive_key_public_a,
             change_derive_key_secret_a,
         );
@@ -138,7 +138,7 @@ impl Circuit for WithdrawFromObfuscatedCircuit {
         let change_derive_key_b = gadgets::identity_select_point(
             composer,
             change_derive_key_is_public,
-            C::IDENTITY,
+            Composer::IDENTITY,
             change_derive_key_public_b,
             change_derive_key_secret_b,
         );

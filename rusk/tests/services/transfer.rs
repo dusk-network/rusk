@@ -9,10 +9,10 @@ use std::path::Path;
 use std::sync::{Arc, LazyLock, RwLock};
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet, Store};
 use ff::Field;
 use node_data::ledger::SpentTransaction;
+use phoenix_core::SecretKey as SecretSpendKey;
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk};

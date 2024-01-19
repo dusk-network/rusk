@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
-use dusk_pki::StealthAddress;
+use phoenix_core::StealthAddress;
 
 const STAKE_MESSAGE_SIZE: usize = u64::SIZE + u64::SIZE;
 const WITHDRAW_MESSAGE_SIZE: usize =

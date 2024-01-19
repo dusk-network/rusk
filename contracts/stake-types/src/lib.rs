@@ -19,9 +19,9 @@ mod stake;
 pub use sig::*;
 pub use stake::*;
 
+use bls12_381_bls::{PublicKey, Signature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey, Signature};
-use dusk_pki::StealthAddress;
+use phoenix_core::StealthAddress;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};

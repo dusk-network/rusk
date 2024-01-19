@@ -11,15 +11,15 @@ use dusk_poseidon::cipher;
 use dusk_poseidon::sponge::truncated;
 use poseidon_merkle::{zk::opening_gadget, Opening};
 
-pub use dusk_schnorr::gadgets::double_key_verify as schnorr_double_key_verify;
-pub use dusk_schnorr::gadgets::single_key_verify as schnorr_single_key_verify;
+pub use jubjub_schnorr::gadgets::verify_signature as schnorr_single_key_verify;
+pub use jubjub_schnorr::gadgets::verify_signature_double as schnorr_double_key_verify;
 
 /// Prove the opening of a Pedersen commitment and prove that `v` is in the
 /// range of `2^bits`.
 ///
 /// `commitment(p, v, b, s) → p == v · G + b · G′ ∧ v < 2^s`
-pub fn commitment<C: Composer>(
-    composer: &mut C,
+pub fn commitment(
+    composer: &mut Composer,
     p: WitnessPoint,
     v: Witness,
     b: Witness,
@@ -41,14 +41,13 @@ pub fn commitment<C: Composer>(
 /// matches.
 ///
 /// `opening(b, r, l) → O(b) ∧ (b0, b|b|) == (l, r)`
-pub fn merkle_opening<T, C, const H: usize, const A: usize>(
-    composer: &mut C,
+pub fn merkle_opening<T, const H: usize, const A: usize>(
+    composer: &mut Composer,
     branch: &Opening<T, H, A>,
     anchor: Witness,
     leaf: Witness,
 ) where
     T: Clone + Aggregate<A>,
-    C: Composer,
 {
     // The gadget asserts the leaf is the expected
     let root = opening_gadget(composer, branch, leaf);
@@ -62,8 +61,8 @@ pub fn merkle_opening<T, C, const H: usize, const A: usize>(
 /// b, if flag == 0 ^ a == identity
 ///
 /// Fail the circuit otherwise
-pub fn identity_select_point<C: Composer>(
-    composer: &mut C,
+pub fn identity_select_point(
+    composer: &mut Composer,
     flag: Witness,
     identity: WitnessPoint,
     a: WitnessPoint,
@@ -82,8 +81,8 @@ pub fn identity_select_point<C: Composer>(
 /// Derives a stealth address out of a public spend key
 ///
 /// S = H(r · A) · G + B
-pub fn stealth_address<C: Composer>(
-    composer: &mut C,
+pub fn stealth_address(
+    composer: &mut Composer,
     r: Witness,
     a: WitnessPoint,
     b: WitnessPoint,
@@ -95,8 +94,8 @@ pub fn stealth_address<C: Composer>(
     Ok(composer.component_add_point(a, b))
 }
 
-pub fn encrypt<C: Composer>(
-    composer: &mut C,
+pub fn encrypt(
+    composer: &mut Composer,
     secret: WitnessPoint,
     nonce: Witness,
     message: &[Witness],

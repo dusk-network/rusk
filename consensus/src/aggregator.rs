@@ -139,23 +139,23 @@ impl fmt::Display for Aggregator {
 
 #[derive(Debug)]
 pub enum AggrSigError {
-    InvalidData(dusk_bls12_381_sign::Error),
+    InvalidData(bls12_381_bls::Error),
 }
 
-impl From<dusk_bls12_381_sign::Error> for AggrSigError {
-    fn from(e: dusk_bls12_381_sign::Error) -> Self {
+impl From<bls12_381_bls::Error> for AggrSigError {
+    fn from(e: bls12_381_bls::Error) -> Self {
         Self::InvalidData(e)
     }
 }
 
 #[derive(Default)]
 pub(super) struct AggrSignature {
-    data: Option<dusk_bls12_381_sign::Signature>,
+    data: Option<bls12_381_bls::Signature>,
 }
 
 impl AggrSignature {
     pub fn add(&mut self, data: &[u8; 48]) -> Result<(), AggrSigError> {
-        let sig = dusk_bls12_381_sign::Signature::from_bytes(data)?;
+        let sig = bls12_381_bls::Signature::from_bytes(data)?;
 
         let aggr_sig = match self.data {
             Some(data) => data.aggregate(&[sig]),
@@ -179,7 +179,7 @@ mod tests {
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use dusk_bls12_381_sign::{PublicKey, SecretKey};
+    use bls12_381_bls::{PublicKey, SecretKey};
     use dusk_bytes::DeserializableSlice;
     use hex::FromHex;
     use node_data::ledger::Seed;

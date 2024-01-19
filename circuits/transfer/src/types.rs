@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::PublicSpendKey;
+use phoenix_core::PublicKey as PublicSpendKey;
 
 use dusk_plonk::prelude::*;
 

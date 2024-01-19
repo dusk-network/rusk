@@ -6,15 +6,17 @@
 
 use std::sync::mpsc;
 
+use bls12_381_bls::{PublicKey, SecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey, SecretKey};
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
 use ff::Field;
 use phoenix_core::transaction::{TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Fee, Note, Transaction};
+use phoenix_core::{
+    Fee, Note, Ownable, PublicKey as PublicSpendKey,
+    SecretKey as SecretSpendKey, Transaction, ViewKey,
+};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};

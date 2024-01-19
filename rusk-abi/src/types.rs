@@ -8,7 +8,7 @@
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, JubJubExtended, JubJubScalar};
-use dusk_pki::PublicSpendKey;
+use phoenix_core::PublicKey as PublicSpendKey;
 
 use bytecheck::CheckBytes;
 use rkyv::{Archive, Deserialize, Serialize};
@@ -52,6 +52,25 @@ pub enum PublicInput {
     BlsScalar(BlsScalar),
     /// A Public Input JubJub Scalar
     JubJubScalar(JubJubScalar),
+}
+
+impl PublicInput {
+    /// Returns a bls scalar from arbitrary bytes, falling back to zero
+    #[deprecated]
+    pub fn from_bls_scalar_bytes(bytes: &[u8; 32]) -> Self {
+        Self::BlsScalar(
+            BlsScalar::from_bytes(bytes).unwrap_or_else(|| BlsScalar::zero()),
+        )
+    }
+
+    /// Returns a jubjub scalar from arbitrary bytes, falling back to zero
+    #[deprecated]
+    pub fn from_jubjub_scalar_bytes(bytes: &[u8; 32]) -> Self {
+        Self::JubJubScalar(
+            JubJubScalar::from_bytes(bytes)
+                .unwrap_or_else(|| JubJubScalar::zero()),
+        )
+    }
 }
 
 impl From<BlsScalar> for PublicInput {

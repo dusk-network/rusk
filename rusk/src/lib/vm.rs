@@ -47,9 +47,8 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<VerificationOutput> {
         info!("Received verify_state_transition request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (_, verification_output) = self
             .verify_transactions(
@@ -70,9 +69,8 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received accept request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, verification_output) = self
             .accept_transactions(
@@ -97,9 +95,8 @@ impl VMExecution for Rusk {
     ) -> anyhow::Result<(Vec<SpentTransaction>, VerificationOutput)> {
         info!("Received finalize request");
         let generator = blk.header().generator_bls_pubkey;
-        let generator =
-            dusk_bls12_381_sign::PublicKey::from_slice(&generator.0)
-                .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
+        let generator = bls12_381_bls::PublicKey::from_slice(&generator.0)
+            .map_err(|e| anyhow::anyhow!("Error in from_slice {e:?}"))?;
 
         let (txs, state_root) = self
             .finalize_transactions(
@@ -131,7 +128,13 @@ impl VMExecution for Rusk {
             let err = crate::Error::RepeatingNullifiers(existing_nullifiers);
             return Err(anyhow::anyhow!("Invalid tx: {err}"));
         }
-        match crate::verifier::verify_proof(tx) {
+
+        // converting from bytes incompatible versions from wallet-core
+        let tx = tx.to_var_bytes();
+        let tx = dusk_wallet_core::Transaction::from_slice(&tx)
+            .map_err(|e| anyhow::Error::msg(format!("{:?}", e)))?;
+
+        match crate::verifier::verify_proof(&tx) {
             Ok(true) => Ok(()),
             Ok(false) => Err(anyhow::anyhow!("Invalid proof")),
             Err(e) => Err(anyhow::anyhow!("Cannot verify the proof: {e}")),

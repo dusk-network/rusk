@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use cargo_toml::{Dependency, Manifest};
-use dusk_plonk::prelude::{Circuit, Compiler};
+use dusk_plonk::prelude::Circuit;
 use rusk_profile::{Circuit as CircuitProfile, Theme};
 use std::io::{self, ErrorKind};
 use tracing::info;
@@ -38,7 +38,7 @@ where
     };
 
     // compress circuit and prepare for storage
-    let compressed = Compiler::compress::<C>().map_err(|e| {
+    let compressed = C::compress().map_err(|e| {
         io::Error::new(
             ErrorKind::InvalidData,
             format!("Plonk circuit couldn't be compressed: {e}"),

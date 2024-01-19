@@ -11,12 +11,11 @@ use crate::{Result, Rusk};
 use std::pin::Pin;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey;
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::ViewKey;
 use futures::{Stream, StreamExt};
 use phoenix_core::transaction::StakeData;
-use phoenix_core::{Note, Transaction};
+use phoenix_core::{Note, Transaction, ViewKey};
 use tokio::spawn;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;

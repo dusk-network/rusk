@@ -10,7 +10,7 @@ use crate::*;
 
 use alloc::collections::BTreeMap;
 
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey;
 use dusk_bytes::Serializable;
 
 use rusk_abi::{STAKE_CONTRACT, TRANSFER_CONTRACT};

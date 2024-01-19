@@ -414,10 +414,10 @@ impl Header {
     pub fn verify_signature(
         &self,
         signature: &[u8; 48],
-    ) -> Result<(), dusk_bls12_381_sign::Error> {
-        let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
+    ) -> Result<(), bls12_381_bls::Error> {
+        let sig = bls12_381_bls::Signature::from_bytes(signature)?;
 
-        dusk_bls12_381_sign::APK::from(self.pubkey_bls.inner()).verify(
+        bls12_381_bls::APK::from(self.pubkey_bls.inner()).verify(
             &sig,
             marshal_signable_vote(
                 self.round,
@@ -430,8 +430,8 @@ impl Header {
 
     pub fn sign(
         &self,
-        sk: &dusk_bls12_381_sign::SecretKey,
-        pk: &dusk_bls12_381_sign::PublicKey,
+        sk: &bls12_381_bls::SecretKey,
+        pk: &bls12_381_bls::PublicKey,
     ) -> [u8; 48] {
         let msg = marshal_signable_vote(
             self.round,

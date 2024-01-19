@@ -5,7 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Error as BytesError;
-use dusk_plonk::error::Error as PlonkError;
+use dusk_plonk::prelude::Error as PlonkError;
 use phoenix_core::Error as PhoenixError;
 
 use std::str::ParseBoolError;

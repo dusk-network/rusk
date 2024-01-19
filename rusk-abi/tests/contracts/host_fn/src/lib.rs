@@ -11,13 +11,11 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, Signature as BlsSignature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, Signature as BlsSignature,
-};
 use dusk_bytes::Serializable;
-use dusk_pki::{PublicKey, PublicSpendKey};
-use dusk_schnorr::Signature;
+use jubjub_schnorr::{PublicKey, Signature};
+use phoenix_core::PublicKey as PublicSpendKey;
 use rusk_abi::{ContractId, PaymentInfo, PublicInput};
 
 #[no_mangle]

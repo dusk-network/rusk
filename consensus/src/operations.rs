@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use dusk_bls12_381_sign::PublicKey;
+use bls12_381_bls::PublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
 
 pub type StateRoot = [u8; 32];

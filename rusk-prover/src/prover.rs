@@ -13,9 +13,9 @@ mod wfct;
 use crate::{ProverError, ProverResult};
 
 use dusk_bytes::{DeserializableSlice, Serializable};
-use dusk_pki::PublicSpendKey;
 use dusk_plonk::prelude::Prover as PlonkProver;
 use once_cell::sync::Lazy;
+use phoenix_core::PublicKey as PublicSpendKey;
 
 #[cfg(not(feature = "no_random"))]
 use rand::rngs::OsRng;

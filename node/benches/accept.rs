@@ -14,7 +14,7 @@ use criterion::{
     criterion_group, criterion_main, BenchmarkGroup, BenchmarkId, Criterion,
 };
 
-use dusk_bls12_381_sign::{
+use bls12_381_bls::{
     PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
     Signature as BlsSignature,
 };
