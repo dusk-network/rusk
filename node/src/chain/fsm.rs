@@ -299,7 +299,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
             // R_B.Iteration < L_B.Iteration
             //
             // Then we fallback to N_B.PrevBlock and accept N_B
-            let local_header = acc.db.read().await.view(|t| {
+            let result = acc.db.read().await.view(|t| {
                 if let Some((prev_header, _)) =
                     t.fetch_block_header(&remote_blk.header().prev_block_hash)?
                 {
@@ -308,7 +308,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                         if remote_blk.header().iteration
                             < l_b.header().iteration
                         {
-                            return Ok(Some(l_b.header().clone()));
+                            return Ok(Some((
+                                l_b.header().clone(),
+                                prev_header.state_hash,
+                            )));
                         }
                     }
                 }
@@ -316,12 +319,12 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> InSyncImpl<DB, VM, N> {
                 anyhow::Ok(None)
             })?;
 
-            if let Some(local_header) = local_header {
+            if let Some((local_header, state_hash)) = result {
                 match fallback::WithContext::new(acc.deref())
                     .try_revert(
                         &local_header,
                         remote_blk.header(),
-                        RevertTarget::LastFinalizedState,
+                        RevertTarget::Commit(state_hash),
                     )
                     .await
                 {
