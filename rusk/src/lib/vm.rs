@@ -149,7 +149,7 @@ impl VMExecution for Rusk {
         Ok(self.state_root())
     }
 
-    fn get_base_state_root(&self) -> anyhow::Result<[u8; 32]> {
+    fn get_finalized_state_root(&self) -> anyhow::Result<[u8; 32]> {
         Ok(self.base_root())
     }
 
@@ -157,6 +157,14 @@ impl VMExecution for Rusk {
         let state_hash = self
             .revert(state_hash)
             .map_err(|inner| anyhow::anyhow!("Cannot revert: {inner}"))?;
+
+        Ok(state_hash)
+    }
+
+    fn revert_to_finalized(&self) -> anyhow::Result<[u8; 32]> {
+        let state_hash = self.revert_to_base_root().map_err(|inner| {
+            anyhow::anyhow!("Cannot revert to finalized: {inner}")
+        })?;
 
         Ok(state_hash)
     }
