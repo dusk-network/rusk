@@ -102,8 +102,7 @@ pub fn rusk_state_accepted() -> Result<()> {
         "There should be two notes in the state now"
     );
 
-    let base_root = rusk.base_root();
-    rusk.revert(base_root)?;
+    rusk.revert_to_base_root()?;
     let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(
@@ -135,8 +134,7 @@ pub fn rusk_state_finalized() -> Result<()> {
         "There should be two notes in the state now"
     );
 
-    let base_root = rusk.base_root();
-    rusk.revert(base_root)?;
+    rusk.revert_to_base_root()?;
     let leaves = leaves_from_height(&rusk, 0)?;
 
     assert_eq!(

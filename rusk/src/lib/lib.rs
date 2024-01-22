@@ -346,6 +346,10 @@ impl Rusk {
         Ok(inner.current_commit)
     }
 
+    pub fn revert_to_base_root(&self) -> Result<[u8; 32]> {
+        self.revert(self.base_root())
+    }
+
     /// Perform an action with the underlying data structure.
     pub fn with_inner<'a, F, T>(&'a self, closure: F) -> T
     where
