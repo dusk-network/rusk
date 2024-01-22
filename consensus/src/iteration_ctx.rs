@@ -6,7 +6,7 @@
 
 use crate::commons::Database;
 use crate::commons::RoundUpdate;
-use crate::config::MAX_STEP_TIMEOUT;
+use crate::config::MAX_ITERATION_BASE_TIMEOUT;
 use crate::msg_handler::HandleMsgOutput::Ready;
 use crate::msg_handler::MsgHandler;
 
@@ -74,7 +74,8 @@ pub struct IterationCtx<DB: Database> {
     pub(crate) committees: RoundCommittees,
 
     /// Implements the adaptive timeout algorithm
-    step_base_timeout: Duration,
+    iteration_base_timeout: Duration,
+    round_base_timeout: Duration,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -96,13 +97,18 @@ impl<D: Database> IterationCtx<D> {
             validation_handler,
             ratification_handler,
             committees: Default::default(),
-            step_base_timeout: round_base_timeout,
+            round_base_timeout,
+            iteration_base_timeout: round_base_timeout,
         }
     }
 
     /// Executed on starting a new iteration, before Proposal step execution
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
+        self.iteration_base_timeout = cmp::min(
+            MAX_ITERATION_BASE_TIMEOUT,
+            self.round_base_timeout + Duration::from_secs(iter as u64),
+        );
     }
 
     /// Executed on closing an iteration, after Ratification step execution
@@ -117,16 +123,14 @@ impl<D: Database> IterationCtx<D> {
     }
 
     /// Handles an event of a Phase timeout
-    pub(crate) fn on_timeout_event(&mut self) {
-        self.increase_step_timeout();
-    }
+    pub(crate) fn on_timeout_event(&mut self) {}
 
     /// Calculates and returns the adjusted timeout for the specified step
     pub(crate) fn get_timeout(&self, step_name: StepName) -> Duration {
         match step_name {
-            StepName::Proposal => self.step_base_timeout,
-            StepName::Validation => self.step_base_timeout * 3,
-            StepName::Ratification => self.step_base_timeout * 3,
+            StepName::Proposal => self.iteration_base_timeout * 3,
+            StepName::Validation => self.iteration_base_timeout * 3,
+            StepName::Ratification => self.iteration_base_timeout * 2,
         }
     }
 
@@ -135,11 +139,6 @@ impl<D: Database> IterationCtx<D> {
         self.committees
             .get_committee(step)
             .and_then(|c| c.iter().next().map(|p| *p.bytes()))
-    }
-
-    pub(crate) fn increase_step_timeout(&mut self) {
-        self.step_base_timeout =
-            cmp::min(MAX_STEP_TIMEOUT, self.step_base_timeout * 2);
     }
 
     /// Collects a message from a past iteration

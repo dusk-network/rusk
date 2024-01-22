@@ -33,5 +33,5 @@ pub const RELAX_ITERATION_THRESHOLD: u8 = 10;
 /// Emergency mode is enabled only for the last N iterations
 pub const EMERGENCY_MODE_ITERATION_THRESHOLD: u8 = CONSENSUS_MAX_ITER - 9;
 
-pub const ROUND_BASE_TIMEOUT: Duration = Duration::from_secs(5);
-pub const MAX_STEP_TIMEOUT: Duration = Duration::from_secs(60);
+pub const ROUND_BASE_TIMEOUT: Duration = Duration::from_secs(2);
+pub const MAX_ITERATION_BASE_TIMEOUT: Duration = Duration::from_secs(30);
