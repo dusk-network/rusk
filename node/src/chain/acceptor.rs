@@ -409,8 +409,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let target_state_hash = match target {
             RevertTarget::LastFinalizedState => {
                 let vm = self.vm.read().await;
-                let base_root = vm.get_base_state_root()?;
-                let state_hash = vm.revert(base_root)?;
+                let state_hash = vm.revert_to_finalized()?;
 
                 info!(
                     event = "vm reverted",
@@ -423,7 +422,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             RevertTarget::Commit(state_hash) => {
                 let vm = self.vm.read().await;
                 let state_hash = vm.revert(state_hash)?;
-                let is_final = vm.get_base_state_root()? == state_hash;
+                let is_final = vm.get_finalized_state_root()? == state_hash;
 
                 info!(
                     event = "vm reverted",
