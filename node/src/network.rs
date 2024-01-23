@@ -72,22 +72,19 @@ impl<const N: usize> kadcast::NetworkListen for Listener<N> {
 
                 // Allow upper layers to fast-discard a message before queueing
                 if let Err(e) = self.call_filters(msg.topic(), &msg) {
-                    info!("discard message due to {:?}", e);
+                    info!("discard message due to {e}");
                     return;
                 }
 
                 // Reroute message to the upper layer
                 if let Err(e) = self.reroute(msg.topic().into(), msg) {
-                    error!("could not reroute due to {:?}", e);
+                    error!("could not reroute due to {e}");
                 }
             }
             Err(err) => {
                 // Dump message blob and topic number
-                error!(
-                    "err: {:?}, msg_topic: {:?}",
-                    err,
-                    blob.get(node_data::message::TOPIC_FIELD_POS),
-                );
+                let topic = blob.get(node_data::message::TOPIC_FIELD_POS);
+                error!("err: {err}, msg_topic: {topic:?}",);
             }
         };
     }
@@ -121,7 +118,7 @@ impl<const N: usize> Kadcast<N> {
     }
 
     pub fn route_internal(&self, msg: Message) {
-        let topic = msg.header.topic as usize;
+        let topic = msg.topic() as usize;
         let routes = self.routes.clone();
 
         tokio::spawn(async move {
@@ -161,11 +158,11 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         };
 
         let encoded = frame::Pdu::encode(msg, 0).map_err(|err| {
-            error!("could not encode message {:?}: {}", msg, err);
-            anyhow::anyhow!("failed to broadcast: {}", err)
+            error!("could not encode message {msg:?}: {err}");
+            anyhow::anyhow!("failed to broadcast: {err}")
         })?;
 
-        trace!("broadcasting msg ({:?})", msg.header.topic);
+        trace!("broadcasting msg ({:?})", msg.topic());
         self.peer.broadcast(&encoded, height).await;
 
         Ok(())
@@ -177,16 +174,13 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         msg: &Message,
         recv_addr: SocketAddr,
     ) -> anyhow::Result<()> {
-        let encoded = frame::Pdu::encode(
-            msg,
-            self.counter.fetch_add(1, Ordering::SeqCst),
-        )
-        .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {}", err))?;
+        // rnd_count is added to bypass kadcast dupemap
+        let rnd_count = self.counter.fetch_add(1, Ordering::SeqCst);
+        let encoded = frame::Pdu::encode(msg, rnd_count)
+            .map_err(|err| anyhow::anyhow!("failed to send_to_peer: {err}"))?;
+        let topic = msg.topic();
 
-        info!(
-            "sending msg ({:?}) to peer {:?}",
-            msg.header.topic, recv_addr
-        );
+        info!("sending msg ({topic:?}) to peer {recv_addr}");
 
         self.peer.send(&encoded, recv_addr).await;
 
@@ -200,14 +194,11 @@ impl<const N: usize> crate::Network for Kadcast<N> {
         amount: usize,
     ) -> anyhow::Result<()> {
         let encoded = frame::Pdu::encode(msg, 0)
-            .map_err(|err| anyhow::anyhow!("failed to encode: {}", err))?;
+            .map_err(|err| anyhow::anyhow!("failed to encode: {err}"))?;
+        let topic = msg.topic();
 
         for recv_addr in self.peer.alive_nodes(amount).await {
-            trace!(
-                "sending msg ({:?}) to peer {:?}",
-                msg.header.topic,
-                recv_addr
-            );
+            trace!("sending msg ({topic:?}) to peer {recv_addr}");
 
             self.peer.send(&encoded, recv_addr).await;
         }
@@ -225,7 +216,7 @@ impl<const N: usize> crate::Network for Kadcast<N> {
 
         let route = guard
             .get_mut(topic as usize)
-            .ok_or_else(|| anyhow::anyhow!("topic out of range: {}", topic))?;
+            .ok_or_else(|| anyhow::anyhow!("topic out of range: {topic}"))?;
 
         debug_assert!(route.is_none(), "topic already registered");
 

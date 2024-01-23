@@ -13,6 +13,8 @@ use dusk_consensus::user::committee::CommitteeSet;
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::to_str;
 use node_data::ledger::Signature;
+use node_data::message::payload::Vote;
+use node_data::message::ConsensusHeader;
 use node_data::{ledger, StepName};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -104,21 +106,21 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         }
 
         let prev_block_seed = self.db.read().await.view(|v| {
-            let prev_block =
+            let prior_tip =
                 Ledger::fetch_block_by_height(&v, self.prev_header.height - 1)?
                     .ok_or_else(|| anyhow::anyhow!("could not fetch block"))?;
 
-            Ok::<_, anyhow::Error>(prev_block.header().seed)
+            Ok::<_, anyhow::Error>(prior_tip.header().seed)
         })?;
 
         verify_block_cert(
+            self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
             self.prev_header.hash,
             self.prev_header.height,
             &candidate_block.prev_block_cert,
             self.prev_header.iteration,
-            true,
         )
         .await?;
 
@@ -150,13 +152,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                 }
 
                 let quorums = verify_block_cert(
+                    self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
                     [0u8; 32],
                     candidate_block.height,
                     cert,
                     iter as u8,
-                    true,
                 )
                 .await?;
 
@@ -176,13 +178,13 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
         candidate_block: &'a ledger::Header,
     ) -> anyhow::Result<()> {
         verify_block_cert(
+            self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
             candidate_block.hash,
             candidate_block.height,
             &candidate_block.cert,
             candidate_block.iteration,
-            true,
         )
         .await?;
 
@@ -191,34 +193,36 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
 }
 
 pub async fn verify_block_cert(
+    prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
     block_hash: [u8; 32],
-    height: u64,
+    round: u64,
     cert: &ledger::Certificate,
     iteration: u8,
-    enable_quorum_check: bool,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
-
-    let hdr = node_data::message::Header {
-        topic: node_data::message::Topics::Unknown,
-        pubkey_bls: node_data::bls::PublicKey::default(),
-        round: height,
-        iteration,
-        block_hash,
+    let vote = match block_hash == [0; 32] {
+        true => Vote::NoCandidate,
+        false => Vote::Valid(block_hash),
     };
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
+    let consensus_header = ConsensusHeader {
+        iteration,
+        round,
+        prev_block_hash,
+        ..Default::default()
+    };
     // Verify validation
     match verifiers::verify_step_votes(
+        &consensus_header,
+        &vote,
         &cert.validation,
         &committee,
         curr_seed,
-        &hdr,
         StepName::Validation,
-        enable_quorum_check,
     )
     .await
     {
@@ -227,25 +231,25 @@ pub async fn verify_block_cert(
         }
         Err(e) => {
             return Err(anyhow!(
-        "invalid validation, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-        to_str(&hdr.block_hash),
-        hdr.round,
-        iteration,
-        to_str(&curr_seed.inner()),
-        cert.validation,
-        e
-    ));
+                "invalid validation, vote = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+                vote,
+                round,
+                iteration,
+                to_str(curr_seed.inner()),
+                cert.validation,
+                e
+            ));
         }
     };
 
     // Verify ratification
     match verifiers::verify_step_votes(
+        &consensus_header,
+        &vote,
         &cert.ratification,
         &committee,
         curr_seed,
-        &hdr,
         StepName::Ratification,
-        enable_quorum_check,
     )
     .await
     {
@@ -254,14 +258,14 @@ pub async fn verify_block_cert(
         }
         Err(e) => {
             return Err(anyhow!(
-        "invalid ratification, hash = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
-        to_str(&hdr.block_hash),
-        hdr.round,
-        iteration,
-        to_str(&curr_seed.inner()),
-        cert.ratification,
-        e,
-    ));
+                "invalid ratification, vote = {}, round = {}, iter = {}, seed = {},  sv = {:?}, err = {}",
+                vote,
+                round,
+                iteration,
+                to_str(curr_seed.inner()),
+                cert.ratification,
+                e,
+            ));
         }
     }
 

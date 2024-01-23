@@ -21,6 +21,7 @@ use crate::{LongLivedService, Message};
 use anyhow::Result;
 use async_trait::async_trait;
 use dusk_consensus::commons::ConsensusError;
+pub use header_validation::verify_block_cert;
 use node_data::ledger::{to_str, BlockWithLabel, Label};
 use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
@@ -114,7 +115,7 @@ impl<N: Network, DB: database::DB, VM: vm::VMExecution>
 
                             // Handles a block that originates from local consensus
                             // TODO: Remove the redundant blk.clone()
-                            if let Err(err) = fsm.on_event(&blk, &Message::new_block(Box::new(blk.clone()))).await  {
+                            if let Err(err) = fsm.on_event(&blk, &Message::new_block(blk.clone())).await  {
                                 // Internal consensus execution has produced an invalid block
                                 error!(event = "failed_consensus",  ?err);
                                 failed_consensus = true;

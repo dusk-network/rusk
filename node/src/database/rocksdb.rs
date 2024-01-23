@@ -734,10 +734,7 @@ impl node_data::Serializable for HeaderRecord {
         let header = ledger::Header::read(r)?;
 
         // Read transactions count
-        let mut buf = [0u8; 4];
-        r.read_exact(&mut buf)?;
-
-        let len = u32::from_le_bytes(buf);
+        let len = Self::read_u32_le(r)?;
 
         // Read transactions hashes
         let mut transactions_ids = vec![];
