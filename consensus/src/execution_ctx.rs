@@ -7,7 +7,6 @@
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 
 use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::HandleMsgOutput::{Pending, Ready};
 use crate::msg_handler::MsgHandler;
 use crate::operations::Operations;
 use crate::queue::Queue;
@@ -17,9 +16,8 @@ use crate::user::provisioners::Provisioners;
 use crate::user::sortition;
 
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Block};
-use node_data::message::Payload;
-use node_data::message::{AsyncQueue, Message};
+use node_data::ledger::Block;
+use node_data::message::{AsyncQueue, Message, Payload};
 
 use node_data::StepName;
 
@@ -118,7 +116,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// accordingly.
     ///
     /// By design, the loop is terminated by aborting the consensus task.
-    pub async fn event_loop<C: MsgHandler<Message>>(
+    pub async fn event_loop<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
@@ -155,19 +153,16 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     /// Cast a validation vote for a candidate that originates from former
     /// iteration
-    pub(crate) async fn try_cast_validation_vote(
-        &mut self,
-        msg_iteration: u8,
-        candidate: &Block,
-    ) {
+    pub(crate) async fn try_cast_validation_vote(&mut self, candidate: &Block) {
+        let msg_iteration = candidate.header().iteration;
         let step = StepName::Validation.to_step(msg_iteration);
 
         if let Some(committee) = self.iter_ctx.committees.get_committee(step) {
             if self.am_member(committee) {
                 ValidationStep::try_vote(
-                    candidate,
-                    &self.round_update,
                     msg_iteration,
+                    Some(candidate),
+                    &self.round_update,
                     self.outbound.clone(),
                     self.inbound.clone(),
                     self.executor.clone(),
@@ -221,8 +216,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         // Try to cast validation vote for a candidate block from former
         // iteration
         if let Payload::Candidate(p) = &msg.payload {
-            self.try_cast_validation_vote(msg.header.iteration, &p.candidate)
-                .await;
+            self.try_cast_validation_vote(&p.candidate).await;
         }
 
         let msg_iteration = msg.header.iteration;
@@ -234,12 +228,12 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             .await
         {
             match &m.payload {
-                Payload::Quorum(_) => {
+                Payload::Quorum(q) => {
                     debug!(
                         event = "quorum",
                         src = "prev_step",
                         msg_step = m.header.get_step(),
-                        hash = to_str(&m.header.block_hash),
+                        vote = %q.vote,
                     );
 
                     self.quorum_sender.send(m).await;
@@ -266,7 +260,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     ///
     /// Returning Option::Some here is interpreted as FinalMessage by
     /// event_loop.
-    async fn process_inbound_msg<C: MsgHandler<Message>>(
+    async fn process_inbound_msg<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
         msg: Message,
@@ -291,31 +285,28 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     error!("unable to re-publish a handled msg {:?}", err)
                 });
             }
+            // This is a message from future round or step.
+            // Save it in future_msgs to be processed when we reach
+            // same round/step.
+            Err(ConsensusError::FutureEvent) => {
+                trace!("future msg {:?}", msg);
+
+                self.future_msgs.lock().await.put_event(
+                    msg.header.round,
+                    msg.header.get_step(),
+                    msg,
+                );
+
+                return None;
+            }
+            Err(ConsensusError::PastEvent) => {
+                return self.process_past_events(msg).await;
+            }
             // An error here means an phase considers this message as invalid.
             // This could be due to failed verification, bad round/step.
             Err(e) => {
-                match e {
-                    ConsensusError::FutureEvent => {
-                        trace!("future msg {:?}", msg);
-                        // This is a message from future round or step.
-                        // Save it in future_msgs to be processed when we reach
-                        // same round/step.
-                        self.future_msgs.lock().await.put_event(
-                            msg.header.round,
-                            msg.header.get_step(),
-                            msg,
-                        );
-
-                        return None;
-                    }
-                    ConsensusError::PastEvent => {
-                        return self.process_past_events(msg).await;
-                    }
-                    _ => {
-                        error!("phase handler err: {:?}", e);
-                        return None;
-                    }
-                }
+                error!("phase handler err: {:?}", e);
+                return None;
             }
         }
 
@@ -334,9 +325,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         match collected {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
-            Ok(Ready(m)) => Some(m),
+            Ok(Some(m)) => Some(m),
             // Message collected but phase didn't reach a final result
-            Ok(Pending(_)) => None,
+            Ok(None) => None,
             Err(err) => {
                 let event = "failed collect";
                 error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_round,);
@@ -347,17 +338,13 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
     /// Delegates the received event of timeout to the Phase handler for further
     /// processing.
-    async fn process_timeout_event<C: MsgHandler<Message>>(
+    async fn process_timeout_event<C: MsgHandler>(
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
         self.iter_ctx.on_timeout_event();
 
-        if let Ok(Ready(msg)) = phase
-            .lock()
-            .await
-            .handle_timeout(&self.round_update, self.iteration)
-        {
+        if let Ok(Some(msg)) = phase.lock().await.handle_timeout() {
             return Ok(msg);
         }
 
@@ -368,7 +355,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     /// current round and step.
     ///
     /// Returns Some(msg) if the step is finalized.
-    pub async fn handle_future_msgs<C: MsgHandler<Message>>(
+    pub async fn handle_future_msgs<C: MsgHandler>(
         &self,
         phase: Arc<Mutex<C>>,
     ) -> Option<Message> {
@@ -401,7 +388,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         src = "future_msgs",
                         msg_step = msg.header.get_step(),
                         msg_round = msg.header.round,
-                        msg_topic = ?msg.header.topic,
+                        msg_topic = ?msg.topic(),
                     );
 
                     self.outbound.send(msg.clone()).await.unwrap_or_else(
@@ -413,7 +400,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         },
                     );
 
-                    if let Ok(Ready(msg)) = phase
+                    if let Ok(Some(msg)) = phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, committee)

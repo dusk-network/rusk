@@ -8,7 +8,7 @@
 // Provisioners, the BidList, the Seed and the Hash.
 
 use node_data::ledger::*;
-use node_data::message::payload::QuorumType;
+use node_data::message::payload::{QuorumType, Vote};
 use std::fmt;
 use std::fmt::Display;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -42,17 +42,17 @@ impl RoundUpdate {
     pub fn new(
         pubkey_bls: PublicKey,
         secret_key: SecretKey,
-        mrb_block: &Block,
+        mrb_header: &Header,
         round_base_timeout: Duration,
     ) -> Self {
-        let round = mrb_block.header().height + 1;
+        let round = mrb_header.height + 1;
         RoundUpdate {
             round,
             pubkey_bls,
             secret_key,
-            cert: mrb_block.header().cert,
-            hash: mrb_block.header().hash,
-            seed: mrb_block.header().seed,
+            cert: mrb_header.cert,
+            hash: mrb_header.hash,
+            seed: mrb_header.seed,
             round_base_timeout,
         }
     }
@@ -102,7 +102,7 @@ impl Display for Error {
 pub enum ConsensusError {
     InvalidBlock,
     InvalidBlockHash,
-    InvalidSignature,
+    InvalidSignature(dusk_bls12_381_sign::Error),
     InvalidMsgType,
     InvalidValidationStepVotes(Error),
     InvalidValidation(QuorumType),
@@ -120,6 +120,11 @@ pub enum ConsensusError {
 impl From<Error> for ConsensusError {
     fn from(e: Error) -> Self {
         Self::InvalidValidationStepVotes(e)
+    }
+}
+impl From<dusk_bls12_381_sign::Error> for ConsensusError {
+    fn from(e: dusk_bls12_381_sign::Error) -> Self {
+        Self::InvalidSignature(e)
     }
 }
 
@@ -146,22 +151,23 @@ impl QuorumMsgSender {
     /// Sends an quorum (internally) to the quorum loop.
     pub(crate) async fn send(&self, msg: Message) -> bool {
         if let Payload::Quorum(q) = &msg.payload {
-            if q.signature == [0u8; 48]
+            if q.header.signature.is_zeroed()
                 || q.validation.is_empty()
                 || q.ratification.is_empty()
-                || msg.header.block_hash == [0; 32]
+                || q.vote == Vote::NoCandidate
+            //TODO: Not sure about `q.vote == Vote::NoCandidate`
             {
                 return false;
             }
 
             tracing::debug!(
                 event = "send quorum_msg",
-                hash = to_str(&msg.header.block_hash),
+                vote = %q.vote,
                 round = msg.header.round,
                 iteration = msg.header.iteration,
-                validation = format!("{:#?}", q.validation),
-                ratification = format!("{:#?}", q.ratification),
-                signature = to_str(&q.signature),
+                validation = ?q.validation,
+                ratification = ?q.ratification,
+                signature = to_str(q.header.signature.inner()),
             );
 
             let _ = self

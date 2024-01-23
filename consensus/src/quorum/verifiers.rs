@@ -4,110 +4,105 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use node_data::bls::PublicKey;
 use node_data::ledger::{Seed, StepVotes};
-use node_data::StepName;
+use node_data::message::payload::{Quorum, Vote};
+use node_data::message::{ConsensusHeader, ConsensusMessage, ConsensusMsgType};
+use node_data::{Serializable, StepName};
 
 use crate::commons::Error;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
-use bytes::Buf;
 
-use dusk_bytes::Serializable;
-use node_data::bls::PublicKey;
-use node_data::message::{marshal_signable_vote, Header, Message, Payload};
+use dusk_bytes::Serializable as BytesSerializable;
 use tokio::sync::RwLock;
 use tracing::error;
 
 /// Performs all three-steps verification of a quorum msg.
 pub async fn verify_quorum(
-    msg: Message,
+    quorum: &Quorum,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
-    //TODO use if let
-    match msg.payload {
-        Payload::Quorum(payload) => {
-            msg.header
-                .verify_signature(&payload.signature)
-                .map_err(|e| {
-                    error!(
-                        desc = "invalid signature",
-                        signature =
-                            format!("{:?}", hex::encode(payload.signature)),
-                        hdr = format!("{:?}", msg.header),
-                    );
-                    e
-                })?;
+    quorum.verify_signature().map_err(|e| {
+        error!(
+            desc = "invalid signature",
+            signature = hex::encode(quorum.header.signature.inner()),
+            hdr = ?quorum.header,
+        );
+        e
+    })?;
 
-            // Verify validation
-            verify_step_votes(
-                &payload.validation,
-                committees_set,
-                seed,
-                &msg.header,
-                StepName::Validation,
-                true,
-            )
-            .await
-            .map_err(|e| {
-                error!(
-                    desc = "invalid validation",
-                    sv = format!("{:?}", payload.validation),
-                    hdr = format!("{:?}", msg.header),
-                );
-                e
-            })?;
+    // Verify validation
+    verify_step_votes(
+        &quorum.header,
+        &quorum.vote,
+        &quorum.validation,
+        committees_set,
+        seed,
+        StepName::Validation,
+    )
+    .await
+    .map_err(|e| {
+        error!(
+            desc = "invalid validation",
+            sv = ?quorum.validation,
+            hdr = ?quorum.header,
+        );
+        e
+    })?;
 
-            // Verify ratification
-            verify_step_votes(
-                &payload.ratification,
-                committees_set,
-                seed,
-                &msg.header,
-                StepName::Ratification,
-                true,
-            )
-            .await
-            .map_err(|e| {
-                error!(
-                    desc = "invalid ratification",
-                    sv = format!("{:?}", payload.ratification),
-                    hdr = format!("{:?}", msg.header),
-                );
-                e
-            })?;
+    // Verify ratification
+    verify_step_votes(
+        &quorum.header,
+        &quorum.vote,
+        &quorum.ratification,
+        committees_set,
+        seed,
+        StepName::Ratification,
+    )
+    .await
+    .map_err(|e| {
+        error!(
+            desc = "invalid ratification",
+            sv = ?quorum.ratification,
+            hdr = ?quorum.header,
+        );
+        e
+    })?;
 
-            // Verification done
-            Ok(())
-        }
-        _ => Err(Error::InvalidType),
-    }
+    Ok(())
 }
 
 pub async fn verify_step_votes(
+    header: &ConsensusHeader,
+    vote: &Vote,
     sv: &StepVotes,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
-    hdr: &Header,
     step_name: StepName,
-    enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
-    if step_name == StepName::Proposal {
-        return Err(Error::InvalidStepNum);
-    }
+    let round = header.round;
+    let iteration = header.iteration;
+    // ConsensusMsgType cannot be taken from header, since we can receive header
+    // from different messages (like Quorum)
+    let msg_type = match step_name {
+        StepName::Proposal => return Err(Error::InvalidStepNum),
+        StepName::Validation => ConsensusMsgType::Validation,
+        StepName::Ratification => ConsensusMsgType::Ratification,
+    };
 
-    let iteration = hdr.iteration;
     let generator = committees_set
         .read()
         .await
         .provisioners()
-        .get_generator(iteration, seed, hdr.round);
+        .get_generator(iteration, seed, round);
 
     let cfg = sortition::Config::new(
         seed,
-        hdr.round,
-        hdr.iteration,
+        round,
+        iteration,
         step_name,
         Some(generator),
     );
@@ -120,12 +115,13 @@ pub async fn verify_step_votes(
     let committee = set.get(&cfg).expect("committee to be created");
 
     verify_votes(
-        &hdr.block_hash,
+        header,
+        msg_type,
+        vote,
         sv.bitset,
-        &sv.aggregate_signature.inner(),
+        sv.aggregate_signature.inner(),
         committee,
         &cfg,
-        enable_quorum_check,
     )
 }
 
@@ -142,20 +138,20 @@ impl QuorumResult {
 }
 
 pub fn verify_votes(
-    block_hash: &[u8; 32],
+    header: &ConsensusHeader,
+    msg_type: ConsensusMsgType,
+    vote: &Vote,
     bitset: u64,
     signature: &[u8; 48],
     committee: &Committee,
     cfg: &sortition::Config,
-    enable_quorum_check: bool,
 ) -> Result<QuorumResult, Error> {
     let sub_committee = committee.intersect(bitset);
 
     let total = committee.total_occurrences(&sub_committee);
-    let target_quorum = if block_hash == &[0u8; 32] {
-        committee.nil_quorum()
-    } else {
-        committee.quorum()
+    let target_quorum = match vote {
+        Vote::NoCandidate => committee.nil_quorum(),
+        _ => committee.quorum(),
     };
 
     let quorum_result = QuorumResult {
@@ -163,7 +159,7 @@ pub fn verify_votes(
         target_quorum,
     };
 
-    if enable_quorum_check && !quorum_result.quorum_reached() {
+    if !quorum_result.quorum_reached() {
         tracing::error!(
             desc = "vote_set_too_small",
             committee = format!("{:#?}", sub_committee),
@@ -185,13 +181,7 @@ pub fn verify_votes(
         let apk = sub_committee.aggregate_pks()?;
 
         // verify signatures
-        verify_step_signature(
-            cfg.round(),
-            cfg.step(),
-            block_hash,
-            apk,
-            signature,
-        )?;
+        verify_step_signature(header, msg_type, vote, apk, signature)?;
     }
     // Verification done
     Ok(quorum_result)
@@ -214,14 +204,17 @@ impl Cluster<PublicKey> {
 }
 
 fn verify_step_signature(
-    round: u64,
-    step: u16,
-    block_hash: &[u8; 32],
+    header: &ConsensusHeader,
+    msg_type: ConsensusMsgType,
+    vote: &Vote,
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],
-) -> Result<(), dusk_bls12_381_sign::Error> {
+) -> Result<(), Error> {
     // Compile message to verify
-
     let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
-    apk.verify(&sig, marshal_signable_vote(round, step, block_hash).bytes())
+    let mut msg = header.signable();
+    msg.extend_from_slice(&[msg_type as u8]);
+    vote.write(&mut msg).expect("Writing to vec should succeed");
+    apk.verify(&sig, &msg)?;
+    Ok(())
 }

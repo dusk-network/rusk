@@ -8,8 +8,9 @@ use crate::user::cluster::Cluster;
 use crate::user::committee::Committee;
 use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
-use node_data::ledger::{to_str, Hash, Signature, StepVotes};
-use node_data::message::Header;
+use node_data::ledger::{to_str, Signature, StepVotes};
+use node_data::message::payload::Vote;
+use node_data::message::ConsensusHeader;
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{debug, error, warn};
@@ -19,26 +20,25 @@ use tracing::{debug, error, warn};
 /// and a cluster of bls voters.
 #[derive(Default)]
 pub struct Aggregator(
-    BTreeMap<(u16, Hash), (AggrSignature, Cluster<PublicKey>)>,
+    BTreeMap<(u16, Vote), (AggrSignature, Cluster<PublicKey>)>,
 );
 
 impl Aggregator {
     pub fn collect_vote(
         &mut self,
         committee: &Committee,
-        header: &Header,
-        signature: &[u8; 48],
-    ) -> Option<(Hash, StepVotes, bool)> {
+        header: &ConsensusHeader,
+        vote: &Vote,
+    ) -> Option<(StepVotes, bool)> {
+        let signature = header.signature.inner();
         let msg_step = header.get_step();
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
         if let Some(weight) = committee.votes_for(&header.pubkey_bls) {
-            let hash: Hash = header.block_hash;
-
             let (aggr_sign, cluster) = self
                 .0
-                .entry((msg_step, hash))
+                .entry((msg_step, vote.clone()))
                 .or_insert((AggrSignature::default(), Cluster::new()));
 
             // Each committee has 64 slots. If a Provisioner is extracted into
@@ -52,7 +52,7 @@ impl Aggregator {
                 warn!(
                     event = "discarded duplicated vote",
                     from = header.pubkey_bls.to_bs58(),
-                    hash = hex::encode(hash),
+                    %vote,
                     msg_step,
                     msg_round = header.round,
                 );
@@ -76,23 +76,13 @@ impl Aggregator {
 
             debug!(
                 event = "vote aggregated",
-                hash = to_str(&hash),
+                %vote,
                 from = header.pubkey_bls.to_bs58(),
                 added = weight,
                 total,
                 target = quorum_target,
                 signature = to_str(signature),
             );
-
-            let quorum_reached = {
-                if hash == [0u8; 32] {
-                    // When collecting votes, there is no need to wait for the
-                    // full quorum (QUORUM=67) of NIL votes
-                    total >= committee.nil_quorum()
-                } else {
-                    total >= committee.quorum()
-                }
-            };
 
             let s = aggr_sign
                 .aggregated_bytes()
@@ -104,10 +94,15 @@ impl Aggregator {
                 aggregate_signature: Signature::from(s),
             };
 
+            let quorum_reached = match &vote {
+                Vote::NoCandidate => total >= committee.nil_quorum(),
+                _ => total >= committee.quorum(),
+            };
+
             if quorum_reached {
                 tracing::info!(
                     event = "quorum reached",
-                    hash = to_str(&hash),
+                    %vote,
                     total,
                     target = quorum_target,
                     bitset,
@@ -116,7 +111,7 @@ impl Aggregator {
                 );
             }
 
-            return Some((hash, step_votes, quorum_reached));
+            return Some((step_votes, quorum_reached));
         }
 
         None
@@ -174,19 +169,21 @@ impl AggrSignature {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
     use crate::aggregator::Aggregator;
+    use crate::commons::RoundUpdate;
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
     use dusk_bls12_381_sign::{PublicKey, SecretKey};
     use dusk_bytes::DeserializableSlice;
     use hex::FromHex;
-    use node_data::ledger::Seed;
-    use node_data::message;
+    use node_data::ledger::{Header, Seed};
     impl Aggregator {
-        pub fn get_total(&self, step: u16, hash: Hash) -> Option<usize> {
-            if let Some(value) = self.0.get(&(step, hash)) {
+        pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
+            if let Some(value) = self.0.get(&(step, vote)) {
                 return Some(value.1.total_occurrences());
             }
             None
@@ -222,30 +219,37 @@ mod tests {
             "b70189c7e7a347989f4fbc1205ce612f755dfc489ecf28f9f883800acf078bd5",
         )
         .unwrap();
+        let init_vote = Vote::Valid(block_hash);
 
         // Create provisioners
         // Also populate a vector of headers
         let mut p = Provisioners::empty();
         let mut input = vec![];
+        let mut mrb_header = Header::default();
+        mrb_header.height = 0;
 
-        for sk in sks {
-            let pk = node_data::bls::PublicKey::new(PublicKey::from(&sk));
+        for secret_key in sks {
+            let pubkey_bls =
+                node_data::bls::PublicKey::new(PublicKey::from(&secret_key));
 
-            p.add_member_with_value(pk.clone(), 1000 * DUSK);
+            p.add_member_with_value(pubkey_bls.clone(), 1000 * DUSK);
 
-            let header = message::Header {
-                pubkey_bls: pk,
-                round,
+            let ru = RoundUpdate::new(
+                pubkey_bls,
+                secret_key,
+                &mrb_header,
+                Duration::from_millis(1),
+            );
+
+            let msg = crate::build_validation_payload(
+                init_vote.clone(),
+                &ru,
                 iteration,
-                block_hash,
-                topic: message::Topics::Unknown,
-            };
-
-            let signature = header.sign(&sk, header.pubkey_bls.inner());
+            );
 
             // Message headers to be used in test for voting for hash:
             // block_hash
-            input.push((signature, header));
+            input.push((msg.vote, msg.header));
         }
 
         // Execute sortition with specific config
@@ -279,20 +283,20 @@ mod tests {
         let mut collected_votes = 0;
         for i in 0..expected_members.len() - 1 {
             // Select provisioner
-            let (signature, h) =
+            let (vote, h) =
                 input.get(expected_members[i]).expect("invalid index");
 
+            let vote = vote.clone();
             // Last member's vote should reach the quorum
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
-                let (hash, sv, quorum_reached) = a
-                    .collect_vote(&c, h, signature)
+                let (sv, quorum_reached) = a
+                    .collect_vote(&c, h, &vote)
                     .expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
 
-                // Check expected block hash
-                assert_eq!(hash, block_hash);
+                assert_eq!(vote, init_vote);
 
                 // Check expected StepVotes bitset
                 // bitset: 0b00000000000000000000000000000000000000000000000000000000011111
@@ -303,20 +307,19 @@ mod tests {
             }
 
             // Check collected votes
-            let (_, _, quorum_reached) =
-                a.collect_vote(&c, h, signature).unwrap();
+            let (_, quorum_reached) = a.collect_vote(&c, h, &vote).unwrap();
 
             assert!(!quorum_reached, "quorum should not be reached yet");
 
             collected_votes += expected_votes[i];
             assert_eq!(
-                a.get_total(h.get_step(), block_hash),
+                a.get_total(h.get_step(), vote.clone()),
                 Some(collected_votes)
             );
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
-                assert!(a.collect_vote(&c, h, signature).is_none());
+                assert!(a.collect_vote(&c, h, &vote).is_none());
             }
         }
     }

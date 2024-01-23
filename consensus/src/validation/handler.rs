@@ -15,28 +15,26 @@ use tracing::warn;
 use crate::user::committee::Committee;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::payload::QuorumType;
-use node_data::message::{payload, Message, Payload};
-
-const EMPTY_SIGNATURE: [u8; 48] = [0u8; 48];
+use node_data::message::payload::{QuorumType, Validation, Vote};
+use node_data::message::{payload, ConsensusMessage, Message, Payload};
 
 fn final_result(
     sv: StepVotes,
-    hash: [u8; 32],
+    vote: Vote,
     quorum: QuorumType,
 ) -> HandleMsgOutput {
     let msg = Message::from_validation_result(payload::ValidationResult {
         sv,
-        hash,
+        vote,
         quorum,
     });
 
-    HandleMsgOutput::Ready(msg)
+    Some(msg)
 }
 
 pub struct ValidationHandler {
     pub(crate) aggr: Aggregator,
-    pub(crate) candidate: Block,
+    pub(crate) candidate: Option<Block>,
     sv_registry: SafeCertificateInfoRegistry,
     curr_iteration: u8,
 }
@@ -46,19 +44,26 @@ impl ValidationHandler {
         Self {
             sv_registry,
             aggr: Aggregator::default(),
-            candidate: Block::default(),
+            candidate: None,
             curr_iteration: 0,
         }
     }
 
     pub(crate) fn reset(&mut self, curr_iteration: u8) {
-        self.candidate = Block::default();
+        self.candidate = None;
         self.curr_iteration = curr_iteration;
+    }
+
+    fn unwrap_msg(msg: Message) -> Result<Validation, ConsensusError> {
+        match msg.payload {
+            Payload::Validation(r) => Ok(r),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }
     }
 }
 
 #[async_trait]
-impl MsgHandler<Message> for ValidationHandler {
+impl MsgHandler for ValidationHandler {
     /// Verifies if a msg is a valid reduction message.
     fn verify(
         &self,
@@ -68,15 +73,11 @@ impl MsgHandler<Message> for ValidationHandler {
         _committee: &Committee,
         _round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
-        let signed_hash = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            Payload::Empty => Ok(EMPTY_SIGNATURE),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
-
-        if msg.header.verify_signature(&signed_hash).is_err() {
-            return Err(ConsensusError::InvalidSignature);
-        }
+        match &msg.payload {
+            Payload::Validation(p) => p.verify_signature()?,
+            Payload::Empty => (),
+            _ => Err(ConsensusError::InvalidMsgType)?,
+        };
 
         Ok(())
     }
@@ -88,7 +89,8 @@ impl MsgHandler<Message> for ValidationHandler {
         _ru: &RoundUpdate,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        let iteration = msg.header.iteration;
+        let p = Self::unwrap_msg(msg)?;
+        let iteration = p.header().iteration;
         if iteration != self.curr_iteration {
             // Message that belongs to step from the past must be handled with
             // collect_from_past fn
@@ -97,22 +99,17 @@ impl MsgHandler<Message> for ValidationHandler {
                 reason = "invalid iteration number",
                 msg_iteration = iteration,
             );
-            return Ok(HandleMsgOutput::Pending(msg));
+            return Ok(None);
         }
 
-        let signature = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
-
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv, quorum_reached)) =
-            self.aggr.collect_vote(committee, &msg.header, &signature)
+        if let Some((sv, quorum_reached)) =
+            self.aggr.collect_vote(committee, p.header(), &p.vote)
         {
             // Record result in global round registry
             _ = self.sv_registry.lock().await.add_step_votes(
                 iteration,
-                hash,
+                &p.vote,
                 sv,
                 SvType::Validation,
                 quorum_reached,
@@ -121,18 +118,18 @@ impl MsgHandler<Message> for ValidationHandler {
 
             if quorum_reached {
                 // if the votes converged for an empty hash we invoke halt
-                if hash == [0u8; 32] {
+                if p.vote == Vote::NoCandidate {
                     tracing::warn!(
                         "votes converged for an empty hash (timeout)"
                     );
-                    return Ok(final_result(sv, hash, QuorumType::NilQuorum));
+                    return Ok(final_result(sv, p.vote, QuorumType::NilQuorum));
                 }
 
-                return Ok(final_result(sv, hash, QuorumType::ValidQuorum));
+                return Ok(final_result(sv, p.vote, QuorumType::ValidQuorum));
             }
         }
 
-        Ok(HandleMsgOutput::Pending(msg))
+        Ok(None)
     }
 
     /// Collects the reduction message from former iteration.
@@ -142,45 +139,37 @@ impl MsgHandler<Message> for ValidationHandler {
         _ru: &RoundUpdate,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        let iteration = msg.header.iteration;
-        let signature = match &msg.payload {
-            Payload::Validation(p) => Ok(p.signature),
-            _ => Err(ConsensusError::InvalidMsgType),
-        }?;
+        let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((hash, sv, quorum_reached)) =
-            self.aggr.collect_vote(committee, &msg.header, &signature)
+        if let Some((sv, quorum_reached)) =
+            self.aggr.collect_vote(committee, p.header(), &p.vote)
         {
             // Record result in global round registry
             if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
-                    iteration,
-                    hash,
+                    p.header().iteration,
+                    &p.vote,
                     sv,
                     SvType::Validation,
                     quorum_reached,
                     committee.excluded().expect("Generator to be excluded"),
                 )
             {
-                return Ok(HandleMsgOutput::Ready(quorum_msg));
+                return Ok(Some(quorum_msg));
             }
 
-            return Ok(final_result(sv, hash, QuorumType::ValidQuorum));
+            return Ok(final_result(sv, p.vote, QuorumType::ValidQuorum));
         }
 
-        Ok(HandleMsgOutput::Pending(msg))
+        Ok(None)
     }
 
     /// Handles of an event of step execution timeout
-    fn handle_timeout(
-        &mut self,
-        _ru: &RoundUpdate,
-        _iteration: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(final_result(
             StepVotes::default(),
-            [0u8; 32],
+            Vote::NoCandidate,
             QuorumType::NoQuorum,
         ))
     }

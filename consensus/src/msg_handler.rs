@@ -8,30 +8,25 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::iteration_ctx::RoundCommittees;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
-use node_data::ledger::to_str;
-use node_data::message::{Message, MessageTrait, Status};
+use node_data::message::{Message, Status};
 use node_data::StepName;
-use std::fmt::Debug;
 use tracing::{debug, trace};
 
 /// Indicates whether an output value is available for current step execution
-/// (Step is Ready) or needs to collect data (Step is Pending)
-pub enum HandleMsgOutput {
-    Pending(Message),
-    Ready(Message),
-}
+/// (Some) or needs to collect data (None)
+pub type HandleMsgOutput = Option<Message>;
 
 /// MsgHandler must be implemented by any step that needs to handle an external
 /// message within event_loop life-cycle.
 #[async_trait]
-pub trait MsgHandler<T: Debug + MessageTrait> {
+pub trait MsgHandler {
     /// is_valid checks a new message is valid in the first place.
     ///
     /// Only if the message has correct round and step and is signed by a
     /// committee member then we delegate it to Phase::verify.
     fn is_valid(
         &self,
-        msg: &T,
+        msg: &Message,
         ru: &RoundUpdate,
         iteration: u8,
         step: StepName,
@@ -41,8 +36,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
         debug!(
             event = "msg received",
             from = msg.get_pubkey_bls().to_bs58(),
-            hash = to_str(&msg.get_block_hash()),
-            topic = ?msg.get_topic(),
+            topic = ?msg.topic(),
             step = msg.get_step(),
         );
 
@@ -68,7 +62,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// verify allows each Phase to fully verify the message payload.
     fn verify(
         &self,
-        msg: &T,
+        msg: &Message,
         ru: &RoundUpdate,
         iteration: u8,
         committee: &Committee,
@@ -78,7 +72,7 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// collect allows each Phase to process a verified inbound message.
     async fn collect(
         &mut self,
-        msg: T,
+        msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
@@ -87,15 +81,11 @@ pub trait MsgHandler<T: Debug + MessageTrait> {
     /// iteration
     async fn collect_from_past(
         &mut self,
-        msg: T,
+        msg: Message,
         ru: &RoundUpdate,
         committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError>;
 
     /// handle_timeout allows each Phase to handle a timeout event.
-    fn handle_timeout(
-        &mut self,
-        _ru: &RoundUpdate,
-        _iteration: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError>;
+    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError>;
 }
