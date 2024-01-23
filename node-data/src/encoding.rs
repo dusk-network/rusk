@@ -5,8 +5,14 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::bls::PublicKeyBytes;
-use crate::ledger::*;
-use crate::message::payload::{QuorumType, Ratification, ValidationResult};
+use crate::ledger::{
+    Block, Certificate, Header, IterationsInfo, Label, SpentTransaction,
+    StepVotes, Transaction,
+};
+use crate::message::payload::{
+    QuorumType, Ratification, ValidationResult, Vote,
+};
+use crate::message::ConsensusHeader;
 use crate::Serializable;
 use std::io::{self, Read, Write};
 
@@ -169,7 +175,7 @@ impl Serializable for Certificate {
 impl Serializable for StepVotes {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.bitset.to_le_bytes())?;
-        w.write_all(&self.aggregate_signature.inner())?;
+        w.write_all(self.aggregate_signature.inner())?;
 
         Ok(())
     }
@@ -183,7 +189,7 @@ impl Serializable for StepVotes {
 
         Ok(StepVotes {
             bitset,
-            aggregate_signature: Signature(aggregate_signature),
+            aggregate_signature: aggregate_signature.into(),
         })
     }
 }
@@ -269,7 +275,8 @@ impl Serializable for Label {
 
 impl Serializable for Ratification {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&self.signature)?;
+        self.header.write(w)?;
+        self.vote.write(w)?;
         w.write_all(&self.timestamp.to_le_bytes())?;
         self.validation_result.write(w)?;
 
@@ -280,12 +287,14 @@ impl Serializable for Ratification {
     where
         Self: Sized,
     {
-        let signature = Self::read_bytes(r)?;
+        let header = ConsensusHeader::read(r)?;
+        let vote = Vote::read(r)?;
         let timestamp = Self::read_u64_le(r)?;
         let validation_result = ValidationResult::read(r)?;
 
         Ok(Ratification {
-            signature,
+            header,
+            vote,
             timestamp,
             validation_result,
         })
@@ -295,7 +304,7 @@ impl Serializable for Ratification {
 impl Serializable for ValidationResult {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.sv.write(w)?;
-        w.write_all(&self.hash)?;
+        self.vote.write(w)?;
         self.quorum.write(w)?;
 
         Ok(())
@@ -306,10 +315,10 @@ impl Serializable for ValidationResult {
         Self: Sized,
     {
         let sv = StepVotes::read(r)?;
-        let hash = Self::read_bytes(r)?;
+        let vote = Vote::read(r)?;
         let quorum = QuorumType::read(r)?;
 
-        Ok(ValidationResult { sv, hash, quorum })
+        Ok(ValidationResult { sv, vote, quorum })
     }
 }
 
@@ -381,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_encoding_header() {
-        assert_serializable::<Header>();
+        assert_serializable::<ConsensusHeader>();
     }
 
     #[test]

@@ -71,7 +71,7 @@ impl std::fmt::Debug for Header {
             .field("height", &self.height)
             .field("timestamp", &timestamp)
             .field("prev_block_hash", &to_str(&self.prev_block_hash))
-            .field("seed", &to_str(&self.seed.inner()))
+            .field("seed", &to_str(self.seed.inner()))
             .field("state_hash", &to_str(&self.state_hash))
             .field("event_hash", &to_str(&self.event_hash))
             .field("gen_bls_pubkey", &to_str(self.generator_bls_pubkey.inner()))
@@ -134,7 +134,7 @@ impl Header {
         w.write_all(&self.timestamp.to_le_bytes())?;
         w.write_all(&self.prev_block_hash)?;
 
-        w.write_all(&self.seed.inner())?;
+        w.write_all(self.seed.inner())?;
 
         w.write_all(&self.state_hash)?;
         w.write_all(&self.event_hash)?;
@@ -269,14 +269,16 @@ impl StepVotes {
 
 /// a wrapper of 48-sized array to facilitate Signature
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
-pub struct Signature(pub [u8; 48]);
+pub struct Signature([u8; 48]);
 
 impl Signature {
+    pub const EMPTY: [u8; 48] = [0u8; 48];
+
     pub fn is_zeroed(&self) -> bool {
-        self.0 == [0; 48]
+        self.0 == Self::EMPTY
     }
-    pub fn inner(&self) -> [u8; 48] {
-        self.0
+    pub fn inner(&self) -> &[u8; 48] {
+        &self.0
     }
 }
 
@@ -296,7 +298,7 @@ impl From<[u8; 48]> for Signature {
 
 impl Default for Signature {
     fn default() -> Self {
-        Signature([0; 48])
+        Self(Self::EMPTY)
     }
 }
 
@@ -421,10 +423,17 @@ pub mod faker {
         }
     }
 
+    impl<T> Dummy<T> for bls::PublicKey {
+        fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
+            let rand_val = rng.gen();
+            bls::PublicKey::from_sk_seed_u64(rand_val)
+        }
+    }
+
     impl<T> Dummy<T> for Signature {
         fn dummy_with_rng<R: Rng + ?Sized>(_config: &T, rng: &mut R) -> Self {
             let rand_val = rng.gen::<[u8; 32]>();
-            let mut rand_signature = [0u8; 48];
+            let mut rand_signature = Self::EMPTY;
             rand_signature[..32].copy_from_slice(&rand_val);
 
             Signature(rand_signature)
