@@ -96,7 +96,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
             Ok(_) => Vote::Valid(header.hash),
             Err(err) => {
                 error!(event = "failed_vst_call", ?err);
-                return; 
+                Vote::Invalid(header.hash)
             }
         };
 
