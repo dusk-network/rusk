@@ -4,7 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use node::database::Mempool;
+use node::database::rocksdb::MD_HASH_KEY;
+use node::database::{Mempool, Metadata};
 
 use super::*;
 
@@ -29,10 +30,11 @@ pub async fn last_transactions(
     let db = ctx.data::<DBContext>()?;
     let transactions = db.read().await.view(|t| {
         let mut txs = vec![];
-        let mut current_block = t.get_register().and_then(|reg| match reg {
-            Some(Register { mrb_hash, .. }) => t.fetch_block_header(&mrb_hash),
-            None => Ok(None),
-        })?;
+        let mut current_block =
+            t.op_read(MD_HASH_KEY).and_then(|res| match res {
+                Some(hash) => t.fetch_block_header(&hash),
+                None => Ok(None),
+            })?;
 
         while let Some((header, block_txs)) = current_block {
             for txs_id in block_txs {

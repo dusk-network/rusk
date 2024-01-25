@@ -5,32 +5,39 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use super::*;
+use node::database::rocksdb::MD_HASH_KEY;
+use node::database::{into_array, Metadata};
 
 pub async fn block_by_height(
     ctx: &Context<'_>,
     height: f64,
 ) -> OptResult<Block> {
     let db = ctx.data::<DBContext>()?;
-
-    let block_hash = db.read().await.view(|t| match height >= 0f64 {
-        true => t.fetch_block_hash_by_height(height as u64),
-        false => t.get_register().map(|reg| reg.map(|r| r.mrb_hash)),
+    let block_hash = db.read().await.view(|t| {
+        if height >= 0f64 {
+            t.fetch_block_hash_by_height(height as u64)
+        } else {
+            Ok(t.op_read(MD_HASH_KEY)?.map(|hash| into_array(&hash[..])))
+        }
     })?;
 
     if let Some(hash) = block_hash {
         return block_by_hash(ctx, hex::encode(hash)).await;
     };
+
     Ok(None)
 }
 
 pub async fn last_block(ctx: &Context<'_>) -> FieldResult<Block> {
     let db = ctx.data::<DBContext>()?;
     let block = db.read().await.view(|t| {
-        t.get_register().and_then(|reg| match reg {
-            Some(Register { mrb_hash, .. }) => t.fetch_block_header(&mrb_hash),
+        let hash = t.op_read(MD_HASH_KEY)?;
+        match hash {
             None => Ok(None),
-        })
+            Some(hash) => t.fetch_block_header(&hash),
+        }
     })?;
+
     block
         .map(|(header, txs_id)| Block::new(header, txs_id))
         .ok_or_else(|| FieldError::new("Cannot find last block"))

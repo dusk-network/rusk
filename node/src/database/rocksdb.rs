@@ -35,15 +35,14 @@ const CF_CANDIDATES: &str = "cf_candidates";
 const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
-
-const CF_METADATA: &str = "cf_mempool_fees";
-
+const CF_METADATA: &str = "cf_metadata";
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
 
+const DB_FOLDER_NAME: &str = "chain.db";
+
+// List of supported metadata keys
 pub const MD_HASH_KEY: &[u8; 8] = b"hash_key";
 pub const MD_STATE_ROOT_KEY: &[u8; 14] = b"state_hash_key";
-
-const DB_FOLDER_NAME: &str = "chain.db";
 
 #[derive(Clone)]
 pub struct Backend {
