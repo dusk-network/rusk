@@ -4,16 +4,13 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use std::{
-    io::{self, Read, Write},
-    path::Path,
-};
+use std::path::Path;
 
 pub mod rocksdb;
 
 use anyhow::Result;
+use node_data::ledger;
 use node_data::ledger::{Label, SpentTransaction};
-use node_data::{ledger, Serializable};
 
 pub trait DB: Send + Sync + 'static {
     type P<'a>: Persist;
@@ -79,8 +76,7 @@ pub trait Ledger {
     ) -> Result<Option<ledger::SpentTransaction>>;
 
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool>;
-    fn get_register(&self) -> Result<Option<Register>>;
-    fn set_register(&self, header: &ledger::Header) -> Result<()>;
+
     fn fetch_block_label_by_height(&self, height: u64)
         -> Result<Option<Label>>;
 }
@@ -125,37 +121,25 @@ pub trait Mempool {
     fn get_txs_hashes(&self) -> Result<Vec<[u8; 32]>>;
 }
 
-pub trait Persist: Ledger + Candidate + Mempool + core::fmt::Debug {
+pub trait Metadata {
+    /// Assigns an value to a key in the Metadata CF
+    fn op_write<T: AsRef<[u8]>>(&self, key: &[u8], value: T) -> Result<()>;
+
+    /// Reads an value of a key from the Metadata CF
+    fn op_read(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
+}
+
+pub trait Persist:
+    Ledger + Candidate + Mempool + Metadata + core::fmt::Debug
+{
     // Candidate block functions
 
     fn clear_database(&self) -> Result<()>;
     fn commit(self) -> Result<()>;
 }
 
-#[derive(Default)]
-/// Introduces the value schema in a special database key-value record that
-/// provides chain metadata.
-pub struct Register {
-    pub mrb_hash: [u8; 32],
-    pub state_hash: [u8; 32],
-}
-
-impl Serializable for Register {
-    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&self.mrb_hash)?;
-        w.write_all(&self.state_hash)
-    }
-
-    fn read<R: Read>(r: &mut R) -> io::Result<Self>
-    where
-        Self: Sized,
-    {
-        let mrb_hash = Self::read_bytes(r)?;
-        let state_hash = Self::read_bytes(r)?;
-
-        Ok(Self {
-            mrb_hash,
-            state_hash,
-        })
-    }
+pub fn into_array<const N: usize>(value: &[u8]) -> [u8; N] {
+    let mut res = [0u8; N];
+    res.copy_from_slice(&value[0..N]);
+    res
 }
