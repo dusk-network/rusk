@@ -14,7 +14,8 @@ mod header_validation;
 
 use self::acceptor::Acceptor;
 use self::fsm::SimpleFSM;
-use crate::database::Ledger;
+use crate::database::rocksdb::MD_HASH_KEY;
+use crate::database::{Ledger, Metadata};
 use crate::{database, vm, Network};
 use crate::{LongLivedService, Message};
 use anyhow::Result;
@@ -26,6 +27,7 @@ use node_data::message::{Payload, Topics};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+
 use tokio::time::{sleep_until, Instant};
 use tracing::{error, info, warn};
 
@@ -214,9 +216,9 @@ impl ChainSrv {
         vm: Arc<RwLock<VM>>,
     ) -> Result<BlockWithLabel> {
         let stored_block = db.read().await.update(|t| {
-            Ok(t.get_register()?.and_then(|r| {
-                t.fetch_block(&r.mrb_hash)
-                    .expect("block to be found if register is set")
+            Ok(t.op_read(MD_HASH_KEY)?.and_then(|mrb_hash| {
+                t.fetch_block(&mrb_hash[..])
+                    .expect("block to be found if metadata is set")
             }))
         })?;
 
