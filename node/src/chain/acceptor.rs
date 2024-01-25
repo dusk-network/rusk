@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Ledger, Mempool};
+use crate::database::{self, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
 use dusk_consensus::commons::ConsensusError;
@@ -22,6 +22,7 @@ use tracing::{info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::Validator;
+use crate::database::rocksdb::{MD_HASH_KEY, MD_STATE_ROOT_KEY};
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -211,10 +212,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         task.abort_with_wait().await;
 
         //  Update register.
-        self.db
-            .read()
-            .await
-            .update(|t| t.set_register(blk.header()))?;
+        self.db.read().await.update(|t| {
+            t.op_write(MD_HASH_KEY, blk.header().hash)?;
+            t.op_write(MD_STATE_ROOT_KEY, blk.header().state_hash)
+        })?;
 
         let (prev_header, _) = self
             .db
