@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use crate::database::{self, Candidate, Mempool};
+use crate::database::{self, Candidate, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use async_trait::async_trait;
 use dusk_consensus::commons::{ConsensusError, RoundUpdate};
@@ -22,6 +22,8 @@ use tokio::task::JoinHandle;
 use tracing::{error, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
+use crate::chain::metrics::AvgValidationTime;
+use crate::database::rocksdb::MD_AVG_VALIDATION;
 use node_data::ledger;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,6 +81,7 @@ impl Task {
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
+        round_base_timeout: Duration,
     ) {
         let current = provisioners_list.to_current();
         let c = Consensus::new(
@@ -94,8 +97,6 @@ impl Task {
             ))),
             Arc::new(Mutex::new(CandidateDB::new(db.clone(), network.clone()))),
         );
-
-        let round_base_timeout = self.adjust_round_base_timeout(db);
 
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
@@ -152,14 +153,6 @@ impl Task {
                 warn!("Unable to send cancel for abort")
             };
         }
-    }
-
-    /// TBD
-    fn adjust_round_base_timeout<D: database::DB>(
-        &mut self,
-        _db: &Arc<RwLock<D>>,
-    ) -> Duration {
-        dusk_consensus::config::ROUND_BASE_TIMEOUT
     }
 }
 
@@ -355,5 +348,29 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             verification_output,
             discarded_txs,
         })
+    }
+
+    async fn set_validation_time(
+        &self,
+        elapsed: Duration,
+    ) -> Result<(), Error> {
+        let db = self.db.read().await;
+
+        let _ = db
+            .view(|t| {
+                let mut values = AvgValidationTime::from_bytes(
+                    &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default(),
+                    5,
+                );
+
+                values.push_back(elapsed.as_secs() as u16);
+                t.op_write(MD_AVG_VALIDATION, values.to_bytes())
+            })
+            .map_err(|err: anyhow::Error| {
+                error!("{err}");
+                Error::Failed
+            })?;
+
+        Ok(())
     }
 }

@@ -5,6 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use std::fmt;
+use std::time::Duration;
 
 use dusk_bls12_381_sign::PublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
@@ -67,4 +68,7 @@ pub trait Operations: Send + Sync {
         &self,
         params: CallParams,
     ) -> Result<Output, Error>;
+
+    async fn set_validation_time(&self, elapsed: Duration)
+        -> Result<(), Error>;
 }

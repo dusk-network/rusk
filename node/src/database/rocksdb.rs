@@ -43,6 +43,7 @@ const DB_FOLDER_NAME: &str = "chain.db";
 // List of supported metadata keys
 pub const MD_HASH_KEY: &[u8; 8] = b"hash_key";
 pub const MD_STATE_ROOT_KEY: &[u8; 14] = b"state_hash_key";
+pub const MD_AVG_VALIDATION: &[u8; 19] = b"avg_validation_time";
 
 #[derive(Clone)]
 pub struct Backend {

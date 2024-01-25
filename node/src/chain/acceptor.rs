@@ -16,13 +16,18 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
+use dusk_consensus::operations::Error;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::Validator;
-use crate::database::rocksdb::{MD_HASH_KEY, MD_STATE_ROOT_KEY};
+use crate::chain::metrics::AvgValidationTime;
+use crate::database::rocksdb::{
+    MD_AVG_VALIDATION, MD_HASH_KEY, MD_STATE_ROOT_KEY,
+};
 
 #[allow(dead_code)]
 pub(crate) enum RevertTarget {
@@ -132,6 +137,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
+        let round_base_timeout = self.adjust_round_base_timeout().await;
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
@@ -139,6 +145,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             &self.network,
+            round_base_timeout,
         );
     }
 
@@ -389,12 +396,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Restart Consensus.
         if enable_consensus {
+            let base_timeout = self.adjust_round_base_timeout().await;
             task.spawn(
                 mrb.inner(),
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
                 &self.network,
+                base_timeout,
             );
         }
 
@@ -514,12 +523,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&mrb.inner().header().hash),
         );
 
+        let base_timeout = self.adjust_round_base_timeout().await;
         task.spawn(
             mrb.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
             &self.network,
+            base_timeout,
         );
     }
 
@@ -578,6 +589,33 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     pub(crate) async fn get_outbound_chan(&self) -> AsyncQueue<Message> {
         self.task.read().await.outbound.clone()
+    }
+
+    async fn adjust_round_base_timeout(&self) -> Duration {
+        let values = self
+            .db
+            .read()
+            .await
+            .view(|t| {
+                let values = AvgValidationTime::from_bytes(
+                    &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default(),
+                    5,
+                );
+
+                Ok(values)
+            })
+            .map_err(|err: anyhow::Error| {
+                error!("{err}");
+                Error::Failed
+            })
+            .expect("valid values"); // TODO:
+
+        Duration::from_secs(
+            values
+                .average()
+                .map(|v| v as u64)
+                .unwrap_or(dusk_consensus::config::ROUND_BASE_TIMEOUT as u64),
+        )
     }
 }
 
