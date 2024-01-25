@@ -1111,25 +1111,24 @@ mod tests {
         let path = t.get_path();
         let opts = Options::default();
 
-        // Iterate through all items, in all CFs.
-        // Ensure that the only key available after deleting a block is
-        // REGISTER_KEY
-
         let vec = rocksdb_lib::DB::list_cf(&opts, &path).unwrap();
         assert!(!vec.is_empty());
 
+        // Ensure no block fields leak after its deletion
         let db = rocksdb_lib::DB::open_cf(&opts, &path, vec.clone()).unwrap();
-
         vec.into_iter()
             .map(|cf_name| {
-                println!("cf_name: {}", cf_name);
+                if cf_name == CF_METADATA {
+                    return;
+                }
 
                 let cf = db.cf_handle(&cf_name).unwrap();
-                let iter = db.iterator_cf(cf, IteratorMode::Start);
-
-                iter.map(Result::unwrap)
-                    .map(|(key, _)| assert_eq!(&*key, REGISTER_KEY.as_slice()))
-                    .for_each(drop);
+                assert_eq!(
+                    db.iterator_cf(cf, IteratorMode::Start)
+                        .map(Result::unwrap)
+                        .count(),
+                    0
+                );
             })
             .for_each(drop);
     }
