@@ -130,8 +130,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(feature = "prover")]
             prover: rusk_prover::LocalProver,
         };
+
+        let listen_addr = config.http.listen_addr();
+
+        let cert_and_key = match (config.http.cert, config.http.key) {
+            (Some(cert), Some(key)) => Some((cert, key)),
+            _ => None,
+        };
+
         _ws_server =
-            Some(HttpServer::bind(handler, config.http.listen_addr()).await?);
+            Some(HttpServer::bind(handler, listen_addr, cert_and_key).await?);
     }
 
     // node spawn_all is the entry point

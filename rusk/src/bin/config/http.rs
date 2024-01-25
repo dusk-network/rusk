@@ -4,12 +4,16 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 use crate::args::Args;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct HttpConfig {
+    pub cert: Option<PathBuf>,
+    pub key: Option<PathBuf>,
     #[serde(default = "default_listen")]
     pub listen: bool,
     listen_address: Option<String>,
@@ -20,6 +24,8 @@ impl Default for HttpConfig {
         Self {
             listen: default_listen(),
             listen_address: None,
+            cert: None,
+            key: None,
         }
     }
 }
