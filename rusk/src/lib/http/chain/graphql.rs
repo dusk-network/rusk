@@ -14,7 +14,7 @@ use tx::*;
 
 use async_graphql::{Context, FieldError, FieldResult, Object};
 use node::database::rocksdb::Backend;
-use node::database::{Ledger, Register, DB};
+use node::database::{Ledger, DB};
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
