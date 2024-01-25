@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use super::{Candidate, Ledger, Persist, Register, DB};
+use super::{Candidate, Ledger, Metadata, Persist, DB};
 use anyhow::Result;
 
 use node_data::ledger::{self, Label, SpentTransaction};
@@ -36,8 +36,12 @@ const CF_MEMPOOL: &str = "cf_mempool";
 const CF_MEMPOOL_NULLIFIERS: &str = "cf_mempool_nullifiers";
 const CF_MEMPOOL_FEES: &str = "cf_mempool_fees";
 
+const CF_METADATA: &str = "cf_mempool_fees";
+
 const MAX_MEMPOOL_SIZE: usize = 64 * 1024 * 1024; // 64 MiB
-const REGISTER_KEY: &[u8; 8] = b"register";
+
+pub const MD_HASH_KEY: &[u8; 8] = b"hash_key";
+pub const MD_STATE_ROOT_KEY: &[u8; 14] = b"state_hash_key";
 
 const DB_FOLDER_NAME: &str = "chain.db";
 
@@ -90,6 +94,11 @@ impl Backend {
             .cf_handle(CF_LEDGER_HEIGHT)
             .expect("CF_LEDGER_HEIGHT column family must exist");
 
+        let metadata_cf = self
+            .rocksdb
+            .cf_handle(CF_METADATA)
+            .expect("CF_METADATA column family must exist");
+
         let snapshot = self.rocksdb.snapshot();
 
         DBTransaction::<'_, OptimisticTransactionDB> {
@@ -101,6 +110,7 @@ impl Backend {
             nullifiers_cf,
             fees_cf,
             ledger_height_cf,
+            metadata_cf,
             snapshot,
         }
     }
@@ -139,7 +149,8 @@ impl DB for Backend {
             ColumnFamilyDescriptor::new(CF_CANDIDATES, Options::default()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL, mp_opts.clone()),
             ColumnFamilyDescriptor::new(CF_MEMPOOL_NULLIFIERS, mp_opts.clone()),
-            ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts),
+            ColumnFamilyDescriptor::new(CF_MEMPOOL_FEES, mp_opts.clone()),
+            ColumnFamilyDescriptor::new(CF_METADATA, mp_opts),
         ];
 
         Self {
@@ -200,6 +211,8 @@ pub struct DBTransaction<'db, DB: DBAccess> {
     nullifiers_cf: &'db ColumnFamily,
     fees_cf: &'db ColumnFamily,
 
+    metadata_cf: &'db ColumnFamily,
+
     snapshot: SnapshotWithThreadMode<'db, DB>,
 }
 
@@ -227,16 +240,11 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
             .write(&mut buf)?;
 
             self.inner.put_cf(cf, header.hash, buf)?;
-
-            // Overwrite the Register record
-            let mut buf = vec![];
-            Register {
-                mrb_hash: header.hash,
-                state_hash: header.state_hash,
-            }
-            .write(&mut buf)?;
-            self.inner.put_cf(cf, REGISTER_KEY, buf)?;
         }
+
+        // Update metadata values
+        self.op_write(MD_HASH_KEY, header.hash)?;
+        self.op_write(MD_STATE_ROOT_KEY, header.state_hash)?;
 
         // COLUMN FAMILY: CF_LEDGER_TXS
         {
@@ -362,29 +370,6 @@ impl<'db, DB: DBAccess> Ledger for DBTransaction<'db, DB> {
     /// ledger without unmarshalling the transaction
     fn get_ledger_tx_exists(&self, tx_hash: &[u8]) -> Result<bool> {
         Ok(self.snapshot.get_cf(self.ledger_txs_cf, tx_hash)?.is_some())
-    }
-
-    /// Returns stored register data
-    fn get_register(&self) -> Result<Option<Register>> {
-        if let Some(data) =
-            self.snapshot.get_cf(self.ledger_cf, REGISTER_KEY)?
-        {
-            return Ok(Some(Register::read(&mut &data[..])?));
-        }
-
-        Ok(None)
-    }
-
-    fn set_register(&self, header: &ledger::Header) -> Result<()> {
-        // Overwrite the Register record
-        let mut buf = vec![];
-        Register {
-            mrb_hash: header.hash,
-            state_hash: header.state_hash,
-        }
-        .write(&mut buf)?;
-
-        Ok(self.inner.put_cf(self.ledger_cf, REGISTER_KEY, buf)?)
     }
 
     fn fetch_block_by_height(
@@ -686,6 +671,17 @@ impl<'db, DB: DBAccess> std::fmt::Debug for DBTransaction<'db, DB> {
             });
 
         results
+    }
+}
+
+impl<'db, DB: DBAccess> Metadata for DBTransaction<'db, DB> {
+    fn op_write<T: AsRef<[u8]>>(&self, key: &[u8], value: T) -> Result<()> {
+        self.inner.put_cf(self.metadata_cf, key, value)?;
+        Ok(())
+    }
+
+    fn op_read(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        self.inner.get_cf(self.metadata_cf, key).map_err(Into::into)
     }
 }
 
