@@ -287,10 +287,9 @@ impl Message {
 pub struct ConsensusHeader {
     pub msg_type: ConsensusMsgType,
     pub prev_block_hash: Hash,
-
-    pub pubkey_bls: bls::PublicKey,
     pub round: u64,
     pub iteration: u8,
+    pub pubkey_bls: bls::PublicKey,
     pub signature: Signature,
 }
 
@@ -335,10 +334,10 @@ impl std::fmt::Debug for ConsensusHeader {
 impl Serializable for ConsensusHeader {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&[self.msg_type as u8])?;
-        w.write_all(self.pubkey_bls.bytes().inner())?;
         w.write_all(&self.prev_block_hash)?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.iteration])?;
+        w.write_all(self.pubkey_bls.bytes().inner())?;
         w.write_all(self.signature.inner())?;
 
         Ok(())
@@ -349,20 +348,15 @@ impl Serializable for ConsensusHeader {
         Self: Sized,
     {
         let msg_type = Self::read_u8(r)?.try_into()?;
+        let prev_block_hash = Self::read_bytes(r)?;
+        let round = Self::read_u64_le(r)?;
+        let iteration = Self::read_u8(r)?;
 
         // Read bls pubkey
         let pubkey_bls = Self::read_bytes(r)?;
         let pubkey_bls = pubkey_bls
             .try_into()
             .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let prev_block_hash = Self::read_bytes(r)?;
-
-        // Read round
-        let round = Self::read_u64_le(r)?;
-
-        // Read iteration
-        let iteration = Self::read_u8(r)?;
 
         let signature = Self::read_bytes(r)?.into();
 
