@@ -11,6 +11,7 @@ mod event;
 #[cfg(feature = "prover")]
 mod prover;
 mod rusk;
+mod stream;
 
 pub(crate) use event::{
     BinaryWrapper, DataType, ExecutionError, MessageResponse as EventResponse,
@@ -23,6 +24,7 @@ use std::borrow::Cow;
 use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::pin::Pin;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -31,7 +33,7 @@ use std::task::{Context, Poll};
 use async_trait::async_trait;
 
 use tokio::io::{AsyncRead, AsyncWrite};
-use tokio::net::{TcpListener, ToSocketAddrs};
+use tokio::net::ToSocketAddrs;
 use tokio::sync::{broadcast, mpsc};
 use tokio::{io, task};
 
@@ -43,12 +45,14 @@ use hyper_tungstenite::{tungstenite, HyperWebsocket};
 use tungstenite::protocol::frame::coding::CloseCode;
 use tungstenite::protocol::{CloseFrame, Message};
 
-use futures_util::{stream, SinkExt, StreamExt};
+use futures_util::stream::iter as stream_iter;
+use futures_util::{SinkExt, StreamExt};
 
 use crate::chain::RuskNode;
 use crate::{Rusk, VERSION};
 
 use self::event::{MessageRequest, ResponseData};
+use self::stream::{Listener, Stream};
 
 const RUSK_VERSION_HEADER: &str = "Rusk-Version";
 
@@ -59,11 +63,22 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn bind<A: ToSocketAddrs, H: HandleRequest>(
+    pub async fn bind<A, H, P1, P2>(
         handler: H,
         addr: A,
-    ) -> io::Result<Self> {
-        let listener = TcpListener::bind(addr).await?;
+        cert_and_key: Option<(P1, P2)>,
+    ) -> io::Result<Self>
+    where
+        A: ToSocketAddrs,
+        H: HandleRequest,
+        P1: AsRef<Path>,
+        P2: AsRef<Path>,
+    {
+        let listener = match cert_and_key {
+            Some(cert_and_key) => Listener::bind_tls(addr, cert_and_key).await,
+            None => Listener::bind(addr).await,
+        }?;
+
         let (shutdown_sender, shutdown_receiver) = broadcast::channel(1);
 
         let local_addr = listener.local_addr()?;
@@ -116,11 +131,13 @@ impl HandleRequest for DataSources {
     }
 }
 
-async fn listening_loop<H: HandleRequest>(
+async fn listening_loop<H>(
     handler: H,
-    listener: TcpListener,
+    listener: Listener,
     mut shutdown: broadcast::Receiver<Infallible>,
-) {
+) where
+    H: HandleRequest,
+{
     let handler = Arc::new(handler);
     let http = Http::new();
 
@@ -130,10 +147,10 @@ async fn listening_loop<H: HandleRequest>(
                 break;
             }
             r = listener.accept() => {
-                if r.is_err() {
-                    break;
-                }
-                let (stream, _) = r.unwrap();
+                let stream = match r {
+                    Ok(stream) => stream,
+                    Err(_) => break,
+                };
 
                 let service = ExecutionService {
                     sources: handler.clone(),
@@ -142,7 +159,6 @@ async fn listening_loop<H: HandleRequest>(
                 let conn = http.serve_connection(stream, service).with_upgrades();
 
                 task::spawn(conn);
-
             }
         }
     }
@@ -190,7 +206,7 @@ async fn handle_stream<H: HandleRequest>(
                 let rsp = rsp.unwrap();
 
                 if let DataType::Channel(c) = rsp.data {
-                    let mut datas = stream::iter(c).map(|e| {
+                    let mut datas = stream_iter(c).map(|e| {
                         EventResponse {
                             data: e.into(),
                             headers: rsp.headers.clone(),
@@ -423,7 +439,7 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
+    use std::{fs, thread};
 
     use super::*;
     use event::Event as EventRequest;
@@ -465,12 +481,13 @@ mod tests {
 
     #[tokio::test]
     async fn http_query() {
-        let server = HttpServer::bind(TestHandle, "localhost:0")
+        let cert_and_key: Option<(String, String)> = None;
+
+        let server = HttpServer::bind(TestHandle, "localhost:0", cert_and_key)
             .await
             .expect("Binding the server to the address should succeed");
 
         let data = Vec::from(&b"I am call data 0"[..]);
-
         let data = RequestData::Binary(BinaryWrapper { inner: data });
 
         let event = EventRequest {
@@ -502,9 +519,67 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn https_query() {
+        let cert_path = "tests/assets/cert.pem";
+        let key_path = "tests/assets/key.pem";
+
+        let cert_bytes = fs::read(cert_path).expect("cert file should exist");
+        let certificate = reqwest::tls::Certificate::from_pem(&cert_bytes)
+            .expect("cert should be valid");
+
+        let server = HttpServer::bind(
+            TestHandle,
+            "localhost:0",
+            Some((cert_path, key_path)),
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let data = Vec::from(&b"I am call data 0"[..]);
+        let data = RequestData::Binary(BinaryWrapper { inner: data });
+
+        let event = EventRequest {
+            target: Target::None,
+            data,
+            topic: "topic".into(),
+        };
+
+        let request = serde_json::to_vec(&event)
+            .expect("Serializing request should succeed");
+
+        let client = reqwest::ClientBuilder::new()
+            .add_root_certificate(certificate)
+            .build()
+            .expect("creating client should succeed");
+
+        let response = client
+            .post(format!(
+                "https://localhost:{}/01/target",
+                server.local_addr.port()
+            ))
+            .body(Body::from(request))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let response_bytes =
+            response.bytes().await.expect("There should be a response");
+        let response_bytes =
+            hex::decode(response_bytes).expect("data to be hex encoded");
+        let request_bytes = event.data.as_bytes();
+
+        assert_eq!(
+            request_bytes, response_bytes,
+            "Data received the same as sent"
+        );
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn websocket_queries() {
-        let server = HttpServer::bind(TestHandle, "localhost:0")
+        let cert_and_key: Option<(String, String)> = None;
+
+        let server = HttpServer::bind(TestHandle, "localhost:0", cert_and_key)
             .await
             .expect("Binding the server to the address should succeed");
 
