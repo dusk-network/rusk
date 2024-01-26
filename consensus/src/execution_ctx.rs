@@ -302,8 +302,8 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             Err(ConsensusError::PastEvent) => {
                 return self.process_past_events(msg).await;
             }
-            // An error here means an phase considers this message as invalid.
-            // This could be due to failed verification, bad round/step.
+            // An error here means this message is invalid due to failed
+            // verification.
             Err(e) => {
                 error!("phase handler err: {:?}", e);
                 return None;

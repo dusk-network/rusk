@@ -155,7 +155,7 @@ impl QuorumMsgSender {
                 || q.validation.is_empty()
                 || q.ratification.is_empty()
                 || q.vote == Vote::NoCandidate
-            //TODO: Not sure about `q.vote == Vote::NoCandidate`
+            // TODO: Change me accoringly to https://github.com/dusk-network/rusk/issues/1268
             {
                 return false;
             }
