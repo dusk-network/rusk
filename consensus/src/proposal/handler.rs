@@ -52,7 +52,7 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
             .await
             .store_candidate_block(p.candidate.clone());
 
-        Ok(Some(msg))
+        Ok(HandleMsgOutput::Ready(msg))
     }
 
     async fn collect_from_past(
@@ -61,12 +61,12 @@ impl<D: Database> MsgHandler for ProposalHandler<D> {
         _ru: &RoundUpdate,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(None)
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Handles of an event of step execution timeout
     fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(Some(Message::empty()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
 

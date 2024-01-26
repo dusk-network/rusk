@@ -80,7 +80,7 @@ impl MsgHandler for RatificationHandler {
                 reason = "invalid iteration number",
                 msg_iteration = iteration,
             );
-            return Ok(None);
+            return Ok(HandleMsgOutput::Pending);
         }
 
         // Collect vote, if msg payload is of ratification type
@@ -98,7 +98,7 @@ impl MsgHandler for RatificationHandler {
             );
 
             if quorum_reached {
-                return Ok(Some(self.build_quorum_msg(
+                return Ok(HandleMsgOutput::Ready(self.build_quorum_msg(
                     ru,
                     iteration,
                     p.vote,
@@ -108,7 +108,7 @@ impl MsgHandler for RatificationHandler {
             }
         }
 
-        Ok(None)
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Collects the reduction message from former iteration.
@@ -135,16 +135,16 @@ impl MsgHandler for RatificationHandler {
                     committee.excluded().expect("Generator to be excluded"),
                 )
             {
-                return Ok(Some(quorum_msg));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
         }
 
-        Ok(None)
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Handle of an event of step execution timeout
     fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(Some(Message::empty()))
+        Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
 

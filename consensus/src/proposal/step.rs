@@ -6,7 +6,7 @@
 
 use crate::commons::{ConsensusError, Database};
 use crate::execution_ctx::ExecutionCtx;
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
 use node_data::ledger::IterationsInfo;
 use node_data::message::Message;
@@ -85,7 +85,7 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .collect(msg, &ctx.round_update, committee)
                     .await
                 {
-                    Ok(Some(msg)) => return Ok(msg),
+                    Ok(HandleMsgOutput::Ready(msg)) => return Ok(msg),
                     Err(e) => {
                         error!("invalid candidate generated due to {:?}", e)
                     }

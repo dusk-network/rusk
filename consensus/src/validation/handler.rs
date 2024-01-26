@@ -10,7 +10,7 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
 use node_data::ledger::{Block, StepVotes};
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::user::committee::Committee;
 
@@ -29,7 +29,7 @@ fn final_result(
         quorum,
     });
 
-    Some(msg)
+    HandleMsgOutput::Ready(msg)
 }
 
 pub struct ValidationHandler {
@@ -99,7 +99,7 @@ impl MsgHandler for ValidationHandler {
                 reason = "invalid iteration number",
                 msg_iteration = iteration,
             );
-            return Ok(None);
+            return Ok(HandleMsgOutput::Pending);
         }
 
         // Collect vote, if msg payload is reduction type
@@ -118,18 +118,19 @@ impl MsgHandler for ValidationHandler {
 
             if quorum_reached {
                 // if the votes converged for an empty hash we invoke halt
-                if p.vote == Vote::NoCandidate {
-                    tracing::warn!(
-                        "votes converged for an empty hash (timeout)"
-                    );
-                    return Ok(final_result(sv, p.vote, QuorumType::NilQuorum));
-                }
+                let vote = &p.vote;
 
-                return Ok(final_result(sv, p.vote, QuorumType::ValidQuorum));
+                let quorum_type = match vote {
+                    Vote::NoCandidate => QuorumType::NilQuorum,
+                    Vote::Invalid(_) => QuorumType::InvalidQuorum,
+                    Vote::Valid(_) => QuorumType::ValidQuorum,
+                };
+                info!(event = "quorum reached", %vote);
+                return Ok(final_result(sv, p.vote, quorum_type));
             }
         }
 
-        Ok(None)
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Collects the reduction message from former iteration.
@@ -156,13 +157,13 @@ impl MsgHandler for ValidationHandler {
                     committee.excluded().expect("Generator to be excluded"),
                 )
             {
-                return Ok(Some(quorum_msg));
+                return Ok(HandleMsgOutput::Ready(quorum_msg));
             }
 
             return Ok(final_result(sv, p.vote, QuorumType::ValidQuorum));
         }
 
-        Ok(None)
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Handles of an event of step execution timeout

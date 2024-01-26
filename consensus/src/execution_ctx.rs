@@ -7,7 +7,7 @@
 use crate::commons::{ConsensusError, Database, QuorumMsgSender, RoundUpdate};
 
 use crate::iteration_ctx::IterationCtx;
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::operations::Operations;
 use crate::queue::Queue;
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
@@ -325,9 +325,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         match collected {
             // Fully valid state reached on this step. Return it as an output to
             // populate next step with it.
-            Ok(Some(m)) => Some(m),
+            Ok(HandleMsgOutput::Ready(m)) => Some(m),
             // Message collected but phase didn't reach a final result
-            Ok(None) => None,
+            Ok(HandleMsgOutput::Pending) => None,
             Err(err) => {
                 let event = "failed collect";
                 error!(event, ?err, ?msg_topic, msg_iter, msg_step, msg_round,);
@@ -344,7 +344,9 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     ) -> Result<Message, ConsensusError> {
         self.iter_ctx.on_timeout_event();
 
-        if let Ok(Some(msg)) = phase.lock().await.handle_timeout() {
+        if let Ok(HandleMsgOutput::Ready(msg)) =
+            phase.lock().await.handle_timeout()
+        {
             return Ok(msg);
         }
 
@@ -400,7 +402,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                         },
                     );
 
-                    if let Ok(Some(msg)) = phase
+                    if let Ok(HandleMsgOutput::Ready(msg)) = phase
                         .lock()
                         .await
                         .collect(msg, &self.round_update, committee)

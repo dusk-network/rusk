@@ -13,8 +13,12 @@ use node_data::StepName;
 use tracing::{debug, trace};
 
 /// Indicates whether an output value is available for current step execution
-/// (Some) or needs to collect data (None)
-pub type HandleMsgOutput = Option<Message>;
+/// (Step is Ready) or needs to collect data (Step is Pending)
+#[allow(clippy::large_enum_variant)]
+pub enum HandleMsgOutput {
+    Pending,
+    Ready(Message),
+}
 
 /// MsgHandler must be implemented by any step that needs to handle an external
 /// message within event_loop life-cycle.

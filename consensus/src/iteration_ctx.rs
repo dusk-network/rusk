@@ -7,6 +7,7 @@
 use crate::commons::Database;
 use crate::commons::RoundUpdate;
 use crate::config::MAX_STEP_TIMEOUT;
+use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
 
 use crate::user::committee::Committee;
@@ -155,7 +156,7 @@ impl<D: Database> IterationCtx<D> {
             }
             node_data::message::Topics::Validation => {
                 let mut handler = self.validation_handler.lock().await;
-                if let Ok(Some(m)) =
+                if let Ok(HandleMsgOutput::Ready(m)) =
                     handler.collect_from_past(msg, ru, committee).await
                 {
                     return Some(m);
@@ -163,7 +164,7 @@ impl<D: Database> IterationCtx<D> {
             }
             node_data::message::Topics::Ratification => {
                 let mut handler = self.ratification_handler.lock().await;
-                if let Ok(Some(m)) =
+                if let Ok(HandleMsgOutput::Ready(m)) =
                     handler.collect_from_past(msg, ru, committee).await
                 {
                     return Some(m);

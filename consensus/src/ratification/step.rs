@@ -11,7 +11,7 @@ use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use std::marker::PhantomData;
 
-use crate::msg_handler::MsgHandler;
+use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
 use node_data::ledger::Signature;
 use node_data::message;
@@ -147,7 +147,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             let res = handler
                 .collect(vote_msg, &ctx.round_update, committee)
                 .await?;
-            if let Some(m) = res {
+            if let HandleMsgOutput::Ready(m) = res {
                 return Ok(m);
             }
         }
