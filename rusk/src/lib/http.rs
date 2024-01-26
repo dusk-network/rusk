@@ -439,7 +439,7 @@ pub trait HandleRequest: Send + Sync + 'static {
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
+    use std::{fs, thread};
 
     use super::*;
     use event::Event as EventRequest;
@@ -488,7 +488,6 @@ mod tests {
             .expect("Binding the server to the address should succeed");
 
         let data = Vec::from(&b"I am call data 0"[..]);
-
         let data = RequestData::Binary(BinaryWrapper { inner: data });
 
         let event = EventRequest {
@@ -503,6 +502,62 @@ mod tests {
         let client = reqwest::Client::new();
         let response = client
             .post(format!("http://{}/01/target", server.local_addr))
+            .body(Body::from(request))
+            .send()
+            .await
+            .expect("Requesting should succeed");
+
+        let response_bytes =
+            response.bytes().await.expect("There should be a response");
+        let response_bytes =
+            hex::decode(response_bytes).expect("data to be hex encoded");
+        let request_bytes = event.data.as_bytes();
+
+        assert_eq!(
+            request_bytes, response_bytes,
+            "Data received the same as sent"
+        );
+    }
+
+    #[tokio::test]
+    async fn https_query() {
+        let cert_path = "tests/assets/cert.pem";
+        let key_path = "tests/assets/key.pem";
+
+        let cert_bytes = fs::read(cert_path).expect("cert file should exist");
+        let certificate = reqwest::tls::Certificate::from_pem(&cert_bytes)
+            .expect("cert should be valid");
+
+        let server = HttpServer::bind(
+            TestHandle,
+            "localhost:0",
+            Some((cert_path, key_path)),
+        )
+        .await
+        .expect("Binding the server to the address should succeed");
+
+        let data = Vec::from(&b"I am call data 0"[..]);
+        let data = RequestData::Binary(BinaryWrapper { inner: data });
+
+        let event = EventRequest {
+            target: Target::None,
+            data,
+            topic: "topic".into(),
+        };
+
+        let request = serde_json::to_vec(&event)
+            .expect("Serializing request should succeed");
+
+        let client = reqwest::ClientBuilder::new()
+            .add_root_certificate(certificate)
+            .build()
+            .expect("creating client should succeed");
+
+        let response = client
+            .post(format!(
+                "https://localhost:{}/01/target",
+                server.local_addr.port()
+            ))
             .body(Body::from(request))
             .send()
             .await
