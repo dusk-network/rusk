@@ -51,7 +51,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     pub iteration: u8,
     step: StepName,
 
-    executor: Arc<Mutex<T>>,
+    pub executor: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
     quorum_sender: QuorumMsgSender,

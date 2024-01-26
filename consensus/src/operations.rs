@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use dusk_bls12_381_sign::PublicKey;
 use node_data::ledger::{Block, Header, SpentTransaction, Transaction};
+use node_data::StepName;
 
 pub type StateRoot = [u8; 32];
 pub type EventHash = [u8; 32];
@@ -69,6 +70,10 @@ pub trait Operations: Send + Sync {
         params: CallParams,
     ) -> Result<Output, Error>;
 
-    async fn set_validation_time(&self, elapsed: Duration)
-        -> Result<(), Error>;
+    async fn add_step_elapsed_time(
+        &self,
+        round: u64,
+        step_name: StepName,
+        elapsed: Duration,
+    ) -> Result<(), Error>;
 }

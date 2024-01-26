@@ -7,6 +7,7 @@
 use crate::commons::{ConsensusError, Database};
 use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
+use std::time::Instant;
 
 use node_data::message::Message;
 use node_data::StepName;
@@ -59,10 +60,14 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
         &mut self,
         mut ctx: ExecutionCtx<'_, D, T>,
     ) -> Result<Message, ConsensusError> {
+        let step_name = ctx.step_name();
+        let client = ctx.executor.clone();
+        let round = ctx.round_update.round;
+
         let timeout = ctx.iter_ctx.get_timeout(ctx.step_name());
         debug!(event = "execute_step", ?timeout);
 
-        let exclusion = match ctx.step_name() {
+        let exclusion = match step_name {
             StepName::Proposal => None,
             _ => {
                 let generator = ctx
@@ -90,6 +95,20 @@ impl<T: Operations + 'static, D: Database + 'static> Phase<T, D> {
 
         ctx.save_committee(step_committee);
 
-        await_phase!(self, run(ctx))
+        // Execute step
+        let start_time = Instant::now();
+        let res = await_phase!(self, run(ctx));
+        let elapsed = start_time.elapsed();
+
+        // report step elapsed time to the client
+        if res.is_ok() {
+            let _ = client
+                .lock()
+                .await
+                .add_step_elapsed_time(round, step_name, elapsed)
+                .await;
+        }
+
+        res
     }
 }
