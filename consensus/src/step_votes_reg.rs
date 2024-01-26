@@ -13,14 +13,14 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::debug;
 
 pub(crate) enum SvType {
     Validation,
     Ratification,
 }
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 struct CertificateInfo {
     vote: Vote,
     cert: Certificate,
@@ -44,13 +44,22 @@ impl fmt::Display for CertificateInfo {
 }
 
 impl CertificateInfo {
+    pub(crate) fn new(vote: Vote) -> Self {
+        CertificateInfo {
+            vote,
+            cert: Certificate::default(),
+            quorum_reached_validation: false,
+            quorum_reached_ratification: false,
+        }
+    }
+
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
-    ) -> bool {
+    ) {
         match svt {
             SvType::Validation => {
                 self.cert.validation = sv;
@@ -74,8 +83,6 @@ impl CertificateInfo {
             data = format!("{}", self),
             quorum_reached
         );
-
-        self.is_ready()
     }
 
     /// Returns `true` if all fields are non-empty and quorum is reached for
@@ -96,35 +103,28 @@ pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
 #[derive(Clone)]
 struct IterationCerts {
-    valid: Option<CertificateInfo>,
-    nil: CertificateInfo,
+    votes: HashMap<Vote, CertificateInfo>,
+    no_candidate: CertificateInfo,
     generator: PublicKeyBytes,
 }
 
 impl IterationCerts {
     fn new(generator: PublicKeyBytes) -> Self {
         Self {
-            valid: None,
-            nil: CertificateInfo::default(),
+            votes: HashMap::new(),
+            no_candidate: CertificateInfo::new(Vote::NoCandidate),
             generator,
         }
     }
 
-    fn for_vote(&mut self, vote: &Vote) -> Option<&mut CertificateInfo> {
+    fn for_vote(&mut self, vote: &Vote) -> &mut CertificateInfo {
         if vote == &Vote::NoCandidate {
-            return Some(&mut self.nil);
+            return &mut self.no_candidate;
         }
-        let cert = self.valid.get_or_insert_with(|| CertificateInfo {
-            vote: vote.clone(),
-            ..Default::default()
-        });
-        match &cert.vote == vote {
-            true => Some(cert),
-            false => {
-                error!("Cannot add step votes for vote {vote:?}");
-                None
-            }
-        }
+
+        self.votes
+            .entry(vote.clone())
+            .or_insert_with_key(|vote| CertificateInfo::new(vote.clone()))
     }
 }
 
@@ -160,17 +160,18 @@ impl CertInfoRegistry {
             .entry(iteration)
             .or_insert_with(|| IterationCerts::new(*generator));
 
-        cert.for_vote(vote).and_then(|cert| {
-            cert.add_sv(iteration, sv, svt, quorum_reached).then(|| {
-                Self::build_quorum_msg(self.ru.clone(), iteration, cert.clone())
-            })
-        })
+        let cert_info = cert.for_vote(vote);
+
+        cert_info.add_sv(iteration, sv, svt, quorum_reached);
+        cert_info
+            .is_ready()
+            .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
     }
 
     fn build_quorum_msg(
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         iteration: u8,
-        result: CertificateInfo,
+        result: &CertificateInfo,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
             pubkey_bls: ru.pubkey_bls.clone(),
@@ -183,7 +184,7 @@ impl CertInfoRegistry {
 
         let mut payload = payload::Quorum {
             header,
-            vote: result.vote,
+            vote: result.vote.clone(),
             validation: result.cert.validation,
             ratification: result.cert.ratification,
         };
@@ -202,7 +203,7 @@ impl CertInfoRegistry {
             res.push(
                 self.cert_list
                     .get(&iteration)
-                    .map(|c| (&c.nil, c.generator))
+                    .map(|c| (&c.no_candidate, c.generator))
                     .filter(|(ci, _)| ci.is_ready())
                     .map(|(ci, pk)| (ci.cert, pk)),
             );
