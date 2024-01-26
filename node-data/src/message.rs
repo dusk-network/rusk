@@ -1079,10 +1079,7 @@ impl ConsensusMessage for Quorum {
 
 impl ConsensusMessage for Candidate {
     fn signable(&self) -> Vec<u8> {
-        let mut signable = self.header.signable();
-        signable.extend_from_slice(&[ConsensusMsgType::Candidate as u8]);
-        signable.extend_from_slice(&self.candidate.header().hash);
-        signable
+        self.candidate.header().hash.to_vec()
     }
     fn header(&self) -> &ConsensusHeader {
         &self.header
