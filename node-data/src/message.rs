@@ -15,7 +15,7 @@ use std::net::SocketAddr;
 
 use async_channel::TrySendError;
 
-use self::payload::{Candidate, Quorum, Ratification, Validation};
+use self::payload::{Candidate, Ratification, Validation};
 
 /// Topic field position in the message binary representation
 pub const TOPIC_FIELD_POS: usize = 8 + 8 + 4;
@@ -1001,7 +1001,7 @@ impl<M: Clone> AsyncQueue<M> {
     }
 }
 
-pub trait ConsensusMessage {
+pub trait StepMessage {
     fn signable(&self) -> Vec<u8>;
     fn header(&self) -> &ConsensusHeader;
     fn header_mut(&mut self) -> &mut ConsensusHeader;
@@ -1026,7 +1026,7 @@ pub trait ConsensusMessage {
     }
 }
 
-impl ConsensusMessage for Validation {
+impl StepMessage for Validation {
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
         signable.extend_from_slice(&[ConsensusMsgType::Validation as u8]);
@@ -1043,7 +1043,7 @@ impl ConsensusMessage for Validation {
     }
 }
 
-impl ConsensusMessage for Ratification {
+impl StepMessage for Ratification {
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
         signable.extend_from_slice(&[ConsensusMsgType::Ratification as u8]);
@@ -1060,24 +1060,7 @@ impl ConsensusMessage for Ratification {
     }
 }
 
-impl ConsensusMessage for Quorum {
-    fn signable(&self) -> Vec<u8> {
-        let mut signable = self.header.signable();
-        signable.extend_from_slice(&[ConsensusMsgType::Quorum as u8]);
-        self.vote
-            .write(&mut signable)
-            .expect("Writing to vec should succeed");
-        signable
-    }
-    fn header(&self) -> &ConsensusHeader {
-        &self.header
-    }
-    fn header_mut(&mut self) -> &mut ConsensusHeader {
-        &mut self.header
-    }
-}
-
-impl ConsensusMessage for Candidate {
+impl StepMessage for Candidate {
     fn signable(&self) -> Vec<u8> {
         self.candidate.header().hash.to_vec()
     }
