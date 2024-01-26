@@ -178,7 +178,6 @@ impl CertInfoRegistry {
             prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            msg_type: node_data::message::ConsensusMsgType::Quorum,
             signature: Signature::default(),
         };
 

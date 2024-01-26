@@ -63,7 +63,6 @@ impl<T: Operations> Generator<T> {
             prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            msg_type: node_data::message::ConsensusMsgType::Candidate,
             signature: Signature::default(),
         };
         let mut candidate = Candidate { header, candidate };

@@ -20,7 +20,7 @@ use node_data::message::payload::{
     QuorumType, Ratification, ValidationResult, Vote,
 };
 use node_data::message::{
-    payload, ConsensusHeader, ConsensusMsgType, Message, Payload, StepMessage,
+    payload, ConsensusHeader, Message, Payload, StepMessage,
 };
 
 use crate::user::committee::Committee;
@@ -48,7 +48,6 @@ impl MsgHandler for RatificationHandler {
             p.verify_signature()?;
             Self::verify_validation_result(
                 &msg.header,
-                ConsensusMsgType::Validation,
                 ru,
                 iteration,
                 round_committees,
@@ -83,9 +82,12 @@ impl MsgHandler for RatificationHandler {
         }
 
         // Collect vote, if msg payload is of ratification type
-        if let Some((sv, quorum_reached)) =
-            self.aggregator.collect_vote(committee, p.header(), &p.vote)
-        {
+        if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
+            committee,
+            p.header(),
+            &p.vote,
+            p.get_step(),
+        ) {
             // Record any signature in global registry
             _ = self.sv_registry.lock().await.add_step_votes(
                 iteration,
@@ -120,9 +122,12 @@ impl MsgHandler for RatificationHandler {
         let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((sv, quorum_reached)) =
-            self.aggregator.collect_vote(committee, p.header(), &p.vote)
-        {
+        if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
+            committee,
+            p.header(),
+            &p.vote,
+            p.get_step(),
+        ) {
             // Record any signature in global registry
             if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(
@@ -166,7 +171,6 @@ impl RatificationHandler {
         ratification: ledger::StepVotes,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
-            msg_type: ConsensusMsgType::Quorum,
             pubkey_bls: ru.pubkey_bls.clone(),
             prev_block_hash: ru.hash(),
             round: ru.round,
@@ -203,7 +207,6 @@ impl RatificationHandler {
     /// Verifies either valid or nil quorum of validation output
     fn verify_validation_result(
         header: &ConsensusHeader,
-        msg_type: ConsensusMsgType,
         ru: &RoundUpdate,
         iter: u8,
         round_committees: &RoundCommittees,
@@ -225,7 +228,7 @@ impl RatificationHandler {
 
                         verify_votes(
                             header,
-                            msg_type,
+                            StepName::Validation,
                             &result.vote,
                             result.sv.bitset,
                             result.sv.aggregate_signature.inner(),

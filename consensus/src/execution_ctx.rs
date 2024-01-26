@@ -232,7 +232,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     debug!(
                         event = "quorum",
                         src = "prev_step",
-                        msg_step = m.header.get_step(),
+                        msg_step = m.get_step(),
                         vote = %q.vote,
                     );
 
@@ -293,7 +293,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
                 self.future_msgs.lock().await.put_event(
                     msg.header.round,
-                    msg.header.get_step(),
+                    msg.get_step(),
                     msg,
                 );
 
@@ -312,7 +312,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
 
         let msg_topic = msg.topic();
         let msg_iter = msg.header.iteration;
-        let msg_step = msg.header.get_step();
+        let msg_step = msg.get_step();
         let msg_round = msg.header.round;
         trace!("collecting msg {msg:#?}");
 
@@ -388,7 +388,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     debug!(
                         event = "republish",
                         src = "future_msgs",
-                        msg_step = msg.header.get_step(),
+                        msg_step = msg.get_step(),
                         msg_round = msg.header.round,
                         msg_topic = ?msg.topic(),
                     );

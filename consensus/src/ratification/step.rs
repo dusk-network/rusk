@@ -65,7 +65,6 @@ pub fn build_ratification_payload(
         prev_block_hash: ru.hash(),
         round: ru.round,
         iteration,
-        msg_type: message::ConsensusMsgType::Ratification,
         signature: Signature::default(),
     };
 

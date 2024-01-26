@@ -136,7 +136,7 @@ impl<'p, D: Database> Executor<'p, D> {
 
     async fn collect_inbound_msg(&self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
-        let step = hdr.get_step();
+        let step = msg.get_step();
         debug!(
             event = "msg received",
             from = hdr.pubkey_bls.to_bs58(),

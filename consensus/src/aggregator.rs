@@ -29,9 +29,9 @@ impl Aggregator {
         committee: &Committee,
         header: &ConsensusHeader,
         vote: &Vote,
+        msg_step: u16,
     ) -> Option<(StepVotes, bool)> {
         let signature = header.signature.inner();
-        let msg_step = header.get_step();
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
@@ -181,6 +181,7 @@ mod tests {
     use dusk_bytes::DeserializableSlice;
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
+    use node_data::message::StepMessage;
     impl Aggregator {
         pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
             if let Some(value) = self.0.get(&(step, vote)) {
@@ -249,7 +250,7 @@ mod tests {
 
             // Message headers to be used in test for voting for hash:
             // block_hash
-            input.push((msg.vote, msg.header));
+            input.push((msg.vote.clone(), msg));
         }
 
         // Execute sortition with specific config
@@ -283,15 +284,18 @@ mod tests {
         let mut collected_votes = 0;
         for i in 0..expected_members.len() - 1 {
             // Select provisioner
-            let (vote, h) =
+            let (vote, msg) =
                 input.get(expected_members[i]).expect("invalid index");
+
+            let h = msg.header();
+            let step = msg.get_step();
 
             let vote = vote.clone();
             // Last member's vote should reach the quorum
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
                 let (sv, quorum_reached) = a
-                    .collect_vote(&c, h, &vote)
+                    .collect_vote(&c, h, &vote, step)
                     .expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
@@ -307,19 +311,17 @@ mod tests {
             }
 
             // Check collected votes
-            let (_, quorum_reached) = a.collect_vote(&c, h, &vote).unwrap();
+            let (_, quorum_reached) =
+                a.collect_vote(&c, h, &vote, step).unwrap();
 
             assert!(!quorum_reached, "quorum should not be reached yet");
 
             collected_votes += expected_votes[i];
-            assert_eq!(
-                a.get_total(h.get_step(), vote.clone()),
-                Some(collected_votes)
-            );
+            assert_eq!(a.get_total(step, vote.clone()), Some(collected_votes));
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
-                assert!(a.collect_vote(&c, h, &vote).is_none());
+                assert!(a.collect_vote(&c, h, &vote, step).is_none());
             }
         }
     }

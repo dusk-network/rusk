@@ -148,7 +148,7 @@ impl<D: Database> IterationCtx<D> {
         ru: &RoundUpdate,
         msg: Message,
     ) -> Option<Message> {
-        let committee = self.committees.get_committee(msg.header.get_step())?;
+        let committee = self.committees.get_committee(msg.get_step())?;
         match msg.topic() {
             node_data::message::Topics::Candidate => {
                 let mut handler = self.proposal_handler.lock().await;

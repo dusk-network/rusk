@@ -6,8 +6,8 @@
 
 use node_data::bls::PublicKey;
 use node_data::ledger::{Seed, StepVotes};
-use node_data::message::payload::{Quorum, Vote};
-use node_data::message::{ConsensusHeader, ConsensusMsgType};
+use node_data::message::payload::{self, Quorum, Vote};
+use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 
 use crate::commons::Error;
@@ -76,13 +76,6 @@ pub async fn verify_step_votes(
 ) -> Result<QuorumResult, Error> {
     let round = header.round;
     let iteration = header.iteration;
-    // ConsensusMsgType cannot be taken from header, since we can receive header
-    // from different messages (like Quorum)
-    let msg_type = match step_name {
-        StepName::Proposal => return Err(Error::InvalidStepNum),
-        StepName::Validation => ConsensusMsgType::Validation,
-        StepName::Ratification => ConsensusMsgType::Ratification,
-    };
 
     let generator = committees_set
         .read()
@@ -107,7 +100,7 @@ pub async fn verify_step_votes(
 
     verify_votes(
         header,
-        msg_type,
+        step_name,
         vote,
         sv.bitset,
         sv.aggregate_signature.inner(),
@@ -130,7 +123,7 @@ impl QuorumResult {
 
 pub fn verify_votes(
     header: &ConsensusHeader,
-    msg_type: ConsensusMsgType,
+    msg_type: StepName,
     vote: &Vote,
     bitset: u64,
     signature: &[u8; 48],
@@ -196,15 +189,21 @@ impl Cluster<PublicKey> {
 
 fn verify_step_signature(
     header: &ConsensusHeader,
-    msg_type: ConsensusMsgType,
+    msg_type: StepName,
     vote: &Vote,
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],
 ) -> Result<(), Error> {
     // Compile message to verify
+    let msg_type = match msg_type {
+        StepName::Validation => payload::Validation::SIGN_SEED,
+        StepName::Ratification => payload::Ratification::SIGN_SEED,
+        StepName::Proposal => Err(Error::InvalidType)?,
+    };
+
     let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
     let mut msg = header.signable();
-    msg.extend_from_slice(&[msg_type as u8]);
+    msg.extend_from_slice(msg_type);
     vote.write(&mut msg).expect("Writing to vec should succeed");
     apk.verify(&sig, &msg)?;
     Ok(())
