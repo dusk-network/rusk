@@ -48,13 +48,26 @@ pub struct Message {
 
 impl Message {
     pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
-        self.header.compare(round, iteration, step)
+        self.header
+            .round
+            .cmp(&round)
+            .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
+            .into()
     }
     pub fn get_pubkey_bls(&self) -> &bls::PublicKey {
         &self.header.pubkey_bls
     }
     pub fn get_step(&self) -> u16 {
-        self.header.get_step()
+        match &self.payload {
+            Payload::Candidate(c) => c.get_step(),
+            Payload::Validation(v) => v.get_step(),
+            Payload::Ratification(r) => r.get_step(),
+            Payload::Quorum(_) => {
+                // This should be removed in future
+                StepName::Ratification.to_step(self.header.iteration)
+            }
+            _ => StepName::Proposal.to_step(self.header.iteration),
+        }
     }
 }
 
@@ -131,18 +144,6 @@ impl Serializable for Message {
         };
 
         Ok(message)
-    }
-}
-
-impl ConsensusHeader {
-    pub fn get_step(&self) -> u16 {
-        let step_name = match self.msg_type {
-            ConsensusMsgType::Candidate => StepName::Proposal,
-            ConsensusMsgType::Validation => StepName::Validation,
-            ConsensusMsgType::Ratification => StepName::Ratification,
-            ConsensusMsgType::Quorum => StepName::Ratification,
-        };
-        step_name.to_step(self.iteration)
     }
 }
 
@@ -285,7 +286,6 @@ impl Message {
 #[derive(Default, Clone, PartialEq, Eq)]
 #[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
 pub struct ConsensusHeader {
-    pub msg_type: ConsensusMsgType,
     pub prev_block_hash: Hash,
     pub round: u64,
     pub iteration: u8,
@@ -293,37 +293,9 @@ pub struct ConsensusHeader {
     pub signature: Signature,
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(any(feature = "faker", test), derive(fake::Dummy))]
-pub enum ConsensusMsgType {
-    #[default]
-    Candidate = 0,
-    Validation = 1,
-    Ratification = 2,
-    Quorum = 3,
-}
-
-impl TryFrom<u8> for ConsensusMsgType {
-    type Error = io::Error;
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        let ret = match value {
-            0 => Self::Candidate,
-            1 => Self::Validation,
-            2 => Self::Ratification,
-            3 => Self::Quorum,
-            _ => Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                value.to_string(),
-            ))?,
-        };
-        Ok(ret)
-    }
-}
-
 impl std::fmt::Debug for ConsensusHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConsensusHeader")
-            .field("msg_type", &self.msg_type)
             .field("pubkey_bls", &to_str(self.pubkey_bls.bytes().inner()))
             .field("round", &self.round)
             .field("iteration", &self.iteration)
@@ -333,7 +305,6 @@ impl std::fmt::Debug for ConsensusHeader {
 
 impl Serializable for ConsensusHeader {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
-        w.write_all(&[self.msg_type as u8])?;
         w.write_all(&self.prev_block_hash)?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.iteration])?;
@@ -347,7 +318,6 @@ impl Serializable for ConsensusHeader {
     where
         Self: Sized,
     {
-        let msg_type = Self::read_u8(r)?.try_into()?;
         let prev_block_hash = Self::read_bytes(r)?;
         let round = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
@@ -361,7 +331,6 @@ impl Serializable for ConsensusHeader {
         let signature = Self::read_bytes(r)?.into();
 
         Ok(ConsensusHeader {
-            msg_type,
             pubkey_bls,
             prev_block_hash,
             round,
@@ -372,13 +341,6 @@ impl Serializable for ConsensusHeader {
 }
 
 impl ConsensusHeader {
-    pub fn compare(&self, round: u64, iteration: u8, step: StepName) -> Status {
-        self.round
-            .cmp(&round)
-            .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
-            .into()
-    }
-
     pub fn compare_round(&self, round: u64) -> Status {
         if self.round == round {
             return Status::Present;
@@ -996,9 +958,15 @@ impl<M: Clone> AsyncQueue<M> {
 }
 
 pub trait StepMessage {
+    const SIGN_SEED: &'static [u8];
+    const STEP_NAME: StepName;
     fn signable(&self) -> Vec<u8>;
     fn header(&self) -> &ConsensusHeader;
     fn header_mut(&mut self) -> &mut ConsensusHeader;
+
+    fn get_step(&self) -> u16 {
+        Self::STEP_NAME.to_step(self.header().iteration)
+    }
 
     fn verify_signature(&self) -> Result<(), dusk_bls12_381_sign::Error> {
         let signature = self.header().signature.inner();
@@ -1021,9 +989,11 @@ pub trait StepMessage {
 }
 
 impl StepMessage for Validation {
+    const SIGN_SEED: &'static [u8] = &[1u8];
+    const STEP_NAME: StepName = StepName::Validation;
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
-        signable.extend_from_slice(&[ConsensusMsgType::Validation as u8]);
+        signable.extend_from_slice(Self::SIGN_SEED);
         self.vote
             .write(&mut signable)
             .expect("Writing to vec should succeed");
@@ -1038,9 +1008,11 @@ impl StepMessage for Validation {
 }
 
 impl StepMessage for Ratification {
+    const SIGN_SEED: &'static [u8] = &[2u8];
+    const STEP_NAME: StepName = StepName::Ratification;
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
-        signable.extend_from_slice(&[ConsensusMsgType::Ratification as u8]);
+        signable.extend_from_slice(Self::SIGN_SEED);
         self.vote
             .write(&mut signable)
             .expect("Writing to vec should succeed");
@@ -1055,6 +1027,8 @@ impl StepMessage for Ratification {
 }
 
 impl StepMessage for Candidate {
+    const SIGN_SEED: &'static [u8] = &[];
+    const STEP_NAME: StepName = StepName::Proposal;
     fn signable(&self) -> Vec<u8> {
         self.candidate.header().hash.to_vec()
     }
@@ -1079,7 +1053,6 @@ mod tests {
     #[test]
     fn test_serialize() {
         let consensus_header = ConsensusHeader {
-            msg_type: ConsensusMsgType::Quorum,
             iteration: 1,
             prev_block_hash: [2; 32],
             pubkey_bls: bls::PublicKey::from_sk_seed_u64(3),
