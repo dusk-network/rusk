@@ -16,7 +16,7 @@ use crate::user::committee::Committee;
 
 use crate::iteration_ctx::RoundCommittees;
 use node_data::message::payload::{QuorumType, Validation, Vote};
-use node_data::message::{payload, ConsensusMessage, Message, Payload};
+use node_data::message::{payload, Message, Payload, StepMessage};
 
 fn final_result(
     sv: StepVotes,

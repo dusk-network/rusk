@@ -16,7 +16,7 @@ use crate::merkle::merkle_root;
 use dusk_bytes::Serializable;
 use node_data::ledger;
 use node_data::message::payload::Candidate;
-use node_data::message::{ConsensusHeader, ConsensusMessage, Message};
+use node_data::message::{ConsensusHeader, Message, StepMessage};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;

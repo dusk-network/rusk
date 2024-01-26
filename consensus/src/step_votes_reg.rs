@@ -8,7 +8,7 @@ use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
 use node_data::ledger::{Certificate, IterationInfo, Signature, StepVotes};
 use node_data::message::payload::Vote;
-use node_data::message::{payload, ConsensusMessage, Message};
+use node_data::message::{payload, Message};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
@@ -182,13 +182,12 @@ impl CertInfoRegistry {
             signature: Signature::default(),
         };
 
-        let mut payload = payload::Quorum {
+        let payload = payload::Quorum {
             header,
             vote: result.vote.clone(),
             validation: result.cert.validation,
             ratification: result.cert.ratification,
         };
-        payload.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         Message::new_quorum(payload)
     }

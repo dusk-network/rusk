@@ -7,7 +7,7 @@
 use node_data::bls::PublicKey;
 use node_data::ledger::{Seed, StepVotes};
 use node_data::message::payload::{Quorum, Vote};
-use node_data::message::{ConsensusHeader, ConsensusMessage, ConsensusMsgType};
+use node_data::message::{ConsensusHeader, ConsensusMsgType};
 use node_data::{Serializable, StepName};
 
 use crate::commons::Error;
@@ -25,15 +25,6 @@ pub async fn verify_quorum(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
 ) -> Result<(), Error> {
-    quorum.verify_signature().map_err(|e| {
-        error!(
-            desc = "invalid signature",
-            signature = hex::encode(quorum.header.signature.inner()),
-            hdr = ?quorum.header,
-        );
-        e
-    })?;
-
     // Verify validation
     verify_step_votes(
         &quorum.header,

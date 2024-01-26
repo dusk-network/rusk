@@ -16,7 +16,7 @@ use crate::ratification::handler;
 use node_data::ledger::Signature;
 use node_data::message;
 use node_data::message::payload::{self, ValidationResult};
-use node_data::message::{AsyncQueue, ConsensusMessage, Message, Payload};
+use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

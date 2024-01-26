@@ -20,8 +20,7 @@ use node_data::message::payload::{
     QuorumType, Ratification, ValidationResult, Vote,
 };
 use node_data::message::{
-    payload, ConsensusHeader, ConsensusMessage, ConsensusMsgType, Message,
-    Payload,
+    payload, ConsensusHeader, ConsensusMsgType, Message, Payload, StepMessage,
 };
 
 use crate::user::committee::Committee;
@@ -175,14 +174,12 @@ impl RatificationHandler {
             signature: Signature::default(),
         };
 
-        let mut quorum = payload::Quorum {
+        let quorum = payload::Quorum {
             header,
             vote,
             validation,
             ratification,
         };
-
-        quorum.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
         Message::new_quorum(quorum)
     }

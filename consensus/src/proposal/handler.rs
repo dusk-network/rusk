@@ -13,7 +13,7 @@ use async_trait::async_trait;
 use node_data::message::payload::Candidate;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::{ConsensusMessage, Message, Payload};
+use node_data::message::{Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

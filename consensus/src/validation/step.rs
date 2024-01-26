@@ -12,9 +12,7 @@ use crate::validation::handler;
 use anyhow::anyhow;
 use node_data::ledger::{to_str, Block, Signature};
 use node_data::message::payload::{self, Vote};
-use node_data::message::{
-    self, AsyncQueue, ConsensusMessage, Message, Payload,
-};
+use node_data::message::{self, AsyncQueue, Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
