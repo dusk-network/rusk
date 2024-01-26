@@ -4,7 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
+use bls12_381_bls::PublicKey as BlsPublicKey;
 use dusk_bytes::Serializable;
 use rusk_abi::dusk::Dusk;
 use serde_derive::{Deserialize, Serialize};

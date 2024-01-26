@@ -10,7 +10,7 @@
 use alloc::vec::Vec;
 
 use dusk_bls12_381::BlsScalar;
-use dusk_pki::PublicKey;
+use jubjub_schnorr::PublicKey;
 
 const SCRATCH_SIZE: usize = 128;
 

@@ -8,9 +8,8 @@ use transfer_circuits::{
     DeriveKey, SendToContractObfuscatedCircuit, StcoCrossover, StcoMessage,
 };
 
-use dusk_pki::SecretSpendKey;
 use ff::Field;
-use phoenix_core::{Message, Note};
+use phoenix_core::{Message, Note, SecretKey as SecretSpendKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 

@@ -5,8 +5,7 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_merkle::Aggregate;
-use dusk_pki::{Ownable, PublicSpendKey};
-use phoenix_core::{Note, NoteType};
+use phoenix_core::{Note, NoteType, Ownable, PublicKey as PublicSpendKey};
 use poseidon_merkle::{Item, Opening, Tree};
 
 use dusk_plonk::prelude::*;
@@ -69,9 +68,9 @@ impl<T, const H: usize, const A: usize> CircuitInput<T, H, A> {
         &self.nullifier
     }
 
-    pub fn to_witness<C: Composer>(
+    pub fn to_witness(
         &self,
-        composer: &mut C,
+        composer: &mut Composer,
     ) -> Result<WitnessInput, Error> {
         let nullifier = self.nullifier;
 

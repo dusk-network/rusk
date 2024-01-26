@@ -10,7 +10,7 @@ use rand::prelude::*;
 use rand::rngs::StdRng;
 use tracing::info;
 
-use dusk_bls12_381_sign::SecretKey as BlsSecretKey;
+use bls12_381_bls::SecretKey as BlsSecretKey;
 
 pub static BLS_SK: LazyLock<BlsSecretKey> = LazyLock::new(|| {
     info!("Generating BlsSecretKey");

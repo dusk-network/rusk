@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use node_data::message::Payload;
 
-use dusk_bls12_381_sign::SecretKey;
+use bls12_381_bls::SecretKey;
 
 use node_data::bls::PublicKey;
 
@@ -73,14 +73,14 @@ impl RoundUpdate {
 #[derive(Debug, Clone, Copy)]
 pub enum Error {
     VoteSetTooSmall(u16),
-    VerificationFailed(dusk_bls12_381_sign::Error),
+    VerificationFailed(bls12_381_bls::Error),
     EmptyApk,
     InvalidType,
     InvalidStepNum,
 }
 
-impl From<dusk_bls12_381_sign::Error> for Error {
-    fn from(inner: dusk_bls12_381_sign::Error) -> Self {
+impl From<bls12_381_bls::Error> for Error {
+    fn from(inner: bls12_381_bls::Error) -> Self {
         Self::VerificationFailed(inner)
     }
 }

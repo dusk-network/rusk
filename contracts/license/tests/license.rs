@@ -8,9 +8,11 @@ extern crate alloc;
 
 use dusk_bls12_381::BlsScalar;
 use dusk_jubjub::{JubJubAffine, GENERATOR_EXTENDED};
-use dusk_pki::{PublicSpendKey, SecretSpendKey, StealthAddress};
 use dusk_plonk::prelude::*;
 use dusk_poseidon::sponge;
+use phoenix_core::{
+    PublicKey as PublicSpendKey, SecretKey as SecretSpendKey, StealthAddress,
+};
 use std::ops::Range;
 use std::sync::mpsc;
 

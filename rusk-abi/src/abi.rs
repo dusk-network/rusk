@@ -38,8 +38,8 @@ pub fn verify_proof(
 #[cfg(feature = "abi")]
 pub fn verify_schnorr(
     msg: dusk_bls12_381::BlsScalar,
-    pk: dusk_pki::PublicKey,
-    sig: dusk_schnorr::Signature,
+    pk: jubjub_schnorr::PublicKey,
+    sig: jubjub_schnorr::Signature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_SCHNORR, (msg, pk, sig))
@@ -49,8 +49,8 @@ pub fn verify_schnorr(
 #[cfg(feature = "abi")]
 pub fn verify_bls(
     msg: alloc::vec::Vec<u8>,
-    pk: dusk_bls12_381_sign::PublicKey,
-    sig: dusk_bls12_381_sign::Signature,
+    pk: bls12_381_bls::PublicKey,
+    sig: bls12_381_bls::Signature,
 ) -> bool {
     use crate::Query;
     host_query(Query::VERIFY_BLS, (msg, pk, sig))

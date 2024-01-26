@@ -4,8 +4,9 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{PublicSpendKey, SecretSpendKey};
-use phoenix_core::Note;
+use phoenix_core::{
+    Note, PublicKey as PublicSpendKey, SecretKey as SecretSpendKey,
+};
 use poseidon_merkle::{Item, Tree};
 use transfer_circuits::Error;
 use transfer_circuits::{

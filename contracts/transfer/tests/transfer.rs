@@ -9,10 +9,13 @@ use std::sync::mpsc;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::Serializable;
 use dusk_jubjub::{JubJubScalar, GENERATOR_NUMS_EXTENDED};
-use dusk_pki::{Ownable, PublicKey, PublicSpendKey, SecretSpendKey, ViewKey};
 use dusk_plonk::prelude::*;
+use jubjub_schnorr::PublicKey;
 use phoenix_core::transaction::*;
-use phoenix_core::{Fee, Message, Note};
+use phoenix_core::{
+    Fee, Message, Note, Ownable, PublicKey as PublicSpendKey,
+    SecretKey as SecretSpendKey, ViewKey,
+};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};

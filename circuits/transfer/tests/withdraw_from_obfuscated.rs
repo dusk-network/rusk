@@ -8,8 +8,7 @@ use transfer_circuits::{
     DeriveKey, WfoChange, WfoCommitment, WithdrawFromObfuscatedCircuit,
 };
 
-use dusk_pki::SecretSpendKey;
-use phoenix_core::{Message, Note};
+use phoenix_core::{Message, Note, SecretKey as SecretSpendKey};
 use rand::rngs::StdRng;
 use rand::{CryptoRng, RngCore, SeedableRng};
 

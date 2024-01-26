@@ -11,44 +11,17 @@ use std::sync::OnceLock;
 
 use rand_core::OsRng;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
 use dusk_bytes::{ParseHexStr, Serializable};
-use dusk_pki::{PublicKey, PublicSpendKey, SecretKey, SecretSpendKey};
 use dusk_plonk::prelude::*;
-use dusk_schnorr::Signature;
 use ff::Field;
-use rusk_abi::hash::Hasher;
+use jubjub_schnorr::{PublicKey, SecretKey};
+use phoenix_core::{PublicKey as PublicSpendKey, SecretKey as SecretSpendKey};
 use rusk_abi::PublicInput;
 use rusk_abi::{ContractData, ContractId, Session, VM};
 
 const POINT_LIMIT: u64 = 0x700000;
-
-#[test]
-fn hash_host() {
-    let test_inputs = [
-        "bb67ed265bf1db490ded2e1ede55c0d14c55521509dc73f9c354e98ab76c9625",
-        "7e74220084d75e10c89e9435d47bb5b8075991b2e29be3b84421dac3b1ee6007",
-        "5ce5481a4d78cca03498f72761da1b9f1d2aa8fb300be39f0e4fe2534f9d4308",
-    ];
-
-    let test_inputs: Vec<BlsScalar> = test_inputs
-        .iter()
-        .map(|input| BlsScalar::from_hex_str(input).unwrap())
-        .collect();
-
-    let mut input = Vec::with_capacity(3 * BlsScalar::SIZE);
-    for scalar in test_inputs {
-        input.extend(scalar.to_bytes());
-    }
-
-    assert_eq!(
-        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
-        format!("{:?}", Hasher::digest(input))
-    );
-}
 
 fn instantiate(vm: &VM, height: u64) -> (Session, ContractId) {
     let bytecode = include_bytes!(
@@ -101,7 +74,7 @@ fn hash() {
         .data;
 
     assert_eq!(
-        "0x0e17c56704c3ec2523d206e2e06e08b336e0079bb4c4c5b850d496125f73cdb9",
+        "0x58c751eca2d6a41227e0c52ef579f4688d698b3447a8bcc27fb2831e11d3239e",
         format!("{scalar:?}")
     );
 }
@@ -144,9 +117,9 @@ fn schnorr_signature() {
     let message = BlsScalar::random(&mut OsRng);
     let pk = PublicKey::from(&sk);
 
-    let sign = Signature::new(&sk, &mut OsRng, message);
+    let sign = sk.sign(&mut OsRng, message);
 
-    assert!(sign.verify(&pk, message));
+    assert!(pk.verify(&sign, message));
 
     let valid: bool = session
         .call(
@@ -227,7 +200,7 @@ impl TestCircuit {
 }
 
 impl Circuit for TestCircuit {
-    fn circuit<C: Composer>(&self, composer: &mut C) -> Result<(), Error> {
+    fn circuit(&self, composer: &mut Composer) -> Result<(), Error> {
         let a = composer.append_witness(self.a);
         let b = composer.append_witness(self.b);
 
@@ -239,7 +212,6 @@ impl Circuit for TestCircuit {
             .public(self.c);
 
         composer.append_gate(constraint);
-        composer.append_dummy_gates();
 
         Ok(())
     }
@@ -326,7 +298,7 @@ fn get_owner() -> &'static PublicSpendKey {
     static OWNER: OnceLock<PublicSpendKey> = OnceLock::new();
     OWNER.get_or_init(|| {
         let secret = SecretSpendKey::random(&mut OsRng);
-        secret.public_spend_key()
+        PublicSpendKey::from(secret)
     })
 }
 

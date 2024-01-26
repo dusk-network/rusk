@@ -15,9 +15,9 @@ use alloc::vec::Vec;
 use dusk_bls12_381::BlsScalar;
 use dusk_bytes::{DeserializableSlice, Serializable};
 use dusk_jubjub::{JubJubAffine, JubJubExtended};
-use dusk_pki::{Ownable, PublicKey, StealthAddress};
+use jubjub_schnorr::PublicKey;
 use phoenix_core::transaction::*;
-use phoenix_core::{Crossover, Fee, Message, Note};
+use phoenix_core::{Crossover, Fee, Message, Note, Ownable, StealthAddress};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rusk_abi::{
     ContractError, ContractId, PaymentInfo, PublicInput, STAKE_CONTRACT,

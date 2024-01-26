@@ -11,12 +11,10 @@ extern crate alloc;
 mod msg;
 use msg::*;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, SecretKey as BlsSecretKey};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
-    PublicKey as BlsPublicKey, SecretKey as BlsSecretKey,
-};
-use dusk_pki::{PublicKey, SecretKey};
 use ff::Field;
+use jubjub_schnorr::{PublicKey, SecretKey};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use rusk_abi::{ContractData, ContractId, Session, VM};

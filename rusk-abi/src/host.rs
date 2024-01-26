@@ -7,20 +7,18 @@
 use alloc::vec::Vec;
 use std::path::{Path, PathBuf};
 
-use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{
+use bls12_381_bls::{
     PublicKey as BlsPublicKey, Signature as BlsSignature, APK,
 };
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use dusk_pki::PublicKey;
 use dusk_plonk::prelude::{Proof, Verifier};
-use dusk_schnorr::Signature;
+use jubjub_schnorr::{PublicKey, Signature};
 use rkyv::ser::serializers::AllocSerializer;
 use rkyv::{Archive, Deserialize, Serialize};
 
 pub use piecrust::*;
 
-use crate::hash::Hasher;
 use crate::{Metadata, PublicInput, Query};
 
 /// Create a new session based on the given `vm`. The vm *must* have been
@@ -115,11 +113,9 @@ fn host_verify_bls(arg_buf: &mut [u8], arg_len: u32) -> u32 {
     wrap_host_query(arg_buf, arg_len, |(msg, pk, sig)| verify_bls(msg, pk, sig))
 }
 
-/// Compute the blake2b hash of the given scalars, returning the resulting
-/// scalar. The output of the hasher is truncated (last nibble) to fit onto a
-/// scalar.
+/// Computes the scalar from the given bytes using [BlsScalar::hash_to_scalar].
 pub fn hash(bytes: Vec<u8>) -> BlsScalar {
-    Hasher::digest(bytes)
+    BlsScalar::hash_to_scalar(&bytes)
 }
 
 /// Compute the poseidon hash of the given scalars
@@ -164,7 +160,7 @@ pub fn verify_proof(
 
 /// Verify a schnorr signature is valid for the given public key and message
 pub fn verify_schnorr(msg: BlsScalar, pk: PublicKey, sig: Signature) -> bool {
-    sig.verify(&pk, msg)
+    pk.verify(&sig, msg)
 }
 
 /// Verify a BLS signature is valid for the given public key and message

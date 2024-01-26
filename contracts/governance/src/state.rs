@@ -10,9 +10,9 @@ use core::sync::atomic::{AtomicPtr, Ordering};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
+use bls12_381_bls::{PublicKey as BlsPublicKey, Signature};
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, Signature};
-use dusk_pki::PublicKey;
+use jubjub_schnorr::PublicKey;
 
 use crate::Transfer;
 use contract_helpers::{Map, Set};

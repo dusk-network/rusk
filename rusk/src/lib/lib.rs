@@ -25,15 +25,15 @@ use futures::Stream;
 use tokio::spawn;
 use tracing::{error, info};
 
+use bls12_381_bls::PublicKey as BlsPublicKey;
 use bytecheck::CheckBytes;
 use dusk_bls12_381::BlsScalar;
-use dusk_bls12_381_sign::PublicKey as BlsPublicKey;
 use dusk_consensus::operations::VerificationOutput;
-use dusk_pki::{PublicKey, ViewKey};
+use jubjub_schnorr::PublicKey;
 use node_data::ledger::{SpentTransaction, Transaction};
 use parking_lot::{Mutex, MutexGuard};
 use phoenix_core::transaction::{StakeData, TreeLeaf, TRANSFER_TREE_DEPTH};
-use phoenix_core::{Message, Note, Transaction as PhoenixTransaction};
+use phoenix_core::{Message, Note, Transaction as PhoenixTransaction, ViewKey};
 use poseidon_merkle::Opening as PoseidonOpening;
 use rkyv::validation::validators::DefaultValidator;
 use rkyv::{Archive, Deserialize, Infallible, Serialize};

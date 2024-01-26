@@ -10,11 +10,10 @@ dusk-bytes = { version = "0.1" }
 
 ## feature local_prover
 once_cell = { version = "1.9", optional = true }
-dusk-plonk = { version = "0.16", optional = true }
+dusk-plonk = { version = "0.19", optional = true }
 dusk-wallet-core = { version = "0.24.0-plonk.0.16-rc.2", default-features = false }
-phoenix-core = { version = "0.21", optional = true }
-dusk-pki = { version = "0.13", optional = true }
-dusk-schnorr = { version = "0.14", optional = true }
+phoenix-core = { version = "0.25.0-rc.0", optional = true }
+jubjub-schnorr = { version = "0.1", optional = true }
 rand = { version = "0.8", optional = true }
 rusk-profile = { version = "0.6", path = "../rusk-profile", optional = true }
 transfer-circuits = { version = "0.5", path = "../circuits/transfer", optional = true }
@@ -29,8 +28,7 @@ local_prover = [
     "once_cell",
     "dusk-plonk",
     "phoenix-core",
-    "dusk-pki",
-    "dusk-schnorr",
+    "jubjub-schnorr",
     "rand",
     "rusk-profile",
     "transfer-circuits",

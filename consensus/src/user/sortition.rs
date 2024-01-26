@@ -103,7 +103,7 @@ mod tests {
     use crate::user::committee::Committee;
     use crate::user::provisioners::{Provisioners, DUSK};
     use crate::user::sortition::Config;
-    use dusk_bls12_381_sign::{PublicKey as BlsPublicKey, SecretKey};
+    use bls12_381_bls::{PublicKey as BlsPublicKey, SecretKey};
     use dusk_bytes::DeserializableSlice;
 
     use node_data::bls::PublicKey;

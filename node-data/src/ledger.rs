@@ -7,8 +7,8 @@
 use crate::bls::{self, PublicKeyBytes};
 use crate::Serializable;
 
+use dusk_bls12_381::BlsScalar;
 use dusk_bytes::DeserializableSlice;
-use rusk_abi::hash::Hasher;
 use sha3::Digest;
 use std::io::{self, Read, Write};
 
@@ -109,7 +109,7 @@ pub struct SpentTransaction {
 
 impl Transaction {
     pub fn hash(&self) -> [u8; 32] {
-        Hasher::digest(self.inner.to_hash_input_bytes()).to_bytes()
+        BlsScalar::hash_to_scalar(&self.inner.to_hash_input_bytes()).to_bytes()
     }
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price
@@ -347,11 +347,11 @@ impl IterationsInfo {
 
     pub fn to_missed_generators(
         &self,
-    ) -> Result<Vec<dusk_bls12_381_sign::PublicKey>, io::Error> {
+    ) -> Result<Vec<bls12_381_bls::PublicKey>, io::Error> {
         self.cert_list
         .iter()
         .flatten()
-        .map(|(_, pk)| dusk_bls12_381_sign::PublicKey::from_slice(pk.inner()).map_err(|e|{
+        .map(|(_, pk)| bls12_381_bls::PublicKey::from_slice(pk.inner()).map_err(|e|{
             tracing::error!("Unable to generate missing generators from failed_iterations: {e:?}");
             io::Error::new(io::ErrorKind::InvalidData, "Error in deserialize")
         }))

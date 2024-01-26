@@ -14,12 +14,11 @@ use dusk_bls12_381::BlsScalar;
 use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 
-use dusk_pki::SecretSpendKey;
 use dusk_wallet_core::{self as wallet};
 use ff::Field;
 use parking_lot::MutexGuard;
 use phoenix_core::transaction::TreeLeaf;
-use phoenix_core::Note;
+use phoenix_core::{Note, SecretKey as SecretSpendKey};
 use rand::prelude::*;
 use rand::rngs::StdRng;
 use rusk::{Result, Rusk, RuskInner};

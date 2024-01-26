@@ -4,9 +4,8 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
-use dusk_pki::{Ownable, SecretKey, SecretSpendKey};
-use dusk_schnorr::Proof as SchnorrProof;
-use phoenix_core::Note;
+use jubjub_schnorr::{SecretKey, SignatureDouble as SchnorrProof};
+use phoenix_core::{Note, Ownable, SecretKey as SecretSpendKey};
 use rand_core::{CryptoRng, RngCore};
 
 use dusk_plonk::prelude::*;
@@ -27,8 +26,8 @@ impl From<SchnorrProof> for CircuitInputSignature {
 impl From<&SchnorrProof> for CircuitInputSignature {
     fn from(p: &SchnorrProof) -> Self {
         let u = *p.u();
-        let r = p.keys().R().as_ref().into();
-        let r_p = p.keys().R_prime().as_ref().into();
+        let r = p.R().into();
+        let r_p = p.R_prime().into();
 
         Self { u, r, r_p }
     }
@@ -51,8 +50,7 @@ impl CircuitInputSignature {
     ) -> Self {
         let sk_r = *ssk.sk_r(note.stealth_address()).as_ref();
         let sk_r = SecretKey::from(&sk_r);
-
-        let proof = SchnorrProof::new(&sk_r, rng, tx_hash);
+        let proof = sk_r.sign_double(rng, tx_hash);
 
         Self::from(proof)
     }

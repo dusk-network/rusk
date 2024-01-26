@@ -34,10 +34,6 @@ mod host;
 pub use host::*;
 
 pub mod dusk;
-#[doc(hidden)]
-pub mod hash;
-
-use hash::Hasher;
 
 // re-export `piecrust-uplink` such that `rusk-abi` is the only crate
 pub use piecrust_uplink::*;
@@ -69,9 +65,9 @@ const fn reserved(b: u8) -> ContractId {
 /// Generate a [`ContractId`] address from the given slice of bytes, that is
 /// also a valid [`BlsScalar`]
 pub fn gen_contract_id(bytes: &[u8]) -> ContractId {
-    let mut hasher = Hasher::new();
-    hasher.update(bytes);
-    ContractId::from_bytes(hasher.output())
+    let bytes = BlsScalar::hash_to_scalar(bytes).to_bytes();
+
+    ContractId::from_bytes(bytes)
 }
 
 /// Converts a `ContractId` to a `BlsScalar`

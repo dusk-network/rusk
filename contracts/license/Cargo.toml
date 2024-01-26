@@ -7,29 +7,29 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-dusk-bls12_381 = { version = "0.12", default-features = false, features = ["rkyv-impl"] }
+dusk-bls12_381 = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
 dusk-bytes = "0.1"
-dusk-jubjub = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-pki = { version = "0.13", default-features = false, features = ["rkyv-impl"] }
-dusk-poseidon = { version = "0.31", default-features = false, features = ["rkyv-impl", "alloc"] }
-poseidon-merkle = { version = "0.3", features = ["rkyv-impl", "zk", "size_32"] }
-dusk-plonk = { version = "0.16", default-features = false, features = ["rkyv-impl", "alloc"] }
+dusk-jubjub = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
+dusk-poseidon = { version = "0.33", default-features = false, features = ["rkyv-impl", "alloc"] }
+poseidon-merkle = { version = "0.5", features = ["rkyv-impl", "zk", "size_32"] }
+dusk-plonk = { version = "0.19", default-features = false, features = ["rkyv-impl", "alloc"] }
 rkyv = { version = "0.7", default-features = false, features = ["size_32"] }
 bytecheck = { version = "0.6", default-features = false }
 contract-helpers = { version = "0.1", path = "../../contract-helpers" }
-dusk-schnorr = { version = "0.14", default-features = false, features = ["rkyv-impl"] }
+jubjub-schnorr = { version = "0.1", default-features = false, features = ["rkyv-impl"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi" }
 
 [dev-dependencies]
+phoenix-core = { version = "0.25.0-rc.0", default-features = false, features = ["rkyv-impl", "alloc"] }
 rusk-abi = { version = "0.12.0-rc", path = "../../rusk-abi", default-features = false, features = ["host"] }
 rusk-profile = { version = "0.6", path = "../../rusk-profile"}
 license-circuits = { version = "0.1", path = "../../circuits/license" }
 rkyv = { version = "0.7", default-features = false }
 hex = "0.4"
 rand = "0.8"
-zk-citadel = "0.5"
+zk-citadel = "0.8"
 
 [build-dependencies]
 rusk-profile = { version = "0.6", path = "../../rusk-profile"}
