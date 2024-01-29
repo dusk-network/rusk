@@ -17,6 +17,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
 use dusk_consensus::operations::Error;
+use node_data::Serializable;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -592,26 +593,23 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
     }
 
     async fn adjust_round_base_timeout(&self) -> Duration {
-        let values = self
+        let metric = self
             .db
             .read()
             .await
             .view(|t| {
-                let values = AvgValidationTime::from_bytes(
-                    &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default(),
-                    5,
-                );
-
-                Ok(values)
+                let bytes = &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default();
+                let metric = AvgValidationTime::read(&mut &bytes[..])?;
+                Ok(metric)
             })
             .map_err(|err: anyhow::Error| {
                 error!("{err}");
                 Error::Failed
-            })
-            .expect("valid values"); // TODO:
+            });
 
         Duration::from_secs(
-            values
+            metric
+                .unwrap_or_default()
                 .average()
                 .map(|v| v as u64)
                 .unwrap_or(dusk_consensus::config::ROUND_BASE_TIMEOUT as u64),

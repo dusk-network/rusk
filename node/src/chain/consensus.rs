@@ -24,7 +24,7 @@ use tracing::{error, info, trace, warn};
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AvgValidationTime;
 use crate::database::rocksdb::MD_AVG_VALIDATION;
-use node_data::{ledger, StepName};
+use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -365,9 +365,13 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         let _ = db
             .update(|t| {
                 let bytes = &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default();
-                let mut values = AvgValidationTime::from_bytes(bytes, 5);
-                values.update(round, elapsed.as_secs() as u16);
-                t.op_write(MD_AVG_VALIDATION, values.to_bytes())
+
+                let mut metric = AvgValidationTime::read(&mut &bytes[..])?;
+                metric.update(round, elapsed.as_secs() as u16);
+                let mut bytes = Vec::new();
+                metric.write(&mut bytes)?;
+
+                t.op_write(MD_AVG_VALIDATION, bytes)
             })
             .map_err(|err: anyhow::Error| {
                 error!("{err}");
