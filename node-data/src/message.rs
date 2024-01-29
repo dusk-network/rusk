@@ -397,9 +397,9 @@ pub mod payload {
     pub struct Ratification {
         pub header: ConsensusHeader,
         pub vote: Vote,
-        pub sign_info: SignInfo,
         pub timestamp: u64,
         pub validation_result: ValidationResult,
+        pub sign_info: SignInfo,
     }
 
     #[derive(Debug, Clone)]
@@ -483,6 +483,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
             self.vote.write(w)?;
+            // sign_info at the end
             self.sign_info.write(w)?;
             Ok(())
         }
@@ -540,6 +541,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
             self.candidate.write(w)?;
+            // sign_info at the end
             self.sign_info.write(w)?;
             Ok(())
         }

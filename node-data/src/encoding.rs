@@ -277,9 +277,10 @@ impl Serializable for Ratification {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         self.header.write(w)?;
         self.vote.write(w)?;
-        self.sign_info.write(w)?;
         w.write_all(&self.timestamp.to_le_bytes())?;
         self.validation_result.write(w)?;
+        // sign_info at the end
+        self.sign_info.write(w)?;
 
         Ok(())
     }
@@ -290,9 +291,9 @@ impl Serializable for Ratification {
     {
         let header = ConsensusHeader::read(r)?;
         let vote = Vote::read(r)?;
-        let sign_info = SignInfo::read(r)?;
         let timestamp = Self::read_u64_le(r)?;
         let validation_result = ValidationResult::read(r)?;
+        let sign_info = SignInfo::read(r)?;
 
         Ok(Ratification {
             header,
