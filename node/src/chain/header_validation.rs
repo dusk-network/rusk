@@ -213,7 +213,6 @@ pub async fn verify_block_cert(
         iteration,
         round,
         prev_block_hash,
-        ..Default::default()
     };
     // Verify validation
     match verifiers::verify_step_votes(

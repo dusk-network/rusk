@@ -67,7 +67,7 @@ fn create_step_votes(
                     dusk_consensus::build_validation_payload(
                         vote, &ru, iteration,
                     )
-                    .header
+                    .sign_info
                     .signature
                 }
                 StepName::Ratification => {
@@ -79,7 +79,7 @@ fn create_step_votes(
                             ..Default::default()
                         },
                     )
-                    .header
+                    .sign_info
                     .signature
                 }
                 _ => unreachable!(),
