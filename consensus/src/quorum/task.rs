@@ -139,7 +139,6 @@ impl<'p, D: Database> Executor<'p, D> {
         let step = msg.get_step();
         debug!(
             event = "msg received",
-            from = hdr.pubkey_bls.to_bs58(),
             topic = ?msg.topic(),
             iteration = hdr.iteration,
             step,

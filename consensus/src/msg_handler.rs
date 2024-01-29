@@ -37,9 +37,11 @@ pub trait MsgHandler {
         committee: &Committee,
         round_committees: &RoundCommittees,
     ) -> Result<(), ConsensusError> {
+        let from =
+            msg.get_pubkey_bls().ok_or(ConsensusError::InvalidMsgType)?;
         debug!(
             event = "msg received",
-            from = msg.get_pubkey_bls().to_bs58(),
+            from = from.to_bs58(),
             topic = ?msg.topic(),
             step = msg.get_step(),
         );
@@ -50,7 +52,7 @@ pub trait MsgHandler {
             Status::Past => Err(ConsensusError::PastEvent),
             Status::Present => {
                 // Ensure the message originates from a committee member.
-                if !committee.is_member(msg.get_pubkey_bls()) {
+                if !committee.is_member(from) {
                     return Err(ConsensusError::NotCommitteeMember);
                 }
 

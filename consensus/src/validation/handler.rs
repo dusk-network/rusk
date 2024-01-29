@@ -103,10 +103,13 @@ impl MsgHandler for ValidationHandler {
         }
 
         // Collect vote, if msg payload is reduction type
-        if let Some((sv, quorum_reached)) =
-            self.aggr
-                .collect_vote(committee, p.header(), &p.vote, p.get_step())
-        {
+        if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
+            committee,
+            p.header(),
+            p.sign_info(),
+            &p.vote,
+            p.get_step(),
+        ) {
             // Record result in global round registry
             _ = self.sv_registry.lock().await.add_step_votes(
                 iteration,
@@ -144,10 +147,13 @@ impl MsgHandler for ValidationHandler {
         let p = Self::unwrap_msg(msg)?;
 
         // Collect vote, if msg payload is reduction type
-        if let Some((sv, quorum_reached)) =
-            self.aggr
-                .collect_vote(committee, p.header(), &p.vote, p.get_step())
-        {
+        if let Some((sv, quorum_reached)) = self.aggr.collect_vote(
+            committee,
+            p.header(),
+            p.sign_info(),
+            &p.vote,
+            p.get_step(),
+        ) {
             // Record result in global round registry
             if let Some(quorum_msg) =
                 self.sv_registry.lock().await.add_step_votes(

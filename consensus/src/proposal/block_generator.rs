@@ -6,9 +6,7 @@
 
 use crate::commons::{get_current_timestamp, RoundUpdate};
 use crate::operations::{CallParams, Operations};
-use node_data::ledger::{
-    to_str, Block, Certificate, IterationsInfo, Seed, Signature,
-};
+use node_data::ledger::{to_str, Block, Certificate, IterationsInfo, Seed};
 
 use crate::config;
 use crate::merkle::merkle_root;
@@ -16,7 +14,7 @@ use crate::merkle::merkle_root;
 use dusk_bytes::Serializable;
 use node_data::ledger;
 use node_data::message::payload::Candidate;
-use node_data::message::{ConsensusHeader, Message, StepMessage};
+use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -59,13 +57,16 @@ impl<T: Operations> Generator<T> {
         debug!("block: {:?}", &candidate);
 
         let header = ConsensusHeader {
-            pubkey_bls: ru.pubkey_bls.clone(),
             prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            signature: Signature::default(),
         };
-        let mut candidate = Candidate { header, candidate };
+        let sign_info = SignInfo::default();
+        let mut candidate = Candidate {
+            header,
+            candidate,
+            sign_info,
+        };
 
         candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
 

@@ -13,7 +13,6 @@ use std::marker::PhantomData;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
-use node_data::ledger::Signature;
 use node_data::message;
 use node_data::message::payload::{self, ValidationResult};
 use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
@@ -61,16 +60,16 @@ pub fn build_ratification_payload(
     result: &ValidationResult,
 ) -> payload::Ratification {
     let header = message::ConsensusHeader {
-        pubkey_bls: ru.pubkey_bls.clone(),
         prev_block_hash: ru.hash(),
         round: ru.round,
         iteration,
-        signature: Signature::default(),
     };
 
+    let sign_info = message::SignInfo::default();
     let mut ratification = message::payload::Ratification {
         header,
         vote: result.vote.clone(),
+        sign_info,
         validation_result: result.clone(),
         timestamp: get_current_timestamp(),
     };

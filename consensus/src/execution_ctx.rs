@@ -24,12 +24,12 @@ use node_data::StepName;
 use crate::config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 use crate::ratification::step::RatificationStep;
 use crate::validation::step::ValidationStep;
-use node_data::message::payload::ValidationResult;
+use node_data::message::payload::{QuorumType, ValidationResult};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::time;
 use tokio::time::Instant;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, trace, warn};
 
 /// ExecutionCtx encapsulates all data needed in the execution of consensus
 /// messages handlers.
@@ -301,6 +301,10 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             }
             Err(ConsensusError::PastEvent) => {
                 return self.process_past_events(msg).await;
+            }
+            Err(ConsensusError::InvalidValidation(QuorumType::NoQuorum)) => {
+                warn!(event = "No quorum reached", iter = msg.header.iteration);
+                return None;
             }
             // An error here means this message is invalid due to failed
             // verification.

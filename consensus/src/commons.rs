@@ -151,11 +151,10 @@ impl QuorumMsgSender {
     /// Sends an quorum (internally) to the quorum loop.
     pub(crate) async fn send(&self, msg: Message) -> bool {
         if let Payload::Quorum(q) = &msg.payload {
-            if q.header.signature.is_zeroed()
-                || q.validation.is_empty()
+            if q.validation.is_empty()
                 || q.ratification.is_empty()
                 || q.vote == Vote::NoCandidate
-            // TODO: Change me accoringly to https://github.com/dusk-network/rusk/issues/1268
+            // TODO: Change me accordingly to https://github.com/dusk-network/rusk/issues/1268
             {
                 return false;
             }
@@ -167,7 +166,6 @@ impl QuorumMsgSender {
                 iteration = msg.header.iteration,
                 validation = ?q.validation,
                 ratification = ?q.ratification,
-                signature = to_str(q.header.signature.inner()),
             );
 
             let _ = self

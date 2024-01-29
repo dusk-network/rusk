@@ -101,7 +101,7 @@ impl<D: Database> ProposalHandler<D> {
             return Err(ConsensusError::InvalidBlock);
         }
 
-        if !committee.is_member(&msg.header.pubkey_bls) {
+        if !committee.is_member(&p.sign_info.signer) {
             return Err(ConsensusError::NotCommitteeMember);
         }
 

@@ -10,7 +10,7 @@ use dusk_bytes::Serializable;
 use node_data::bls::PublicKey;
 use node_data::ledger::{to_str, Signature, StepVotes};
 use node_data::message::payload::Vote;
-use node_data::message::ConsensusHeader;
+use node_data::message::{ConsensusHeader, SignInfo};
 use std::collections::BTreeMap;
 use std::fmt;
 use tracing::{debug, error, warn};
@@ -28,14 +28,16 @@ impl Aggregator {
         &mut self,
         committee: &Committee,
         header: &ConsensusHeader,
+        sign_info: &SignInfo,
         vote: &Vote,
         msg_step: u16,
     ) -> Option<(StepVotes, bool)> {
-        let signature = header.signature.inner();
+        let signature = sign_info.signature.inner();
+        let signer = &sign_info.signer;
         // Get weight for this pubkey bls. If votes_for returns None, it means
         // the key is not a committee member, respectively we should not
         // process a vote from it.
-        if let Some(weight) = committee.votes_for(&header.pubkey_bls) {
+        if let Some(weight) = committee.votes_for(signer) {
             let (aggr_sign, cluster) = self
                 .0
                 .entry((msg_step, vote.clone()))
@@ -48,10 +50,10 @@ impl Aggregator {
             // slot per committee, then a single vote is taken into
             // account (if more votes for the same slot are
             // propagated, those are discarded).
-            if cluster.contains_key(&header.pubkey_bls) {
+            if cluster.contains_key(signer) {
                 warn!(
                     event = "discarded duplicated vote",
-                    from = header.pubkey_bls.to_bs58(),
+                    from = signer.to_bs58(),
                     %vote,
                     msg_step,
                     msg_round = header.round,
@@ -68,7 +70,7 @@ impl Aggregator {
             // An committee member is allowed to vote only once per a single
             // step. Its vote has a weight value depending on how many times it
             // has been extracted in the sortition for this step.
-            let weight = cluster.set_weight(&header.pubkey_bls, weight);
+            let weight = cluster.set_weight(signer, weight);
             debug_assert!(weight.is_some());
 
             let total = cluster.total_occurrences();
@@ -77,7 +79,7 @@ impl Aggregator {
             debug!(
                 event = "vote aggregated",
                 %vote,
-                from = header.pubkey_bls.to_bs58(),
+                from = signer.to_bs58(),
                 added = weight,
                 total,
                 target = quorum_target,
@@ -288,6 +290,7 @@ mod tests {
                 input.get(expected_members[i]).expect("invalid index");
 
             let h = msg.header();
+            let sign_info = msg.sign_info();
             let step = msg.get_step();
 
             let vote = vote.clone();
@@ -295,7 +298,7 @@ mod tests {
             if i == winning_index {
                 // (hash, sv) is only returned in case we reach the quorum
                 let (sv, quorum_reached) = a
-                    .collect_vote(&c, h, &vote, step)
+                    .collect_vote(&c, h, sign_info, &vote, step)
                     .expect("failed to reach quorum");
 
                 assert!(quorum_reached, "quorum should be reached");
@@ -312,7 +315,7 @@ mod tests {
 
             // Check collected votes
             let (_, quorum_reached) =
-                a.collect_vote(&c, h, &vote, step).unwrap();
+                a.collect_vote(&c, h, sign_info, &vote, step).unwrap();
 
             assert!(!quorum_reached, "quorum should not be reached yet");
 
@@ -321,7 +324,9 @@ mod tests {
 
             // Ensure a duplicated vote is discarded
             if i == 0 {
-                assert!(a.collect_vote(&c, h, &vote, step).is_none());
+                assert!(a
+                    .collect_vote(&c, h, sign_info, &vote, step)
+                    .is_none());
             }
         }
     }

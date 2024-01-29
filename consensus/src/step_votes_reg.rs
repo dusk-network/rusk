@@ -6,7 +6,7 @@
 
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{Certificate, IterationInfo, Signature, StepVotes};
+use node_data::ledger::{Certificate, IterationInfo, StepVotes};
 use node_data::message::payload::Vote;
 use node_data::message::{payload, Message};
 use std::collections::HashMap;
@@ -174,11 +174,9 @@ impl CertInfoRegistry {
         result: &CertificateInfo,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
-            pubkey_bls: ru.pubkey_bls.clone(),
             prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            signature: Signature::default(),
         };
 
         let payload = payload::Quorum {

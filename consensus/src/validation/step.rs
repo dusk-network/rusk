@@ -10,9 +10,11 @@ use crate::execution_ctx::ExecutionCtx;
 use crate::operations::Operations;
 use crate::validation::handler;
 use anyhow::anyhow;
-use node_data::ledger::{to_str, Block, Signature};
-use node_data::message::payload::{self, Vote};
-use node_data::message::{self, AsyncQueue, Message, Payload, StepMessage};
+use node_data::ledger::{to_str, Block};
+use node_data::message::payload::{Validation, Vote};
+use node_data::message::{
+    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, StepMessage,
+};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -123,7 +125,7 @@ impl<T: Operations + 'static> ValidationStep<T> {
         // Sign and construct validation message
         let validation = self::build_validation_payload(vote, ru, iteration);
         info!(event = "send_vote", vote = %validation.vote);
-        let msg = message::Message::new_validation(validation);
+        let msg = Message::new_validation(validation);
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -180,16 +182,19 @@ pub fn build_validation_payload(
     vote: Vote,
     ru: &RoundUpdate,
     iteration: u8,
-) -> payload::Validation {
-    let header = message::ConsensusHeader {
-        pubkey_bls: ru.pubkey_bls.clone(),
+) -> Validation {
+    let header = ConsensusHeader {
         prev_block_hash: ru.hash(),
         round: ru.round,
         iteration,
-        signature: Signature::default(),
     };
 
-    let mut validation = message::payload::Validation { header, vote };
+    let sign_info = SignInfo::default();
+    let mut validation = Validation {
+        header,
+        vote,
+        sign_info,
+    };
     validation.sign(&ru.secret_key, ru.pubkey_bls.inner());
     validation
 }

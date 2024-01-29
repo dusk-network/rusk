@@ -8,7 +8,6 @@ use crate::commons::{ConsensusError, RoundUpdate};
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::{SafeCertificateInfoRegistry, SvType};
 use async_trait::async_trait;
-use node_data::ledger::Signature;
 use node_data::{ledger, StepName};
 use tracing::{error, warn};
 
@@ -85,6 +84,7 @@ impl MsgHandler for RatificationHandler {
         if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
             committee,
             p.header(),
+            p.sign_info(),
             &p.vote,
             p.get_step(),
         ) {
@@ -125,6 +125,7 @@ impl MsgHandler for RatificationHandler {
         if let Some((sv, quorum_reached)) = self.aggregator.collect_vote(
             committee,
             p.header(),
+            p.sign_info(),
             &p.vote,
             p.get_step(),
         ) {
@@ -171,11 +172,9 @@ impl RatificationHandler {
         ratification: ledger::StepVotes,
     ) -> Message {
         let header = node_data::message::ConsensusHeader {
-            pubkey_bls: ru.pubkey_bls.clone(),
             prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            signature: Signature::default(),
         };
 
         let quorum = payload::Quorum {
