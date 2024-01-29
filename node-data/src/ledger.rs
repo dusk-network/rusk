@@ -274,7 +274,7 @@ pub struct Signature([u8; 48]);
 impl Signature {
     pub const EMPTY: [u8; 48] = [0u8; 48];
 
-    pub fn is_zeroed(&self) -> bool {
+    fn is_zeroed(&self) -> bool {
         self.0 == Self::EMPTY
     }
     pub fn inner(&self) -> &[u8; 48] {

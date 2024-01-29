@@ -5,7 +5,9 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use dusk_bytes::Serializable as DuskSerializable;
+use tracing::warn;
 
+use crate::bls::PublicKey;
 use crate::ledger::{to_str, Hash, Signature};
 use crate::StepName;
 use crate::{bls, ledger, Serializable};
@@ -54,8 +56,17 @@ impl Message {
             .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
             .into()
     }
-    pub fn get_pubkey_bls(&self) -> &bls::PublicKey {
-        &self.header.pubkey_bls
+    pub fn get_pubkey_bls(&self) -> Option<&bls::PublicKey> {
+        let signer = match &self.payload {
+            Payload::Candidate(c) => &c.sign_info().signer,
+            Payload::Validation(v) => &v.sign_info().signer,
+            Payload::Ratification(r) => &r.sign_info().signer,
+            msg => {
+                warn!("Calling get_pubkey_bls for {msg:?}");
+                return None;
+            }
+        };
+        Some(signer)
     }
     pub fn get_step(&self) -> u16 {
         match &self.payload {
@@ -289,14 +300,12 @@ pub struct ConsensusHeader {
     pub prev_block_hash: Hash,
     pub round: u64,
     pub iteration: u8,
-    pub pubkey_bls: bls::PublicKey,
-    pub signature: Signature,
 }
 
 impl std::fmt::Debug for ConsensusHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConsensusHeader")
-            .field("pubkey_bls", &to_str(self.pubkey_bls.bytes().inner()))
+            .field("prev_block_hash", &to_str(&self.prev_block_hash))
             .field("round", &self.round)
             .field("iteration", &self.iteration)
             .finish()
@@ -308,8 +317,6 @@ impl Serializable for ConsensusHeader {
         w.write_all(&self.prev_block_hash)?;
         w.write_all(&self.round.to_le_bytes())?;
         w.write_all(&[self.iteration])?;
-        w.write_all(self.pubkey_bls.bytes().inner())?;
-        w.write_all(self.signature.inner())?;
 
         Ok(())
     }
@@ -322,20 +329,10 @@ impl Serializable for ConsensusHeader {
         let round = Self::read_u64_le(r)?;
         let iteration = Self::read_u8(r)?;
 
-        // Read bls pubkey
-        let pubkey_bls = Self::read_bytes(r)?;
-        let pubkey_bls = pubkey_bls
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-
-        let signature = Self::read_bytes(r)?.into();
-
         Ok(ConsensusHeader {
-            pubkey_bls,
             prev_block_hash,
             round,
             iteration,
-            signature,
         })
     }
 }
@@ -355,10 +352,7 @@ impl ConsensusHeader {
 
     pub fn signable(&self) -> Vec<u8> {
         let mut buf = vec![];
-        buf.extend_from_slice(&self.round.to_le_bytes());
-        buf.extend_from_slice(&self.iteration.to_le_bytes());
-        buf.extend_from_slice(&self.prev_block_hash);
-
+        self.write(&mut buf).expect("Writing to vec should succeed");
         buf
     }
 }
@@ -393,7 +387,7 @@ pub mod payload {
     use std::fmt;
     use std::io::{self, Read, Write};
 
-    use super::ConsensusHeader;
+    use super::{ConsensusHeader, SignInfo};
 
     #[derive(Debug, Clone)]
     #[cfg_attr(
@@ -403,6 +397,7 @@ pub mod payload {
     pub struct Ratification {
         pub header: ConsensusHeader,
         pub vote: Vote,
+        pub sign_info: SignInfo,
         pub timestamp: u64,
         pub validation_result: ValidationResult,
     }
@@ -415,6 +410,7 @@ pub mod payload {
     pub struct Validation {
         pub header: ConsensusHeader,
         pub vote: Vote,
+        pub sign_info: SignInfo,
     }
 
     #[derive(Debug, Clone, Hash, Eq, PartialEq, Default, PartialOrd, Ord)]
@@ -487,6 +483,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
             self.vote.write(w)?;
+            self.sign_info.write(w)?;
             Ok(())
         }
 
@@ -496,8 +493,13 @@ pub mod payload {
         {
             let header = ConsensusHeader::read(r)?;
             let vote = Vote::read(r)?;
+            let sign_info = SignInfo::read(r)?;
 
-            Ok(Validation { header, vote })
+            Ok(Validation {
+                header,
+                vote,
+                sign_info,
+            })
         }
     }
 
@@ -506,6 +508,7 @@ pub mod payload {
     pub struct Candidate {
         pub header: ConsensusHeader,
         pub candidate: Block,
+        pub sign_info: SignInfo,
     }
 
     impl std::fmt::Debug for Candidate {
@@ -513,7 +516,7 @@ pub mod payload {
             f.debug_struct("Candidate")
                 .field(
                     "signature",
-                    &ledger::to_str(self.header.signature.inner()),
+                    &ledger::to_str(self.sign_info.signature.inner()),
                 )
                 .field("block", &self.candidate)
                 .finish()
@@ -522,7 +525,7 @@ pub mod payload {
 
     impl PartialEq<Self> for Candidate {
         fn eq(&self, other: &Self) -> bool {
-            self.header.signature.eq(&other.header.signature)
+            self.sign_info.signature.eq(&other.sign_info.signature)
                 && self
                     .candidate
                     .header()
@@ -537,6 +540,7 @@ pub mod payload {
         fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
             self.header.write(w)?;
             self.candidate.write(w)?;
+            self.sign_info.write(w)?;
             Ok(())
         }
 
@@ -546,8 +550,13 @@ pub mod payload {
         {
             let header = ConsensusHeader::read(r)?;
             let candidate = Block::read(r)?;
+            let sign_info = SignInfo::read(r)?;
 
-            Ok(Candidate { header, candidate })
+            Ok(Candidate {
+                header,
+                candidate,
+                sign_info,
+            })
         }
     }
     #[derive(Clone, Copy, Default)]
@@ -962,17 +971,18 @@ pub trait StepMessage {
     const STEP_NAME: StepName;
     fn signable(&self) -> Vec<u8>;
     fn header(&self) -> &ConsensusHeader;
-    fn header_mut(&mut self) -> &mut ConsensusHeader;
+    fn sign_info(&self) -> &SignInfo;
+    fn sign_info_mut(&mut self) -> &mut SignInfo;
 
     fn get_step(&self) -> u16 {
         Self::STEP_NAME.to_step(self.header().iteration)
     }
 
     fn verify_signature(&self) -> Result<(), dusk_bls12_381_sign::Error> {
-        let signature = self.header().signature.inner();
+        let signature = self.sign_info().signature.inner();
         let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;
         let pk =
-            dusk_bls12_381_sign::APK::from(self.header().pubkey_bls.inner());
+            dusk_bls12_381_sign::APK::from(self.sign_info().signer.inner());
         let msg = self.signable();
         pk.verify(&sig, &msg)
     }
@@ -983,14 +993,23 @@ pub trait StepMessage {
         pk: &dusk_bls12_381_sign::PublicKey,
     ) {
         let msg = self.signable();
+        let sign_info = self.sign_info_mut();
         let signature = sk.sign(pk, &msg).to_bytes();
-        self.header_mut().signature = signature.into();
+        sign_info.signature = signature.into();
+        sign_info.signer = PublicKey::new(*pk)
     }
 }
 
 impl StepMessage for Validation {
     const SIGN_SEED: &'static [u8] = &[1u8];
     const STEP_NAME: StepName = StepName::Validation;
+
+    fn sign_info(&self) -> &SignInfo {
+        &self.sign_info
+    }
+    fn sign_info_mut(&mut self) -> &mut SignInfo {
+        &mut self.sign_info
+    }
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
         signable.extend_from_slice(Self::SIGN_SEED);
@@ -1001,15 +1020,18 @@ impl StepMessage for Validation {
     }
     fn header(&self) -> &ConsensusHeader {
         &self.header
-    }
-    fn header_mut(&mut self) -> &mut ConsensusHeader {
-        &mut self.header
     }
 }
 
 impl StepMessage for Ratification {
     const SIGN_SEED: &'static [u8] = &[2u8];
     const STEP_NAME: StepName = StepName::Ratification;
+    fn sign_info(&self) -> &SignInfo {
+        &self.sign_info
+    }
+    fn sign_info_mut(&mut self) -> &mut SignInfo {
+        &mut self.sign_info
+    }
     fn signable(&self) -> Vec<u8> {
         let mut signable = self.header.signable();
         signable.extend_from_slice(Self::SIGN_SEED);
@@ -1021,22 +1043,62 @@ impl StepMessage for Ratification {
     fn header(&self) -> &ConsensusHeader {
         &self.header
     }
-    fn header_mut(&mut self) -> &mut ConsensusHeader {
-        &mut self.header
-    }
 }
 
 impl StepMessage for Candidate {
     const SIGN_SEED: &'static [u8] = &[];
     const STEP_NAME: StepName = StepName::Proposal;
+    fn sign_info(&self) -> &SignInfo {
+        &self.sign_info
+    }
+    fn sign_info_mut(&mut self) -> &mut SignInfo {
+        &mut self.sign_info
+    }
     fn signable(&self) -> Vec<u8> {
         self.candidate.header().hash.to_vec()
     }
     fn header(&self) -> &ConsensusHeader {
         &self.header
     }
-    fn header_mut(&mut self) -> &mut ConsensusHeader {
-        &mut self.header
+}
+
+#[derive(Clone, Default)]
+#[cfg_attr(any(feature = "faker", test), derive(fake::Dummy, Eq, PartialEq))]
+pub struct SignInfo {
+    pub signer: bls::PublicKey,
+    pub signature: Signature,
+}
+
+impl Serializable for SignInfo {
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
+        w.write_all(self.signer.bytes().inner())?;
+        w.write_all(self.signature.inner())?;
+
+        Ok(())
+    }
+
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
+    where
+        Self: Sized,
+    {
+        // Read bls pubkey
+        let signer = Self::read_bytes(r)?;
+        let signer = signer
+            .try_into()
+            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
+
+        let signature = Self::read_bytes(r)?.into();
+
+        Ok(Self { signer, signature })
+    }
+}
+
+impl std::fmt::Debug for SignInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SignInfo")
+            .field("signer", &to_str(self.signature.inner()))
+            .field("signature", &self.signature)
+            .finish()
     }
 }
 
@@ -1055,10 +1117,7 @@ mod tests {
         let consensus_header = ConsensusHeader {
             iteration: 1,
             prev_block_hash: [2; 32],
-            pubkey_bls: bls::PublicKey::from_sk_seed_u64(3),
             round: 4,
-
-            signature: [5; 48].into(),
         };
         assert_serialize(consensus_header.clone());
 
@@ -1089,9 +1148,15 @@ mod tests {
         let sample_block =
             ledger::Block::new(header, vec![]).expect("should be valid block");
 
+        let sign_info = SignInfo {
+            signer: bls::PublicKey::from_sk_seed_u64(3),
+            signature: [5; 48].into(),
+        };
+
         assert_serialize(payload::Candidate {
             header: consensus_header.clone(),
             candidate: sample_block,
+            sign_info: sign_info.clone(),
         });
 
         assert_serialize(ledger::StepVotes {
@@ -1102,11 +1167,13 @@ mod tests {
         assert_serialize(payload::Validation {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
+            sign_info: sign_info.clone(),
         });
 
         assert_serialize(payload::Ratification {
             header: consensus_header.clone(),
             vote: payload::Vote::Valid([4; 32]),
+            sign_info: sign_info.clone(),
             validation_result: ValidationResult {
                 sv: ledger::StepVotes {
                     bitset: 12345,
