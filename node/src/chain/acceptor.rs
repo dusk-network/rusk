@@ -363,6 +363,10 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.db.read().await.update(|update| {
             for tx in mrb.inner().txs().iter() {
                 database::Mempool::delete_tx(update, tx.hash())?;
+                let nullifiers = tx.to_nullifiers();
+                for orphan_tx in update.get_txs_by_nullifiers(&nullifiers) {
+                    database::Mempool::delete_tx(update, orphan_tx)?;
+                }
             }
             Ok(())
         })?;

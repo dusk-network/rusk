@@ -4,6 +4,7 @@
 //
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
+use std::collections::HashSet;
 use std::path::Path;
 
 pub mod rocksdb;
@@ -104,8 +105,8 @@ pub trait Mempool {
     /// Deletes a transaction from the mempool.
     fn delete_tx(&self, tx_hash: [u8; 32]) -> Result<bool>;
 
-    /// Checks if any of the passed nullifiers exists in the mempool.
-    fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool;
+    /// Get transactions hash from the mempool, searching by nullifiers
+    fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]>;
 
     /// Get an iterator over the mempool transactions sorted by gas price
     fn get_txs_sorted_by_fee(
