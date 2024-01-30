@@ -104,7 +104,6 @@ pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 #[derive(Clone)]
 struct IterationCerts {
     votes: HashMap<Vote, CertificateInfo>,
-    no_candidate: CertificateInfo,
     generator: PublicKeyBytes,
 }
 
@@ -112,19 +111,16 @@ impl IterationCerts {
     fn new(generator: PublicKeyBytes) -> Self {
         Self {
             votes: HashMap::new(),
-            no_candidate: CertificateInfo::new(Vote::NoCandidate),
             generator,
         }
     }
 
-    fn for_vote(&mut self, vote: &Vote) -> &mut CertificateInfo {
-        if vote == &Vote::NoCandidate {
-            return &mut self.no_candidate;
+    fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
+        if !self.votes.contains_key(vote) {
+            self.votes
+                .insert(vote.clone(), CertificateInfo::new(vote.clone()));
         }
-
-        self.votes
-            .entry(vote.clone())
-            .or_insert_with_key(|vote| CertificateInfo::new(vote.clone()))
+        self.votes.get_mut(vote).expect("Vote to be inserted")
     }
 }
 
@@ -160,7 +156,7 @@ impl CertInfoRegistry {
             .entry(iteration)
             .or_insert_with(|| IterationCerts::new(*generator));
 
-        let cert_info = cert.for_vote(vote);
+        let cert_info = cert.get_or_insert(vote);
 
         cert_info.add_sv(iteration, sv, svt, quorum_reached);
         cert_info
@@ -190,7 +186,7 @@ impl CertInfoRegistry {
     }
 
     pub(crate) fn get_nil_certificates(
-        &mut self,
+        &self,
         to: u8,
     ) -> Vec<Option<IterationInfo>> {
         let mut res = Vec::with_capacity(to as usize);
@@ -199,7 +195,11 @@ impl CertInfoRegistry {
             res.push(
                 self.cert_list
                     .get(&iteration)
-                    .map(|c| (&c.no_candidate, c.generator))
+                    .and_then(|iter| {
+                        iter.votes
+                            .get(&Vote::NoCandidate)
+                            .map(|ci| (ci, iter.generator))
+                    })
                     .filter(|(ci, _)| ci.is_ready())
                     .map(|(ci, pk)| (ci.cert, pk)),
             );
