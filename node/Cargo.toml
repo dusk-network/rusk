@@ -34,6 +34,7 @@ console-subscriber = { version = "0.1.8", optional = true }
 smallvec = "1.10.0"
 
 serde = "1.0"
+thiserror = "1"
 
 [dev-dependencies]
 fake = { version = "2.5", features = ['derive'] }

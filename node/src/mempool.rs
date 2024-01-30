@@ -11,37 +11,29 @@ use async_trait::async_trait;
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
 use std::sync::Arc;
+use thiserror::Error;
 use tokio::sync::RwLock;
 use tracing::{error, warn};
 
 const TOPICS: &[u8] = &[Topics::Tx as u8];
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 enum TxAcceptanceError {
+    #[error("this transaction exists in the mempool")]
     AlreadyExistsInMempool,
+    #[error("this transaction exists in the ledger")]
     AlreadyExistsInLedger,
+    #[error("this transaction's input(s) exists in the mempool")]
     NullifierExistsInMempool,
+    #[error("this transaction is invalid {0}")]
     VerificationFailed(String),
+    #[error("A generic error occurred {0}")]
+    Generic(anyhow::Error),
 }
 
-impl std::error::Error for TxAcceptanceError {}
-
-impl std::fmt::Display for TxAcceptanceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::AlreadyExistsInMempool => {
-                write!(f, "this transaction exists in the mempool")
-            }
-            Self::AlreadyExistsInLedger => {
-                write!(f, "this transaction exists in the ledger")
-            }
-            Self::VerificationFailed(inner) => {
-                write!(f, "this transaction is invalid {inner}")
-            }
-            Self::NullifierExistsInMempool => {
-                write!(f, "this transaction's input(s) exists in the mempool")
-            }
-        }
+impl From<anyhow::Error> for TxAcceptanceError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::Generic(err)
     }
 }
 
