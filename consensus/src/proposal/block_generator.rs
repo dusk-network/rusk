@@ -14,7 +14,7 @@ use crate::merkle::merkle_root;
 use dusk_bytes::Serializable;
 use node_data::ledger;
 use node_data::message::payload::Candidate;
-use node_data::message::{Header, Message, Topics};
+use node_data::message::{ConsensusHeader, Message, SignInfo, StepMessage};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -56,23 +56,21 @@ impl<T: Operations> Generator<T> {
 
         debug!("block: {:?}", &candidate);
 
-        let msg_header = Header {
-            pubkey_bls: ru.pubkey_bls.clone(),
+        let header = ConsensusHeader {
+            prev_block_hash: ru.hash(),
             round: ru.round,
-            block_hash: candidate.header().hash,
             iteration,
-            topic: Topics::Candidate,
+        };
+        let sign_info = SignInfo::default();
+        let mut candidate = Candidate {
+            header,
+            candidate,
+            sign_info,
         };
 
-        let signature = msg_header.sign(&ru.secret_key, ru.pubkey_bls.inner());
+        candidate.sign(&ru.secret_key, ru.pubkey_bls.inner());
 
-        Ok(Message::new_newblock(
-            msg_header,
-            Candidate {
-                candidate,
-                signature,
-            },
-        ))
+        Ok(Message::new_candidate(candidate))
     }
 
     async fn generate_block(

@@ -13,10 +13,9 @@ use std::marker::PhantomData;
 
 use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::ratification::handler;
-use node_data::ledger::to_str;
 use node_data::message;
-use node_data::message::payload::{Ratification, ValidationResult};
-use node_data::message::{AsyncQueue, Message, Payload, Topics};
+use node_data::message::payload::{self, ValidationResult};
+use node_data::message::{AsyncQueue, Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -37,25 +36,11 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
         result: &ValidationResult,
         outbound: AsyncQueue<Message>,
     ) -> Message {
-        let hdr = message::Header {
-            pubkey_bls: ru.pubkey_bls.clone(),
-            round: ru.round,
-            iteration,
-            block_hash: result.hash,
-            topic: Topics::Ratification,
-        };
-
-        let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
-
         // Sign and construct ratification message
-        let msg = Message::new_ratification(
-            hdr,
-            Ratification {
-                signature,
-                validation_result: result.clone(),
-                timestamp: get_current_timestamp(),
-            },
-        );
+        let ratification =
+            self::build_ratification_payload(ru, iteration, result);
+
+        let msg = Message::new_ratification(ratification);
 
         // Publish ratification vote
         info!(event = "send_vote", validation_bitset = result.sv.bitset);
@@ -67,6 +52,29 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
         msg
     }
+}
+
+pub fn build_ratification_payload(
+    ru: &RoundUpdate,
+    iteration: u8,
+    result: &ValidationResult,
+) -> payload::Ratification {
+    let header = message::ConsensusHeader {
+        prev_block_hash: ru.hash(),
+        round: ru.round,
+        iteration,
+    };
+
+    let sign_info = message::SignInfo::default();
+    let mut ratification = message::payload::Ratification {
+        header,
+        vote: result.vote.clone(),
+        sign_info,
+        validation_result: result.clone(),
+        timestamp: get_current_timestamp(),
+    };
+    ratification.sign(&ru.secret_key, ru.pubkey_bls.inner());
+    ratification
 }
 
 impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
@@ -106,7 +114,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
             name = self.name(),
             round = round,
             iter = iteration,
-            hash = to_str(&handler.validation_result().hash),
+            vote = ?handler.validation_result().vote,
             fsv_bitset = handler.validation_result().sv.bitset,
             quorum_type = format!("{:?}", handler.validation_result().quorum)
         )
@@ -122,7 +130,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
 
         if ctx.am_member(committee) {
             let mut handler = self.handler.lock().await;
-            let hash = to_str(&handler.validation_result().hash);
+            let vote = &handler.validation_result().vote;
 
             let vote_msg = Self::try_vote(
                 &ctx.round_update,
@@ -130,7 +138,7 @@ impl<T: Operations + 'static, DB: Database> RatificationStep<T, DB> {
                 handler.validation_result(),
                 ctx.outbound.clone(),
             )
-            .instrument(tracing::info_span!("ratification", hash,))
+            .instrument(tracing::info_span!("ratification", %vote))
             .await;
 
             // Collect my own vote

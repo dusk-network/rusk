@@ -85,14 +85,11 @@ impl<T: Operations + 'static, D: Database> ProposalStep<T, D> {
                     .collect(msg, &ctx.round_update, committee)
                     .await
                 {
-                    Ok(f) => {
-                        if let HandleMsgOutput::Ready(msg) = f {
-                            return Ok(msg);
-                        }
-                    }
+                    Ok(HandleMsgOutput::Ready(msg)) => return Ok(msg),
                     Err(e) => {
                         error!("invalid candidate generated due to {:?}", e)
                     }
+                    _ => {}
                 };
             } else {
                 error!("block generator couldn't create candidate block")

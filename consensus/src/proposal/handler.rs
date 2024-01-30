@@ -10,9 +10,10 @@ use crate::msg_handler::{HandleMsgOutput, MsgHandler};
 use crate::step_votes_reg::SafeCertificateInfoRegistry;
 use crate::user::committee::Committee;
 use async_trait::async_trait;
+use node_data::message::payload::Candidate;
 
 use crate::iteration_ctx::RoundCommittees;
-use node_data::message::{Message, Payload};
+use node_data::message::{Message, Payload, StepMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -22,7 +23,7 @@ pub struct ProposalHandler<D: Database> {
 }
 
 #[async_trait]
-impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
+impl<D: Database> MsgHandler for ProposalHandler<D> {
     /// Verifies if msg is a valid new_block message.
     fn verify(
         &self,
@@ -45,33 +46,26 @@ impl<D: Database> MsgHandler<Message> for ProposalHandler<D> {
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
         // store candidate block
-        if let Payload::Candidate(p) = &msg.payload {
-            self.db
-                .lock()
-                .await
-                .store_candidate_block(p.candidate.clone());
+        let p = Self::unwrap_msg(&msg)?;
+        self.db
+            .lock()
+            .await
+            .store_candidate_block(p.candidate.clone());
 
-            return Ok(HandleMsgOutput::Ready(msg));
-        }
-
-        Err(ConsensusError::InvalidMsgType)
+        Ok(HandleMsgOutput::Ready(msg))
     }
 
     async fn collect_from_past(
         &mut self,
-        msg: Message,
+        _msg: Message,
         _ru: &RoundUpdate,
         _committee: &Committee,
     ) -> Result<HandleMsgOutput, ConsensusError> {
-        Ok(HandleMsgOutput::Pending(msg))
+        Ok(HandleMsgOutput::Pending)
     }
 
     /// Handles of an event of step execution timeout
-    fn handle_timeout(
-        &mut self,
-        _ru: &RoundUpdate,
-        _iteration: u8,
-    ) -> Result<HandleMsgOutput, ConsensusError> {
+    fn handle_timeout(&self) -> Result<HandleMsgOutput, ConsensusError> {
         Ok(HandleMsgOutput::Ready(Message::empty()))
     }
 }
@@ -92,30 +86,32 @@ impl<D: Database> ProposalHandler<D> {
         msg: &Message,
         committee: &Committee,
     ) -> Result<(), ConsensusError> {
-        if let Payload::Candidate(p) = &msg.payload {
-            //  Verify new_block msg signature
-            if msg.header.verify_signature(&p.signature).is_err() {
-                return Err(ConsensusError::InvalidSignature);
-            }
+        let p = Self::unwrap_msg(msg)?;
+        //  Verify new_block msg signature
+        p.verify_signature()?;
 
-            if msg.header.block_hash != p.candidate.header().hash {
-                return Err(ConsensusError::InvalidBlockHash);
-            }
-
-            let tx_hashes: Vec<[u8; 32]> =
-                p.candidate.txs().iter().map(|t| t.hash()).collect();
-            let tx_root = merkle_root(&tx_hashes[..]);
-            if tx_root != p.candidate.header().txroot {
-                return Err(ConsensusError::InvalidBlock);
-            }
-
-            if !committee.is_member(&msg.header.pubkey_bls) {
-                return Err(ConsensusError::NotCommitteeMember);
-            }
-
-            return Ok(());
+        if msg.header.prev_block_hash != p.candidate.header().prev_block_hash {
+            return Err(ConsensusError::InvalidBlockHash);
         }
 
-        Err(ConsensusError::InvalidMsgType)
+        let tx_hashes: Vec<[u8; 32]> =
+            p.candidate.txs().iter().map(|t| t.hash()).collect();
+        let tx_root = merkle_root(&tx_hashes[..]);
+        if tx_root != p.candidate.header().txroot {
+            return Err(ConsensusError::InvalidBlock);
+        }
+
+        if !committee.is_member(&p.sign_info.signer) {
+            return Err(ConsensusError::NotCommitteeMember);
+        }
+
+        Ok(())
+    }
+
+    fn unwrap_msg(msg: &Message) -> Result<&Candidate, ConsensusError> {
+        match &msg.payload {
+            Payload::Candidate(c) => Ok(c),
+            _ => Err(ConsensusError::InvalidMsgType),
+        }
     }
 }

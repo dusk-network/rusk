@@ -11,7 +11,10 @@ use crate::operations::Operations;
 use crate::validation::handler;
 use anyhow::anyhow;
 use node_data::ledger::{to_str, Block};
-use node_data::message::{self, AsyncQueue, Message, Payload, Topics};
+use node_data::message::payload::{Validation, Vote};
+use node_data::message::{
+    AsyncQueue, ConsensusHeader, Message, Payload, SignInfo, StepMessage,
+};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
@@ -25,18 +28,28 @@ pub struct ValidationStep<T> {
 impl<T: Operations + 'static> ValidationStep<T> {
     pub(crate) fn spawn_try_vote(
         join_set: &mut JoinSet<()>,
-        candidate: Block,
-        ru: RoundUpdate,
         iteration: u8,
+        candidate: Option<Block>,
+        ru: RoundUpdate,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
-        let hash = to_str(&candidate.header().hash);
+        let hash = to_str(
+            &candidate
+                .as_ref()
+                .map(|c| c.header().hash)
+                .unwrap_or_default(),
+        );
         join_set.spawn(
             async move {
                 Self::try_vote(
-                    &candidate, &ru, iteration, outbound, inbound, executor,
+                    iteration,
+                    candidate.as_ref(),
+                    &ru,
+                    outbound,
+                    inbound,
+                    executor,
                 )
                 .await
             }
@@ -45,20 +58,26 @@ impl<T: Operations + 'static> ValidationStep<T> {
     }
 
     pub(crate) async fn try_vote(
-        candidate: &Block,
-        ru: &RoundUpdate,
         iteration: u8,
+        candidate: Option<&Block>,
+        ru: &RoundUpdate,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
         executor: Arc<Mutex<T>>,
     ) {
-        let header = candidate.header();
-
-        // A Validation step with empty/default Block produces a Nil Vote
-        if header.hash == [0u8; 32] {
-            Self::cast_vote([0u8; 32], ru, iteration, outbound, inbound).await;
+        if candidate.is_none() {
+            Self::cast_vote(
+                Vote::NoCandidate,
+                ru,
+                iteration,
+                outbound,
+                inbound,
+            )
+            .await;
             return;
         }
+        let candidate = candidate.expect("Candidate to be already checked");
+        let header = candidate.header();
 
         // Verify candidate header (all fields except the winning certificate)
         // NB: Winning certificate is produced only on reaching consensus
@@ -69,43 +88,44 @@ impl<T: Operations + 'static> ValidationStep<T> {
             .await
         {
             error!(event = "invalid_header", ?err, ?header);
+            // We should not vote Invalid if the candidate is not signed by the
+            // block producer.
+            // However, this is already verified in the Candidate message
+            // verification, so it's safe to vote invalid here
+            Self::cast_vote(
+                Vote::Invalid(header.hash),
+                ru,
+                iteration,
+                outbound,
+                inbound,
+            )
+            .await;
             return;
         };
 
         // Call Verify State Transition to make sure transactions set is valid
-        if let Err(err) = Self::call_vst(candidate, executor).await {
-            error!(event = "failed_vst_call", ?err);
-            return;
-        }
+        let vote = match Self::call_vst(candidate, executor).await {
+            Ok(_) => Vote::Valid(header.hash),
+            Err(err) => {
+                error!(event = "failed_vst_call", ?err);
+                Vote::Invalid(header.hash)
+            }
+        };
 
-        Self::cast_vote(header.hash, ru, iteration, outbound, inbound).await;
+        Self::cast_vote(vote, ru, iteration, outbound, inbound).await;
     }
 
     async fn cast_vote(
-        hash: [u8; 32],
+        vote: Vote,
         ru: &RoundUpdate,
         iteration: u8,
         outbound: AsyncQueue<Message>,
         inbound: AsyncQueue<Message>,
     ) {
-        let hdr = message::Header {
-            pubkey_bls: ru.pubkey_bls.clone(),
-            round: ru.round,
-            iteration,
-            block_hash: hash,
-            topic: Topics::Validation,
-        };
-
-        let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
-
         // Sign and construct validation message
-        let msg = message::Message::new_validation(
-            hdr,
-            message::payload::Validation { signature },
-        );
-
-        // Publish validation vote
-        info!(event = "send_vote");
+        let validation = self::build_validation_payload(vote, ru, iteration);
+        info!(event = "send_vote", vote = %validation.vote);
+        let msg = Message::new_validation(validation);
 
         // Publish
         outbound.send(msg.clone()).await.unwrap_or_else(|err| {
@@ -157,6 +177,28 @@ impl<T: Operations + 'static> ValidationStep<T> {
         Ok(())
     }
 }
+
+pub fn build_validation_payload(
+    vote: Vote,
+    ru: &RoundUpdate,
+    iteration: u8,
+) -> Validation {
+    let header = ConsensusHeader {
+        prev_block_hash: ru.hash(),
+        round: ru.round,
+        iteration,
+    };
+
+    let sign_info = SignInfo::default();
+    let mut validation = Validation {
+        header,
+        vote,
+        sign_info,
+    };
+    validation.sign(&ru.secret_key, ru.pubkey_bls.inner());
+    validation
+}
+
 impl<T: Operations + 'static> ValidationStep<T> {
     pub(crate) fn new(
         executor: Arc<Mutex<T>>,
@@ -175,15 +217,21 @@ impl<T: Operations + 'static> ValidationStep<T> {
         handler.reset(iteration);
 
         if let Payload::Candidate(p) = msg.clone().payload {
-            handler.candidate = p.candidate.clone();
+            handler.candidate = Some(p.candidate);
         }
+
+        let hash = handler
+            .candidate
+            .as_ref()
+            .map(|c| c.header().hash)
+            .unwrap_or_default();
 
         debug!(
             event = "init",
             name = self.name(),
             round,
             iter = iteration,
-            hash = to_str(&handler.candidate.header().hash),
+            hash = to_str(&hash),
         )
     }
 
@@ -198,15 +246,15 @@ impl<T: Operations + 'static> ValidationStep<T> {
             let candidate = self.handler.lock().await.candidate.clone();
 
             // Casting a NIL vote is disabled in Emergency Mode
-            let voting_enabled = candidate.header().hash != [0u8; 32]
+            let voting_enabled = candidate.is_some()
                 || ctx.iteration < config::EMERGENCY_MODE_ITERATION_THRESHOLD;
 
             if voting_enabled {
                 Self::spawn_try_vote(
                     &mut ctx.iter_ctx.join_set,
+                    ctx.iteration,
                     candidate,
                     ctx.round_update.clone(),
-                    ctx.iteration,
                     ctx.outbound.clone(),
                     ctx.inbound.clone(),
                     self.executor.clone(),

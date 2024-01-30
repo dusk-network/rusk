@@ -231,9 +231,9 @@ impl DataBrokerSrv {
         let block =
             res.ok_or_else(|| anyhow::anyhow!("could not find candidate"))?;
 
-        Ok(Message::new_candidate_resp(Box::new(
-            payload::CandidateResp { candidate: block },
-        )))
+        Ok(Message::new_get_candidate_resp(payload::GetCandidateResp {
+            candidate: block,
+        }))
     }
 
     /// Handles GetMempool requests.
@@ -384,7 +384,7 @@ impl DataBrokerSrv {
                             Ledger::fetch_block_by_height(&t, *height)
                                 .ok()
                                 .flatten()
-                                .map(|blk| Message::new_block(Box::new(blk)))
+                                .map(Message::new_block)
                         } else {
                             None
                         }
@@ -394,16 +394,17 @@ impl DataBrokerSrv {
                             Ledger::fetch_block(&t, hash)
                                 .ok()
                                 .flatten()
-                                .map(|blk| Message::new_block(Box::new(blk)))
+                                .map(Message::new_block)
                         } else {
                             None
                         }
                     }
                     InvType::MempoolTx => {
                         if let InvParam::Hash(hash) = &i.param {
-                            Mempool::get_tx(&t, *hash).ok().flatten().map(
-                                |tx| Message::new_transaction(Box::new(tx)),
-                            )
+                            Mempool::get_tx(&t, *hash)
+                                .ok()
+                                .flatten()
+                                .map(Message::new_transaction)
                         } else {
                             None
                         }

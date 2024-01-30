@@ -156,7 +156,7 @@ impl Header<'_> {
     }
 
     pub async fn seed(&self) -> String {
-        hex::encode(self.0.seed.0)
+        hex::encode(self.0.seed.inner())
     }
 
     pub async fn iteration(&self) -> u8 {

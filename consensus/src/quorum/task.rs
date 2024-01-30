@@ -10,6 +10,7 @@ use crate::queue::Queue;
 use crate::user::committee::CommitteeSet;
 use crate::user::provisioners::Provisioners;
 use node_data::ledger::{to_str, Block, Certificate};
+use node_data::message::payload::Vote;
 use node_data::message::{AsyncQueue, Message, Payload, Status};
 
 use crate::quorum::verifiers;
@@ -135,12 +136,10 @@ impl<'p, D: Database> Executor<'p, D> {
 
     async fn collect_inbound_msg(&self, msg: Message) -> Option<Block> {
         let hdr = &msg.header;
-        let step = hdr.get_step();
+        let step = msg.get_step();
         debug!(
             event = "msg received",
-            from = hdr.pubkey_bls.to_bs58(),
-            hash = to_str(&hdr.block_hash),
-            topic = ?hdr.topic,
+            topic = ?msg.topic(),
             iteration = hdr.iteration,
             step,
         );
@@ -152,22 +151,22 @@ impl<'p, D: Database> Executor<'p, D> {
         if let Payload::Quorum(quorum) = &msg.payload {
             // Verify quorum
             verifiers::verify_quorum(
-                msg.clone(),
+                quorum,
                 &self.committees_set,
                 self.ru.seed(),
             )
             .await
             .ok()?;
 
-            debug!("generate block from quorum msg");
-            let (cert, hash) =
-                (quorum.generate_certificate(), msg.header.block_hash);
-
             // Publish the quorum
-            self.publish(msg).await;
+            self.publish(msg.clone()).await;
 
-            // Create winning block
-            return self.create_winning_block(&hash, &cert).await;
+            if let Vote::Valid(hash) = quorum.vote {
+                // Create winning block
+                debug!("generate block from quorum msg");
+                let cert = quorum.generate_certificate();
+                return self.create_winning_block(&hash, &cert).await;
+            }
         }
 
         None
@@ -175,7 +174,7 @@ impl<'p, D: Database> Executor<'p, D> {
 
     // Publishes a message
     async fn publish(&self, msg: Message) {
-        let topic = msg.header.topic;
+        let topic = msg.topic();
         self.outbound_queue.send(msg).await.unwrap_or_else(|err| {
             error!("unable to publish msg(topic:{topic:?}) {err:?}")
         });

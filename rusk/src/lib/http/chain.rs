@@ -110,7 +110,7 @@ impl RuskNode {
         let tx = phoenix_core::Transaction::from_slice(tx)
             .map_err(|e| anyhow::anyhow!("Invalid Data {e:?}"))?
             .into();
-        let tx_message = Message::new_transaction(Box::new(tx));
+        let tx_message = Message::new_transaction(tx);
 
         let network = self.0.network();
         network.read().await.route_internal(tx_message);
