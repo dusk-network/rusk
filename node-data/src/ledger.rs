@@ -114,6 +114,13 @@ impl Transaction {
     pub fn gas_price(&self) -> u64 {
         self.inner.fee().gas_price
     }
+    pub fn to_nullifiers(&self) -> Vec<[u8; 32]> {
+        self.inner
+            .nullifiers()
+            .iter()
+            .map(|n| n.to_bytes())
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
