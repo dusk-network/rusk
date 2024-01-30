@@ -6,7 +6,6 @@
 
 use crate::database::{Ledger, Mempool};
 use crate::{database, vm, LongLivedService, Message, Network};
-use anyhow::anyhow;
 use async_trait::async_trait;
 use node_data::ledger::Transaction;
 use node_data::message::{AsyncQueue, Payload, Topics};
@@ -113,7 +112,12 @@ impl MempoolSrv {
         db: &Arc<RwLock<DB>>,
         vm: &Arc<RwLock<VM>>,
         tx: &Transaction,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), TxAcceptanceError> {
+        // VM Preverify call
+        if let Err(e) = vm.read().await.preverify(tx) {
+            Err(TxAcceptanceError::VerificationFailed(format!("{e:?}")))?;
+        }
+
         let hash = tx.hash();
 
         // Perform basic checks on the transaction
@@ -121,10 +125,10 @@ impl MempoolSrv {
             // ensure transaction does not exist in the mempool
 
             if view.get_tx_exists(hash)? {
-                return Err(anyhow!(TxAcceptanceError::AlreadyExistsInMempool));
+                return Err(TxAcceptanceError::AlreadyExistsInMempool);
             }
 
-            let nullifiers = tx
+            let nullifiers: Vec<_> = tx
                 .inner
                 .nullifiers()
                 .iter()
@@ -132,25 +136,24 @@ impl MempoolSrv {
                 .collect();
 
             // ensure nullifiers do not exist in the mempool
-            if view.get_any_nullifier_exists(nullifiers) {
-                return Err(anyhow!(
-                    TxAcceptanceError::NullifierExistsInMempool
-                ));
+            for m_tx_hash in view.get_txs_by_nullifiers(&nullifiers) {
+                if let Some(m_tx) = view.get_tx(m_tx_hash)? {
+                    if m_tx.inner.fee().gas_price < tx.inner.fee().gas_price {
+                        view.delete_tx(m_tx_hash)?;
+                    } else {
+                        return Err(
+                            TxAcceptanceError::NullifierExistsInMempool,
+                        );
+                    }
+                }
             }
 
             // ensure transaction does not exist in the blockchain
             if view.get_ledger_tx_exists(&hash)? {
-                return Err(anyhow!(TxAcceptanceError::AlreadyExistsInLedger));
+                return Err(TxAcceptanceError::AlreadyExistsInLedger);
             }
 
             Ok(())
-        })?;
-
-        // VM Preverify call
-        vm.read().await.preverify(tx).map_err(|e| {
-            anyhow::anyhow!(TxAcceptanceError::VerificationFailed(format!(
-                "{e:?}"
-            )))
         })?;
 
         tracing::info!(
