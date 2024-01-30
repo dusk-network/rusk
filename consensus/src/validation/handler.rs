@@ -121,8 +121,7 @@ impl MsgHandler for ValidationHandler {
             );
 
             if quorum_reached {
-                // if the votes converged for an empty hash we invoke halt
-                let vote = &p.vote;
+                let vote = p.vote;
 
                 let quorum_type = match vote {
                     Vote::NoCandidate => QuorumType::NilQuorum,
@@ -130,7 +129,7 @@ impl MsgHandler for ValidationHandler {
                     Vote::Valid(_) => QuorumType::ValidQuorum,
                 };
                 info!(event = "quorum reached", %vote);
-                return Ok(final_result(sv, p.vote, quorum_type));
+                return Ok(final_result(sv, vote, quorum_type));
             }
         }
 
