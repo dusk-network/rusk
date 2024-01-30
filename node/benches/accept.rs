@@ -160,7 +160,7 @@ pub fn verify_block_cert(c: &mut Criterion) {
                             [0u8; 32],
                             mrb_header.seed,
                             &provisioners,
-                            block_hash,
+                            Vote::Valid(block_hash),
                             mrb_header.height + 1,
                             &cert,
                             iteration,

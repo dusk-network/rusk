@@ -117,7 +117,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.prev_block_hash,
             prev_block_seed,
             self.provisioners.prev(),
-            self.prev_header.hash,
+            Vote::Valid(self.prev_header.hash),
             self.prev_header.height,
             &candidate_block.prev_block_cert,
             self.prev_header.iteration,
@@ -155,7 +155,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
                     self.prev_header.hash,
                     self.prev_header.seed,
                     self.provisioners.current(),
-                    [0u8; 32],
+                    Vote::NoCandidate,
                     candidate_block.height,
                     cert,
                     iter as u8,
@@ -181,7 +181,7 @@ impl<'a, DB: database::DB> Validator<'a, DB> {
             self.prev_header.hash,
             self.prev_header.seed,
             self.provisioners.current(),
-            candidate_block.hash,
+            Vote::Valid(candidate_block.hash),
             candidate_block.height,
             &candidate_block.cert,
             candidate_block.iteration,
@@ -196,16 +196,12 @@ pub async fn verify_block_cert(
     prev_block_hash: [u8; 32],
     curr_seed: Signature,
     curr_eligible_provisioners: &Provisioners,
-    block_hash: [u8; 32],
+    vote: Vote,
     round: u64,
     cert: &ledger::Certificate,
     iteration: u8,
 ) -> anyhow::Result<(QuorumResult, QuorumResult)> {
     let committee = RwLock::new(CommitteeSet::new(curr_eligible_provisioners));
-    let vote = match block_hash == [0; 32] {
-        true => Vote::NoCandidate,
-        false => Vote::Valid(block_hash),
-    };
 
     let mut result = (QuorumResult::default(), QuorumResult::default());
 
