@@ -25,8 +25,8 @@ impl StepName {
 }
 
 pub trait Serializable {
-    fn write<W: Write>(&self, writer: &mut W) -> io::Result<()>;
-    fn read<R: Read>(reader: &mut R) -> io::Result<Self>
+    fn write<W: Write>(&self, w: &mut W) -> io::Result<()>;
+    fn read<R: Read>(r: &mut R) -> io::Result<Self>
     where
         Self: Sized;
 

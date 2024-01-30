@@ -6,6 +6,7 @@
 
 use std::time::Duration;
 
+use dusk_consensus::commons::RoundUpdate;
 use node::chain;
 
 use criterion::async_executor::FuturesExecutor;
@@ -23,25 +24,26 @@ use dusk_consensus::user::{
     cluster::Cluster, committee::Committee, provisioners::Provisioners,
     sortition::Config as SortitionConfig,
 };
-use node_data::message::Topics;
-use node_data::StepName;
+use node_data::message::payload::{ValidationResult, Vote};
 use node_data::{
     bls::PublicKey,
-    ledger::{Certificate, Signature, StepVotes},
-    message,
+    ledger::{Certificate, StepVotes},
 };
+use node_data::{ledger, StepName};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
 fn create_step_votes(
-    seed: Signature,
-    round: u64,
-    block_hash: [u8; 32],
+    mrb_header: &ledger::Header,
+    vote: &Vote,
     step: StepName,
     iteration: u8,
     provisioners: &Provisioners,
     keys: &[(PublicKey, BlsSecretKey)],
 ) -> StepVotes {
+    let round = mrb_header.height + 1;
+    let seed = mrb_header.seed;
+
     let generator = provisioners.get_generator(iteration, seed, round);
 
     let sortition_config =
@@ -49,25 +51,40 @@ fn create_step_votes(
 
     let committee = Committee::new(provisioners, &sortition_config);
 
-    let topic = match step {
-        StepName::Ratification => Topics::Ratification,
-        StepName::Validation => Topics::Validation,
-        _ => unreachable!(),
-    };
-
-    let hdr = message::Header {
-        round,
-        iteration,
-        block_hash,
-        topic,
-        ..Default::default()
-    };
     let mut signatures = vec![];
     let mut cluster = Cluster::<PublicKey>::default();
     for (pk, sk) in keys.iter() {
         if let Some(weight) = committee.votes_for(pk) {
-            let sig = hdr.sign(sk, pk.inner());
-            signatures.push(BlsSignature::from_bytes(&sig).unwrap());
+            let vote = vote.clone();
+            let ru = RoundUpdate::new(
+                pk.clone(),
+                *sk,
+                mrb_header,
+                Duration::from_millis(1),
+            );
+            let sig = match step {
+                StepName::Validation => {
+                    dusk_consensus::build_validation_payload(
+                        vote, &ru, iteration,
+                    )
+                    .sign_info
+                    .signature
+                }
+                StepName::Ratification => {
+                    dusk_consensus::build_ratification_payload(
+                        &ru,
+                        iteration,
+                        &ValidationResult {
+                            vote,
+                            ..Default::default()
+                        },
+                    )
+                    .sign_info
+                    .signature
+                }
+                _ => unreachable!(),
+            };
+            signatures.push(BlsSignature::from_bytes(sig.inner()).unwrap());
             cluster.set_weight(pk, weight);
         }
     }
@@ -103,30 +120,35 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 keys.push((pk.clone(), sk));
                 provisioners.add_member_with_value(pk, 1000000000000)
             }
-            let height = 1;
-            let seed = Signature([5; 48]);
+            let mrb_header = ledger::Header {
+                seed: [5; 48].into(),
+                ..Default::default()
+            };
             let block_hash = [1; 32];
+            let vote = Vote::Valid(block_hash);
             let iteration = 0;
-            let mut cert = Certificate::default();
 
-            cert.validation = create_step_votes(
-                seed,
-                height,
-                block_hash,
+            let validation = create_step_votes(
+                &mrb_header,
+                &vote,
                 StepName::Validation,
                 iteration,
                 &provisioners,
                 &keys[..],
             );
-            cert.ratification = create_step_votes(
-                seed,
-                height,
-                block_hash,
+            let ratification = create_step_votes(
+                &mrb_header,
+                &vote,
                 StepName::Ratification,
                 iteration,
                 &provisioners,
                 &keys[..],
             );
+            let cert = Certificate {
+                validation,
+                ratification,
+            };
+
             group.bench_function(
                 BenchmarkId::new(
                     "verify_block_cert",
@@ -135,13 +157,13 @@ pub fn verify_block_cert(c: &mut Criterion) {
                 move |b| {
                     b.to_async(FuturesExecutor).iter(|| async {
                         chain::verify_block_cert(
-                            seed,
+                            [0u8; 32],
+                            mrb_header.seed,
                             &provisioners,
-                            block_hash,
-                            height,
+                            Vote::Valid(block_hash),
+                            mrb_header.height + 1,
                             &cert,
                             iteration,
-                            true,
                         )
                         .await
                         .expect("block to be verified")

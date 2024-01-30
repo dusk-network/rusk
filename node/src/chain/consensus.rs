@@ -100,7 +100,7 @@ impl Task {
         let ru = RoundUpdate::new(
             self.keys.1.clone(),
             self.keys.0,
-            most_recent_block,
+            most_recent_block.header(),
             round_base_timeout,
         );
 

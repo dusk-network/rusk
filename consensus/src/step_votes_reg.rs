@@ -6,23 +6,23 @@
 
 use crate::commons::RoundUpdate;
 use node_data::bls::PublicKeyBytes;
-use node_data::ledger::{to_str, Certificate, IterationInfo, StepVotes};
-use node_data::message::{payload, Message, Topics};
+use node_data::ledger::{Certificate, IterationInfo, StepVotes};
+use node_data::message::payload::Vote;
+use node_data::message::{payload, Message};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, error};
+use tracing::debug;
 
 pub(crate) enum SvType {
     Validation,
     Ratification,
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Clone)]
 struct CertificateInfo {
-    /// represents vote (candidate hash or nil)
-    hash: [u8; 32],
+    vote: Vote,
     cert: Certificate,
 
     quorum_reached_validation: bool,
@@ -33,8 +33,8 @@ impl fmt::Display for CertificateInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "cert_info: hash: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
-            to_str(&self.hash),
+            "cert_info: {}, validation: ({:?},{:?}), ratification: ({:?},{:?}) ",
+            self.vote,
             self.cert.validation,
             self.quorum_reached_validation,
             self.cert.ratification,
@@ -44,13 +44,22 @@ impl fmt::Display for CertificateInfo {
 }
 
 impl CertificateInfo {
+    pub(crate) fn new(vote: Vote) -> Self {
+        CertificateInfo {
+            vote,
+            cert: Certificate::default(),
+            quorum_reached_validation: false,
+            quorum_reached_ratification: false,
+        }
+    }
+
     pub(crate) fn add_sv(
         &mut self,
         iter: u8,
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
-    ) -> bool {
+    ) {
         match svt {
             SvType::Validation => {
                 self.cert.validation = sv;
@@ -74,8 +83,6 @@ impl CertificateInfo {
             data = format!("{}", self),
             quorum_reached
         );
-
-        self.is_ready()
     }
 
     /// Returns `true` if all fields are non-empty and quorum is reached for
@@ -96,35 +103,24 @@ pub type SafeCertificateInfoRegistry = Arc<Mutex<CertInfoRegistry>>;
 
 #[derive(Clone)]
 struct IterationCerts {
-    valid: Option<CertificateInfo>,
-    nil: CertificateInfo,
+    votes: HashMap<Vote, CertificateInfo>,
     generator: PublicKeyBytes,
 }
 
 impl IterationCerts {
     fn new(generator: PublicKeyBytes) -> Self {
         Self {
-            valid: None,
-            nil: CertificateInfo::default(),
+            votes: HashMap::new(),
             generator,
         }
     }
 
-    fn for_hash(&mut self, hash: [u8; 32]) -> Option<&mut CertificateInfo> {
-        if hash == [0u8; 32] {
-            return Some(&mut self.nil);
+    fn get_or_insert(&mut self, vote: &Vote) -> &mut CertificateInfo {
+        if !self.votes.contains_key(vote) {
+            self.votes
+                .insert(vote.clone(), CertificateInfo::new(vote.clone()));
         }
-        let cert = self.valid.get_or_insert_with(|| CertificateInfo {
-            hash,
-            ..Default::default()
-        });
-        match cert.hash == hash {
-            true => Some(cert),
-            false => {
-                error!("Cannot add step votes for hash {hash:?}");
-                None
-            }
-        }
+        self.votes.get_mut(vote).expect("Vote to be inserted")
     }
 }
 
@@ -149,7 +145,7 @@ impl CertInfoRegistry {
     pub(crate) fn add_step_votes(
         &mut self,
         iteration: u8,
-        hash: [u8; 32],
+        vote: &Vote,
         sv: StepVotes,
         svt: SvType,
         quorum_reached: bool,
@@ -160,39 +156,37 @@ impl CertInfoRegistry {
             .entry(iteration)
             .or_insert_with(|| IterationCerts::new(*generator));
 
-        cert.for_hash(hash).and_then(|cert| {
-            cert.add_sv(iteration, sv, svt, quorum_reached).then(|| {
-                Self::build_quorum_msg(self.ru.clone(), iteration, *cert)
-            })
-        })
+        let cert_info = cert.get_or_insert(vote);
+
+        cert_info.add_sv(iteration, sv, svt, quorum_reached);
+        cert_info
+            .is_ready()
+            .then(|| Self::build_quorum_msg(&self.ru, iteration, cert_info))
     }
 
     fn build_quorum_msg(
-        ru: RoundUpdate,
+        ru: &RoundUpdate,
         iteration: u8,
-        result: CertificateInfo,
+        result: &CertificateInfo,
     ) -> Message {
-        let hdr = node_data::message::Header {
-            pubkey_bls: ru.pubkey_bls.clone(),
+        let header = node_data::message::ConsensusHeader {
+            prev_block_hash: ru.hash(),
             round: ru.round,
             iteration,
-            block_hash: result.hash,
-            topic: Topics::Quorum,
         };
 
-        let signature = hdr.sign(&ru.secret_key, ru.pubkey_bls.inner());
-
         let payload = payload::Quorum {
-            signature,
+            header,
+            vote: result.vote.clone(),
             validation: result.cert.validation,
             ratification: result.cert.ratification,
         };
 
-        Message::new_quorum(hdr, payload)
+        Message::new_quorum(payload)
     }
 
     pub(crate) fn get_nil_certificates(
-        &mut self,
+        &self,
         to: u8,
     ) -> Vec<Option<IterationInfo>> {
         let mut res = Vec::with_capacity(to as usize);
@@ -201,7 +195,11 @@ impl CertInfoRegistry {
             res.push(
                 self.cert_list
                     .get(&iteration)
-                    .map(|c| (c.nil, c.generator))
+                    .and_then(|iter| {
+                        iter.votes
+                            .get(&Vote::NoCandidate)
+                            .map(|ci| (ci, iter.generator))
+                    })
                     .filter(|(ci, _)| ci.is_ready())
                     .map(|(ci, pk)| (ci.cert, pk)),
             );
