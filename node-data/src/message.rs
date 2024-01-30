@@ -56,13 +56,13 @@ impl Message {
             .then_with(|| self.get_step().cmp(&step.to_step(iteration)))
             .into()
     }
-    pub fn get_pubkey_bls(&self) -> Option<&bls::PublicKey> {
+    pub fn get_signer(&self) -> Option<&bls::PublicKey> {
         let signer = match &self.payload {
             Payload::Candidate(c) => &c.sign_info().signer,
             Payload::Validation(v) => &v.sign_info().signer,
             Payload::Ratification(r) => &r.sign_info().signer,
             msg => {
-                warn!("Calling get_pubkey_bls for {msg:?}");
+                warn!("Calling get_signer for {msg:?}");
                 return None;
             }
         };
