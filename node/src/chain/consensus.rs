@@ -138,7 +138,7 @@ impl Task {
     pub(crate) async fn abort_with_wait(&mut self) {
         if let Some((handle, cancel_chan)) = self.running_task.take() {
             if cancel_chan.send(0).is_err() {
-                warn!("Unable to send cancel for abort_with_wait")
+                trace!("Unable to send cancel for abort_with_wait")
             }
             if let Err(e) = handle.await {
                 warn!("Unable to wait for abort {e}")
