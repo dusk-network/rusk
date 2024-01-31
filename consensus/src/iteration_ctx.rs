@@ -7,9 +7,8 @@
 use crate::commons::Database;
 use crate::commons::RoundUpdate;
 
-use crate::config::{MAX_ITERATION_BASE_TIMEOUT, MAX_STEP_TIMEOUT};
+use crate::config::MAX_ITERATION_BASE_TIMEOUT;
 use crate::msg_handler::HandleMsgOutput;
-use crate::msg_handler::HandleMsgOutput::Ready;
 use crate::msg_handler::MsgHandler;
 
 use crate::user::committee::Committee;
