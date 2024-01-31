@@ -14,8 +14,8 @@ const AVG_VALUES_NUM: usize = 5;
 
 /// Implements logic of calculating the average of last N stored values
 #[derive(Debug)]
-pub struct AvgValidationTime(VecDeque<u16>, u64);
-impl AvgValidationTime {
+pub struct AverageElapsedTime(VecDeque<u16>, u64);
+impl AverageElapsedTime {
     pub fn update(&mut self, round: u64, value: u16) -> Option<u16> {
         match round.cmp(&self.1) {
             Ordering::Equal => {
@@ -48,13 +48,13 @@ impl AvgValidationTime {
     }
 }
 
-impl Default for AvgValidationTime {
+impl Default for AverageElapsedTime {
     fn default() -> Self {
         Self(VecDeque::with_capacity(AVG_VALUES_NUM), 0)
     }
 }
 
-impl Serializable for AvgValidationTime {
+impl Serializable for AverageElapsedTime {
     fn write<W: Write>(&self, w: &mut W) -> io::Result<()> {
         w.write_all(&self.1.to_le_bytes())?;
 
@@ -101,7 +101,7 @@ mod tests {
         ];
         let avg = 525 / AVG_VALUES_NUM as u16;
 
-        let mut metric = AvgValidationTime::default();
+        let mut metric = AverageElapsedTime::default();
         for (round, value, exp) in test_cases.iter() {
             assert_eq!(metric.update(*round, *value).is_some(), *exp);
         }
@@ -111,7 +111,7 @@ mod tests {
         let mut buf = Vec::new();
         metric.write(&mut buf).expect("all written");
         assert_eq!(
-            AvgValidationTime::read(&mut &buf[..])
+            AverageElapsedTime::read(&mut &buf[..])
                 .expect("all read")
                 .average()
                 .unwrap(),

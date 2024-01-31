@@ -24,7 +24,7 @@ use tracing::{info, warn};
 
 use super::consensus::Task;
 use crate::chain::header_validation::Validator;
-use crate::chain::metrics::AvgValidationTime;
+use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
     MD_AVG_VALIDATION, MD_HASH_KEY, MD_STATE_ROOT_KEY,
 };
@@ -595,8 +595,8 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         let metric = self.db.read().await.view(|t| {
             let bytes = &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default();
             let metric =
-                AvgValidationTime::read(&mut &bytes[..]).unwrap_or_default();
-            Ok::<AvgValidationTime, anyhow::Error>(metric)
+                AverageElapsedTime::read(&mut &bytes[..]).unwrap_or_default();
+            Ok::<AverageElapsedTime, anyhow::Error>(metric)
         });
 
         Duration::from_secs(

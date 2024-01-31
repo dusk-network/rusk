@@ -22,8 +22,10 @@ use tokio::task::JoinHandle;
 use tracing::{debug, error, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
-use crate::chain::metrics::AvgValidationTime;
-use crate::database::rocksdb::MD_AVG_VALIDATION;
+use crate::chain::metrics::AverageElapsedTime;
+use crate::database::rocksdb::{
+    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION,
+};
 use node_data::{ledger, Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
@@ -357,31 +359,28 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
         step_name: StepName,
         elapsed: Duration,
     ) -> Result<(), Error> {
-        if let StepName::Proposal | StepName::Ratification = step_name {
-            // Later on, measurements can be collected for all steps as well
-            return Ok(());
-        }
-
-        if elapsed.as_secs() == 0 {
-            return Ok(());
-        }
+        let db_key = match step_name {
+            StepName::Proposal => &MD_AVG_PROPOSAL[..],
+            StepName::Validation => &MD_AVG_VALIDATION[..],
+            StepName::Ratification => &MD_AVG_RATIFICATION[..],
+        };
 
         let db = self.db.read().await;
         let _ = db
             .update(|t| {
-                let mut metric = match &t.op_read(MD_AVG_VALIDATION)? {
-                    Some(bytes) => AvgValidationTime::read(&mut &bytes[..])
+                let mut metric = match &t.op_read(db_key)? {
+                    Some(bytes) => AverageElapsedTime::read(&mut &bytes[..])
                         .unwrap_or_default(),
-                    None => AvgValidationTime::default(),
+                    None => AverageElapsedTime::default(),
                 };
 
                 metric.update(round, elapsed.as_secs() as u16);
-                debug!(event = "avg_updated", metric = ?metric);
+                debug!(event = "avg_updated", ?step_name,  metric = ?metric);
 
                 let mut bytes = Vec::new();
                 metric.write(&mut bytes)?;
 
-                t.op_write(MD_AVG_VALIDATION, bytes)
+                t.op_write(db_key, bytes)
             })
             .map_err(|err: anyhow::Error| {
                 error!("{err}");
