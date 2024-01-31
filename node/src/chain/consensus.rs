@@ -19,7 +19,7 @@ use node_data::message::AsyncQueue;
 use node_data::message::{Payload, Topics};
 use tokio::sync::{oneshot, Mutex, RwLock};
 use tokio::task::JoinHandle;
-use tracing::{error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AvgValidationTime;
@@ -113,6 +113,7 @@ impl Task {
             event = "spawn consensus",
             id = self.task_id,
             round = ru.round,
+            timeout = ?round_base_timeout,
             all = all_num,           // all provisioners count
             eligible = eligible_num  // eligible provisioners count
         );
@@ -361,13 +362,22 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
             return Ok(());
         }
 
+        if elapsed.as_secs() == 0 {
+            return Ok(());
+        }
+
         let db = self.db.read().await;
         let _ = db
             .update(|t| {
-                let bytes = &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default();
+                let mut metric = match &t.op_read(MD_AVG_VALIDATION)? {
+                    Some(bytes) => AvgValidationTime::read(&mut &bytes[..])
+                        .unwrap_or_default(),
+                    None => AvgValidationTime::default(),
+                };
 
-                let mut metric = AvgValidationTime::read(&mut &bytes[..])?;
                 metric.update(round, elapsed.as_secs() as u16);
+                debug!(event = "avg_updated", metric = ?metric);
+
                 let mut bytes = Vec::new();
                 metric.write(&mut bytes)?;
 
