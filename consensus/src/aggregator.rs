@@ -171,8 +171,6 @@ impl AggrSignature {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use super::*;
     use crate::aggregator::Aggregator;
     use crate::commons::RoundUpdate;
@@ -184,6 +182,8 @@ mod tests {
     use hex::FromHex;
     use node_data::ledger::{Header, Seed};
     use node_data::message::StepMessage;
+    use std::collections::HashMap;
+
     impl Aggregator {
         pub fn get_total(&self, step: u16, vote: Vote) -> Option<usize> {
             if let Some(value) = self.0.get(&(step, vote)) {
@@ -241,7 +241,7 @@ mod tests {
                 pubkey_bls,
                 secret_key,
                 &mrb_header,
-                Duration::from_millis(1),
+                HashMap::new(),
             );
 
             let msg = crate::build_validation_payload(
