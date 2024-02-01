@@ -32,7 +32,7 @@ impl AverageElapsedTime {
         let sum: Duration = self.0.iter().sum();
 
         let mut res = sum.div(self.0.len() as u32);
-        if res.subsec_millis() >= 500 {
+        if res.subsec_millis() > 0 {
             res = Duration::from_secs(res.as_secs() + 1);
         }
 
