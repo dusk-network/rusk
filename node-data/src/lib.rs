@@ -11,7 +11,7 @@ pub mod message;
 
 use std::io::{self, Read, Write};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StepName {
     Proposal = 0,
     Validation = 1,
@@ -40,6 +40,11 @@ pub trait Serializable {
         let mut num = [0u8; 1];
         r.read_exact(&mut num)?;
         Ok(num[0])
+    }
+
+    fn read_u16_le<R: Read>(r: &mut R) -> io::Result<u16> {
+        let data = Self::read_bytes(r)?;
+        Ok(u16::from_le_bytes(data))
     }
 
     fn read_u64_le<R: Read>(r: &mut R) -> io::Result<u64> {
