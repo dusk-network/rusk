@@ -10,20 +10,13 @@
 use node_data::ledger::*;
 use node_data::message::payload::{QuorumType, Vote};
 use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Display;
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-use node_data::message::Payload;
-
 use dusk_bls12_381_sign::SecretKey;
-
 use node_data::bls::PublicKey;
-
-use node_data::message::{AsyncQueue, Message};
-
+use node_data::message::{AsyncQueue, Message, Payload};
 use node_data::StepName;
 use tracing::error;
 

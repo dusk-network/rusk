@@ -8,7 +8,7 @@ use crate::commons::Database;
 use crate::commons::{RoundUpdate, TimeoutSet};
 use std::cmp;
 
-use crate::config::{INCREASE_TIMEOUT, MAX_STEP_TIMEOUT};
+use crate::config::{MAX_STEP_TIMEOUT, TIMEOUT_INCREASE};
 use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
 
@@ -76,7 +76,7 @@ pub struct IterationCtx<DB: Database> {
     pub(crate) committees: RoundCommittees,
 
     /// Implements the adaptive timeout algorithm
-    base_timeouts: TimeoutSet,
+    timeouts: TimeoutSet,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -88,7 +88,7 @@ impl<D: Database> IterationCtx<D> {
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
-        base_timeouts: TimeoutSet,
+        timeouts: TimeoutSet,
     ) -> Self {
         Self {
             round,
@@ -98,7 +98,7 @@ impl<D: Database> IterationCtx<D> {
             validation_handler,
             ratification_handler,
             committees: Default::default(),
-            base_timeouts,
+            timeouts,
         }
     }
 
@@ -120,21 +120,19 @@ impl<D: Database> IterationCtx<D> {
 
     /// Handles an event of a Phase timeout
     pub(crate) fn on_timeout_event(&mut self, step_name: StepName) {
-        let curr_step_timeout = self
-            .base_timeouts
-            .get_mut(&step_name)
-            .expect("valid base timeout");
+        let curr_step_timeout =
+            self.timeouts.get_mut(&step_name).expect("valid timeout");
 
         *curr_step_timeout =
-            cmp::min(MAX_STEP_TIMEOUT, curr_step_timeout.add(INCREASE_TIMEOUT));
+            cmp::min(MAX_STEP_TIMEOUT, curr_step_timeout.add(TIMEOUT_INCREASE));
     }
 
     /// Calculates and returns the adjusted timeout for the specified step
     pub(crate) fn get_timeout(&self, step_name: StepName) -> Duration {
         *self
-            .base_timeouts
+            .timeouts
             .get(&step_name)
-            .expect("base timeout per step")
+            .expect("valid timeout per step")
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
