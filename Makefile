@@ -57,7 +57,7 @@ run: keys state ## Run the server
 rusk: keys state ## Build rusk binary
 	$(MAKE) -C ./rusk build
 
-COMPILER_VERSION=v0.1.0
+COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 

@@ -12,7 +12,9 @@ use node_data::message::payload::{QuorumType, Vote};
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
+
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use thiserror::Error;
 
 use node_data::message::Payload;
 
@@ -75,31 +77,21 @@ impl RoundUpdate {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum Error {
+#[derive(Debug, Clone, Copy, Error)]
+pub enum StepSigError {
+    #[error("Failed to reach a quorum at step {0}")]
     VoteSetTooSmall(u16),
+    #[error("Verification error {0}")]
     VerificationFailed(dusk_bls12_381_sign::Error),
+    #[error("Empty Apk instance")]
     EmptyApk,
+    #[error("Invalid Type")]
     InvalidType,
-    InvalidStepNum,
 }
 
-impl From<dusk_bls12_381_sign::Error> for Error {
+impl From<dusk_bls12_381_sign::Error> for StepSigError {
     fn from(inner: dusk_bls12_381_sign::Error) -> Self {
         Self::VerificationFailed(inner)
-    }
-}
-impl Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::VoteSetTooSmall(step) => {
-                write!(f, "Failed to reach a quorum at step {step}")
-            }
-            Error::VerificationFailed(_) => write!(f, "Verification error"),
-            Error::EmptyApk => write!(f, "Empty Apk instance"),
-            Error::InvalidType => write!(f, "Invalid Type"),
-            Error::InvalidStepNum => write!(f, "Invalid step number"),
-        }
     }
 }
 
@@ -109,7 +101,7 @@ pub enum ConsensusError {
     InvalidBlockHash,
     InvalidSignature(dusk_bls12_381_sign::Error),
     InvalidMsgType,
-    InvalidValidationStepVotes(Error),
+    InvalidValidationStepVotes(StepSigError),
     InvalidValidation(QuorumType),
     InvalidQuorumType,
     FutureEvent,
@@ -122,8 +114,8 @@ pub enum ConsensusError {
     Canceled,
 }
 
-impl From<Error> for ConsensusError {
-    fn from(e: Error) -> Self {
+impl From<StepSigError> for ConsensusError {
+    fn from(e: StepSigError) -> Self {
         Self::InvalidValidationStepVotes(e)
     }
 }

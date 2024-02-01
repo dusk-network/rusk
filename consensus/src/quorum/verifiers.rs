@@ -10,7 +10,7 @@ use node_data::message::payload::{self, Quorum, Vote};
 use node_data::message::{ConsensusHeader, StepMessage};
 use node_data::{Serializable, StepName};
 
-use crate::commons::Error;
+use crate::commons::StepSigError;
 use crate::user::cluster::Cluster;
 use crate::user::committee::{Committee, CommitteeSet};
 use crate::user::sortition;
@@ -24,7 +24,7 @@ pub async fn verify_quorum(
     quorum: &Quorum,
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
-) -> Result<(), Error> {
+) -> Result<(), StepSigError> {
     // Verify validation
     verify_step_votes(
         &quorum.header,
@@ -73,7 +73,7 @@ pub async fn verify_step_votes(
     committees_set: &RwLock<CommitteeSet<'_>>,
     seed: Seed,
     step_name: StepName,
-) -> Result<QuorumResult, Error> {
+) -> Result<QuorumResult, StepSigError> {
     let round = header.round;
     let iteration = header.iteration;
 
@@ -129,7 +129,7 @@ pub fn verify_votes(
     signature: &[u8; 48],
     committee: &Committee,
     cfg: &sortition::Config,
-) -> Result<QuorumResult, Error> {
+) -> Result<QuorumResult, StepSigError> {
     let sub_committee = committee.intersect(bitset);
 
     let total = committee.total_occurrences(&sub_committee);
@@ -152,7 +152,7 @@ pub fn verify_votes(
             target_quorum,
             total,
         );
-        return Err(Error::VoteSetTooSmall(cfg.step()));
+        return Err(StepSigError::VoteSetTooSmall(cfg.step()));
     }
 
     // If bitset=0 this means that we are checking for failed iteration
@@ -172,7 +172,7 @@ pub fn verify_votes(
 }
 
 impl Cluster<PublicKey> {
-    fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, Error> {
+    fn aggregate_pks(&self) -> Result<dusk_bls12_381_sign::APK, StepSigError> {
         let pks: Vec<_> =
             self.iter().map(|(pubkey, _)| *pubkey.inner()).collect();
 
@@ -182,7 +182,7 @@ impl Cluster<PublicKey> {
                 apk.aggregate(rest);
                 Ok(apk)
             }
-            None => Err(Error::EmptyApk),
+            None => Err(StepSigError::EmptyApk),
         }
     }
 }
@@ -193,12 +193,12 @@ fn verify_step_signature(
     vote: &Vote,
     apk: dusk_bls12_381_sign::APK,
     signature: &[u8; 48],
-) -> Result<(), Error> {
+) -> Result<(), StepSigError> {
     // Compile message to verify
     let msg_type = match msg_type {
         StepName::Validation => payload::Validation::SIGN_SEED,
         StepName::Ratification => payload::Ratification::SIGN_SEED,
-        StepName::Proposal => Err(Error::InvalidType)?,
+        StepName::Proposal => Err(StepSigError::InvalidType)?,
     };
 
     let sig = dusk_bls12_381_sign::Signature::from_bytes(signature)?;

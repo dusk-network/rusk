@@ -30,6 +30,7 @@ async-trait = "0.1"
 anyhow = "1.0"
 node-data = { version = "0.1", path = "../node-data" }
 dusk-merkle = "0.5"
+thiserror = "1"
 
 [dev-dependencies]
 hex-literal = { version = "0.3.4" }

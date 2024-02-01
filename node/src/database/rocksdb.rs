@@ -19,6 +19,7 @@ use rocksdb_lib::{
     WriteOptions,
 };
 
+use std::collections::HashSet;
 use std::io;
 use std::io::Read;
 use std::io::Write;
@@ -465,17 +466,17 @@ impl<'db, DB: DBAccess> Persist for DBTransaction<'db, DB> {
 impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
     fn add_tx(&self, tx: &ledger::Transaction) -> Result<()> {
         // Map Hash to serialized transaction
-        let mut d = vec![];
-        tx.write(&mut d)?;
+        let mut tx_data = vec![];
+        tx.write(&mut tx_data)?;
 
         let hash = tx.hash();
-        self.inner.put_cf(self.mempool_cf, hash, d)?;
+        self.inner.put_cf(self.mempool_cf, hash, tx_data)?;
 
         // Add Secondary indexes //
         // Nullifiers
         for n in tx.inner.nullifiers().iter() {
             let key = n.to_bytes();
-            self.inner.put_cf(self.nullifiers_cf, key, vec![0])?;
+            self.inner.put_cf(self.nullifiers_cf, key, hash)?;
         }
 
         // Map Fee_Hash to Null to facilitate sort-by-fee
@@ -530,14 +531,13 @@ impl<'db, DB: DBAccess> Mempool for DBTransaction<'db, DB> {
         Ok(false)
     }
 
-    fn get_any_nullifier_exists(&self, nullifiers: Vec<[u8; 32]>) -> bool {
-        nullifiers.into_iter().any(|n| {
-            let r = self.snapshot.get_cf(self.nullifiers_cf, n);
-            match r {
-                Ok(r) => r.is_some(),
-                _ => false,
-            }
-        })
+    fn get_txs_by_nullifiers(&self, n: &[[u8; 32]]) -> HashSet<[u8; 32]> {
+        n.iter()
+            .filter_map(|n| match self.snapshot.get_cf(self.nullifiers_cf, n) {
+                Ok(Some(tx_hash)) => tx_hash.try_into().ok(),
+                _ => None,
+            })
+            .collect()
     }
 
     fn get_txs_sorted_by_fee(
