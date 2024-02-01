@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # The script should check whether the inputs are set, or print usage
 # information otherwise.
 if [ -z "$1" ]; then
