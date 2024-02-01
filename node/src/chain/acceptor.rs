@@ -7,8 +7,10 @@
 use crate::database::{self, Ledger, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use anyhow::{anyhow, Result};
-use dusk_consensus::commons::ConsensusError;
-use dusk_consensus::config::CONSENSUS_ROLLING_FINALITY_THRESHOLD;
+use dusk_consensus::commons::{ConsensusError, TimeoutSet};
+use dusk_consensus::config::{
+    CONSENSUS_ROLLING_FINALITY_THRESHOLD, MIN_STEP_TIMEOUT,
+};
 use dusk_consensus::user::provisioners::{ContextProvisioners, Provisioners};
 use node_data::ledger::{
     self, to_str, Block, BlockWithLabel, Label, Seed, SpentTransaction,
@@ -16,7 +18,7 @@ use node_data::ledger::{
 use node_data::message::AsyncQueue;
 use node_data::message::Payload;
 
-use node_data::Serializable;
+use node_data::{Serializable, StepName};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
@@ -26,7 +28,8 @@ use super::consensus::Task;
 use crate::chain::header_validation::Validator;
 use crate::chain::metrics::AverageElapsedTime;
 use crate::database::rocksdb::{
-    MD_AVG_VALIDATION, MD_HASH_KEY, MD_STATE_ROOT_KEY,
+    MD_AVG_PROPOSAL, MD_AVG_RATIFICATION, MD_AVG_VALIDATION, MD_HASH_KEY,
+    MD_STATE_ROOT_KEY,
 };
 
 #[allow(dead_code)]
@@ -591,21 +594,39 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.task.read().await.outbound.clone()
     }
 
-    async fn adjust_round_base_timeout(&self) -> Duration {
+    async fn adjust_round_base_timeout(&self) -> TimeoutSet {
+        let mut base_timeout_set = TimeoutSet::new();
+
+        base_timeout_set.insert(
+            StepName::Proposal,
+            self.read_avg_timeout(MD_AVG_PROPOSAL).await,
+        );
+
+        base_timeout_set.insert(
+            StepName::Validation,
+            self.read_avg_timeout(MD_AVG_VALIDATION).await,
+        );
+
+        base_timeout_set.insert(
+            StepName::Ratification,
+            self.read_avg_timeout(MD_AVG_RATIFICATION).await,
+        );
+
+        base_timeout_set
+    }
+
+    async fn read_avg_timeout(&self, key: &[u8]) -> Duration {
         let metric = self.db.read().await.view(|t| {
-            let bytes = &t.op_read(MD_AVG_VALIDATION)?.unwrap_or_default();
+            let bytes = &t.op_read(key)?.unwrap_or_default();
             let metric =
                 AverageElapsedTime::read(&mut &bytes[..]).unwrap_or_default();
             Ok::<AverageElapsedTime, anyhow::Error>(metric)
         });
 
-        Duration::from_secs(
-            metric
-                .unwrap_or_default()
-                .average()
-                .map(|v| v as u64)
-                .unwrap_or(dusk_consensus::config::ROUND_BASE_TIMEOUT as u64),
-        )
+        metric
+            .unwrap_or_default()
+            .average()
+            .unwrap_or(MIN_STEP_TIMEOUT)
     }
 }
 

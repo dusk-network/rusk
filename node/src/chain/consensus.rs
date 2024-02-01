@@ -7,7 +7,7 @@
 use crate::database::{self, Candidate, Mempool, Metadata};
 use crate::{vm, Message, Network};
 use async_trait::async_trait;
-use dusk_consensus::commons::{ConsensusError, RoundUpdate};
+use dusk_consensus::commons::{ConsensusError, RoundUpdate, TimeoutSet};
 use dusk_consensus::consensus::Consensus;
 use dusk_consensus::operations::{
     CallParams, Error, Operations, Output, VerificationOutput,
@@ -83,7 +83,7 @@ impl Task {
         db: &Arc<RwLock<D>>,
         vm: &Arc<RwLock<VM>>,
         network: &Arc<RwLock<N>>,
-        round_base_timeout: Duration,
+        base_timeout: TimeoutSet,
     ) {
         let current = provisioners_list.to_current();
         let c = Consensus::new(
@@ -104,7 +104,7 @@ impl Task {
             self.keys.1.clone(),
             self.keys.0,
             most_recent_block.header(),
-            round_base_timeout,
+            base_timeout.clone(),
         );
 
         self.task_id += 1;
@@ -115,7 +115,7 @@ impl Task {
             event = "spawn consensus",
             id = self.task_id,
             round = ru.round,
-            timeout = ?round_base_timeout,
+            timeout = ?base_timeout,
             all = all_num,           // all provisioners count
             eligible = eligible_num  // eligible provisioners count
         );
@@ -355,7 +355,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
 
     async fn add_step_elapsed_time(
         &self,
-        round: u64,
+        _round: u64,
         step_name: StepName,
         elapsed: Duration,
     ) -> Result<(), Error> {
@@ -374,7 +374,7 @@ impl<DB: database::DB, VM: vm::VMExecution> Operations for Executor<DB, VM> {
                     None => AverageElapsedTime::default(),
                 };
 
-                metric.update(round, elapsed.as_secs() as u16);
+                metric.push_back(elapsed);
                 debug!(event = "avg_updated", ?step_name,  metric = ?metric);
 
                 let mut bytes = Vec::new();
