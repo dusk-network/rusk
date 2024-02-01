@@ -9,6 +9,7 @@
 
 use node_data::ledger::*;
 use node_data::message::payload::{QuorumType, Vote};
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -21,13 +22,15 @@ use node_data::bls::PublicKey;
 
 use node_data::message::{AsyncQueue, Message};
 
+use node_data::StepName;
 use tracing::error;
+
+pub type TimeoutSet = HashMap<StepName, Duration>;
 
 #[derive(Clone, Default, Debug)]
 pub struct RoundUpdate {
     // Current round number of the ongoing consensus
     pub round: u64,
-    pub round_base_timeout: Duration,
 
     // This provisioner consensus keys
     pub pubkey_bls: PublicKey,
@@ -36,6 +39,8 @@ pub struct RoundUpdate {
     seed: Seed,
     hash: [u8; 32],
     cert: Certificate,
+
+    pub base_timeouts: TimeoutSet,
 }
 
 impl RoundUpdate {
@@ -43,7 +48,7 @@ impl RoundUpdate {
         pubkey_bls: PublicKey,
         secret_key: SecretKey,
         mrb_header: &Header,
-        round_base_timeout: Duration,
+        base_timeouts: TimeoutSet,
     ) -> Self {
         let round = mrb_header.height + 1;
         RoundUpdate {
@@ -53,7 +58,7 @@ impl RoundUpdate {
             cert: mrb_header.cert,
             hash: mrb_header.hash,
             seed: mrb_header.seed,
-            round_base_timeout,
+            base_timeouts,
         }
     }
 

@@ -346,7 +346,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         &mut self,
         phase: Arc<Mutex<C>>,
     ) -> Result<Message, ConsensusError> {
-        self.iter_ctx.on_timeout_event();
+        self.iter_ctx.on_timeout_event(self.step_name());
 
         if let Ok(HandleMsgOutput::Ready(msg)) =
             phase.lock().await.handle_timeout()

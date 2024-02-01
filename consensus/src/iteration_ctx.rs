@@ -5,9 +5,10 @@
 // Copyright (c) DUSK NETWORK. All rights reserved.
 
 use crate::commons::Database;
-use crate::commons::RoundUpdate;
+use crate::commons::{RoundUpdate, TimeoutSet};
+use std::cmp;
 
-use crate::config::MAX_ITERATION_BASE_TIMEOUT;
+use crate::config::{INCREASE_TIMEOUT, MAX_STEP_TIMEOUT};
 use crate::msg_handler::HandleMsgOutput;
 use crate::msg_handler::MsgHandler;
 
@@ -17,8 +18,8 @@ use crate::{proposal, ratification, validation};
 use node_data::bls::PublicKeyBytes;
 
 use node_data::message::Message;
-use std::cmp;
 use std::collections::HashMap;
+use std::ops::Add;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -75,8 +76,7 @@ pub struct IterationCtx<DB: Database> {
     pub(crate) committees: RoundCommittees,
 
     /// Implements the adaptive timeout algorithm
-    iteration_base_timeout: Duration,
-    round_base_timeout: Duration,
+    base_timeouts: TimeoutSet,
 }
 
 impl<D: Database> IterationCtx<D> {
@@ -88,7 +88,7 @@ impl<D: Database> IterationCtx<D> {
         ratification_handler: Arc<
             Mutex<ratification::handler::RatificationHandler>,
         >,
-        round_base_timeout: Duration,
+        base_timeouts: TimeoutSet,
     ) -> Self {
         Self {
             round,
@@ -98,18 +98,13 @@ impl<D: Database> IterationCtx<D> {
             validation_handler,
             ratification_handler,
             committees: Default::default(),
-            round_base_timeout,
-            iteration_base_timeout: round_base_timeout,
+            base_timeouts,
         }
     }
 
     /// Executed on starting a new iteration, before Proposal step execution
     pub(crate) fn on_begin(&mut self, iter: u8) {
         self.iter = iter;
-        self.iteration_base_timeout = cmp::min(
-            MAX_ITERATION_BASE_TIMEOUT,
-            self.round_base_timeout + Duration::from_secs(iter as u64),
-        );
     }
 
     /// Executed on closing an iteration, after Ratification step execution
@@ -124,15 +119,22 @@ impl<D: Database> IterationCtx<D> {
     }
 
     /// Handles an event of a Phase timeout
-    pub(crate) fn on_timeout_event(&mut self) {}
+    pub(crate) fn on_timeout_event(&mut self, step_name: StepName) {
+        let curr_step_timeout = self
+            .base_timeouts
+            .get_mut(&step_name)
+            .expect("valid base timeout");
+
+        *curr_step_timeout =
+            cmp::min(MAX_STEP_TIMEOUT, curr_step_timeout.add(INCREASE_TIMEOUT));
+    }
 
     /// Calculates and returns the adjusted timeout for the specified step
     pub(crate) fn get_timeout(&self, step_name: StepName) -> Duration {
-        match step_name {
-            StepName::Proposal => self.iteration_base_timeout * 3,
-            StepName::Validation => self.iteration_base_timeout * 3,
-            StepName::Ratification => self.iteration_base_timeout * 2,
-        }
+        *self
+            .base_timeouts
+            .get(&step_name)
+            .expect("base timeout per step")
     }
 
     pub(crate) fn get_generator(&self, iter: u8) -> Option<PublicKeyBytes> {
