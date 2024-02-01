@@ -8,6 +8,7 @@ use node_data::Serializable;
 use std::collections::VecDeque;
 use std::io;
 use std::io::{Read, Write};
+use std::ops::Div;
 use std::time::Duration;
 
 const AVG_VALUES_NUM: usize = 5;
@@ -29,7 +30,13 @@ impl AverageElapsedTime {
         }
 
         let sum: Duration = self.0.iter().sum();
-        Some(sum / self.0.len() as u32)
+
+        let mut res = sum.div(self.0.len() as u32);
+        if res.subsec_millis() >= 500 {
+            res = Duration::from_secs(res.as_secs() + 1);
+        }
+
+        Some(res)
     }
 }
 

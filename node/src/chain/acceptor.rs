@@ -140,7 +140,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
     async fn spawn_task(&self) {
         let provisioners_list = self.provisioners_list.read().await.clone();
-        let round_base_timeout = self.adjust_round_base_timeout().await;
+        let base_timeouts = self.adjust_round_base_timeouts().await;
 
         self.task.write().await.spawn(
             self.mrb.read().await.inner(),
@@ -148,7 +148,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             &self.db,
             &self.vm,
             &self.network,
-            round_base_timeout,
+            base_timeouts,
         );
     }
 
@@ -403,14 +403,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
 
         // Restart Consensus.
         if enable_consensus {
-            let base_timeout = self.adjust_round_base_timeout().await;
+            let base_timeouts = self.adjust_round_base_timeouts().await;
             task.spawn(
                 mrb.inner(),
                 provisioners_list.clone(),
                 &self.db,
                 &self.vm,
                 &self.network,
-                base_timeout,
+                base_timeouts,
             );
         }
 
@@ -530,14 +530,14 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
             hash = to_str(&mrb.inner().header().hash),
         );
 
-        let base_timeout = self.adjust_round_base_timeout().await;
+        let base_timeouts = self.adjust_round_base_timeouts().await;
         task.spawn(
             mrb.inner(),
             provisioners_list,
             &self.db,
             &self.vm,
             &self.network,
-            base_timeout,
+            base_timeouts,
         );
     }
 
@@ -598,7 +598,7 @@ impl<DB: database::DB, VM: vm::VMExecution, N: Network> Acceptor<N, DB, VM> {
         self.task.read().await.outbound.clone()
     }
 
-    async fn adjust_round_base_timeout(&self) -> TimeoutSet {
+    async fn adjust_round_base_timeouts(&self) -> TimeoutSet {
         let mut base_timeout_set = TimeoutSet::new();
 
         base_timeout_set.insert(
