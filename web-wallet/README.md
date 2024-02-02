@@ -1,4 +1,4 @@
-# Web Wallet
+# Web Walletto
 
 Web Wallet website.
 
