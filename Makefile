@@ -1,4 +1,4 @@
-all: circuits keys wasm abi allcircuits state contracts rusk ## Build everything
+all: circuits keys wasm abi allcircuits state contracts rusk web-wallet ## Build everything
 
 help: ## Display this help screen
 	@grep -h \
@@ -51,14 +51,17 @@ clippy: ## Run clippy
 	$(MAKE) -C ./node $@
 	$(MAKE) -C ./rusk/ $@
 
-run: keys state ## Run the server
+run: keys state web-wallet ## Run the server
 	cargo run --release --bin rusk
 
-rusk: keys state ## Build rusk binary
+rusk: keys state web-wallet ## Build rusk binary
 	$(MAKE) -C ./rusk build
+
+web-wallet: ## build the static files of the web wallet
+	$(MAKE) -C ./web-wallet all 
 
 COMPILER_VERSION=v0.2.0
 setup-compiler: ## Setup the Dusk Contract Compiler
 	@./scripts/setup-compiler.sh $(COMPILER_VERSION)
 
-.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk setup-compiler
+.PHONY: all abi circuits keys state wasm allcircuits contracts test run help rusk web-wallet setup-compiler
