@@ -50,7 +50,7 @@ pub struct ExecutionCtx<'a, DB: Database, T> {
     step: StepName,
     step_start_time: Option<Instant>,
 
-    pub executor: Arc<Mutex<T>>,
+    pub client: Arc<Mutex<T>>,
 
     pub sv_registry: SafeCertificateInfoRegistry,
     quorum_sender: QuorumMsgSender,
@@ -68,7 +68,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
         round_update: RoundUpdate,
         iteration: u8,
         step: StepName,
-        executor: Arc<Mutex<T>>,
+        client: Arc<Mutex<T>>,
         sv_registry: SafeCertificateInfoRegistry,
         quorum_sender: QuorumMsgSender,
     ) -> Self {
@@ -81,7 +81,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
             round_update,
             iteration,
             step,
-            executor,
+            client,
             sv_registry,
             quorum_sender,
             step_start_time: None,
@@ -172,7 +172,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
                     &self.round_update,
                     self.outbound.clone(),
                     self.inbound.clone(),
-                    self.executor.clone(),
+                    self.client.clone(),
                 )
                 .await;
             };
@@ -445,7 +445,7 @@ impl<'a, DB: Database, T: Operations + 'static> ExecutionCtx<'a, DB, T> {
     async fn report_elapsed_time(&mut self) {
         let elapsed = self.step_start_time.expect("valid start time").elapsed();
         let _ = self
-            .executor
+            .client
             .lock()
             .await
             .add_step_elapsed_time(
