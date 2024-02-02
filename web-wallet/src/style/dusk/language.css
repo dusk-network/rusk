@@ -1,0 +1,107 @@
+:root {
+	/* Theme colours */
+
+	--page-background-color: var(--smokey-black);
+	--background-color: var(--light-grey);
+	--background-color-alt: #fff;
+	--primary-color: var(--smokey-black);
+	--primary-color-variant-dark: #000;
+	--primary-color-variant-light: var(--jet);
+	--secondary-color: var(--cornflower);
+	--secondary-color-variant-dark: var(--cornflower-dark);
+	--secondary-color-variant-light: var(--cornflower-light);
+	--surface-color: var(--magnolia);
+	--success-color: var(--success);
+	--warning-color: var(--warning);
+	--error-color: var(--error);
+	--info-color: var(--info);
+	--danger-color: var(--error);
+
+	--on-background-color: var(--smokey-black);
+	--on-primary-color: var(--light-grey);
+	--on-secondary-color: var(--smokey-black);
+	--on-surface-color: var(--smokey-black);
+
+	--on-error-color: var(--light-grey);
+
+	/* Typography */
+
+	--main-font-family: "Soehne", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	--main-font-size: 16px;
+	--mono-font-family: "Soehne Mono", monospace;
+
+	/* Layout */
+
+	--small-gap: 0.5em;
+	--default-gap: 1em;
+	--large-gap: 2em;
+
+	/* Grid */
+
+	--mobile-grid-template-columns: 1fr;
+	--tablet-grid-template-columns: 1fr 1fr;
+	--desktop-grid-template-columns: 1fr 1fr 1fr;
+
+	/* Controls */
+
+	--control-border-radius-size: 1.5em;
+	--control-border-size: .0625em;
+	--control-font-size: 1em;
+	--control-icon-size: 2em;
+	--control-padding: .9em 1.25em;
+	--control-small-font-size: .875em;
+	--control-small-padding: .625em .875em;
+
+	--control-bg-color: #fff;
+	--control-bg-color-hover: var(--silver-metallic);
+	--control-border-color: transparent;
+	--control-border-color-hover: transparent;
+	--control-text-color: var(--smokey-black);
+	--control-text-color-hover: var(--smokey-black);
+
+	--control-secondary-bg-color: var(--smokey-black);
+	--control-secondary-bg-color-hover: var(--cornflower);
+	--control-secondary-border-color: transparent;
+	--control-secondary-border-color-hover: transparent;
+	--control-secondary-text-color: #fff;
+	--control-secondary-text-color-hover: var(--smokey-black);
+
+	--control-tertiary-bg-color: transparent;
+	--control-tertiary-bg-color-hover: transparent;
+	--control-tertiary-border-color: var(--smokey-black);
+	--control-tertiary-border-color-hover: var(--granite-grey);
+	--control-tertiary-text-color: var(--smokey-black);
+	--control-tertiary-text-color-hover: var(--granite-grey);
+
+	/* Progress-related components (Stepper, Progress Bar, etc */
+
+	--progress-bar-height: .3125em;
+	--progress-bg-color: var(--primary-color);
+	--progress-filler-color: var(--success-color);
+
+	/* Checkbox control */
+
+	--checkbox-control-size: 1.2em;
+	--checkbox-control-border-radius: 20%;
+	--checkbox-control-border-width: .20em;
+	--checkbox-control-border-color: var(--smokey-black);
+	--checkbox-control-checked-bg-color: var(--smokey-black);
+
+	/* Dividers */
+
+	--divider-color-primary: var(--taupe-grey);
+
+    /* Footer icon */
+
+    --footer-icon-color: var(--light-grey);
+
+	/* Home animation */
+
+	--home-box-color: var(--silver-metallic);
+	--home-grid-color: var(--light-gray);
+
+	/* Ribbon */
+
+	--ribbon-color: var(--magnolia);
+	--ribbon-bg-color: var(--cornflower)
+}

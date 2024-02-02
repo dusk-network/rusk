@@ -1,0 +1,103 @@
+.address-picker {
+    position: relative;
+    background-color: var(--surface-color);
+    padding: 1em;
+    border-radius: 1.25rem;
+    user-select: none;
+    z-index: 2;
+}
+
+.address-picker__current-address {
+    width: 100%;
+    text-align: center;
+    font-family: monospace;
+}
+
+.address-picker__copy-address-button-wrapper {
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+}
+
+.address-picker__copy-address-button {
+    aspect-ratio: 1/1;
+    width: 1.5em;
+}
+
+.address-picker__copy-address-button:hover {
+    cursor: copy;
+}
+
+.address-picker__copy-address-button, .address-picker__copy-address-button:hover {
+    color: var(--primary-color) !important;
+}
+
+.address-picker__address {
+    max-width: 100%;
+    all: unset;
+}
+
+.address-picker__address:hover, .address-picker__address--selected {
+    color: var(--secondary-color);
+}
+
+.address-picker__address:hover {
+    cursor: pointer;
+}
+
+.address-picker__trigger {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--default-gap);
+}
+
+.address-picker__drop-down {
+    display: flex;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 2;
+
+    background-color: var(--surface-color);
+    padding: 0 1em 1em 1em;
+    border-bottom-left-radius: 1.25rem;
+    border-bottom-right-radius: 1.25rem;
+
+    flex-direction: column;
+    gap: var(--default-gap);
+    align-items: center;
+    width: 100%;
+}
+
+.address-picker__address-options {
+    overflow-y: auto;
+    width: 100%;
+    max-height: 20svh;
+}
+
+.address-picker__address-option-button {
+    all: unset;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 100%;
+    display: block;
+    text-align: center;
+    padding: .5em 0;
+}
+
+.address-picker__generating-address-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-self: flex-start;
+    gap: var(--small-gap)
+}
+
+.address-picker--expanded {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.address-picker__generate-address-button {
+    text-align: left;
+    width: 100%
+}

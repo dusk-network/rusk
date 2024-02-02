@@ -1,0 +1,190 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Balance > renders the Balance component 1`] = `
+<div>
+  <article
+    class="dusk-balance"
+    token="2000000"
+  >
+    <header
+      class="dusk-balance__header"
+    >
+      <h2>
+        Your Balance:
+      </h2>
+    </header>
+     
+    <p
+      class="dusk-balance__dusk"
+    >
+      <strong>
+        0.000000000
+      </strong>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        data-tooltip-id="balance-tooltip"
+        data-tooltip-place="right"
+        data-tooltip-text="DUSK"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </p>
+     
+    <p
+      class="dusk-balance__fiat"
+    >
+      <strong>
+        (
+        $100,000.00
+        )
+      </strong>
+    </p>
+     
+     
+    <div
+      aria-hidden="true"
+      class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+      id="balance-tooltip"
+      role="tooltip"
+      style="left: 0px; top: 0px;"
+    >
+      
+    </div>
+    <!--&lt;Tooltip&gt;-->
+  </article>
+  <!--&lt;Balance&gt;-->
+</div>
+`;
+
+exports[`Balance > should update the Balance component when the props change 1`] = `
+<div>
+  <article
+    class="dusk-balance"
+    token="2000000"
+  >
+    <header
+      class="dusk-balance__header"
+    >
+      <h2>
+        Your Balance:
+      </h2>
+    </header>
+     
+    <p
+      class="dusk-balance__dusk"
+    >
+      <strong>
+        0.000000000
+      </strong>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        data-tooltip-id="balance-tooltip"
+        data-tooltip-place="right"
+        data-tooltip-text="DUSK"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </p>
+     
+    <p
+      class="dusk-balance__fiat"
+    >
+      <strong>
+        (
+        $100,000.00
+        )
+      </strong>
+    </p>
+     
+     
+    <div
+      aria-hidden="true"
+      class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+      id="balance-tooltip"
+      role="tooltip"
+      style="left: 0px; top: 0px;"
+    >
+      
+    </div>
+    <!--&lt;Tooltip&gt;-->
+  </article>
+  <!--&lt;Balance&gt;-->
+</div>
+`;
+
+exports[`Balance > should update the Balance component when the props change 2`] = `
+<div>
+  <article
+    class="dusk-balance"
+    token="4000000"
+  >
+    <header
+      class="dusk-balance__header"
+    >
+      <h2>
+        Your Balance:
+      </h2>
+    </header>
+     
+    <p
+      class="dusk-balance__dusk"
+    >
+      <strong>
+        0.000000000
+      </strong>
+       
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-balance__icon"
+        data-tooltip-id="balance-tooltip"
+        data-tooltip-place="right"
+        data-tooltip-text="DUSK"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12.335 0.005a12.186 12.186 0 0 0 -2.58 0.204C4.2 1.259 0 6.14 0 11.999 0 17.859 4.203 22.74 9.759 23.79c0.726 0.138 1.476 0.21 2.241 0.21 6.789 0 12.261 -5.64 11.991 -12.49C23.741 5.249 18.599 0.173 12.335 0.005Zm0.207 21.58c-0.204 0.012 -0.336 -0.222 -0.21 -0.384 1.974 -2.541 3.153 -5.733 3.153 -9.202 0 -3.468 -1.176 -6.663 -3.153 -9.202 -0.126 -0.162 0.003 -0.396 0.207 -0.384 5.052 0.282 9.06 4.465 9.06 9.586 0 5.121 -4.005 9.304 -9.057 9.586Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </p>
+     
+    <p
+      class="dusk-balance__fiat"
+    >
+      <strong>
+        (
+        $200,000.00
+        )
+      </strong>
+    </p>
+     
+     
+    <div
+      aria-hidden="true"
+      class="dusk-tooltip dusk-tooltip-top dusk-tooltip-info"
+      id="balance-tooltip"
+      role="tooltip"
+      style="left: 0px; top: 0px;"
+    >
+      
+    </div>
+    <!--&lt;Tooltip&gt;-->
+  </article>
+  <!--&lt;Balance&gt;-->
+</div>
+`;

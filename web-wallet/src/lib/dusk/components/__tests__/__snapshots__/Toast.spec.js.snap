@@ -1,0 +1,101 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Toast > should render and dismiss 2 Toasts 1`] = `
+<ul
+  class="dusk-toast"
+>
+  <li
+    class="dusk-toast__item"
+  >
+    <span
+      class="dusk-toast__item-icon-wrapper dusk-toast__item-icon-wrapper--success"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-toast__item-icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </span>
+     
+    <span
+      class="dusk-toast__item-message"
+    >
+      Render Toast 1
+    </span>
+     
+  </li>
+  <li
+    class="dusk-toast__item"
+  >
+    <span
+      class="dusk-toast__item-icon-wrapper dusk-toast__item-icon-wrapper--info"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-toast__item-icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </span>
+     
+    <span
+      class="dusk-toast__item-message"
+    >
+      Render Toast 2
+    </span>
+     
+  </li>
+</ul>
+`;
+
+exports[`Toast > should render and dismiss the Toast component with the correct properties 1`] = `
+<ul
+  class="dusk-toast"
+>
+  <li
+    class="dusk-toast__item"
+  >
+    <span
+      class="dusk-toast__item-icon-wrapper dusk-toast__item-icon-wrapper--success"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-toast__item-icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+    </span>
+     
+    <span
+      class="dusk-toast__item-message"
+    >
+      Render Toast 1
+    </span>
+     
+  </li>
+</ul>
+`;
+
+exports[`Toast > should render the Toast component with the correct custom class and rest props 1`] = `
+<ul
+  class="dusk-toast test-toast"
+  data-baz="baz"
+  id="toast-container"
+/>
+`;

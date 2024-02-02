@@ -1,0 +1,40 @@
+.dusk-tabs {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: .25em;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.dusk-button.dusk-icon-button.dusk-tab-scroll-button[hidden="true"] {
+	display: none;
+}
+
+.dusk-tabs-list {
+	display: flex;
+	list-style-type: none;
+	user-select: none;
+	cursor: default;
+	white-space: nowrap;
+	overflow: hidden;
+	width: 100%;
+}
+
+.dusk-tab-item {
+	flex: 50%;
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
+
+.dusk-tab-item > .dusk-tab-label {
+	display: none;
+}
+
+.dusk-tab-item__selected > .dusk-tab-label, .dusk-tab-item > span:only-child {
+	display: block;
+}

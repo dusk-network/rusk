@@ -1,0 +1,85 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Create > should render the Terms of Service step of the Create flow 1`] = `
+<div>
+  <div
+    class="onboarding-wrapper s-p4ikGGAJA5YG"
+  >
+    <section
+      class="flex flex-col flex-1"
+    >
+      <div
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+           
+          <h3
+            class="h4"
+          >
+            Terms & Privacy Policy
+          </h3>
+           
+        </header>
+         
+        <div
+          class="flex flex-col gap-1"
+        >
+          <p>
+            Our 
+            <a
+              class="dusk-anchor"
+              href="https://dusk.network/privacy-policy/"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Terms & Privacy Policy
+            </a>
+            <!--&lt;Anchor&gt;-->
+             govern your use of our services,
+			including data handling and user responsibilities.
+			Your privacy and security are our top priorities.
+          </p>
+           
+          <div
+            class="flex gap-1 w-100"
+          >
+            <a
+              aria-disabled="false"
+              class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal flex-1"
+              href="/setup"
+            >
+              <span
+                class="dusk-anchor-button__text"
+              >
+                Cancel
+              </span>
+              
+            </a>
+            <!--&lt;Anchor&gt;-->
+            <!--&lt;AnchorButton&gt;-->
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal flex-1"
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Accept
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+        </div>
+      </div>
+      
+      <!--&lt;Card&gt;-->
+    </section>
+    <!--&lt;TermsOfService&gt;-->
+  </div>
+  
+  <!--&lt;+page&gt;-->
+</div>
+`;

@@ -1,0 +1,69 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AddressPicker > renders the AddressPicker component 1`] = `
+<div>
+   
+  <div
+    class="address-picker"
+  >
+    <div
+      aria-expanded="false"
+      aria-haspopup="true"
+      class="address-picker__trigger"
+      role="button"
+      tabindex="0"
+    >
+      <div
+        class="dusk-icon--circular"
+        style=""
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--large"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+      </div>
+      <!--&lt;CircularIcon&gt;-->
+       
+      <p
+        class="address-picker__current-address"
+      >
+        2087290d3dc213d43e493f03f5435f99
+      </p>
+       
+      <span
+        class="address-picker__copy-address-button-wrapper"
+      >
+        <button
+          aria-label="Copy Address"
+          class="dusk-button dusk-button--type--button dusk-button--variant--quaternary dusk-button--size--normal dusk-icon-button address-picker__copy-address-button"
+          type="button"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          
+        </button>
+        <!--&lt;Button&gt;-->
+      </span>
+    </div>
+     
+  </div>
+  <!--&lt;AddressPicker&gt;-->
+</div>
+`;

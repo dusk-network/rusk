@@ -1,0 +1,41 @@
+.dusk-words {
+	--words-container-padding: 1.5em 1em;
+	--words-word-index-size: 2em;
+ }
+
+.dusk-words {
+	padding: var(--words-container-padding);
+	overflow: hidden;
+	background-color: var(--on-primary-color);
+	display: grid;
+	grid-template-columns: var(--mobile-grid-template-columns);
+	gap: var(--small-gap);
+	border-radius: var(--control-border-radius-size);
+	list-style-type: none;
+	counter-reset: list-counter;
+}
+
+.dusk-words__word {
+	counter-increment: list-counter;
+	text-transform: uppercase;
+	align-items: center;
+	display: flex;
+}
+
+.dusk-words__word::before {
+	content: counter(list-counter);
+	margin-right: var(--small-gap);
+	border: 2px solid var(--on-surface-color);
+	border-radius: 30%;
+	height: var(--words-word-index-size);
+	width: var(--words-word-index-size);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+@media (min-width: 800px) {
+	.dusk-words {
+		grid-template-columns: var(--desktop-grid-template-columns);
+	}
+}

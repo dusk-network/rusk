@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Textbox > should pass additional class names and attributes to the rendered element 1`] = `
+<input
+  class="dusk-textbox dusk-textbox-text foo bar"
+  id="some-id"
+  type="text"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 1`] = `
+<input
+  class="dusk-textbox dusk-textbox-email"
+  type="email"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 2`] = `
+<input
+  class="dusk-textbox dusk-textbox-hidden"
+  type="hidden"
+  value=""
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 3`] = `
+<textarea
+  class="dusk-textbox dusk-textbox-multiline"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 4`] = `
+<input
+  class="dusk-textbox dusk-textbox-number"
+  type="number"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 5`] = `
+<input
+  class="dusk-textbox dusk-textbox-password"
+  type="password"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 6`] = `
+<input
+  class="dusk-textbox dusk-textbox-search"
+  type="search"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 7`] = `
+<input
+  class="dusk-textbox dusk-textbox-tel"
+  type="tel"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 8`] = `
+<input
+  class="dusk-textbox dusk-textbox-text"
+  type="text"
+/>
+`;
+
+exports[`Textbox > should render a Textbox component of the desired type 9`] = `
+<input
+  class="dusk-textbox dusk-textbox-url"
+  type="url"
+/>
+`;
+
+exports[`Textbox > should render a Textbox of type "text" as a default 1`] = `
+<input
+  class="dusk-textbox dusk-textbox-text"
+  type="text"
+/>
+`;

@@ -1,0 +1,80 @@
+.dusk-tooltip {
+	--tip-size: .625em;
+	--half-tip-size: calc(var(--tip-size) / 2);
+	--tip-main-axis-offset:  -.0625em;
+
+	border-radius: var(--control-border-radius-size);
+	line-height: 1.5;
+	padding: var(--control-padding);
+	transition: opacity .2s ease-in-out 0s;
+	opacity: 1;
+}
+
+.dusk-tooltip[aria-hidden="true"] {
+	opacity: 0;
+}
+
+.dusk-tooltip.dusk-tooltip-error {
+	background-color: var(--error-color);
+}
+
+.dusk-tooltip.dusk-tooltip-info {
+	background-color: var(--secondary-color);
+}
+
+.dusk-tooltip.dusk-tooltip-success {
+	background-color: var(--success-color);
+}
+
+.dusk-tooltip.dusk-tooltip-warning {
+	background-color: var(--warning-color);
+}
+
+.dusk-tooltip::after {
+	background-color: inherit;
+	border: inherit;
+	pointer-events: none;
+	position: absolute;
+	content: "";
+	display: inline-block;
+	width: var(--tip-size);
+	height: var(--tip-size);
+	transform: rotate(45deg);
+	transform-origin: center;
+}
+
+.dusk-tooltip.dusk-tooltip-bottom::after {
+	bottom: 100%;
+	left: 50%;
+	margin-left: calc(var(--half-tip-size) * -1);
+	margin-bottom: calc(var(--half-tip-size) * -1 + var(--tip-main-axis-offset));
+	border-bottom-color: transparent;
+	border-right-color: transparent;
+}
+
+.dusk-tooltip.dusk-tooltip-left::after {
+	top: 50%;
+	left: 100%;
+	margin-left: calc(var(--half-tip-size) * -1 + var(--tip-main-axis-offset));
+	margin-top: calc(var(--half-tip-size) * -1);
+	border-bottom-color: transparent;
+	border-left-color: transparent;
+}
+
+.dusk-tooltip.dusk-tooltip-right::after {
+	top: 50%;
+	right: 100%;
+	margin-right: calc(var(--half-tip-size) * -1 + var(--tip-main-axis-offset));
+	margin-top: calc(var(--half-tip-size) * -1);
+	border-top-color: transparent;
+	border-right-color: transparent;
+}
+
+.dusk-tooltip.dusk-tooltip-top::after {
+	top: 100%;
+	left: 50%;
+	margin-left: calc(var(--half-tip-size) * -1);
+	margin-top: calc(var(--half-tip-size) * -1 + var(--tip-main-axis-offset));
+	border-top-color: transparent;
+	border-left-color: transparent;
+}

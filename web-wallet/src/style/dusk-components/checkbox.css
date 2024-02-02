@@ -1,0 +1,22 @@
+.dusk-checkbox {
+	display: inline-block;
+	appearance: none;
+	background-color: transparent;
+	border-style: solid;
+	border-color: var(--checkbox-control-border-color);
+	border-radius: var(--checkbox-control-border-radius);
+	border-width: var(--checkbox-control-border-width);
+	width: var(--checkbox-control-size);
+	height: var(--checkbox-control-size);
+	flex-shrink: 0;
+}
+
+.dusk-checkbox:checked {
+	background-color: var(--checkbox-control-checked-bg-color);
+}
+
+.dusk-checkbox:disabled, .dusk-checkbox:checked:disabled {
+	opacity: .5;
+	/* workaround for Safari */
+	pointer-events: none;
+}

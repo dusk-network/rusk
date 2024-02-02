@@ -1,0 +1,163 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Setup > should render the Setup page 1`] = `
+<div>
+  <section
+    class="setup-content s-yhWmfXbY838u"
+  >
+    <div
+      class="setup-content__wrapper s-yhWmfXbY838u"
+    >
+      <h2
+        class="h1 setup-heading s-yhWmfXbY838u"
+      >
+        Unlocking the Future: 
+        <br
+          class="s-yhWmfXbY838u"
+        />
+        
+			Your 
+        <mark
+          class="s-yhWmfXbY838u"
+        >
+          DUSK
+        </mark>
+         Native Wallet
+      </h2>
+       
+      <div
+        class="setup-content__options s-yhWmfXbY838u"
+      >
+        <div
+          class="setup-content__options-group s-yhWmfXbY838u"
+        >
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--primary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+            href="/setup/create"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M5,3C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V16.72C21.59,16.37 22,15.74 22,15V9C22,8.26 21.59,7.63 21,7.28V5A2,2 0 0,0 19,3H5M5,5H19V7H13A2,2 0 0,0 11,9V15A2,2 0 0,0 13,17H19V19H5V5M13,9H20V15H13V9M16,10.5A1.5,1.5 0 0,0 14.5,12A1.5,1.5 0 0,0 16,13.5A1.5,1.5 0 0,0 17.5,12A1.5,1.5 0 0,0 16,10.5Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Create new wallet
+            </span>
+            
+            
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AnchorButton&gt;-->
+           
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+            href="/setup/restore/"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Restore Wallet
+            </span>
+            
+            
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AnchorButton&gt;-->
+        </div>
+         
+        <css-doodle
+          class="animation s-KW_ES-0X66o4"
+        >
+          <style
+            class="s-KW_ES-0X66o4"
+          >
+            --color: var(--home-box-color);
+		--delay: 80s;
+
+		:container {
+			perspective: 15vmin;
+			transform: scale(0.5) translateY(-10%);
+			--deg: @p(-180deg, 180deg);
+			opacity: .4;
+		}
+
+		@grid: 30x1 / 100% 50% / var(--home-grid-color);
+		@place: center;
+		@size: 18vmin;
+
+		border: 1px solid @p(--color);
+		will-change: transform opacity;
+		animation: scale-up @p(--delay) linear infinite;
+		animation-delay: calc(-@p(--delay) / @I * @i);
+
+		@keyframes scale-up {
+			0%, 95.01%, 100% {
+				transform: translateZ(0) rotate(0);
+				opacity: 1;
+			}
+			95% {
+				transform:
+					translateZ(18vmin) rotateZ(var(--deg));
+					opacity: 0;
+			}
+		} *{}
+          </style>
+        </css-doodle>
+        <!--&lt;Animation&gt;-->
+         
+        <a
+          aria-disabled="false"
+          class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--secondary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+          href="/login"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <span
+            class="dusk-anchor-button__text"
+          >
+            Access wallet
+          </span>
+          
+          
+        </a>
+        <!--&lt;Anchor&gt;-->
+        <!--&lt;AnchorButton&gt;-->
+      </div>
+    </div>
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;

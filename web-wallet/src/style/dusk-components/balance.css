@@ -1,0 +1,39 @@
+.dusk-balance {
+	display: flex;
+	flex-direction: column;
+}
+
+.dusk-balance__header > h2 {
+	color: var(--primary-color);
+	font-size: 1.125em;
+	line-height: 150%;
+	letter-spacing: -0.01125em;
+}
+
+.dusk-balance__dusk {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+}
+
+.dusk-balance__dusk > strong {
+	color: var(--primary-color-variant-dark);
+	font-size: 1.75em;
+	font-weight: 500;
+	line-height: 120%;
+	letter-spacing: -0.0175em;
+}
+
+.dusk-balance__fiat > strong {
+	color: var(--primary-color);
+	font-size: 1em;
+	font-weight: 400;
+	line-height: 150%;
+	letter-spacing: -0.01em;
+}
+
+.dusk-icon.dusk-balance__icon {
+	width: 1.3125em;
+	height: 1.3125em;
+	flex-shrink: 0;
+}

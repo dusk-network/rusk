@@ -1,0 +1,151 @@
+@import url("utilities.css");
+@import url("./dusk/colors.css");
+@import url("./dusk/language.css");
+@import url("./dusk-components/agreement.css");
+@import url("./dusk-components/anchor.css");
+@import url("./dusk-components/badge.css");
+@import url("./dusk-components/balance.css");
+@import url("./dusk-components/button.css");
+@import url("./dusk-components/card.css");
+@import url("./dusk-components/checkbox.css");
+@import url("./dusk-components/error-details.css");
+@import url("./dusk-components/mnemonic.css");
+@import url("./dusk-components/icon.css");
+@import url("./dusk-components/progress-bar.css");
+@import url("./dusk-components/select.css");
+@import url("./dusk-components/stepper.css");
+@import url("./dusk-components/switch.css");
+@import url("./dusk-components/tabs.css");
+@import url("./dusk-components/textbox.css");
+@import url("./dusk-components/throbber.css");
+@import url("./dusk-components/toast.css");
+@import url("./dusk-components/tooltip.css");
+@import url("./dusk-components/wizard.css");
+@import url("./dusk-components/words.css");
+@import url("./app-components/headings.css");
+@import url("./app-components/marks.css");
+@import url("./app-components/notice.css");
+@import url("./app-components/horizontal-rules.css");
+
+@font-face {
+	font-family: "Soehne";
+	font-style: normal;
+	font-weight: 400;
+	src: url("/fonts/soehne-buch.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Soehne";
+	font-style: normal;
+	font-weight: 500;
+	src: url("/fonts/soehne-kraftig.woff2") format("woff2");
+}
+
+* {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+}
+
+html {
+	background-color: var(--page-background-color);
+	color: var(--on-background-color);
+	font-family: var(--main-font-family);
+	font-size: var(--main-font-size);
+	letter-spacing: 0.06125rem;
+}
+
+body {
+	padding: 2rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+svg {
+	fill: currentColor;
+}
+
+#outer-container {
+	background-color: var(--background-color);
+	width: 60%;
+	max-width: 40rem;
+	max-height: 60rem;
+	height: 80%;
+	border-radius: 2rem;
+	transition: all 0.2s ease-in-out 0s;
+	position: relative;
+	overflow: hidden;
+}
+
+#outer-container:after{
+	content: "beta";
+	position: absolute;
+	width: 90px;
+	height: 36px;
+	background: var(--ribbon-bg-color);
+	top: 1px;
+	right: -26px;
+	text-align: center;
+	font-size: 12px;
+	font-family: var(--mono-font-family);
+	text-transform: uppercase;
+	color: var(--ribbon-color);
+	line-height: 45px;
+	transform:rotate(45deg);
+	z-index: 4;
+}
+
+.dusk-anchor-button:not(.dusk-anchor-button__disabled),
+.dusk-button:enabled,
+.dusk-checkbox:enabled,
+.dusk-select:enabled,
+.dusk-switch[aria-disabled="false"][aria-readonly="false"],
+.dusk-textbox:enabled,
+*[role="menuitem"] {
+	transition: all 0.2s linear 0s;
+}
+
+:is(
+	.dusk-anchor-button:not(.dusk-anchor-button__disabled),
+	.dusk-button:enabled,
+	.dusk-checkbox:enabled,
+	.dusk-select:enabled,
+	.dusk-switch[aria-disabled="false"][aria-readonly="false"],
+	.dusk-textbox:read-write:enabled,
+	*[role="menuitem"]):focus {
+	border-color: color-mix(in srgb, var(--secondary-color-variant-dark) 80%, transparent);
+	box-shadow: 0 0 .5em color-mix(in srgb, var(--secondary-color-variant-dark) 60%, transparent);
+	outline: 0 none;
+}
+
+@media (max-width: 500px), (max-height: 500px) {
+	body {
+		padding: 1rem;
+	}
+}
+
+@media (max-width: 1024px) {
+	#outer-container {
+		width: 100%;
+	}
+}
+
+@media (max-height: 1200px) {
+	#outer-container {
+		height: 100%;
+	}
+}
+
+@media (max-height: 800px) {
+	#outer-container {
+		gap: 1rem;
+		border-radius: 1.5rem;
+	}
+}

@@ -1,0 +1,1395 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Settings > Resetting the wallet > should show an error if clearing local data fails 1`] = `
+<div>
+  <section
+    class="settings s-EBshooXNO1eQ"
+  >
+    <header
+      class="settings__header s-EBshooXNO1eQ"
+    >
+      <h2
+        class="s-EBshooXNO1eQ"
+      >
+        Settings
+      </h2>
+    </header>
+     
+    <div
+      class="settings__content s-EBshooXNO1eQ"
+    >
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header settings-group__header--network s-EBshooXNO1eQ"
+        >
+          <div
+            class="settings-group__header s-EBshooXNO1eQ"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M7,15V5H17V15H7M8,10.37L9.24,9.13L10.93,10.83L14.76,7L16,8.5L10.93,13.57L8,10.37Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <h3
+              class="h4 settings-group__heading s-EBshooXNO1eQ"
+            >
+              Network
+            </h3>
+          </div>
+           
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            Online
+          </span>
+          <!--&lt;Badge&gt;-->
+        </header>
+         
+        <select
+          class="dusk-select settings-group__select"
+        >
+          <option
+            value="testnet"
+          >
+            testnet
+             
+          </option>
+          <option
+            disabled=""
+            value="mainnet"
+          >
+            mainnet
+             
+          </option>
+          
+          <!--&lt;Options&gt;-->
+        </select>
+        <!--&lt;Select&gt;-->
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5,3C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V16.72C21.59,16.37 22,15.74 22,15V9C22,8.26 21.59,7.63 21,7.28V5A2,2 0 0,0 19,3H5M5,5H19V7H13A2,2 0 0,0 11,9V15A2,2 0 0,0 13,17H19V19H5V5M13,9H20V15H13V9M16,10.5A1.5,1.5 0 0,0 14.5,12A1.5,1.5 0 0,0 16,13.5A1.5,1.5 0 0,0 17.5,12A1.5,1.5 0 0,0 16,10.5Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Wallet
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <div
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Recovery file
+            </span>
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+              disabled=""
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Export
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+           
+          <div
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Key-Pair file
+            </span>
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+              disabled=""
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Export
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+           
+          <p
+            class="s-EBshooXNO1eQ"
+          >
+            These functionalities are currently disabled in the beta
+					version of the web wallet and will be enabled in a future update.
+          </p>
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M12,13.5V19H6V12H12V13.5M12,10H6V5H12V10M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Gas
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <label
+            class="gas-control s-POS_LBjGgkOM"
+          >
+            <span
+              class="gas-control__label s-POS_LBjGgkOM"
+            >
+              Price: (lux)
+            </span>
+             
+            <input
+              class="dusk-textbox dusk-textbox-number gas-control__input"
+              max="20000000"
+              min="1"
+              required=""
+              type="number"
+            />
+            
+            <!--&lt;Textbox&gt;-->
+          </label>
+           
+          <label
+            class="gas-control s-POS_LBjGgkOM"
+          >
+            <span
+              class="gas-control__label s-POS_LBjGgkOM"
+            >
+              Gas Limit: (unit)
+            </span>
+             
+            <input
+              class="dusk-textbox dusk-textbox-number gas-control__input"
+              max="1000000000"
+              min="10000000"
+              required=""
+              type="number"
+            />
+            
+            <!--&lt;Textbox&gt;-->
+          </label>
+          <!--&lt;GasControls&gt;-->
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21.7 18.6V17.6L22.8 16.8C22.9 16.7 23 16.6 22.9 16.5L21.9 14.8C21.9 14.7 21.7 14.7 21.6 14.7L20.4 15.2C20.1 15 19.8 14.8 19.5 14.7L19.3 13.4C19.3 13.3 19.2 13.2 19.1 13.2H17.1C16.9 13.2 16.8 13.3 16.8 13.4L16.6 14.7C16.3 14.9 16.1 15 15.8 15.2L14.6 14.7C14.5 14.7 14.4 14.7 14.3 14.8L13.3 16.5C13.3 16.6 13.3 16.7 13.4 16.8L14.5 17.6V18.6L13.4 19.4C13.3 19.5 13.2 19.6 13.3 19.7L14.3 21.4C14.4 21.5 14.5 21.5 14.6 21.5L15.8 21C16 21.2 16.3 21.4 16.6 21.5L16.8 22.8C16.9 22.9 17 23 17.1 23H19.1C19.2 23 19.3 22.9 19.3 22.8L19.5 21.5C19.8 21.3 20 21.2 20.3 21L21.5 21.4C21.6 21.4 21.7 21.4 21.8 21.3L22.8 19.6C22.9 19.5 22.9 19.4 22.8 19.4L21.7 18.6M18 19.5C17.2 19.5 16.5 18.8 16.5 18S17.2 16.5 18 16.5 19.5 17.2 19.5 18 18.8 19.5 18 19.5M12.3 22H3C1.9 22 1 21.1 1 20V4C1 2.9 1.9 2 3 2H21C22.1 2 23 2.9 23 4V13.1C22.4 12.5 21.7 12 21 11.7V6H3V20H11.3C11.5 20.7 11.8 21.4 12.3 22Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Preferences
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <label
+            class="settings-group__control settings-group__control--switch s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Dark mode
+            </span>
+             
+            <div
+              aria-checked="false"
+              aria-disabled="true"
+              class="dusk-switch"
+              role="switch"
+              tabindex="-1"
+            />
+            <!--&lt;Switch&gt;-->
+          </label>
+           
+          <p
+            class="s-EBshooXNO1eQ"
+          >
+            This functionality is currently disabled in the beta
+					version of the web wallet and will be enabled in a future update.
+          </p>
+           
+          <label
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Currency
+            </span>
+             
+            <select
+              class="dusk-select settings-group__control settings-group__control--with-label"
+            >
+              <option
+                value="AED"
+              >
+                United Arab Emirates Dirham
+                 
+              </option>
+              <option
+                value="ARS"
+              >
+                Argentine Peso
+                 
+              </option>
+              <option
+                value="AUD"
+              >
+                Australian Dollar
+                 
+              </option>
+              <option
+                value="BDT"
+              >
+                Bangladeshi Taka
+                 
+              </option>
+              <option
+                value="BHD"
+              >
+                Bahraini Dinar
+                 
+              </option>
+              <option
+                value="BMD"
+              >
+                Bermudian Dollar
+                 
+              </option>
+              <option
+                value="BRL"
+              >
+                Brazilian Real
+                 
+              </option>
+              <option
+                value="CAD"
+              >
+                Canadian Dollar
+                 
+              </option>
+              <option
+                value="CFH"
+              >
+                Swiss Franc
+                 
+              </option>
+              <option
+                value="CLP"
+              >
+                Chilean Peso
+                 
+              </option>
+              <option
+                value="CNY"
+              >
+                Renminbi
+                 
+              </option>
+              <option
+                value="CZK"
+              >
+                Czech Koruna
+                 
+              </option>
+              <option
+                value="DKK"
+              >
+                Danish Krone
+                 
+              </option>
+              <option
+                value="EUR"
+              >
+                Euro
+                 
+              </option>
+              <option
+                value="GBP"
+              >
+                Pound Sterling
+                 
+              </option>
+              <option
+                value="HKD"
+              >
+                Hong Kong Dollar
+                 
+              </option>
+              <option
+                value="HUF"
+              >
+                Hungarian Forint
+                 
+              </option>
+              <option
+                value="IDR"
+              >
+                Indonesian Rupiah
+                 
+              </option>
+              <option
+                value="ILS"
+              >
+                Israeli New Shekel
+                 
+              </option>
+              <option
+                value="INR"
+              >
+                Indian Rupee
+                 
+              </option>
+              <option
+                value="JPY"
+              >
+                Japanese Yen
+                 
+              </option>
+              <option
+                value="KRW"
+              >
+                South Korean Won
+                 
+              </option>
+              <option
+                value="KWD"
+              >
+                Kuwaiti Dinar
+                 
+              </option>
+              <option
+                value="LKR"
+              >
+                Sri Lankan Rupee
+                 
+              </option>
+              <option
+                value="MMK"
+              >
+                Myanmar Kyat
+                 
+              </option>
+              <option
+                value="MXN"
+              >
+                Mexican Peso
+                 
+              </option>
+              <option
+                value="MYR"
+              >
+                Malaysian Ringgit
+                 
+              </option>
+              <option
+                value="NGN"
+              >
+                Nigerian Naira
+                 
+              </option>
+              <option
+                value="NOK"
+              >
+                Norwegian Krone
+                 
+              </option>
+              <option
+                value="NZD"
+              >
+                New Zealand Dollar
+                 
+              </option>
+              <option
+                value="PHP"
+              >
+                Philippine Peso
+                 
+              </option>
+              <option
+                value="PKR"
+              >
+                Pakistani Rupee
+                 
+              </option>
+              <option
+                value="PLN"
+              >
+                Polish Złoty
+                 
+              </option>
+              <option
+                value="RUB"
+              >
+                Russian Ruble
+                 
+              </option>
+              <option
+                value="SAR"
+              >
+                Saudi Riyal
+                 
+              </option>
+              <option
+                value="SEK"
+              >
+                Swedish Krona
+                 
+              </option>
+              <option
+                value="SGD"
+              >
+                Singapore Dollar
+                 
+              </option>
+              <option
+                value="THB"
+              >
+                Thai Baht
+                 
+              </option>
+              <option
+                value="TRY"
+              >
+                Turkish Lira
+                 
+              </option>
+              <option
+                value="TWD"
+              >
+                New Taiwan Dollar
+                 
+              </option>
+              <option
+                value="UAH"
+              >
+                Ukrainian Hryvnia
+                 
+              </option>
+              <option
+                value="USD"
+              >
+                United States Dollar
+                 
+              </option>
+              <option
+                value="VEF"
+              >
+                Venezuelan Bolívar Fuerte
+                 
+              </option>
+              <option
+                value="VND"
+              >
+                Vietnamese Dồng
+                 
+              </option>
+              <option
+                value="ZAR"
+              >
+                South African Rand
+                 
+              </option>
+              
+              <!--&lt;Options&gt;-->
+            </select>
+            <!--&lt;Select&gt;-->
+          </label>
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M13 3C8 3 4 7 4 12H1L4.9 15.9L5 16L9 12H6C6 8.1 9.1 5 13 5S20 8.1 20 12 16.9 19 13 19C11.1 19 9.3 18.2 8.1 16.9L6.7 18.3C8.3 20 10.5 21 13 21C18 21 22 17 22 12S18 3 13 3M12 15H14V17H12V15M12 7H14V13H12V7"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Danger zone
+          </h3>
+        </header>
+         
+        <details
+          class="dusk-error-details dusk-error-details__details"
+        >
+          <summary
+            class="dusk-error-details__summary"
+          >
+            An error occurred while resetting the wallet. Please try again.
+          </summary>
+           
+          <pre
+            class="dusk-error-details__error"
+          >
+            			
+            Clear data error
+            
+		
+          </pre>
+        </details>
+        
+        <!--&lt;ErrorDetails&gt;-->
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Impossible to reset while a sync is in progress"
+          data-tooltip-type="warning"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </article>
+    </div>
+  </section>
+   
+  <div
+    class="settings-actions s-EBshooXNO1eQ"
+  >
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+      href="/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
+    <!--&lt;Anchor&gt;-->
+    <!--&lt;AnchorButton&gt;-->
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Log out
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Settings > should render the settings page 1`] = `
+<div>
+  <section
+    class="settings s-EBshooXNO1eQ"
+  >
+    <header
+      class="settings__header s-EBshooXNO1eQ"
+    >
+      <h2
+        class="s-EBshooXNO1eQ"
+      >
+        Settings
+      </h2>
+    </header>
+     
+    <div
+      class="settings__content s-EBshooXNO1eQ"
+    >
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header settings-group__header--network s-EBshooXNO1eQ"
+        >
+          <div
+            class="settings-group__header s-EBshooXNO1eQ"
+          >
+            <svg
+              class="dusk-icon dusk-icon--size--normal"
+              role="graphics-symbol"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M15,20A1,1 0 0,0 14,19H13V17H17A2,2 0 0,0 19,15V5A2,2 0 0,0 17,3H7A2,2 0 0,0 5,5V15A2,2 0 0,0 7,17H11V19H10A1,1 0 0,0 9,20H2V22H9A1,1 0 0,0 10,23H14A1,1 0 0,0 15,22H22V20H15M7,15V5H17V15H7M8,10.37L9.24,9.13L10.93,10.83L14.76,7L16,8.5L10.93,13.57L8,10.37Z"
+              />
+            </svg>
+            
+            <!--&lt;Icon&gt;-->
+             
+            <h3
+              class="h4 settings-group__heading s-EBshooXNO1eQ"
+            >
+              Network
+            </h3>
+          </div>
+           
+          <span
+            class="dusk-badge dusk-badge--variant-success"
+          >
+            Online
+          </span>
+          <!--&lt;Badge&gt;-->
+        </header>
+         
+        <select
+          class="dusk-select settings-group__select"
+        >
+          <option
+            value="testnet"
+          >
+            testnet
+             
+          </option>
+          <option
+            disabled=""
+            value="mainnet"
+          >
+            mainnet
+             
+          </option>
+          
+          <!--&lt;Options&gt;-->
+        </select>
+        <!--&lt;Select&gt;-->
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M5,3C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V16.72C21.59,16.37 22,15.74 22,15V9C22,8.26 21.59,7.63 21,7.28V5A2,2 0 0,0 19,3H5M5,5H19V7H13A2,2 0 0,0 11,9V15A2,2 0 0,0 13,17H19V19H5V5M13,9H20V15H13V9M16,10.5A1.5,1.5 0 0,0 14.5,12A1.5,1.5 0 0,0 16,13.5A1.5,1.5 0 0,0 17.5,12A1.5,1.5 0 0,0 16,10.5Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Wallet
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <div
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Recovery file
+            </span>
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+              disabled=""
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Export
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+           
+          <div
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Key-Pair file
+            </span>
+             
+            <button
+              class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal"
+              disabled=""
+              type="button"
+            >
+              <span
+                class="dusk-button__text"
+              >
+                Export
+              </span>
+            </button>
+            <!--&lt;Button&gt;-->
+          </div>
+           
+          <p
+            class="s-EBshooXNO1eQ"
+          >
+            These functionalities are currently disabled in the beta
+					version of the web wallet and will be enabled in a future update.
+          </p>
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M19.77,7.23L19.78,7.22L16.06,3.5L15,4.56L17.11,6.67C16.17,7.03 15.5,7.93 15.5,9A2.5,2.5 0 0,0 18,11.5C18.36,11.5 18.69,11.42 19,11.29V18.5A1,1 0 0,1 18,19.5A1,1 0 0,1 17,18.5V14A2,2 0 0,0 15,12H14V5A2,2 0 0,0 12,3H6A2,2 0 0,0 4,5V21H14V13.5H15.5V18.5A2.5,2.5 0 0,0 18,21A2.5,2.5 0 0,0 20.5,18.5V9C20.5,8.31 20.22,7.68 19.77,7.23M12,13.5V19H6V12H12V13.5M12,10H6V5H12V10M18,10A1,1 0 0,1 17,9A1,1 0 0,1 18,8A1,1 0 0,1 19,9A1,1 0 0,1 18,10Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Gas
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <label
+            class="gas-control s-POS_LBjGgkOM"
+          >
+            <span
+              class="gas-control__label s-POS_LBjGgkOM"
+            >
+              Price: (lux)
+            </span>
+             
+            <input
+              class="dusk-textbox dusk-textbox-number gas-control__input"
+              max="20000000"
+              min="1"
+              required=""
+              type="number"
+            />
+            
+            <!--&lt;Textbox&gt;-->
+          </label>
+           
+          <label
+            class="gas-control s-POS_LBjGgkOM"
+          >
+            <span
+              class="gas-control__label s-POS_LBjGgkOM"
+            >
+              Gas Limit: (unit)
+            </span>
+             
+            <input
+              class="dusk-textbox dusk-textbox-number gas-control__input"
+              max="1000000000"
+              min="10000000"
+              required=""
+              type="number"
+            />
+            
+            <!--&lt;Textbox&gt;-->
+          </label>
+          <!--&lt;GasControls&gt;-->
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21.7 18.6V17.6L22.8 16.8C22.9 16.7 23 16.6 22.9 16.5L21.9 14.8C21.9 14.7 21.7 14.7 21.6 14.7L20.4 15.2C20.1 15 19.8 14.8 19.5 14.7L19.3 13.4C19.3 13.3 19.2 13.2 19.1 13.2H17.1C16.9 13.2 16.8 13.3 16.8 13.4L16.6 14.7C16.3 14.9 16.1 15 15.8 15.2L14.6 14.7C14.5 14.7 14.4 14.7 14.3 14.8L13.3 16.5C13.3 16.6 13.3 16.7 13.4 16.8L14.5 17.6V18.6L13.4 19.4C13.3 19.5 13.2 19.6 13.3 19.7L14.3 21.4C14.4 21.5 14.5 21.5 14.6 21.5L15.8 21C16 21.2 16.3 21.4 16.6 21.5L16.8 22.8C16.9 22.9 17 23 17.1 23H19.1C19.2 23 19.3 22.9 19.3 22.8L19.5 21.5C19.8 21.3 20 21.2 20.3 21L21.5 21.4C21.6 21.4 21.7 21.4 21.8 21.3L22.8 19.6C22.9 19.5 22.9 19.4 22.8 19.4L21.7 18.6M18 19.5C17.2 19.5 16.5 18.8 16.5 18S17.2 16.5 18 16.5 19.5 17.2 19.5 18 18.8 19.5 18 19.5M12.3 22H3C1.9 22 1 21.1 1 20V4C1 2.9 1.9 2 3 2H21C22.1 2 23 2.9 23 4V13.1C22.4 12.5 21.7 12 21 11.7V6H3V20H11.3C11.5 20.7 11.8 21.4 12.3 22Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Preferences
+          </h3>
+        </header>
+         
+        <div
+          class="settings-group__multi-control-content s-EBshooXNO1eQ"
+        >
+          <label
+            class="settings-group__control settings-group__control--switch s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Dark mode
+            </span>
+             
+            <div
+              aria-checked="false"
+              aria-disabled="true"
+              class="dusk-switch"
+              role="switch"
+              tabindex="-1"
+            />
+            <!--&lt;Switch&gt;-->
+          </label>
+           
+          <p
+            class="s-EBshooXNO1eQ"
+          >
+            This functionality is currently disabled in the beta
+					version of the web wallet and will be enabled in a future update.
+          </p>
+           
+          <label
+            class="settings-group__control settings-group__control--with-label s-EBshooXNO1eQ"
+          >
+            <span
+              class="s-EBshooXNO1eQ"
+            >
+              Currency
+            </span>
+             
+            <select
+              class="dusk-select settings-group__control settings-group__control--with-label"
+            >
+              <option
+                value="AED"
+              >
+                United Arab Emirates Dirham
+                 
+              </option>
+              <option
+                value="ARS"
+              >
+                Argentine Peso
+                 
+              </option>
+              <option
+                value="AUD"
+              >
+                Australian Dollar
+                 
+              </option>
+              <option
+                value="BDT"
+              >
+                Bangladeshi Taka
+                 
+              </option>
+              <option
+                value="BHD"
+              >
+                Bahraini Dinar
+                 
+              </option>
+              <option
+                value="BMD"
+              >
+                Bermudian Dollar
+                 
+              </option>
+              <option
+                value="BRL"
+              >
+                Brazilian Real
+                 
+              </option>
+              <option
+                value="CAD"
+              >
+                Canadian Dollar
+                 
+              </option>
+              <option
+                value="CFH"
+              >
+                Swiss Franc
+                 
+              </option>
+              <option
+                value="CLP"
+              >
+                Chilean Peso
+                 
+              </option>
+              <option
+                value="CNY"
+              >
+                Renminbi
+                 
+              </option>
+              <option
+                value="CZK"
+              >
+                Czech Koruna
+                 
+              </option>
+              <option
+                value="DKK"
+              >
+                Danish Krone
+                 
+              </option>
+              <option
+                value="EUR"
+              >
+                Euro
+                 
+              </option>
+              <option
+                value="GBP"
+              >
+                Pound Sterling
+                 
+              </option>
+              <option
+                value="HKD"
+              >
+                Hong Kong Dollar
+                 
+              </option>
+              <option
+                value="HUF"
+              >
+                Hungarian Forint
+                 
+              </option>
+              <option
+                value="IDR"
+              >
+                Indonesian Rupiah
+                 
+              </option>
+              <option
+                value="ILS"
+              >
+                Israeli New Shekel
+                 
+              </option>
+              <option
+                value="INR"
+              >
+                Indian Rupee
+                 
+              </option>
+              <option
+                value="JPY"
+              >
+                Japanese Yen
+                 
+              </option>
+              <option
+                value="KRW"
+              >
+                South Korean Won
+                 
+              </option>
+              <option
+                value="KWD"
+              >
+                Kuwaiti Dinar
+                 
+              </option>
+              <option
+                value="LKR"
+              >
+                Sri Lankan Rupee
+                 
+              </option>
+              <option
+                value="MMK"
+              >
+                Myanmar Kyat
+                 
+              </option>
+              <option
+                value="MXN"
+              >
+                Mexican Peso
+                 
+              </option>
+              <option
+                value="MYR"
+              >
+                Malaysian Ringgit
+                 
+              </option>
+              <option
+                value="NGN"
+              >
+                Nigerian Naira
+                 
+              </option>
+              <option
+                value="NOK"
+              >
+                Norwegian Krone
+                 
+              </option>
+              <option
+                value="NZD"
+              >
+                New Zealand Dollar
+                 
+              </option>
+              <option
+                value="PHP"
+              >
+                Philippine Peso
+                 
+              </option>
+              <option
+                value="PKR"
+              >
+                Pakistani Rupee
+                 
+              </option>
+              <option
+                value="PLN"
+              >
+                Polish Złoty
+                 
+              </option>
+              <option
+                value="RUB"
+              >
+                Russian Ruble
+                 
+              </option>
+              <option
+                value="SAR"
+              >
+                Saudi Riyal
+                 
+              </option>
+              <option
+                value="SEK"
+              >
+                Swedish Krona
+                 
+              </option>
+              <option
+                value="SGD"
+              >
+                Singapore Dollar
+                 
+              </option>
+              <option
+                value="THB"
+              >
+                Thai Baht
+                 
+              </option>
+              <option
+                value="TRY"
+              >
+                Turkish Lira
+                 
+              </option>
+              <option
+                value="TWD"
+              >
+                New Taiwan Dollar
+                 
+              </option>
+              <option
+                value="UAH"
+              >
+                Ukrainian Hryvnia
+                 
+              </option>
+              <option
+                value="USD"
+              >
+                United States Dollar
+                 
+              </option>
+              <option
+                value="VEF"
+              >
+                Venezuelan Bolívar Fuerte
+                 
+              </option>
+              <option
+                value="VND"
+              >
+                Vietnamese Dồng
+                 
+              </option>
+              <option
+                value="ZAR"
+              >
+                South African Rand
+                 
+              </option>
+              
+              <!--&lt;Options&gt;-->
+            </select>
+            <!--&lt;Select&gt;-->
+          </label>
+        </div>
+      </article>
+       
+      <hr
+        class="s-EBshooXNO1eQ"
+      />
+       
+      <article
+        class="settings-group s-EBshooXNO1eQ"
+      >
+        <header
+          class="settings-group__header s-EBshooXNO1eQ"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M13 3C8 3 4 7 4 12H1L4.9 15.9L5 16L9 12H6C6 8.1 9.1 5 13 5S20 8.1 20 12 16.9 19 13 19C11.1 19 9.3 18.2 8.1 16.9L6.7 18.3C8.3 20 10.5 21 13 21C18 21 22 17 22 12S18 3 13 3M12 15H14V17H12V15M12 7H14V13H12V7"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4 settings-group__heading s-EBshooXNO1eQ"
+          >
+            Danger zone
+          </h3>
+        </header>
+         
+        
+        <!--&lt;ErrorDetails&gt;-->
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--secondary dusk-button--size--normal settings-group__button--state--danger"
+          data-tooltip-disabled="true"
+          data-tooltip-id="main-tooltip"
+          data-tooltip-text="Impossible to reset while a sync is in progress"
+          data-tooltip-type="warning"
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Reset Wallet
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </article>
+    </div>
+  </section>
+   
+  <div
+    class="settings-actions s-EBshooXNO1eQ"
+  >
+    <a
+      aria-disabled="false"
+      class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+      href="/dashboard"
+    >
+      <svg
+        class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+        role="graphics-symbol"
+        viewBox="0 0 24 24"
+      >
+        <path
+          d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+        />
+      </svg>
+      
+      <!--&lt;Icon&gt;-->
+       
+      <span
+        class="dusk-anchor-button__text"
+      >
+        Back
+      </span>
+      
+      
+    </a>
+    <!--&lt;Anchor&gt;-->
+    <!--&lt;AnchorButton&gt;-->
+     
+    <button
+      class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal"
+      type="button"
+    >
+      <span
+        class="dusk-button__text"
+      >
+        Log out
+      </span>
+    </button>
+    <!--&lt;Button&gt;-->
+  </div>
+  <!--&lt;+page&gt;-->
+</div>
+`;

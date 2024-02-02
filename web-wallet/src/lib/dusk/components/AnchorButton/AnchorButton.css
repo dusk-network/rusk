@@ -1,0 +1,10 @@
+.dusk-anchor-button {
+	appearance: button;
+	text-decoration: none;
+	text-align: center;
+}
+
+.dusk-anchor-button.dusk-anchor-button--disabled {
+	cursor: default;
+	pointer-events: none;
+}

@@ -1,0 +1,30 @@
+.dusk-card {
+	background-color: var(--surface-color);
+	border-radius: var(--control-border-radius-size);
+	padding: 1.3em 2em;
+}
+
+.dusk-card__icon {
+	margin-right: .4em;
+	font-size: 1.1em;
+}
+
+.dusk-card__header {
+	display: flex;
+	margin-bottom: 1.25em;
+	align-items: center;
+}
+
+.dusk-card__header--toggle-off {
+	margin-bottom: 0;
+}
+
+.dusk-card .dusk-switch {
+	margin-left: auto;
+}
+
+.dusk-card pre {
+	overflow-x: auto;
+	tab-width: 4;
+	padding: 1em 0;
+}

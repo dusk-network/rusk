@@ -1,0 +1,25 @@
+.dusk-wizard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25em;
+    width: 100%;
+}
+
+.dusk-wizard--full-height {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.dusk-wizard--full-height .dusk-wizard__step-navigation {
+    margin-top: auto;
+}
+
+.dusk-wizard__step-navigation {
+    display: flex;
+    flex-direction: row;
+    gap: var(--default-gap);
+}
+
+.dusk-wizard__step-navigation button, .dusk-wizard__step-navigation a {
+    flex: 1;
+}

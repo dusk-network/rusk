@@ -1,0 +1,346 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Login > Mnemonic phrase workflow > should render the login page and show the field to enter the mnemonic phrase, if there is no login info stored 1`] = `
+<div>
+  <section
+    class="login s-diEOsynXV9Ac"
+  >
+    <h2
+      class="h1 s-diEOsynXV9Ac"
+    >
+      Unleash 
+      <mark
+        class="s-diEOsynXV9Ac"
+      >
+        RWA
+      </mark>
+       and
+      <br
+        class="s-diEOsynXV9Ac"
+      />
+       
+      <mark
+        class="s-diEOsynXV9Ac"
+      >
+        Decentralized Finance
+      </mark>
+    </h2>
+     
+    <div
+      class="login s-diEOsynXV9Ac"
+    >
+      <article
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4"
+          >
+            Mnemonic phrase
+          </h3>
+           
+        </header>
+         
+        <form
+          class="login__form s-diEOsynXV9Ac"
+        >
+          <input
+            class="dusk-textbox dusk-textbox-password"
+            name="secret"
+            placeholder="Mnemonic phrase"
+            required=""
+            type="password"
+          />
+          
+          <!--&lt;Textbox&gt;-->
+           
+           
+          <button
+            class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+            type="submit"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              Unlock Wallet
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+           
+        </form>
+      </article>
+      
+      <!--&lt;Card&gt;-->
+       
+      <article
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2M18 20H6V4H13V9H18M12.83 15A3 3 0 1 0 12.83 17H14V19H16V17H17V15M10 17A1 1 0 1 1 11 16A1 1 0 0 1 10 17Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4"
+          >
+            Upload DAT file
+          </h3>
+           
+        </header>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal alt-login"
+          disabled=""
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Choose file
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </article>
+      
+      <!--&lt;Card&gt;-->
+    </div>
+     
+    <footer
+      class="login-footer s-diEOsynXV9Ac"
+    >
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        href="/setup"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <span
+          class="dusk-anchor-button__text"
+        >
+          Back
+        </span>
+        
+        
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AnchorButton&gt;-->
+    </footer>
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;
+
+exports[`Login > Password workflow > should show the password field and the link to restore the wallet if there is login info stored 1`] = `
+<div>
+  <section
+    class="login s-diEOsynXV9Ac"
+  >
+    <h2
+      class="h1 s-diEOsynXV9Ac"
+    >
+      Unleash 
+      <mark
+        class="s-diEOsynXV9Ac"
+      >
+        RWA
+      </mark>
+       and
+      <br
+        class="s-diEOsynXV9Ac"
+      />
+       
+      <mark
+        class="s-diEOsynXV9Ac"
+      >
+        Decentralized Finance
+      </mark>
+    </h2>
+     
+    <div
+      class="login s-diEOsynXV9Ac"
+    >
+      <article
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21 18H15V15H13.3C12.2 17.4 9.7 19 7 19C3.1 19 0 15.9 0 12S3.1 5 7 5C9.7 5 12.2 6.6 13.3 9H24V15H21V18M17 16H19V13H22V11H11.9L11.7 10.3C11 8.3 9.1 7 7 7C4.2 7 2 9.2 2 12S4.2 17 7 17C9.1 17 11 15.7 11.7 13.7L11.9 13H17V16M7 15C5.3 15 4 13.7 4 12S5.3 9 7 9 10 10.3 10 12 8.7 15 7 15M7 11C6.4 11 6 11.4 6 12S6.4 13 7 13 8 12.6 8 12 7.6 11 7 11Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4"
+          >
+            Password
+          </h3>
+           
+        </header>
+         
+        <form
+          class="login__form s-diEOsynXV9Ac"
+        >
+          <input
+            autocomplete="current-password"
+            class="dusk-textbox dusk-textbox-password"
+            name="secret"
+            placeholder="Password"
+            required=""
+            type="password"
+          />
+          
+          <!--&lt;Textbox&gt;-->
+           
+           
+          <button
+            class="dusk-button dusk-button--type--submit dusk-button--variant--secondary dusk-button--size--normal"
+            type="submit"
+          >
+            <span
+              class="dusk-button__text"
+            >
+              Unlock Wallet
+            </span>
+          </button>
+          <!--&lt;Button&gt;-->
+           
+          <a
+            aria-disabled="false"
+            class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--quaternary dusk-anchor-button--size--normal"
+            href="/setup/restore"
+          >
+            <span
+              class="dusk-anchor-button__text"
+            >
+              Forgot Password?
+            </span>
+            
+          </a>
+          <!--&lt;Anchor&gt;-->
+          <!--&lt;AnchorButton&gt;-->
+        </form>
+      </article>
+      
+      <!--&lt;Card&gt;-->
+       
+      <article
+        class="dusk-card"
+      >
+        <header
+          class="dusk-card__header"
+        >
+          <svg
+            class="dusk-icon dusk-icon--size--normal dusk-card__icon"
+            role="graphics-symbol"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M14 2H6A2 2 0 0 0 4 4V20A2 2 0 0 0 6 22H18A2 2 0 0 0 20 20V8L14 2M18 20H6V4H13V9H18M12.83 15A3 3 0 1 0 12.83 17H14V19H16V17H17V15M10 17A1 1 0 1 1 11 16A1 1 0 0 1 10 17Z"
+            />
+          </svg>
+          
+          <!--&lt;Icon&gt;-->
+           
+          <h3
+            class="h4"
+          >
+            Upload DAT file
+          </h3>
+           
+        </header>
+         
+        <button
+          class="dusk-button dusk-button--type--button dusk-button--variant--tertiary dusk-button--size--normal alt-login"
+          disabled=""
+          type="button"
+        >
+          <span
+            class="dusk-button__text"
+          >
+            Choose file
+          </span>
+        </button>
+        <!--&lt;Button&gt;-->
+      </article>
+      
+      <!--&lt;Card&gt;-->
+    </div>
+     
+    <footer
+      class="login-footer s-diEOsynXV9Ac"
+    >
+      <a
+        aria-disabled="false"
+        class="dusk-anchor dusk-anchor-button dusk-anchor-button--variant--tertiary dusk-anchor-button--size--normal dusk-icon-button-labeled"
+        href="/setup"
+      >
+        <svg
+          class="dusk-icon dusk-icon--size--normal dusk-anchor-button__icon"
+          role="graphics-symbol"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"
+          />
+        </svg>
+        
+        <!--&lt;Icon&gt;-->
+         
+        <span
+          class="dusk-anchor-button__text"
+        >
+          Back
+        </span>
+        
+        
+      </a>
+      <!--&lt;Anchor&gt;-->
+      <!--&lt;AnchorButton&gt;-->
+    </footer>
+  </section>
+  <!--&lt;+page&gt;-->
+</div>
+`;

@@ -1,0 +1,16 @@
+@media (min-width: 768px) {
+	.notice {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: var(--default-gap);
+	}
+
+	.notice svg {
+		width: 10%;
+	}
+}
+
+.notice--error {
+	color: var(--error-color);
+}
